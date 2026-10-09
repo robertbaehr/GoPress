@@ -29,7 +29,8 @@ type Context struct {
 	DB *db.DB
 
 	// Hooks is the action/filter registry for this process (P1.4).
-	Hooks any
+	// Typically one process-wide *Hooks shared across requests.
+	Hooks *Hooks
 
 	// Cache is the object cache (P1.6).
 	Cache any
