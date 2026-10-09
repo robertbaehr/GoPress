@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/robertbaehr/GoPress/internal/config"
+	"github.com/robertbaehr/GoPress/internal/db"
 )
 
 // ctxKey is the private context.Context key for *Context.
@@ -25,7 +26,7 @@ type Context struct {
 	Config *config.Config
 
 	// DB is the database handle (P1.3).
-	DB any
+	DB *db.DB
 
 	// Hooks is the action/filter registry for this process (P1.4).
 	Hooks any

@@ -12,12 +12,17 @@ modules:
   - path: gopkg.in/yaml.v3
     license: MIT AND Apache-2.0
     purpose: corpus / allowlist YAML parsing
+  - path: github.com/go-sql-driver/mysql
+    license: MPL-2.0
+    purpose: MariaDB/MySQL driver for wpdb port (internal/db)
 
 # Indirect modules are tracked for license awareness but not required in go.mod require.
 indirect:
   - path: golang.org/x/mod
     license: BSD-3-Clause
   - path: golang.org/x/sync
+    license: BSD-3-Clause
+  - path: filippo.io/edwards25519
     license: BSD-3-Clause
 
 forbidden_license_substrings:
