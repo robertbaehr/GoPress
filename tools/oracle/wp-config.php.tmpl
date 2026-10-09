@@ -1,0 +1,46 @@
+<?php
+/**
+ * GoPress PHP oracle site configuration template (P0.3).
+ *
+ * Fixed, test-only salts are intentional and committed. They are not secrets.
+ * Rendered to /opt/gopress-ref/wp-config.php by `make oracle-up`.
+ *
+ * @package GoPress
+ */
+
+// ** Database settings ** //
+define( 'DB_NAME', 'gopress_ref' );
+define( 'DB_USER', 'gopress' );
+define( 'DB_PASSWORD', 'gopress' );
+define( 'DB_HOST', 'localhost' );
+define( 'DB_CHARSET', 'utf8mb4' );
+define( 'DB_COLLATE', '' );
+
+/**#@+
+ * Authentication unique keys and salts (fixed for the oracle).
+ */
+define( 'AUTH_KEY',         'gopress-ref-auth-key-0001-fixed-for-oracle' );
+define( 'SECURE_AUTH_KEY',  'gopress-ref-secure-auth-key-0002-fixed' );
+define( 'LOGGED_IN_KEY',    'gopress-ref-logged-in-key-0003-fixed' );
+define( 'NONCE_KEY',        'gopress-ref-nonce-key-0004-fixed-oracle' );
+define( 'AUTH_SALT',        'gopress-ref-auth-salt-0005-fixed-oracle' );
+define( 'SECURE_AUTH_SALT', 'gopress-ref-secure-auth-salt-0006-fixed' );
+define( 'LOGGED_IN_SALT',   'gopress-ref-logged-in-salt-0007-fixed' );
+define( 'NONCE_SALT',       'gopress-ref-nonce-salt-0008-fixed-oracle' );
+/**#@-*/
+
+$table_prefix = 'wp_';
+
+define( 'WP_ENVIRONMENT_TYPE', 'local' );
+define( 'DISABLE_WP_CRON', true );
+define( 'AUTOMATIC_UPDATER_DISABLED', true );
+define( 'WP_HTTP_BLOCK_EXTERNAL', true );
+define( 'WP_DEBUG', false );
+
+/* That's all, stop editing! Happy publishing. */
+
+if ( ! defined( 'ABSPATH' ) ) {
+	define( 'ABSPATH', __DIR__ . '/' );
+}
+
+require_once ABSPATH . 'wp-settings.php';
