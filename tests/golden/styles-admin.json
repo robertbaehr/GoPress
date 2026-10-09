@@ -1,0 +1,1032 @@
+{
+    "about": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/about.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "admin-bar": {
+        "args": null,
+        "deps": [
+            "dashicons"
+        ],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/admin-bar.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "admin-menu": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/admin-menu.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "buttons": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/buttons.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "classic-theme-styles": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "path": "/opt/gopress-ref/wp-includes/css/classic-themes.min.css"
+        },
+        "src": "/wp-includes/css/classic-themes.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "code-editor": {
+        "args": null,
+        "deps": [
+            "wp-codemirror"
+        ],
+        "extra": [],
+        "src": "/wp-admin/css/code-editor.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "colors": {
+        "args": null,
+        "deps": [
+            "wp-admin",
+            "buttons"
+        ],
+        "extra": [],
+        "src": true,
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "colors-fresh": {
+        "args": null,
+        "deps": [
+            "wp-admin",
+            "buttons"
+        ],
+        "extra": [],
+        "src": false,
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "common": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/common.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "customize-controls": {
+        "args": null,
+        "deps": [
+            "wp-admin",
+            "colors",
+            "imgareaselect"
+        ],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/customize-controls.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "customize-nav-menus": {
+        "args": null,
+        "deps": [
+            "wp-admin",
+            "colors"
+        ],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/customize-nav-menus.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "customize-preview": {
+        "args": null,
+        "deps": [
+            "dashicons"
+        ],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/customize-preview.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "customize-widgets": {
+        "args": null,
+        "deps": [
+            "wp-admin",
+            "colors"
+        ],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/customize-widgets.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "dashboard": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/dashboard.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "dashicons": {
+        "args": null,
+        "deps": [],
+        "extra": [],
+        "src": "/wp-includes/css/dashicons.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "deprecated-media": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/deprecated-media.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "edit": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/edit.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "editor-buttons": {
+        "args": null,
+        "deps": [
+            "dashicons"
+        ],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/editor.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "farbtastic": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/farbtastic.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": "1.3u1"
+    },
+    "forms": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/forms.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "imgareaselect": {
+        "args": null,
+        "deps": [],
+        "extra": [],
+        "src": "/wp-includes/js/imgareaselect/imgareaselect.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": "0.9.8"
+    },
+    "install": {
+        "args": null,
+        "deps": [
+            "dashicons",
+            "buttons",
+            "forms",
+            "l10n",
+            "wp-base-styles"
+        ],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/install.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "jcrop": {
+        "args": null,
+        "deps": [],
+        "extra": [],
+        "src": "/wp-includes/js/jcrop/jquery.Jcrop.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": "0.9.15"
+    },
+    "l10n": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/l10n.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "list-tables": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/list-tables.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "login": {
+        "args": null,
+        "deps": [
+            "dashicons",
+            "buttons",
+            "forms",
+            "l10n",
+            "wp-base-styles",
+            "wp-tooltip"
+        ],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/login.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "media": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/media.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "media-views": {
+        "args": null,
+        "deps": [
+            "buttons",
+            "dashicons",
+            "wp-mediaelement"
+        ],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/media-views.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "mediaelement": {
+        "args": null,
+        "deps": [],
+        "extra": [],
+        "src": "/wp-includes/js/mediaelement/mediaelementplayer-legacy.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": "4.2.17"
+    },
+    "nav-menus": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/nav-menus.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "open-sans": {
+        "args": null,
+        "deps": [],
+        "extra": [],
+        "src": "https://fonts.googleapis.com/css?family=Open+Sans:300italic,400italic,600italic,300,400,600&subset=latin,latin-ext&display=fallback",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "revisions": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/revisions.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "site-health": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/site-health.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "site-icon": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/site-icon.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "themes": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/themes.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "thickbox": {
+        "args": null,
+        "deps": [
+            "dashicons"
+        ],
+        "extra": [],
+        "src": "/wp-includes/js/thickbox/thickbox.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "widgets": {
+        "args": null,
+        "deps": [
+            "wp-pointer"
+        ],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/widgets.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-admin": {
+        "args": null,
+        "deps": [
+            "dashicons",
+            "common",
+            "forms",
+            "admin-menu",
+            "dashboard",
+            "list-tables",
+            "edit",
+            "revisions",
+            "media",
+            "themes",
+            "about",
+            "nav-menus",
+            "widgets",
+            "site-icon",
+            "l10n",
+            "wp-base-styles",
+            "wp-tooltip"
+        ],
+        "extra": [],
+        "src": false,
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-auth-check": {
+        "args": null,
+        "deps": [
+            "dashicons"
+        ],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/wp-auth-check.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-base-styles": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "path": "/opt/gopress-ref//wp-includes/css/dist/base-styles/admin-schemes.min.css"
+        },
+        "src": "/wp-includes/css/dist/base-styles/admin-schemes.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-block-directory": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "path": "/opt/gopress-ref//wp-includes/css/dist/block-directory/style.min.css",
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/block-directory/style.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-block-editor": {
+        "args": null,
+        "deps": [
+            "wp-components",
+            "wp-preferences"
+        ],
+        "extra": {
+            "path": "/opt/gopress-ref//wp-includes/css/dist/block-editor/style.min.css",
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/block-editor/style.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-block-editor-content": {
+        "args": null,
+        "deps": [
+            "wp-components"
+        ],
+        "extra": [],
+        "src": "/wp-includes/css/dist/block-editor/content.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-block-library": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "path": "/opt/gopress-ref//wp-includes/css/dist/block-library/common.min.css",
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/block-library/common.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-block-library-theme": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "path": "/opt/gopress-ref/wp-includes/css/dist/block-library/theme.min.css",
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/block-library/theme.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-block-template-skip-link": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "path": "/opt/gopress-ref/wp-includes/css/wp-block-template-skip-link.min.css",
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/wp-block-template-skip-link.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-codemirror": {
+        "args": null,
+        "deps": [],
+        "extra": [],
+        "src": "/wp-includes/js/codemirror/codemirror.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": "5.65.20"
+    },
+    "wp-color-picker": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-admin/css/color-picker.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-commands": {
+        "args": null,
+        "deps": [
+            "wp-components"
+        ],
+        "extra": {
+            "path": "/opt/gopress-ref//wp-includes/css/dist/commands/style.min.css",
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/commands/style.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-components": {
+        "args": null,
+        "deps": [
+            "wp-theme"
+        ],
+        "extra": {
+            "path": "/opt/gopress-ref//wp-includes/css/dist/components/style.min.css",
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/components/style.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-customize-widgets": {
+        "args": null,
+        "deps": [
+            "wp-widgets",
+            "wp-block-editor",
+            "wp-editor",
+            "wp-edit-blocks",
+            "wp-block-library",
+            "wp-patterns",
+            "wp-preferences"
+        ],
+        "extra": {
+            "path": "/opt/gopress-ref//wp-includes/css/dist/customize-widgets/style.min.css",
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/customize-widgets/style.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-edit-blocks": {
+        "args": null,
+        "deps": [
+            "wp-theme",
+            "wp-base-styles",
+            "wp-components",
+            "wp-reset-editor-styles",
+            "wp-block-library",
+            "wp-block-editor-content"
+        ],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/block-library/editor.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-edit-post": {
+        "args": null,
+        "deps": [
+            "wp-components",
+            "wp-block-editor",
+            "wp-editor",
+            "wp-edit-blocks",
+            "wp-block-library",
+            "wp-commands",
+            "wp-preferences"
+        ],
+        "extra": {
+            "path": "/opt/gopress-ref//wp-includes/css/dist/edit-post/style.min.css",
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/edit-post/style.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-edit-site": {
+        "args": null,
+        "deps": [
+            "wp-components",
+            "wp-block-editor",
+            "wp-editor",
+            "wp-edit-blocks",
+            "wp-commands",
+            "wp-preferences"
+        ],
+        "extra": {
+            "path": "/opt/gopress-ref//wp-includes/css/dist/edit-site/style.min.css",
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/edit-site/style.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-edit-widgets": {
+        "args": null,
+        "deps": [
+            "wp-widgets",
+            "wp-block-editor",
+            "wp-editor",
+            "wp-edit-blocks",
+            "wp-block-library",
+            "wp-patterns",
+            "wp-preferences"
+        ],
+        "extra": {
+            "path": "/opt/gopress-ref//wp-includes/css/dist/edit-widgets/style.min.css",
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/edit-widgets/style.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-editor": {
+        "args": null,
+        "deps": [
+            "wp-components",
+            "wp-block-editor",
+            "wp-reusable-blocks",
+            "wp-patterns",
+            "wp-preferences",
+            "wp-media-utils"
+        ],
+        "extra": {
+            "path": "/opt/gopress-ref//wp-includes/css/dist/editor/style.min.css",
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/editor/style.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-editor-classic-layout-styles": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/edit-post/classic.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-editor-font": {
+        "args": null,
+        "deps": [],
+        "extra": [],
+        "src": "https://fonts.googleapis.com/css?family=Noto+Serif%3A400%2C400i%2C700%2C700i",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-embed-template-ie": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "conditional": "_required-conditional-dependency_"
+        },
+        "src": false,
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-emoji-styles": {
+        "args": "all",
+        "deps": [],
+        "extra": {
+            "after": [
+                "\n\timg.wp-smiley, img.emoji {\n\t\tdisplay: inline !important;\n\t\tborder: none !important;\n\t\tbox-shadow: none !important;\n\t\theight: 1em !important;\n\t\twidth: 1em !important;\n\t\tmargin: 0 0.07em !important;\n\t\tvertical-align: -0.1em !important;\n\t\tbackground: none !important;\n\t\tpadding: 0 !important;\n\t}"
+            ]
+        },
+        "src": false,
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-empty-template-alert": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/wp-empty-template-alert.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-format-library": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "path": "/opt/gopress-ref//wp-includes/css/dist/format-library/style.min.css",
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/format-library/style.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-jquery-ui-dialog": {
+        "args": null,
+        "deps": [
+            "dashicons"
+        ],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/jquery-ui-dialog.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-list-reusable-blocks": {
+        "args": null,
+        "deps": [
+            "wp-components"
+        ],
+        "extra": {
+            "path": "/opt/gopress-ref//wp-includes/css/dist/list-reusable-blocks/style.min.css",
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/list-reusable-blocks/style.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-media-utils": {
+        "args": null,
+        "deps": [
+            "wp-components"
+        ],
+        "extra": {
+            "path": "/opt/gopress-ref//wp-includes/css/dist/media-utils/style.min.css",
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/media-utils/style.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-mediaelement": {
+        "args": null,
+        "deps": [
+            "mediaelement"
+        ],
+        "extra": [],
+        "src": "/wp-includes/js/mediaelement/wp-mediaelement.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-nux": {
+        "args": null,
+        "deps": [
+            "wp-components"
+        ],
+        "extra": {
+            "path": "/opt/gopress-ref//wp-includes/css/dist/nux/style.min.css",
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/nux/style.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-patterns": {
+        "args": null,
+        "deps": [
+            "wp-components"
+        ],
+        "extra": {
+            "path": "/opt/gopress-ref//wp-includes/css/dist/patterns/style.min.css",
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/patterns/style.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-pointer": {
+        "args": null,
+        "deps": [
+            "dashicons"
+        ],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/wp-pointer.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-preferences": {
+        "args": null,
+        "deps": [
+            "wp-components"
+        ],
+        "extra": {
+            "path": "/opt/gopress-ref//wp-includes/css/dist/preferences/style.min.css"
+        },
+        "src": "/wp-includes/css/dist/preferences/style.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-reset-editor-styles": {
+        "args": null,
+        "deps": [
+            "common",
+            "forms"
+        ],
+        "extra": {
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/block-library/reset.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-reusable-blocks": {
+        "args": null,
+        "deps": [
+            "wp-components"
+        ],
+        "extra": {
+            "path": "/opt/gopress-ref//wp-includes/css/dist/reusable-blocks/style.min.css",
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/reusable-blocks/style.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-theme": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "path": "/opt/gopress-ref//wp-includes/css/dist/theme/design-tokens.min.css",
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/theme/design-tokens.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-tooltip": {
+        "args": null,
+        "deps": [
+            "dashicons"
+        ],
+        "extra": [],
+        "src": "/wp-admin/css/wp-tooltip.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-view-transitions-admin": {
+        "args": null,
+        "deps": [],
+        "extra": {
+            "after": [
+                "/*! This file is auto-generated */\n@media (prefers-reduced-motion:no-preference){@view-transition{navigation:auto}#adminmenu>.menu-top{view-transition-name:attr(id type(<custom-ident>),none)}}",
+                "/*! This file is auto-generated */\n@media (prefers-reduced-motion:no-preference){@view-transition{navigation:auto}#adminmenu>.menu-top{view-transition-name:attr(id type(<custom-ident>),none)}}"
+            ]
+        },
+        "src": false,
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    },
+    "wp-widgets": {
+        "args": null,
+        "deps": [
+            "wp-components"
+        ],
+        "extra": {
+            "path": "/opt/gopress-ref//wp-includes/css/dist/widgets/style.min.css",
+            "rtl": "replace",
+            "suffix": ".min"
+        },
+        "src": "/wp-includes/css/dist/widgets/style.min.css",
+        "textdomain": null,
+        "translations_path": null,
+        "ver": false
+    }
+}

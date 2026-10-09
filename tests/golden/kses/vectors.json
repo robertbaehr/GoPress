@@ -1,0 +1,347 @@
+{
+    "corpus_size": 57,
+    "items": [
+        {
+            "i": 0,
+            "input": "",
+            "wp_kses_data": "",
+            "wp_kses_post": ""
+        },
+        {
+            "i": 1,
+            "input": "0",
+            "wp_kses_data": "0",
+            "wp_kses_post": "0"
+        },
+        {
+            "i": 2,
+            "input": "1",
+            "wp_kses_data": "1",
+            "wp_kses_post": "1"
+        },
+        {
+            "i": 3,
+            "input": "-1",
+            "wp_kses_data": "-1",
+            "wp_kses_post": "-1"
+        },
+        {
+            "i": 4,
+            "input": "12abc",
+            "wp_kses_data": "12abc",
+            "wp_kses_post": "12abc"
+        },
+        {
+            "i": 5,
+            "input": "  spaced  ",
+            "wp_kses_data": "  spaced  ",
+            "wp_kses_post": "  spaced  "
+        },
+        {
+            "i": 6,
+            "input": "line1\nline2",
+            "wp_kses_data": "line1\nline2",
+            "wp_kses_post": "line1\nline2"
+        },
+        {
+            "i": 7,
+            "input": "a\tb",
+            "wp_kses_data": "a\tb",
+            "wp_kses_post": "a\tb"
+        },
+        {
+            "i": 8,
+            "input": "<script>alert(1)</script>",
+            "wp_kses_data": "",
+            "wp_kses_post": ""
+        },
+        {
+            "i": 9,
+            "input": "<p onclick=\"x\">hi</p>",
+            "wp_kses_data": "hi",
+            "wp_kses_post": "<p>hi</p>"
+        },
+        {
+            "i": 10,
+            "input": "<a href=\"javascript:alert(1)\">x</a>",
+            "wp_kses_data": "<a href=\"alert(1)\">x</a>",
+            "wp_kses_post": "<a href=\"alert(1)\">x</a>"
+        },
+        {
+            "i": 11,
+            "input": "<a href=\"https://example.com/path?q=1&r=2\">link</a>",
+            "wp_kses_data": "<a href=\"https://example.com/path?q=1&amp;r=2\">link</a>",
+            "wp_kses_post": "<a href=\"https://example.com/path?q=1&amp;r=2\">link</a>"
+        },
+        {
+            "i": 12,
+            "input": "https://example.com/foo bar",
+            "wp_kses_data": "https://example.com/foo bar",
+            "wp_kses_post": "https://example.com/foo bar"
+        },
+        {
+            "i": 13,
+            "input": "//example.com/scheme-relative",
+            "wp_kses_data": "//example.com/scheme-relative",
+            "wp_kses_post": "//example.com/scheme-relative"
+        },
+        {
+            "i": 14,
+            "input": "mailto:test@example.com",
+            "wp_kses_data": "mailto:test@example.com",
+            "wp_kses_post": "mailto:test@example.com"
+        },
+        {
+            "i": 15,
+            "input": "foo@bar.com",
+            "wp_kses_data": "foo@bar.com",
+            "wp_kses_post": "foo@bar.com"
+        },
+        {
+            "i": 16,
+            "input": "not-an-email",
+            "wp_kses_data": "not-an-email",
+            "wp_kses_post": "not-an-email"
+        },
+        {
+            "i": 17,
+            "input": "O'Reilly & Sons",
+            "wp_kses_data": "O'Reilly &amp; Sons",
+            "wp_kses_post": "O'Reilly &amp; Sons"
+        },
+        {
+            "i": 18,
+            "input": "\"quoted\"",
+            "wp_kses_data": "\"quoted\"",
+            "wp_kses_post": "\"quoted\""
+        },
+        {
+            "i": 19,
+            "input": "café résumé naïve",
+            "wp_kses_data": "café résumé naïve",
+            "wp_kses_post": "café résumé naïve"
+        },
+        {
+            "i": 20,
+            "input": "emoji 😀",
+            "wp_kses_data": "emoji 😀",
+            "wp_kses_post": "emoji 😀"
+        },
+        {
+            "i": 21,
+            "input": "&amp; &lt; &gt;",
+            "wp_kses_data": "&amp; &lt; &gt;",
+            "wp_kses_post": "&amp; &lt; &gt;"
+        },
+        {
+            "i": 22,
+            "input": "&#38; &#x26;",
+            "wp_kses_data": "&amp; &amp;",
+            "wp_kses_post": "&amp; &amp;"
+        },
+        {
+            "i": 23,
+            "input": "hello...world",
+            "wp_kses_data": "hello...world",
+            "wp_kses_post": "hello...world"
+        },
+        {
+            "i": 24,
+            "input": "it's a test",
+            "wp_kses_data": "it's a test",
+            "wp_kses_post": "it's a test"
+        },
+        {
+            "i": 25,
+            "input": "--double-dash--",
+            "wp_kses_data": "--double-dash--",
+            "wp_kses_post": "--double-dash--"
+        },
+        {
+            "i": 26,
+            "input": "word \"quote\" word",
+            "wp_kses_data": "word \"quote\" word",
+            "wp_kses_post": "word \"quote\" word"
+        },
+        {
+            "i": 27,
+            "input": "http://example.com\nhttp://evil.com",
+            "wp_kses_data": "http://example.com\nhttp://evil.com",
+            "wp_kses_post": "http://example.com\nhttp://evil.com"
+        },
+        {
+            "i": 28,
+            "input": "<img src=x onerror=alert(1)>",
+            "wp_kses_data": "",
+            "wp_kses_post": "<img src=\"x\">"
+        },
+        {
+            "i": 29,
+            "input": "<div style=\"color:red; expression(alert(1))\">x</div>",
+            "wp_kses_data": "x",
+            "wp_kses_post": "<div style=\"color:red\">x</div>"
+        },
+        {
+            "i": 30,
+            "input": "../../etc/passwd",
+            "wp_kses_data": "../../etc/passwd",
+            "wp_kses_post": "../../etc/passwd"
+        },
+        {
+            "i": 31,
+            "input": "file:///etc/passwd",
+            "wp_kses_data": "file:///etc/passwd",
+            "wp_kses_post": "file:///etc/passwd"
+        },
+        {
+            "i": 32,
+            "input": "data:text/html,<b>x</b>",
+            "wp_kses_data": "data:text/html,<b>x</b>",
+            "wp_kses_post": "data:text/html,<b>x</b>"
+        },
+        {
+            "i": 33,
+            "input": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "wp_kses_data": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+            "wp_kses_post": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
+        },
+        {
+            "i": 34,
+            "input": "Foo_Bar-baz.123",
+            "wp_kses_data": "Foo_Bar-baz.123",
+            "wp_kses_post": "Foo_Bar-baz.123"
+        },
+        {
+            "i": 35,
+            "input": "UPPER lower MiXeD",
+            "wp_kses_data": "UPPER lower MiXeD",
+            "wp_kses_post": "UPPER lower MiXeD"
+        },
+        {
+            "i": 36,
+            "input": "null\u0000byte",
+            "wp_kses_data": "nullbyte",
+            "wp_kses_post": "nullbyte"
+        },
+        {
+            "i": 37,
+            "input": "<![CDATA[test]]>",
+            "wp_kses_data": "",
+            "wp_kses_post": ""
+        },
+        {
+            "i": 38,
+            "input": "<?xml version=\"1.0\"?>",
+            "wp_kses_data": "",
+            "wp_kses_post": ""
+        },
+        {
+            "i": 39,
+            "input": "select * from users; drop table users;--",
+            "wp_kses_data": "select * from users; drop table users;--",
+            "wp_kses_post": "select * from users; drop table users;--"
+        },
+        {
+            "i": 40,
+            "input": "https://xn--fsq.com/",
+            "wp_kses_data": "https://xn--fsq.com/",
+            "wp_kses_post": "https://xn--fsq.com/"
+        },
+        {
+            "i": 41,
+            "input": "1.5e+2",
+            "wp_kses_data": "1.5e+2",
+            "wp_kses_post": "1.5e+2"
+        },
+        {
+            "i": 42,
+            "input": "000123",
+            "wp_kses_data": "000123",
+            "wp_kses_post": "000123"
+        },
+        {
+            "i": 43,
+            "input": "-0",
+            "wp_kses_data": "-0",
+            "wp_kses_post": "-0"
+        },
+        {
+            "i": 44,
+            "input": "true",
+            "wp_kses_data": "true",
+            "wp_kses_post": "true"
+        },
+        {
+            "i": 45,
+            "input": "false",
+            "wp_kses_data": "false",
+            "wp_kses_post": "false"
+        },
+        {
+            "i": 46,
+            "input": "null",
+            "wp_kses_data": "null",
+            "wp_kses_post": "null"
+        },
+        {
+            "i": 47,
+            "input": "\r\n",
+            "wp_kses_data": "\n",
+            "wp_kses_post": "\n"
+        },
+        {
+            "i": 48,
+            "input": "&nbsp;",
+            "wp_kses_data": " ",
+            "wp_kses_post": " "
+        },
+        {
+            "i": 49,
+            "input": "<br>",
+            "wp_kses_data": "",
+            "wp_kses_post": "<br>"
+        },
+        {
+            "i": 50,
+            "input": "<br/>",
+            "wp_kses_data": "",
+            "wp_kses_post": "<br>"
+        },
+        {
+            "i": 51,
+            "input": "<BR />",
+            "wp_kses_data": "",
+            "wp_kses_post": "<br>"
+        },
+        {
+            "i": 52,
+            "input": "http://user:pass@example.com:8080/path?x=1#frag",
+            "wp_kses_data": "http://user:pass@example.com:8080/path?x=1#frag",
+            "wp_kses_post": "http://user:pass@example.com:8080/path?x=1#frag"
+        },
+        {
+            "i": 53,
+            "input": "[shortcode attr=\"1\"]content[/shortcode]",
+            "wp_kses_data": "[shortcode attr=\"1\"]content[/shortcode]",
+            "wp_kses_post": "[shortcode attr=\"1\"]content[/shortcode]"
+        },
+        {
+            "i": 54,
+            "input": "<!--more-->",
+            "wp_kses_data": "<!--more-->",
+            "wp_kses_post": "<!--more-->"
+        },
+        {
+            "i": 55,
+            "input": "<!--nextpage-->",
+            "wp_kses_data": "<!--nextpage-->",
+            "wp_kses_post": "<!--nextpage-->"
+        },
+        {
+            "i": 56,
+            "input": "Hello <!--comment--> world",
+            "wp_kses_data": "Hello <!--comment--> world",
+            "wp_kses_post": "Hello <!--comment--> world"
+        }
+    ]
+}

@@ -1,0 +1,89 @@
+{
+    "comment": {
+        "": {
+            "_wp_note_status": {
+                "auth_callback": true,
+                "description": "Note resolution status",
+                "label": "",
+                "revisions_enabled": false,
+                "sanitize_callback": null,
+                "show_in_rest": {
+                    "schema": {
+                        "enum": [
+                            "resolved",
+                            "reopen"
+                        ],
+                        "type": "string"
+                    }
+                },
+                "single": true,
+                "type": "string"
+            }
+        }
+    },
+    "post": {
+        "": [],
+        "attachment": [],
+        "page": {
+            "footnotes": {
+                "auth_callback": "__return_true",
+                "description": "",
+                "label": "",
+                "revisions_enabled": true,
+                "sanitize_callback": null,
+                "show_in_rest": true,
+                "single": true,
+                "type": "string"
+            }
+        },
+        "post": {
+            "footnotes": {
+                "auth_callback": "__return_true",
+                "description": "",
+                "label": "",
+                "revisions_enabled": true,
+                "sanitize_callback": null,
+                "show_in_rest": true,
+                "single": true,
+                "type": "string"
+            }
+        }
+    },
+    "term": {
+        "": [],
+        "category": [],
+        "post_tag": []
+    },
+    "user": {
+        "": {
+            "wp_persisted_preferences": {
+                "auth_callback": "__return_true",
+                "description": "",
+                "label": "",
+                "revisions_enabled": false,
+                "sanitize_callback": null,
+                "show_in_rest": {
+                    "name": "persisted_preferences",
+                    "schema": {
+                        "additionalProperties": true,
+                        "context": [
+                            "edit"
+                        ],
+                        "properties": {
+                            "_modified": {
+                                "description": "The date and time the preferences were updated.",
+                                "format": "date-time",
+                                "readonly": false,
+                                "type": "string"
+                            }
+                        },
+                        "type": "object"
+                    },
+                    "type": "object"
+                },
+                "single": true,
+                "type": "object"
+            }
+        }
+    }
+}

@@ -21,12 +21,8 @@ $schemes = array( 'auth', 'secure_auth', 'logged_in', 'nonce' );
 
 foreach ( $schemes as $scheme ) {
 	if ( function_exists( 'wp_salt' ) ) {
-		$salt = wp_salt( $scheme );
-		// Site-specific secrets: store length + sha256 for fixture stability checks.
-		$out['salts'][ $scheme ] = array(
-			'length' => strlen( $salt ),
-			'hash'   => hash( 'sha256', $salt ),
-		);
+		// Oracle wp-config salts are fixed and committed; store the real value.
+		$out['salts'][ $scheme ] = wp_salt( $scheme );
 	} else {
 		WP_CLI::warning( 'wp_salt missing' );
 		break;
@@ -84,9 +80,8 @@ if ( function_exists( 'wp_generate_auth_cookie' ) ) {
 	$token      = 'fixedtokenfixedtokenfixedtokenfixedtok';
 	$cookies    = array();
 	foreach ( array( 'auth', 'secure_auth', 'logged_in' ) as $scheme ) {
-		$cookie = wp_generate_auth_cookie( $user_id, $expiration, $scheme, $token );
-		// Normalize long hex hmac segments.
-		$cookies[ $scheme ] = preg_replace( '/[0-9a-f]{32,}/i', 'HASH', $cookie );
+		// Deterministic given fixed salts + fixture user_pass + expiration + token.
+		$cookies[ $scheme ] = wp_generate_auth_cookie( $user_id, $expiration, $scheme, $token );
 	}
 	$out['auth_cookie'] = array(
 		'user_id'    => $user_id,

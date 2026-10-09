@@ -21,7 +21,16 @@ function gopress_dump_dependencies( $deps ) {
 	$registered = isset( $deps->registered ) ? $deps->registered : array();
 	foreach ( $registered as $handle => $obj ) {
 		$extra = isset( $obj->extra ) ? $obj->extra : array();
-		// Drop volatile translation paths that include ABSPATH.
+		if ( is_array( $extra ) ) {
+			foreach ( $extra as $ek => $ev ) {
+				if ( is_string( $ev ) ) {
+					// userSettings.time and similar wall-clock embeds.
+					$ev = preg_replace( '/"time"\s*:\s*"\d+"/', '"time":"TIME"', $ev );
+					$ev = preg_replace( '/\b1[6-9]\d{8}\b/', 'TIME', $ev );
+					$extra[ $ek ] = $ev;
+				}
+			}
+		}
 		$row = array(
 			'src'               => isset( $obj->src ) ? $obj->src : null,
 			'deps'              => isset( $obj->deps ) ? array_values( (array) $obj->deps ) : array(),

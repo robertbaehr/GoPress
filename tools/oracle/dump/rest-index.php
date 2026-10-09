@@ -55,15 +55,16 @@ if ( ! empty( $admins ) ) {
 	}
 }
 
+$scrub = array( 'scrub_volatiles' => true );
 if ( function_exists( 'rest_get_server' ) ) {
-	gopress_golden_write( 'rest/index-admin.json', gopress_rest_index_dump() );
+	gopress_golden_write( 'rest/index-admin.json', gopress_rest_index_dump(), $scrub );
 
 	wp_set_current_user( 0 );
-	gopress_golden_write( 'rest/index-anon.json', gopress_rest_index_dump() );
+	gopress_golden_write( 'rest/index-anon.json', gopress_rest_index_dump(), $scrub );
 } else {
 	WP_CLI::warning( 'rest_get_server missing' );
-	gopress_golden_write( 'rest/index-admin.json', array( 'skipped' => true ) );
-	gopress_golden_write( 'rest/index-anon.json', array( 'skipped' => true ) );
+	gopress_golden_write( 'rest/index-admin.json', array( 'skipped' => true ), $scrub );
+	gopress_golden_write( 'rest/index-anon.json', array( 'skipped' => true ), $scrub );
 }
 
 WP_CLI::success( 'rest-index dump complete' );

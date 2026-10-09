@@ -1,0 +1,656 @@
+{
+    "autoload": {
+        "active_plugins": "on",
+        "admin_email": "on",
+        "admin_email_lifespan": "on",
+        "auto_plugin_theme_update_emails": "off",
+        "auto_update_core_dev": "on",
+        "auto_update_core_major": "on",
+        "auto_update_core_minor": "on",
+        "avatar_default": "on",
+        "avatar_rating": "on",
+        "blog_charset": "on",
+        "blog_public": "on",
+        "blogdescription": "on",
+        "blogname": "on",
+        "category_base": "on",
+        "category_children": "auto",
+        "close_comments_days_old": "on",
+        "close_comments_for_old_posts": "on",
+        "comment_max_links": "on",
+        "comment_moderation": "on",
+        "comment_order": "on",
+        "comment_previously_approved": "on",
+        "comment_registration": "on",
+        "comments_notify": "on",
+        "comments_per_page": "on",
+        "cron": "on",
+        "date_format": "on",
+        "db_version": "on",
+        "default_category": "on",
+        "default_comment_status": "on",
+        "default_comments_page": "on",
+        "default_email_category": "on",
+        "default_link_category": "on",
+        "default_ping_status": "on",
+        "default_pingback_flag": "on",
+        "default_post_format": "on",
+        "default_role": "on",
+        "disallowed_keys": "off",
+        "finished_splitting_shared_terms": "on",
+        "fresh_site": "off",
+        "gmt_offset": "on",
+        "gopress_fixture_seeded": "auto",
+        "gopress_fixture_seeded_at": "auto",
+        "hack_file": "on",
+        "home": "on",
+        "html_type": "on",
+        "image_default_align": "on",
+        "image_default_link_type": "on",
+        "image_default_size": "on",
+        "initial_db_version": "on",
+        "large_size_h": "on",
+        "large_size_w": "on",
+        "link_manager_enabled": "on",
+        "links_updated_date_format": "on",
+        "mailserver_login": "on",
+        "mailserver_pass": "on",
+        "mailserver_port": "on",
+        "mailserver_url": "on",
+        "medium_large_size_h": "on",
+        "medium_large_size_w": "on",
+        "medium_size_h": "on",
+        "medium_size_w": "on",
+        "moderation_keys": "off",
+        "moderation_notify": "on",
+        "page_comments": "on",
+        "page_for_posts": "on",
+        "page_on_front": "on",
+        "permalink_structure": "on",
+        "ping_sites": "on",
+        "posts_per_page": "on",
+        "posts_per_rss": "on",
+        "recently_edited": "off",
+        "require_name_email": "on",
+        "rewrite_rules": "on",
+        "rss_use_excerpt": "on",
+        "show_avatars": "on",
+        "show_comments_cookies_opt_in": "on",
+        "show_on_front": "on",
+        "sidebars_widgets": "auto",
+        "site_icon": "on",
+        "siteurl": "on",
+        "start_of_week": "on",
+        "sticky_posts": "on",
+        "stylesheet": "on",
+        "tag_base": "on",
+        "template": "on",
+        "theme_mods_twentytwentyfive": "auto",
+        "thread_comments": "on",
+        "thread_comments_depth": "on",
+        "thumbnail_crop": "on",
+        "thumbnail_size_h": "on",
+        "thumbnail_size_w": "on",
+        "time_format": "on",
+        "timezone_string": "on",
+        "uninstall_plugins": "off",
+        "upload_path": "on",
+        "upload_url_path": "on",
+        "uploads_use_yearmonth_folders": "on",
+        "use_balanceTags": "on",
+        "use_smilies": "on",
+        "use_trackback": "on",
+        "user_count": "off",
+        "users_can_register": "on",
+        "widget_archives": "auto",
+        "widget_block": "auto",
+        "widget_calendar": "auto",
+        "widget_categories": "on",
+        "widget_custom_html": "auto",
+        "widget_media_audio": "auto",
+        "widget_media_gallery": "auto",
+        "widget_media_image": "auto",
+        "widget_media_video": "auto",
+        "widget_meta": "auto",
+        "widget_nav_menu": "auto",
+        "widget_pages": "auto",
+        "widget_recent-comments": "auto",
+        "widget_recent-posts": "auto",
+        "widget_rss": "on",
+        "widget_search": "auto",
+        "widget_tag_cloud": "auto",
+        "widget_text": "on",
+        "wp_attachment_pages_enabled": "on",
+        "wp_calendar_block_has_published_posts": "auto",
+        "wp_force_deactivated_plugins": "on",
+        "wp_notes_notify": "on",
+        "wp_page_for_privacy_policy": "on",
+        "wp_user_roles": "on"
+    },
+    "count": 126,
+    "note": "Dumped from current DB (fixture). See options.php header NOTE.",
+    "options": {
+        "active_plugins": [],
+        "admin_email": "admin@example.com",
+        "admin_email_lifespan": "1734004800",
+        "auto_plugin_theme_update_emails": [],
+        "auto_update_core_dev": "enabled",
+        "auto_update_core_major": "enabled",
+        "auto_update_core_minor": "enabled",
+        "avatar_default": "mystery",
+        "avatar_rating": "G",
+        "blog_charset": "UTF-8",
+        "blog_public": "1",
+        "blogdescription": "",
+        "blogname": "GoPress Fixture",
+        "category_base": "",
+        "category_children": {
+            "2": [
+                3
+            ],
+            "3": [
+                4
+            ]
+        },
+        "close_comments_days_old": "14",
+        "close_comments_for_old_posts": "0",
+        "comment_max_links": "2",
+        "comment_moderation": "0",
+        "comment_order": "asc",
+        "comment_previously_approved": "1",
+        "comment_registration": "0",
+        "comments_notify": "1",
+        "comments_per_page": "50",
+        "cron": {
+            "1718452800": {
+                "recovery_mode_clean_expired_keys": {
+                    "40cd750bba9870f18aada2478b24840a": {
+                        "args": [],
+                        "interval": 86400,
+                        "schedule": "daily"
+                    }
+                },
+                "wp_privacy_delete_old_export_files": {
+                    "40cd750bba9870f18aada2478b24840a": {
+                        "args": [],
+                        "interval": 3600,
+                        "schedule": "hourly"
+                    }
+                },
+                "wp_privacy_personal_data_cleanup_requests": {
+                    "40cd750bba9870f18aada2478b24840a": {
+                        "args": [],
+                        "interval": 86400,
+                        "schedule": "daily"
+                    }
+                }
+            },
+            "1718452801": {
+                "do_pings": {
+                    "40cd750bba9870f18aada2478b24840a": {
+                        "args": [],
+                        "schedule": false
+                    }
+                }
+            },
+            "1718452802": {
+                "wp_version_check": {
+                    "40cd750bba9870f18aada2478b24840a": {
+                        "args": [],
+                        "interval": 43200,
+                        "schedule": "twicedaily"
+                    }
+                }
+            },
+            "1718452803": {
+                "wp_update_plugins": {
+                    "40cd750bba9870f18aada2478b24840a": {
+                        "args": [],
+                        "interval": 43200,
+                        "schedule": "twicedaily"
+                    }
+                }
+            },
+            "1718452804": {
+                "wp_update_themes": {
+                    "40cd750bba9870f18aada2478b24840a": {
+                        "args": [],
+                        "interval": 43200,
+                        "schedule": "twicedaily"
+                    }
+                }
+            },
+            "1718452805": {
+                "wp_site_health_scheduled_check": {
+                    "40cd750bba9870f18aada2478b24840a": {
+                        "args": [],
+                        "interval": 604800,
+                        "schedule": "weekly"
+                    }
+                }
+            },
+            "1796119200": {
+                "publish_future_post": {
+                    "17f415781210aaa50f7cb291eccfc7af": {
+                        "args": [
+                            28
+                        ],
+                        "schedule": false
+                    },
+                    "3c2f09ef3307c7968f556ae704095acf": {
+                        "args": [
+                            35
+                        ],
+                        "schedule": false
+                    },
+                    "78525e41f5c2848ff7e1a2337fb96361": {
+                        "args": [
+                            14
+                        ],
+                        "schedule": false
+                    },
+                    "9faa5555021560fb2a78d8c9f3513bc5": {
+                        "args": [
+                            42
+                        ],
+                        "schedule": false
+                    },
+                    "c4b66550e50f6ae8347c6592ebc1a4d1": {
+                        "args": [
+                            21
+                        ],
+                        "schedule": false
+                    },
+                    "c7c97442c7bbde2137452591b932e68d": {
+                        "args": [
+                            49
+                        ],
+                        "schedule": false
+                    }
+                }
+            },
+            "version": 2
+        },
+        "date_format": "F j, Y",
+        "db_version": "61833",
+        "default_category": "1",
+        "default_comment_status": "open",
+        "default_comments_page": "newest",
+        "default_email_category": "1",
+        "default_link_category": "2",
+        "default_ping_status": "open",
+        "default_pingback_flag": "1",
+        "default_post_format": "0",
+        "default_role": "subscriber",
+        "disallowed_keys": "",
+        "finished_splitting_shared_terms": "1",
+        "fresh_site": "0",
+        "gmt_offset": "0",
+        "gopress_fixture_seeded": "1",
+        "gopress_fixture_seeded_at": "2024-06-15 12:00:00",
+        "hack_file": "0",
+        "home": "http://127.0.0.1:8081",
+        "html_type": "text/html",
+        "image_default_align": "",
+        "image_default_link_type": "none",
+        "image_default_size": "",
+        "initial_db_version": "61833",
+        "large_size_h": "1024",
+        "large_size_w": "1024",
+        "link_manager_enabled": "0",
+        "links_updated_date_format": "F j, Y g:i a",
+        "mailserver_login": "login@example.com",
+        "mailserver_pass": "",
+        "mailserver_port": "110",
+        "mailserver_url": "mail.example.com",
+        "medium_large_size_h": "0",
+        "medium_large_size_w": "768",
+        "medium_size_h": "300",
+        "medium_size_w": "300",
+        "moderation_keys": "",
+        "moderation_notify": "1",
+        "page_comments": "0",
+        "page_for_posts": "0",
+        "page_on_front": "0",
+        "permalink_structure": "/%year%/%monthnum%/%day%/%postname%/",
+        "ping_sites": "https://rpc.pingomatic.com/",
+        "posts_per_page": "10",
+        "posts_per_rss": "10",
+        "recently_edited": "",
+        "require_name_email": "1",
+        "rewrite_rules": {
+            "(.?.+?)(?:/([0-9]+))?/?$": "index.php?pagename=$matches[1]&page=$matches[2]",
+            "(.?.+?)/(feed|rdf|rss|rss2|atom)/?$": "index.php?pagename=$matches[1]&feed=$matches[2]",
+            "(.?.+?)/comment-page-([0-9]{1,})/?$": "index.php?pagename=$matches[1]&cpage=$matches[2]",
+            "(.?.+?)/embed/?$": "index.php?pagename=$matches[1]&embed=true",
+            "(.?.+?)/feed/(feed|rdf|rss|rss2|atom)/?$": "index.php?pagename=$matches[1]&feed=$matches[2]",
+            "(.?.+?)/page/?([0-9]{1,})/?$": "index.php?pagename=$matches[1]&paged=$matches[2]",
+            "(.?.+?)/trackback/?$": "index.php?pagename=$matches[1]&tb=1",
+            "([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/([^/]+)(?:/([0-9]+))?/?$": "index.php?year=$matches[1]&monthnum=$matches[2]&day=$matches[3]&name=$matches[4]&page=$matches[5]",
+            "([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/([^/]+)/(feed|rdf|rss|rss2|atom)/?$": "index.php?year=$matches[1]&monthnum=$matches[2]&day=$matches[3]&name=$matches[4]&feed=$matches[5]",
+            "([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/([^/]+)/comment-page-([0-9]{1,})/?$": "index.php?year=$matches[1]&monthnum=$matches[2]&day=$matches[3]&name=$matches[4]&cpage=$matches[5]",
+            "([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/([^/]+)/embed/?$": "index.php?year=$matches[1]&monthnum=$matches[2]&day=$matches[3]&name=$matches[4]&embed=true",
+            "([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/([^/]+)/feed/(feed|rdf|rss|rss2|atom)/?$": "index.php?year=$matches[1]&monthnum=$matches[2]&day=$matches[3]&name=$matches[4]&feed=$matches[5]",
+            "([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/([^/]+)/page/?([0-9]{1,})/?$": "index.php?year=$matches[1]&monthnum=$matches[2]&day=$matches[3]&name=$matches[4]&paged=$matches[5]",
+            "([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/([^/]+)/trackback/?$": "index.php?year=$matches[1]&monthnum=$matches[2]&day=$matches[3]&name=$matches[4]&tb=1",
+            "([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/(feed|rdf|rss|rss2|atom)/?$": "index.php?year=$matches[1]&monthnum=$matches[2]&day=$matches[3]&feed=$matches[4]",
+            "([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/?$": "index.php?year=$matches[1]&monthnum=$matches[2]&day=$matches[3]",
+            "([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/comment-page-([0-9]{1,})/?$": "index.php?year=$matches[1]&monthnum=$matches[2]&day=$matches[3]&cpage=$matches[4]",
+            "([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/embed/?$": "index.php?year=$matches[1]&monthnum=$matches[2]&day=$matches[3]&embed=true",
+            "([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/feed/(feed|rdf|rss|rss2|atom)/?$": "index.php?year=$matches[1]&monthnum=$matches[2]&day=$matches[3]&feed=$matches[4]",
+            "([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/page/?([0-9]{1,})/?$": "index.php?year=$matches[1]&monthnum=$matches[2]&day=$matches[3]&paged=$matches[4]",
+            "([0-9]{4})/([0-9]{1,2})/(feed|rdf|rss|rss2|atom)/?$": "index.php?year=$matches[1]&monthnum=$matches[2]&feed=$matches[3]",
+            "([0-9]{4})/([0-9]{1,2})/?$": "index.php?year=$matches[1]&monthnum=$matches[2]",
+            "([0-9]{4})/([0-9]{1,2})/comment-page-([0-9]{1,})/?$": "index.php?year=$matches[1]&monthnum=$matches[2]&cpage=$matches[3]",
+            "([0-9]{4})/([0-9]{1,2})/embed/?$": "index.php?year=$matches[1]&monthnum=$matches[2]&embed=true",
+            "([0-9]{4})/([0-9]{1,2})/feed/(feed|rdf|rss|rss2|atom)/?$": "index.php?year=$matches[1]&monthnum=$matches[2]&feed=$matches[3]",
+            "([0-9]{4})/([0-9]{1,2})/page/?([0-9]{1,})/?$": "index.php?year=$matches[1]&monthnum=$matches[2]&paged=$matches[3]",
+            "([0-9]{4})/(feed|rdf|rss|rss2|atom)/?$": "index.php?year=$matches[1]&feed=$matches[2]",
+            "([0-9]{4})/?$": "index.php?year=$matches[1]",
+            "([0-9]{4})/comment-page-([0-9]{1,})/?$": "index.php?year=$matches[1]&cpage=$matches[2]",
+            "([0-9]{4})/embed/?$": "index.php?year=$matches[1]&embed=true",
+            "([0-9]{4})/feed/(feed|rdf|rss|rss2|atom)/?$": "index.php?year=$matches[1]&feed=$matches[2]",
+            "([0-9]{4})/page/?([0-9]{1,})/?$": "index.php?year=$matches[1]&paged=$matches[2]",
+            "(feed|rdf|rss|rss2|atom)/?$": "index.php?&feed=$matches[1]",
+            ".*wp-(atom|rdf|rss|rss2|feed|commentsrss2)\\.php$": "index.php?feed=old",
+            ".*wp-app\\.php(/.*)?$": "index.php?error=403",
+            ".*wp-register.php$": "index.php?register=true",
+            ".?.+?/attachment/([^/]+)/(feed|rdf|rss|rss2|atom)/?$": "index.php?attachment=$matches[1]&feed=$matches[2]",
+            ".?.+?/attachment/([^/]+)/?$": "index.php?attachment=$matches[1]",
+            ".?.+?/attachment/([^/]+)/comment-page-([0-9]{1,})/?$": "index.php?attachment=$matches[1]&cpage=$matches[2]",
+            ".?.+?/attachment/([^/]+)/embed/?$": "index.php?attachment=$matches[1]&embed=true",
+            ".?.+?/attachment/([^/]+)/feed/(feed|rdf|rss|rss2|atom)/?$": "index.php?attachment=$matches[1]&feed=$matches[2]",
+            ".?.+?/attachment/([^/]+)/trackback/?$": "index.php?attachment=$matches[1]&tb=1",
+            "[0-9]{4}/[0-9]{1,2}/[0-9]{1,2}/[^/]+/([^/]+)/(feed|rdf|rss|rss2|atom)/?$": "index.php?attachment=$matches[1]&feed=$matches[2]",
+            "[0-9]{4}/[0-9]{1,2}/[0-9]{1,2}/[^/]+/([^/]+)/?$": "index.php?attachment=$matches[1]",
+            "[0-9]{4}/[0-9]{1,2}/[0-9]{1,2}/[^/]+/([^/]+)/comment-page-([0-9]{1,})/?$": "index.php?attachment=$matches[1]&cpage=$matches[2]",
+            "[0-9]{4}/[0-9]{1,2}/[0-9]{1,2}/[^/]+/([^/]+)/embed/?$": "index.php?attachment=$matches[1]&embed=true",
+            "[0-9]{4}/[0-9]{1,2}/[0-9]{1,2}/[^/]+/([^/]+)/feed/(feed|rdf|rss|rss2|atom)/?$": "index.php?attachment=$matches[1]&feed=$matches[2]",
+            "[0-9]{4}/[0-9]{1,2}/[0-9]{1,2}/[^/]+/([^/]+)/trackback/?$": "index.php?attachment=$matches[1]&tb=1",
+            "[0-9]{4}/[0-9]{1,2}/[0-9]{1,2}/[^/]+/attachment/([^/]+)/(feed|rdf|rss|rss2|atom)/?$": "index.php?attachment=$matches[1]&feed=$matches[2]",
+            "[0-9]{4}/[0-9]{1,2}/[0-9]{1,2}/[^/]+/attachment/([^/]+)/?$": "index.php?attachment=$matches[1]",
+            "[0-9]{4}/[0-9]{1,2}/[0-9]{1,2}/[^/]+/attachment/([^/]+)/comment-page-([0-9]{1,})/?$": "index.php?attachment=$matches[1]&cpage=$matches[2]",
+            "[0-9]{4}/[0-9]{1,2}/[0-9]{1,2}/[^/]+/attachment/([^/]+)/embed/?$": "index.php?attachment=$matches[1]&embed=true",
+            "[0-9]{4}/[0-9]{1,2}/[0-9]{1,2}/[^/]+/attachment/([^/]+)/feed/(feed|rdf|rss|rss2|atom)/?$": "index.php?attachment=$matches[1]&feed=$matches[2]",
+            "[0-9]{4}/[0-9]{1,2}/[0-9]{1,2}/[^/]+/attachment/([^/]+)/trackback/?$": "index.php?attachment=$matches[1]&tb=1",
+            "^index.php/wp-json/(.*)?": "index.php?rest_route=/$matches[1]",
+            "^index.php/wp-json/?$": "index.php?rest_route=/",
+            "^wp-json/(.*)?": "index.php?rest_route=/$matches[1]",
+            "^wp-json/?$": "index.php?rest_route=/",
+            "^wp-sitemap-([a-z]+?)-([a-z\\d_-]+?)-(\\d+?)\\.xml$": "index.php?sitemap=$matches[1]&sitemap-subtype=$matches[2]&paged=$matches[3]",
+            "^wp-sitemap-([a-z]+?)-(\\d+?)\\.xml$": "index.php?sitemap=$matches[1]&paged=$matches[2]",
+            "^wp-sitemap\\.xml$": "index.php?sitemap=index",
+            "author/([^/]+)/(feed|rdf|rss|rss2|atom)/?$": "index.php?author_name=$matches[1]&feed=$matches[2]",
+            "author/([^/]+)/?$": "index.php?author_name=$matches[1]",
+            "author/([^/]+)/embed/?$": "index.php?author_name=$matches[1]&embed=true",
+            "author/([^/]+)/feed/(feed|rdf|rss|rss2|atom)/?$": "index.php?author_name=$matches[1]&feed=$matches[2]",
+            "author/([^/]+)/page/?([0-9]{1,})/?$": "index.php?author_name=$matches[1]&paged=$matches[2]",
+            "comments/(feed|rdf|rss|rss2|atom)/?$": "index.php?&feed=$matches[1]&withcomments=1",
+            "comments/embed/?$": "index.php?&embed=true",
+            "comments/feed/(feed|rdf|rss|rss2|atom)/?$": "index.php?&feed=$matches[1]&withcomments=1",
+            "embed/?$": "index.php?&embed=true",
+            "favicon\\.ico$": "index.php?favicon=1",
+            "feed/(feed|rdf|rss|rss2|atom)/?$": "index.php?&feed=$matches[1]",
+            "page/?([0-9]{1,})/?$": "index.php?&paged=$matches[1]",
+            "robots\\.txt$": "index.php?robots=1",
+            "search/(.+)/(feed|rdf|rss|rss2|atom)/?$": "index.php?s=$matches[1]&feed=$matches[2]",
+            "search/(.+)/?$": "index.php?s=$matches[1]",
+            "search/(.+)/embed/?$": "index.php?s=$matches[1]&embed=true",
+            "search/(.+)/feed/(feed|rdf|rss|rss2|atom)/?$": "index.php?s=$matches[1]&feed=$matches[2]",
+            "search/(.+)/page/?([0-9]{1,})/?$": "index.php?s=$matches[1]&paged=$matches[2]",
+            "sitemap\\.xml": "index.php?sitemap=index"
+        },
+        "rss_use_excerpt": "0",
+        "show_avatars": "1",
+        "show_comments_cookies_opt_in": "1",
+        "show_on_front": "posts",
+        "sidebars_widgets": {
+            "array_version": 3,
+            "sidebar-1": [
+                "block-2",
+                "block-3",
+                "block-4"
+            ],
+            "sidebar-2": [
+                "block-5",
+                "block-6"
+            ],
+            "wp_inactive_widgets": []
+        },
+        "site_icon": "0",
+        "siteurl": "http://127.0.0.1:8081",
+        "start_of_week": "1",
+        "sticky_posts": [
+            13
+        ],
+        "stylesheet": "twentytwentyfive",
+        "tag_base": "",
+        "template": "twentytwentyfive",
+        "theme_mods_twentytwentyfive": {
+            "custom_css_post_id": -1
+        },
+        "thread_comments": "1",
+        "thread_comments_depth": "5",
+        "thumbnail_crop": "1",
+        "thumbnail_size_h": "150",
+        "thumbnail_size_w": "150",
+        "time_format": "g:i a",
+        "timezone_string": "",
+        "uninstall_plugins": [],
+        "upload_path": "",
+        "upload_url_path": "",
+        "uploads_use_yearmonth_folders": "1",
+        "use_balanceTags": "0",
+        "use_smilies": "1",
+        "use_trackback": "0",
+        "user_count": "5",
+        "users_can_register": "0",
+        "widget_archives": {
+            "_multiwidget": 1
+        },
+        "widget_block": {
+            "2": {
+                "content": "<!-- wp:search /-->"
+            },
+            "3": {
+                "content": "<!-- wp:group --><div class=\"wp-block-group\"><!-- wp:heading --><h2>Recent Posts</h2><!-- /wp:heading --><!-- wp:latest-posts /--></div><!-- /wp:group -->"
+            },
+            "4": {
+                "content": "<!-- wp:group --><div class=\"wp-block-group\"><!-- wp:heading --><h2>Recent Comments</h2><!-- /wp:heading --><!-- wp:latest-comments {\"displayAvatar\":false,\"displayDate\":false,\"displayExcerpt\":false} /--></div><!-- /wp:group -->"
+            },
+            "5": {
+                "content": "<!-- wp:group --><div class=\"wp-block-group\"><!-- wp:heading --><h2>Archives</h2><!-- /wp:heading --><!-- wp:archives /--></div><!-- /wp:group -->"
+            },
+            "6": {
+                "content": "<!-- wp:group --><div class=\"wp-block-group\"><!-- wp:heading --><h2>Categories</h2><!-- /wp:heading --><!-- wp:categories /--></div><!-- /wp:group -->"
+            },
+            "_multiwidget": 1
+        },
+        "widget_calendar": {
+            "_multiwidget": 1
+        },
+        "widget_categories": [],
+        "widget_custom_html": {
+            "_multiwidget": 1
+        },
+        "widget_media_audio": {
+            "_multiwidget": 1
+        },
+        "widget_media_gallery": {
+            "_multiwidget": 1
+        },
+        "widget_media_image": {
+            "_multiwidget": 1
+        },
+        "widget_media_video": {
+            "_multiwidget": 1
+        },
+        "widget_meta": {
+            "_multiwidget": 1
+        },
+        "widget_nav_menu": {
+            "_multiwidget": 1
+        },
+        "widget_pages": {
+            "_multiwidget": 1
+        },
+        "widget_recent-comments": {
+            "_multiwidget": 1
+        },
+        "widget_recent-posts": {
+            "_multiwidget": 1
+        },
+        "widget_rss": [],
+        "widget_search": {
+            "_multiwidget": 1
+        },
+        "widget_tag_cloud": {
+            "_multiwidget": 1
+        },
+        "widget_text": [],
+        "wp_attachment_pages_enabled": "0",
+        "wp_calendar_block_has_published_posts": "1",
+        "wp_force_deactivated_plugins": [],
+        "wp_notes_notify": "1",
+        "wp_page_for_privacy_policy": "3",
+        "wp_user_roles": {
+            "administrator": {
+                "capabilities": {
+                    "activate_plugins": true,
+                    "create_users": true,
+                    "delete_others_pages": true,
+                    "delete_others_posts": true,
+                    "delete_pages": true,
+                    "delete_plugins": true,
+                    "delete_posts": true,
+                    "delete_private_pages": true,
+                    "delete_private_posts": true,
+                    "delete_published_pages": true,
+                    "delete_published_posts": true,
+                    "delete_themes": true,
+                    "delete_users": true,
+                    "edit_dashboard": true,
+                    "edit_files": true,
+                    "edit_others_pages": true,
+                    "edit_others_posts": true,
+                    "edit_pages": true,
+                    "edit_plugins": true,
+                    "edit_posts": true,
+                    "edit_private_pages": true,
+                    "edit_private_posts": true,
+                    "edit_published_pages": true,
+                    "edit_published_posts": true,
+                    "edit_theme_options": true,
+                    "edit_themes": true,
+                    "edit_users": true,
+                    "export": true,
+                    "import": true,
+                    "install_plugins": true,
+                    "install_themes": true,
+                    "level_0": true,
+                    "level_1": true,
+                    "level_10": true,
+                    "level_2": true,
+                    "level_3": true,
+                    "level_4": true,
+                    "level_5": true,
+                    "level_6": true,
+                    "level_7": true,
+                    "level_8": true,
+                    "level_9": true,
+                    "list_users": true,
+                    "manage_categories": true,
+                    "manage_links": true,
+                    "manage_options": true,
+                    "moderate_comments": true,
+                    "promote_users": true,
+                    "publish_pages": true,
+                    "publish_posts": true,
+                    "read": true,
+                    "read_private_pages": true,
+                    "read_private_posts": true,
+                    "remove_users": true,
+                    "switch_themes": true,
+                    "unfiltered_html": true,
+                    "unfiltered_upload": true,
+                    "update_core": true,
+                    "update_plugins": true,
+                    "update_themes": true,
+                    "upload_files": true
+                },
+                "name": "Administrator"
+            },
+            "author": {
+                "capabilities": {
+                    "delete_posts": true,
+                    "delete_published_posts": true,
+                    "edit_posts": true,
+                    "edit_published_posts": true,
+                    "level_0": true,
+                    "level_1": true,
+                    "level_2": true,
+                    "publish_posts": true,
+                    "read": true,
+                    "upload_files": true
+                },
+                "name": "Author"
+            },
+            "contributor": {
+                "capabilities": {
+                    "delete_posts": true,
+                    "edit_posts": true,
+                    "level_0": true,
+                    "level_1": true,
+                    "read": true
+                },
+                "name": "Contributor"
+            },
+            "editor": {
+                "capabilities": {
+                    "delete_others_pages": true,
+                    "delete_others_posts": true,
+                    "delete_pages": true,
+                    "delete_posts": true,
+                    "delete_private_pages": true,
+                    "delete_private_posts": true,
+                    "delete_published_pages": true,
+                    "delete_published_posts": true,
+                    "edit_others_pages": true,
+                    "edit_others_posts": true,
+                    "edit_pages": true,
+                    "edit_posts": true,
+                    "edit_private_pages": true,
+                    "edit_private_posts": true,
+                    "edit_published_pages": true,
+                    "edit_published_posts": true,
+                    "level_0": true,
+                    "level_1": true,
+                    "level_2": true,
+                    "level_3": true,
+                    "level_4": true,
+                    "level_5": true,
+                    "level_6": true,
+                    "level_7": true,
+                    "manage_categories": true,
+                    "manage_links": true,
+                    "moderate_comments": true,
+                    "publish_pages": true,
+                    "publish_posts": true,
+                    "read": true,
+                    "read_private_pages": true,
+                    "read_private_posts": true,
+                    "unfiltered_html": true,
+                    "upload_files": true
+                },
+                "name": "Editor"
+            },
+            "subscriber": {
+                "capabilities": {
+                    "level_0": true,
+                    "read": true
+                },
+                "name": "Subscriber"
+            }
+        }
+    }
+}

@@ -124,7 +124,8 @@ gopress_golden_write(
 		'user_id' => (int) $user->ID,
 		'menu'    => gopress_golden_public_props( $menu ),
 		'submenu' => gopress_golden_public_props( $submenu ),
-	)
+	),
+	array( 'scrub_volatiles' => true )
 );
 
 WP_CLI::success( "admin-menu $only dump complete" );

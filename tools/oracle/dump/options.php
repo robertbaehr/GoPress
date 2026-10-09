@@ -27,10 +27,14 @@ $map      = array();
 $autoload = array();
 
 foreach ( (array) $rows as $row ) {
-	$name  = $row['option_name'];
-	$value = maybe_unserialize( $row['option_value'] );
-	$map[ $name ]      = $value;
-	$autoload[ $name ] = $row['autoload'];
+	$name = $row['option_name'];
+	// Skip volatile transients (timeouts change every run).
+	if ( 0 === strpos( $name, '_transient_' ) || 0 === strpos( $name, '_site_transient_' ) ) {
+		continue;
+	}
+	$value                 = maybe_unserialize( $row['option_value'] );
+	$map[ $name ]          = $value;
+	$autoload[ $name ]     = $row['autoload'];
 }
 
 $payload = array(

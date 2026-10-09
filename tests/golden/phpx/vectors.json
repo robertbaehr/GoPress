@@ -1,0 +1,2050 @@
+{
+    "date": [
+        {
+            "H": "00",
+            "Y": "1970",
+            "YmdHis": "19700101000000",
+            "d": "01",
+            "full": "1970-01-01 00:00:00 000000 19700101000000",
+            "i": "00",
+            "m": "01",
+            "s": "00",
+            "ts": 0,
+            "tz": "UTC",
+            "u": "000000"
+        },
+        {
+            "H": "00",
+            "Y": "2000",
+            "YmdHis": "20000101000000",
+            "d": "01",
+            "full": "2000-01-01 00:00:00 000000 20000101000000",
+            "i": "00",
+            "m": "01",
+            "s": "00",
+            "ts": 946684800,
+            "tz": "UTC",
+            "u": "000000"
+        },
+        {
+            "H": "00",
+            "Y": "2021",
+            "YmdHis": "20210101000000",
+            "d": "01",
+            "full": "2021-01-01 00:00:00 000000 20210101000000",
+            "i": "00",
+            "m": "01",
+            "s": "00",
+            "ts": 1609459200,
+            "tz": "UTC",
+            "u": "000000"
+        },
+        {
+            "H": "22",
+            "Y": "2023",
+            "YmdHis": "20231114221320",
+            "d": "14",
+            "full": "2023-11-14 22:13:20 000000 20231114221320",
+            "i": "13",
+            "m": "11",
+            "s": "20",
+            "ts": 1700000000,
+            "tz": "UTC",
+            "u": "000000"
+        },
+        {
+            "H": "03",
+            "Y": "2033",
+            "YmdHis": "20330518033320",
+            "d": "18",
+            "full": "2033-05-18 03:33:20 000000 20330518033320",
+            "i": "33",
+            "m": "05",
+            "s": "20",
+            "ts": 2000000000,
+            "tz": "UTC",
+            "u": "000000"
+        },
+        {
+            "H": "19",
+            "Y": "1969",
+            "YmdHis": "19691231190000",
+            "d": "31",
+            "full": "1969-12-31 19:00:00 000000 19691231190000",
+            "i": "00",
+            "m": "12",
+            "s": "00",
+            "ts": 0,
+            "tz": "America/New_York",
+            "u": "000000"
+        },
+        {
+            "H": "19",
+            "Y": "1999",
+            "YmdHis": "19991231190000",
+            "d": "31",
+            "full": "1999-12-31 19:00:00 000000 19991231190000",
+            "i": "00",
+            "m": "12",
+            "s": "00",
+            "ts": 946684800,
+            "tz": "America/New_York",
+            "u": "000000"
+        },
+        {
+            "H": "19",
+            "Y": "2020",
+            "YmdHis": "20201231190000",
+            "d": "31",
+            "full": "2020-12-31 19:00:00 000000 20201231190000",
+            "i": "00",
+            "m": "12",
+            "s": "00",
+            "ts": 1609459200,
+            "tz": "America/New_York",
+            "u": "000000"
+        },
+        {
+            "H": "17",
+            "Y": "2023",
+            "YmdHis": "20231114171320",
+            "d": "14",
+            "full": "2023-11-14 17:13:20 000000 20231114171320",
+            "i": "13",
+            "m": "11",
+            "s": "20",
+            "ts": 1700000000,
+            "tz": "America/New_York",
+            "u": "000000"
+        },
+        {
+            "H": "23",
+            "Y": "2033",
+            "YmdHis": "20330517233320",
+            "d": "17",
+            "full": "2033-05-17 23:33:20 000000 20330517233320",
+            "i": "33",
+            "m": "05",
+            "s": "20",
+            "ts": 2000000000,
+            "tz": "America/New_York",
+            "u": "000000"
+        },
+        {
+            "H": "01",
+            "Y": "1970",
+            "YmdHis": "19700101010000",
+            "d": "01",
+            "full": "1970-01-01 01:00:00 000000 19700101010000",
+            "i": "00",
+            "m": "01",
+            "s": "00",
+            "ts": 0,
+            "tz": "Europe/Berlin",
+            "u": "000000"
+        },
+        {
+            "H": "01",
+            "Y": "2000",
+            "YmdHis": "20000101010000",
+            "d": "01",
+            "full": "2000-01-01 01:00:00 000000 20000101010000",
+            "i": "00",
+            "m": "01",
+            "s": "00",
+            "ts": 946684800,
+            "tz": "Europe/Berlin",
+            "u": "000000"
+        },
+        {
+            "H": "01",
+            "Y": "2021",
+            "YmdHis": "20210101010000",
+            "d": "01",
+            "full": "2021-01-01 01:00:00 000000 20210101010000",
+            "i": "00",
+            "m": "01",
+            "s": "00",
+            "ts": 1609459200,
+            "tz": "Europe/Berlin",
+            "u": "000000"
+        },
+        {
+            "H": "23",
+            "Y": "2023",
+            "YmdHis": "20231114231320",
+            "d": "14",
+            "full": "2023-11-14 23:13:20 000000 20231114231320",
+            "i": "13",
+            "m": "11",
+            "s": "20",
+            "ts": 1700000000,
+            "tz": "Europe/Berlin",
+            "u": "000000"
+        },
+        {
+            "H": "05",
+            "Y": "2033",
+            "YmdHis": "20330518053320",
+            "d": "18",
+            "full": "2033-05-18 05:33:20 000000 20330518053320",
+            "i": "33",
+            "m": "05",
+            "s": "20",
+            "ts": 2000000000,
+            "tz": "Europe/Berlin",
+            "u": "000000"
+        },
+        {
+            "H": "09",
+            "Y": "1970",
+            "YmdHis": "19700101090000",
+            "d": "01",
+            "full": "1970-01-01 09:00:00 000000 19700101090000",
+            "i": "00",
+            "m": "01",
+            "s": "00",
+            "ts": 0,
+            "tz": "Asia/Tokyo",
+            "u": "000000"
+        },
+        {
+            "H": "09",
+            "Y": "2000",
+            "YmdHis": "20000101090000",
+            "d": "01",
+            "full": "2000-01-01 09:00:00 000000 20000101090000",
+            "i": "00",
+            "m": "01",
+            "s": "00",
+            "ts": 946684800,
+            "tz": "Asia/Tokyo",
+            "u": "000000"
+        },
+        {
+            "H": "09",
+            "Y": "2021",
+            "YmdHis": "20210101090000",
+            "d": "01",
+            "full": "2021-01-01 09:00:00 000000 20210101090000",
+            "i": "00",
+            "m": "01",
+            "s": "00",
+            "ts": 1609459200,
+            "tz": "Asia/Tokyo",
+            "u": "000000"
+        },
+        {
+            "H": "07",
+            "Y": "2023",
+            "YmdHis": "20231115071320",
+            "d": "15",
+            "full": "2023-11-15 07:13:20 000000 20231115071320",
+            "i": "13",
+            "m": "11",
+            "s": "20",
+            "ts": 1700000000,
+            "tz": "Asia/Tokyo",
+            "u": "000000"
+        },
+        {
+            "H": "12",
+            "Y": "2033",
+            "YmdHis": "20330518123320",
+            "d": "18",
+            "full": "2033-05-18 12:33:20 000000 20330518123320",
+            "i": "33",
+            "m": "05",
+            "s": "20",
+            "ts": 2000000000,
+            "tz": "Asia/Tokyo",
+            "u": "000000"
+        },
+        {
+            "H": "12",
+            "Y": "1970",
+            "YmdHis": "19700101120000",
+            "d": "01",
+            "full": "1970-01-01 12:00:00 000000 19700101120000",
+            "i": "00",
+            "m": "01",
+            "s": "00",
+            "ts": 0,
+            "tz": "Pacific/Auckland",
+            "u": "000000"
+        },
+        {
+            "H": "13",
+            "Y": "2000",
+            "YmdHis": "20000101130000",
+            "d": "01",
+            "full": "2000-01-01 13:00:00 000000 20000101130000",
+            "i": "00",
+            "m": "01",
+            "s": "00",
+            "ts": 946684800,
+            "tz": "Pacific/Auckland",
+            "u": "000000"
+        },
+        {
+            "H": "13",
+            "Y": "2021",
+            "YmdHis": "20210101130000",
+            "d": "01",
+            "full": "2021-01-01 13:00:00 000000 20210101130000",
+            "i": "00",
+            "m": "01",
+            "s": "00",
+            "ts": 1609459200,
+            "tz": "Pacific/Auckland",
+            "u": "000000"
+        },
+        {
+            "H": "11",
+            "Y": "2023",
+            "YmdHis": "20231115111320",
+            "d": "15",
+            "full": "2023-11-15 11:13:20 000000 20231115111320",
+            "i": "13",
+            "m": "11",
+            "s": "20",
+            "ts": 1700000000,
+            "tz": "Pacific/Auckland",
+            "u": "000000"
+        },
+        {
+            "H": "15",
+            "Y": "2033",
+            "YmdHis": "20330518153320",
+            "d": "18",
+            "full": "2033-05-18 15:33:20 000000 20330518153320",
+            "i": "33",
+            "m": "05",
+            "s": "20",
+            "ts": 2000000000,
+            "tz": "Pacific/Auckland",
+            "u": "000000"
+        }
+    ],
+    "html_entity_decode": [
+        {
+            "input": "<script>alert(1)</script>",
+            "result": "<script>alert(1)</script>"
+        },
+        {
+            "input": "\"quoted\"",
+            "result": "\"quoted\""
+        },
+        {
+            "input": "O'Reilly & Sons",
+            "result": "O'Reilly & Sons"
+        },
+        {
+            "input": "&amp; &lt; &gt;",
+            "result": "& < >"
+        },
+        {
+            "input": "café",
+            "result": "café"
+        },
+        {
+            "input": "<p onclick=\"x\">hi</p>",
+            "result": "<p onclick=\"x\">hi</p>"
+        },
+        {
+            "input": "",
+            "result": ""
+        },
+        {
+            "input": "a\tb",
+            "result": "a\tb"
+        }
+    ],
+    "htmlspecialchars": [
+        {
+            "input": "<script>alert(1)</script>",
+            "result": "&lt;script&gt;alert(1)&lt;/script&gt;"
+        },
+        {
+            "input": "\"quoted\"",
+            "result": "&quot;quoted&quot;"
+        },
+        {
+            "input": "O'Reilly & Sons",
+            "result": "O&#039;Reilly &amp; Sons"
+        },
+        {
+            "input": "&amp; &lt; &gt;",
+            "result": "&amp;amp; &amp;lt; &amp;gt;"
+        },
+        {
+            "input": "café",
+            "result": "café"
+        },
+        {
+            "input": "<p onclick=\"x\">hi</p>",
+            "result": "&lt;p onclick=&quot;x&quot;&gt;hi&lt;/p&gt;"
+        },
+        {
+            "input": "",
+            "result": ""
+        },
+        {
+            "input": "a\tb",
+            "result": "a\tb"
+        }
+    ],
+    "http_build_query": [
+        {
+            "input": {
+                "a": 1,
+                "b": 2
+            },
+            "result": "a=1&b=2"
+        },
+        {
+            "input": {
+                "a": [
+                    1,
+                    2
+                ]
+            },
+            "result": "a%5B0%5D=1&a%5B1%5D=2"
+        },
+        {
+            "input": {
+                "q": "hello world"
+            },
+            "result": "q=hello+world"
+        },
+        {
+            "input": {
+                "tag": "<b>"
+            },
+            "result": "tag=%3Cb%3E"
+        },
+        {
+            "input": {
+                "uni": "café"
+            },
+            "result": "uni=caf%C3%A9"
+        },
+        {
+            "input": [],
+            "result": ""
+        },
+        {
+            "input": {
+                "a": null,
+                "b": false,
+                "c": true
+            },
+            "result": "b=0&c=1"
+        }
+    ],
+    "json_encode": [
+        {
+            "flags": "0",
+            "input_i": 0,
+            "result": "{\"tag\":\"<script>\",\"slash\":\"a\\/b\",\"uni\":\"caf\\u00e9\",\"emoji\":\"\\ud83d\\ude00\"}"
+        },
+        {
+            "flags": "HexTag",
+            "input_i": 0,
+            "result": "{\"tag\":\"\\u003Cscript\\u003E\",\"slash\":\"a\\/b\",\"uni\":\"caf\\u00e9\",\"emoji\":\"\\ud83d\\ude00\"}"
+        },
+        {
+            "flags": "UnescapedSlashes",
+            "input_i": 0,
+            "result": "{\"tag\":\"<script>\",\"slash\":\"a/b\",\"uni\":\"caf\\u00e9\",\"emoji\":\"\\ud83d\\ude00\"}"
+        },
+        {
+            "flags": "UnescapedUnicode",
+            "input_i": 0,
+            "result": "{\"tag\":\"<script>\",\"slash\":\"a\\/b\",\"uni\":\"café\",\"emoji\":\"😀\"}"
+        },
+        {
+            "flags": "PrettyPrint",
+            "input_i": 0,
+            "result": "{\n    \"tag\": \"<script>\",\n    \"slash\": \"a\\/b\",\n    \"uni\": \"caf\\u00e9\",\n    \"emoji\": \"\\ud83d\\ude00\"\n}"
+        },
+        {
+            "flags": "ForceObject",
+            "input_i": 0,
+            "result": "{\"tag\":\"<script>\",\"slash\":\"a\\/b\",\"uni\":\"caf\\u00e9\",\"emoji\":\"\\ud83d\\ude00\"}"
+        },
+        {
+            "flags": "HexTag|UnescapedSlashes",
+            "input_i": 0,
+            "result": "{\"tag\":\"\\u003Cscript\\u003E\",\"slash\":\"a/b\",\"uni\":\"caf\\u00e9\",\"emoji\":\"\\ud83d\\ude00\"}"
+        },
+        {
+            "flags": "UnescapedSlashes|UnescapedUnicode",
+            "input_i": 0,
+            "result": "{\"tag\":\"<script>\",\"slash\":\"a/b\",\"uni\":\"café\",\"emoji\":\"😀\"}"
+        },
+        {
+            "flags": "PrettyPrint|UnescapedUnicode|UnescapedSlashes",
+            "input_i": 0,
+            "result": "{\n    \"tag\": \"<script>\",\n    \"slash\": \"a/b\",\n    \"uni\": \"café\",\n    \"emoji\": \"😀\"\n}"
+        },
+        {
+            "flags": "HexTag|UnescapedSlashes|UnescapedUnicode",
+            "input_i": 0,
+            "result": "{\"tag\":\"\\u003Cscript\\u003E\",\"slash\":\"a/b\",\"uni\":\"café\",\"emoji\":\"😀\"}"
+        },
+        {
+            "flags": "ForceObject|UnescapedUnicode",
+            "input_i": 0,
+            "result": "{\"tag\":\"<script>\",\"slash\":\"a\\/b\",\"uni\":\"café\",\"emoji\":\"😀\"}"
+        },
+        {
+            "flags": "0",
+            "input_i": 1,
+            "result": "[1,2,3]"
+        },
+        {
+            "flags": "HexTag",
+            "input_i": 1,
+            "result": "[1,2,3]"
+        },
+        {
+            "flags": "UnescapedSlashes",
+            "input_i": 1,
+            "result": "[1,2,3]"
+        },
+        {
+            "flags": "UnescapedUnicode",
+            "input_i": 1,
+            "result": "[1,2,3]"
+        },
+        {
+            "flags": "PrettyPrint",
+            "input_i": 1,
+            "result": "[\n    1,\n    2,\n    3\n]"
+        },
+        {
+            "flags": "ForceObject",
+            "input_i": 1,
+            "result": "{\"0\":1,\"1\":2,\"2\":3}"
+        },
+        {
+            "flags": "HexTag|UnescapedSlashes",
+            "input_i": 1,
+            "result": "[1,2,3]"
+        },
+        {
+            "flags": "UnescapedSlashes|UnescapedUnicode",
+            "input_i": 1,
+            "result": "[1,2,3]"
+        },
+        {
+            "flags": "PrettyPrint|UnescapedUnicode|UnescapedSlashes",
+            "input_i": 1,
+            "result": "[\n    1,\n    2,\n    3\n]"
+        },
+        {
+            "flags": "HexTag|UnescapedSlashes|UnescapedUnicode",
+            "input_i": 1,
+            "result": "[1,2,3]"
+        },
+        {
+            "flags": "ForceObject|UnescapedUnicode",
+            "input_i": 1,
+            "result": "{\"0\":1,\"1\":2,\"2\":3}"
+        },
+        {
+            "flags": "0",
+            "input_i": 2,
+            "result": "{\"a\":1}"
+        },
+        {
+            "flags": "HexTag",
+            "input_i": 2,
+            "result": "{\"a\":1}"
+        },
+        {
+            "flags": "UnescapedSlashes",
+            "input_i": 2,
+            "result": "{\"a\":1}"
+        },
+        {
+            "flags": "UnescapedUnicode",
+            "input_i": 2,
+            "result": "{\"a\":1}"
+        },
+        {
+            "flags": "PrettyPrint",
+            "input_i": 2,
+            "result": "{\n    \"a\": 1\n}"
+        },
+        {
+            "flags": "ForceObject",
+            "input_i": 2,
+            "result": "{\"a\":1}"
+        },
+        {
+            "flags": "HexTag|UnescapedSlashes",
+            "input_i": 2,
+            "result": "{\"a\":1}"
+        },
+        {
+            "flags": "UnescapedSlashes|UnescapedUnicode",
+            "input_i": 2,
+            "result": "{\"a\":1}"
+        },
+        {
+            "flags": "PrettyPrint|UnescapedUnicode|UnescapedSlashes",
+            "input_i": 2,
+            "result": "{\n    \"a\": 1\n}"
+        },
+        {
+            "flags": "HexTag|UnescapedSlashes|UnescapedUnicode",
+            "input_i": 2,
+            "result": "{\"a\":1}"
+        },
+        {
+            "flags": "ForceObject|UnescapedUnicode",
+            "input_i": 2,
+            "result": "{\"a\":1}"
+        },
+        {
+            "flags": "0",
+            "input_i": 3,
+            "result": "\"\""
+        },
+        {
+            "flags": "HexTag",
+            "input_i": 3,
+            "result": "\"\""
+        },
+        {
+            "flags": "UnescapedSlashes",
+            "input_i": 3,
+            "result": "\"\""
+        },
+        {
+            "flags": "UnescapedUnicode",
+            "input_i": 3,
+            "result": "\"\""
+        },
+        {
+            "flags": "PrettyPrint",
+            "input_i": 3,
+            "result": "\"\""
+        },
+        {
+            "flags": "ForceObject",
+            "input_i": 3,
+            "result": "\"\""
+        },
+        {
+            "flags": "HexTag|UnescapedSlashes",
+            "input_i": 3,
+            "result": "\"\""
+        },
+        {
+            "flags": "UnescapedSlashes|UnescapedUnicode",
+            "input_i": 3,
+            "result": "\"\""
+        },
+        {
+            "flags": "PrettyPrint|UnescapedUnicode|UnescapedSlashes",
+            "input_i": 3,
+            "result": "\"\""
+        },
+        {
+            "flags": "HexTag|UnescapedSlashes|UnescapedUnicode",
+            "input_i": 3,
+            "result": "\"\""
+        },
+        {
+            "flags": "ForceObject|UnescapedUnicode",
+            "input_i": 3,
+            "result": "\"\""
+        },
+        {
+            "flags": "0",
+            "input_i": 4,
+            "result": "null"
+        },
+        {
+            "flags": "HexTag",
+            "input_i": 4,
+            "result": "null"
+        },
+        {
+            "flags": "UnescapedSlashes",
+            "input_i": 4,
+            "result": "null"
+        },
+        {
+            "flags": "UnescapedUnicode",
+            "input_i": 4,
+            "result": "null"
+        },
+        {
+            "flags": "PrettyPrint",
+            "input_i": 4,
+            "result": "null"
+        },
+        {
+            "flags": "ForceObject",
+            "input_i": 4,
+            "result": "null"
+        },
+        {
+            "flags": "HexTag|UnescapedSlashes",
+            "input_i": 4,
+            "result": "null"
+        },
+        {
+            "flags": "UnescapedSlashes|UnescapedUnicode",
+            "input_i": 4,
+            "result": "null"
+        },
+        {
+            "flags": "PrettyPrint|UnescapedUnicode|UnescapedSlashes",
+            "input_i": 4,
+            "result": "null"
+        },
+        {
+            "flags": "HexTag|UnescapedSlashes|UnescapedUnicode",
+            "input_i": 4,
+            "result": "null"
+        },
+        {
+            "flags": "ForceObject|UnescapedUnicode",
+            "input_i": 4,
+            "result": "null"
+        },
+        {
+            "flags": "0",
+            "input_i": 5,
+            "result": "true"
+        },
+        {
+            "flags": "HexTag",
+            "input_i": 5,
+            "result": "true"
+        },
+        {
+            "flags": "UnescapedSlashes",
+            "input_i": 5,
+            "result": "true"
+        },
+        {
+            "flags": "UnescapedUnicode",
+            "input_i": 5,
+            "result": "true"
+        },
+        {
+            "flags": "PrettyPrint",
+            "input_i": 5,
+            "result": "true"
+        },
+        {
+            "flags": "ForceObject",
+            "input_i": 5,
+            "result": "true"
+        },
+        {
+            "flags": "HexTag|UnescapedSlashes",
+            "input_i": 5,
+            "result": "true"
+        },
+        {
+            "flags": "UnescapedSlashes|UnescapedUnicode",
+            "input_i": 5,
+            "result": "true"
+        },
+        {
+            "flags": "PrettyPrint|UnescapedUnicode|UnescapedSlashes",
+            "input_i": 5,
+            "result": "true"
+        },
+        {
+            "flags": "HexTag|UnescapedSlashes|UnescapedUnicode",
+            "input_i": 5,
+            "result": "true"
+        },
+        {
+            "flags": "ForceObject|UnescapedUnicode",
+            "input_i": 5,
+            "result": "true"
+        },
+        {
+            "flags": "0",
+            "input_i": 6,
+            "result": "[]"
+        },
+        {
+            "flags": "HexTag",
+            "input_i": 6,
+            "result": "[]"
+        },
+        {
+            "flags": "UnescapedSlashes",
+            "input_i": 6,
+            "result": "[]"
+        },
+        {
+            "flags": "UnescapedUnicode",
+            "input_i": 6,
+            "result": "[]"
+        },
+        {
+            "flags": "PrettyPrint",
+            "input_i": 6,
+            "result": "[]"
+        },
+        {
+            "flags": "ForceObject",
+            "input_i": 6,
+            "result": "{}"
+        },
+        {
+            "flags": "HexTag|UnescapedSlashes",
+            "input_i": 6,
+            "result": "[]"
+        },
+        {
+            "flags": "UnescapedSlashes|UnescapedUnicode",
+            "input_i": 6,
+            "result": "[]"
+        },
+        {
+            "flags": "PrettyPrint|UnescapedUnicode|UnescapedSlashes",
+            "input_i": 6,
+            "result": "[]"
+        },
+        {
+            "flags": "HexTag|UnescapedSlashes|UnescapedUnicode",
+            "input_i": 6,
+            "result": "[]"
+        },
+        {
+            "flags": "ForceObject|UnescapedUnicode",
+            "input_i": 6,
+            "result": "{}"
+        }
+    ],
+    "nl2br": [
+        {
+            "input": "hello world",
+            "result": "hello world"
+        },
+        {
+            "input": "HELLO WORLD",
+            "result": "HELLO WORLD"
+        },
+        {
+            "input": "hello\nworld",
+            "result": "hello<br />\nworld"
+        },
+        {
+            "input": "a-b c_d",
+            "result": "a-b c_d"
+        },
+        {
+            "input": "",
+            "result": ""
+        },
+        {
+            "input": "line1\nline2\nline3",
+            "result": "line1<br />\nline2<br />\nline3"
+        }
+    ],
+    "number_format": [
+        {
+            "input": 0,
+            "result": "0.00"
+        },
+        {
+            "input": 1,
+            "result": "1.00"
+        },
+        {
+            "input": 1234.567,
+            "result": "1,234.57"
+        },
+        {
+            "input": -1234.567,
+            "result": "-1,234.57"
+        },
+        {
+            "input": 1000000,
+            "result": "1,000,000.00"
+        },
+        {
+            "input": 0.30000000000000004,
+            "result": "0.30"
+        }
+    ],
+    "parse_url": [
+        {
+            "input": "https://example.com/path?q=1&r=2#frag",
+            "result": {
+                "fragment": "frag",
+                "host": "example.com",
+                "path": "/path",
+                "query": "q=1&r=2",
+                "scheme": "https"
+            }
+        },
+        {
+            "input": "http://user:pass@example.com:8080/path",
+            "result": {
+                "host": "example.com",
+                "pass": "pass",
+                "path": "/path",
+                "port": 8080,
+                "scheme": "http",
+                "user": "user"
+            }
+        },
+        {
+            "input": "//example.com/scheme-relative",
+            "result": {
+                "host": "example.com",
+                "path": "/scheme-relative"
+            }
+        },
+        {
+            "input": "/relative/path",
+            "result": {
+                "path": "/relative/path"
+            }
+        },
+        {
+            "input": "mailto:test@example.com",
+            "result": {
+                "path": "test@example.com",
+                "scheme": "mailto"
+            }
+        },
+        {
+            "input": "https://xn--fsq.com/",
+            "result": {
+                "host": "xn--fsq.com",
+                "path": "/",
+                "scheme": "https"
+            }
+        },
+        {
+            "input": "https://example.com",
+            "result": {
+                "host": "example.com",
+                "scheme": "https"
+            }
+        },
+        {
+            "input": "https://example.com/",
+            "result": {
+                "host": "example.com",
+                "path": "/",
+                "scheme": "https"
+            }
+        },
+        {
+            "input": "https://example.com:443/path",
+            "result": {
+                "host": "example.com",
+                "path": "/path",
+                "port": 443,
+                "scheme": "https"
+            }
+        },
+        {
+            "input": "data:text/html,<b>x</b>",
+            "result": {
+                "path": "text/html,<b>x</b>",
+                "scheme": "data"
+            }
+        },
+        {
+            "input": "file:///etc/passwd",
+            "result": {
+                "path": "/etc/passwd",
+                "scheme": "file"
+            }
+        },
+        {
+            "input": "",
+            "result": {
+                "path": ""
+            }
+        },
+        {
+            "input": "not a url",
+            "result": {
+                "path": "not a url"
+            }
+        },
+        {
+            "input": "https://example.com/foo bar",
+            "result": {
+                "host": "example.com",
+                "path": "/foo bar",
+                "scheme": "https"
+            }
+        },
+        {
+            "input": "http://[::1]/80/path",
+            "result": {
+                "host": "[::1]",
+                "path": "/80/path",
+                "scheme": "http"
+            }
+        }
+    ],
+    "preg_match": [
+        {
+            "code": 1,
+            "i": 0,
+            "matches": [
+                "Hello-World"
+            ],
+            "pattern": "/^[a-z0-9-]+$/i",
+            "subject": "Hello-World"
+        },
+        {
+            "code": 0,
+            "i": 1,
+            "matches": [],
+            "pattern": "/^[a-z0-9-]+$/i",
+            "subject": "Hello World"
+        },
+        {
+            "code": 1,
+            "i": 7,
+            "matches": [
+                "[shortcode]x[/shortcode]",
+                "",
+                "shortcode",
+                "",
+                "",
+                "x",
+                ""
+            ],
+            "pattern": "/\\[(\\[?)([A-Za-z0-9\\-_]+)(?![\\w-])([^\\]\\/]*(?:\\/(?!\\])[^\\]\\/]*)*?)(?:(\\/)\\]|\\](?:([^\\[]*+(?:\\[(?!\\/\\2\\])[^\\[]*+)*+)\\[\\/\\2\\])?)(\\]?)/",
+            "subject": "[shortcode]x[/shortcode]"
+        },
+        {
+            "code": 1,
+            "i": 8,
+            "matches": [
+                "https://example.com/path"
+            ],
+            "pattern": "/https?:\\/\\/[^\\s<>\"']+/i",
+            "subject": "see https://example.com/path now"
+        },
+        {
+            "code": 1,
+            "i": 9,
+            "matches": [
+                "https://"
+            ],
+            "pattern": "/^https?:\\/\\//i",
+            "subject": "https://example.com"
+        },
+        {
+            "code": 0,
+            "i": 10,
+            "matches": [],
+            "pattern": "/^https?:\\/\\//i",
+            "subject": "//example.com"
+        },
+        {
+            "code": 1,
+            "i": 14,
+            "matches": [
+                "foo@bar.com",
+                "",
+                "bar.",
+                "ar",
+                "om"
+            ],
+            "pattern": "/^[-a-z0-9+_]+(\\.[-a-z0-9+_]+)*@([a-z0-9]([-a-z0-9]*[a-z0-9])?\\.)+[a-z0-9]([-a-z0-9]*[a-z0-9])?$/i",
+            "subject": "foo@bar.com"
+        },
+        {
+            "code": 0,
+            "i": 15,
+            "matches": [],
+            "pattern": "/^[-a-z0-9+_]+(\\.[-a-z0-9+_]+)*@([a-z0-9]([-a-z0-9]*[a-z0-9])?\\.)+[a-z0-9]([-a-z0-9]*[a-z0-9])?$/i",
+            "subject": "not-an-email"
+        },
+        {
+            "code": 1,
+            "i": 19,
+            "matches": [
+                " "
+            ],
+            "pattern": "/\\s/",
+            "subject": "a b c"
+        },
+        {
+            "code": 1,
+            "i": 20,
+            "matches": [
+                "12345"
+            ],
+            "pattern": "/^\\d+$/",
+            "subject": "12345"
+        },
+        {
+            "code": 0,
+            "i": 21,
+            "matches": [],
+            "pattern": "/^\\d+$/",
+            "subject": "12abc"
+        },
+        {
+            "code": 1,
+            "i": 22,
+            "matches": [
+                "2020-01-01 12:00:00"
+            ],
+            "pattern": "/^(?:\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2})$/",
+            "subject": "2020-01-01 12:00:00"
+        },
+        {
+            "code": 1,
+            "i": 23,
+            "matches": [
+                "%20",
+                "20"
+            ],
+            "pattern": "/%([a-f0-9]{2})/i",
+            "subject": "%20hello%2F"
+        },
+        {
+            "code": 1,
+            "i": 25,
+            "matches": [
+                "&amp;"
+            ],
+            "pattern": "/&(?:[a-z\\d]+|#\\d+|#x[a-f\\d]+);/i",
+            "subject": "&amp; &lt; &#38;"
+        },
+        {
+            "code": 1,
+            "i": 28,
+            "matches": [
+                "https:",
+                "https"
+            ],
+            "pattern": "/^(https?|ftp|mailto):/i",
+            "subject": "https://x"
+        },
+        {
+            "code": 0,
+            "i": 29,
+            "matches": [],
+            "pattern": "/^(https?|ftp|mailto):/i",
+            "subject": "javascript:alert(1)"
+        },
+        {
+            "code": 1,
+            "i": 30,
+            "matches": [
+                ".JPG",
+                "JPG"
+            ],
+            "pattern": "/\\.(jpe?g|png|gif|webp)$/i",
+            "subject": "photo.JPG"
+        },
+        {
+            "code": 0,
+            "i": 31,
+            "matches": [],
+            "pattern": "/\\.(jpe?g|png|gif|webp)$/i",
+            "subject": "photo.txt"
+        },
+        {
+            "code": 1,
+            "i": 34,
+            "matches": [
+                "script",
+                "script"
+            ],
+            "pattern": "/\\b(script|style)\\b/i",
+            "subject": "<script>"
+        },
+        {
+            "code": 1,
+            "i": 35,
+            "matches": [
+                "expression("
+            ],
+            "pattern": "/expression\\s*\\(/i",
+            "subject": "color: expression(alert(1))"
+        },
+        {
+            "code": 1,
+            "i": 36,
+            "matches": [
+                "javascript:"
+            ],
+            "pattern": "/javascript\\s*:/i",
+            "subject": "javascript:alert(1)"
+        },
+        {
+            "code": 1,
+            "i": 37,
+            "matches": [
+                "valid_key"
+            ],
+            "pattern": "/\\A[a-z0-9_]+\\z/i",
+            "subject": "valid_key"
+        },
+        {
+            "code": 0,
+            "i": 38,
+            "matches": [],
+            "pattern": "/\\A[a-z0-9_]+\\z/i",
+            "subject": "bad key"
+        },
+        {
+            "code": 1,
+            "i": 47,
+            "matches": [
+                "café"
+            ],
+            "pattern": "/\\p{L}+/u",
+            "subject": "café résumé"
+        },
+        {
+            "code": 1,
+            "i": 48,
+            "matches": [
+                "1,234.56",
+                ",234",
+                ".56"
+            ],
+            "pattern": "/\\d{1,3}(,\\d{3})*(\\.\\d+)?/",
+            "subject": "1,234.56"
+        },
+        {
+            "code": 1,
+            "i": 49,
+            "matches": [
+                "post",
+                "post"
+            ],
+            "pattern": "/^(post|page|attachment)$/",
+            "subject": "post"
+        },
+        {
+            "code": 0,
+            "i": 50,
+            "matches": [],
+            "pattern": "/^(post|page|attachment)$/",
+            "subject": "revision"
+        }
+    ],
+    "preg_replace": [
+        {
+            "i": 2,
+            "pattern": "/[^a-z0-9_\\-]/i",
+            "replace": "_",
+            "result": "Foo_Bar-baz_",
+            "subject": "Foo_Bar-baz!"
+        },
+        {
+            "i": 3,
+            "pattern": "/\\s+/",
+            "replace": " ",
+            "result": "a b c",
+            "subject": "a  b   c"
+        },
+        {
+            "i": 4,
+            "pattern": "/[\\r\\n\\t ]+/",
+            "replace": " ",
+            "result": "a b c",
+            "subject": "a\tb\nc"
+        },
+        {
+            "i": 5,
+            "pattern": "/<[^>]*>/",
+            "replace": "",
+            "result": "hi",
+            "subject": "<p>hi</p>"
+        },
+        {
+            "i": 6,
+            "pattern": "/<!--.*?-->/s",
+            "replace": "",
+            "result": "Hello  world",
+            "subject": "Hello <!--comment--> world"
+        },
+        {
+            "i": 11,
+            "pattern": "/[#].*$/",
+            "replace": "",
+            "result": "color",
+            "subject": "color#fff"
+        },
+        {
+            "i": 12,
+            "pattern": "/\\.+/",
+            "replace": ".",
+            "result": "hello.world",
+            "subject": "hello...world"
+        },
+        {
+            "i": 13,
+            "pattern": "/[^\\P{C}\\n]+/u",
+            "replace": "",
+            "result": "ab",
+            "subject": "a\u0000b"
+        },
+        {
+            "i": 16,
+            "pattern": "/[^a-z0-9]/i",
+            "replace": "",
+            "result": "FooBar",
+            "subject": "Foo Bar!"
+        },
+        {
+            "i": 17,
+            "pattern": "/-+/",
+            "replace": "-",
+            "result": "a-b-c",
+            "subject": "a---b--c"
+        },
+        {
+            "i": 18,
+            "pattern": "/^-|-$/",
+            "replace": "",
+            "result": "trim",
+            "subject": "-trim-"
+        },
+        {
+            "i": 24,
+            "pattern": "/%([a-f0-9]{2})/i",
+            "replace": "X",
+            "result": "XhelloX",
+            "subject": "%20hello%2F"
+        },
+        {
+            "i": 26,
+            "pattern": "/&(?:[a-z\\d]+|#\\d+|#x[a-f\\d]+);/i",
+            "replace": "",
+            "result": " ",
+            "subject": "&amp; &lt;"
+        },
+        {
+            "i": 27,
+            "pattern": "/[\\x00-\\x08\\x0B\\x0C\\x0E-\\x1F]/",
+            "replace": "",
+            "result": "ab",
+            "subject": "a\u0001b"
+        },
+        {
+            "i": 32,
+            "pattern": "/[^a-z0-9\\-\\._]/i",
+            "replace": "",
+            "result": "....etcpasswd",
+            "subject": "../../etc/passwd"
+        },
+        {
+            "i": 33,
+            "pattern": "/\\/+/",
+            "replace": "/",
+            "result": "a/b/c",
+            "subject": "a///b//c"
+        },
+        {
+            "i": 39,
+            "pattern": "/([A-Z])/",
+            "replace": "_$1",
+            "result": "camel_Case",
+            "subject": "camelCase"
+        },
+        {
+            "i": 40,
+            "pattern": "/_+/",
+            "replace": "_",
+            "result": "a_b",
+            "subject": "a__b"
+        },
+        {
+            "i": 41,
+            "pattern": "/^_+/",
+            "replace": "",
+            "result": "lead",
+            "subject": "__lead"
+        },
+        {
+            "i": 42,
+            "pattern": "/_+$/",
+            "replace": "",
+            "result": "trail",
+            "subject": "trail__"
+        },
+        {
+            "i": 43,
+            "pattern": "/\\s*<br\\s*\\/?>\\s*/i",
+            "replace": "\n",
+            "result": "a\nb\nc",
+            "subject": "a<br>b<br/>c"
+        },
+        {
+            "i": 44,
+            "pattern": "/\\r\\n|\\r|\\n/",
+            "replace": "\n",
+            "result": "a\nb\nc",
+            "subject": "a\r\nb\nc"
+        },
+        {
+            "i": 45,
+            "pattern": "/^(www\\.)/i",
+            "replace": "",
+            "result": "example.com",
+            "subject": "www.example.com"
+        },
+        {
+            "i": 46,
+            "pattern": "/[<>\"']/",
+            "replace": "",
+            "result": "a href=x",
+            "subject": "<a href=\"x\">"
+        },
+        {
+            "i": 51,
+            "pattern": "/\\s+class=(\"|')(.*?)\\1/i",
+            "replace": "",
+            "result": "<div>",
+            "subject": "<div class=\"foo bar\">"
+        }
+    ],
+    "round": [
+        {
+            "input": 0,
+            "round0": 0,
+            "round2": 0,
+            "round_1": 0
+        },
+        {
+            "input": 1,
+            "round0": 1,
+            "round2": 1,
+            "round_1": 0
+        },
+        {
+            "input": 1234.567,
+            "round0": 1235,
+            "round2": 1234.57,
+            "round_1": 1230
+        },
+        {
+            "input": -1234.567,
+            "round0": -1235,
+            "round2": -1234.57,
+            "round_1": -1230
+        },
+        {
+            "input": 1000000,
+            "round0": 1000000,
+            "round2": 1000000,
+            "round_1": 1000000
+        },
+        {
+            "input": 0.30000000000000004,
+            "round0": 0,
+            "round2": 0.3,
+            "round_1": 0
+        }
+    ],
+    "serialize": [
+        {
+            "i": 0,
+            "input_type": "NULL",
+            "roundtrip_ok": true,
+            "serialized": "N;"
+        },
+        {
+            "i": 1,
+            "input_type": "boolean",
+            "roundtrip_ok": true,
+            "serialized": "b:1;"
+        },
+        {
+            "i": 2,
+            "input_type": "boolean",
+            "roundtrip_ok": true,
+            "serialized": "b:0;"
+        },
+        {
+            "i": 3,
+            "input_type": "integer",
+            "roundtrip_ok": true,
+            "serialized": "i:0;"
+        },
+        {
+            "i": 4,
+            "input_type": "integer",
+            "roundtrip_ok": true,
+            "serialized": "i:1;"
+        },
+        {
+            "i": 5,
+            "input_type": "integer",
+            "roundtrip_ok": true,
+            "serialized": "i:-1;"
+        },
+        {
+            "i": 6,
+            "input_type": "double",
+            "roundtrip_ok": true,
+            "serialized": "d:3.14;"
+        },
+        {
+            "i": 7,
+            "input_type": "string",
+            "roundtrip_ok": true,
+            "serialized": "s:0:\"\";"
+        },
+        {
+            "i": 8,
+            "input_type": "string",
+            "roundtrip_ok": true,
+            "serialized": "s:5:\"hello\";"
+        },
+        {
+            "i": 9,
+            "input_type": "array",
+            "roundtrip_ok": true,
+            "serialized": "a:0:{}"
+        },
+        {
+            "i": 10,
+            "input_type": "array",
+            "roundtrip_ok": true,
+            "serialized": "a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}"
+        },
+        {
+            "i": 11,
+            "input_type": "array",
+            "roundtrip_ok": true,
+            "serialized": "a:2:{s:1:\"a\";i:1;s:1:\"b\";s:3:\"two\";}"
+        },
+        {
+            "i": 12,
+            "input_type": "array",
+            "roundtrip_ok": true,
+            "serialized": "a:1:{s:6:\"nested\";a:1:{s:1:\"x\";a:1:{i:0;i:1;}}}"
+        },
+        {
+            "i": 13,
+            "input_type": "string",
+            "roundtrip_ok": true,
+            "serialized": "s:8:\"O'Reilly\";"
+        },
+        {
+            "i": 14,
+            "input_type": "string",
+            "roundtrip_ok": true,
+            "serialized": "s:9:\"null\u0000byte\";"
+        },
+        {
+            "i": 15,
+            "input_type": "array",
+            "roundtrip_ok": true,
+            "serialized": "a:1:{s:7:\"unicode\";s:5:\"café\";}"
+        }
+    ],
+    "sprintf": [
+        {
+            "args": [
+                "hello"
+            ],
+            "format": "%s",
+            "result": "hello"
+        },
+        {
+            "args": [
+                42
+            ],
+            "format": "%d",
+            "result": "42"
+        },
+        {
+            "args": [
+                42
+            ],
+            "format": "%05d",
+            "result": "00042"
+        },
+        {
+            "args": [
+                3.14159
+            ],
+            "format": "%.2f",
+            "result": "3.14"
+        },
+        {
+            "args": [
+                "post",
+                7
+            ],
+            "format": "%s-%d",
+            "result": "post-7"
+        },
+        {
+            "args": [
+                "a",
+                "b"
+            ],
+            "format": "%1$s %2$s",
+            "result": "a b"
+        },
+        {
+            "args": [
+                "a",
+                "b"
+            ],
+            "format": "%2$s %1$s",
+            "result": "b a"
+        },
+        {
+            "args": [],
+            "format": "%%s",
+            "result": "%s"
+        },
+        {
+            "args": [
+                -1
+            ],
+            "format": "%u",
+            "result": "18446744073709551615"
+        },
+        {
+            "args": [
+                255
+            ],
+            "format": "%x",
+            "result": "ff"
+        },
+        {
+            "args": [
+                8
+            ],
+            "format": "%o",
+            "result": "10"
+        },
+        {
+            "args": [
+                65
+            ],
+            "format": "%c",
+            "result": "A"
+        },
+        {
+            "args": [
+                1.6
+            ],
+            "format": "%.0f",
+            "result": "2"
+        },
+        {
+            "args": [
+                5
+            ],
+            "format": "%+d",
+            "result": "+5"
+        },
+        {
+            "args": [
+                "x"
+            ],
+            "format": "% 8s",
+            "result": "       x"
+        }
+    ],
+    "strip_tags": [
+        {
+            "input": "<script>alert(1)</script>",
+            "result": "alert(1)"
+        },
+        {
+            "input": "\"quoted\"",
+            "result": "\"quoted\""
+        },
+        {
+            "input": "O'Reilly & Sons",
+            "result": "O'Reilly & Sons"
+        },
+        {
+            "input": "&amp; &lt; &gt;",
+            "result": "&amp; &lt; &gt;"
+        },
+        {
+            "input": "café",
+            "result": "café"
+        },
+        {
+            "input": "<p onclick=\"x\">hi</p>",
+            "result": "hi"
+        },
+        {
+            "input": "",
+            "result": ""
+        },
+        {
+            "input": "a\tb",
+            "result": "a\tb"
+        }
+    ],
+    "strnatcasecmp": [
+        {
+            "a": "img1",
+            "b": "img2",
+            "result": -1
+        },
+        {
+            "a": "img10",
+            "b": "img2",
+            "result": 1
+        },
+        {
+            "a": "img2",
+            "b": "img10",
+            "result": -1
+        },
+        {
+            "a": "A",
+            "b": "a",
+            "result": 0
+        },
+        {
+            "a": "a",
+            "b": "A",
+            "result": 0
+        },
+        {
+            "a": "",
+            "b": "a",
+            "result": -1
+        },
+        {
+            "a": "file-1.txt",
+            "b": "file-10.txt",
+            "result": -1
+        },
+        {
+            "a": "1",
+            "b": "01",
+            "result": 0
+        },
+        {
+            "a": "v1.10",
+            "b": "v1.9",
+            "result": 1
+        },
+        {
+            "a": "café",
+            "b": "cafe",
+            "result": 1
+        }
+    ],
+    "strtotime": [
+        {
+            "base": 1609459200,
+            "input": "now",
+            "result": 1609459200
+        },
+        {
+            "base": 1609459200,
+            "input": "today",
+            "result": 1609459200
+        },
+        {
+            "base": 1609459200,
+            "input": "tomorrow",
+            "result": 1609545600
+        },
+        {
+            "base": 1609459200,
+            "input": "yesterday",
+            "result": 1609372800
+        },
+        {
+            "base": 1609459200,
+            "input": "+1 day",
+            "result": 1609545600
+        },
+        {
+            "base": 1609459200,
+            "input": "-1 day",
+            "result": 1609372800
+        },
+        {
+            "base": 1609459200,
+            "input": "+1 week",
+            "result": 1610064000
+        },
+        {
+            "base": 1609459200,
+            "input": "+1 month",
+            "result": 1612137600
+        },
+        {
+            "base": 1609459200,
+            "input": "+1 year",
+            "result": 1640995200
+        },
+        {
+            "base": 1609459200,
+            "input": "next Monday",
+            "result": 1609718400
+        },
+        {
+            "base": 1609459200,
+            "input": "last Friday",
+            "result": 1608854400
+        },
+        {
+            "base": 1609459200,
+            "input": "2020-01-01",
+            "result": 1577836800
+        },
+        {
+            "base": 1609459200,
+            "input": "2020-01-01 12:00:00",
+            "result": 1577880000
+        },
+        {
+            "base": 1609459200,
+            "input": "2020/01/01",
+            "result": 1577836800
+        },
+        {
+            "base": 1609459200,
+            "input": "01/02/2020",
+            "result": 1577923200
+        },
+        {
+            "base": 1609459200,
+            "input": "January 1, 2020",
+            "result": 1577836800
+        },
+        {
+            "base": 1609459200,
+            "input": "1 Jan 2020",
+            "result": 1577836800
+        },
+        {
+            "base": 1609459200,
+            "input": "2020-W01-1",
+            "result": 1577664000
+        },
+        {
+            "base": 1609459200,
+            "input": "@1609459200",
+            "result": 1609459200
+        },
+        {
+            "base": 1609459200,
+            "input": "midnight",
+            "result": 1609459200
+        },
+        {
+            "base": 1609459200,
+            "input": "noon",
+            "result": 1609502400
+        },
+        {
+            "base": 1609459200,
+            "input": "first day of this month",
+            "result": 1609459200
+        },
+        {
+            "base": 1609459200,
+            "input": "last day of next month",
+            "result": 1614470400
+        },
+        {
+            "base": 1609459200,
+            "input": "+2 hours",
+            "result": 1609466400
+        },
+        {
+            "base": 1609459200,
+            "input": "-30 minutes",
+            "result": 1609457400
+        },
+        {
+            "base": 1609459200,
+            "input": "2020-02-29",
+            "result": 1582934400
+        },
+        {
+            "base": 1609459200,
+            "input": "2019-02-29",
+            "result": 1551398400
+        },
+        {
+            "base": 1609459200,
+            "input": "Thu, 01 Jan 1970 00:00:00 GMT",
+            "result": 0
+        },
+        {
+            "base": 1609459200,
+            "input": "2020-01-01T00:00:00Z",
+            "result": 1577836800
+        },
+        {
+            "base": 1609459200,
+            "input": "2020-01-01T00:00:00+00:00",
+            "result": 1577836800
+        },
+        {
+            "base": 1609459200,
+            "input": "2020-01-01T12:00:00-05:00",
+            "result": 1577898000
+        },
+        {
+            "base": 1609459200,
+            "input": "next year",
+            "result": 1640995200
+        },
+        {
+            "base": 1609459200,
+            "input": "previous month",
+            "result": 1606780800
+        },
+        {
+            "base": 1609459200,
+            "input": "third wednesday of january 2020",
+            "result": 1579046400
+        },
+        {
+            "base": 1609459200,
+            "input": "2020-12-31 23:59:59",
+            "result": 1609459199
+        },
+        {
+            "base": 1609459200,
+            "input": "invalid date xyz",
+            "result": false
+        },
+        {
+            "base": 1609459200,
+            "input": "",
+            "result": false
+        },
+        {
+            "base": 1609459200,
+            "input": "0",
+            "result": false
+        },
+        {
+            "base": 1609459200,
+            "input": "+0 seconds",
+            "result": 1609459200
+        },
+        {
+            "base": 1609459200,
+            "input": "1970-01-01",
+            "result": 0
+        }
+    ],
+    "ucwords": [
+        {
+            "input": "hello world",
+            "result": "Hello World"
+        },
+        {
+            "input": "HELLO WORLD",
+            "result": "HELLO WORLD"
+        },
+        {
+            "input": "hello\nworld",
+            "result": "Hello\nWorld"
+        },
+        {
+            "input": "a-b c_d",
+            "result": "A-b C_d"
+        },
+        {
+            "input": "",
+            "result": ""
+        },
+        {
+            "input": "line1\nline2\nline3",
+            "result": "Line1\nLine2\nLine3"
+        }
+    ],
+    "urlencode": [
+        {
+            "input": "hello world",
+            "rawurlencode": "hello%20world",
+            "urlencode": "hello+world"
+        },
+        {
+            "input": "a/b",
+            "rawurlencode": "a%2Fb",
+            "urlencode": "a%2Fb"
+        },
+        {
+            "input": "café",
+            "rawurlencode": "caf%C3%A9",
+            "urlencode": "caf%C3%A9"
+        },
+        {
+            "input": "a+b",
+            "rawurlencode": "a%2Bb",
+            "urlencode": "a%2Bb"
+        },
+        {
+            "input": "a&b=c",
+            "rawurlencode": "a%26b%3Dc",
+            "urlencode": "a%26b%3Dc"
+        },
+        {
+            "input": "",
+            "rawurlencode": "",
+            "urlencode": ""
+        },
+        {
+            "input": "~!@#$%^&*()_+",
+            "rawurlencode": "~%21%40%23%24%25%5E%26%2A%28%29_%2B",
+            "urlencode": "%7E%21%40%23%24%25%5E%26%2A%28%29_%2B"
+        },
+        {
+            "input": "😀",
+            "rawurlencode": "%F0%9F%98%80",
+            "urlencode": "%F0%9F%98%80"
+        }
+    ],
+    "wordwrap": [
+        {
+            "input": "hello world",
+            "result": "hello\nworld"
+        },
+        {
+            "input": "HELLO WORLD",
+            "result": "HELLO\nWORLD"
+        },
+        {
+            "input": "hello\nworld",
+            "result": "hello\nworld"
+        },
+        {
+            "input": "a-b c_d",
+            "result": "a-b\nc_d"
+        },
+        {
+            "input": "",
+            "result": ""
+        },
+        {
+            "input": "line1\nline2\nline3",
+            "result": "line1\nline2\nline3"
+        }
+    ]
+}

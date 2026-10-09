@@ -21,18 +21,28 @@ function gopress_golden_dir() {
 }
 
 /**
- * Write JSON with stable encoding (pretty, unescaped unicode/slashes sorted keys recursively).
+ * Write JSON with stable encoding (pretty, unescaped unicode/slashes, sorted keys).
  *
  * @param string $relative Path under tests/golden/.
  * @param mixed  $data     Data to encode.
+ * @param array  $args {
+ *     Optional.
+ *     @type bool $scrub_volatiles Replace nonce/time-like substrings (default false).
+ * }
  */
-function gopress_golden_write( $relative, $data ) {
+function gopress_golden_write( $relative, $data, $args = array() ) {
+	$args = array_merge(
+		array(
+			'scrub_volatiles' => false,
+		),
+		$args
+	);
 	$path = gopress_golden_dir() . '/' . ltrim( $relative, '/' );
 	$dir  = dirname( $path );
 	if ( ! is_dir( $dir ) ) {
 		mkdir( $dir, 0755, true );
 	}
-	$data = gopress_golden_normalize( $data );
+	$data = gopress_golden_normalize( $data, (bool) $args['scrub_volatiles'] );
 	$json = wp_json_encode( $data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE );
 	if ( false === $json ) {
 		WP_CLI::error( 'json_encode failed for ' . $relative );
@@ -43,16 +53,17 @@ function gopress_golden_write( $relative, $data ) {
 }
 
 /**
- * Recursively normalize volatile values and sort associative arrays by key.
+ * Recursively sort associative arrays by key; optionally scrub volatile strings.
  *
- * @param mixed $value Value.
+ * @param mixed $value           Value.
+ * @param bool  $scrub_volatiles Whether to replace nonce/time-like substrings.
  * @return mixed
  */
-function gopress_golden_normalize( $value ) {
+function gopress_golden_normalize( $value, $scrub_volatiles = false ) {
 	if ( is_array( $value ) ) {
 		$out = array();
 		foreach ( $value as $k => $v ) {
-			$out[ $k ] = gopress_golden_normalize( $v );
+			$out[ $k ] = gopress_golden_normalize( $v, $scrub_volatiles );
 		}
 		// Sort only associative arrays (preserve list order).
 		if ( gopress_golden_is_assoc( $out ) ) {
@@ -61,13 +72,13 @@ function gopress_golden_normalize( $value ) {
 		return $out;
 	}
 	if ( is_string( $value ) ) {
-		return gopress_golden_normalize_string( $value );
+		return $scrub_volatiles ? gopress_golden_normalize_string( $value ) : $value;
 	}
 	if ( is_object( $value ) ) {
 		if ( $value instanceof WP_Error ) {
 			return array(
-				'__type'   => 'WP_Error',
-				'errors'   => $value->errors,
+				'__type'     => 'WP_Error',
+				'errors'     => $value->errors,
 				'error_data' => $value->error_data,
 			);
 		}

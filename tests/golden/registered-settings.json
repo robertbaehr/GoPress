@@ -1,0 +1,209 @@
+{
+    "WPLANG": {
+        "default": "en_US",
+        "description": "WordPress locale code.",
+        "group": "general",
+        "label": "",
+        "sanitize_callback": null,
+        "show_in_rest": {
+            "name": "language"
+        },
+        "type": "string"
+    },
+    "admin_email": {
+        "description": "This address is used for admin purposes, like new user notification.",
+        "group": "general",
+        "label": "",
+        "sanitize_callback": null,
+        "show_in_rest": {
+            "name": "email",
+            "schema": {
+                "format": "email"
+            }
+        },
+        "type": "string"
+    },
+    "blogdescription": {
+        "description": "Site tagline.",
+        "group": "general",
+        "label": "Tagline",
+        "sanitize_callback": null,
+        "show_in_rest": {
+            "name": "description"
+        },
+        "type": "string"
+    },
+    "blogname": {
+        "description": "Site title.",
+        "group": "general",
+        "label": "Title",
+        "sanitize_callback": null,
+        "show_in_rest": {
+            "name": "title"
+        },
+        "type": "string"
+    },
+    "date_format": {
+        "description": "A date format for all date strings.",
+        "group": "general",
+        "label": "",
+        "sanitize_callback": null,
+        "show_in_rest": true,
+        "type": "string"
+    },
+    "default_category": {
+        "description": "Default post category.",
+        "group": "writing",
+        "label": "",
+        "sanitize_callback": null,
+        "show_in_rest": true,
+        "type": "integer"
+    },
+    "default_comment_status": {
+        "description": "Allow people to submit comments on new posts.",
+        "group": "discussion",
+        "label": "Allow comments on new posts",
+        "sanitize_callback": null,
+        "show_in_rest": {
+            "schema": {
+                "enum": [
+                    "open",
+                    "closed"
+                ]
+            }
+        },
+        "type": "string"
+    },
+    "default_ping_status": {
+        "description": "Allow link notifications from other blogs (pingbacks and trackbacks) on new articles.",
+        "group": "discussion",
+        "label": "",
+        "sanitize_callback": null,
+        "show_in_rest": {
+            "schema": {
+                "enum": [
+                    "open",
+                    "closed"
+                ]
+            }
+        },
+        "type": "string"
+    },
+    "default_post_format": {
+        "description": "Default post format.",
+        "group": "writing",
+        "label": "",
+        "sanitize_callback": null,
+        "show_in_rest": true,
+        "type": "string"
+    },
+    "page_for_posts": {
+        "description": "The ID of the page that should display the latest posts",
+        "group": "reading",
+        "label": "",
+        "sanitize_callback": null,
+        "show_in_rest": true,
+        "type": "integer"
+    },
+    "page_on_front": {
+        "description": "The ID of the page that should be displayed on the front page",
+        "group": "reading",
+        "label": "Page on front",
+        "sanitize_callback": null,
+        "show_in_rest": true,
+        "type": "integer"
+    },
+    "posts_per_page": {
+        "default": 10,
+        "description": "Blog pages show at most.",
+        "group": "reading",
+        "label": "Maximum posts per page",
+        "sanitize_callback": null,
+        "show_in_rest": true,
+        "type": "integer"
+    },
+    "show_on_front": {
+        "description": "What to show on the front page",
+        "group": "reading",
+        "label": "Show on front",
+        "sanitize_callback": null,
+        "show_in_rest": true,
+        "type": "string"
+    },
+    "site_icon": {
+        "description": "Site icon.",
+        "group": "general",
+        "label": "Icon",
+        "sanitize_callback": null,
+        "show_in_rest": true,
+        "type": "integer"
+    },
+    "site_logo": {
+        "description": "Site logo.",
+        "group": "general",
+        "label": "Logo",
+        "sanitize_callback": null,
+        "show_in_rest": {
+            "name": "site_logo"
+        },
+        "type": "integer"
+    },
+    "siteurl": {
+        "description": "Site URL.",
+        "group": "general",
+        "label": "",
+        "sanitize_callback": null,
+        "show_in_rest": {
+            "name": "url",
+            "schema": {
+                "format": "uri"
+            }
+        },
+        "type": "string"
+    },
+    "start_of_week": {
+        "description": "A day number of the week that the week should start on.",
+        "group": "general",
+        "label": "",
+        "sanitize_callback": null,
+        "show_in_rest": true,
+        "type": "integer"
+    },
+    "time_format": {
+        "description": "A time format for all time strings.",
+        "group": "general",
+        "label": "",
+        "sanitize_callback": null,
+        "show_in_rest": true,
+        "type": "string"
+    },
+    "timezone_string": {
+        "description": "A city in the same timezone as you.",
+        "group": "general",
+        "label": "",
+        "sanitize_callback": null,
+        "show_in_rest": {
+            "name": "timezone"
+        },
+        "type": "string"
+    },
+    "use_smilies": {
+        "default": true,
+        "description": "Convert emoticons like :-) and :-P to graphics on display.",
+        "group": "writing",
+        "label": "",
+        "sanitize_callback": null,
+        "show_in_rest": true,
+        "type": "boolean"
+    },
+    "wp_page_for_privacy_policy": {
+        "description": "The ID of the page that should be displayed as the privacy policy page",
+        "group": "reading",
+        "label": "",
+        "sanitize_callback": null,
+        "show_in_rest": {
+            "name": "page_for_privacy_policy"
+        },
+        "type": "integer"
+    }
+}

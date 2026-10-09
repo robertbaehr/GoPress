@@ -1,0 +1,232 @@
+{
+    "parsed": [
+        {
+            "flags": [],
+            "matched_query": null,
+            "matched_rule": null,
+            "query_vars": [],
+            "request": "",
+            "url": "/"
+        },
+        {
+            "flags": [],
+            "matched_query": "index.php?pagename=$matches[1]&page=$matches[2]",
+            "matched_rule": "(.?.+?)(?:/([0-9]+))?/?$",
+            "query_vars": {
+                "index_php?pagename": "sample-page",
+                "page": ""
+            },
+            "request": "sample-page",
+            "url": "/sample-page/"
+        },
+        {
+            "flags": [],
+            "matched_query": "index.php?pagename=$matches[1]&page=$matches[2]",
+            "matched_rule": "(.?.+?)(?:/([0-9]+))?/?$",
+            "query_vars": {
+                "index_php?pagename": "hello-world",
+                "page": ""
+            },
+            "request": "hello-world",
+            "url": "/hello-world/"
+        },
+        {
+            "flags": {
+                "has_day": true,
+                "has_monthnum": true,
+                "has_name": true
+            },
+            "matched_query": "index.php?year=$matches[1]&monthnum=$matches[2]&day=$matches[3]&name=$matches[4]&page=$matches[5]",
+            "matched_rule": "([0-9]{4})/([0-9]{1,2})/([0-9]{1,2})/([^/]+)(?:/([0-9]+))?/?$",
+            "query_vars": {
+                "day": "01",
+                "index_php?year": "2020",
+                "monthnum": "01",
+                "name": "hello-world",
+                "page": ""
+            },
+            "request": "2020/01/01/hello-world",
+            "url": "/2020/01/01/hello-world/"
+        },
+        {
+            "flags": [],
+            "matched_query": "index.php?pagename=$matches[1]&page=$matches[2]",
+            "matched_rule": "(.?.+?)(?:/([0-9]+))?/?$",
+            "query_vars": {
+                "index_php?pagename": "2020/01/hello-world",
+                "page": ""
+            },
+            "request": "2020/01/hello-world",
+            "url": "/2020/01/hello-world/"
+        },
+        {
+            "flags": [],
+            "matched_query": "index.php?pagename=$matches[1]&page=$matches[2]",
+            "matched_rule": "(.?.+?)(?:/([0-9]+))?/?$",
+            "query_vars": {
+                "index_php?pagename": "archives",
+                "page": "1"
+            },
+            "request": "archives/1",
+            "url": "/archives/1"
+        },
+        {
+            "flags": [],
+            "matched_query": "index.php?category_name=$matches[1]",
+            "matched_rule": "category/(.+?)/?$",
+            "query_vars": {
+                "index_php?category_name": "uncategorized"
+            },
+            "request": "category/uncategorized",
+            "url": "/category/uncategorized/"
+        },
+        {
+            "flags": [],
+            "matched_query": "index.php?tag=$matches[1]",
+            "matched_rule": "tag/([^/]+)/?$",
+            "query_vars": {
+                "index_php?tag": "test"
+            },
+            "request": "tag/test",
+            "url": "/tag/test/"
+        },
+        {
+            "flags": [],
+            "matched_query": "index.php?author_name=$matches[1]",
+            "matched_rule": "author/([^/]+)/?$",
+            "query_vars": {
+                "index_php?author_name": "admin"
+            },
+            "request": "author/admin",
+            "url": "/author/admin/"
+        },
+        {
+            "flags": [],
+            "matched_query": "index.php?&paged=$matches[1]",
+            "matched_rule": "page/?([0-9]{1,})/?$",
+            "query_vars": {
+                "index_php?": "",
+                "paged": "2"
+            },
+            "request": "page/2",
+            "url": "/page/2/"
+        },
+        {
+            "flags": {
+                "has_feed": true
+            },
+            "matched_query": "index.php?&feed=$matches[1]",
+            "matched_rule": "(feed|rdf|rss|rss2|atom)/?$",
+            "query_vars": {
+                "feed": "feed",
+                "index_php?": ""
+            },
+            "request": "feed",
+            "url": "/feed/"
+        },
+        {
+            "flags": {
+                "has_feed": true
+            },
+            "matched_query": "index.php?&feed=$matches[1]&withcomments=1",
+            "matched_rule": "comments/(feed|rdf|rss|rss2|atom)/?$",
+            "query_vars": {
+                "feed": "feed",
+                "index_php?": "",
+                "withcomments": "1"
+            },
+            "request": "comments/feed",
+            "url": "/comments/feed/"
+        },
+        {
+            "flags": {
+                "has_p": true
+            },
+            "matched_query": null,
+            "matched_rule": null,
+            "query_vars": {
+                "p": "1"
+            },
+            "request": "",
+            "url": "/?p=1"
+        },
+        {
+            "flags": {
+                "has_page_id": true
+            },
+            "matched_query": null,
+            "matched_rule": null,
+            "query_vars": {
+                "page_id": "2"
+            },
+            "request": "",
+            "url": "/?page_id=2"
+        },
+        {
+            "flags": [],
+            "matched_query": "index.php?rest_route=/",
+            "matched_rule": "^wp-json/?$",
+            "query_vars": {
+                "index_php?rest_route": "/"
+            },
+            "request": "wp-json",
+            "url": "/wp-json/"
+        },
+        {
+            "flags": [],
+            "matched_query": "index.php?rest_route=/$matches[1]",
+            "matched_rule": "^wp-json/(.*)?",
+            "query_vars": {
+                "index_php?rest_route": "/wp/v2/posts"
+            },
+            "request": "wp-json/wp/v2/posts",
+            "url": "/wp-json/wp/v2/posts"
+        },
+        {
+            "flags": [],
+            "matched_query": "index.php?year=$matches[1]",
+            "matched_rule": "([0-9]{4})/?$",
+            "query_vars": {
+                "index_php?year": "2020"
+            },
+            "request": "2020",
+            "url": "/2020/"
+        },
+        {
+            "flags": {
+                "has_monthnum": true
+            },
+            "matched_query": "index.php?year=$matches[1]&monthnum=$matches[2]",
+            "matched_rule": "([0-9]{4})/([0-9]{1,2})/?$",
+            "query_vars": {
+                "index_php?year": "2020",
+                "monthnum": "01"
+            },
+            "request": "2020/01",
+            "url": "/2020/01/"
+        },
+        {
+            "flags": [],
+            "matched_query": "index.php?pagename=$matches[1]&page=$matches[2]",
+            "matched_rule": "(.?.+?)(?:/([0-9]+))?/?$",
+            "query_vars": {
+                "index_php?pagename": "blog/uncategorized/hello-world",
+                "page": ""
+            },
+            "request": "blog/uncategorized/hello-world",
+            "url": "/blog/uncategorized/hello-world/"
+        },
+        {
+            "flags": [],
+            "matched_query": "index.php?pagename=$matches[1]&page=$matches[2]",
+            "matched_rule": "(.?.+?)(?:/([0-9]+))?/?$",
+            "query_vars": {
+                "index_php?pagename": "index.php/hello-world",
+                "page": ""
+            },
+            "request": "index.php/hello-world",
+            "url": "/index.php/hello-world/"
+        }
+    ],
+    "structure": "/%year%/%monthnum%/%day%/%postname%/"
+}

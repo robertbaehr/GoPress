@@ -1,0 +1,266 @@
+{
+    "menu": {
+        "2": [
+            "Dashboard",
+            "read",
+            "index.php",
+            "",
+            "menu-top menu-top-first menu-icon-dashboard menu-top-last",
+            "menu-dashboard",
+            "dashicons-dashboard"
+        ],
+        "4": [
+            "",
+            "read",
+            "separator1",
+            "",
+            "wp-menu-separator"
+        ],
+        "5": [
+            "Posts",
+            "edit_posts",
+            "edit.php",
+            "",
+            "menu-top menu-icon-post open-if-no-js menu-top-first",
+            "menu-posts",
+            "dashicons-admin-post"
+        ],
+        "10": [
+            "Media",
+            "upload_files",
+            "upload.php",
+            "",
+            "menu-top menu-icon-media",
+            "menu-media",
+            "dashicons-admin-media"
+        ],
+        "20": [
+            "Pages",
+            "edit_pages",
+            "edit.php?post_type=page",
+            "",
+            "menu-top menu-icon-page",
+            "menu-pages",
+            "dashicons-admin-page"
+        ],
+        "25": [
+            "Comments <span class=\"awaiting-mod count-1\"><span class=\"pending-count\" aria-hidden=\"true\">1</span><span class=\"comments-in-moderation-text screen-reader-text\">1 Comment in moderation</span></span>",
+            "edit_posts",
+            "edit-comments.php",
+            "",
+            "menu-top menu-icon-comments menu-top-last",
+            "menu-comments",
+            "dashicons-admin-comments"
+        ],
+        "59": [
+            "",
+            "read",
+            "separator2",
+            "",
+            "wp-menu-separator"
+        ],
+        "60": [
+            "Appearance",
+            "switch_themes",
+            "themes.php",
+            "",
+            "menu-top menu-icon-appearance menu-top-first",
+            "menu-appearance",
+            "dashicons-admin-appearance"
+        ],
+        "65": [
+            "Plugins ",
+            "activate_plugins",
+            "plugins.php",
+            "",
+            "menu-top menu-icon-plugins",
+            "menu-plugins",
+            "dashicons-admin-plugins"
+        ],
+        "70": [
+            "Users",
+            "list_users",
+            "users.php",
+            "",
+            "menu-top menu-icon-users",
+            "menu-users",
+            "dashicons-admin-users"
+        ],
+        "75": [
+            "Tools",
+            "edit_posts",
+            "tools.php",
+            "",
+            "menu-top menu-icon-tools",
+            "menu-tools",
+            "dashicons-admin-tools"
+        ],
+        "80": [
+            "Settings",
+            "manage_options",
+            "options-general.php",
+            "",
+            "menu-top menu-icon-settings menu-top-last",
+            "menu-settings",
+            "dashicons-admin-settings"
+        ]
+    },
+    "role": "administrator",
+    "submenu": {
+        "edit.php": {
+            "5": [
+                "All Posts",
+                "edit_posts",
+                "edit.php"
+            ],
+            "10": [
+                "Add Post",
+                "edit_posts",
+                "post-new.php"
+            ],
+            "15": [
+                "Categories",
+                "manage_categories",
+                "edit-tags.php?taxonomy=category"
+            ],
+            "16": [
+                "Tags",
+                "manage_post_tags",
+                "edit-tags.php?taxonomy=post_tag"
+            ]
+        },
+        "edit.php?post_type=page": {
+            "5": [
+                "All Pages",
+                "edit_pages",
+                "edit.php?post_type=page"
+            ],
+            "10": [
+                "Add Page",
+                "edit_pages",
+                "post-new.php?post_type=page"
+            ]
+        },
+        "options-general.php": {
+            "10": [
+                "General",
+                "manage_options",
+                "options-general.php"
+            ],
+            "12": [
+                "Connectors",
+                "manage_options",
+                "options-connectors.php"
+            ],
+            "15": [
+                "Writing",
+                "manage_options",
+                "options-writing.php"
+            ],
+            "20": [
+                "Reading",
+                "manage_options",
+                "options-reading.php"
+            ],
+            "25": [
+                "Discussion",
+                "manage_options",
+                "options-discussion.php"
+            ],
+            "30": [
+                "Media",
+                "manage_options",
+                "options-media.php"
+            ],
+            "40": [
+                "Permalinks",
+                "manage_options",
+                "options-permalink.php"
+            ],
+            "45": [
+                "Privacy",
+                "manage_privacy_options",
+                "options-privacy.php"
+            ]
+        },
+        "themes.php": {
+            "5": [
+                "Themes ",
+                "switch_themes",
+                "themes.php"
+            ],
+            "6": [
+                "Editor",
+                "edit_theme_options",
+                "site-editor.php"
+            ],
+            "9": [
+                "Fonts",
+                "edit_theme_options",
+                "font-library.php"
+            ]
+        },
+        "tools.php": {
+            "5": [
+                "Available Tools",
+                "edit_posts",
+                "tools.php"
+            ],
+            "10": [
+                "Import",
+                "import",
+                "import.php"
+            ],
+            "15": [
+                "Export",
+                "export",
+                "export.php"
+            ],
+            "20": [
+                "Site Health <span class=\"menu-counter site-health-counter count-0\"><span class=\"count\">0</span></span>",
+                "view_site_health_checks",
+                "site-health.php"
+            ],
+            "25": [
+                "Export Personal Data",
+                "export_others_personal_data",
+                "export-personal-data.php"
+            ],
+            "30": [
+                "Erase Personal Data",
+                "erase_others_personal_data",
+                "erase-personal-data.php"
+            ]
+        },
+        "upload.php": {
+            "5": [
+                "Library",
+                "upload_files",
+                "upload.php"
+            ],
+            "10": [
+                "Add Media File",
+                "upload_files",
+                "media-new.php"
+            ]
+        },
+        "users.php": {
+            "5": [
+                "All Users",
+                "list_users",
+                "users.php"
+            ],
+            "10": [
+                "Add User",
+                "create_users",
+                "user-new.php"
+            ],
+            "15": [
+                "Profile",
+                "read",
+                "profile.php"
+            ]
+        }
+    },
+    "user_id": 1
+}
