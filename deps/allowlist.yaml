@@ -12,6 +12,9 @@ modules:
   - path: golang.org/x/text
     license: BSD-3-Clause
     purpose: Unicode normalization for sanitize_title / remove_accents
+  - path: golang.org/x/crypto
+    license: BSD-3-Clause
+    purpose: bcrypt password hashes and BLAKE2b wp_fast_hash (P2.1)
   - path: gopkg.in/yaml.v3
     license: MIT AND Apache-2.0
     purpose: corpus / allowlist YAML parsing
