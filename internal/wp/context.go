@@ -42,7 +42,7 @@ type Context struct {
 	Meta *Meta
 
 	// Locale is the active locale / translations (P1.9).
-	Locale any
+	Locale *Locale
 
 	// CurrentUser is the authenticated user for this request (P2.x).
 	CurrentUser any

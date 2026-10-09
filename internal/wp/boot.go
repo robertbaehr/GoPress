@@ -28,6 +28,7 @@ func Boot(ctx context.Context, cfg *config.Config) (*Context, error) {
 	c.Cache = NewObjectCache()
 	c.Options = NewOptions(handle, c.Cache)
 	c.Meta = NewMeta(handle, c.Cache)
+	c.Locale = NewLocale("")
 
 	if err := c.Options.LoadAutoload(); err != nil {
 		_ = handle.Close()
