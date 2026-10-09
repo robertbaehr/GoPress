@@ -9,6 +9,9 @@ modules:
   - path: golang.org/x/net
     license: BSD-3-Clause
     purpose: HTML normalizer for differential harness
+  - path: golang.org/x/text
+    license: BSD-3-Clause
+    purpose: Unicode normalization for sanitize_title / remove_accents
   - path: gopkg.in/yaml.v3
     license: MIT AND Apache-2.0
     purpose: corpus / allowlist YAML parsing
