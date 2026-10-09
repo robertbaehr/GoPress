@@ -22,6 +22,21 @@ if ( ! empty( $admins ) ) {
 	wp_set_current_user( $admins[0]->ID );
 }
 
+// Editor settings touch script/style registries.
+global $wp_scripts, $wp_styles;
+if ( ! ( $wp_scripts instanceof WP_Scripts ) ) {
+	$wp_scripts = new WP_Scripts();
+	if ( function_exists( 'wp_default_scripts' ) ) {
+		wp_default_scripts( $wp_scripts );
+	}
+}
+if ( ! ( $wp_styles instanceof WP_Styles ) ) {
+	$wp_styles = new WP_Styles();
+	if ( function_exists( 'wp_default_styles' ) ) {
+		wp_default_styles( $wp_styles );
+	}
+}
+
 // Dummy / existing post for post editor context.
 $post = get_post( 1 );
 if ( ! $post ) {

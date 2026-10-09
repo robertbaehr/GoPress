@@ -84,6 +84,13 @@ try {
 			wp_set_current_user( $admins[0]->ID );
 		}
 	}
+	// Avoid null $current_screen notices in admin enqueue callbacks.
+	if ( ! function_exists( 'set_current_screen' ) && file_exists( ABSPATH . 'wp-admin/includes/screen.php' ) ) {
+		require_once ABSPATH . 'wp-admin/includes/screen.php';
+	}
+	if ( function_exists( 'set_current_screen' ) ) {
+		set_current_screen( 'dashboard' );
+	}
 	do_action( 'admin_enqueue_scripts', 'index.php' );
 } catch ( Exception $e ) {
 	WP_CLI::warning( 'admin_enqueue_scripts threw: ' . $e->getMessage() );

@@ -4,8 +4,9 @@ require __DIR__ . '/_lib.php';
 /**
  * Golden dump: admin $menu / $submenu per role.
  *
- * Loading wp-admin menu is fragile under wp eval-file; attempt carefully and
- * write a stub documenting the skip if it fails.
+ * wp-admin/menu.php can only be included once per process (function declarations).
+ * When GOPRESS_ADMIN_MENU_ROLE is unset, this script re-invokes itself once per
+ * role via a child `wp eval-file` process so each role gets a clean bootstrap.
  *
  * @package GoPress
  */
@@ -18,158 +19,112 @@ $roles = array(
 	'subscriber'  => 'subscriber',
 );
 
-/**
- * Attempt to build admin menu for current user.
- *
- * @return array{menu:array,submenu:array}|WP_Error
- */
-function gopress_load_admin_menu() {
-	global $menu, $submenu, $pagenow, $_wp_menu_nopriv, $_wp_submenu_nopriv;
+$only = getenv( 'GOPRESS_ADMIN_MENU_ROLE' );
 
-	$menu    = array();
-	$submenu = array();
-
-	// Pretend we are in admin.
-	if ( ! defined( 'WP_ADMIN' ) ) {
-		define( 'WP_ADMIN', true );
+if ( ! $only ) {
+	$wp_path = defined( 'ABSPATH' ) ? rtrim( ABSPATH, '/' ) : '/opt/gopress-ref';
+	$self    = __FILE__;
+	$url     = home_url( '/' );
+	foreach ( array_keys( $roles ) as $slug ) {
+		$cmd = sprintf(
+			'GOPRESS_ADMIN_MENU_ROLE=%s GOPRESS_REPO=%s wp eval-file %s --path=%s --url=%s --user=admin',
+			escapeshellarg( $slug ),
+			escapeshellarg( getenv( 'GOPRESS_REPO' ) ?: '/workspace' ),
+			escapeshellarg( $self ),
+			escapeshellarg( $wp_path ),
+			escapeshellarg( $url )
+		);
+		passthru( $cmd, $code );
+		if ( 0 !== $code ) {
+			WP_CLI::warning( "admin-menu child for $slug exited $code" );
+			gopress_golden_write(
+				"admin-menu/{$slug}.json",
+				array(
+					'skipped' => true,
+					'reason'  => "child process exit $code",
+					'role'    => $roles[ $slug ],
+					'note'    => 'Dump skipped; loading wp-admin/menu.php under wp eval-file is fragile.',
+				)
+			);
+		}
 	}
-	if ( ! defined( 'WP_NETWORK_ADMIN' ) ) {
-		define( 'WP_NETWORK_ADMIN', false );
+	WP_CLI::success( 'admin-menu dump complete' );
+	return;
+}
+
+if ( ! isset( $roles[ $only ] ) ) {
+	WP_CLI::error( "Unknown role slug: $only" );
+}
+
+$role  = $roles[ $only ];
+$users = get_users( array( 'role' => $role, 'number' => 1 ) );
+if ( empty( $users ) ) {
+	$user = ( 'administrator' === $role ) ? get_user_by( 'login', 'admin' ) : false;
+	if ( ! $user ) {
+		gopress_golden_write(
+			"admin-menu/{$only}.json",
+			array(
+				'skipped' => true,
+				'reason'  => "no user for role $role",
+				'role'    => $role,
+			)
+		);
+		WP_CLI::success( "admin-menu $only stubbed" );
+		return;
 	}
-	if ( ! defined( 'WP_USER_ADMIN' ) ) {
-		define( 'WP_USER_ADMIN', false );
-	}
+} else {
+	$user = $users[0];
+}
 
-	$pagenow = 'index.php';
+wp_set_current_user( $user->ID );
 
-	$includes = array(
-		ABSPATH . 'wp-admin/includes/admin.php',
-		ABSPATH . 'wp-admin/includes/menu.php',
-	);
+if ( ! defined( 'WP_ADMIN' ) ) {
+	define( 'WP_ADMIN', true );
+}
+if ( ! defined( 'WP_NETWORK_ADMIN' ) ) {
+	define( 'WP_NETWORK_ADMIN', false );
+}
+if ( ! defined( 'WP_USER_ADMIN' ) ) {
+	define( 'WP_USER_ADMIN', false );
+}
 
-	// admin.php pulls in many includes; prefer plugin.php + menu.php path used by WP.
+global $menu, $submenu, $pagenow, $_wp_menu_nopriv, $_wp_submenu_nopriv, $typenow;
+$menu = $submenu = $_wp_menu_nopriv = $_wp_submenu_nopriv = array();
+$pagenow = 'index.php';
+$typenow = '';
+// Critical: leave $plugin_page unset. An empty string makes isset($plugin_page)
+// true and user_can_access_admin_page() returns false.
+unset( $GLOBALS['plugin_page'] );
+
+try {
 	if ( ! function_exists( 'get_admin_page_title' ) && file_exists( ABSPATH . 'wp-admin/includes/admin.php' ) ) {
 		require_once ABSPATH . 'wp-admin/includes/admin.php';
 	}
-
-	// Reset and rebuild menu globals the way menu.php expects.
-	$menu = $submenu = $_wp_menu_nopriv = $_wp_submenu_nopriv = array();
-
-	// Include menu.php which both defines and runs menu construction when included
-	// from admin bootstrap. Under eval-file this often fatals — catch via output buffer.
-	$menu_file = ABSPATH . 'wp-admin/menu.php';
-	if ( ! file_exists( $menu_file ) ) {
-		return new WP_Error( 'missing', 'wp-admin/menu.php not found' );
-	}
-
-	try {
-		// menu.php expects to be included once; use require and hope.
-		// Suppress redeclare by checking a sentinel.
-		if ( ! defined( 'GOPRESS_ADMIN_MENU_LOADED' ) ) {
-			// First load of translations etc.
-			if ( ! function_exists( 'wp_get_current_user' ) ) {
-				return new WP_Error( 'no_user', 'wp_get_current_user missing' );
-			}
-			ob_start();
-			require $menu_file;
-			ob_end_clean();
-			define( 'GOPRESS_ADMIN_MENU_LOADED', true );
-		} else {
-			// Re-include is unsafe (function redeclarations). Rebuild via hooks only.
-			$menu = $submenu = array();
-			do_action( '_admin_menu' );
-			do_action( 'admin_menu', '' );
-			do_action( 'admin_menu', 'index.php' );
-		}
-	} catch ( Throwable $e ) {
-		return new WP_Error( 'exception', $e->getMessage() );
-	}
-
-	return array(
-		'menu'    => isset( $menu ) ? $menu : array(),
-		'submenu' => isset( $submenu ) ? $submenu : array(),
+	ob_start();
+	require ABSPATH . 'wp-admin/menu.php';
+	ob_end_clean();
+} catch ( Throwable $e ) {
+	gopress_golden_write(
+		"admin-menu/{$only}.json",
+		array(
+			'skipped' => true,
+			'reason'  => $e->getMessage(),
+			'role'    => $role,
+			'note'    => 'Dump skipped; loading wp-admin/menu.php under wp eval-file failed.',
+		)
 	);
+	WP_CLI::warning( 'admin-menu load failed: ' . $e->getMessage() );
+	return;
 }
 
-$loaded_once = false;
+gopress_golden_write(
+	"admin-menu/{$only}.json",
+	array(
+		'role'    => $role,
+		'user_id' => (int) $user->ID,
+		'menu'    => gopress_golden_public_props( $menu ),
+		'submenu' => gopress_golden_public_props( $submenu ),
+	)
+);
 
-foreach ( $roles as $slug => $role ) {
-	$users = get_users( array( 'role' => $role, 'number' => 1 ) );
-	if ( empty( $users ) ) {
-		// Fallback: admin login.
-		$user = ( 'administrator' === $role ) ? get_user_by( 'login', 'admin' ) : false;
-		if ( ! $user ) {
-			gopress_golden_write(
-				"admin-menu/{$slug}.json",
-				array(
-					'skipped' => true,
-					'reason'  => "no user for role $role",
-					'role'    => $role,
-				)
-			);
-			continue;
-		}
-	} else {
-		$user = $users[0];
-	}
-
-	wp_set_current_user( $user->ID );
-
-	if ( ! $loaded_once ) {
-		$result = gopress_load_admin_menu();
-		$loaded_once = true;
-		if ( is_wp_error( $result ) ) {
-			WP_CLI::warning( 'admin-menu load failed: ' . $result->get_error_message() );
-			foreach ( $roles as $s2 => $r2 ) {
-				gopress_golden_write(
-					"admin-menu/{$s2}.json",
-					array(
-						'skipped' => true,
-						'reason'  => $result->get_error_message(),
-						'role'    => $r2,
-						'note'    => 'Dump skipped; loading wp-admin/menu.php under wp eval-file is fragile (redeclare / bootstrap).',
-					)
-				);
-			}
-			WP_CLI::success( 'admin-menu dump complete (stubs)' );
-			return;
-		}
-		gopress_golden_write(
-			"admin-menu/{$slug}.json",
-			array(
-				'role'    => $role,
-				'user_id' => (int) $user->ID,
-				'menu'    => gopress_golden_public_props( $result['menu'] ),
-				'submenu' => gopress_golden_public_props( $result['submenu'] ),
-			)
-		);
-	} else {
-		// For subsequent roles, re-fire admin_menu with new caps — best effort.
-		global $menu, $submenu;
-		$menu = $submenu = array();
-		try {
-			// Cannot re-require menu.php; document partial skip.
-			gopress_golden_write(
-				"admin-menu/{$slug}.json",
-				array(
-					'skipped' => true,
-					'reason'  => 'menu.php can only be loaded once per process; per-role rebuild not available under eval-file',
-					'role'    => $role,
-					'user_id' => (int) $user->ID,
-				)
-			);
-		} catch ( Throwable $e ) {
-			gopress_golden_write(
-				"admin-menu/{$slug}.json",
-				array(
-					'skipped' => true,
-					'reason'  => $e->getMessage(),
-					'role'    => $role,
-				)
-			);
-		}
-	}
-}
-
-wp_set_current_user( 0 );
-WP_CLI::success( 'admin-menu dump complete' );
+WP_CLI::success( "admin-menu $only dump complete" );
