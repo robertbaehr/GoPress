@@ -33,7 +33,7 @@ type Context struct {
 	Hooks *Hooks
 
 	// Cache is the object cache (P1.6).
-	Cache any
+	Cache *ObjectCache
 
 	// Options is the options API (P1.7).
 	Options any
