@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
-# P0.1: Idempotent GoPress development toolchain setup.
-# Safe to run repeatedly. Requires sudo for apt and MariaDB admin.
+# P0.1–P0.2: Idempotent GoPress development toolchain and upstream checkouts.
+# Safe to run repeatedly. Requires sudo for apt, MariaDB admin, and /opt writes.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -10,9 +10,12 @@ PHP_REFERENCE_TAG="${PHP_REFERENCE_TAG:-php-reference}"
 GOPRESS_DB_USER="${GOPRESS_DB_USER:-gopress}"
 GOPRESS_DB_PASS="${GOPRESS_DB_PASS:-gopress}"
 GOPATH_DIR="${GOPATH:-${HOME}/go}"
+GOPRESS_REF_DIR="${GOPRESS_REF_DIR:-/opt/gopress-ref}"
+WORDPRESS_DEVELOP_DIR="${WORDPRESS_DEVELOP_DIR:-/opt/wordpress-develop}"
+GUTENBERG_DIR="${GUTENBERG_DIR:-/opt/gutenberg}"
 export PATH="${GOPATH_DIR}/bin:${PATH}"
 
-log() { printf '+ %s\n' "$*"; }
+log() { printf '+ %s\n' "$*" >&2; }
 warn() { printf '! %s\n' "$*" >&2; }
 
 require_cmd() {
@@ -178,9 +181,161 @@ install_go_tools() {
 	GOBIN="${GOPATH_DIR}/bin" GOTOOLCHAIN=local go install "honnef.co/go/tools/cmd/staticcheck@${staticcheck_ver}"
 }
 
+# --- P0.2.1 Oracle site tree from php-reference ---
+setup_gopress_ref() {
+	cd "${REPO_ROOT}"
+	local full_sha
+	full_sha="$(git rev-parse "${PHP_REFERENCE_TAG}^{commit}")"
+	local marker="${GOPRESS_REF_DIR}/.gopress-php-reference-sha"
+
+	if [[ -f "${marker}" ]] && [[ "$(cat "${marker}")" == "${full_sha}" ]] \
+		&& [[ -f "${GOPRESS_REF_DIR}/wp-includes/version.php" ]]; then
+		log "oracle site ${GOPRESS_REF_DIR} already at ${full_sha}"
+		return 0
+	fi
+
+	log "extracting ${PHP_REFERENCE_TAG} (${full_sha}) into ${GOPRESS_REF_DIR}"
+	sudo mkdir -p "${GOPRESS_REF_DIR}"
+	# Clear previous extract but keep the directory mount point.
+	sudo find "${GOPRESS_REF_DIR}" -mindepth 1 -maxdepth 1 -exec rm -rf {} +
+	git archive "${PHP_REFERENCE_TAG}" | sudo tar -x -C "${GOPRESS_REF_DIR}"
+	printf '%s\n' "${full_sha}" | sudo tee "${marker}" >/dev/null
+	# Make the tree writable by the invoking user for later oracle config (P0.3).
+	if [[ -n "${SUDO_USER:-}" ]]; then
+		sudo chown -R "${SUDO_USER}:${SUDO_USER}" "${GOPRESS_REF_DIR}"
+	elif [[ "$(id -u)" -ne 0 ]]; then
+		sudo chown -R "$(id -u):$(id -g)" "${GOPRESS_REF_DIR}"
+	fi
+	log "oracle site ready: ${GOPRESS_REF_DIR} @ ${full_sha}"
+}
+
+# --- P0.2.2 wordpress-develop at trunk@64260 ---
+setup_wordpress_develop() {
+	local repo_url="https://github.com/WordPress/wordpress-develop.git"
+	local trunk_marker="trunk@64260"
+
+	if [[ ! -d "${WORDPRESS_DEVELOP_DIR}/.git" ]]; then
+		log "cloning wordpress-develop into ${WORDPRESS_DEVELOP_DIR}"
+		sudo mkdir -p "$(dirname "${WORDPRESS_DEVELOP_DIR}")"
+		# Clone as root into /opt, then chown.
+		if [[ -e "${WORDPRESS_DEVELOP_DIR}" ]]; then
+			sudo rm -rf "${WORDPRESS_DEVELOP_DIR}"
+		fi
+		sudo git clone --filter=blob:none "${repo_url}" "${WORDPRESS_DEVELOP_DIR}"
+		if [[ "$(id -u)" -ne 0 ]]; then
+			sudo chown -R "$(id -u):$(id -g)" "${WORDPRESS_DEVELOP_DIR}"
+		fi
+	else
+		log "fetching wordpress-develop updates"
+		git -C "${WORDPRESS_DEVELOP_DIR}" fetch --all --tags --prune
+	fi
+
+	local develop_sha
+	develop_sha="$(git -C "${WORDPRESS_DEVELOP_DIR}" log --all --grep="${trunk_marker}" --format=%H | head -1)"
+	if [[ -z "${develop_sha}" ]]; then
+		warn "no commit matching ${trunk_marker} in ${WORDPRESS_DEVELOP_DIR}"
+		exit 1
+	fi
+	log "checking out wordpress-develop ${develop_sha} (${trunk_marker})"
+	git -C "${WORDPRESS_DEVELOP_DIR}" checkout --detach "${develop_sha}"
+	printf '%s\n' "${develop_sha}"
+}
+
+# Resolve a Gutenberg ref matching wordpress-develop's package.json.
+resolve_gutenberg_ref() {
+	local pkg="${WORDPRESS_DEVELOP_DIR}/package.json"
+	if [[ ! -f "${pkg}" ]]; then
+		warn "missing ${pkg}"
+		exit 1
+	fi
+
+	# Prefer package.json "gutenberg.sha" (current wordpress-develop layout),
+	# then a string "gutenberg" key, then @wordpress/block-library version → tag.
+	# PHP prints "sha|<ref>" or "tag|<version>" or nothing.
+	local resolved
+	resolved="$(
+		php -r '
+			$j = json_decode(file_get_contents($argv[1]), true);
+			if (isset($j["gutenberg"]["sha"]) && is_string($j["gutenberg"]["sha"]) && $j["gutenberg"]["sha"] !== "") {
+				echo "sha|" . $j["gutenberg"]["sha"];
+				exit(0);
+			}
+			if (isset($j["gutenberg"]) && is_string($j["gutenberg"]) && $j["gutenberg"] !== "") {
+				echo "sha|" . $j["gutenberg"];
+				exit(0);
+			}
+			foreach (["dependencies", "devDependencies"] as $k) {
+				if (isset($j[$k]["@wordpress/block-library"])) {
+					echo "tag|" . $j[$k]["@wordpress/block-library"];
+					exit(0);
+				}
+			}
+			exit(1);
+		' "${pkg}"
+	)" || {
+		warn "could not find gutenberg.sha or @wordpress/block-library in ${pkg}"
+		exit 1
+	}
+
+	local kind="${resolved%%|*}"
+	local value="${resolved#*|}"
+	if [[ "${kind}" == "tag" ]]; then
+		value="${value#^}"
+		value="${value#~}"
+		value="${value#=}"
+		value="${value#v}"
+		printf 'v%s\n' "${value}"
+		return 0
+	fi
+	printf '%s\n' "${value}"
+}
+
+# --- P0.2.3 Gutenberg at the matching ref ---
+setup_gutenberg() {
+	local repo_url="https://github.com/WordPress/gutenberg.git"
+	local ref
+	ref="$(resolve_gutenberg_ref)"
+	log "resolved Gutenberg ref: ${ref}"
+
+	if [[ ! -d "${GUTENBERG_DIR}/.git" ]]; then
+		log "cloning gutenberg into ${GUTENBERG_DIR}"
+		if [[ -e "${GUTENBERG_DIR}" ]]; then
+			sudo rm -rf "${GUTENBERG_DIR}"
+		fi
+		sudo git clone --filter=blob:none "${repo_url}" "${GUTENBERG_DIR}"
+		if [[ "$(id -u)" -ne 0 ]]; then
+			sudo chown -R "$(id -u):$(id -g)" "${GUTENBERG_DIR}"
+		fi
+	else
+		log "fetching gutenberg updates"
+		git -C "${GUTENBERG_DIR}" fetch --all --tags --prune
+	fi
+
+	# Ensure the commit/tag is present (shallow clones or new SHAs may need a fetch).
+	if ! git -C "${GUTENBERG_DIR}" rev-parse --verify "${ref}^{commit}" >/dev/null 2>&1; then
+		log "fetching Gutenberg ref ${ref}"
+		git -C "${GUTENBERG_DIR}" fetch --depth=1 origin "${ref}" \
+			|| git -C "${GUTENBERG_DIR}" fetch origin "${ref}" \
+			|| git -C "${GUTENBERG_DIR}" fetch --unshallow 2>/dev/null \
+			|| true
+	fi
+
+	# Accept full SHA, short SHA, branch, or tag (with or without v prefix).
+	if git -C "${GUTENBERG_DIR}" rev-parse --verify "${ref}^{commit}" >/dev/null 2>&1; then
+		git -C "${GUTENBERG_DIR}" checkout --detach "${ref}"
+	elif [[ "${ref}" == v* ]] \
+		&& git -C "${GUTENBERG_DIR}" rev-parse --verify "${ref#v}^{commit}" >/dev/null 2>&1; then
+		git -C "${GUTENBERG_DIR}" checkout --detach "${ref#v}"
+	else
+		warn "Gutenberg ref ${ref} not found after fetch"
+		exit 1
+	fi
+	git -C "${GUTENBERG_DIR}" rev-parse HEAD
+}
+
 # --- Verification (Done when) ---
 verify() {
-	log "verifying toolchain"
+	log "verifying toolchain (P0.1)"
 	php -v
 	mysql -u"${GOPRESS_DB_USER}" -p"${GOPRESS_DB_PASS}" -e 'select 1'
 	wp --info
@@ -191,8 +346,37 @@ verify() {
 	log "all P0.1 checks passed"
 }
 
+verify_upstream_checkouts() {
+	log "verifying upstream checkouts (P0.2)"
+	local ref_sha develop_sha gutenberg_sha
+
+	[[ -f "${GOPRESS_REF_DIR}/wp-includes/version.php" ]] || {
+		warn "missing ${GOPRESS_REF_DIR}/wp-includes/version.php"
+		exit 1
+	}
+	ref_sha="$(cat "${GOPRESS_REF_DIR}/.gopress-php-reference-sha")"
+	[[ "${ref_sha}" == "$(git -C "${REPO_ROOT}" rev-parse "${PHP_REFERENCE_TAG}^{commit}")" ]]
+
+	develop_sha="$(git -C "${WORDPRESS_DEVELOP_DIR}" rev-parse HEAD)"
+	gutenberg_sha="$(git -C "${GUTENBERG_DIR}" rev-parse HEAD)"
+
+	# Confirm develop commit still mentions trunk@64260 (usually in the
+	# git-svn-id footer of the body, not the subject line).
+	if ! git -C "${WORDPRESS_DEVELOP_DIR}" log -1 --format=%B "${develop_sha}" | grep -q 'trunk@64260'; then
+		warn "wordpress-develop HEAD ${develop_sha} does not mention trunk@64260"
+		exit 1
+	fi
+
+	# Print SHAs to stdout so the Done-when criterion is visible in logs.
+	printf 'SHAs:\n'
+	printf '  gopress-ref (php-reference): %s\n' "${ref_sha}"
+	printf '  wordpress-develop:           %s\n' "${develop_sha}"
+	printf '  gutenberg:                   %s\n' "${gutenberg_sha}"
+	log "all P0.2 checks passed"
+}
+
 main() {
-	log "GoPress P0.1 dev-setup (repo=${REPO_ROOT})"
+	log "GoPress P0.1–P0.2 dev-setup (repo=${REPO_ROOT})"
 	tag_php_reference
 	install_packages
 	start_mariadb
@@ -200,6 +384,10 @@ main() {
 	install_wp_cli
 	install_go_tools
 	verify
+	setup_gopress_ref
+	setup_wordpress_develop >/tmp/gopress-wordpress-develop.sha
+	setup_gutenberg >/tmp/gopress-gutenberg.sha
+	verify_upstream_checkouts
 }
 
 main "$@"
