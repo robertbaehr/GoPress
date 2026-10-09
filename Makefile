@@ -24,9 +24,9 @@ lint: build
 generate:
 	@echo "generate: hookgen/apigen/gen-assets land in P1; nothing to do yet"
 
-deps:
-	@echo "deps-check lands in P0.8; verifying modules readonly"
+deps: build
 	$(GO) mod verify
+	./bin/gopress-tools deps-check
 
 check: lint deps test
 
