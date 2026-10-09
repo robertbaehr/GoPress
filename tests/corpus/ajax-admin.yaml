@@ -1,0 +1,38 @@
+- id: ajax-heartbeat-admin
+  role: admin
+  method: POST
+  path: /wp-admin/admin-ajax.php
+  headers:
+    Content-Type: application/x-www-form-urlencoded
+  body: action=heartbeat&_nonce=PLACEHOLDER&screen_id=dashboard&has_focus=true
+  compare: json
+  nonce: heartbeat
+
+- id: ajax-rest-nonce-admin
+  role: admin
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=rest-nonce
+  headers: {}
+  body: null
+  compare: raw
+  nonce: null
+
+- id: ajax-logged-in-check
+  role: admin
+  method: POST
+  path: /wp-admin/admin-ajax.php
+  headers:
+    Content-Type: application/x-www-form-urlencoded
+  body: action=wp-compression-test&test=1
+  compare: headers
+  nonce: null
+
+- id: ajax-anon-reject
+  role: anon
+  method: POST
+  path: /wp-admin/admin-ajax.php
+  headers:
+    Content-Type: application/x-www-form-urlencoded
+  body: action=heartbeat
+  compare: headers
+  nonce: null

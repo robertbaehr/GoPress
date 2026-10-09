@@ -1,0 +1,35 @@
+- id: login-form-get
+  role: anon
+  method: GET
+  path: /wp-login.php
+  headers: {}
+  body: null
+  compare: html
+  nonce: null
+
+- id: login-form-redirect-param
+  role: anon
+  method: GET
+  path: /wp-login.php?redirect_to=%2Fwp-admin%2F&reauth=1
+  headers: {}
+  body: null
+  compare: html
+  nonce: null
+
+- id: login-lostpassword
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword
+  headers: {}
+  body: null
+  compare: html
+  nonce: null
+
+- id: login-admin-profile-headers
+  role: admin
+  method: GET
+  path: /wp-admin/profile.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

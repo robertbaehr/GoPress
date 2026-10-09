@@ -1,0 +1,35 @@
+- id: admin-dashboard
+  role: admin
+  method: GET
+  path: /wp-admin/
+  headers: {}
+  body: null
+  compare: html
+  nonce: null
+
+- id: admin-edit-posts
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php
+  headers: {}
+  body: null
+  compare: html
+  nonce: null
+
+- id: admin-options-general
+  role: admin
+  method: GET
+  path: /wp-admin/options-general.php
+  headers: {}
+  body: null
+  compare: html
+  nonce: null
+
+- id: admin-plugins
+  role: admin
+  method: GET
+  path: /wp-admin/plugins.php
+  headers: {}
+  body: null
+  compare: html
+  nonce: null

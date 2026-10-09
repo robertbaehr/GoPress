@@ -1,0 +1,5 @@
+# Known intentional mismatches between PHP oracle and GoPress.
+# Entries expire after remove_by (YYYY-MM-DD); expired rows are ignored.
+#
+# Fields: id, path, reason, remove_by
+[]
