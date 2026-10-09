@@ -1,0 +1,47 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [master]
+
+jobs:
+  check:
+    runs-on: ubuntu-24.04
+    services:
+      mariadb:
+        image: mariadb:10.11
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: gopress_test
+          MYSQL_USER: gopress
+          MYSQL_PASSWORD: gopress
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="healthcheck.sh --connect --innodb_initialized"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+    env:
+      GOPRESS_TEST_DSN: gopress:gopress@tcp(127.0.0.1:3306)/gopress_test?parseTime=false&charset=utf8mb4
+      GOFLAGS: -mod=readonly
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.2"
+      - name: Install staticcheck
+        run: GOTOOLCHAIN=local go install honnef.co/go/tools/cmd/staticcheck@v0.5.1
+      - name: make check
+        run: make check
+      - name: PORTING.md coverage
+        run: |
+          go run ./cmd/gopress-tools porting-status
+          if git diff --quiet PORTING.md; then
+            echo "PORTING.md up to date"
+          else
+            echo "PORTING.md drifted; regenerate with gopress-tools porting-status"
+            git diff --stat PORTING.md
+            exit 1
+          fi

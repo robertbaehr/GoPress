@@ -1,16 +1,49 @@
 # GoPress development Makefile.
-# Additional targets (build, test, check, …) land in P0.6+.
 
-.PHONY: oracle-up fixture golden
+.PHONY: build test lint generate deps check oracle-up fixture golden diff e2e porting-status
 
-# P0.3: configure /opt/gopress-ref, start the PHP oracle on :8081, install if needed.
+GO ?= go
+export PATH := $(HOME)/go/bin:$(PATH)
+export GOTOOLCHAIN ?= local
+
+build:
+	$(GO) build -o bin/gopress ./cmd/gopress
+	$(GO) build -o bin/gopress-tools ./cmd/gopress-tools
+	$(GO) build -o bin/gopress-lint ./cmd/gopress-lint
+
+test:
+	$(GO) test ./...
+
+lint: build
+	@unformatted=$$(gofmt -l .); \
+	if [ -n "$$unformatted" ]; then echo "gofmt needed:"; echo "$$unformatted"; exit 1; fi
+	$(GO) vet ./...
+	staticcheck ./...
+	./bin/gopress-lint ./...
+
+generate:
+	@echo "generate: hookgen/apigen/gen-assets land in P1; nothing to do yet"
+
+deps:
+	@echo "deps-check lands in P0.8; verifying modules readonly"
+	$(GO) mod verify
+
+check: lint deps test
+
 oracle-up:
 	@bash scripts/oracle-up.sh
 
-# P0.4: rebuild tests/fixtures/site.sql (+ site-static.sql) and uploads/ from a clean seed.
 fixture:
 	@bash scripts/fixture.sh
 
-# P0.5: regenerate tests/golden/ from the PHP oracle (must be idempotent).
 golden:
 	@bash scripts/golden.sh
+
+diff:
+	@echo "diff harness lands in P0.7" >&2; exit 1
+
+e2e:
+	@echo "e2e lands with Playwright" >&2; exit 1
+
+porting-status:
+	$(GO) run ./cmd/gopress-tools porting-status

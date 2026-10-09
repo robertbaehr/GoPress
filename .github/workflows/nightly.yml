@@ -1,0 +1,35 @@
+name: Nightly
+
+on:
+  schedule:
+    - cron: "0 6 * * *"
+  workflow_dispatch:
+
+jobs:
+  diff-e2e:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22.2"
+      - name: Dev setup
+        run: bash scripts/dev-setup.sh
+      - name: Oracle up
+        run: make oracle-up
+      - name: Diff (oracle self-check until GoPress exists)
+        run: |
+          echo "make diff lands in P0.7; placeholder succeeds"
+      - name: E2E placeholder
+        run: |
+          echo "make e2e lands with Playwright suites"
+      - name: Upload reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: nightly-reports
+          path: |
+            tests/diff/report.html
+          if-no-files-found: ignore

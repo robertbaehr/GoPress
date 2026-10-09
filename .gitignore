@@ -1,0 +1,26 @@
+# Local runtime state (P0.6)
+/wp-config.php
+/wp-content/uploads/
+/wp-content/fonts/
+/wp-content/languages/
+/wp-content/upgrade/
+/bin/
+/tests/diff/report.html
+
+# Go
+/vendor/
+*.exe
+*.test
+*.out
+coverage.out
+
+# Node (e2e later)
+/tests/e2e/node_modules/
+/tests/e2e/test-results/
+/tests/e2e/playwright-report/
+
+# Editor / OS
+.DS_Store
+.idea/
+.vscode/
+*.swp

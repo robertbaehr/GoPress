@@ -1,0 +1,320 @@
+# Seed rules for gopress-tools porting-status (Appendix A).
+# Longest prefix wins. status: todo|partial|done|out-of-scope|replaced-by-library|data-file
+
+- prefix: wp-config-sample.php
+  go: data-file
+  status: data-file
+  task: P6.2
+  api: n/a
+
+- prefix: wp-mail.php
+  go: out-of-scope
+  status: out-of-scope
+  task: ""
+  api: n/a
+
+- prefix: xmlrpc.php
+  go: Tier 2
+  status: out-of-scope
+  task: ""
+  api: n/a
+
+- prefix: wp-signup.php
+  go: Tier 2
+  status: out-of-scope
+  task: ""
+  api: n/a
+
+- prefix: wp-activate.php
+  go: Tier 2
+  status: out-of-scope
+  task: ""
+  api: n/a
+
+- prefix: wp-login.php
+  go: internal/login
+  status: todo
+  task: P6.1
+  api: n/a
+
+- prefix: wp-cron.php
+  go: internal/wp/cron.go
+  status: todo
+  task: P3.8
+  api: n/a
+
+- prefix: wp-comments-post.php
+  go: internal/frontend
+  status: todo
+  task: P5.8
+  api: n/a
+
+- prefix: index.php
+  go: internal/server
+  status: todo
+  task: P3.1
+  api: n/a
+
+- prefix: wp-blog-header.php
+  go: internal/server
+  status: todo
+  task: P3.1
+  api: n/a
+
+- prefix: wp-load.php
+  go: internal/config
+  status: todo
+  task: P1.2
+  api: n/a
+
+- prefix: wp-settings.php
+  go: internal/wp/boot.go
+  status: todo
+  task: P1.5
+  api: n/a
+
+- prefix: wp-includes/class-wpdb.php
+  go: internal/db
+  status: todo
+  task: P1.3
+  api: internal
+
+- prefix: wp-includes/plugin.php
+  go: internal/wp/plugin.go
+  status: todo
+  task: P1.4
+  api: exported
+
+- prefix: wp-includes/class-wp-hook.php
+  go: internal/wp/hook.go
+  status: todo
+  task: P1.4
+  api: internal
+
+- prefix: wp-includes/cache.php
+  go: internal/wp/cache.go
+  status: todo
+  task: P1.6
+  api: exported
+
+- prefix: wp-includes/option.php
+  go: internal/wp/option.go
+  status: todo
+  task: P1.7
+  api: exported
+
+- prefix: wp-includes/meta.php
+  go: internal/wp/meta.go
+  status: todo
+  task: P1.8
+  api: exported
+
+- prefix: wp-includes/kses.php
+  go: internal/wp/kses.go
+  status: todo
+  task: P1.11
+  api: exported
+
+- prefix: wp-includes/formatting.php
+  go: internal/wp/formatting.go
+  status: todo
+  task: P1.10
+  api: exported
+
+- prefix: wp-includes/html-api/
+  go: internal/htmlapi
+  status: todo
+  task: P1.12
+  api: internal
+
+- prefix: wp-includes/rest-api/
+  go: internal/rest
+  status: todo
+  task: P4
+  api: exported
+
+- prefix: wp-includes/block-supports/
+  go: internal/blocks/supports
+  status: todo
+  task: P5.2
+  api: internal
+
+- prefix: wp-includes/blocks/
+  go: internal/blocks/library
+  status: todo
+  task: P5.3
+  api: internal
+
+- prefix: wp-includes/SimplePie/
+  go: replaced-by-library
+  status: replaced-by-library
+  task: P5.3
+  api: n/a
+
+- prefix: wp-includes/Requests/
+  go: replaced-by-library
+  status: replaced-by-library
+  task: P3.6
+  api: n/a
+
+- prefix: wp-includes/sodium_compat/
+  go: replaced-by-library
+  status: replaced-by-library
+  task: P2.3
+  api: n/a
+
+- prefix: wp-includes/PHPMailer/
+  go: replaced-by-library
+  status: replaced-by-library
+  task: P3.7
+  api: n/a
+
+- prefix: wp-includes/ID3/
+  go: internal/wp/media.go
+  status: todo
+  task: P2.10
+  api: n/a
+
+- prefix: wp-includes/customize/
+  go: out-of-scope
+  status: out-of-scope
+  task: ""
+  api: n/a
+
+- prefix: wp-includes/widgets/
+  go: out-of-scope
+  status: out-of-scope
+  task: ""
+  api: n/a
+
+- prefix: wp-includes/IXR/
+  go: Tier 2
+  status: out-of-scope
+  task: ""
+  api: n/a
+
+- prefix: wp-includes/ms-
+  go: Tier 2
+  status: out-of-scope
+  task: ""
+  api: n/a
+
+- prefix: wp-includes/
+  go: internal/wp
+  status: todo
+  task: P1
+  api: partial
+
+- prefix: wp-admin/network/
+  go: Tier 2
+  status: out-of-scope
+  task: ""
+  api: n/a
+
+- prefix: wp-admin/includes/class-wp-upgrader
+  go: out-of-scope
+  status: out-of-scope
+  task: ""
+  api: n/a
+
+- prefix: wp-admin/includes/class-wp-filesystem
+  go: out-of-scope
+  status: out-of-scope
+  task: ""
+  api: n/a
+
+- prefix: wp-admin/includes/update
+  go: out-of-scope
+  status: out-of-scope
+  task: ""
+  api: n/a
+
+- prefix: wp-admin/includes/plugin-install.php
+  go: out-of-scope
+  status: out-of-scope
+  task: ""
+  api: n/a
+
+- prefix: wp-admin/includes/theme-install.php
+  go: out-of-scope
+  status: out-of-scope
+  task: ""
+  api: n/a
+
+- prefix: wp-admin/includes/schema.php
+  go: internal/db
+  status: todo
+  task: P1.3
+  api: internal
+
+- prefix: wp-admin/includes/upgrade.php
+  go: internal/install
+  status: todo
+  task: P6.2
+  api: internal
+
+- prefix: wp-admin/includes/ajax-actions.php
+  go: internal/ajax
+  status: todo
+  task: P7
+  api: n/a
+
+- prefix: wp-admin/
+  go: internal/admin
+  status: todo
+  task: P7
+  api: n/a
+
+- prefix: wp-content/plugins/hello.php
+  go: plugins/hellodolly
+  status: todo
+  task: P9.7
+  api: n/a
+
+- prefix: wp-content/themes/twentytwentytwo/
+  go: internal/wp/themeshims
+  status: todo
+  task: P5.7
+  api: n/a
+
+- prefix: wp-content/themes/twentytwentythree/
+  go: internal/wp/themeshims
+  status: todo
+  task: P5.7
+  api: n/a
+
+- prefix: wp-content/themes/twentytwentyfour/
+  go: internal/wp/themeshims
+  status: todo
+  task: P5.7
+  api: n/a
+
+- prefix: wp-content/themes/twentytwentyfive/
+  go: internal/wp/themeshims
+  status: todo
+  task: P5.7
+  api: n/a
+
+- prefix: wp-content/themes/
+  go: out-of-scope
+  status: out-of-scope
+  task: P10.4
+  api: n/a
+
+- prefix: wp-content/
+  go: data-file
+  status: data-file
+  task: ""
+  api: n/a
+
+- prefix: wp-trackback.php
+  go: internal/frontend
+  status: todo
+  task: P5.8
+  api: n/a
+
+- prefix: wp-links-opml.php
+  go: internal/frontend
+  status: todo
+  task: P5.8
+  api: n/a
