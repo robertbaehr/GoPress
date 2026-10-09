@@ -1,0 +1,38 @@
+{
+    "core/pattern-overrides": {
+        "label": "Pattern Overrides",
+        "name": "core/pattern-overrides",
+        "uses_context": [
+            "pattern/overrides"
+        ]
+    },
+    "core/post-data": {
+        "label": "Post Data",
+        "name": "core/post-data",
+        "uses_context": [
+            "postId",
+            "postType"
+        ]
+    },
+    "core/post-meta": {
+        "label": "Post Meta",
+        "name": "core/post-meta",
+        "uses_context": [
+            "postId",
+            "postType"
+        ]
+    },
+    "core/term-data": {
+        "label": "Term Data",
+        "name": "core/term-data",
+        "uses_context": [
+            "termId",
+            "taxonomy"
+        ]
+    },
+    "twentytwentyfive/format": {
+        "label": "Post format name",
+        "name": "twentytwentyfive/format",
+        "uses_context": null
+    }
+}

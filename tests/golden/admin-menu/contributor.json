@@ -1,0 +1,79 @@
+{
+    "menu": {
+        "2": [
+            "Dashboard",
+            "read",
+            "index.php",
+            "",
+            "menu-top menu-top-first menu-icon-dashboard menu-top-last",
+            "menu-dashboard",
+            "dashicons-dashboard"
+        ],
+        "4": [
+            "",
+            "read",
+            "separator1",
+            "",
+            "wp-menu-separator"
+        ],
+        "5": [
+            "Posts",
+            "edit_posts",
+            "edit.php",
+            "",
+            "menu-top menu-icon-post open-if-no-js menu-top-first",
+            "menu-posts",
+            "dashicons-admin-post"
+        ],
+        "25": [
+            "Comments <span class=\"awaiting-mod count-1\"><span class=\"pending-count\" aria-hidden=\"true\">1</span><span class=\"comments-in-moderation-text screen-reader-text\">1 Comment in moderation</span></span>",
+            "edit_posts",
+            "edit-comments.php",
+            "",
+            "menu-top menu-icon-comments menu-top-last",
+            "menu-comments",
+            "dashicons-admin-comments"
+        ],
+        "59": [
+            "",
+            "read",
+            "separator2",
+            "",
+            "wp-menu-separator"
+        ],
+        "70": [
+            "Profile",
+            "read",
+            "profile.php",
+            "",
+            "menu-top menu-icon-users menu-top-first",
+            "menu-users",
+            "dashicons-admin-users"
+        ],
+        "75": [
+            "Tools",
+            "edit_posts",
+            "tools.php",
+            "",
+            "menu-top menu-icon-tools menu-top-last",
+            "menu-tools",
+            "dashicons-admin-tools"
+        ]
+    },
+    "role": "contributor",
+    "submenu": {
+        "edit.php": {
+            "5": [
+                "All Posts",
+                "edit_posts",
+                "edit.php"
+            ],
+            "10": [
+                "Add Post",
+                "edit_posts",
+                "post-new.php"
+            ]
+        }
+    },
+    "user_id": 4
+}

@@ -1,0 +1,1467 @@
+{
+    "date_i18n": [
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "1970-01-01 00:00:00",
+            "ts": 0,
+            "tz": "UTC"
+        },
+        {
+            "format": "c",
+            "result": "1970-01-01T00:00:00+00:00",
+            "ts": 0,
+            "tz": "UTC"
+        },
+        {
+            "format": "U",
+            "result": 0,
+            "ts": 0,
+            "tz": "UTC"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 1970",
+            "ts": 0,
+            "tz": "UTC"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2000-01-01 00:00:00",
+            "ts": 946684800,
+            "tz": "UTC"
+        },
+        {
+            "format": "c",
+            "result": "2000-01-01T00:00:00+00:00",
+            "ts": 946684800,
+            "tz": "UTC"
+        },
+        {
+            "format": "U",
+            "result": 946684800,
+            "ts": 946684800,
+            "tz": "UTC"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 2000",
+            "ts": 946684800,
+            "tz": "UTC"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2021-01-01 00:00:00",
+            "ts": 1609459200,
+            "tz": "UTC"
+        },
+        {
+            "format": "c",
+            "result": "2021-01-01T00:00:00+00:00",
+            "ts": 1609459200,
+            "tz": "UTC"
+        },
+        {
+            "format": "U",
+            "result": 1609459200,
+            "ts": 1609459200,
+            "tz": "UTC"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 2021",
+            "ts": 1609459200,
+            "tz": "UTC"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2023-11-14 22:13:20",
+            "ts": 1700000000,
+            "tz": "UTC"
+        },
+        {
+            "format": "c",
+            "result": "2023-11-14T22:13:20+00:00",
+            "ts": 1700000000,
+            "tz": "UTC"
+        },
+        {
+            "format": "U",
+            "result": 1700000000,
+            "ts": 1700000000,
+            "tz": "UTC"
+        },
+        {
+            "format": "F j, Y",
+            "result": "November 14, 2023",
+            "ts": 1700000000,
+            "tz": "UTC"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2033-05-18 03:33:20",
+            "ts": 2000000000,
+            "tz": "UTC"
+        },
+        {
+            "format": "c",
+            "result": "2033-05-18T03:33:20+00:00",
+            "ts": 2000000000,
+            "tz": "UTC"
+        },
+        {
+            "format": "U",
+            "result": 2000000000,
+            "ts": 2000000000,
+            "tz": "UTC"
+        },
+        {
+            "format": "F j, Y",
+            "result": "May 18, 2033",
+            "ts": 2000000000,
+            "tz": "UTC"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "1970-01-01 00:00:00",
+            "ts": 0,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "c",
+            "result": "1970-01-01T00:00:00-05:00",
+            "ts": 0,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "U",
+            "result": 0,
+            "ts": 0,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 1970",
+            "ts": 0,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2000-01-01 00:00:00",
+            "ts": 946684800,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "c",
+            "result": "2000-01-01T00:00:00-05:00",
+            "ts": 946684800,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "U",
+            "result": 946684800,
+            "ts": 946684800,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 2000",
+            "ts": 946684800,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2021-01-01 00:00:00",
+            "ts": 1609459200,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "c",
+            "result": "2021-01-01T00:00:00-05:00",
+            "ts": 1609459200,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "U",
+            "result": 1609459200,
+            "ts": 1609459200,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 2021",
+            "ts": 1609459200,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2023-11-14 22:13:20",
+            "ts": 1700000000,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "c",
+            "result": "2023-11-14T22:13:20-05:00",
+            "ts": 1700000000,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "U",
+            "result": 1700000000,
+            "ts": 1700000000,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "F j, Y",
+            "result": "November 14, 2023",
+            "ts": 1700000000,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2033-05-18 03:33:20",
+            "ts": 2000000000,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "c",
+            "result": "2033-05-18T03:33:20-04:00",
+            "ts": 2000000000,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "U",
+            "result": 2000000000,
+            "ts": 2000000000,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "F j, Y",
+            "result": "May 18, 2033",
+            "ts": 2000000000,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "1970-01-01 00:00:00",
+            "ts": 0,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "c",
+            "result": "1970-01-01T00:00:00+01:00",
+            "ts": 0,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "U",
+            "result": 0,
+            "ts": 0,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 1970",
+            "ts": 0,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2000-01-01 00:00:00",
+            "ts": 946684800,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "c",
+            "result": "2000-01-01T00:00:00+01:00",
+            "ts": 946684800,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "U",
+            "result": 946684800,
+            "ts": 946684800,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 2000",
+            "ts": 946684800,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2021-01-01 00:00:00",
+            "ts": 1609459200,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "c",
+            "result": "2021-01-01T00:00:00+01:00",
+            "ts": 1609459200,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "U",
+            "result": 1609459200,
+            "ts": 1609459200,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 2021",
+            "ts": 1609459200,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2023-11-14 22:13:20",
+            "ts": 1700000000,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "c",
+            "result": "2023-11-14T22:13:20+01:00",
+            "ts": 1700000000,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "U",
+            "result": 1700000000,
+            "ts": 1700000000,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "F j, Y",
+            "result": "November 14, 2023",
+            "ts": 1700000000,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2033-05-18 03:33:20",
+            "ts": 2000000000,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "c",
+            "result": "2033-05-18T03:33:20+02:00",
+            "ts": 2000000000,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "U",
+            "result": 2000000000,
+            "ts": 2000000000,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "F j, Y",
+            "result": "May 18, 2033",
+            "ts": 2000000000,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "1970-01-01 00:00:00",
+            "ts": 0,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "c",
+            "result": "1970-01-01T00:00:00+09:00",
+            "ts": 0,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "U",
+            "result": 0,
+            "ts": 0,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 1970",
+            "ts": 0,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2000-01-01 00:00:00",
+            "ts": 946684800,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "c",
+            "result": "2000-01-01T00:00:00+09:00",
+            "ts": 946684800,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "U",
+            "result": 946684800,
+            "ts": 946684800,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 2000",
+            "ts": 946684800,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2021-01-01 00:00:00",
+            "ts": 1609459200,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "c",
+            "result": "2021-01-01T00:00:00+09:00",
+            "ts": 1609459200,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "U",
+            "result": 1609459200,
+            "ts": 1609459200,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 2021",
+            "ts": 1609459200,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2023-11-14 22:13:20",
+            "ts": 1700000000,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "c",
+            "result": "2023-11-14T22:13:20+09:00",
+            "ts": 1700000000,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "U",
+            "result": 1700000000,
+            "ts": 1700000000,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "F j, Y",
+            "result": "November 14, 2023",
+            "ts": 1700000000,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2033-05-18 03:33:20",
+            "ts": 2000000000,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "c",
+            "result": "2033-05-18T03:33:20+09:00",
+            "ts": 2000000000,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "U",
+            "result": 2000000000,
+            "ts": 2000000000,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "F j, Y",
+            "result": "May 18, 2033",
+            "ts": 2000000000,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "1970-01-01 00:00:00",
+            "ts": 0,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "c",
+            "result": "1970-01-01T00:00:00+12:00",
+            "ts": 0,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "U",
+            "result": 0,
+            "ts": 0,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 1970",
+            "ts": 0,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2000-01-01 00:00:00",
+            "ts": 946684800,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "c",
+            "result": "2000-01-01T00:00:00+13:00",
+            "ts": 946684800,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "U",
+            "result": 946684800,
+            "ts": 946684800,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 2000",
+            "ts": 946684800,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2021-01-01 00:00:00",
+            "ts": 1609459200,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "c",
+            "result": "2021-01-01T00:00:00+13:00",
+            "ts": 1609459200,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "U",
+            "result": 1609459200,
+            "ts": 1609459200,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 2021",
+            "ts": 1609459200,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2023-11-14 22:13:20",
+            "ts": 1700000000,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "c",
+            "result": "2023-11-14T22:13:20+13:00",
+            "ts": 1700000000,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "U",
+            "result": 1700000000,
+            "ts": 1700000000,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "F j, Y",
+            "result": "November 14, 2023",
+            "ts": 1700000000,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2033-05-18 03:33:20",
+            "ts": 2000000000,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "c",
+            "result": "2033-05-18T03:33:20+12:00",
+            "ts": 2000000000,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "U",
+            "result": 2000000000,
+            "ts": 2000000000,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "F j, Y",
+            "result": "May 18, 2033",
+            "ts": 2000000000,
+            "tz": "Pacific/Auckland"
+        }
+    ],
+    "get_date_from_gmt": [
+        {
+            "gmt": "2020-01-01 00:00:00",
+            "result": "2020-01-01 00:00:00",
+            "tz": "UTC"
+        },
+        {
+            "gmt": "2020-06-15 12:30:45",
+            "result": "2020-06-15 12:30:45",
+            "tz": "UTC"
+        },
+        {
+            "gmt": "2021-12-31 23:59:59",
+            "result": "2021-12-31 23:59:59",
+            "tz": "UTC"
+        },
+        {
+            "gmt": "2020-01-01 00:00:00",
+            "result": "2019-12-31 19:00:00",
+            "tz": "America/New_York"
+        },
+        {
+            "gmt": "2020-06-15 12:30:45",
+            "result": "2020-06-15 08:30:45",
+            "tz": "America/New_York"
+        },
+        {
+            "gmt": "2021-12-31 23:59:59",
+            "result": "2021-12-31 18:59:59",
+            "tz": "America/New_York"
+        },
+        {
+            "gmt": "2020-01-01 00:00:00",
+            "result": "2020-01-01 01:00:00",
+            "tz": "Europe/Berlin"
+        },
+        {
+            "gmt": "2020-06-15 12:30:45",
+            "result": "2020-06-15 14:30:45",
+            "tz": "Europe/Berlin"
+        },
+        {
+            "gmt": "2021-12-31 23:59:59",
+            "result": "2022-01-01 00:59:59",
+            "tz": "Europe/Berlin"
+        },
+        {
+            "gmt": "2020-01-01 00:00:00",
+            "result": "2020-01-01 09:00:00",
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "gmt": "2020-06-15 12:30:45",
+            "result": "2020-06-15 21:30:45",
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "gmt": "2021-12-31 23:59:59",
+            "result": "2022-01-01 08:59:59",
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "gmt": "2020-01-01 00:00:00",
+            "result": "2020-01-01 13:00:00",
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "gmt": "2020-06-15 12:30:45",
+            "result": "2020-06-16 00:30:45",
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "gmt": "2021-12-31 23:59:59",
+            "result": "2022-01-01 12:59:59",
+            "tz": "Pacific/Auckland"
+        }
+    ],
+    "get_gmt_from_date": [
+        {
+            "local": "2020-01-01 00:00:00",
+            "result": "2020-01-01 00:00:00",
+            "tz": "UTC"
+        },
+        {
+            "local": "2020-06-15 12:30:45",
+            "result": "2020-06-15 12:30:45",
+            "tz": "UTC"
+        },
+        {
+            "local": "2021-12-31 23:59:59",
+            "result": "2021-12-31 23:59:59",
+            "tz": "UTC"
+        },
+        {
+            "local": "2020-01-01 00:00:00",
+            "result": "2020-01-01 05:00:00",
+            "tz": "America/New_York"
+        },
+        {
+            "local": "2020-06-15 12:30:45",
+            "result": "2020-06-15 16:30:45",
+            "tz": "America/New_York"
+        },
+        {
+            "local": "2021-12-31 23:59:59",
+            "result": "2022-01-01 04:59:59",
+            "tz": "America/New_York"
+        },
+        {
+            "local": "2020-01-01 00:00:00",
+            "result": "2019-12-31 23:00:00",
+            "tz": "Europe/Berlin"
+        },
+        {
+            "local": "2020-06-15 12:30:45",
+            "result": "2020-06-15 10:30:45",
+            "tz": "Europe/Berlin"
+        },
+        {
+            "local": "2021-12-31 23:59:59",
+            "result": "2021-12-31 22:59:59",
+            "tz": "Europe/Berlin"
+        },
+        {
+            "local": "2020-01-01 00:00:00",
+            "result": "2019-12-31 15:00:00",
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "local": "2020-06-15 12:30:45",
+            "result": "2020-06-15 03:30:45",
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "local": "2021-12-31 23:59:59",
+            "result": "2021-12-31 14:59:59",
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "local": "2020-01-01 00:00:00",
+            "result": "2019-12-31 11:00:00",
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "local": "2020-06-15 12:30:45",
+            "result": "2020-06-15 00:30:45",
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "local": "2021-12-31 23:59:59",
+            "result": "2021-12-31 10:59:59",
+            "tz": "Pacific/Auckland"
+        }
+    ],
+    "mysql2date": [
+        {
+            "format": "Y-m-d H:i:s",
+            "gmt": "2020-01-01 00:00:00",
+            "mysql": "2020-01-01 00:00:00",
+            "result": "2020-01-01 00:00:00",
+            "tz": "UTC"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "gmt": "2020-06-15 12:30:45",
+            "mysql": "2020-06-15 12:30:45",
+            "result": "2020-06-15 12:30:45",
+            "tz": "UTC"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "gmt": "2021-12-31 23:59:59",
+            "mysql": "2021-12-31 23:59:59",
+            "result": "2021-12-31 23:59:59",
+            "tz": "UTC"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "gmt": "2020-01-01 00:00:00",
+            "mysql": "2020-01-01 00:00:00",
+            "result": "2020-01-01 00:00:00",
+            "tz": "America/New_York"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "gmt": "2020-06-15 12:30:45",
+            "mysql": "2020-06-15 12:30:45",
+            "result": "2020-06-15 12:30:45",
+            "tz": "America/New_York"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "gmt": "2021-12-31 23:59:59",
+            "mysql": "2021-12-31 23:59:59",
+            "result": "2021-12-31 23:59:59",
+            "tz": "America/New_York"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "gmt": "2020-01-01 00:00:00",
+            "mysql": "2020-01-01 00:00:00",
+            "result": "2020-01-01 00:00:00",
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "gmt": "2020-06-15 12:30:45",
+            "mysql": "2020-06-15 12:30:45",
+            "result": "2020-06-15 12:30:45",
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "gmt": "2021-12-31 23:59:59",
+            "mysql": "2021-12-31 23:59:59",
+            "result": "2021-12-31 23:59:59",
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "gmt": "2020-01-01 00:00:00",
+            "mysql": "2020-01-01 00:00:00",
+            "result": "2020-01-01 00:00:00",
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "gmt": "2020-06-15 12:30:45",
+            "mysql": "2020-06-15 12:30:45",
+            "result": "2020-06-15 12:30:45",
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "gmt": "2021-12-31 23:59:59",
+            "mysql": "2021-12-31 23:59:59",
+            "result": "2021-12-31 23:59:59",
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "gmt": "2020-01-01 00:00:00",
+            "mysql": "2020-01-01 00:00:00",
+            "result": "2020-01-01 00:00:00",
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "gmt": "2020-06-15 12:30:45",
+            "mysql": "2020-06-15 12:30:45",
+            "result": "2020-06-15 12:30:45",
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "gmt": "2021-12-31 23:59:59",
+            "mysql": "2021-12-31 23:59:59",
+            "result": "2021-12-31 23:59:59",
+            "tz": "Pacific/Auckland"
+        }
+    ],
+    "wp_date": [
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "1970-01-01 00:00:00",
+            "ts": 0,
+            "tz": "UTC"
+        },
+        {
+            "format": "c",
+            "result": "1970-01-01T00:00:00+00:00",
+            "ts": 0,
+            "tz": "UTC"
+        },
+        {
+            "format": "U",
+            "result": "0",
+            "ts": 0,
+            "tz": "UTC"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 1970",
+            "ts": 0,
+            "tz": "UTC"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2000-01-01 00:00:00",
+            "ts": 946684800,
+            "tz": "UTC"
+        },
+        {
+            "format": "c",
+            "result": "2000-01-01T00:00:00+00:00",
+            "ts": 946684800,
+            "tz": "UTC"
+        },
+        {
+            "format": "U",
+            "result": "946684800",
+            "ts": 946684800,
+            "tz": "UTC"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 2000",
+            "ts": 946684800,
+            "tz": "UTC"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2021-01-01 00:00:00",
+            "ts": 1609459200,
+            "tz": "UTC"
+        },
+        {
+            "format": "c",
+            "result": "2021-01-01T00:00:00+00:00",
+            "ts": 1609459200,
+            "tz": "UTC"
+        },
+        {
+            "format": "U",
+            "result": "1609459200",
+            "ts": 1609459200,
+            "tz": "UTC"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 2021",
+            "ts": 1609459200,
+            "tz": "UTC"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2023-11-14 22:13:20",
+            "ts": 1700000000,
+            "tz": "UTC"
+        },
+        {
+            "format": "c",
+            "result": "2023-11-14T22:13:20+00:00",
+            "ts": 1700000000,
+            "tz": "UTC"
+        },
+        {
+            "format": "U",
+            "result": "1700000000",
+            "ts": 1700000000,
+            "tz": "UTC"
+        },
+        {
+            "format": "F j, Y",
+            "result": "November 14, 2023",
+            "ts": 1700000000,
+            "tz": "UTC"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2033-05-18 03:33:20",
+            "ts": 2000000000,
+            "tz": "UTC"
+        },
+        {
+            "format": "c",
+            "result": "2033-05-18T03:33:20+00:00",
+            "ts": 2000000000,
+            "tz": "UTC"
+        },
+        {
+            "format": "U",
+            "result": "2000000000",
+            "ts": 2000000000,
+            "tz": "UTC"
+        },
+        {
+            "format": "F j, Y",
+            "result": "May 18, 2033",
+            "ts": 2000000000,
+            "tz": "UTC"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "1969-12-31 19:00:00",
+            "ts": 0,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "c",
+            "result": "1969-12-31T19:00:00-05:00",
+            "ts": 0,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "U",
+            "result": "0",
+            "ts": 0,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "F j, Y",
+            "result": "December 31, 1969",
+            "ts": 0,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "1999-12-31 19:00:00",
+            "ts": 946684800,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "c",
+            "result": "1999-12-31T19:00:00-05:00",
+            "ts": 946684800,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "U",
+            "result": "946684800",
+            "ts": 946684800,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "F j, Y",
+            "result": "December 31, 1999",
+            "ts": 946684800,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2020-12-31 19:00:00",
+            "ts": 1609459200,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "c",
+            "result": "2020-12-31T19:00:00-05:00",
+            "ts": 1609459200,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "U",
+            "result": "1609459200",
+            "ts": 1609459200,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "F j, Y",
+            "result": "December 31, 2020",
+            "ts": 1609459200,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2023-11-14 17:13:20",
+            "ts": 1700000000,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "c",
+            "result": "2023-11-14T17:13:20-05:00",
+            "ts": 1700000000,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "U",
+            "result": "1700000000",
+            "ts": 1700000000,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "F j, Y",
+            "result": "November 14, 2023",
+            "ts": 1700000000,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2033-05-17 23:33:20",
+            "ts": 2000000000,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "c",
+            "result": "2033-05-17T23:33:20-04:00",
+            "ts": 2000000000,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "U",
+            "result": "2000000000",
+            "ts": 2000000000,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "F j, Y",
+            "result": "May 17, 2033",
+            "ts": 2000000000,
+            "tz": "America/New_York"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "1970-01-01 01:00:00",
+            "ts": 0,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "c",
+            "result": "1970-01-01T01:00:00+01:00",
+            "ts": 0,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "U",
+            "result": "0",
+            "ts": 0,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 1970",
+            "ts": 0,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2000-01-01 01:00:00",
+            "ts": 946684800,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "c",
+            "result": "2000-01-01T01:00:00+01:00",
+            "ts": 946684800,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "U",
+            "result": "946684800",
+            "ts": 946684800,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 2000",
+            "ts": 946684800,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2021-01-01 01:00:00",
+            "ts": 1609459200,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "c",
+            "result": "2021-01-01T01:00:00+01:00",
+            "ts": 1609459200,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "U",
+            "result": "1609459200",
+            "ts": 1609459200,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 2021",
+            "ts": 1609459200,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2023-11-14 23:13:20",
+            "ts": 1700000000,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "c",
+            "result": "2023-11-14T23:13:20+01:00",
+            "ts": 1700000000,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "U",
+            "result": "1700000000",
+            "ts": 1700000000,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "F j, Y",
+            "result": "November 14, 2023",
+            "ts": 1700000000,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2033-05-18 05:33:20",
+            "ts": 2000000000,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "c",
+            "result": "2033-05-18T05:33:20+02:00",
+            "ts": 2000000000,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "U",
+            "result": "2000000000",
+            "ts": 2000000000,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "F j, Y",
+            "result": "May 18, 2033",
+            "ts": 2000000000,
+            "tz": "Europe/Berlin"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "1970-01-01 09:00:00",
+            "ts": 0,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "c",
+            "result": "1970-01-01T09:00:00+09:00",
+            "ts": 0,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "U",
+            "result": "0",
+            "ts": 0,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 1970",
+            "ts": 0,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2000-01-01 09:00:00",
+            "ts": 946684800,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "c",
+            "result": "2000-01-01T09:00:00+09:00",
+            "ts": 946684800,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "U",
+            "result": "946684800",
+            "ts": 946684800,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 2000",
+            "ts": 946684800,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2021-01-01 09:00:00",
+            "ts": 1609459200,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "c",
+            "result": "2021-01-01T09:00:00+09:00",
+            "ts": 1609459200,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "U",
+            "result": "1609459200",
+            "ts": 1609459200,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 2021",
+            "ts": 1609459200,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2023-11-15 07:13:20",
+            "ts": 1700000000,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "c",
+            "result": "2023-11-15T07:13:20+09:00",
+            "ts": 1700000000,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "U",
+            "result": "1700000000",
+            "ts": 1700000000,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "F j, Y",
+            "result": "November 15, 2023",
+            "ts": 1700000000,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2033-05-18 12:33:20",
+            "ts": 2000000000,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "c",
+            "result": "2033-05-18T12:33:20+09:00",
+            "ts": 2000000000,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "U",
+            "result": "2000000000",
+            "ts": 2000000000,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "F j, Y",
+            "result": "May 18, 2033",
+            "ts": 2000000000,
+            "tz": "Asia/Tokyo"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "1970-01-01 12:00:00",
+            "ts": 0,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "c",
+            "result": "1970-01-01T12:00:00+12:00",
+            "ts": 0,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "U",
+            "result": "0",
+            "ts": 0,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 1970",
+            "ts": 0,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2000-01-01 13:00:00",
+            "ts": 946684800,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "c",
+            "result": "2000-01-01T13:00:00+13:00",
+            "ts": 946684800,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "U",
+            "result": "946684800",
+            "ts": 946684800,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 2000",
+            "ts": 946684800,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2021-01-01 13:00:00",
+            "ts": 1609459200,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "c",
+            "result": "2021-01-01T13:00:00+13:00",
+            "ts": 1609459200,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "U",
+            "result": "1609459200",
+            "ts": 1609459200,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "F j, Y",
+            "result": "January 1, 2021",
+            "ts": 1609459200,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2023-11-15 11:13:20",
+            "ts": 1700000000,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "c",
+            "result": "2023-11-15T11:13:20+13:00",
+            "ts": 1700000000,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "U",
+            "result": "1700000000",
+            "ts": 1700000000,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "F j, Y",
+            "result": "November 15, 2023",
+            "ts": 1700000000,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "Y-m-d H:i:s",
+            "result": "2033-05-18 15:33:20",
+            "ts": 2000000000,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "c",
+            "result": "2033-05-18T15:33:20+12:00",
+            "ts": 2000000000,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "U",
+            "result": "2000000000",
+            "ts": 2000000000,
+            "tz": "Pacific/Auckland"
+        },
+        {
+            "format": "F j, Y",
+            "result": "May 18, 2033",
+            "ts": 2000000000,
+            "tz": "Pacific/Auckland"
+        }
+    ]
+}

@@ -1,0 +1,32 @@
+{
+    "1536x1536": {
+        "crop": false,
+        "height": 1536,
+        "width": 1536
+    },
+    "2048x2048": {
+        "crop": false,
+        "height": 2048,
+        "width": 2048
+    },
+    "large": {
+        "crop": false,
+        "height": 1024,
+        "width": 1024
+    },
+    "medium": {
+        "crop": false,
+        "height": 300,
+        "width": 300
+    },
+    "medium_large": {
+        "crop": false,
+        "height": 0,
+        "width": 768
+    },
+    "thumbnail": {
+        "crop": true,
+        "height": 150,
+        "width": 150
+    }
+}

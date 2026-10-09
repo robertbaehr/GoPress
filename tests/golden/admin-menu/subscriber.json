@@ -1,0 +1,32 @@
+{
+    "menu": {
+        "2": [
+            "Dashboard",
+            "read",
+            "index.php",
+            "",
+            "menu-top menu-top-first menu-icon-dashboard menu-top-last",
+            "menu-dashboard",
+            "dashicons-dashboard"
+        ],
+        "4": [
+            "",
+            "read",
+            "separator1",
+            "",
+            "wp-menu-separator"
+        ],
+        "70": [
+            "Profile",
+            "read",
+            "profile.php",
+            "",
+            "menu-top menu-icon-users menu-top-first menu-top-last",
+            "menu-users",
+            "dashicons-admin-users"
+        ]
+    },
+    "role": "subscriber",
+    "submenu": [],
+    "user_id": 5
+}

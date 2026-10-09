@@ -1,0 +1,109 @@
+{
+    "core/column": {
+        "section-1": {
+            "label": "Style 1",
+            "name": "section-1"
+        },
+        "section-2": {
+            "label": "Style 2",
+            "name": "section-2"
+        },
+        "section-3": {
+            "label": "Style 3",
+            "name": "section-3"
+        },
+        "section-4": {
+            "label": "Style 4",
+            "name": "section-4"
+        },
+        "section-5": {
+            "label": "Style 5",
+            "name": "section-5"
+        }
+    },
+    "core/columns": {
+        "section-1": {
+            "label": "Style 1",
+            "name": "section-1"
+        },
+        "section-2": {
+            "label": "Style 2",
+            "name": "section-2"
+        },
+        "section-3": {
+            "label": "Style 3",
+            "name": "section-3"
+        },
+        "section-4": {
+            "label": "Style 4",
+            "name": "section-4"
+        },
+        "section-5": {
+            "label": "Style 5",
+            "name": "section-5"
+        }
+    },
+    "core/group": {
+        "section-1": {
+            "label": "Style 1",
+            "name": "section-1"
+        },
+        "section-2": {
+            "label": "Style 2",
+            "name": "section-2"
+        },
+        "section-3": {
+            "label": "Style 3",
+            "name": "section-3"
+        },
+        "section-4": {
+            "label": "Style 4",
+            "name": "section-4"
+        },
+        "section-5": {
+            "label": "Style 5",
+            "name": "section-5"
+        }
+    },
+    "core/heading": {
+        "text-annotation": {
+            "label": "Annotation",
+            "name": "text-annotation"
+        },
+        "text-display": {
+            "label": "Display",
+            "name": "text-display"
+        },
+        "text-subtitle": {
+            "label": "Subtitle",
+            "name": "text-subtitle"
+        }
+    },
+    "core/list": {
+        "checkmark-list": {
+            "inline_style": "\n\t\t\t\tul.is-style-checkmark-list {\n\t\t\t\t\tlist-style-type: \"\\2713\";\n\t\t\t\t}\n\n\t\t\t\tul.is-style-checkmark-list li {\n\t\t\t\t\tpadding-inline-start: 1ch;\n\t\t\t\t}",
+            "label": "Checkmark",
+            "name": "checkmark-list"
+        }
+    },
+    "core/paragraph": {
+        "text-annotation": {
+            "label": "Annotation",
+            "name": "text-annotation"
+        },
+        "text-display": {
+            "label": "Display",
+            "name": "text-display"
+        },
+        "text-subtitle": {
+            "label": "Subtitle",
+            "name": "text-subtitle"
+        }
+    },
+    "core/post-terms": {
+        "post-terms-1": {
+            "label": "Pill shaped",
+            "name": "post-terms-1"
+        }
+    }
+}

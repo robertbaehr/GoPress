@@ -1,0 +1,96 @@
+{
+    "auth_cookie": {
+        "cookies": {
+            "auth": "admin|2000000000|fixedtokenfixedtokenfixedtokenfixedtok|42b95f36031882da954d070a7c0d5cc1d94a2f563abcb9a9b4eb4ecb72052157",
+            "logged_in": "admin|2000000000|fixedtokenfixedtokenfixedtokenfixedtok|5516b02f14ce763f7bf5cd2c4d95fdc0cf69eb85c59a64fe84b9d5b258584b9c",
+            "secure_auth": "admin|2000000000|fixedtokenfixedtokenfixedtokenfixedtok|c6416a40fca3fa44a4d117b806218cabe39330f453c2e17761db7071a03e7db5"
+        },
+        "expiration": 2000000000,
+        "token": "fixedtokenfixedtokenfixedtokenfixedtok",
+        "user_id": 1
+    },
+    "fast_hash": "$generic$3pTWxTN-y1jjLpI-voSeSHmCYQHFkXMVZ1TdrVrc",
+    "hash_password": {
+        "hash": "HASH",
+        "input": "password",
+        "length": 63,
+        "prefix": "$wp"
+    },
+    "hashes": {
+        "auth": "6a3006ec553e63e1749856eff618e546",
+        "logged_in": "e6e2f5cfa770635c90a3c8ec646adcc2",
+        "nonce": "56c2b882ea360a01b31b299bef88833d",
+        "secure_auth": "a1a5ceba2233ef1fe9615723cf4fc22e"
+    },
+    "nonces": [
+        {
+            "action": "wp_rest",
+            "nonce": "70f6512cf4",
+            "tick": 1000,
+            "token": "tok",
+            "uid": 1
+        },
+        {
+            "action": "wp_rest",
+            "nonce": "00b47a4a5d",
+            "tick": 1000,
+            "token": "tok",
+            "uid": 0
+        },
+        {
+            "action": "-1",
+            "nonce": "a3025bb435",
+            "tick": 1000,
+            "token": "tok",
+            "uid": 1
+        },
+        {
+            "action": "-1",
+            "nonce": "5a63e9d352",
+            "tick": 1000,
+            "token": "tok",
+            "uid": 0
+        },
+        {
+            "action": "wp_rest",
+            "nonce": "b59b5d0b38",
+            "tick": 1001,
+            "token": "tok",
+            "uid": 1
+        },
+        {
+            "action": "wp_rest",
+            "nonce": "b94eaa231a",
+            "tick": 1001,
+            "token": "tok",
+            "uid": 0
+        },
+        {
+            "action": "-1",
+            "nonce": "67dbd2778b",
+            "tick": 1001,
+            "token": "tok",
+            "uid": 1
+        },
+        {
+            "action": "-1",
+            "nonce": "ef330ad135",
+            "tick": 1001,
+            "token": "tok",
+            "uid": 0
+        }
+    ],
+    "phpass_check": {
+        "known_bad_hash": false,
+        "password_matches_portable": true,
+        "stored_hash": "HASH",
+        "wp_check_password": true,
+        "wrong_rejects_portable": false
+    },
+    "salts": {
+        "auth": "gopress-ref-auth-key-0001-fixed-for-oraclegopress-ref-auth-salt-0005-fixed-oracle",
+        "logged_in": "gopress-ref-logged-in-key-0003-fixedgopress-ref-logged-in-salt-0007-fixed",
+        "nonce": "gopress-ref-nonce-key-0004-fixed-oraclegopress-ref-nonce-salt-0008-fixed-oracle",
+        "secure_auth": "gopress-ref-secure-auth-key-0002-fixedgopress-ref-secure-auth-salt-0006-fixed"
+    }
+}
