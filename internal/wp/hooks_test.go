@@ -1,6 +1,7 @@
 package wp_test
 
 import (
+	"context"
 	"fmt"
 	"testing"
 
@@ -175,7 +176,7 @@ func TestHooksCurrentFilterStack(t *testing.T) {
 }
 
 func TestContextHoldsHooks(t *testing.T) {
-	c := wp.NewContext(nil)
+	c := wp.NewContext(context.TODO())
 	if c.Hooks != nil {
 		t.Fatal("Hooks should be nil until set")
 	}
