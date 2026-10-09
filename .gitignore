@@ -6,6 +6,7 @@
 /wp-content/upgrade/
 /bin/
 /tests/diff/report.html
+/tests/diff/captures/
 
 # Go
 /vendor/

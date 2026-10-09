@@ -1,0 +1,35 @@
+- id: front-home
+  role: anon
+  method: GET
+  path: /
+  headers: {}
+  body: null
+  compare: html
+  nonce: null
+
+- id: front-sample-page
+  role: anon
+  method: GET
+  path: /sample-page/
+  headers: {}
+  body: null
+  compare: html
+  nonce: null
+
+- id: front-hello-world
+  role: anon
+  method: GET
+  path: /blog/uncategorized/hello-world/
+  headers: {}
+  body: null
+  compare: html
+  nonce: null
+
+- id: front-feed
+  role: anon
+  method: GET
+  path: /feed/
+  headers: {}
+  body: null
+  compare: raw
+  nonce: null

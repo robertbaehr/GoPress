@@ -39,8 +39,8 @@ fixture:
 golden:
 	@bash scripts/golden.sh
 
-diff:
-	@echo "diff harness lands in P0.7" >&2; exit 1
+diff: build
+	./bin/gopress-tools diff --ref http://127.0.0.1:8081 --go http://127.0.0.1:8081
 
 e2e:
 	@echo "e2e lands with Playwright" >&2; exit 1

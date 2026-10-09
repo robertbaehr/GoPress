@@ -1,0 +1,44 @@
+- id: rest-index-anon
+  role: anon
+  method: GET
+  path: /wp-json/
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-posts-list-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?per_page=5
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-posts-edit-admin
+  role: admin
+  method: GET
+  path: /wp-json/wp/v2/posts?context=edit&per_page=5
+  headers: {}
+  body: null
+  compare: json
+  nonce: wp_rest
+
+- id: rest-types-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-pages-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?per_page=5
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
