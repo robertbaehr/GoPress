@@ -69,7 +69,7 @@ func TestRequestScopeCurrentPostOnce(t *testing.T) {
 }
 
 func TestNewContextHasScope(t *testing.T) {
-	c := wp.NewContext(nil)
+	c := wp.NewContext(context.TODO())
 	if c.Scope == nil {
 		t.Fatal("Scope is nil")
 	}
