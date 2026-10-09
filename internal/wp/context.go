@@ -8,6 +8,8 @@ import (
 	"context"
 	"net/http"
 	"sync"
+
+	"github.com/robertbaehr/GoPress/internal/config"
 )
 
 // ctxKey is the private context.Context key for *Context.
@@ -20,7 +22,7 @@ type Context struct {
 	Parent context.Context
 
 	// Config is site configuration (P1.2).
-	Config any
+	Config *config.Config
 
 	// DB is the database handle (P1.3).
 	DB any
