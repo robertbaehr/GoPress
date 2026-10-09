@@ -9,7 +9,7 @@ import (
 	"github.com/robertbaehr/GoPress/internal/db"
 )
 
-// Boot opens the database and wires Hooks, Cache, and Options on a Context.
+// Boot opens the database and wires Hooks, Cache, Options, and Meta on a Context.
 // Autoloaded options are loaded into the object cache (alloptions).
 func Boot(ctx context.Context, cfg *config.Config) (*Context, error) {
 	if cfg == nil {
@@ -27,6 +27,7 @@ func Boot(ctx context.Context, cfg *config.Config) (*Context, error) {
 	c.Hooks = NewHooks()
 	c.Cache = NewObjectCache()
 	c.Options = NewOptions(handle, c.Cache)
+	c.Meta = NewMeta(handle, c.Cache)
 
 	if err := c.Options.LoadAutoload(); err != nil {
 		_ = handle.Close()

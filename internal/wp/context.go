@@ -39,7 +39,7 @@ type Context struct {
 	Options *Options
 
 	// Meta is the metadata API (P1.8).
-	Meta any
+	Meta *Meta
 
 	// Locale is the active locale / translations (P1.9).
 	Locale any

@@ -31,8 +31,8 @@ func TestBootLoadsBlogname(t *testing.T) {
 	}
 	defer c.DB.Close()
 
-	if c.Hooks == nil || c.Cache == nil || c.Options == nil {
-		t.Fatal("Hooks/Cache/Options not wired")
+	if c.Hooks == nil || c.Cache == nil || c.Options == nil || c.Meta == nil {
+		t.Fatal("Hooks/Cache/Options/Meta not wired")
 	}
 	got := c.Options.GetOption("blogname", "")
 	s, _ := got.(string)
