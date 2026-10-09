@@ -26,6 +26,18 @@ add_filter(
 	}
 );
 
+// Keep uploads under a fixed year/month so dumps do not drift across calendar months.
+add_filter(
+	'upload_dir',
+	static function ( $uploads ) {
+		$subdir = '/2024/06';
+		$uploads['subdir'] = $subdir;
+		$uploads['path']   = $uploads['basedir'] . $subdir;
+		$uploads['url']    = $uploads['baseurl'] . $subdir;
+		return $uploads;
+	}
+);
+
 /** @var string Fixed "now" used for all generated timestamps. */
 const GOPRESS_FIXTURE_NOW = '2024-06-15 12:00:00';
 const GOPRESS_FIXTURE_NOW_GMT = '2024-06-15 12:00:00';
