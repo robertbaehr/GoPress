@@ -1,0 +1,29 @@
+# Runtime + tooling Go module allowlist (P0.8).
+# Every direct require in go.mod must appear here.
+# Forbidden license classes: GPL, AGPL, SSPL, BUSL, Commons Clause.
+
+modules:
+  - path: golang.org/x/tools
+    license: BSD-3-Clause
+    purpose: analysis multichecker (gopress-lint)
+  - path: golang.org/x/net
+    license: BSD-3-Clause
+    purpose: HTML normalizer for differential harness
+  - path: gopkg.in/yaml.v3
+    license: MIT AND Apache-2.0
+    purpose: corpus / allowlist YAML parsing
+
+# Indirect modules are tracked for license awareness but not required in go.mod require.
+indirect:
+  - path: golang.org/x/mod
+    license: BSD-3-Clause
+  - path: golang.org/x/sync
+    license: BSD-3-Clause
+
+forbidden_license_substrings:
+  - "GPL"
+  - "AGPL"
+  - "SSPL"
+  - "BUSL"
+  - "Commons Clause"
+  - "Commons-Clause"

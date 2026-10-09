@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/robertbaehr/GoPress/internal/tools/depscheck"
 	"github.com/robertbaehr/GoPress/internal/tools/diffharness"
 	"github.com/robertbaehr/GoPress/internal/tools/porting"
 )
@@ -30,6 +31,16 @@ func main() {
 	case "capture":
 		if err := runCapture(os.Args[2:]); err != nil {
 			fmt.Fprintf(os.Stderr, "capture: %v\n", err)
+			os.Exit(1)
+		}
+	case "deps-check":
+		wd, err := os.Getwd()
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "deps-check: %v\n", err)
+			os.Exit(1)
+		}
+		if err := depscheck.Run(wd); err != nil {
+			fmt.Fprintf(os.Stderr, "deps-check: %v\n", err)
 			os.Exit(1)
 		}
 	case "help", "-h", "--help":
@@ -96,7 +107,9 @@ Usage:
   gopress-tools porting-status
   gopress-tools diff [--ref URL] [--go URL] [--corpus DIR] [--report PATH]
   gopress-tools capture [--url URL] [--corpus DIR] [--out DIR]
+  gopress-tools deps-check
 
 P0.7: diff compares the PHP oracle against GoPress (both may point at the oracle).
+P0.8: deps-check enforces deps/allowlist.yaml and third_party LICENSE.txt.
 `)
 }
