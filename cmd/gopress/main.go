@@ -2,10 +2,15 @@
 package main
 
 import (
+	"context"
 	"flag"
 	"fmt"
+	"log"
 	"net/http"
 	"os"
+
+	"github.com/robertbaehr/GoPress/internal/config"
+	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
 const version = "0.0.0-dev"
@@ -43,6 +48,22 @@ func serveCmd(args []string) {
 	addr := fs.String("addr", ":8080", "listen address")
 	root := fs.String("root", ".", "WordPress root (ABSPATH)")
 	_ = fs.Parse(args)
+
+	cfg, err := config.Load(config.LoadOptions{Root: *root})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "config: %v\n", err)
+		os.Exit(1)
+	}
+
+	wpCtx, err := wp.Boot(context.Background(), cfg)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "boot: %v\n", err)
+		os.Exit(1)
+	}
+	defer func() { _ = wpCtx.DB.Close() }()
+
+	blogname, _ := wpCtx.Options.GetOption("blogname", "").(string)
+	log.Printf("gopress boot ok root=%s db=%s blogname=%q", *root, cfg.DBName, blogname)
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
