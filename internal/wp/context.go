@@ -36,7 +36,7 @@ type Context struct {
 	Cache *ObjectCache
 
 	// Options is the options API (P1.7).
-	Options any
+	Options *Options
 
 	// Meta is the metadata API (P1.8).
 	Meta any
