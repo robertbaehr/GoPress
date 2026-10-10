@@ -3739,22 +3739,85 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 				paged = c.Scope.Paged
 				offset = (paged-1)*limit + q.Offset
 			}
+			// P5.85: non-inherit query block args (search/author/order/sticky/exclude/format).
+			if !q.Inherit {
+				if q.Search != "" {
+					search = q.Search
+				}
+				if q.Author > 0 {
+					authorID = q.Author
+				}
+			}
 			// Sticky posts are prepended on page 1 only (WP main query / P3.26).
 			stickyFirst := postType == "post" && search == "" && year == 0 && authorID == 0 && tagSlug == "" && catSlug == "" && paged <= 1
-			posts, err := wp.GetPosts(c, wp.QueryArgs{
-				PostType:     postType,
-				PostStatus:   "publish",
-				PostsPerPage: limit,
-				Offset:       offset,
-				Search:       search,
-				Year:         year,
-				MonthNum:     month,
-				Day:          day,
-				Author:       authorID,
-				Tag:          tagSlug,
-				Category:     catSlug,
-				StickyFirst:  stickyFirst,
-			})
+			ignoreSticky := false
+			postNotIn := append([]int64(nil), q.Exclude...)
+			var postIn []int64
+			switch q.Sticky {
+			case "only":
+				stickyFirst = false
+				ignoreSticky = true
+				postIn = wp.StickyPostIDs(c)
+				if len(postIn) == 0 {
+					postIn = []int64{0}
+				}
+			case "exclude":
+				stickyFirst = false
+				ignoreSticky = true
+				postNotIn = append(postNotIn, wp.StickyPostIDs(c)...)
+			case "ignore":
+				stickyFirst = false
+				ignoreSticky = true
+			}
+			order := q.Order
+			orderBy := q.OrderBy
+			if order == "" {
+				order = "desc"
+			}
+			if orderBy == "" {
+				orderBy = "date"
+			}
+			var formatIn []string
+			formatStandard := false
+			for _, f := range q.Format {
+				f = strings.TrimSpace(strings.ToLower(f))
+				if f == "" {
+					continue
+				}
+				if f == "standard" {
+					formatStandard = true
+					continue
+				}
+				if !strings.HasPrefix(f, "post-format-") {
+					f = "post-format-" + f
+				}
+				formatIn = append(formatIn, f)
+			}
+			qa := wp.QueryArgs{
+				PostType:           postType,
+				PostStatus:         "publish",
+				PostsPerPage:       limit,
+				Offset:             offset,
+				Search:             search,
+				Year:               year,
+				MonthNum:           month,
+				Day:                day,
+				Author:             authorID,
+				Tag:                tagSlug,
+				Category:           catSlug,
+				StickyFirst:        stickyFirst,
+				IgnoreSticky:       ignoreSticky,
+				PostIn:             postIn,
+				PostNotIn:          postNotIn,
+				Order:              order,
+				OrderBy:            orderBy,
+				PostFormatIn:       formatIn,
+				PostFormatStandard: formatStandard,
+				CategoryIn:         q.CategoryIn,
+				TagIn:              q.TagIn,
+				ParentIn:           q.Parents,
+			}
+			posts, err := wp.GetPosts(c, qa)
 			if err != nil {
 				return nil
 			}
