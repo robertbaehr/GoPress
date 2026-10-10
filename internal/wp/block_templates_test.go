@@ -11,12 +11,26 @@ import (
 
 func TestResolveBlockTemplateFromDB(t *testing.T) {
 	c := bootWP(t)
-	content, ok := wp.ResolveBlockTemplate(c, "home", "index")
+	// Theme has home.html, so home→index hierarchy prefers the theme home file.
+	// Resolving only "index" should hit the fixture's customized wp_template.
+	content, ok := wp.ResolveBlockTemplate(c, "index")
 	if !ok {
 		t.Fatal("expected fixture wp_template index")
 	}
 	if !strings.Contains(content, "Customized index template") {
 		t.Fatalf("want DB customized content, got %q", content)
+	}
+}
+
+func TestResolveBlockTemplateHomePrefersThemeHome(t *testing.T) {
+	c := bootWP(t)
+	content, ok := wp.ResolveBlockTemplate(c, "home", "index")
+	if !ok {
+		t.Fatal("expected home or index template")
+	}
+	// TT5 ships templates/home.html; that beats a customized index post.
+	if !strings.Contains(content, `wp:pattern {"slug":"twentytwentyfive/template-query-loop"}`) {
+		t.Fatalf("want theme home.html, got %q", content[:min(120, len(content))])
 	}
 }
 

@@ -42,12 +42,18 @@ func TestFrontHomeRendersBlogname(t *testing.T) {
 	if !strings.Contains(body, "<title>") || !strings.Contains(body, "GoPress Fixture") {
 		t.Fatalf("expected blogname in HTML, got %q", body)
 	}
-	// P5.5: fixture has a customized wp_template "index" — render that instead of shim.
-	if !strings.Contains(body, "Customized index template") {
-		t.Fatalf("expected block template content, got %q", body)
+	// P5.5: active theme has templates/home.html — render blocks instead of shim.
+	if !strings.Contains(body, `class="wp-template"`) {
+		t.Fatalf("expected wp-template body, got %q", body)
+	}
+	if !strings.Contains(body, "wp-block-group") {
+		t.Fatalf("expected rendered block template markup, got %q", body)
 	}
 	if strings.Contains(body, "<!-- wp:") {
 		t.Fatalf("block comments should be rendered away, got %q", body)
+	}
+	if strings.Contains(body, `<ul class="posts">`) {
+		t.Fatalf("shim home should not render when a block template exists")
 	}
 	if ct := rec.Header().Get("Content-Type"); !strings.Contains(ct, "text/html") {
 		t.Fatalf("content-type=%q", ct)
