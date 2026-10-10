@@ -6483,3 +6483,12 @@ wp-login.php#language-switcher-post
   task: P10.113
   api: n/a
   notes: "P10.113 — regenerate porting-status after stacked P5.101–P10.112"
+
+
+# P10.114: expand diff corpus after P5.102–P9.22.
+- prefix: tests/corpus/#p10-114
+  go: tests/corpus/
+  status: partial
+  task: P10.114
+  api: n/a
+  notes: "P10.114 — users/settings/login/heartbeat/types; drop flaky options-* cookies; grow after P5.102–P9.22"
