@@ -164,3 +164,43 @@ func TestValidateRedirectRejectsBadSchemesAndNewlines(t *testing.T) {
 		t.Fatalf("newline survived: %q", got)
 	}
 }
+
+func TestSafeRedirectLocation(t *testing.T) {
+	c := bootWP(t)
+	got := wp.SafeRedirectLocation(c, "/wp-admin/edit.php", 302)
+	if got != "/wp-admin/edit.php" {
+		t.Fatalf("same-origin=%q", got)
+	}
+	admin := wp.AdminURL(c, "")
+	got = wp.SafeRedirectLocation(c, "https://evil.example/phish", 302)
+	if got != admin {
+		t.Fatalf("external fallback=%q want %q", got, admin)
+	}
+	c.Hooks.AddFilter("wp_safe_redirect_fallback", func(value any, args ...any) any {
+		return "/custom-fallback/"
+	}, 10, 2)
+	got = wp.SafeRedirectLocation(c, "https://evil.example/", 302)
+	if got != "/custom-fallback/" {
+		t.Fatalf("filtered fallback=%q", got)
+	}
+}
+
+func TestSafeRedirectWritesHeaders(t *testing.T) {
+	c := bootWP(t)
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	ok := wp.SafeRedirect(rec, req, c, "/wp-admin/", 302)
+	if !ok {
+		t.Fatal("SafeRedirect returned false")
+	}
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	if loc := rec.Header().Get("Location"); loc != "/wp-admin/" {
+		t.Fatalf("Location=%q", loc)
+	}
+	if by := rec.Header().Get("X-Redirect-By"); by != "WordPress" {
+		t.Fatalf("X-Redirect-By=%q", by)
+	}
+}

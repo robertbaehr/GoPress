@@ -8,6 +8,9 @@ import (
 	"strings"
 )
 
+// Default redirect status used by Redirect / SafeRedirect (wp_redirect).
+const DefaultRedirectStatus = http.StatusFound
+
 // GetRawReferer returns the unvalidated referer from `_wp_http_referer`
 // (query or POST body) or the HTTP Referer header (wp_get_raw_referer, P2.74).
 //
@@ -213,4 +216,93 @@ func ValidateRedirect(c *Context, location, fallback string) string {
 		return fallback
 	}
 	return location
+}
+
+// SafeRedirectLocation mirrors wp_safe_redirect's validation step (P2.77):
+// sanitize → wp_safe_redirect_fallback filter (default admin_url) → ValidateRedirect.
+func SafeRedirectLocation(c *Context, location string, status int) string {
+	if status == 0 {
+		status = DefaultRedirectStatus
+	}
+	location = SanitizeRedirect(strings.TrimSpace(location))
+	fallback := AdminURL(c, "")
+	if fallback == "" {
+		fallback = "/wp-admin/"
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("wp_safe_redirect_fallback", fallback, status); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				fallback = s
+			}
+		}
+	}
+	return ValidateRedirect(c, location, fallback)
+}
+
+// SafeRedirect validates location then redirects (wp_safe_redirect, P2.77).
+// Returns false when the redirect was canceled (empty location after filters).
+func SafeRedirect(w http.ResponseWriter, r *http.Request, c *Context, location string, status int) bool {
+	if status == 0 {
+		status = DefaultRedirectStatus
+	}
+	location = SafeRedirectLocation(c, location, status)
+	return Redirect(w, r, c, location, status, "WordPress")
+}
+
+// Redirect mirrors wp_redirect subset (P2.77): wp_redirect / wp_redirect_status /
+// x_redirect_by filters, then Location + optional X-Redirect-By headers.
+func Redirect(w http.ResponseWriter, r *http.Request, c *Context, location string, status int, xRedirectBy string) bool {
+	if w == nil {
+		return false
+	}
+	if status == 0 {
+		status = DefaultRedirectStatus
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("wp_redirect", location, status); v != nil {
+			if s, ok := v.(string); ok {
+				location = s
+			}
+		}
+		if v := c.Hooks.ApplyFilters("wp_redirect_status", status, location); v != nil {
+			switch t := v.(type) {
+			case int:
+				status = t
+			case int64:
+				status = int(t)
+			}
+		}
+	}
+	location = SanitizeRedirect(strings.TrimSpace(location))
+	if location == "" {
+		return false
+	}
+	if status < 300 || status > 399 {
+		status = DefaultRedirectStatus
+	}
+	if xRedirectBy == "" {
+		xRedirectBy = "WordPress"
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("x_redirect_by", xRedirectBy, status, location); v != nil {
+			switch t := v.(type) {
+			case string:
+				xRedirectBy = t
+			case bool:
+				if !t {
+					xRedirectBy = ""
+				}
+			case nil:
+				xRedirectBy = ""
+			}
+		}
+	}
+	if xRedirectBy != "" {
+		w.Header().Set("X-Redirect-By", xRedirectBy)
+	}
+	if r == nil {
+		r = &http.Request{}
+	}
+	http.Redirect(w, r, location, status)
+	return true
 }
