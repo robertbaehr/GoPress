@@ -37,6 +37,7 @@ func Register(p Plugin) {
 }
 
 // LoadActive loads must-use plugins then active_plugins shims.
+// Fires plugin_loaded for each activated shim and plugins_loaded after (P9.23).
 func LoadActive(c *wp.Context) error {
 	if err := LoadMUPlugins(c); err != nil {
 		return err
@@ -54,6 +55,9 @@ func LoadActive(c *wp.Context) error {
 	// P9.17: Plugin Updates from wordpress.org (update.php) are N/A.
 	CheckPluginUpdateGone(c)
 	if c == nil || c.Options == nil {
+		if c != nil && c.Hooks != nil {
+			c.Hooks.DoAction("plugins_loaded")
+		}
 		return nil
 	}
 	files, err := ActivePluginFiles(c)
@@ -62,6 +66,14 @@ func LoadActive(c *wp.Context) error {
 	}
 	for _, file := range files {
 		activateRegistered(c, file)
+		// P9.23: WP fires plugin_loaded after each plugin include.
+		if c.Hooks != nil {
+			c.Hooks.DoAction("plugin_loaded", file)
+		}
+	}
+	// P9.23: WP fires plugins_loaded after all active plugins are loaded.
+	if c.Hooks != nil {
+		c.Hooks.DoAction("plugins_loaded")
 	}
 	return nil
 }

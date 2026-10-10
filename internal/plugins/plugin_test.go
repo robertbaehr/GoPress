@@ -223,3 +223,76 @@ func TestDashboardShowsDollyWhenActive(t *testing.T) {
 		t.Fatalf("expected dolly in dashboard, got %q", rec.Body.String())
 	}
 }
+
+func TestLoadActivePluginsLoadedHooks(t *testing.T) {
+	// P9.23: plugin_loaded per file + plugins_loaded after LoadActive.
+	c := bootOrSkip(t)
+	serialized := `a:1:{i:0;s:9:"hello.php";}`
+	if _, err := c.Options.UpdateOption("active_plugins", serialized, "yes"); err != nil {
+		t.Fatalf("UpdateOption: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = c.Options.UpdateOption("active_plugins", `a:0:{}`, "yes")
+	})
+	var loadedFiles []string
+	pluginsLoaded := false
+	c.Hooks.AddAction("plugin_loaded", func(args ...any) {
+		if len(args) > 0 {
+			if s, ok := args[0].(string); ok {
+				loadedFiles = append(loadedFiles, s)
+			}
+		}
+	}, 10, 1)
+	c.Hooks.AddAction("plugins_loaded", func(args ...any) { pluginsLoaded = true }, 10, 0)
+	if err := plugins.LoadActive(c); err != nil {
+		t.Fatal(err)
+	}
+	if !pluginsLoaded {
+		t.Fatal("expected plugins_loaded")
+	}
+	found := false
+	for _, f := range loadedFiles {
+		if f == "hello.php" {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected plugin_loaded hello.php, got %v", loadedFiles)
+	}
+}
+
+func TestListInstalledPluginsAllPluginsFilter(t *testing.T) {
+	// P9.23: all_plugins filter on ListInstalledPlugins.
+	c := bootOrSkip(t)
+	c.Hooks.AddFilter("all_plugins", func(value any, _ ...any) any {
+		list, ok := value.([]plugins.PluginData)
+		if !ok {
+			return value
+		}
+		out := make([]plugins.PluginData, 0, len(list))
+		for _, p := range list {
+			if p.File == "hello.php" {
+				p.Name = "Filtered Dolly"
+			}
+			out = append(out, p)
+		}
+		return out
+	}, 10, 1)
+	list, err := plugins.ListInstalledPlugins(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, p := range list {
+		if p.File == "hello.php" {
+			found = true
+			if p.Name != "Filtered Dolly" {
+				t.Fatalf("name=%q", p.Name)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("hello.php missing from %v", list)
+	}
+}
