@@ -90,13 +90,40 @@ func ReadImageMetadata(c *Context, file string) (map[string]any, bool) {
 	return meta, true
 }
 
-// GenerateAttachmentMetadata builds a minimal wp_generate_attachment_metadata bag (P8.25).
-// For images: width/height/file/sizes{}/image_meta. Non-images return filesize-only when possible.
+// Filesize returns the file size in bytes (wp_filesize, P8.26).
+// Returns 0 when the path is missing or unreadable.
+func Filesize(file string) int64 {
+	file = strings.TrimSpace(file)
+	if file == "" {
+		return 0
+	}
+	st, err := os.Stat(file)
+	if err != nil || st.IsDir() {
+		return 0
+	}
+	return st.Size()
+}
+
+// GenerateAttachmentMetadata builds a minimal wp_generate_attachment_metadata bag (P8.25 / P8.26).
+// For images: width/height/file/sizes{}/image_meta/filesize.
+// Non-images: file + filesize when the path exists.
 func GenerateAttachmentMetadata(c *Context, attachmentID int64, file string) map[string]any {
+	return generateAttachmentMetadata(c, attachmentID, file, "create")
+}
+
+// UpdateAttachmentMetadata regenerates metadata with context "update" (P8.26).
+func UpdateAttachmentMetadata(c *Context, attachmentID int64, file string) map[string]any {
+	return generateAttachmentMetadata(c, attachmentID, file, "update")
+}
+
+func generateAttachmentMetadata(c *Context, attachmentID int64, file, context string) map[string]any {
 	out := map[string]any{}
 	file = strings.TrimSpace(file)
 	if file == "" {
 		return out
+	}
+	if context == "" {
+		context = "create"
 	}
 	rel := file
 	if c != nil {
@@ -131,9 +158,13 @@ func GenerateAttachmentMetadata(c *Context, attachmentID int64, file string) map
 	} else {
 		out["file"] = rel
 	}
+	// P8.26: always capture filesize when the file exists (WP 6.0+).
+	if fs := Filesize(file); fs > 0 {
+		out["filesize"] = fs
+	}
 
 	if c != nil && c.Hooks != nil {
-		filtered := c.Hooks.ApplyFilters("wp_generate_attachment_metadata", out, attachmentID, "create")
+		filtered := c.Hooks.ApplyFilters("wp_generate_attachment_metadata", out, attachmentID, context)
 		if m, ok := filtered.(map[string]any); ok {
 			out = m
 		}
