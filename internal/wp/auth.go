@@ -29,12 +29,36 @@ func NewAuth(cfg *config.Config) *Auth {
 	return &Auth{Config: cfg}
 }
 
-// Salt returns the concatenated key+salt for a scheme (wp_salt).
+// Salt returns the concatenated key+salt for a scheme (wp_salt / P2.1 / P2.100).
+// Known schemes use AUTH_* / SECURE_AUTH_* / LOGGED_IN_* / NONCE_* key+salt.
+// Unknown schemes use SECRET_KEY (or AUTH_KEY fallback) + HMAC-MD5(scheme, key),
+// matching pluggable.php's hash_hmac('md5', $scheme, $key) path.
 func (a *Auth) Salt(scheme string) string {
 	if a == nil || a.Config == nil {
 		return ""
 	}
-	return a.Config.Salt(scheme)
+	switch scheme {
+	case "auth", "secure_auth", "logged_in", "nonce":
+		return a.Config.Salt(scheme)
+	default:
+		key := a.secretKey()
+		mac := hmac.New(md5.New, []byte(key))
+		mac.Write([]byte(scheme))
+		return key + hex.EncodeToString(mac.Sum(nil))
+	}
+}
+
+// secretKey returns SECRET_KEY from config Extra, else AUTH_KEY (P2.100).
+func (a *Auth) secretKey() string {
+	if a == nil || a.Config == nil {
+		return ""
+	}
+	if a.Config.Extra != nil {
+		if sk := strings.TrimSpace(a.Config.Extra["SECRET_KEY"]); sk != "" {
+			return sk
+		}
+	}
+	return a.Config.AuthKey
 }
 
 // Hash returns HMAC-MD5 hex of data keyed by the scheme salt (wp_hash default algo).

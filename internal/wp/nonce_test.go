@@ -1,6 +1,9 @@
 package wp_test
 
 import (
+	"crypto/hmac"
+	"crypto/md5"
+	"encoding/hex"
 	"testing"
 	"time"
 
@@ -117,5 +120,41 @@ func TestNonceLifeFilterShortensTick(t *testing.T) {
 	nonce := c.CreateNonce("update-post")
 	if got := c.VerifyNonce(nonce, "update-post"); got != 1 {
 		t.Fatalf("VerifyNonce=%d want 1", got)
+	}
+}
+
+func TestSaltUnknownSchemeAndFilter(t *testing.T) {
+	// P2.100: unknown schemes use SECRET_KEY/AUTH_KEY + HMAC-MD5; salt filter applies.
+	c := bootWP(t)
+	if c.Auth == nil || c.Auth.Config == nil {
+		t.Fatal("missing auth config")
+	}
+	key := c.Auth.Config.AuthKey
+	mac := hmac.New(md5.New, []byte(key))
+	mac.Write([]byte("custom"))
+	want := key + hex.EncodeToString(mac.Sum(nil))
+	got := c.Auth.Salt("custom")
+	if got != want {
+		t.Fatalf("unknown scheme salt=%q want %q", got, want)
+	}
+	// Known schemes unchanged.
+	if c.Auth.Salt("auth") != c.Auth.Config.AuthKey+c.Auth.Config.AuthSalt {
+		t.Fatalf("auth scheme drifted: %q", c.Auth.Salt("auth"))
+	}
+
+	seenScheme := ""
+	c.Hooks.AddFilter("salt", func(value any, args ...any) any {
+		if len(args) > 0 {
+			if s, ok := args[0].(string); ok {
+				seenScheme = s
+			}
+		}
+		return "filtered-salt"
+	}, 10, 2)
+	if got := c.Salt("auth"); got != "filtered-salt" {
+		t.Fatalf("Context.Salt=%q want filtered-salt", got)
+	}
+	if seenScheme != "auth" {
+		t.Fatalf("filter scheme=%q", seenScheme)
 	}
 }
