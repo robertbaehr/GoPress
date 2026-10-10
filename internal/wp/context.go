@@ -85,6 +85,10 @@ type Context struct {
 	// CurrentUser is the authenticated user for this request (P2.2+).
 	CurrentUser *User
 
+	// AuthenticatedAppPasswordUUID is set when Basic auth used an application password (P4.110).
+	// Mirrors $wp_rest_application_password_uuid / rest_get_authenticated_app_password().
+	AuthenticatedAppPasswordUUID string
+
 	// SessionToken is the session token from the auth cookie (P2.4+/P7.2).
 	SessionToken string
 

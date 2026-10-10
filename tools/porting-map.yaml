@@ -498,17 +498,27 @@ wp-login.php#language-switcher-post
   api: exported
 
 # P2.21: wp_check_password covers $wp$ / phpass; application passwords reuse it.
+# P4.110: introspect + AuthenticatedAppPasswordUUID + last_used recording.
 - prefix: wp-includes/class-wp-application-passwords.php
   go: internal/wp/application_passwords.go
   status: partial
-  task: P4.43
+  task: P4.110
   api: exported
+  notes: "P4.110 — MatchApplicationPasswordUUID; RecordApplicationPasswordUsage; auth UUID"
 
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-application-passwords-controller.php
   go: internal/rest/application_passwords.go
   status: partial
-  task: P4.43
+  task: P4.110
   api: exported
+  notes: "P4.110 — GET .../application-passwords/introspect"
+
+- prefix: wp-includes/rest-api.php#rest_get_authenticated_app_password
+  go: internal/wp/application_passwords.go
+  status: partial
+  task: P4.110
+  api: exported
+  notes: "P4.110 — Context.AuthenticatedAppPasswordUUID / GetAuthenticatedAppPasswordUUID"
 
 # P4.44: POST /wp/v2/categories and /wp/v2/tags for editors (manage_categories).
 # P4.65: DELETE /wp/v2/categories/{id} and /wp/v2/tags/{id} (force=true).

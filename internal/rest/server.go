@@ -881,6 +881,13 @@ func builtInIndexRoutes() map[string]RouteIndex {
 				{Methods: []string{"DELETE"}},
 			},
 		},
+		"/wp/v2/users/(?P<user_id>(?:[\\d]+|me))/application-passwords/introspect": {
+			Namespace: "wp/v2",
+			Methods:   []string{"GET"},
+			Endpoints: []RouteEndpoint{
+				{Methods: []string{"GET"}},
+			},
+		},
 	}
 }
 

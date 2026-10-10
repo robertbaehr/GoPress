@@ -24,11 +24,7 @@ func (s *Server) serveApplicationPasswords(w http.ResponseWriter, r *http.Reques
 		return
 	}
 	if uuid == "introspect" {
-		writeJSON(w, http.StatusNotFound, map[string]any{
-			"code":    "rest_no_authenticated_app_password",
-			"message": "Cannot introspect application password.",
-			"data":    map[string]any{"status": 404},
-		})
+		s.serveApplicationPasswordIntrospect(w, r, c, user)
 		return
 	}
 	if uuid != "" {
@@ -119,6 +115,60 @@ func (s *Server) serveApplicationPasswords(w http.ResponseWriter, r *http.Reques
 			"data":    map[string]any{"status": 405},
 		})
 	}
+}
+
+// serveApplicationPasswordIntrospect is GET .../application-passwords/introspect (P4.110).
+func (s *Server) serveApplicationPasswordIntrospect(w http.ResponseWriter, r *http.Request, c *wp.Context, user *wp.User) {
+	if r.Method != http.MethodGet {
+		w.Header().Set("Allow", "GET")
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
+			"code":    "rest_no_route",
+			"message": "No route was found matching the URL and request method.",
+			"data":    map[string]any{"status": 405},
+		})
+		return
+	}
+	// Authenticated app password can only be introspected for the current user.
+	if c == nil || c.CurrentUser == nil || user == nil || c.CurrentUser.ID != user.ID {
+		status := http.StatusUnauthorized
+		if c != nil && c.CurrentUser != nil {
+			status = http.StatusForbidden
+		}
+		writeJSON(w, status, map[string]any{
+			"code":    "rest_cannot_introspect_app_password_for_non_authenticated_user",
+			"message": "The authenticated application password can only be introspected for the current user.",
+			"data":    map[string]any{"status": status},
+		})
+		return
+	}
+	authUUID := c.GetAuthenticatedAppPasswordUUID()
+	if authUUID == "" {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"code":    "rest_no_authenticated_app_password",
+			"message": "Cannot introspect application password.",
+			"data":    map[string]any{"status": 404},
+		})
+		return
+	}
+	item, err := wp.GetUserApplicationPassword(c, user.ID, authUUID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_application_password_error",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	if item == nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_application_password_not_found",
+			"message": "Application password not found.",
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	w.Header().Set("Allow", "GET")
+	writeJSON(w, http.StatusOK, prepareApplicationPassword(c, user, *item, ""))
 }
 
 func (s *Server) serveApplicationPasswordItem(w http.ResponseWriter, r *http.Request, c *wp.Context, user *wp.User, uuid string) {

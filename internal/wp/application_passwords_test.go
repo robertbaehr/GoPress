@@ -80,4 +80,7 @@ func TestAuthenticateApplicationPasswordBasic(t *testing.T) {
 	if rc.CurrentUser == nil || rc.CurrentUser.ID != 1 {
 		t.Fatalf("expected admin, got %+v", rc.CurrentUser)
 	}
+	if rc.GetAuthenticatedAppPasswordUUID() == "" {
+		t.Fatal("expected AuthenticatedAppPasswordUUID after Basic auth")
+	}
 }
