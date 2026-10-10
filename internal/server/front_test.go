@@ -12,9 +12,10 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-func TestFrontHomeRendersBlogname(t *testing.T) {
+func testBoot(t *testing.T) *wp.Context {
+	t.Helper()
 	cfg := &config.Config{
-		DBName: "gopress_ref", DBUser: "gopress", DBPassword: "gopress",
+		DBName: "gopress_go", DBUser: "gopress", DBPassword: "gopress",
 		DBHost: "127.0.0.1:3306", DBCharset: "utf8mb4", TablePrefix: "wp_",
 		ABSPATH: "/workspace/",
 		AuthKey: "k", SecureAuthKey: "k", LoggedInKey: "k", NonceKey: "k",
@@ -24,9 +25,13 @@ func TestFrontHomeRendersBlogname(t *testing.T) {
 	if err != nil {
 		t.Skipf("Boot unavailable: %v", err)
 	}
-	defer c.DB.Close()
+	t.Cleanup(func() { _ = c.DB.Close() })
+	return c
+}
 
-	srv := &server.Server{WP: c, AbsPath: cfg.ABSPATH, Front: &server.Front{}}
+func TestFrontHomeRendersBlogname(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
 	rec := httptest.NewRecorder()
 	srv.ServeHTTP(rec, req)
@@ -42,5 +47,65 @@ func TestFrontHomeRendersBlogname(t *testing.T) {
 	}
 	if ct := rec.Header().Get("Content-Type"); !strings.Contains(ct, "text/html") {
 		t.Fatalf("content-type=%q", ct)
+	}
+}
+
+func TestFrontSingularByQueryP(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?p=1", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "Hello world!") {
+		t.Fatalf("expected title, got %q", body)
+	}
+	if !strings.Contains(body, "entry-content") || !strings.Contains(body, "Welcome to WordPress") {
+		t.Fatalf("expected content, got %q", body)
+	}
+}
+
+func TestFrontSingularByPageID(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?page_id=2", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "Sample Page") {
+		t.Fatalf("expected Sample Page, got %q", rec.Body.String())
+	}
+}
+
+func TestFrontSingularByPrettyPermalink(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/2024/06/15/hello-world/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "Hello world!") {
+		t.Fatalf("expected Hello world!, got %q", rec.Body.String())
+	}
+}
+
+func TestFrontSingular404(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?p=999999999", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "Page not found") {
+		t.Fatalf("expected 404 page, got %q", rec.Body.String())
 	}
 }
