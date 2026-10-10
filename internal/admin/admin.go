@@ -1193,35 +1193,7 @@ func (h *Handler) serveOptionsPHP(w http.ResponseWriter, r *http.Request, c *wp.
 		http.Redirect(w, r, "/wp-admin/options-writing.php?settings-updated=true", http.StatusFound)
 		return
 	case "reading":
-		if c.Options != nil {
-			show := strings.TrimSpace(r.Form.Get("show_on_front"))
-			if show != "page" {
-				show = "posts"
-			}
-			_, _ = c.Options.UpdateOption("show_on_front", show, "yes")
-			// P3.80: static front page + posts page IDs.
-			pageOnFront := strings.TrimSpace(r.Form.Get("page_on_front"))
-			if pageOnFront == "" {
-				pageOnFront = "0"
-			}
-			_, _ = c.Options.UpdateOption("page_on_front", pageOnFront, "yes")
-			pageForPosts := strings.TrimSpace(r.Form.Get("page_for_posts"))
-			if pageForPosts == "" {
-				pageForPosts = "0"
-			}
-			_, _ = c.Options.UpdateOption("page_for_posts", pageForPosts, "yes")
-			ppp := strings.TrimSpace(r.Form.Get("posts_per_page"))
-			if ppp == "" {
-				ppp = "10"
-			}
-			_, _ = c.Options.UpdateOption("posts_per_page", ppp, "yes")
-			// Unchecked checkbox omits the field → blog_public=1 (allow indexing).
-			blogPublic := "1"
-			if _, ok := r.Form["blog_public"]; ok {
-				blogPublic = "0"
-			}
-			_, _ = c.Options.UpdateOption("blog_public", blogPublic, "yes")
-		}
+		saveReadingOptions(c, r)
 		http.Redirect(w, r, "/wp-admin/options-reading.php?settings-updated=true", http.StatusFound)
 		return
 	case "discussion":
@@ -1440,13 +1412,69 @@ func (h *Handler) serveOptionsWriting(w http.ResponseWriter, r *http.Request, c 
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveOptionsReading is the Settings → Reading screen stub (P7.14 / P7.49 / P3.80).
+// saveReadingOptions persists Settings → Reading fields (P7.49 / P7.104).
+func saveReadingOptions(c *wp.Context, r *http.Request) {
+	if c == nil || c.Options == nil || r == nil {
+		return
+	}
+	show := strings.TrimSpace(r.Form.Get("show_on_front"))
+	if show != "page" {
+		show = "posts"
+	}
+	_, _ = c.Options.UpdateOption("show_on_front", show, "yes")
+	// P3.80: static front page + posts page IDs.
+	pageOnFront := strings.TrimSpace(r.Form.Get("page_on_front"))
+	if pageOnFront == "" {
+		pageOnFront = "0"
+	}
+	_, _ = c.Options.UpdateOption("page_on_front", pageOnFront, "yes")
+	pageForPosts := strings.TrimSpace(r.Form.Get("page_for_posts"))
+	if pageForPosts == "" {
+		pageForPosts = "0"
+	}
+	_, _ = c.Options.UpdateOption("page_for_posts", pageForPosts, "yes")
+	ppp := strings.TrimSpace(r.Form.Get("posts_per_page"))
+	if ppp == "" {
+		ppp = "10"
+	}
+	_, _ = c.Options.UpdateOption("posts_per_page", ppp, "yes")
+	// P7.104: syndication feed counts + excerpt vs full text.
+	if _, ok := r.Form["posts_per_rss"]; ok {
+		ppr := strings.TrimSpace(r.Form.Get("posts_per_rss"))
+		if ppr == "" {
+			ppr = "10"
+		}
+		_, _ = c.Options.UpdateOption("posts_per_rss", ppr, "yes")
+	}
+	if _, ok := r.Form["rss_use_excerpt"]; ok {
+		excerpt := strings.TrimSpace(r.Form.Get("rss_use_excerpt"))
+		if excerpt != "1" {
+			excerpt = "0"
+		}
+		_, _ = c.Options.UpdateOption("rss_use_excerpt", excerpt, "yes")
+	}
+	// Unchecked checkbox omits the field → blog_public=1 (allow indexing).
+	blogPublic := "1"
+	if _, ok := r.Form["blog_public"]; ok {
+		blogPublic = "0"
+	}
+	_, _ = c.Options.UpdateOption("blog_public", blogPublic, "yes")
+}
+
+// serveOptionsReading is the Settings → Reading screen stub (P7.14 / P7.49 / P7.104 / P3.80).
 func (h *Handler) serveOptionsReading(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	// P7.104: manage_options gate (mirrors options-reading.php wp_die).
+	if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "manage_options") {
+		http.Error(w, "Sorry, you are not allowed to manage options for this site.\n", http.StatusForbidden)
+		return
+	}
 	blogname := optionString(c, "blogname", "GoPress")
 	showOnFront := optionString(c, "show_on_front", "posts")
 	pageOnFront := optionString(c, "page_on_front", "0")
 	pageForPosts := optionString(c, "page_for_posts", "0")
 	postsPerPage := optionString(c, "posts_per_page", "10")
+	postsPerRSS := optionString(c, "posts_per_rss", "10")
+	rssUseExcerpt := optionString(c, "rss_use_excerpt", "0")
 	blogPublic := optionString(c, "blog_public", "1")
 	pages, _ := wp.ListPublishedPages(c, 100)
 	var b strings.Builder
@@ -1511,6 +1539,22 @@ func (h *Handler) serveOptionsReading(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString("<td><input name=\"posts_per_page\" type=\"number\" step=\"1\" min=\"1\" id=\"posts_per_page\" value=\"")
 	b.WriteString(html.EscapeString(postsPerPage))
 	b.WriteString("\" class=\"small-text\"> posts</td>\n</tr>\n")
+	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"posts_per_rss\">Syndication feeds show the most recent</label></th>\n")
+	b.WriteString("<td><input name=\"posts_per_rss\" type=\"number\" step=\"1\" min=\"1\" id=\"posts_per_rss\" value=\"")
+	b.WriteString(html.EscapeString(postsPerRSS))
+	b.WriteString("\" class=\"small-text\"> items</td>\n</tr>\n")
+	b.WriteString("<tr>\n<th scope=\"row\">For each post in a feed, include</th>\n<td><fieldset>\n")
+	b.WriteString("<label><input id=\"rss-use-full-text\" name=\"rss_use_excerpt\" type=\"radio\" value=\"0\"")
+	if rssUseExcerpt != "1" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString("> Full text</label><br>\n")
+	b.WriteString("<label><input id=\"rss-use-excerpt\" name=\"rss_use_excerpt\" type=\"radio\" value=\"1\"")
+	if rssUseExcerpt == "1" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString("> Excerpt</label>\n")
+	b.WriteString("</fieldset></td>\n</tr>\n")
 	b.WriteString("<tr>\n<th scope=\"row\">Search engine visibility</th>\n<td>\n")
 	b.WriteString("<label for=\"blog_public\"><input name=\"blog_public\" type=\"checkbox\" id=\"blog_public\" value=\"0\"")
 	if blogPublic == "0" {
