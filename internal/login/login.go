@@ -469,14 +469,14 @@ func (h *Handler) serveLostPassword(w http.ResponseWriter, r *http.Request, c *w
 	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Lost Password</h1>\n")
 	b.WriteString("\t\t\t<div id=\"login\">\n")
 	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
+	// WP always shows the info message via login_header, then any WP_Error notices.
+	b.WriteString("<div class=\"notice notice-info message\"><p>Please enter your username or email address. You will receive an email message with instructions on how to reset your password.</p></div>\n")
 	if errMsg != "" {
-		b.WriteString("<div id=\"login_error\"><strong>Error:</strong> ")
+		b.WriteString("<div class=\"notice notice-error\" id=\"login_error\"><p><strong>Error:</strong> ")
 		b.WriteString(html.EscapeString(errMsg))
-		b.WriteString("<br /></div>\n")
-	} else {
-		b.WriteString("<div class=\"notice notice-info message\"><p>Please enter your username or email address. You will receive an email message with instructions on how to reset your password.</p></div>\n")
+		b.WriteString("</p></div>\n")
 	}
-	b.WriteString("\n")
+	b.WriteString("\t\t")
 	b.WriteString("\t\t<form name=\"lostpasswordform\" id=\"lostpasswordform\" action=\"")
 	b.WriteString(html.EscapeString(actionURL))
 	b.WriteString("\" method=\"post\">\n")
