@@ -623,6 +623,13 @@
   task: P2.44
   api: exported
 
+# P2.45: wp_recursive_ksort.
+- prefix: wp-includes/functions.php#wp_recursive_ksort
+  go: internal/wp/recursive_ksort.go
+  status: done
+  task: P2.45
+  api: exported
+
 # P2.38: wp_array_slice_assoc.
 - prefix: wp-includes/functions.php#wp_array_slice_assoc
   go: internal/wp/array_slice_assoc.go
