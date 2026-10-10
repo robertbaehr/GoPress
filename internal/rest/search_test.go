@@ -237,3 +237,80 @@ func TestSearchSubtypePost(t *testing.T) {
 		}
 	}
 }
+
+func TestSearchIncludeExclude(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/search?search=&include=1&per_page=20", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("include status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var results []rest.SearchResult
+	if err := json.Unmarshal(rec.Body.Bytes(), &results); err != nil {
+		t.Fatalf("json: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("include=1 want 1 got %d: %+v", len(results), results)
+	}
+	switch id := results[0].ID.(type) {
+	case float64:
+		if int64(id) != 1 {
+			t.Fatalf("id=%v", id)
+		}
+	case int64:
+		if id != 1 {
+			t.Fatalf("id=%v", id)
+		}
+	default:
+		t.Fatalf("id type %T", results[0].ID)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/search?search=hello&exclude=1&per_page=20", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("exclude status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	results = nil
+	if err := json.Unmarshal(rec.Body.Bytes(), &results); err != nil {
+		t.Fatalf("json: %v", err)
+	}
+	for _, r := range results {
+		switch id := r.ID.(type) {
+		case float64:
+			if int64(id) == 1 {
+				t.Fatalf("exclude=1 still returned id 1")
+			}
+		case int64:
+			if id == 1 {
+				t.Fatalf("exclude=1 still returned id 1")
+			}
+		}
+	}
+}
+
+func TestSearchTermInclude(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	// Uncategorized is typically term_id 1.
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/search?type=term&include=1&per_page=10", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var results []rest.SearchResult
+	if err := json.Unmarshal(rec.Body.Bytes(), &results); err != nil {
+		t.Fatalf("json: %v", err)
+	}
+	if len(results) != 1 {
+		t.Fatalf("want 1 term, got %d: %+v", len(results), results)
+	}
+}

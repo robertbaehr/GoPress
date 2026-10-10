@@ -60,6 +60,9 @@ func (s *Server) serveSearch(w http.ResponseWriter, r *http.Request, c *wp.Conte
 	page := parsePage(r)
 	term := strings.TrimSpace(r.URL.Query().Get("search"))
 	subtype := parseSearchSubtypes(r.URL.Query()["subtype"])
+	// P4.100: include/exclude ID filters (WP_REST_Search_Controller collection params).
+	include := parsePostsInclude(r)
+	exclude := parsePostsExclude(r)
 
 	var (
 		total   int
@@ -68,17 +71,17 @@ func (s *Server) serveSearch(w http.ResponseWriter, r *http.Request, c *wp.Conte
 	)
 	switch searchType {
 	case "term":
-		total, err = countTermSearch(c, term, subtype)
+		total, err = countTermSearch(c, term, subtype, include, exclude)
 		if err == nil {
-			results, err = listTermSearchPaged(c, term, subtype, perPage, page)
+			results, err = listTermSearchPaged(c, term, subtype, include, exclude, perPage, page)
 		}
 	case "post-format":
 		total, results, err = listPostFormatSearch(c, term, perPage, page)
 	default:
 		postTypes := resolvePostSearchSubtypes(subtype)
-		total, err = countSearch(c, term, postTypes)
+		total, err = countSearch(c, term, postTypes, include, exclude)
 		if err == nil {
-			results, err = listSearchPaged(c, term, postTypes, perPage, page)
+			results, err = listSearchPaged(c, term, postTypes, include, exclude, perPage, page)
 		}
 	}
 	if err != nil {
@@ -144,7 +147,7 @@ func resolvePostSearchSubtypes(subtype []string) []string {
 	return out
 }
 
-func listSearchPaged(c *wp.Context, term string, postTypes []string, limit, page int) ([]SearchResult, error) {
+func listSearchPaged(c *wp.Context, term string, postTypes []string, include, exclude []int64, limit, page int) ([]SearchResult, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
@@ -159,18 +162,19 @@ func listSearchPaged(c *wp.Context, term string, postTypes []string, limit, page
 	}
 	offset := (page - 1) * limit
 	like := "%" + db.EscapeLike(term) + "%"
-	args := make([]any, 0, len(postTypes)+4)
+	args := make([]any, 0, len(postTypes)+len(include)+len(exclude)+4)
 	args = append(args, "publish")
 	inParts := make([]string, len(postTypes))
 	for i, pt := range postTypes {
 		inParts[i] = "%s"
 		args = append(args, pt)
 	}
+	whereExtra, args := searchIncludeExcludeSQL("ID", include, exclude, args)
 	args = append(args, like, like, limit, offset)
 	q, prepArgs, err := c.DB.Prepare(
 		"SELECT ID, post_date, post_name, post_title, post_type, post_parent FROM "+c.DB.Posts()+
 			" WHERE post_status = %s AND post_type IN ("+strings.Join(inParts, ", ")+
-			") AND (post_title LIKE %s OR post_content LIKE %s) "+
+			")"+whereExtra+" AND (post_title LIKE %s OR post_content LIKE %s) "+
 			"ORDER BY post_date DESC LIMIT %d OFFSET %d",
 		args...,
 	)
@@ -189,7 +193,7 @@ func listSearchPaged(c *wp.Context, term string, postTypes []string, limit, page
 	return out, nil
 }
 
-func countSearch(c *wp.Context, term string, postTypes []string) (int, error) {
+func countSearch(c *wp.Context, term string, postTypes []string, include, exclude []int64) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
@@ -197,18 +201,19 @@ func countSearch(c *wp.Context, term string, postTypes []string) (int, error) {
 		postTypes = append([]string(nil), publicRESTPostSearchTypes...)
 	}
 	like := "%" + db.EscapeLike(term) + "%"
-	args := make([]any, 0, len(postTypes)+3)
+	args := make([]any, 0, len(postTypes)+len(include)+len(exclude)+3)
 	args = append(args, "publish")
 	inParts := make([]string, len(postTypes))
 	for i, pt := range postTypes {
 		inParts[i] = "%s"
 		args = append(args, pt)
 	}
+	whereExtra, args := searchIncludeExcludeSQL("ID", include, exclude, args)
 	args = append(args, like, like)
 	q, prepArgs, err := c.DB.Prepare(
 		"SELECT COUNT(*) AS total FROM "+c.DB.Posts()+
 			" WHERE post_status = %s AND post_type IN ("+strings.Join(inParts, ", ")+
-			") AND (post_title LIKE %s OR post_content LIKE %s)",
+			")"+whereExtra+" AND (post_title LIKE %s OR post_content LIKE %s)",
 		args...,
 	)
 	if err != nil {
@@ -222,6 +227,28 @@ func countSearch(c *wp.Context, term string, postTypes []string) (int, error) {
 		return 0, nil
 	}
 	return int(asInt64(row["total"])), nil
+}
+
+// searchIncludeExcludeSQL appends post__in / post__not_in style clauses (P4.100).
+func searchIncludeExcludeSQL(column string, include, exclude []int64, args []any) (string, []any) {
+	var extra strings.Builder
+	if len(include) > 0 {
+		parts := make([]string, len(include))
+		for i, id := range include {
+			parts[i] = "%d"
+			args = append(args, id)
+		}
+		extra.WriteString(" AND " + column + " IN (" + strings.Join(parts, ", ") + ")")
+	}
+	if len(exclude) > 0 {
+		parts := make([]string, len(exclude))
+		for i, id := range exclude {
+			parts[i] = "%d"
+			args = append(args, id)
+		}
+		extra.WriteString(" AND " + column + " NOT IN (" + strings.Join(parts, ", ") + ")")
+	}
+	return extra.String(), args
 }
 
 func searchFromRow(c *wp.Context, row map[string]any, home string) SearchResult {
@@ -287,7 +314,7 @@ func resolveTermTaxonomies(subtype []string) []string {
 	return out
 }
 
-func listTermSearchPaged(c *wp.Context, term string, subtype []string, limit, page int) ([]SearchResult, error) {
+func listTermSearchPaged(c *wp.Context, term string, subtype []string, include, exclude []int64, limit, page int) ([]SearchResult, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
@@ -302,18 +329,19 @@ func listTermSearchPaged(c *wp.Context, term string, subtype []string, limit, pa
 	like := "%" + db.EscapeLike(term) + "%"
 
 	// Build IN list via repeated placeholders.
-	args := make([]any, 0, len(taxonomies)+3)
+	args := make([]any, 0, len(taxonomies)+len(include)+len(exclude)+3)
 	inParts := make([]string, len(taxonomies))
 	for i, tax := range taxonomies {
 		inParts[i] = "%s"
 		args = append(args, tax)
 	}
+	whereExtra, args := searchIncludeExcludeSQL("t.term_id", include, exclude, args)
 	args = append(args, like, limit, offset)
 	q, prepArgs, err := c.DB.Prepare(
 		"SELECT t.term_id, t.name, t.slug, tt.taxonomy, tt.parent FROM "+
 			c.DB.Terms()+" t INNER JOIN "+c.DB.TermTaxonomy()+
 			" tt ON t.term_id = tt.term_id WHERE tt.taxonomy IN ("+strings.Join(inParts, ", ")+
-			") AND t.name LIKE %s ORDER BY t.name ASC LIMIT %d OFFSET %d",
+			")"+whereExtra+" AND t.name LIKE %s ORDER BY t.name ASC LIMIT %d OFFSET %d",
 		args...,
 	)
 	if err != nil {
@@ -331,23 +359,24 @@ func listTermSearchPaged(c *wp.Context, term string, subtype []string, limit, pa
 	return out, nil
 }
 
-func countTermSearch(c *wp.Context, term string, subtype []string) (int, error) {
+func countTermSearch(c *wp.Context, term string, subtype []string, include, exclude []int64) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
 	taxonomies := resolveTermTaxonomies(subtype)
 	like := "%" + db.EscapeLike(term) + "%"
-	args := make([]any, 0, len(taxonomies)+1)
+	args := make([]any, 0, len(taxonomies)+len(include)+len(exclude)+1)
 	inParts := make([]string, len(taxonomies))
 	for i, tax := range taxonomies {
 		inParts[i] = "%s"
 		args = append(args, tax)
 	}
+	whereExtra, args := searchIncludeExcludeSQL("t.term_id", include, exclude, args)
 	args = append(args, like)
 	q, prepArgs, err := c.DB.Prepare(
 		"SELECT COUNT(*) AS total FROM "+c.DB.Terms()+" t INNER JOIN "+c.DB.TermTaxonomy()+
 			" tt ON t.term_id = tt.term_id WHERE tt.taxonomy IN ("+strings.Join(inParts, ", ")+
-			") AND t.name LIKE %s",
+			")"+whereExtra+" AND t.name LIKE %s",
 		args...,
 	)
 	if err != nil {
