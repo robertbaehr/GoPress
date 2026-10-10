@@ -375,6 +375,10 @@ func TestLoginPOSTBadPassword(t *testing.T) {
 	if !strings.Contains(body, "action=lostpassword") {
 		t.Fatalf("expected lost password link: %q", body)
 	}
+	// P6.28: incorrect_password is a shake_error_codes entry.
+	if !strings.Contains(body, "document.querySelector('form').classList.add('shake')") {
+		t.Fatalf("expected login shake script: %q", body)
+	}
 }
 
 func TestLoginPOSTInvalidUsername(t *testing.T) {

@@ -51,7 +51,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 			if r.URL.Query().Get("registration") == "disabled" {
 				errMsg = loginErrorHTML("registerdisabled", "User registration is currently not allowed.", "", "")
 			}
-			h.serveForm(w, r, c, errMsg)
+			h.serveForm(w, r, c, errMsg, false)
 		}
 	case http.MethodPost:
 		switch action {
@@ -242,7 +242,7 @@ func (h *Handler) serveConfirmAdminEmail(w http.ResponseWriter, r *http.Request,
 func (h *Handler) serveRegister(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	if usersCanRegister(c) {
 		// Full registration form is out of scope; still refuse until implemented.
-		h.serveForm(w, r, c, loginErrorHTML("registerdisabled", "User registration is currently not allowed.", "", ""))
+		h.serveForm(w, r, c, loginErrorHTML("registerdisabled", "User registration is currently not allowed.", "", ""), false)
 		return
 	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
@@ -302,7 +302,7 @@ func (h *Handler) serveLogout(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	http.Redirect(w, r, redirectTo, http.StatusFound)
 }
 
-func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Context, errMsg string) {
+func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Context, errMsg string, shake bool) {
 	if c != nil {
 		c.AuthenticateRequest()
 	}
@@ -421,6 +421,10 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	}
 	b.WriteString("\t\t\t</div>\n")
 	b.WriteString("\t\t\n")
+	// P6.28: wp_shake_js on shake_error_codes (adds .shake to the form).
+	if shake && errMsg != "" {
+		writeLoginShakeJS(&b)
+	}
 	writeLoginScripts(&b, home, c)
 	b.WriteString("\t</body>\n")
 	b.WriteString("\t</html>\n")
@@ -943,7 +947,7 @@ func clearAuthCookiesForReauth(w http.ResponseWriter, c *wp.Context) {
 
 func (h *Handler) servePost(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	if err := r.ParseForm(); err != nil {
-		h.serveForm(w, r, c, loginErrorHTML("invalid_form", "Invalid form submission.", "", ""))
+		h.serveForm(w, r, c, loginErrorHTML("invalid_form", "Invalid form submission.", "", ""), false)
 		return
 	}
 	login := strings.TrimSpace(r.FormValue("log"))
@@ -979,7 +983,8 @@ func (h *Handler) servePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		if home == "" {
 			lostURL = "/wp-login.php?action=lostpassword"
 		}
-		h.serveForm(w, r, c, formatLoginAuthError(err, login, password, lostURL))
+		errHTML, shake := formatLoginAuthError(err, login, password, lostURL)
+		h.serveForm(w, r, c, errHTML, shake)
 		return
 	}
 	set.WriteAuthCookies(w, "/")
@@ -992,6 +997,32 @@ func (h *Handler) servePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 
 const testCookieName = "wordpress_test_cookie"
 
+// shakeLoginErrorCodes mirrors wp-login.php $shake_error_codes (P6.28).
+var shakeLoginErrorCodes = map[string]bool{
+	"empty_password":                  true,
+	"empty_email":                     true,
+	"invalid_email":                   true,
+	"invalidcombo":                    true,
+	"empty_username":                  true,
+	"invalid_username":                true,
+	"incorrect_password":              true,
+	"retrieve_password_email_failure": true,
+}
+
+func loginShouldShake(code string) bool {
+	return shakeLoginErrorCodes[code]
+}
+
+// writeLoginShakeJS emits wp_shake_js inline script (P6.28).
+func writeLoginShakeJS(b *strings.Builder) {
+	if b == nil {
+		return
+	}
+	b.WriteString("<script>\n")
+	b.WriteString("document.querySelector('form').classList.add('shake');\n")
+	b.WriteString("</script>\n")
+}
+
 func hasTestCookie(r *http.Request) bool {
 	if r == nil {
 		return false
@@ -1000,42 +1031,45 @@ func hasTestCookie(r *http.Request) bool {
 	return err == nil && ck != nil && strings.TrimSpace(ck.Value) != ""
 }
 
-// formatLoginAuthError builds WP-shaped login_error HTML (P6.12).
-func formatLoginAuthError(err error, login, password, lostURL string) string {
+// formatLoginAuthError builds WP-shaped login_error HTML (P6.12) and whether
+// the form should shake (P6.28).
+func formatLoginAuthError(err error, login, password, lostURL string) (string, bool) {
 	ae, ok := err.(*wp.AuthError)
 	if !ok || ae == nil {
 		// Empty fields without typed error (e.g. both empty before Login change).
 		if strings.TrimSpace(login) == "" && password == "" {
-			return `<ul class="login-error-list"><li><strong>Error:</strong> The username field is empty.</li>` +
+			html := `<ul class="login-error-list"><li><strong>Error:</strong> The username field is empty.</li>` +
 				`<li><strong>Error:</strong> The password field is empty.</li></ul>`
+			return html, true // empty_username / empty_password
 		}
-		return loginErrorHTML("invalid_credentials", "The username or password you entered is incorrect.", "", "")
+		return loginErrorHTML("invalid_credentials", "The username or password you entered is incorrect.", "", ""), false
 	}
 	switch ae.Code {
 	case "empty_username":
 		if password == "" {
-			return `<ul class="login-error-list"><li><strong>Error:</strong> The username field is empty.</li>` +
+			html := `<ul class="login-error-list"><li><strong>Error:</strong> The username field is empty.</li>` +
 				`<li><strong>Error:</strong> The password field is empty.</li></ul>`
+			return html, true
 		}
-		return loginErrorHTML("empty_username", "The username field is empty.", "", "")
+		return loginErrorHTML("empty_username", "The username field is empty.", "", ""), loginShouldShake("empty_username")
 	case "empty_password":
-		return loginErrorHTML("empty_password", "The password field is empty.", "", "")
+		return loginErrorHTML("empty_password", "The password field is empty.", "", ""), loginShouldShake("empty_password")
 	case "invalid_username":
 		user := html.EscapeString(ae.Login)
 		msg := "The username <strong>" + user + "</strong> is not registered on this site. If you are unsure of your username, try your email address instead."
-		return loginErrorHTML("invalid_username", msg, "", "")
+		return loginErrorHTML("invalid_username", msg, "", ""), loginShouldShake("invalid_username")
 	case "incorrect_password":
 		user := html.EscapeString(ae.Login)
 		msg := "The password you entered for the username <strong>" + user + "</strong> is incorrect. "
 		if lostURL != "" {
 			msg += `<a href="` + html.EscapeString(lostURL) + `">Lost your password?</a>`
 		}
-		return loginErrorHTML("incorrect_password", msg, "", "")
+		return loginErrorHTML("incorrect_password", msg, "", ""), loginShouldShake("incorrect_password")
 	case "test_cookie":
 		msg := `Cookies are blocked or not supported by your browser. You must <a href="https://developer.wordpress.org/advanced-administration/wordpress/cookies/#enable-cookies-in-your-browser">enable cookies</a> to use WordPress.`
-		return loginErrorHTML("test_cookie", msg, "", "")
+		return loginErrorHTML("test_cookie", msg, "", ""), false // not in shake_error_codes
 	default:
-		return loginErrorHTML(ae.Code, "The username or password you entered is incorrect.", "", "")
+		return loginErrorHTML(ae.Code, "The username or password you entered is incorrect.", "", ""), loginShouldShake(ae.Code)
 	}
 }
 

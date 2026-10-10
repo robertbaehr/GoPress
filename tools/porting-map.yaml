@@ -821,6 +821,21 @@
   api: n/a
   notes: "P6.22 — POST-only interim-login; links target=_blank in interim form"
 
+# P6.28: login form shake on shake_error_codes (wp_shake_js).
+- prefix: wp-login.php#wp_shake_js
+  go: internal/login/login.go
+  status: partial
+  task: P6.28
+  api: n/a
+  notes: "P6.28 — document.querySelector('form').classList.add('shake') on login_error"
+
+- prefix: wp-login.php#shake_error_codes
+  go: internal/login/login.go
+  status: partial
+  task: P6.28
+  api: n/a
+  notes: "P6.28 — empty_*/invalid_username/incorrect_password/…; not test_cookie"
+
 # P6.27: nocache_headers on wp-login.php.
 - prefix: wp-includes/functions.php#nocache_headers
   go: internal/wp/nocache.go
