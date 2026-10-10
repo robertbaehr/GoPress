@@ -2761,6 +2761,14 @@
   task: P3.23
   api: n/a
 
+# P3.83: deepen author archive (document_title_parts, author_template_content, shim).
+- prefix: wp-includes/author-template.php#p3.83
+  go: internal/server/front.go
+  status: partial
+  task: P3.83
+  api: n/a
+  notes: "P3.83 — always Scope; document_title_parts; author_template_content; shim excerpts + author-N classes"
+
 # P3.24: /tag/{slug}/ tag archives.
 - prefix: wp-includes/taxonomy.php#tag-archive
   go: internal/server/front.go
