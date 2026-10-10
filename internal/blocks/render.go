@@ -135,6 +135,8 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderQuery(block)
 	case "core/query-title":
 		out = e.renderQueryTitle(block)
+	case "core/term-description":
+		out = e.renderTermDescription(block)
 	case "core/post-template":
 		out = e.renderPostTemplate(block)
 	case "core/query-no-results":

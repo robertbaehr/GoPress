@@ -2950,6 +2950,28 @@
   api: n/a
   notes: "P5.72 — unit coverage for post-navigation-link polish attrs"
 
+# P5.76: render core/term-description on term archives.
+- prefix: wp-includes/blocks/term-description.php
+  go: internal/blocks/term_description.go
+  status: partial
+  task: P5.76
+  api: internal
+  notes: "P5.76 — TermContext description; textAlign/align/has-link-color"
+
+- prefix: wp-includes/blocks/term-description
+  go: internal/blocks/term_description_test.go
+  status: partial
+  task: P5.76
+  api: n/a
+  notes: "P5.76 — unit coverage for term-description; REST block-types metadata"
+
+- prefix: wp-includes/blocks/term-description.php#archive-context
+  go: internal/server/front.go
+  status: partial
+  task: P5.76
+  api: n/a
+  notes: "P5.76 — category/tag archive TermContext + term_taxonomy.description"
+
 # P5.75: polish core/page-list (parentPageID, nesting, WP item classes).
 - prefix: wp-includes/blocks/page-list.php
   go: internal/blocks/page_list.go
