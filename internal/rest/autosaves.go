@@ -44,7 +44,7 @@ func (s *Server) servePostAutosaves(w http.ResponseWriter, r *http.Request, c *w
 	}
 	// P4.114: OPTIONS returns public item schema (like WP_REST_Autosaves_Controller).
 	if r.Method == http.MethodOptions {
-		w.Header().Set("Allow", "GET, HEAD, POST, OPTIONS")
+		w.Header().Set("Allow", "GET, POST")
 		writeJSON(w, http.StatusOK, autosaveItemSchema())
 		return
 	}
@@ -80,7 +80,8 @@ func (s *Server) servePostAutosaves(w http.ResponseWriter, r *http.Request, c *w
 	if !validateAutosaveContext(w, r) {
 		return
 	}
-	w.Header().Set("Allow", "GET, HEAD, POST, OPTIONS")
+	// Match WP Allow on collection (GET/POST); HEAD is implied by READABLE.
+	w.Header().Set("Allow", "GET, POST")
 	// P4.114: HEAD returns early with empty body (no X-WP-Total on autosaves).
 	if r.Method == http.MethodHead {
 		w.WriteHeader(http.StatusOK)
@@ -184,7 +185,7 @@ func (s *Server) createPostAutosave(w http.ResponseWriter, r *http.Request, c *w
 			return
 		}
 		home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
-		w.Header().Set("Allow", "GET, HEAD, POST, OPTIONS")
+		w.Header().Set("Allow", "GET, POST")
 		// POST responses use edit context (WP sets context=edit after create).
 		writeJSON(w, http.StatusOK, autosaveFromWP(c, *row, home, parentID, "edit"))
 		return
@@ -204,7 +205,7 @@ func (s *Server) createPostAutosave(w http.ResponseWriter, r *http.Request, c *w
 		normalizeWS(excerpt) != normalizeWS(parent.Excerpt)
 	if !different && old != nil {
 		home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
-		w.Header().Set("Allow", "GET, HEAD, POST, OPTIONS")
+		w.Header().Set("Allow", "GET, POST")
 		writeJSON(w, http.StatusOK, autosaveFromWP(c, *old, home, parentID, "edit"))
 		return
 	}
@@ -252,7 +253,7 @@ func (s *Server) createPostAutosave(w http.ResponseWriter, r *http.Request, c *w
 		return
 	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
-	w.Header().Set("Allow", "GET, HEAD, POST, OPTIONS")
+	w.Header().Set("Allow", "GET, POST")
 	writeJSON(w, http.StatusOK, autosaveFromWP(c, *row, home, parentID, "edit"))
 }
 
@@ -327,7 +328,7 @@ func (s *Server) servePostAutosaveItem(w http.ResponseWriter, r *http.Request, c
 		return
 	}
 	if r.Method == http.MethodOptions {
-		w.Header().Set("Allow", "GET, HEAD, OPTIONS")
+		w.Header().Set("Allow", "GET")
 		writeJSON(w, http.StatusOK, autosaveItemSchema())
 		return
 	}
@@ -380,7 +381,7 @@ func (s *Server) servePostAutosaveItem(w http.ResponseWriter, r *http.Request, c
 		})
 		return
 	}
-	w.Header().Set("Allow", "GET, HEAD, OPTIONS")
+	w.Header().Set("Allow", "GET")
 	if r.Method == http.MethodHead {
 		w.WriteHeader(http.StatusOK)
 		return

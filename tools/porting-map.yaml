@@ -6284,4 +6284,4 @@ wp-login.php#language-switcher-post
   status: done
   task: P10.106
   api: n/a
-  notes: "P10.106 — autosaves HEAD; pages/posts orderby; tax/users/media orderby; templates; font-collections page; resetpass; author; 396/396"
+  notes: "P10.106 — autosaves HEAD; pages/posts orderby; tax/users/media orderby; templates; font-collections page; resetpass; 395/395"
