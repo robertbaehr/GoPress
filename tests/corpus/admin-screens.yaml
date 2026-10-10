@@ -35,3 +35,22 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.74: additional admin chrome screens (headers-only).
+- id: admin-edit-comments
+  role: admin
+  method: GET
+  path: /wp-admin/edit-comments.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-users
+  role: admin
+  method: GET
+  path: /wp-admin/users.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

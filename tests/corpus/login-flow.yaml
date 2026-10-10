@@ -51,3 +51,13 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.74: registration disabled redirect (headers).
+- id: login-register-disabled
+  role: anon
+  method: GET
+  path: /wp-login.php?action=register
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

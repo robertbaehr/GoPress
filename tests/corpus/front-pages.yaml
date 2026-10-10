@@ -72,3 +72,40 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.74: Atom / comments feeds + cron + date archive — Content-Type parity.
+- id: front-atom-feed
+  role: anon
+  method: GET
+  path: /feed/atom/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-comments-feed
+  role: anon
+  method: GET
+  path: /comments/feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-wp-cron
+  role: anon
+  method: GET
+  path: /wp-cron.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-date-2024
+  role: anon
+  method: GET
+  path: /2024/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

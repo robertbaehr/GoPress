@@ -88,6 +88,16 @@
   compare: json
   nonce: null
 
+# P10.74: post statuses collection already matches PHP JSON.
+- id: rest-statuses-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/statuses
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
 - id: rest-revisions-admin
   role: admin
   method: GET
