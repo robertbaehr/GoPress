@@ -37,15 +37,6 @@ func TestCreateUpdateDeletePost(t *testing.T) {
 		t.Fatalf("cookie: %v", err)
 	}
 	ck := &http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue}
-	t.Cleanup(func() {
-		q, args, err := c.DB.Prepare(
-			"DELETE FROM "+c.DB.UserMeta()+" WHERE user_id = %d AND meta_key = %s",
-			user.ID, "session_tokens",
-		)
-		if err == nil {
-			_, _ = c.DB.Exec(q, args...)
-		}
-	})
 
 	createBody := `{"title":"GoPress Write Post","content":"Body from REST write","status":"publish","slug":"gopress-write-post"}`
 	req := httptest.NewRequest(http.MethodPost, "/wp-json/wp/v2/posts", bytes.NewBufferString(createBody))
@@ -137,15 +128,6 @@ func TestPatchPost(t *testing.T) {
 		t.Fatalf("cookie: %v", err)
 	}
 	ck := &http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue}
-	t.Cleanup(func() {
-		q, args, err := c.DB.Prepare(
-			"DELETE FROM "+c.DB.UserMeta()+" WHERE user_id = %d AND meta_key = %s",
-			user.ID, "session_tokens",
-		)
-		if err == nil {
-			_, _ = c.DB.Exec(q, args...)
-		}
-	})
 
 	createBody := `{"title":"Patch Me","content":"orig","status":"draft"}`
 	req := httptest.NewRequest(http.MethodPost, "/wp-json/wp/v2/posts", bytes.NewBufferString(createBody))
