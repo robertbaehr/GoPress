@@ -2322,6 +2322,28 @@
   api: n/a
   notes: "P10.62 — Playwright coverage for edit.php search box + author/category filters"
 
+# P10.68: e2e edit.php status views + STATUS/PORTING refresh after P5.76–P6.32.
+- prefix: tests/e2e/edit-status-views.spec.js
+  go: tests/e2e/edit-status-views.spec.js
+  status: partial
+  task: P10.68
+  api: n/a
+  notes: "P10.68 — Playwright coverage for edit.php All/Published/Drafts/Trash (P7.73)"
+
+- prefix: docs/STATUS.md#P10.68
+  go: docs/STATUS.md
+  status: partial
+  task: P10.68
+  api: n/a
+  notes: "P10.68 — summarize term-description, offset, per-page, current_user_id, media:thumbnail, interim aria"
+
+- prefix: PORTING.md#P10.68
+  go: PORTING.md
+  status: partial
+  task: P10.68
+  api: n/a
+  notes: "P10.68 — regenerate porting-status after stacked P5.76–P6.32"
+
 # P10.67: STATUS/PORTING refresh after P5.75–P8.19.
 - prefix: docs/STATUS.md#P10.67
   go: docs/STATUS.md
