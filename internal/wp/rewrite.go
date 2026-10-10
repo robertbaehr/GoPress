@@ -35,7 +35,7 @@ type ParseResult struct {
 var flagQueryVars = []string{
 	"p", "page_id", "name", "pagename", "category_name", "tag",
 	"author_name", "feed", "year", "monthnum", "day", "attachment",
-	"attachment_id", "rest_route", "error", "s",
+	"attachment_id", "rest_route", "error", "s", "embed",
 }
 
 // LoadRewriteRules returns rewrite rules from the rewrite_rules option, or
