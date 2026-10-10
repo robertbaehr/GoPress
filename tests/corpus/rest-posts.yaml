@@ -42,3 +42,66 @@
   body: null
   compare: json
   nonce: null
+
+- id: rest-media-list-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/media?per_page=5
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-comments-list-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/comments?per_page=5
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-categories-list-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/categories?per_page=5
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-tags-list-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/tags?per_page=5
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-search-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?search=hello&per_page=5
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-revisions-admin
+  role: admin
+  method: GET
+  path: /wp-json/wp/v2/posts/13/revisions
+  headers: {}
+  body: null
+  compare: json
+  nonce: wp_rest
+
+- id: rest-autosaves-admin
+  role: admin
+  method: GET
+  path: /wp-json/wp/v2/posts/13/autosaves
+  headers: {}
+  body: null
+  compare: json
+  nonce: wp_rest
