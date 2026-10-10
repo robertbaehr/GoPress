@@ -4402,6 +4402,21 @@
   api: internal
   notes: "P5.77 — legacy-widget block.json registered via empty render"
 
+# P5.78: core/widget-group renders empty (widgets/sidebars out of scope).
+- prefix: wp-includes/blocks/widget-group.php
+  go: internal/blocks/widget_group.go
+  status: partial
+  task: P5.78
+  api: internal
+  notes: "P5.78 — renderWidgetGroup returns empty; no sidebars / WP_Widget_Factory"
+
+- prefix: wp-includes/blocks/widget-group
+  go: internal/blocks/widget_group.go
+  status: partial
+  task: P5.78
+  api: internal
+  notes: "P5.78 — widget-group block.json registered via empty render"
+
 # P4.93: REST pages ?parent= / ?parent_exclude= (post_parent__in / __not_in).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#parent
   go: internal/rest/posts.go
