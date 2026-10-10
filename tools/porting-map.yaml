@@ -1699,6 +1699,14 @@
   task: P3.12
   api: n/a
 
+# P3.49: print wp-emoji-settings application/json (loader still skipped).
+- prefix: wp-includes/formatting.php#_print_emoji_detection_script
+  go: internal/wp/emoji.go
+  status: partial
+  task: P3.49
+  api: exported
+  notes: "P3.49 — PrintEmojiSettingsJSON / EmojiHeadHTML emits id=wp-emoji-settings"
+
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-font-families-controller.php
   go: internal/rest/fonts.go
   status: partial
