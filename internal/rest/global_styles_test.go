@@ -48,6 +48,9 @@ func TestGlobalStylesThemeAndItem(t *testing.T) {
 	if theme.Settings == nil || theme.Styles == nil {
 		t.Fatalf("expected settings/styles, got %#v", theme)
 	}
+	if theme.Links == nil || theme.Links["self"] == nil {
+		t.Fatalf("expected _links.self: %#v", theme.Links)
+	}
 
 	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/global-styles/445", nil)
 	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
@@ -73,5 +76,46 @@ func TestGlobalStylesThemeAndItem(t *testing.T) {
 	bg, _ := item.Styles["color"].(map[string]any)
 	if bg == nil || bg["background"] != "#f7f7f7" {
 		t.Fatalf("expected fixture background, got %#v", item.Styles)
+	}
+}
+
+func TestGlobalStylesThemeVariations(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/global-styles/themes/twentytwentyfive/variations", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var vars []map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &vars); err != nil {
+		t.Fatal(err)
+	}
+	if len(vars) == 0 {
+		t.Fatal("expected theme style variations for twentytwentyfive")
+	}
+	found := false
+	for _, v := range vars {
+		if title, _ := v["title"].(string); title == "Evening" {
+			found = true
+			if v["settings"] == nil {
+				t.Fatalf("Evening variation missing settings: %#v", v)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("expected Evening variation, got %#v", vars)
 	}
 }
