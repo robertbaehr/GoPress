@@ -457,6 +457,13 @@
   task: P2.31
   api: exported
 
+# P2.42: wp_check_invalid_utf8 (+ strip → U+FFFD).
+- prefix: wp-includes/formatting.php#wp_check_invalid_utf8
+  go: internal/wp/check_invalid_utf8.go
+  status: partial
+  task: P2.42
+  api: exported
+
 # P2.33: wp_slash / wp_unslash.
 - prefix: wp-includes/formatting.php#wp_slash
   go: internal/wp/slash.go
