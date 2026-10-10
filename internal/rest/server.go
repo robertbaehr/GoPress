@@ -34,6 +34,8 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	switch {
 	case path == "/" || path == "":
 		s.serveIndex(w, c)
+	case path == "/oembed/1.0" || path == "/oembed/1.0/" || path == "/oembed/1.0/embed":
+		s.serveOEmbed(w, r, c)
 	case path == "/wp/v2/types":
 		s.serveTypes(w, r, c)
 	case path == "/wp/v2/posts":
@@ -252,6 +254,29 @@ func buildIndex(c *wp.Context) Index {
 				Methods: []string{"GET"},
 				Args: map[string]any{
 					"context": map[string]any{"default": "view", "required": false},
+				},
+			}},
+		},
+		"/oembed/1.0": {
+			Namespace: "oembed/1.0",
+			Methods:   []string{"GET"},
+			Endpoints: []RouteEndpoint{{
+				Methods: []string{"GET"},
+				Args: map[string]any{
+					"context":   map[string]any{"default": "view", "required": false},
+					"namespace": map[string]any{"default": "oembed/1.0", "required": false},
+				},
+			}},
+		},
+		"/oembed/1.0/embed": {
+			Namespace: "oembed/1.0",
+			Methods:   []string{"GET"},
+			Endpoints: []RouteEndpoint{{
+				Methods: []string{"GET"},
+				Args: map[string]any{
+					"url":      map[string]any{"required": true, "type": "string", "format": "uri"},
+					"format":   map[string]any{"default": "json", "required": false},
+					"maxwidth": map[string]any{"default": 600, "required": false},
 				},
 			}},
 		},
