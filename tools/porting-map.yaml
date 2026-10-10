@@ -2175,6 +2175,21 @@
   api: internal
   notes: "P3.60 — GenerateRewriteRules author/*/feed rules before bare author"
 
+# P3.63: RSS/RDF content:encoded when available (omit when rss_use_excerpt).
+- prefix: wp-includes/feed-rss2.php#content:encoded
+  go: internal/server/front.go
+  status: partial
+  task: P3.63
+  api: n/a
+  notes: "P3.63 — content:encoded when !rss_use_excerpt; empty content → excerpt"
+
+- prefix: wp-includes/feed-rdf.php#content:encoded
+  go: internal/server/front.go
+  status: partial
+  task: P3.63
+  api: n/a
+  notes: "P3.63 — RDF content:encoded gated by rss_use_excerpt"
+
 # P3.62: RSS item <guid isPermaLink="false"> even when GUID is a pretty permalink.
 - prefix: wp-includes/feed-rss2.php#guid
   go: internal/server/front.go
