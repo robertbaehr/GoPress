@@ -162,6 +162,10 @@ func TestPrivacyPolicyGuideSections(t *testing.T) {
 		`id="privacy-settings-accordion-js"`,
 		"privacy-settings-accordion-trigger",
 		`aria-expanded`,
+		// P8.19 policy guide search
+		`id="privacy-policy-guide-search-input"`,
+		`id="privacy-policy-guide-search-js"`,
+		"privacy-policy-guide-search",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("missing %q", want)
