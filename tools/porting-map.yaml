@@ -1,3 +1,26 @@
+
+# P7.94: credits.php / freedoms.php About screen stubs.
+- prefix: wp-admin/credits.php
+  go: internal/admin/credits.go
+  status: partial
+  task: P7.94
+  api: n/a
+  notes: "P7.94 — about__container + Credits tab; wp_credits() lists stubbed"
+
+- prefix: wp-admin/freedoms.php
+  go: internal/admin/credits.go
+  status: partial
+  task: P7.94
+  api: n/a
+  notes: "P7.94 — four freedoms + privacy-notice → options-privacy.php; plugins/themes links"
+
+- prefix: wp-admin/includes/credits.php
+  go: internal/admin/credits.go
+  status: partial
+  task: P7.94
+  api: n/a
+  notes: "P7.94 — remote credits fetch deferred; static contributor blurb"
+
 # Seed rules for gopress-tools porting-status (Appendix A).
 # Longest prefix wins. status: todo|partial|done|out-of-scope|replaced-by-library|data-file
 

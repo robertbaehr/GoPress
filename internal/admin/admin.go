@@ -152,6 +152,12 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/site-health-info.php":
 		h.requireLogin(w, r, c, h.serveSiteHealthInfo)
 		return true
+	case "/wp-admin/credits.php":
+		h.requireLogin(w, r, c, h.serveCredits)
+		return true
+	case "/wp-admin/freedoms.php":
+		h.requireLogin(w, r, c, h.serveFreedoms)
+		return true
 	default:
 		return false
 	}
