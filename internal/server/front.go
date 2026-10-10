@@ -190,18 +190,14 @@ func (f *Front) renderSingular(w http.ResponseWriter, c *wp.Context, vars map[st
 
 	blogname := optionString(c, "blogname", "GoPress")
 	content := post.Content
-	if post.Type == "attachment" {
-		if content == "" {
-			if url := wp.GetAttachmentURL(c, post.ID); url != "" {
-				content = `<p class="attachment"><a href="` + html.EscapeString(url) + `">` +
-					html.EscapeString(post.Title) + `</a></p>`
-			}
+	if post.Type == "attachment" && content == "" {
+		if url := wp.GetAttachmentURL(c, post.ID); url != "" {
+			content = `<p class="attachment"><a href="` + html.EscapeString(url) + `">` +
+				html.EscapeString(post.Title) + `</a></p>`
 		}
-	} else if blocks.HasBlocks(content) {
-		content = blocks.Render(content)
 	}
-	// the_content: do_shortcode (P2.11) before display.
-	content = wp.DoShortcode(c, content)
+	// the_content: blocks → shortcodes → texturize (P5.11).
+	content = wp.TheContent(c, content)
 	safeContent := wp.KsesPost(content)
 
 	bodyClass := "singular"

@@ -189,7 +189,7 @@ func listPostAutosaves(c *wp.Context, parentID int64) ([]wp.Post, error) {
 }
 
 func autosaveFromWP(row wp.Post, home string, parentID int64) Autosave {
-	rendered := renderPostContent(row.Content)
+	rendered := renderPostContent(row.Content) // stub: no request context for shortcodes
 	titleRendered := restTexturize(row.Title)
 	excerpt := buildExcerpt(row.Excerpt, rendered, false)
 	restRoot := strings.TrimRight(home, "/") + "/wp-json/wp/v2"

@@ -267,7 +267,7 @@ func getPostByID(c *wp.Context, postType string, id int64, edit bool) (*Post, er
 
 func postFromWP(c *wp.Context, row wp.Post, home string, edit bool, sticky map[int64]bool) Post {
 	protected := row.Password != ""
-	rendered := renderPostContent(row.Content)
+	rendered := renderPostContentCtx(c, row.Content)
 	cats := postTermIDs(c, row.ID, "category")
 	tags := postTermIDs(c, row.ID, "post_tag")
 	format := postFormat(c, row.ID, row.Type)
