@@ -67,3 +67,54 @@ func TestRenderColumnVerticalAlign(t *testing.T) {
 		t.Fatalf("missing width: %q", out)
 	}
 }
+
+func TestRenderColumnsPolishAnchorAlignColors(t *testing.T) {
+	// P5.106: polish saved markup + applySupports colors.
+	src := `<!-- wp:columns {"anchor":"hero-cols","align":"wide","className":"is-style-default","textColor":"contrast","backgroundColor":"base","isStackedOnMobile":false} -->
+<div class="wp-block-columns"><!-- wp:column {"anchor":"col-a"} -->
+<div class="wp-block-column"><!-- wp:paragraph -->
+<p>A</p>
+<!-- /wp:paragraph --></div>
+<!-- /wp:column --></div>
+<!-- /wp:columns -->`
+	out := blocks.Render(src)
+	for _, want := range []string{
+		`wp-block-columns`,
+		`alignwide`,
+		`is-style-default`,
+		`id="hero-cols"`,
+		`id="col-a"`,
+		`is-not-stacked-on-mobile`,
+		`has-contrast-color`,
+		`has-base-background-color`,
+		`>A</p>`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
+
+func TestRenderColumnsSynthesizeAnchorAlign(t *testing.T) {
+	src := `<!-- wp:columns {"anchor":"grid","align":"full","className":"my-cols","verticalAlignment":"top","isStackedOnMobile":false} -->
+<!-- wp:column {"anchor":"left","width":"40%","className":"col-left"} -->
+<!-- wp:paragraph --><p>L</p><!-- /wp:paragraph -->
+<!-- /wp:column -->
+<!-- /wp:columns -->`
+	out := blocks.Render(src)
+	for _, want := range []string{
+		`id="grid"`,
+		`alignfull`,
+		`my-cols`,
+		`are-vertically-aligned-top`,
+		`is-not-stacked-on-mobile`,
+		`id="left"`,
+		`col-left`,
+		`flex-basis:40%`,
+		`>L</p>`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
