@@ -210,6 +210,9 @@ func (c *Context) MapMetaCap(cap string, userID int64, args ...int64) []string {
 		return c.mapEditDeletePost(cap, userID, args...)
 	case "edit_user":
 		return c.mapEditUser(userID, args...)
+	case "delete_user":
+		// WP map_meta_cap('delete_user') → delete_users (P4.79).
+		return []string{"delete_users"}
 	case "create_app_password", "list_app_passwords", "read_app_password",
 		"edit_app_password", "delete_app_passwords", "delete_app_password":
 		return c.mapEditUser(userID, args...)

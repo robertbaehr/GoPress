@@ -2,6 +2,7 @@ package wp
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -202,4 +203,69 @@ func (c *Context) SetUserRole(userID int64, role string) error {
 func randomUserPassword() string {
 	// Deterministic-enough fallback; REST create always sends a password in tests.
 	return fmt.Sprintf("GoPress%x", time.Now().UnixNano())
+}
+
+// DeleteUser removes a user and usermeta (wp_delete_user subset, P4.79).
+// When reassign is non-nil and > 0, post_author rows are reassigned to that user.
+// When reassign is nil, posts authored by the user are left in place (no cascade delete).
+func (c *Context) DeleteUser(id int64, reassign *int64) error {
+	if c == nil || c.DB == nil || id <= 0 {
+		return fmt.Errorf("wp: DeleteUser: invalid state")
+	}
+	u, err := c.GetUserBy("id", id)
+	if err != nil {
+		return err
+	}
+	if u == nil {
+		return fmt.Errorf("wp: DeleteUser: not found")
+	}
+	if reassign != nil {
+		rid := *reassign
+		if rid <= 0 || rid == id {
+			return fmt.Errorf("wp: DeleteUser: invalid reassign")
+		}
+		target, err := c.GetUserBy("id", rid)
+		if err != nil {
+			return err
+		}
+		if target == nil {
+			return fmt.Errorf("wp: DeleteUser: invalid reassign")
+		}
+		uq, uargs, err := c.DB.Prepare(
+			"UPDATE "+c.DB.Posts()+" SET post_author = %d WHERE post_author = %d",
+			rid, id,
+		)
+		if err != nil {
+			return err
+		}
+		if _, err := c.DB.Exec(uq, uargs...); err != nil {
+			return err
+		}
+	}
+	mq, margs, err := c.DB.Prepare("DELETE FROM "+c.DB.UserMeta()+" WHERE user_id = %d", id)
+	if err != nil {
+		return err
+	}
+	if _, err := c.DB.Exec(mq, margs...); err != nil {
+		return err
+	}
+	dq, dargs, err := c.DB.Prepare("DELETE FROM "+c.DB.Users()+" WHERE ID = %d", id)
+	if err != nil {
+		return err
+	}
+	res, err := c.DB.Exec(dq, dargs...)
+	if err != nil {
+		return err
+	}
+	n, _ := res.RowsAffected()
+	if n == 0 {
+		return fmt.Errorf("wp: DeleteUser: not found")
+	}
+	if c.Users != nil && c.Users.Cache != nil {
+		c.Users.Cache.Delete(strconv.FormatInt(id, 10), "users")
+	}
+	if c.Hooks != nil {
+		c.Hooks.DoAction("deleted_user", id, reassign, u)
+	}
+	return nil
 }

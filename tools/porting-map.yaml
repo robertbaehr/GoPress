@@ -451,6 +451,21 @@
   api: exported
   notes: "P4.70 — 207 responses, Allow/Link envelopes, validation=require-all-validate"
 
+# P4.79: DELETE /wp/v2/users/{id}?force=true&reassign= (wp_delete_user).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-users-controller.php#delete_item
+  go: internal/rest/users_write.go
+  status: partial
+  task: P4.79
+  api: exported
+  notes: "P4.79 — force=true required; optional reassign updates post_author"
+
+- prefix: wp-admin/includes/user.php#wp_delete_user
+  go: internal/wp/user_write.go
+  status: partial
+  task: P4.79
+  api: exported
+  notes: "P4.79 — DeleteUser + optional post_author reassignment"
+
 # P4.46 / P4.62: GET collection + POST/PUT users write (create_users / edit_user).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-users-controller.php
   go: internal/rest/users_write.go
