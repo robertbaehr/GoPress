@@ -168,7 +168,7 @@ func adminMenuHTML(screen string) string {
 			current = " current"
 		case screen == "plugins-php" && it.id == "menu-plugins":
 			current = " current"
-		case (screen == "options-general-php" || screen == "options-writing-php" || screen == "options-reading-php" || screen == "options-discussion-php") && it.id == "menu-settings":
+		case (screen == "options-general-php" || screen == "options-writing-php" || screen == "options-reading-php" || screen == "options-discussion-php" || screen == "options-media-php") && it.id == "menu-settings":
 			current = " current"
 		case screen == "profile-php" && it.id == "menu-users":
 			current = " current"

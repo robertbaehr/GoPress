@@ -37,6 +37,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/options-discussion.php":
 		h.requireLogin(w, r, c, h.serveOptionsDiscussion)
 		return true
+	case "/wp-admin/options-media.php":
+		h.requireLogin(w, r, c, h.serveOptionsMedia)
+		return true
 	case "/wp-admin/plugins.php":
 		h.requireLogin(w, r, c, h.servePlugins)
 		return true
@@ -477,6 +480,88 @@ func (h *Handler) serveOptionsDiscussion(w http.ResponseWriter, r *http.Request,
 	b.WriteString("> Show Avatars</label>\n")
 	b.WriteString("</td>\n</tr>\n")
 
+	b.WriteString("</table>\n")
+	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Save Changes\"></p>\n")
+	b.WriteString("</form>\n</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
+// serveOptionsMedia is the Settings → Media screen stub (P7.23).
+func (h *Handler) serveOptionsMedia(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	thumbW := optionString(c, "thumbnail_size_w", "150")
+	thumbH := optionString(c, "thumbnail_size_h", "150")
+	thumbCrop := optionString(c, "thumbnail_crop", "1")
+	mediumW := optionString(c, "medium_size_w", "300")
+	mediumH := optionString(c, "medium_size_h", "300")
+	largeW := optionString(c, "large_size_w", "1024")
+	largeH := optionString(c, "large_size_h", "1024")
+	embeds := optionString(c, "embed_autourls", "1")
+
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Media Settings &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap\">\n")
+	b.WriteString("<h1>Media Settings</h1>\n")
+	b.WriteString("<p class=\"description\">GoPress media settings stub — save lands with options.php.</p>\n")
+	b.WriteString("<form action=\"options.php\" method=\"post\">\n")
+	b.WriteString("<h2 id=\"wp-settings-section-image-sizes\" class=\"title\">Image sizes</h2>\n")
+	b.WriteString("<p>The sizes listed below determine the maximum dimensions in pixels to use when adding an image to the Media Library.</p>\n")
+	b.WriteString("<table class=\"form-table\" role=\"presentation\">\n")
+
+	b.WriteString("<tr>\n<th scope=\"row\">Thumbnail size</th>\n<td><fieldset>\n")
+	b.WriteString("<label for=\"thumbnail_size_w\">Width</label> ")
+	b.WriteString("<input name=\"thumbnail_size_w\" type=\"number\" step=\"1\" min=\"0\" id=\"thumbnail_size_w\" value=\"")
+	b.WriteString(html.EscapeString(thumbW))
+	b.WriteString("\" class=\"small-text\" /><br>\n")
+	b.WriteString("<label for=\"thumbnail_size_h\">Height</label> ")
+	b.WriteString("<input name=\"thumbnail_size_h\" type=\"number\" step=\"1\" min=\"0\" id=\"thumbnail_size_h\" value=\"")
+	b.WriteString(html.EscapeString(thumbH))
+	b.WriteString("\" class=\"small-text\" />\n")
+	b.WriteString("</fieldset>\n")
+	b.WriteString("<input name=\"thumbnail_crop\" type=\"checkbox\" id=\"thumbnail_crop\" value=\"1\"")
+	if thumbCrop == "1" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString(" /> <label for=\"thumbnail_crop\">Crop thumbnail to exact dimensions (normally thumbnails are proportional)</label>\n")
+	b.WriteString("</td>\n</tr>\n")
+
+	b.WriteString("<tr>\n<th scope=\"row\">Medium size</th>\n<td><fieldset>\n")
+	b.WriteString("<label for=\"medium_size_w\">Max Width</label> ")
+	b.WriteString("<input name=\"medium_size_w\" type=\"number\" step=\"1\" min=\"0\" id=\"medium_size_w\" value=\"")
+	b.WriteString(html.EscapeString(mediumW))
+	b.WriteString("\" class=\"small-text\" /><br>\n")
+	b.WriteString("<label for=\"medium_size_h\">Max Height</label> ")
+	b.WriteString("<input name=\"medium_size_h\" type=\"number\" step=\"1\" min=\"0\" id=\"medium_size_h\" value=\"")
+	b.WriteString(html.EscapeString(mediumH))
+	b.WriteString("\" class=\"small-text\" />\n")
+	b.WriteString("</fieldset></td>\n</tr>\n")
+
+	b.WriteString("<tr>\n<th scope=\"row\">Large size</th>\n<td><fieldset>\n")
+	b.WriteString("<label for=\"large_size_w\">Max Width</label> ")
+	b.WriteString("<input name=\"large_size_w\" type=\"number\" step=\"1\" min=\"0\" id=\"large_size_w\" value=\"")
+	b.WriteString(html.EscapeString(largeW))
+	b.WriteString("\" class=\"small-text\" /><br>\n")
+	b.WriteString("<label for=\"large_size_h\">Max Height</label> ")
+	b.WriteString("<input name=\"large_size_h\" type=\"number\" step=\"1\" min=\"0\" id=\"large_size_h\" value=\"")
+	b.WriteString(html.EscapeString(largeH))
+	b.WriteString("\" class=\"small-text\" />\n")
+	b.WriteString("</fieldset></td>\n</tr>\n")
+
+	b.WriteString("</table>\n")
+	b.WriteString("<h2 class=\"title\">Embeds</h2>\n")
+	b.WriteString("<table class=\"form-table\" role=\"presentation\">\n")
+	b.WriteString("<tr>\n<th scope=\"row\">Auto-embeds</th>\n<td>\n")
+	b.WriteString("<label for=\"embed_autourls\"><input name=\"embed_autourls\" type=\"checkbox\" id=\"embed_autourls\" value=\"1\"")
+	if embeds == "1" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString(" /> Items linked to should be embedded automatically</label>\n")
+	b.WriteString("</td>\n</tr>\n")
 	b.WriteString("</table>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Save Changes\"></p>\n")
 	b.WriteString("</form>\n</div>\n</body>\n</html>\n")
