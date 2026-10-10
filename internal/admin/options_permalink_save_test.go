@@ -81,16 +81,25 @@ func TestOptionsPermalinkSave(t *testing.T) {
 func TestOptionsPermalinkManageOptionsAndTags(t *testing.T) {
 	// P7.102: manage_options gate + available tags + body class.
 	c := bootOrSkip(t)
-
 	h := &admin.Handler{}
+
+	editor, err := c.GetUserBy("login", "editor")
+	if err != nil || editor == nil {
+		t.Skipf("editor unavailable: %v", err)
+	}
+	edSet, err := c.SetAuthCookie(editor, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("SetAuthCookie editor: %v", err)
+	}
 	req := httptest.NewRequest(http.MethodGet, "/wp-admin/options-permalink.php", nil)
+	req.AddCookie(&http.Cookie{Name: edSet.LoggedInName, Value: edSet.LoggedInValue})
 	rec := httptest.NewRecorder()
 	rc := c.ForRequest(rec, req)
 	if !h.Handle(rec, req, rc, "/wp-admin/options-permalink.php") {
 		t.Fatal("options-permalink.php not handled")
 	}
 	if rec.Code != http.StatusForbidden {
-		t.Fatalf("anon status=%d want 403", rec.Code)
+		t.Fatalf("editor status=%d want 403", rec.Code)
 	}
 
 	user, err := c.GetUserBy("login", "admin")
