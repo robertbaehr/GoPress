@@ -1,4 +1,5 @@
-// Media upload helpers (P7.7) — store multipart files under uploads/2024/06.
+// Media upload helpers (P7.7 / P8.31) — store multipart files under uploads/2024/06.
+// Ports wp_handle_upload / media_handle_upload subsets used by async-upload and media-new.
 package wp
 
 import (
@@ -23,29 +24,37 @@ type UploadedFile struct {
 	Title    string
 }
 
-// SaveUploadedMedia writes file content under uploads/2024/06 and creates an attachment post.
-func SaveUploadedMedia(c *Context, filename string, r io.Reader, size int64) (*UploadedFile, error) {
+// UploadResult is the success shape of wp_handle_upload (file/url/type) (P8.31).
+type UploadResult struct {
+	File string // absolute filesystem path
+	URL  string
+	Type string // mime type
+}
+
+// HandleUpload writes a multipart upload into uploads/ (wp_handle_upload subset, P8.31).
+// Does not create an attachment row — use MediaHandleUpload for that.
+func HandleUpload(c *Context, filename string, r io.Reader, size int64) (*UploadResult, error) {
 	if c == nil || c.DB == nil {
-		return nil, fmt.Errorf("wp: SaveUploadedMedia: nil context")
+		return nil, fmt.Errorf("upload_error: nil context")
 	}
 	filename = filepath.Base(strings.ReplaceAll(filename, "\\", "/"))
 	filename = sanitizeUploadName(filename)
 	if filename == "" || filename == "." || filename == ".." {
-		return nil, fmt.Errorf("wp: SaveUploadedMedia: empty filename")
+		return nil, fmt.Errorf("upload_error: empty filename")
 	}
 	// P8.24: reject filenames outside upload_mimes / get_allowed_mime_types.
 	preCheck := CheckFiletype(c, filename, nil)
 	if preCheck.Ext == "" || preCheck.Type == "" {
-		return nil, fmt.Errorf("wp: SaveUploadedMedia: sorry, this file type is not permitted for security reasons")
+		return nil, fmt.Errorf("upload_error: sorry, this file type is not permitted for security reasons")
 	}
 
 	uploads := GetUploadDir(c)
 	if uploads.Basedir == "" {
-		return nil, fmt.Errorf("wp: SaveUploadedMedia: empty upload dir")
+		return nil, fmt.Errorf("upload_error: empty upload dir")
 	}
 	dir := filepath.Join(uploads.Basedir, filepath.FromSlash(UploadFixedSubdir))
 	if !MkdirP(dir) {
-		return nil, fmt.Errorf("wp: SaveUploadedMedia: mkdir %s", dir)
+		return nil, fmt.Errorf("upload_error: mkdir %s", dir)
 	}
 
 	destName := UniqueFilename(dir, filename)
@@ -66,14 +75,14 @@ func SaveUploadedMedia(c *Context, filename string, r io.Reader, size int64) (*U
 	}
 	if size > 0 && n == 0 {
 		_ = os.Remove(abs)
-		return nil, fmt.Errorf("wp: SaveUploadedMedia: empty upload")
+		return nil, fmt.Errorf("upload_error: empty upload")
 	}
 
 	// P8.24: resolve mime via CheckFiletypeAndExt (upload_mimes + real image mime).
 	checked := CheckFiletypeAndExt(c, abs, destName, nil)
 	if checked.Ext == "" || checked.Type == "" {
 		_ = os.Remove(abs)
-		return nil, fmt.Errorf("wp: SaveUploadedMedia: sorry, this file type is not permitted for security reasons")
+		return nil, fmt.Errorf("upload_error: sorry, this file type is not permitted for security reasons")
 	}
 	if checked.ProperFilename != "" {
 		proper := sanitizeUploadName(filepath.Base(checked.ProperFilename))
@@ -85,28 +94,56 @@ func SaveUploadedMedia(c *Context, filename string, r io.Reader, size int64) (*U
 			}
 		}
 	}
-	mimeType := checked.Type
 	rel := UploadFixedSubdir + "/" + destName
 	url := strings.TrimRight(uploads.Baseurl, "/") + "/" + rel
-	title := strings.TrimSuffix(destName, filepath.Ext(destName))
+	return &UploadResult{File: abs, URL: url, Type: checked.Type}, nil
+}
+
+// MediaHandleUpload creates an attachment from an upload stream (media_handle_upload, P8.31).
+// postID becomes post_parent when > 0.
+func MediaHandleUpload(c *Context, filename string, r io.Reader, size int64, postID int64) (*UploadedFile, error) {
+	moved, err := HandleUpload(c, filename, r, size)
+	if err != nil {
+		return nil, err
+	}
+	title := strings.TrimSuffix(filepath.Base(moved.File), filepath.Ext(moved.File))
 	title = strings.ReplaceAll(title, "-", " ")
 	title = strings.ReplaceAll(title, "_", " ")
+	content := ""
+	alt := ""
+	if strings.HasPrefix(strings.ToLower(moved.Type), "image/") {
+		if meta, ok := ReadImageMetadata(c, moved.File); ok && meta != nil {
+			if t := strings.TrimSpace(fmt.Sprint(meta["title"])); t != "" && t != "<nil>" && !isNumericSanitizeTitle(t) {
+				title = t
+			}
+			if cap := strings.TrimSpace(fmt.Sprint(meta["caption"])); cap != "" && cap != "<nil>" {
+				content = cap
+			}
+			if a := strings.TrimSpace(fmt.Sprint(meta["alt"])); a != "" && a != "<nil>" {
+				alt = a
+			}
+		}
+	}
 
 	author := int64(0)
 	if c.CurrentUser != nil {
 		author = c.CurrentUser.ID
 	}
 	now := time.Now().UTC().Format("2006-01-02 15:04:05")
-	id, err := insertAttachmentRow(c, author, now, title, SanitizeTitle(title), mimeType, url)
+	id, err := insertAttachmentRowParent(c, author, now, title, SanitizeTitle(title), content, moved.Type, moved.URL, postID)
 	if err != nil {
-		_ = os.Remove(abs)
+		_ = os.Remove(moved.File)
 		return nil, err
 	}
+	rel := UploadFixedSubdir + "/" + filepath.Base(moved.File)
 	if c.Meta != nil {
 		_, _, _ = c.Meta.AddMetadata(MetaPost, id, "_wp_attached_file", rel, true)
+		if alt != "" {
+			_, _, _ = c.Meta.AddMetadata(MetaPost, id, "_wp_attachment_image_alt", alt, true)
+		}
 		// P8.25: generate attachment metadata (width/height/image_meta) for images.
-		if strings.HasPrefix(strings.ToLower(mimeType), "image/") {
-			meta := GenerateAttachmentMetadata(c, id, abs)
+		if strings.HasPrefix(strings.ToLower(moved.Type), "image/") {
+			meta := GenerateAttachmentMetadata(c, id, moved.File)
 			if meta != nil {
 				meta["file"] = rel
 				_ = StoreAttachmentMetadata(c, id, meta)
@@ -116,35 +153,30 @@ func SaveUploadedMedia(c *Context, filename string, r io.Reader, size int64) (*U
 	return &UploadedFile{
 		ID:       id,
 		RelPath:  rel,
-		AbsPath:  abs,
-		URL:      url,
-		MimeType: mimeType,
+		AbsPath:  moved.File,
+		URL:      moved.URL,
+		MimeType: moved.Type,
 		Title:    title,
 	}, nil
 }
 
+// SaveUploadedMedia writes file content under uploads/2024/06 and creates an attachment post.
+// Equivalent to MediaHandleUpload(..., postID=0) (P7.7).
+func SaveUploadedMedia(c *Context, filename string, r io.Reader, size int64) (*UploadedFile, error) {
+	up, err := MediaHandleUpload(c, filename, r, size, 0)
+	if err != nil {
+		// Preserve historical error prefix used by callers/tests.
+		msg := err.Error()
+		if strings.HasPrefix(msg, "upload_error: ") {
+			return nil, fmt.Errorf("wp: SaveUploadedMedia: %s", strings.TrimPrefix(msg, "upload_error: "))
+		}
+		return nil, fmt.Errorf("wp: SaveUploadedMedia: %w", err)
+	}
+	return up, nil
+}
+
 func insertAttachmentRow(c *Context, author int64, now, title, slug, mimeType, guid string) (int64, error) {
-	if slug == "" {
-		slug = "attachment"
-	}
-	q, args, err := c.DB.Prepare(
-		"INSERT INTO "+c.DB.Posts()+
-			" (post_author, post_date, post_date_gmt, post_content, post_title, post_excerpt, post_status, "+
-			"comment_status, ping_status, post_password, post_name, to_ping, pinged, post_modified, post_modified_gmt, "+
-			"post_content_filtered, post_parent, guid, menu_order, post_type, post_mime_type, comment_count) VALUES "+
-			"(%d, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %d, %s, %d, %s, %s, %d)",
-		author, now, now, "", title, "", "inherit",
-		"open", "closed", "", slug, "", "", now, now,
-		"", 0, guid, 0, "attachment", mimeType, 0,
-	)
-	if err != nil {
-		return 0, err
-	}
-	res, err := c.DB.Exec(q, args...)
-	if err != nil {
-		return 0, err
-	}
-	return res.LastInsertId()
+	return insertAttachmentRowParent(c, author, now, title, slug, "", mimeType, guid, 0)
 }
 
 func sanitizeUploadName(name string) string {

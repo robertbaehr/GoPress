@@ -124,6 +124,10 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/async-upload.php":
 		h.requireLogin(w, r, c, h.serveAsyncUpload)
 		return true
+	case "/wp-admin/media-upload.php":
+		// P8.31: legacy iframe media upload popup stub.
+		h.requireLogin(w, r, c, h.serveMediaUpload)
+		return true
 	case "/wp-admin/export-personal-data.php":
 		h.requireLogin(w, r, c, h.serveExportPersonalData)
 		return true
@@ -2702,14 +2706,15 @@ func (h *Handler) handleMediaNewUpload(w http.ResponseWriter, r *http.Request, c
 		return
 	}
 	defer file.Close()
-	if _, err := wp.SaveUploadedMedia(c, hdr.Filename, file, hdr.Size); err != nil {
+	postID, _ := strconv.ParseInt(strings.TrimSpace(r.FormValue("post_id")), 10, 64)
+	if _, err := wp.MediaHandleUpload(c, hdr.Filename, file, hdr.Size, postID); err != nil {
 		http.Error(w, err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
 	http.Redirect(w, r, "/wp-admin/upload.php", http.StatusFound)
 }
 
-// serveAsyncUpload handles multipart POST /wp-admin/async-upload.php (P7.7).
+// serveAsyncUpload handles multipart POST /wp-admin/async-upload.php (P7.7 / P8.31).
 func (h *Handler) serveAsyncUpload(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method not allowed\n", http.StatusMethodNotAllowed)
@@ -2737,7 +2742,8 @@ func (h *Handler) serveAsyncUpload(w http.ResponseWriter, r *http.Request, c *wp
 		return
 	}
 	defer file.Close()
-	up, err := wp.SaveUploadedMedia(c, hdr.Filename, file, hdr.Size)
+	postID, _ := strconv.ParseInt(strings.TrimSpace(r.FormValue("post_id")), 10, 64)
+	up, err := wp.MediaHandleUpload(c, hdr.Filename, file, hdr.Size, postID)
 	if err != nil {
 		http.Error(w, err.Error()+"\n", http.StatusInternalServerError)
 		return
@@ -2746,6 +2752,73 @@ func (h *Handler) serveAsyncUpload(w http.ResponseWriter, r *http.Request, c *wp
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, `{"success":true,"data":{"id":%d,"url":%q,"filename":%q}}`+"\n",
 		up.ID, up.URL, up.RelPath)
+}
+
+// serveMediaUpload is the legacy media-upload.php iframe stub (P8.31).
+func (h *Handler) serveMediaUpload(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if c == nil || c.CurrentUser == nil {
+		http.Error(w, "Unauthorized\n", http.StatusUnauthorized)
+		return
+	}
+	if !c.UserCan(c.CurrentUser, "upload_files") {
+		http.Error(w, "Sorry, you are not allowed to upload files.\n", http.StatusForbidden)
+		return
+	}
+	if r.Method == http.MethodPost {
+		h.handleMediaNewUpload(w, r, c)
+		return
+	}
+	blogname := optionString(c, "blogname", "GoPress")
+	tab := strings.TrimSpace(r.URL.Query().Get("tab"))
+	if tab == "" {
+		tab = "type"
+	}
+	postID := strings.TrimSpace(r.URL.Query().Get("post_id"))
+	if postID == "" {
+		postID = "0"
+	}
+	nonce := c.CreateNonce("media-form")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Upload Media &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui iframe media-upload-php\">\n")
+	b.WriteString("<div class=\"wrap\">\n")
+	b.WriteString("<h1 class=\"wp-heading-inline\">Upload Media</h1>\n")
+	b.WriteString("<ul class=\"media-upload-tabs\" id=\"sidemenu\">\n")
+	b.WriteString("<li id=\"tab-type\"")
+	if tab == "type" {
+		b.WriteString(" class=\"current\"")
+	}
+	b.WriteString("><a href=\"/wp-admin/media-upload.php?tab=type&amp;post_id=")
+	b.WriteString(html.EscapeString(postID))
+	b.WriteString("\">From Computer</a></li>\n")
+	b.WriteString("<li id=\"tab-library\"")
+	if tab == "library" {
+		b.WriteString(" class=\"current\"")
+	}
+	b.WriteString("><a href=\"/wp-admin/media-upload.php?tab=library&amp;post_id=")
+	b.WriteString(html.EscapeString(postID))
+	b.WriteString("\">Media Library</a></li>\n")
+	b.WriteString("</ul>\n")
+	if tab == "library" {
+		b.WriteString("<p><a href=\"/wp-admin/upload.php\">Open Media Library</a></p>\n")
+	} else {
+		b.WriteString("<form enctype=\"multipart/form-data\" method=\"post\" action=\"/wp-admin/media-upload.php\" class=\"media-upload-form\" id=\"file-form\">\n")
+		b.WriteString("<input type=\"hidden\" id=\"_wpnonce\" name=\"_wpnonce\" value=\"")
+		b.WriteString(html.EscapeString(nonce))
+		b.WriteString("\" />\n")
+		b.WriteString("<input type=\"hidden\" name=\"post_id\" id=\"post_id\" value=\"")
+		b.WriteString(html.EscapeString(postID))
+		b.WriteString("\" />\n")
+		b.WriteString("<p><label for=\"async-upload\">Choose a file</label>\n")
+		b.WriteString("<input type=\"file\" id=\"async-upload\" name=\"async-upload\" /></p>\n")
+		b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"html-upload\" id=\"html-upload\" class=\"button\" value=\"Upload\" /></p>\n")
+		b.WriteString("</form>\n")
+	}
+	b.WriteString("</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
 }
 
 func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *wp.Context) {
