@@ -40,9 +40,15 @@ type Config struct {
 	EnvironmentType string
 	DevelopmentMode string // WP_DEVELOPMENT_MODE (P2.70): core|plugin|theme|all|""
 	Debug           bool
-	DisableWPCron   bool
-	BlockExternal   bool
-	AutoUpdaterOff  bool
+	// DebugDisplay is WP_DEBUG_DISPLAY (P2.83). Default true when unset (PHP default-constants).
+	DebugDisplay bool
+	// DebugDisplaySet is true when WP_DEBUG_DISPLAY was explicitly defined/configured.
+	DebugDisplaySet bool
+	// DebugLog is WP_DEBUG_LOG (P2.83): "false", "true"/"1", or a filesystem path.
+	DebugLog       string
+	DisableWPCron  bool
+	BlockExternal  bool
+	AutoUpdaterOff bool
 
 	// Extra holds other define() constants as strings/bools for later tasks.
 	Extra map[string]string
@@ -97,6 +103,8 @@ func Load(opts LoadOptions) (*Config, error) {
 func defaults(root string) *Config {
 	return &Config{
 		ABSPATH:         ensureSlash(root),
+		DebugDisplay:    true, // PHP default-constants.php: WP_DEBUG_DISPLAY defaults true
+		DebugLog:        "false",
 		DBHost:          "localhost",
 		DBCharset:       "utf8mb4",
 		DBCollate:       "",
@@ -222,6 +230,11 @@ func setKnown(cfg *Config, name, val string) error {
 		cfg.DevelopmentMode = val
 	case "WP_DEBUG":
 		cfg.Debug = phpBool(val)
+	case "WP_DEBUG_DISPLAY":
+		cfg.DebugDisplay = phpBool(val)
+		cfg.DebugDisplaySet = true
+	case "WP_DEBUG_LOG":
+		cfg.DebugLog = val
 	case "DISABLE_WP_CRON":
 		cfg.DisableWPCron = phpBool(val)
 	case "WP_HTTP_BLOCK_EXTERNAL":
@@ -275,6 +288,20 @@ func applyEnv(cfg *Config) {
 	}
 	if v, ok := os.LookupEnv("GOPRESS_DEBUG"); ok {
 		cfg.Debug = phpBool(v)
+	}
+	if v, ok := os.LookupEnv("GOPRESS_DEBUG_DISPLAY"); ok {
+		cfg.DebugDisplay = phpBool(v)
+		cfg.DebugDisplaySet = true
+	}
+	if v, ok := os.LookupEnv("WP_DEBUG_DISPLAY"); ok {
+		cfg.DebugDisplay = phpBool(v)
+		cfg.DebugDisplaySet = true
+	}
+	if v, ok := os.LookupEnv("GOPRESS_DEBUG_LOG"); ok && v != "" {
+		cfg.DebugLog = v
+	}
+	if v, ok := os.LookupEnv("WP_DEBUG_LOG"); ok && v != "" {
+		cfg.DebugLog = v
 	}
 }
 
