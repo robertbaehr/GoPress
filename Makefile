@@ -12,7 +12,9 @@ build:
 	$(GO) build -o bin/gopress-lint ./cmd/gopress-lint
 
 test:
-	$(GO) test ./...
+	# -p 1: packages share the fixture MySQL DB; parallel boots race on
+	# session_tokens / usermeta read-modify-write and flake auth tests.
+	$(GO) test -p 1 ./...
 
 lint: build
 	@unformatted=$$(gofmt -l .); \
@@ -40,7 +42,7 @@ golden:
 	@bash scripts/golden.sh
 
 diff: build
-	./bin/gopress-tools diff --ref http://127.0.0.1:8081 --go http://127.0.0.1:8081
+	./bin/gopress-tools diff --ref http://127.0.0.1:8081 --go http://127.0.0.1:8082
 
 e2e:
 	@if ! command -v node >/dev/null 2>&1; then \

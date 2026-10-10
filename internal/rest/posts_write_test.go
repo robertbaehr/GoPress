@@ -13,7 +13,7 @@ import (
 
 func TestCreatePostRequiresAuth(t *testing.T) {
 	c := bootOrSkip(t)
-	defer c.DB.Close()
+	t.Cleanup(func() { _ = c.DB.Close() })
 	body := `{"title":"Nope","content":"x","status":"draft"}`
 	req := httptest.NewRequest(http.MethodPost, "/wp-json/wp/v2/posts", bytes.NewBufferString(body))
 	req.Header.Set("Content-Type", "application/json")
@@ -27,7 +27,7 @@ func TestCreatePostRequiresAuth(t *testing.T) {
 
 func TestCreateUpdateDeletePost(t *testing.T) {
 	c := bootOrSkip(t)
-	defer c.DB.Close()
+	t.Cleanup(func() { _ = c.DB.Close() })
 	user, err := c.GetUserBy("login", "admin")
 	if err != nil || user == nil {
 		t.Fatalf("admin: %v", err)
@@ -59,6 +59,7 @@ func TestCreateUpdateDeletePost(t *testing.T) {
 		t.Fatalf("title=%q", created.Title.Rendered)
 	}
 	id := created.ID
+	// Register after Close cleanup so LIFO deletes while DB is still open.
 	t.Cleanup(func() {
 		q, args, err := c.DB.Prepare("DELETE FROM "+c.DB.Posts()+" WHERE ID = %d", id)
 		if err == nil {
@@ -118,7 +119,7 @@ func TestCreateUpdateDeletePost(t *testing.T) {
 
 func TestPatchPost(t *testing.T) {
 	c := bootOrSkip(t)
-	defer c.DB.Close()
+	t.Cleanup(func() { _ = c.DB.Close() })
 	user, err := c.GetUserBy("login", "admin")
 	if err != nil || user == nil {
 		t.Fatalf("admin: %v", err)

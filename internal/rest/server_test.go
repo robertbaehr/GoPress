@@ -47,6 +47,8 @@ func TestIndexAnonShape(t *testing.T) {
 		"/wp/v2/comments", "/wp/v2/comments/(?P<id>[\\d]+)",
 		"/wp/v2/media", "/wp/v2/media/(?P<id>[\\d]+)",
 		"/wp/v2/search",
+		"/wp/v2/block-types",
+		"/wp/v2/block-renderer/(?P<name>[a-z0-9-]+/[a-z0-9-]+)",
 		"/wp/v2/settings",
 		"/wp/v2/users/me",
 	}
