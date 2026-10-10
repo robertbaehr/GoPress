@@ -1631,6 +1631,21 @@
   api: exported
   notes: "P8.17 — injectPrivacyPolicyGuideTOC when description=true"
 
+# P8.18: Privacy Policy Guide accordion toggle (privacy-tools.js behavior).
+- prefix: wp-admin/js/privacy-tools.js#accordion
+  go: internal/admin/admin.go
+  status: partial
+  task: P8.18
+  api: n/a
+  notes: "P8.18 — vanilla accordion click toggles aria-expanded + hidden on panels"
+
+- prefix: wp-admin/privacy-policy-guide.php#accordion
+  go: internal/admin/admin.go
+  status: partial
+  task: P8.18
+  api: n/a
+  notes: "P8.18 — privacy-settings-accordion-js on policy guide screen"
+
 # P8.14: suggested privacy policy text changed notice + cache.
 - prefix: wp-admin/includes/class-wp-privacy-policy-content.php#text_change_check
   go: internal/wp/privacy_policy_updated.go
