@@ -1,6 +1,7 @@
 package admin_test
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -39,6 +40,12 @@ func TestEditTagsCategoriesStub(t *testing.T) {
 	if !strings.Contains(body, "wp-list-table") {
 		t.Fatalf("expected list table: %q", body)
 	}
+	if !strings.Contains(body, `id="addtag"`) || !strings.Contains(body, "Add New Category") {
+		t.Fatalf("expected add category form: %q", body)
+	}
+	if !strings.Contains(body, `name="tag-name"`) || !strings.Contains(body, `_wpnonce_add-tag`) {
+		t.Fatalf("expected tag-name + nonce fields: %q", body)
+	}
 }
 
 func TestEditTagsTagsStub(t *testing.T) {
@@ -64,5 +71,80 @@ func TestEditTagsTagsStub(t *testing.T) {
 	body := rec.Body.String()
 	if !strings.Contains(body, "<h1") || !strings.Contains(body, "Tags") {
 		t.Fatalf("missing Tags heading: %q", body)
+	}
+	if !strings.Contains(body, `id="addtag"`) || !strings.Contains(body, "Add New Tag") {
+		t.Fatalf("expected add tag form: %q", body)
+	}
+}
+
+func TestEditTagsAddCategory(t *testing.T) {
+	c := bootOrSkip(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	probe := httptest.NewRequest(http.MethodGet, "/wp-admin/edit-tags.php?taxonomy=category", nil)
+	probe.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	probeRec := httptest.NewRecorder()
+	pc := c.ForRequest(probeRec, probe)
+	pc.AuthenticateRequest()
+	nonce := pc.CreateNonce("add-tag")
+	if nonce == "" {
+		t.Fatal("empty nonce")
+	}
+	name := "gopress-p758-cat"
+	form := "action=add-tag&taxonomy=category&tag-name=" + name + "&slug=&description=hello&_wpnonce_add-tag=" + nonce
+	req := httptest.NewRequest(http.MethodPost, "/wp-admin/edit-tags.php", strings.NewReader(form))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	reqC := c.ForRequest(rec, req)
+	reqC.AuthenticateRequest()
+	if !(&admin.Handler{}).Handle(rec, req, reqC, "/wp-admin/edit-tags.php") {
+		t.Fatal("edit-tags.php not handled")
+	}
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	loc := rec.Header().Get("Location")
+	if !strings.Contains(loc, "message=1") {
+		t.Fatalf("location=%q", loc)
+	}
+	t.Cleanup(func() {
+		q, args, err := c.DB.Prepare("SELECT term_id FROM "+c.DB.Terms()+" WHERE slug = %s LIMIT 1", name)
+		if err != nil {
+			return
+		}
+		row, _ := c.DB.GetRow(q, args...)
+		if row == nil {
+			return
+		}
+		id := int64(0)
+		switch v := row["term_id"].(type) {
+		case int64:
+			id = v
+		case []byte:
+			fmt.Sscan(string(v), &id)
+		}
+		if id > 0 {
+			dq, dargs, _ := c.DB.Prepare("DELETE FROM "+c.DB.TermTaxonomy()+" WHERE term_id = %d", id)
+			_, _ = c.DB.Exec(dq, dargs...)
+			dq, dargs, _ = c.DB.Prepare("DELETE FROM "+c.DB.Terms()+" WHERE term_id = %d", id)
+			_, _ = c.DB.Exec(dq, dargs...)
+		}
+	})
+
+	req = httptest.NewRequest(http.MethodGet, loc, nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec = httptest.NewRecorder()
+	reqC = c.ForRequest(rec, req)
+	(&admin.Handler{}).Handle(rec, req, reqC, "/wp-admin/edit-tags.php")
+	body := rec.Body.String()
+	if !strings.Contains(body, name) || !strings.Contains(body, "Category added.") {
+		t.Fatalf("expected new category listed: %q", body)
 	}
 }

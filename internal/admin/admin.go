@@ -330,34 +330,156 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	writeAdminPage(w, c, newAdminChrome(c, heading, "edit-php"), b.String())
 }
 
-// serveEditTags is the Categories / Tags list stub (P7.29 / edit-tags.php).
+// serveEditTags is Categories / Tags list + add form (P7.29 / P7.58 / edit-tags.php).
 func (h *Handler) serveEditTags(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	taxonomy := strings.TrimSpace(r.URL.Query().Get("taxonomy"))
+	if taxonomy == "" && r.Method == http.MethodPost {
+		_ = r.ParseForm()
+		taxonomy = strings.TrimSpace(r.FormValue("taxonomy"))
+	}
 	if taxonomy == "" {
 		taxonomy = "category"
 	}
 	heading := "Categories"
+	addHeading := "Add New Category"
+	submitLabel := "Add New Category"
 	screen := "edit-tags-php"
 	switch taxonomy {
 	case "post_tag", "tag":
 		taxonomy = "post_tag"
 		heading = "Tags"
+		addHeading = "Add New Tag"
+		submitLabel = "Add New Tag"
 	case "category":
 		// ok
 	default:
 		taxonomy = "category"
 	}
+
+	message := strings.TrimSpace(r.URL.Query().Get("message"))
+	if r.Method == http.MethodPost {
+		_ = r.ParseForm()
+		if r.FormValue("action") == "add-tag" {
+			if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "manage_categories") {
+				http.Error(w, "Forbidden\n", http.StatusForbidden)
+				return
+			}
+			if c.VerifyNonce(r.FormValue("_wpnonce_add-tag"), "add-tag") == 0 {
+				http.Error(w, "Invalid nonce\n", http.StatusForbidden)
+				return
+			}
+			name := strings.TrimSpace(r.FormValue("tag-name"))
+			slug := strings.TrimSpace(r.FormValue("slug"))
+			desc := strings.TrimSpace(r.FormValue("description"))
+			var parent int64
+			if taxonomy == "category" {
+				if p, err := strconv.ParseInt(strings.TrimSpace(r.FormValue("parent")), 10, 64); err == nil && p > 0 {
+					parent = p
+				}
+			}
+			loc := "/wp-admin/edit-tags.php?taxonomy=" + url.QueryEscape(taxonomy)
+			if name == "" {
+				http.Redirect(w, r, loc+"&error=1&message=4", http.StatusFound)
+				return
+			}
+			if slug == "" {
+				slug = wp.SanitizeTitle(name)
+			} else {
+				slug = wp.SanitizeTitle(slug)
+			}
+			if slug == "" {
+				slug = "term"
+			}
+			slug, err := uniqueAdminTermSlug(c, slug)
+			if err != nil {
+				http.Error(w, "terms: "+err.Error()+"\n", http.StatusInternalServerError)
+				return
+			}
+			if _, err := insertAdminTerm(c, taxonomy, name, slug, desc, parent); err != nil {
+				http.Redirect(w, r, loc+"&error=1&message=4", http.StatusFound)
+				return
+			}
+			http.Redirect(w, r, loc+"&message=1", http.StatusFound)
+			return
+		}
+	}
+
 	terms, err := listAdminTerms(c, taxonomy, 50)
 	if err != nil {
 		http.Error(w, "terms: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
+	nonce := ""
+	if c != nil {
+		nonce = c.CreateNonce("add-tag")
+	}
+
 	var b strings.Builder
 	b.WriteString("<h1 class=\"wp-heading-inline\">")
 	b.WriteString(html.EscapeString(heading))
 	b.WriteString("</h1>\n")
 	b.WriteString("<hr class=\"wp-header-end\">\n")
-	b.WriteString("<p class=\"description\">GoPress edit-tags stub — create/edit via REST for now.</p>\n")
+	if message == "1" {
+		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p>")
+		if taxonomy == "post_tag" {
+			b.WriteString("Tag added.")
+		} else {
+			b.WriteString("Category added.")
+		}
+		b.WriteString("</p></div>\n")
+	} else if r.URL.Query().Get("error") != "" {
+		b.WriteString("<div id=\"message\" class=\"error notice is-dismissible\"><p>An error occurred adding the term.</p></div>\n")
+	}
+
+	b.WriteString("<div id=\"col-container\" class=\"wp-clearfix\">\n")
+	b.WriteString("<div id=\"col-left\">\n<div class=\"col-wrap\">\n")
+	b.WriteString("<div class=\"form-wrap\">\n<h2>")
+	b.WriteString(html.EscapeString(addHeading))
+	b.WriteString("</h2>\n")
+	b.WriteString("<form id=\"addtag\" method=\"post\" action=\"/wp-admin/edit-tags.php\" class=\"validate\">\n")
+	b.WriteString("<input type=\"hidden\" name=\"action\" value=\"add-tag\" />\n")
+	b.WriteString("<input type=\"hidden\" name=\"screen\" value=\"")
+	b.WriteString(html.EscapeString(screen))
+	b.WriteString("\" />\n")
+	b.WriteString("<input type=\"hidden\" name=\"taxonomy\" value=\"")
+	b.WriteString(html.EscapeString(taxonomy))
+	b.WriteString("\" />\n")
+	b.WriteString("<input type=\"hidden\" name=\"post_type\" value=\"post\" />\n")
+	b.WriteString("<input type=\"hidden\" id=\"_wpnonce_add-tag\" name=\"_wpnonce_add-tag\" value=\"")
+	b.WriteString(html.EscapeString(nonce))
+	b.WriteString("\" />\n")
+	b.WriteString("<div class=\"form-field form-required term-name-wrap\">\n")
+	b.WriteString("<label for=\"tag-name\">Name</label>\n")
+	b.WriteString("<input name=\"tag-name\" id=\"tag-name\" type=\"text\" value=\"\" size=\"40\" aria-required=\"true\" />\n")
+	b.WriteString("</div>\n")
+	b.WriteString("<div class=\"form-field term-slug-wrap\">\n")
+	b.WriteString("<label for=\"tag-slug\">Slug</label>\n")
+	b.WriteString("<input name=\"slug\" id=\"tag-slug\" type=\"text\" value=\"\" size=\"40\" />\n")
+	b.WriteString("</div>\n")
+	if taxonomy == "category" {
+		b.WriteString("<div class=\"form-field term-parent-wrap\">\n")
+		b.WriteString("<label for=\"parent\">Parent Category</label>\n")
+		b.WriteString("<select name=\"parent\" id=\"parent\" class=\"postform\">\n")
+		b.WriteString("<option value=\"-1\">None</option>\n")
+		for _, t := range terms {
+			b.WriteString("<option value=\"")
+			b.WriteString(strconv.FormatInt(t.ID, 10))
+			b.WriteString("\">")
+			b.WriteString(html.EscapeString(t.Name))
+			b.WriteString("</option>\n")
+		}
+		b.WriteString("</select>\n</div>\n")
+	}
+	b.WriteString("<div class=\"form-field term-description-wrap\">\n")
+	b.WriteString("<label for=\"tag-description\">Description</label>\n")
+	b.WriteString("<textarea name=\"description\" id=\"tag-description\" rows=\"5\" cols=\"40\"></textarea>\n")
+	b.WriteString("</div>\n")
+	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"")
+	b.WriteString(html.EscapeString(submitLabel))
+	b.WriteString("\" /></p>\n")
+	b.WriteString("</form>\n</div>\n</div>\n</div>\n")
+
+	b.WriteString("<div id=\"col-right\">\n<div class=\"col-wrap\">\n")
 	b.WriteString("<table class=\"wp-list-table widefat fixed striped table-view-list tags\">\n")
 	b.WriteString("<thead><tr>")
 	b.WriteString("<th scope=\"col\" class=\"manage-column column-name column-primary\">Name</th>")
@@ -386,6 +508,7 @@ func (h *Handler) serveEditTags(w http.ResponseWriter, r *http.Request, c *wp.Co
 		b.WriteString("</td></tr>\n")
 	}
 	b.WriteString("</tbody>\n</table>\n")
+	b.WriteString("</div>\n</div>\n</div>\n")
 	writeAdminPage(w, c, newAdminChrome(c, heading, screen), b.String())
 }
 
@@ -395,6 +518,72 @@ type adminTerm struct {
 	Slug        string
 	Description string
 	Count       int64
+}
+
+func insertAdminTerm(c *wp.Context, taxonomy, name, slug, description string, parent int64) (int64, error) {
+	if c == nil || c.DB == nil {
+		return 0, fmt.Errorf("nil DB")
+	}
+	q, args, err := c.DB.Prepare(
+		"INSERT INTO "+c.DB.Terms()+" (name, slug, term_group) VALUES (%s, %s, %d)",
+		name, slug, 0,
+	)
+	if err != nil {
+		return 0, err
+	}
+	res, err := c.DB.Exec(q, args...)
+	if err != nil {
+		return 0, err
+	}
+	termID, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	tq, targs, err := c.DB.Prepare(
+		"INSERT INTO "+c.DB.TermTaxonomy()+
+			" (term_id, taxonomy, description, parent, count) VALUES (%d, %s, %s, %d, %d)",
+		termID, taxonomy, description, parent, 0,
+	)
+	if err != nil {
+		return 0, err
+	}
+	if _, err := c.DB.Exec(tq, targs...); err != nil {
+		return 0, err
+	}
+	return termID, nil
+}
+
+func uniqueAdminTermSlug(c *wp.Context, base string) (string, error) {
+	slug := base
+	for i := 2; i < 1000; i++ {
+		exists, err := adminTermSlugExists(c, slug)
+		if err != nil {
+			return "", err
+		}
+		if !exists {
+			return slug, nil
+		}
+		slug = fmt.Sprintf("%s-%d", base, i)
+	}
+	return "", fmt.Errorf("could not allocate unique slug")
+}
+
+func adminTermSlugExists(c *wp.Context, slug string) (bool, error) {
+	if c == nil || c.DB == nil {
+		return false, fmt.Errorf("nil DB")
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT term_id FROM "+c.DB.Terms()+" WHERE slug = %s LIMIT 1",
+		slug,
+	)
+	if err != nil {
+		return false, err
+	}
+	row, err := c.DB.GetRow(q, args...)
+	if err != nil {
+		return false, err
+	}
+	return row != nil, nil
 }
 
 func listAdminTerms(c *wp.Context, taxonomy string, limit int) ([]adminTerm, error) {
