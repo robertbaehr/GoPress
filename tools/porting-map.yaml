@@ -1004,6 +1004,21 @@
   api: exported
   notes: "P2.64 — application/json (+json / json+oembed) media-type match"
 
+# P2.65: wp_is_rest_endpoint / wp_is_serving_rest_request.
+- prefix: wp-includes/rest-api.php#wp_is_rest_endpoint
+  go: internal/wp/rest_endpoint.go
+  status: done
+  task: P2.65
+  api: exported
+  notes: "P2.65 — IsRESTEndpoint from Scope.IsREST / RESTDispatching + filter"
+
+- prefix: wp-includes/functions.php#wp_is_serving_rest_request
+  go: internal/wp/rest_endpoint.go
+  status: done
+  task: P2.65
+  api: exported
+  notes: "P2.65 — IsServingRESTRequest (REST_REQUEST / Scope.IsREST)"
+
 - prefix: wp-includes/class-wp-list-util.php
   go: internal/wp/filter_object_list.go
   status: partial

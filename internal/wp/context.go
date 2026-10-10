@@ -211,19 +211,21 @@ type RequestScope struct {
 	IsCategory   bool
 
 	// Is* flags mirror WP_Query conditionals (filled by query parse).
-	IsHome       bool
-	IsSingular   bool
-	IsArchive    bool
-	IsSearch     bool
-	Is404        bool
-	IsAdmin      bool
-	IsREST       bool
-	IsFeed       bool
-	IsFrontPage  bool
-	IsPostsPage  bool
-	IsPage       bool
-	IsSingle     bool
-	IsAttachment bool
+	IsHome     bool
+	IsSingular bool
+	IsArchive  bool
+	IsSearch   bool
+	Is404      bool
+	IsAdmin    bool
+	IsREST     bool
+	// RESTDispatching counts nested rest.Server dispatches (is_dispatching).
+	RESTDispatching int
+	IsFeed          bool
+	IsFrontPage     bool
+	IsPostsPage     bool
+	IsPage          bool
+	IsSingle        bool
+	IsAttachment    bool
 
 	// Paged is the main query page number (1-based; 0 means unset → page 1).
 	Paged int
@@ -291,6 +293,40 @@ func (s *RequestScope) SetREST(v bool) {
 	s.mu.Lock()
 	s.IsREST = v
 	s.mu.Unlock()
+}
+
+// BeginRESTDispatch increments the REST dispatch nesting counter (P2.65).
+func (s *RequestScope) BeginRESTDispatch() {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.RESTDispatching++
+	s.IsREST = true
+	s.mu.Unlock()
+}
+
+// EndRESTDispatch decrements the REST dispatch nesting counter (P2.65).
+func (s *RequestScope) EndRESTDispatch() {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	if s.RESTDispatching > 0 {
+		s.RESTDispatching--
+	}
+	s.mu.Unlock()
+}
+
+// IsRESTDispatching reports whether a REST handler is currently running.
+func (s *RequestScope) IsRESTDispatching() bool {
+	if s == nil {
+		return false
+	}
+	s.mu.Lock()
+	n := s.RESTDispatching
+	s.mu.Unlock()
+	return n > 0
 }
 
 type scopeError string
