@@ -1931,6 +1931,14 @@
   task: P7.24
   api: n/a
 
+# P3.48: link_manager_enabled permanently disabled (manage_links never granted).
+- prefix: wp-includes/option.php#link_manager_enabled
+  go: internal/wp/link_manager.go
+  status: out-of-scope
+  task: P3.48
+  api: exported
+  notes: "P3.48 — GetOption always 0; manage_links → do_not_allow"
+
 - prefix: wp-admin/link-manager.php
   go: internal/admin
   status: out-of-scope

@@ -35,6 +35,10 @@ func (o *Options) GetOption(name string, defaultValue any) any {
 	if o == nil || name == "" {
 		return defaultValue
 	}
+	// P3.48: link_manager_enabled is always off (Links Manager out of scope).
+	if name == linkManagerEnabledOption {
+		return "0"
+	}
 
 	if all, ok := o.alloptions(); ok {
 		if v, exists := all[name]; exists {
@@ -130,6 +134,10 @@ func (o *Options) UpdateOption(name string, value any, autoload string) (bool, e
 	}
 	if err := protectSpecialOption(name); err != nil {
 		return false, err
+	}
+	// P3.48: refuse enabling the Links Manager.
+	if name == linkManagerEnabledOption {
+		value = "0"
 	}
 
 	serialized := optionValueString(value)
