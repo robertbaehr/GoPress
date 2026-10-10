@@ -47,6 +47,8 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 		return true
 	case "/wp-admin/options-media.php":
 		h.requireLogin(w, r, c, h.serveOptionsMedia)
+	case "/wp-admin/options-permalink.php":
+		h.requireLogin(w, r, c, h.serveOptionsPermalink)
 		return true
 	case "/wp-admin/plugins.php":
 		h.requireLogin(w, r, c, h.servePlugins)
@@ -694,6 +696,105 @@ func (h *Handler) serveOptionsMedia(w http.ResponseWriter, r *http.Request, c *w
 	}
 	b.WriteString(" /> Items linked to should be embedded automatically</label>\n")
 	b.WriteString("</td>\n</tr>\n")
+	b.WriteString("</table>\n")
+	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Save Changes\"></p>\n")
+	b.WriteString("</form>\n</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
+// serveOptionsPermalink is the Settings → Permalinks screen stub (P7.36).
+// Shows common permalink structure radios plus optional category/tag bases.
+func (h *Handler) serveOptionsPermalink(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	structure := optionString(c, "permalink_structure", "")
+	categoryBase := optionString(c, "category_base", "")
+	tagBase := optionString(c, "tag_base", "")
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	if home == "" {
+		home = "http://127.0.0.1:8082"
+	}
+
+	type structOpt struct {
+		id, label, value, example string
+	}
+	opts := []structOpt{
+		{"plain", "Plain", "", home + "/?p=123"},
+		{"day-name", "Day and name", "/%year%/%monthnum%/%day%/%postname%/", home + "/2024/01/01/sample-post/"},
+		{"month-name", "Month and name", "/%year%/%monthnum%/%postname%/", home + "/2024/01/sample-post/"},
+		{"numeric", "Numeric", "/archives/%post_id%", home + "/archives/123"},
+		{"post-name", "Post name", "/%postname%/", home + "/sample-post/"},
+	}
+	known := map[string]bool{}
+	for _, o := range opts {
+		known[o.value] = true
+	}
+	customChecked := structure != "" && !known[structure]
+
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Permalink Settings &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap\">\n")
+	b.WriteString("<h1>Permalink Settings</h1>\n")
+	b.WriteString("<p class=\"description\">GoPress permalink settings stub — structure display only; save lands with options-permalink.php.</p>\n")
+	b.WriteString("<form name=\"form\" action=\"options-permalink.php\" method=\"post\">\n")
+	b.WriteString("<h2 id=\"wp-settings-section-common-settings\" class=\"title\">Common Settings</h2>\n")
+	b.WriteString("<table class=\"form-table permalink-structure\" role=\"presentation\">\n")
+	b.WriteString("<tr>\n<th scope=\"row\">Permalink structure</th>\n<td>\n")
+	b.WriteString("<fieldset class=\"structure-selection\">\n")
+	b.WriteString("<legend class=\"screen-reader-text\">Permalink structure</legend>\n")
+	for _, o := range opts {
+		b.WriteString("<div class=\"row\">\n")
+		b.WriteString("<input id=\"permalink-input-")
+		b.WriteString(html.EscapeString(o.id))
+		b.WriteString("\" name=\"selection\" type=\"radio\" value=\"")
+		b.WriteString(html.EscapeString(o.value))
+		b.WriteString("\"")
+		if structure == o.value && !customChecked {
+			b.WriteString(" checked=\"checked\"")
+		}
+		b.WriteString(" />\n")
+		b.WriteString("<div><label for=\"permalink-input-")
+		b.WriteString(html.EscapeString(o.id))
+		b.WriteString("\">")
+		b.WriteString(html.EscapeString(o.label))
+		b.WriteString("</label>\n<p><code id=\"permalink-")
+		b.WriteString(html.EscapeString(o.id))
+		b.WriteString("\">")
+		b.WriteString(html.EscapeString(o.example))
+		b.WriteString("</code></p></div>\n</div>\n")
+	}
+	b.WriteString("<div class=\"row\">\n")
+	b.WriteString("<input id=\"custom_selection\" name=\"selection\" type=\"radio\" value=\"custom\"")
+	if customChecked {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString(" />\n")
+	b.WriteString("<div><label for=\"custom_selection\">Custom Structure</label>\n")
+	b.WriteString("<p><code>")
+	b.WriteString(html.EscapeString(home))
+	customVal := structure
+	if !customChecked {
+		customVal = ""
+	}
+	b.WriteString("</code> <input name=\"permalink_structure\" id=\"permalink_structure\" type=\"text\" value=\"")
+	b.WriteString(html.EscapeString(customVal))
+	b.WriteString("\" class=\"regular-text code\" /></p></div>\n</div>\n")
+	b.WriteString("</fieldset>\n</td>\n</tr>\n</table>\n")
+
+	b.WriteString("<h2 class=\"title\">Optional</h2>\n")
+	b.WriteString("<table class=\"form-table\" role=\"presentation\">\n")
+	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"category_base\">Category base</label></th>\n")
+	b.WriteString("<td><input name=\"category_base\" id=\"category_base\" type=\"text\" value=\"")
+	b.WriteString(html.EscapeString(categoryBase))
+	b.WriteString("\" class=\"regular-text code\" /></td>\n</tr>\n")
+	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"tag_base\">Tag base</label></th>\n")
+	b.WriteString("<td><input name=\"tag_base\" id=\"tag_base\" type=\"text\" value=\"")
+	b.WriteString(html.EscapeString(tagBase))
+	b.WriteString("\" class=\"regular-text code\" /></td>\n</tr>\n")
 	b.WriteString("</table>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Save Changes\"></p>\n")
 	b.WriteString("</form>\n</div>\n</body>\n</html>\n")
