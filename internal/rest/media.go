@@ -140,35 +140,6 @@ func (s *Server) createMedia(w http.ResponseWriter, r *http.Request, c *wp.Conte
 	writeJSON(w, http.StatusCreated, item)
 }
 
-func (s *Server) serveMediaItem(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
-	if r.Method != http.MethodGet {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
-			"code":    "rest_no_route",
-			"message": "No route was found matching the URL and request method.",
-			"data":    map[string]any{"status": 405},
-		})
-		return
-	}
-	item, err := getMediaByID(c, id)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]any{
-			"code":    "rest_media_query",
-			"message": err.Error(),
-			"data":    map[string]any{"status": 500},
-		})
-		return
-	}
-	if item == nil {
-		writeJSON(w, http.StatusNotFound, map[string]any{
-			"code":    "rest_post_invalid_id",
-			"message": "Invalid post ID.",
-			"data":    map[string]any{"status": 404},
-		})
-		return
-	}
-	writeJSON(w, http.StatusOK, item)
-}
-
 func listMediaPaged(c *wp.Context, limit, page int) ([]Media, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
