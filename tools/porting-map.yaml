@@ -3529,6 +3529,21 @@
   task: P5.43
   api: internal
 
+# P5.87: core/post-title + post-content polish (level/textAlign/link/tagName/reentrancy).
+- prefix: wp-includes/blocks/post-title.php#p5.87
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.87
+  api: internal
+  notes: "P5.87 — level 0→p; textAlign/has-link-color/className; isLink+target/rel; empty title omits"
+
+- prefix: wp-includes/blocks/post-content.php#p5.87
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.87
+  api: internal
+  notes: "P5.87 — tagName div|main|section|article; align/className; seen_ids reentrancy + DebugDisplay halt"
+
 # P5.44: query-pagination (+ previous / next / numbers) honor paged + max pages.
 - prefix: wp-includes/blocks/query-pagination.php
   go: internal/blocks/query.go
