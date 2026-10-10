@@ -693,7 +693,10 @@ func builtInIndexRoutes() map[string]RouteIndex {
 		"/wp/v2/settings": {
 			Namespace: "wp/v2",
 			Methods:   []string{"GET", "POST", "PUT", "PATCH"},
-			Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}},
+			Endpoints: []RouteEndpoint{
+				{Methods: []string{"GET"}},
+				{Methods: []string{"POST", "PUT", "PATCH"}},
+			},
 		},
 		"/wp/v2/users/me": {
 			Namespace: "wp/v2",
