@@ -193,6 +193,18 @@
   task: P5.10
   api: internal
 
+- prefix: wp-includes/block-supports/duotone.php
+  go: internal/blocks/supports.go
+  status: partial
+  task: P5.22
+  api: internal
+
+- prefix: wp-includes/class-wp-duotone.php
+  go: internal/blocks/supports.go
+  status: partial
+  task: P5.22
+  api: internal
+
 - prefix: wp-includes/blocks/
   go: internal/blocks
   status: partial
