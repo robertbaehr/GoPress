@@ -520,7 +520,7 @@
 - prefix: wp-admin/includes/privacy-tools.php
   go: internal/wp/privacy_export.go
   status: partial
-  task: P8.4
+  task: P8.5
   api: exported
 
 - prefix: wp-admin/includes/schema.php
@@ -633,3 +633,5 @@
   status: partial
   task: P8.5
   api: exported
+
+# P10.16: e2e update blogname via REST settings — tests/e2e/rest-settings.spec.js
