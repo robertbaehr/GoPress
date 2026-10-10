@@ -395,3 +395,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.116: register/disabled/checkemail headers after P6.43.
+- id: login-p10116-register-disabled-redirect
+  role: anon
+  method: GET
+  path: /wp-login.php?action=register
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10116-checkemail-registered
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=registered
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10116-lostpassword-redirect
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword&redirect_to=/wp-admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
