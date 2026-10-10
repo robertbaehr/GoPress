@@ -56,6 +56,7 @@ func TestLoginPostRejectsExternalRedirectTo(t *testing.T) {
 
 	req := httptest.NewRequest(http.MethodPost, "/wp-login.php", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: "wordpress_test_cookie", Value: "WP Cookie check"})
 	rec := httptest.NewRecorder()
 	rc := c.ForRequest(rec, req)
 	(&login.Handler{}).Handle(rec, req, rc)
