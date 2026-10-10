@@ -77,3 +77,33 @@ func TestBlockSupportsDuotoneCustomColors(t *testing.T) {
 		t.Fatalf("missing custom duotone class: %q", out)
 	}
 }
+
+func TestBlockSupportsShadowPreset(t *testing.T) {
+	in := `<!-- wp:group {"style":{"shadow":"var:preset|shadow|natural"}} -->
+<div class="wp-block-group">X</div>
+<!-- /wp:group -->`
+	out := blocks.Render(in)
+	if !strings.Contains(out, "box-shadow:var(--wp--preset--shadow--natural)") {
+		t.Fatalf("missing shadow preset style: %q", out)
+	}
+}
+
+func TestBlockSupportsShadowCustom(t *testing.T) {
+	in := `<!-- wp:group {"style":{"shadow":"2px 2px 4px #000"}} -->
+<div class="wp-block-group">X</div>
+<!-- /wp:group -->`
+	out := blocks.Render(in)
+	if !strings.Contains(out, "box-shadow:2px 2px 4px #000") {
+		t.Fatalf("missing custom shadow style: %q", out)
+	}
+}
+
+func TestBlockSupportsShadowTopLevelAttr(t *testing.T) {
+	in := `<!-- wp:group {"shadow":"var:preset|shadow|deep"} -->
+<div class="wp-block-group">X</div>
+<!-- /wp:group -->`
+	out := blocks.Render(in)
+	if !strings.Contains(out, "box-shadow:var(--wp--preset--shadow--deep)") {
+		t.Fatalf("missing top-level shadow style: %q", out)
+	}
+}

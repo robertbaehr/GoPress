@@ -50,6 +50,10 @@ func CompileStyle(style map[string]any) string {
 	if border, ok := style["border"].(map[string]any); ok {
 		parts = append(parts, borderStyles(border)...)
 	}
+	// Shadow block support (P5.27): style.shadow → box-shadow.
+	if shadow, ok := style["shadow"].(string); ok && shadow != "" {
+		parts = append(parts, "box-shadow:"+cssValue(shadow))
+	}
 	return strings.Join(parts, ";")
 }
 

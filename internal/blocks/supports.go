@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-// applySupports injects basic color/spacing/fontSize/layout classes and styles
-// from block attributes onto the rendered root element (P5.10 / P5.19).
+// applySupports injects basic color/spacing/fontSize/layout/shadow classes and styles
+// from block attributes onto the rendered root element (P5.10 / P5.19 / P5.27).
 func applySupports(htmlFragment string, attrs map[string]any, blockName string) string {
 	if htmlFragment == "" {
 		return htmlFragment
@@ -63,6 +63,10 @@ func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string
 					styles = mergeCSSDecls(styles, filterCSS)
 				}
 			}
+		}
+		// Top-level shadow attribute (registered by wp_register_shadow_support).
+		if shadow, ok := attrs["shadow"].(string); ok && shadow != "" {
+			styles = mergeCSSDecls(styles, "box-shadow:"+cssValue(shadow))
 		}
 	}
 	classes = append(classes, layoutClasses(blockName, attrs)...)

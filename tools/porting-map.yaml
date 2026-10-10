@@ -224,6 +224,12 @@
   task: P5.22
   api: internal
 
+- prefix: wp-includes/block-supports/shadow.php
+  go: internal/blocks/supports.go
+  status: partial
+  task: P5.27
+  api: internal
+
 - prefix: wp-includes/template.php
   go: internal/wp/template_hierarchy.go
   status: partial
