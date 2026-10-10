@@ -6441,3 +6441,18 @@ wp-login.php#language-switcher-post
   task: P10.112
   api: n/a
   notes: "P10.112 — preformatted route; comments/search/statuses; login redirect_to; tag 404; 462/462"
+
+# P10.113: STATUS/PORTING refresh after P5.101–P10.112.
+- prefix: docs/STATUS.md#p10.113
+  go: docs/STATUS.md
+  status: partial
+  task: P10.113
+  api: n/a
+  notes: "P10.113 — STATUS/PORTING refresh after P5.101–P10.112 (462/462 corpus)"
+
+- prefix: PORTING.md#p10.113
+  go: PORTING.md
+  status: partial
+  task: P10.113
+  api: n/a
+  notes: "P10.113 — regenerate porting-status after stacked P5.101–P10.112"
