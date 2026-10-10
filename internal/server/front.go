@@ -1837,6 +1837,9 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, c *wp.Context) {
 			b.WriteString(strconv.FormatInt(p.CommentCount, 10))
 			b.WriteString("</slash:comments>\n")
 		}
+		for _, enc := range p.Enclosures {
+			b.WriteString(rssEnclosureTag(enc))
+		}
 		b.WriteString("\t\t\n\t\t\n")
 		b.WriteString("\t\t\t</item>\n")
 	}
@@ -1963,6 +1966,9 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 			b.WriteString(strconv.FormatInt(p.CommentCount, 10))
 			b.WriteString("</thr:total>\n")
 		}
+		for _, enc := range p.Enclosures {
+			b.WriteString(atomEnclosureTag(enc))
+		}
 		b.WriteString("\t\t\t</entry>\n")
 	}
 	b.WriteString("</feed>\n")
@@ -2083,6 +2089,12 @@ func xmlEscape(s string) string {
 	return b.String()
 }
 
+type feedEnclosure struct {
+	URL    string
+	Length string
+	Type   string
+}
+
 type feedPost struct {
 	wp.Post
 	AuthorName   string
@@ -2091,6 +2103,7 @@ type feedPost struct {
 	CommentCount int64
 	ExcerptRSS   string
 	ContentRSS   string
+	Enclosures   []feedEnclosure
 }
 
 func latestFeedPosts(c *wp.Context, limit int) ([]feedPost, error) {
@@ -2112,9 +2125,61 @@ func latestFeedPosts(c *wp.Context, limit int) ([]feedPost, error) {
 		// so data: URIs in fixture video blocks are preserved like WP.
 		rendered := wp.TheContent(c, p.Content)
 		fp.ContentRSS = strings.TrimLeft(rendered, " \t\r")
+		if strings.TrimSpace(p.Password) == "" {
+			fp.Enclosures = feedEnclosuresForPost(c, p.ID)
+		}
 		out = append(out, fp)
 	}
 	return out, nil
+}
+
+// feedEnclosuresForPost reads enclosure postmeta (rss_enclosure / atom_enclosure, P3.45).
+// Meta value shape is "url\nlength\nmime …".
+func feedEnclosuresForPost(c *wp.Context, postID int64) []feedEnclosure {
+	if c == nil || c.Meta == nil || postID <= 0 {
+		return nil
+	}
+	raw := c.Meta.GetMetadata(wp.MetaPost, postID, "enclosure", false)
+	vals, ok := raw.([]string)
+	if !ok || len(vals) == 0 {
+		return nil
+	}
+	var out []feedEnclosure
+	for _, enc := range vals {
+		parts := strings.Split(enc, "\n")
+		if len(parts) < 3 {
+			continue
+		}
+		url := strings.TrimSpace(parts[0])
+		length := strings.TrimSpace(parts[1])
+		typeField := strings.TrimSpace(parts[2])
+		if url == "" || typeField == "" {
+			continue
+		}
+		mime := strings.Fields(typeField)
+		if len(mime) == 0 {
+			continue
+		}
+		out = append(out, feedEnclosure{URL: url, Length: length, Type: mime[0]})
+	}
+	return out
+}
+
+func rssEnclosureTag(enc feedEnclosure) string {
+	length := enc.Length
+	if length == "" {
+		length = "0"
+	}
+	return `<enclosure url="` + xmlEscape(enc.URL) + `" length="` + xmlEscape(length) + `" type="` + xmlEscape(enc.Type) + `" />` + "\n"
+}
+
+func atomEnclosureTag(enc feedEnclosure) string {
+	length := enc.Length
+	if length == "" {
+		length = "0"
+	}
+	return fmt.Sprintf("<link href=\"%s\" rel=\"enclosure\" length=\"%s\" type=\"%s\" />\n",
+		xmlEscape(enc.URL), xmlEscape(length), xmlEscape(enc.Type))
 }
 
 func feedBuildDate(posts []feedPost) string {

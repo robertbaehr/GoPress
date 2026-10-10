@@ -1185,6 +1185,13 @@
   task: P3.13
   api: n/a
 
+# P3.45: rss_enclosure / atom_enclosure from enclosure postmeta.
+- prefix: wp-includes/feed.php#rss_enclosure
+  go: internal/server/front.go
+  status: partial
+  task: P3.45
+  api: n/a
+
 # P3.38: strengthen redirect_canonical trailing-slash (absolute Location, /page/N).
 - prefix: wp-includes/canonical.php
   go: internal/server/front.go
