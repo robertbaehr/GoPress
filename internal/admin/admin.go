@@ -1967,9 +1967,9 @@ func listNavMenus(c *wp.Context) ([]navMenuTerm, error) {
 	return out, nil
 }
 
-// serveSiteHealth is the Tools → Site Health screen stub (P8.3).
+// serveSiteHealth is the Tools → Site Health screen stub (P8.3 / P7.45).
 func (h *Handler) serveSiteHealth(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	// WP routes ?tab=debug to site-health-info.php.
+	// WP routes ?tab=debug to the Info view (site-health-info.php in GoPress).
 	if r.URL.Query().Get("tab") == "debug" {
 		http.Redirect(w, r, "/wp-admin/site-health-info.php", http.StatusFound)
 		return
@@ -1977,26 +1977,33 @@ func (h *Handler) serveSiteHealth(w http.ResponseWriter, r *http.Request, c *wp.
 	blogname := optionString(c, "blogname", "GoPress")
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
-	b.WriteString("<title>Site Health &lsaquo; ")
+	b.WriteString("<title>Site Health - Status &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui site-health\">\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui js site-health\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap health-check-header\" id=\"site-health\">\n")
 	b.WriteString("<h1>Site Health</h1>\n")
-	b.WriteString(siteHealthTabsHTML("status"))
-	b.WriteString("<p>GoPress site-health stub — async REST checks land later.</p>\n")
-	b.WriteString("<div class=\"health-check-body\">\n")
-	b.WriteString("<div class=\"site-health-progress-wrapper\">\n")
-	b.WriteString("<div class=\"site-health-progress\"><span class=\"screen-reader-text\">Good</span></div>\n")
+	b.WriteString(siteHealthTabsHTML(""))
+	b.WriteString("<div class=\"health-check-body health-check-status-tab\">\n")
+	b.WriteString("<div class=\"site-health-progress-wrapper\" role=\"region\" aria-labelledby=\"site-health-progress-heading\">\n")
+	b.WriteString("<h2 id=\"site-health-progress-heading\" class=\"screen-reader-text\">Site health status</h2>\n")
+	b.WriteString("<div class=\"site-health-progress\"><svg viewBox=\"0 0 100 100\" role=\"presentation\"><circle r=\"50\" cx=\"50\" cy=\"50\"></circle></svg>")
+	b.WriteString("<span class=\"screen-reader-text\">Good</span></div>\n")
+	b.WriteString("<div class=\"site-health-progress-label\">Good</div>\n")
 	b.WriteString("</div>\n")
+	b.WriteString("<h2>Site health checks</h2>\n")
+	b.WriteString("<p>GoPress site-health stub — async REST checks land later. All stub checks report good.</p>\n")
 	b.WriteString("<ul class=\"health-check-accordion\">\n")
-	b.WriteString("<li class=\"health-check-accordion-item\"><h2>Status</h2><p>All stub checks report good.</p></li>\n")
-	b.WriteString("</ul>\n</div>\n</div>\n</body>\n</html>\n")
+	b.WriteString("<li class=\"health-check-accordion-item\">\n")
+	b.WriteString("<h3 class=\"health-check-accordion-heading\"><button type=\"button\" aria-expanded=\"false\" class=\"health-check-accordion-trigger\">")
+	b.WriteString("<span class=\"title\">WordPress</span><span class=\"badge blue\">Good</span></button></h3>\n")
+	b.WriteString("<div class=\"health-check-accordion-panel\"><p>Runtime is GoPress (Go). Core update checks are out of scope.</p></div>\n")
+	b.WriteString("</li>\n</ul>\n</div>\n</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveSiteHealthInfo is the Site Health → Info (debug) tab stub (P7.44).
+// serveSiteHealthInfo is the Site Health → Info (debug) tab stub (P7.44 / P7.45).
 func (h *Handler) serveSiteHealthInfo(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
 	version := optionString(c, "db_version", "")
@@ -2007,22 +2014,25 @@ func (h *Handler) serveSiteHealthInfo(w http.ResponseWriter, r *http.Request, c 
 	home := optionString(c, "home", optionString(c, "siteurl", ""))
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
-	b.WriteString("<title>Site Health Info &lsaquo; ")
+	b.WriteString("<title>Site Health - Info &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui site-health\">\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui js site-health\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap health-check-header\" id=\"site-health\">\n")
 	b.WriteString("<h1>Site Health</h1>\n")
 	b.WriteString(siteHealthTabsHTML("debug"))
-	b.WriteString("<div class=\"health-check-body health-check-debug-tab\">\n")
+	b.WriteString("<div class=\"health-check-body health-check-debug-tab hide-if-no-js\">\n")
 	b.WriteString("<h2>Site Health Info</h2>\n")
-	b.WriteString("<p>This page shows configuration details for this GoPress site. For status checks, see the ")
+	b.WriteString("<p>This page can show debugging information about your GoPress configuration. For status checks, see the ")
 	b.WriteString("<a href=\"site-health.php\">Site Health Status</a> page.</p>\n")
-	b.WriteString("<div class=\"site-health-copy-buttons\"><button type=\"button\" class=\"button copy-button\">Copy site info to clipboard</button></div>\n")
-	b.WriteString("<div id=\"health-check-debug\" class=\"health-check-accordion\">\n")
+	b.WriteString("<div class=\"site-health-copy-buttons\">\n")
+	b.WriteString("<button type=\"button\" class=\"button button-primary copy-button\" data-clipboard-text=\"\">Copy site info to clipboard</button>\n")
+	b.WriteString("<span class=\"copy-success hidden\" aria-hidden=\"true\">Copied!</span>\n")
+	b.WriteString("</div>\n")
+	b.WriteString("<div id=\"health-check-debug\" class=\"health-check-accordion\" role=\"presentation\">\n")
 	b.WriteString("<h3 class=\"health-check-accordion-heading\">WordPress</h3>\n")
-	b.WriteString("<div class=\"health-check-accordion-panel\"><table class=\"widefat striped health-check-table\">\n")
+	b.WriteString("<div class=\"health-check-accordion-panel\"><table class=\"widefat striped health-check-table\" role=\"presentation\">\n")
 	b.WriteString("<tbody>\n")
 	b.WriteString("<tr><td>Site Title</td><td>")
 	b.WriteString(html.EscapeString(blogname))
@@ -2038,21 +2048,22 @@ func (h *Handler) serveSiteHealthInfo(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString("</td></tr>\n")
 	b.WriteString("<tr><td>Runtime</td><td>GoPress (Go)</td></tr>\n")
 	b.WriteString("</tbody></table></div>\n")
-	b.WriteString("<p class=\"description\">GoPress site-health info stub (P7.44).</p>\n")
+	b.WriteString("<p class=\"description\">GoPress site-health info stub (P7.45).</p>\n")
 	b.WriteString("</div>\n</div>\n</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
 
+// siteHealthTabsHTML renders WP-shaped Status/Info secondary tabs (P7.45).
 func siteHealthTabsHTML(active string) string {
-	statusClass, debugClass := "", ""
+	statusClass, debugClass := "health-check-tab", "health-check-tab"
 	if active == "debug" {
-		debugClass = ` class="active"`
+		debugClass += " active"
 	} else {
-		statusClass = ` class="active"`
+		statusClass += " active"
 	}
-	return `<nav class="health-check-tabs-wrapper hide-if-no-js" aria-label="Secondary menu">` +
-		`<a href="site-health.php"` + statusClass + `>Status</a>` +
-		`<a href="site-health-info.php"` + debugClass + `>Info</a>` +
+	return `<nav class="health-check-tabs-wrapper hide-if-no-js tab-count-2" aria-label="Secondary menu">` +
+		`<a href="site-health.php" class="` + statusClass + `">Status</a>` +
+		`<a href="site-health.php?tab=debug" class="` + debugClass + `">Info</a>` +
 		`</nav>` + "\n"
 }
 
