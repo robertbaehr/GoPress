@@ -1,6 +1,7 @@
 package wp_test
 
 import (
+	"context"
 	"crypto/tls"
 	"net/http"
 	"net/http/httptest"
@@ -13,7 +14,7 @@ import (
 func TestSetURLSchemeHTTPS(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "https://example.test/", nil)
 	req.TLS = &tls.ConnectionState{}
-	c := wp.NewContext(nil)
+	c := wp.NewContext(context.TODO())
 	c.Req = req
 	got := wp.SetURLScheme(c, "http://example.test/path", "")
 	if got != "https://example.test/path" {
