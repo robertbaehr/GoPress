@@ -1045,11 +1045,11 @@
   task: P8.5
   api: exported
 
-# P8.6: wire personal data export download links + attachment response.
+# P8.6 / P7.39: export personal data UI + download wiring.
 - prefix: wp-admin/export-personal-data.php
   go: internal/admin/admin.go
   status: partial
-  task: P8.6
+  task: P7.39
   api: n/a
 
 - prefix: wp-admin/includes/schema.php

@@ -1819,36 +1819,63 @@ func (h *Handler) serveExport(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveExportPersonalData is a privacy tools stub (P8.2) with file generation (P8.4)
-// and download wiring (P8.6).
+// serveExportPersonalData is a privacy tools stub (P8.2) with file generation (P8.4),
+// download wiring (P8.6), and UI polish (P7.39).
 func (h *Handler) serveExportPersonalData(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	if r.Method == http.MethodGet && r.URL.Query().Get("action") == "download" {
 		h.servePersonalDataExportDownload(w, r, c)
 		return
 	}
-	note := "GoPress privacy export stub — full request workflow lands later."
+	note := "This tool helps site owners comply with local laws and regulations by exporting known data for a given user."
 	var downloadLinks string
+	pendingEmail := ""
 	if r.Method == http.MethodPost {
 		_ = r.ParseForm()
-		email := strings.TrimSpace(r.Form.Get("username"))
+		email := strings.TrimSpace(r.Form.Get("username_or_email_for_privacy_request"))
+		if email == "" {
+			email = strings.TrimSpace(r.Form.Get("username"))
+		}
 		if email == "" {
 			email = strings.TrimSpace(r.Form.Get("email"))
 		}
-		if res, err := wp.GeneratePersonalDataExportFile(c, email); err != nil {
-			note = "Export generation failed: " + err.Error()
-		} else {
-			jsonName := filepath.Base(res.JSONPath)
-			htmlName := filepath.Base(res.HTMLPath)
-			jsonDL := wp.PersonalDataExportDownloadURL(jsonName)
-			htmlDL := wp.PersonalDataExportDownloadURL(htmlName)
-			note = "Export file generated for " + email + "."
-			downloadLinks = "<p class=\"export-download-links\">" +
-				"<a class=\"button button-primary\" href=\"" + html.EscapeString(jsonDL) + "\">Download JSON</a> " +
-				"<a class=\"button\" href=\"" + html.EscapeString(htmlDL) + "\">Download HTML</a>" +
-				"</p>\n"
+		action := strings.TrimSpace(r.Form.Get("action"))
+		switch action {
+		case "confirm_export":
+			if res, err := wp.GeneratePersonalDataExportFile(c, email); err != nil {
+				note = "Export generation failed: " + err.Error()
+			} else {
+				jsonName := filepath.Base(res.JSONPath)
+				htmlName := filepath.Base(res.HTMLPath)
+				jsonDL := wp.PersonalDataExportDownloadURL(jsonName)
+				htmlDL := wp.PersonalDataExportDownloadURL(htmlName)
+				note = "Export file generated for " + email + "."
+				downloadLinks = "<p class=\"export-download-links\">" +
+					"<a class=\"button button-primary\" href=\"" + html.EscapeString(jsonDL) + "\">Download JSON</a> " +
+					"<a class=\"button\" href=\"" + html.EscapeString(htmlDL) + "\">Download HTML</a>" +
+					"</p>\n"
+			}
+		default:
+			// WP: send_confirmation_email checked → pending; unchecked → generate now.
+			sendConfirm := r.Form.Get("send_confirmation_email") != ""
+			if sendConfirm {
+				pendingEmail = email
+				note = "Confirmation required: confirm export for " + email + "."
+			} else if res, err := wp.GeneratePersonalDataExportFile(c, email); err != nil {
+				note = "Export generation failed: " + err.Error()
+			} else {
+				jsonName := filepath.Base(res.JSONPath)
+				htmlName := filepath.Base(res.HTMLPath)
+				jsonDL := wp.PersonalDataExportDownloadURL(jsonName)
+				htmlDL := wp.PersonalDataExportDownloadURL(htmlName)
+				note = "Export file generated for " + email + "."
+				downloadLinks = "<p class=\"export-download-links\">" +
+					"<a class=\"button button-primary\" href=\"" + html.EscapeString(jsonDL) + "\">Download JSON</a> " +
+					"<a class=\"button\" href=\"" + html.EscapeString(htmlDL) + "\">Download HTML</a>" +
+					"</p>\n"
+			}
 		}
 	}
-	h.servePrivacyExportPage(w, c, note, downloadLinks)
+	h.servePrivacyExportPage(w, c, note, downloadLinks, pendingEmail)
 }
 
 func (h *Handler) servePersonalDataExportDownload(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -1864,41 +1891,66 @@ func (h *Handler) servePersonalDataExportDownload(w http.ResponseWriter, r *http
 	http.ServeFile(w, r, full)
 }
 
-func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, c *wp.Context, note, downloadLinks string) {
+func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, c *wp.Context, note, downloadLinks, pendingEmail string) {
 	blogname := optionString(c, "blogname", "GoPress")
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>Export Personal Data &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui privacy-settings\">\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui privacy-settings export-personal-data-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
-	b.WriteString("<div class=\"wrap\" id=\"privacy-settings\">\n")
+	b.WriteString("<div class=\"wrap nosubsub\" id=\"privacy-settings\">\n")
 	b.WriteString("<h1>Export Personal Data</h1>\n")
-	b.WriteString("<p>Manage requests for an export of personal data.</p>\n")
+	b.WriteString("<p>This tool helps site owners comply with local laws and regulations by exporting known data for a given user in a .zip file.</p>\n")
+	b.WriteString("<hr class=\"wp-header-end\">\n")
 	b.WriteString("<p class=\"description\">")
 	b.WriteString(html.EscapeString(note))
 	b.WriteString("</p>\n")
 	b.WriteString(downloadLinks)
+	if pendingEmail != "" {
+		b.WriteString("<div class=\"notice notice-warning\" id=\"export-confirm-pending\"><p>")
+		b.WriteString("A confirmation email would be sent to <strong>")
+		b.WriteString(html.EscapeString(pendingEmail))
+		b.WriteString("</strong>. Confirm below to complete the export (P7.39 stub).</p>\n")
+		b.WriteString("<form method=\"post\" action=\"/wp-admin/export-personal-data.php\" class=\"wp-privacy-export-confirm-form\">\n")
+		b.WriteString("<input type=\"hidden\" name=\"action\" value=\"confirm_export\">\n")
+		b.WriteString("<input type=\"hidden\" name=\"email\" value=\"")
+		b.WriteString(html.EscapeString(pendingEmail))
+		b.WriteString("\">\n")
+		b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"confirm_export\" id=\"confirm_export\" class=\"button button-primary\" value=\"Confirm Export\"></p>\n")
+		b.WriteString("</form></div>\n")
+	}
 	b.WriteString("<form method=\"post\" action=\"/wp-admin/export-personal-data.php\" class=\"wp-privacy-request-form\">\n")
-	b.WriteString("<p><label for=\"username\">Username or email address</label><br>\n")
-	b.WriteString("<input name=\"username\" type=\"text\" id=\"username\" class=\"regular-text\" required></p>\n")
+	b.WriteString("<h2>Add Data Export Request</h2>\n")
+	b.WriteString("<div class=\"wp-privacy-request-form-field\">\n")
+	b.WriteString("<table class=\"form-table\">\n")
+	b.WriteString("<tr><th scope=\"row\"><label for=\"username_or_email_for_privacy_request\">Username or email address</label></th>\n")
+	b.WriteString("<td><input name=\"username_or_email_for_privacy_request\" type=\"text\" id=\"username_or_email_for_privacy_request\" class=\"regular-text ltr\" required></td></tr>\n")
+	b.WriteString("<tr><th scope=\"row\">Confirmation email</th><td>\n")
+	b.WriteString("<input type=\"checkbox\" name=\"send_confirmation_email\" id=\"send_confirmation_email\" value=\"1\" checked=\"checked\">\n")
+	b.WriteString("<label for=\"send_confirmation_email\">Send personal data export confirmation email.</label>\n")
+	b.WriteString("</td></tr>\n</table>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Send Request\"></p>\n")
-	b.WriteString("</form>\n")
+	b.WriteString("</div>\n</form>\n")
 	b.WriteString("<table class=\"wp-list-table widefat fixed striped privacy-requests\">\n")
-	b.WriteString("<thead><tr><th scope=\"col\">File</th><th scope=\"col\">Status</th><th scope=\"col\">Download</th></tr></thead>\n")
+	b.WriteString("<thead><tr><th scope=\"col\">Requester</th><th scope=\"col\">File</th><th scope=\"col\">Status</th><th scope=\"col\">Next steps</th></tr></thead>\n")
 	b.WriteString("<tbody>\n")
 	files := wp.ListPersonalDataExportFiles(c, 20)
-	if len(files) == 0 {
-		b.WriteString("<tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"3\">No requests found.</td></tr>\n")
+	if pendingEmail != "" {
+		b.WriteString("<tr class=\"request-pending\"><td>")
+		b.WriteString(html.EscapeString(pendingEmail))
+		b.WriteString("</td><td>—</td><td>Pending confirmation</td><td>Waiting for confirmation</td></tr>\n")
+	} else if len(files) == 0 {
+		b.WriteString("<tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"4\">No requests found.</td></tr>\n")
 	}
 	for _, name := range files {
 		dl := wp.PersonalDataExportDownloadURL(name)
-		b.WriteString("<tr><td>")
+		b.WriteString("<tr><td>—</td><td>")
 		b.WriteString(html.EscapeString(name))
 		b.WriteString("</td><td>Complete</td><td><a class=\"export-personal-data-download\" href=\"")
 		b.WriteString(html.EscapeString(dl))
-		b.WriteString("\">Download</a></td></tr>\n")
+		b.WriteString("\">Download personal data</a></td></tr>\n")
 	}
 	b.WriteString("</tbody>\n</table>\n</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
