@@ -241,11 +241,25 @@
   task: P5.23
   api: exported
 
+- prefix: wp-includes/blocks/details.php
+  go: internal/blocks
+  status: partial
+  task: P5.15
+  api: internal
+
+- prefix: wp-includes/blocks/footnotes.php
+  go: internal/blocks
+  status: partial
+  task: P5.15
+  api: internal
+
 - prefix: wp-includes/blocks/
   go: internal/blocks
   status: partial
   task: P5.3
   api: internal
+
+# P10.14: regenerated PORTING.md from this map against php-reference.
 
 - prefix: wp-includes/SimplePie/
   go: replaced-by-library
