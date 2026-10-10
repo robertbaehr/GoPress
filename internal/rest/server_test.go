@@ -63,6 +63,19 @@ func TestIndexAnonShape(t *testing.T) {
 			t.Fatalf("route %q has no methods", r)
 		}
 	}
+	// P4.33: collection list args include WP catalog keys beyond page/per_page.
+	posts := idx.Routes["/wp/v2/posts"]
+	if len(posts.Endpoints) == 0 || posts.Endpoints[0].Args == nil {
+		t.Fatal("posts collection missing args")
+	}
+	for _, key := range []string{"after", "author", "orderby", "categories", "modified_after"} {
+		if _, ok := posts.Endpoints[0].Args[key]; !ok {
+			t.Fatalf("posts GET args missing %q; have %v", key, routeKeysArgs(posts.Endpoints[0].Args))
+		}
+	}
+	if _, ok := idx.Routes["/wp/v2/block-directory/search"]; !ok {
+		t.Fatal("expected block-directory/search route key")
+	}
 
 	// Route keys must be a subset of the golden anon index.
 	golden := loadGoldenRouteKeys(t)
@@ -207,6 +220,14 @@ func containsAll(have, want []string) bool {
 }
 
 func routeKeys(m map[string]rest.RouteIndex) []string {
+	out := make([]string, 0, len(m))
+	for k := range m {
+		out = append(out, k)
+	}
+	return out
+}
+
+func routeKeysArgs(m map[string]any) []string {
 	out := make([]string, 0, len(m))
 	for k := range m {
 		out = append(out, k)
