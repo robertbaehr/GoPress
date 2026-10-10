@@ -153,9 +153,6 @@ func parsePage(r *http.Request) int {
 }
 
 func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool) ([]Post, error) {
-	if c == nil || c.DB == nil {
-		return nil, fmt.Errorf("nil DB")
-	}
 	if limit <= 0 {
 		limit = 10
 	}
@@ -166,22 +163,19 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool) 
 		postType = "post"
 	}
 	offset := (page - 1) * limit
-	q, args, err := c.DB.Prepare(
-		"SELECT ID, post_date, post_name, post_status, post_type, post_title, post_content, post_excerpt FROM "+
-			c.DB.Posts()+" WHERE post_type = %s AND post_status = %s ORDER BY post_date DESC LIMIT %d OFFSET %d",
-		postType, "publish", limit, offset,
-	)
-	if err != nil {
-		return nil, err
-	}
-	rows, err := c.DB.GetResults(q, args...)
+	rows, err := wp.GetPosts(c, wp.QueryArgs{
+		PostType:     postType,
+		PostStatus:   "publish",
+		PostsPerPage: limit,
+		Offset:       offset,
+	})
 	if err != nil {
 		return nil, err
 	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	out := make([]Post, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, postFromRow(row, home, edit))
+		out = append(out, postFromWP(row, home, edit))
 	}
 	return out, nil
 }
@@ -211,21 +205,10 @@ func countPosts(c *wp.Context, postType string) (int, error) {
 }
 
 func getPostByID(c *wp.Context, postType string, id int64, edit bool) (*Post, error) {
-	if c == nil || c.DB == nil {
-		return nil, fmt.Errorf("nil DB")
-	}
 	if id <= 0 {
 		return nil, nil
 	}
-	q, args, err := c.DB.Prepare(
-		"SELECT ID, post_date, post_name, post_status, post_type, post_title, post_content, post_excerpt FROM "+
-			c.DB.Posts()+" WHERE ID = %d AND post_type = %s AND post_status = %s LIMIT 1",
-		id, postType, "publish",
-	)
-	if err != nil {
-		return nil, err
-	}
-	row, err := c.DB.GetRow(q, args...)
+	row, err := wp.GetPost(c, wp.QueryArgs{P: id, PostType: postType, PostStatus: "publish"})
 	if err != nil {
 		return nil, err
 	}
@@ -233,39 +216,32 @@ func getPostByID(c *wp.Context, postType string, id int64, edit bool) (*Post, er
 		return nil, nil
 	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
-	p := postFromRow(row, home, edit)
+	p := postFromWP(*row, home, edit)
 	return &p, nil
 }
 
-func postFromRow(row map[string]any, home string, edit bool) Post {
-	id := asInt64(row["ID"])
-	dateStr := asString(row["post_date"])
-	slug := asString(row["post_name"])
-	title := asString(row["post_title"])
-	content := asString(row["post_content"])
-	excerpt := asString(row["post_excerpt"])
-	postType := asString(row["post_type"])
+func postFromWP(row wp.Post, home string, edit bool) Post {
 	p := Post{
-		ID:     id,
-		Date:   mysqlDateToREST(dateStr),
-		Slug:   slug,
-		Status: asString(row["post_status"]),
-		Type:   postType,
-		Link:   itemPermalink(home, postType, dateStr, slug, id),
-		Title:  RenderedString{Rendered: title},
+		ID:     row.ID,
+		Date:   mysqlDateToREST(row.Date),
+		Slug:   row.Name,
+		Status: row.Status,
+		Type:   row.Type,
+		Link:   itemPermalink(home, row.Type, row.Date, row.Name, row.ID),
+		Title:  RenderedString{Rendered: row.Title},
 		Content: ProtectedRendered{
-			Rendered:  content,
+			Rendered:  row.Content,
 			Protected: false,
 		},
 		Excerpt: ProtectedRendered{
-			Rendered:  excerpt,
+			Rendered:  row.Excerpt,
 			Protected: false,
 		},
 	}
 	if edit {
-		p.Title.Raw = title
-		p.Content.Raw = content
-		p.Excerpt.Raw = excerpt
+		p.Title.Raw = row.Title
+		p.Content.Raw = row.Content
+		p.Excerpt.Raw = row.Excerpt
 	}
 	return p
 }
