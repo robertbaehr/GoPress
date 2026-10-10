@@ -4872,6 +4872,15 @@
   task: P3.30
   api: n/a
 
+
+# P4.109: deepen menu-locations REST (_links, read cap, error copy).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-menu-locations-controller.php#p4.109
+  go: internal/rest/menus.go
+  status: partial
+  task: P4.109
+  api: exported
+  notes: "P4.109 — _links self/collection/menu; edit_theme_options + rest_menu_read_access; locations error copy"
+
 # P4.74: REST DELETE /wp/v2/menu-locations/{location} unsets assignment.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-menu-locations-controller.php#delete
   go: internal/rest/menus.go
