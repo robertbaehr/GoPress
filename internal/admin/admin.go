@@ -60,6 +60,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/customize.php":
 		h.requireLogin(w, r, c, h.serveCustomizerGone)
 		return true
+	case "/wp-admin/theme-install.php":
+		h.requireLogin(w, r, c, h.serveThemeInstallGone)
+		return true
 	case "/wp-admin/admin-ajax.php":
 		h.serveAdminAjax(w, r, c)
 		return true
@@ -731,6 +734,21 @@ func (h *Handler) serveCustomizerGone(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString("<body class=\"wp-admin\">\n")
 	b.WriteString("<h1>Customizer unavailable</h1>\n")
 	b.WriteString("<p>The Customizer is out of scope for GoPress. Use the <a href=\"/wp-admin/site-editor.php\">Site Editor</a> instead.</p>\n")
+	b.WriteString("</body>\n</html>\n")
+	writeHTML(w, http.StatusForbidden, b.String())
+}
+
+// serveThemeInstallGone rejects theme-install.php as out of scope (P7.18).
+func (h *Handler) serveThemeInstallGone(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Add Themes &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin\">\n")
+	b.WriteString("<h1>Theme install unavailable</h1>\n")
+	b.WriteString("<p>Installing themes from wordpress.org is out of scope for GoPress. Use the <a href=\"/wp-admin/themes.php\">Themes</a> screen to manage local themes.</p>\n")
 	b.WriteString("</body>\n</html>\n")
 	writeHTML(w, http.StatusForbidden, b.String())
 }
