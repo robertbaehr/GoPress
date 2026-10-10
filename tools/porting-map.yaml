@@ -2250,6 +2250,21 @@
   api: n/a
   notes: "P3.63 — RDF content:encoded gated by rss_use_excerpt"
 
+# P3.64: optional RSS item <source url> from post meta attribution.
+- prefix: wp-includes/feed-rss2.php#source
+  go: internal/server/front.go
+  status: partial
+  task: P3.64
+  api: n/a
+  notes: "P3.64 — <source url> when _rss_source_url(+_rss_source_title) post meta set"
+
+- prefix: tests/server/feed_source_test.go
+  go: internal/server/feed_source_test.go
+  status: partial
+  task: P3.64
+  api: n/a
+  notes: "P3.64 — unit coverage for RSS item source meta"
+
 # P3.62: RSS item <guid isPermaLink="false"> even when GUID is a pretty permalink.
 - prefix: wp-includes/feed-rss2.php#guid
   go: internal/server/front.go
