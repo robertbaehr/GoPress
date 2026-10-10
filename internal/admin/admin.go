@@ -1189,18 +1189,7 @@ func (h *Handler) serveOptionsPHP(w http.ResponseWriter, r *http.Request, c *wp.
 	}
 	switch optionPage {
 	case "writing":
-		if c.Options != nil {
-			if v := strings.TrimSpace(r.Form.Get("default_category")); v != "" {
-				_, _ = c.Options.UpdateOption("default_category", v, "yes")
-			}
-			if _, ok := r.Form["default_post_format"]; ok {
-				v := strings.TrimSpace(r.Form.Get("default_post_format"))
-				if v == "" {
-					v = "0"
-				}
-				_, _ = c.Options.UpdateOption("default_post_format", v, "yes")
-			}
-		}
+		saveWritingOptions(c, r)
 		http.Redirect(w, r, "/wp-admin/options-writing.php?settings-updated=true", http.StatusFound)
 		return
 	case "reading":
@@ -1337,11 +1326,49 @@ func saveDiscussionOptions(c *wp.Context, r *http.Request) {
 	}
 }
 
-// serveOptionsWriting is the Settings → Writing screen stub (P7.13 / P7.48).
+// saveWritingOptions persists Settings → Writing fields (P7.48 / P7.103).
+func saveWritingOptions(c *wp.Context, r *http.Request) {
+	if c == nil || c.Options == nil || r == nil {
+		return
+	}
+	if v := strings.TrimSpace(r.Form.Get("default_category")); v != "" {
+		_, _ = c.Options.UpdateOption("default_category", v, "yes")
+	}
+	if _, ok := r.Form["default_post_format"]; ok {
+		v := strings.TrimSpace(r.Form.Get("default_post_format"))
+		if v == "" {
+			v = "0"
+		}
+		_, _ = c.Options.UpdateOption("default_post_format", v, "yes")
+	}
+	// P7.103: Post via email + Update Services.
+	for _, key := range []string{
+		"mailserver_url", "mailserver_port", "mailserver_login", "mailserver_pass",
+		"default_email_category", "ping_sites",
+	} {
+		if _, ok := r.Form[key]; ok {
+			_, _ = c.Options.UpdateOption(key, r.Form.Get(key), "yes")
+		}
+	}
+}
+
+// serveOptionsWriting is the Settings → Writing screen stub (P7.13 / P7.48 / P7.103).
 func (h *Handler) serveOptionsWriting(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	// P7.103: manage_options gate (mirrors options-writing.php wp_die).
+	if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "manage_options") {
+		http.Error(w, "Sorry, you are not allowed to manage options for this site.\n", http.StatusForbidden)
+		return
+	}
 	blogname := optionString(c, "blogname", "GoPress")
 	defaultCat := optionString(c, "default_category", "1")
 	defaultFormat := optionString(c, "default_post_format", "0")
+	mailURL := optionString(c, "mailserver_url", "mail.example.com")
+	mailPort := optionString(c, "mailserver_port", "110")
+	mailLogin := optionString(c, "mailserver_login", "login@example.com")
+	mailPass := optionString(c, "mailserver_pass", "")
+	emailCat := optionString(c, "default_email_category", "1")
+	blogPublic := optionString(c, "blog_public", "1")
+	pingSites := optionString(c, "ping_sites", "")
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>Writing Settings &lsaquo; ")
@@ -1371,6 +1398,43 @@ func (h *Handler) serveOptionsWriting(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString(">Standard</option>\n")
 	b.WriteString("</select></td>\n</tr>\n")
 	b.WriteString("</table>\n")
+
+	// P7.103: Post via email.
+	b.WriteString("<h2 id=\"wp-settings-section-post-via-email\" class=\"title\">Post via email</h2>\n")
+	b.WriteString("<table class=\"form-table\" role=\"presentation\">\n")
+	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"mailserver_url\">Mail Server</label></th>\n<td>")
+	b.WriteString("<input name=\"mailserver_url\" type=\"text\" id=\"mailserver_url\" value=\"")
+	b.WriteString(html.EscapeString(mailURL))
+	b.WriteString("\" class=\"regular-text code\" />\n")
+	b.WriteString("<label for=\"mailserver_port\">Port</label>\n")
+	b.WriteString("<input name=\"mailserver_port\" type=\"text\" id=\"mailserver_port\" value=\"")
+	b.WriteString(html.EscapeString(mailPort))
+	b.WriteString("\" class=\"small-text\" />\n</td>\n</tr>\n")
+	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"mailserver_login\">Login Name</label></th>\n<td>")
+	b.WriteString("<input name=\"mailserver_login\" type=\"text\" id=\"mailserver_login\" value=\"")
+	b.WriteString(html.EscapeString(mailLogin))
+	b.WriteString("\" class=\"regular-text ltr\" /></td>\n</tr>\n")
+	b.WriteString("<tr class=\"mailserver-pass-wrap\">\n<th scope=\"row\"><label for=\"mailserver_pass\">Password</label></th>\n<td>")
+	b.WriteString("<input type=\"text\" name=\"mailserver_pass\" id=\"mailserver_pass\" class=\"regular-text ltr\" autocomplete=\"off\" value=\"")
+	b.WriteString(html.EscapeString(mailPass))
+	b.WriteString("\" /></td>\n</tr>\n")
+	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"default_email_category\">Default Mail Category</label></th>\n<td>")
+	b.WriteString("<input name=\"default_email_category\" type=\"text\" id=\"default_email_category\" value=\"")
+	b.WriteString(html.EscapeString(emailCat))
+	b.WriteString("\" class=\"small-text\" /></td>\n</tr>\n")
+	b.WriteString("</table>\n")
+
+	// P7.103: Update Services (when blog is public).
+	b.WriteString("<h2 id=\"wp-settings-section-update-services\" class=\"title\">Update Services</h2>\n")
+	if blogPublic == "1" {
+		b.WriteString("<p><label for=\"ping_sites\">When you publish a new post, WordPress automatically notifies the following site update services. Separate multiple service URLs with line breaks.</label></p>\n")
+		b.WriteString("<textarea name=\"ping_sites\" id=\"ping_sites\" class=\"large-text code\" rows=\"3\">")
+		b.WriteString(html.EscapeString(pingSites))
+		b.WriteString("</textarea>\n")
+	} else {
+		b.WriteString("<p>WordPress is not notifying any Update Services because of your site&#8217;s <a href=\"options-reading.php\">visibility settings</a>.</p>\n")
+	}
+
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Save Changes\"></p>\n")
 	b.WriteString("</form>\n</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())

@@ -4980,18 +4980,20 @@ wp-login.php#language-switcher-post
   task: P7.25
   api: n/a
 
-# P7.48: POST /wp-admin/options.php saves writing options group.
-- prefix: wp-admin/options.php
+# P7.48 / P7.103: POST /wp-admin/options.php saves writing options group.
+- prefix: wp-admin/options.php#writing
   go: internal/admin/admin.go
   status: partial
-  task: P7.48
+  task: P7.103
   api: n/a
+  notes: "P7.103 — mailserver_*/default_email_category/ping_sites save; P7.48 base"
 
 - prefix: wp-admin/options-writing.php
   go: internal/admin/admin.go
   status: partial
-  task: P7.48
+  task: P7.103
   api: n/a
+  notes: "P7.103 — manage_options gate; Post via email; Update Services/ping_sites; P7.48 base"
 
 # P7.49: POST save reading options via options.php.
 - prefix: wp-admin/options-reading.php
