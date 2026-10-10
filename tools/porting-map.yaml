@@ -363,6 +363,13 @@
   task: P3.29
   api: n/a
 
+# P9.6: plugin uninstall hook stub.
+- prefix: wp-admin/includes/plugin.php#uninstall_plugin
+  go: internal/plugins/uninstall.go
+  status: partial
+  task: P9.6
+  api: exported
+
 # P4.50: REST POST /wp/v2/block-renderer/{name} with attributes + post_id.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-renderer-controller.php
   go: internal/rest/block_types.go
