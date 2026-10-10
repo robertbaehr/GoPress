@@ -262,6 +262,32 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 			return
 		}
 		s.serveGlobalStylesItem(w, r, c, id)
+	case path == "/wp/v2/templates":
+		s.serveTemplates(w, r, c)
+	case strings.HasPrefix(path, "/wp/v2/templates/"):
+		id, ok := parseTemplateIDPath(path, "/wp/v2/templates/")
+		if !ok {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"code":    "rest_no_route",
+				"message": "No route was found matching the URL and request method.",
+				"data":    map[string]any{"status": 404},
+			})
+			return
+		}
+		s.serveTemplateItem(w, r, c, id)
+	case path == "/wp/v2/template-parts":
+		s.serveTemplateParts(w, r, c)
+	case strings.HasPrefix(path, "/wp/v2/template-parts/"):
+		id, ok := parseTemplateIDPath(path, "/wp/v2/template-parts/")
+		if !ok {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"code":    "rest_no_route",
+				"message": "No route was found matching the URL and request method.",
+				"data":    map[string]any{"status": 404},
+			})
+			return
+		}
+		s.serveTemplatePartItem(w, r, c, id)
 	default:
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"code":    "rest_no_route",
