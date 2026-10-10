@@ -56,6 +56,58 @@ func TestLoginFormGET(t *testing.T) {
 	}
 }
 
+func TestInterimLoginForm(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?interim-login=1", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "interim-login") {
+		t.Fatalf("expected interim-login body class: %q", body)
+	}
+	if !strings.Contains(body, `name="interim-login"`) {
+		t.Fatalf("expected interim-login hidden field: %q", body)
+	}
+	if strings.Contains(body, `id="nav"`) || strings.Contains(body, `id="backtoblog"`) {
+		t.Fatalf("interim login should omit nav/backtoblog: %q", body)
+	}
+}
+
+func TestInterimLoginSuccess(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	form := url.Values{}
+	form.Set("log", "admin")
+	form.Set("pwd", "password")
+	form.Set("interim-login", "1")
+	form.Set("testcookie", "1")
+	req := httptest.NewRequest(http.MethodPost, "/wp-login.php?interim-login=1", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "interim-login-success") {
+		t.Fatalf("expected interim-login-success: %q", body)
+	}
+	if !strings.Contains(body, "You have logged in successfully.") {
+		t.Fatalf("expected success message: %q", body)
+	}
+	if loc := rec.Header().Get("Location"); loc != "" {
+		t.Fatalf("interim success should not redirect, Location=%q", loc)
+	}
+}
+
 func TestRegisterDisabledRedirect(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
