@@ -184,3 +184,32 @@ func TestFrontNilReturns503(t *testing.T) {
 		t.Fatalf("status=%d", rec.Code)
 	}
 }
+
+func TestCacheFlushLocalOnly(t *testing.T) {
+	c := testBoot(t)
+	if c.Config == nil {
+		c.Config = &config.Config{}
+	}
+	c.Config.EnvironmentType = "local"
+	c.Cache.Set("_thumbnail_id", "5", "post_meta")
+	srv := &server.Server{WP: c, AbsPath: "/workspace/"}
+	req := httptest.NewRequest(http.MethodPost, "/gopress-internal/cache-flush", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	if got := rec.Body.String(); got != "flushed\n" {
+		t.Fatalf("body=%q", got)
+	}
+	if _, ok := c.Cache.Get("_thumbnail_id", "post_meta"); ok {
+		t.Fatal("expected cache entry cleared")
+	}
+
+	c.Config.EnvironmentType = "production"
+	rec2 := httptest.NewRecorder()
+	srv.ServeHTTP(rec2, httptest.NewRequest(http.MethodPost, "/gopress-internal/cache-flush", nil))
+	if rec2.Code != http.StatusNotFound {
+		t.Fatalf("production status=%d want 404", rec2.Code)
+	}
+}

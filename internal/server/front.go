@@ -1738,6 +1738,17 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 	// P3.51: no PubSubHubbub atom:link rel="hub" (out of scope; never emit hub links).
 	self := feedSelfLink(r, c)
 
+	// P3.69: precompute Media RSS items; emit xmlns:media only when present
+	// so bare fixture feeds match WP (no Media RSS namespace by default).
+	mediaByPost := make([][]feedMediaContent, len(posts))
+	hasMedia := false
+	for i, p := range posts {
+		mediaByPost[i] = feedMediaContentForPost(c, p)
+		if len(mediaByPost[i]) > 0 {
+			hasMedia = true
+		}
+	}
+
 	var b strings.Builder
 	// Match WP feed-rss2.php channel shape (P3.13).
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"` + "\n")
@@ -1747,8 +1758,9 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString("\txmlns:atom=\"http://www.w3.org/2005/Atom\"\n")
 	b.WriteString("\txmlns:sy=\"http://purl.org/rss/1.0/modules/syndication/\"\n")
 	b.WriteString("\txmlns:slash=\"http://purl.org/rss/1.0/modules/slash/\"\n")
-	// P3.69: Media RSS namespace for item <media:content>.
-	b.WriteString("\txmlns:media=\"http://search.yahoo.com/mrss/\"\n")
+	if hasMedia {
+		b.WriteString("\txmlns:media=\"http://search.yahoo.com/mrss/\"\n")
+	}
 	b.WriteString("\t>\n\n")
 	b.WriteString("<channel>\n")
 	b.WriteString("\t<title>")
@@ -1849,7 +1861,7 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 			b.WriteString(rssEnclosureTag(c, enc))
 		}
 		// P3.69: Media RSS <media:content> from featured image + enclosures.
-		for _, mc := range feedMediaContentForPost(c, p) {
+		for _, mc := range mediaByPost[i] {
 			b.WriteString(rssMediaContentTag(mc))
 		}
 		// P3.64: optional RSS 2.0 <source> when post meta provides attribution.
@@ -1882,6 +1894,15 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 	self := feedSelfLink(r, c)
 	atomID := home + "/feed/atom/"
 
+	mediaByPost := make([][]feedMediaContent, len(posts))
+	hasMedia := false
+	for i, p := range posts {
+		mediaByPost[i] = feedMediaContentForPost(c, p)
+		if len(mediaByPost[i]) > 0 {
+			hasMedia = true
+		}
+	}
+
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8"?><feed` + "\n")
 	b.WriteString("\txmlns=\"http://www.w3.org/2005/Atom\"\n")
@@ -1889,8 +1910,9 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString(xmlEscape(wp.BlogInfoLanguage(c)))
 	b.WriteString("\"\n")
 	b.WriteString("\txmlns:thr=\"http://purl.org/syndication/thread/1.0\"\n")
-	// P3.69: Media RSS namespace for entry <media:content>.
-	b.WriteString("\txmlns:media=\"http://search.yahoo.com/mrss/\"\n")
+	if hasMedia {
+		b.WriteString("\txmlns:media=\"http://search.yahoo.com/mrss/\"\n")
+	}
 	b.WriteString("\t>\n")
 	b.WriteString("\t<title type=\"text\">")
 	b.WriteString(feedChannelTitle(c, blogname, authorID))
@@ -1925,7 +1947,7 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString(wp.GetTheGenerator("atom"))
 	b.WriteString("\n")
 
-	for _, p := range posts {
+	for i, p := range posts {
 		link := postPermalink(home, p.Post)
 		guid := feedItemGUID(home, p.ID, p.GUID)
 		b.WriteString("\t<entry>\n")
@@ -1995,7 +2017,7 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 			b.WriteString(atomEnclosureTag(c, enc))
 		}
 		// P3.69: Media RSS media:content on Atom entries too.
-		for _, mc := range feedMediaContentForPost(c, p) {
+		for _, mc := range mediaByPost[i] {
 			b.WriteString(rssMediaContentTag(mc))
 		}
 		b.WriteString("\t\t\t</entry>\n")

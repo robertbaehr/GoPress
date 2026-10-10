@@ -2248,6 +2248,21 @@
   api: n/a
   notes: "P10.62 — Playwright coverage for edit.php search box + author/category filters"
 
+# P10.67: STATUS/PORTING refresh after P5.75–P8.19.
+- prefix: docs/STATUS.md#P10.67
+  go: docs/STATUS.md
+  status: partial
+  task: P10.67
+  api: n/a
+  notes: "P10.67 — summarize page-list, after/before, bulk delete, is_development_mode, media:content, guide search"
+
+- prefix: PORTING.md#P10.67
+  go: PORTING.md
+  status: partial
+  task: P10.67
+  api: n/a
+  notes: "P10.67 — regenerate porting-status after stacked P5.75–P8.19"
+
 # P10.66: e2e edit.php trash/restore + STATUS/PORTING refresh after P5.74–P6.31.
 - prefix: tests/e2e/edit-trash.spec.js
   go: tests/e2e/edit-trash.spec.js

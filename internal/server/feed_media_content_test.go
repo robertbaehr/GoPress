@@ -57,3 +57,21 @@ func TestFrontFeedRSS2MediaContent(t *testing.T) {
 		t.Fatalf("expected enclosure media:content: %s", truncateFeed(body, 500))
 	}
 }
+
+func TestFrontFeedRSS2OmitsMediaNSWithoutContent(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?feed=rss2", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if strings.Contains(body, `xmlns:media=`) {
+		t.Fatalf("fixture feed should omit media xmlns: %s", truncateFeed(body, 400))
+	}
+	if strings.Contains(body, `<media:content`) {
+		t.Fatalf("fixture feed should omit media:content: %s", truncateFeed(body, 400))
+	}
+}

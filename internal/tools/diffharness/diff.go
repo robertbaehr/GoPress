@@ -2,8 +2,10 @@ package diffharness
 
 import (
 	"fmt"
+	"net/http"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	testdiff "github.com/robertbaehr/GoPress/tests/diff"
@@ -49,6 +51,10 @@ func RunDiff(opts DiffOptions) error {
 	fmt.Fprintf(os.Stderr, "diff: preparing fixture DBs/uploads\n")
 	if err := PrepareFixture(SetupOptions{RepoRoot: root, SkipDB: opts.SkipDB}); err != nil {
 		return err
+	}
+	// Long-lived GoPress may have warmed object cache before site.sql reload.
+	if err := flushGoObjectCache(opts.GoURL); err != nil {
+		fmt.Fprintf(os.Stderr, "diff: cache flush skipped: %v\n", err)
 	}
 
 	corpus, err := LoadCorpus(opts.CorpusDir)
@@ -141,5 +147,29 @@ func RunDiff(opts DiffOptions) error {
 	if rep.failed() > 0 {
 		return fmt.Errorf("differential match %.1f%% with %d failures", rep.MatchPercent(), rep.failed())
 	}
+	return nil
+}
+
+// flushGoObjectCache asks a local/development GoPress process to drop its
+// in-memory object cache after PrepareFixture reloads MySQL.
+func flushGoObjectCache(goURL string) error {
+	base := strings.TrimRight(strings.TrimSpace(goURL), "/")
+	if base == "" {
+		return nil
+	}
+	req, err := http.NewRequest(http.MethodPost, base+"/gopress-internal/cache-flush", nil)
+	if err != nil {
+		return err
+	}
+	client := &http.Client{Timeout: 3 * time.Second}
+	resp, err := client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("status %d", resp.StatusCode)
+	}
+	fmt.Fprintf(os.Stderr, "diff: flushed Go object cache\n")
 	return nil
 }

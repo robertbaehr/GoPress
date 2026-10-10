@@ -49,6 +49,14 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	}
 	path := cleanRequestPath(r.URL.Path)
 
+	// Diff harness: after reloading fixture DBs under a long-lived process,
+	// flush the object cache so meta/options cannot drift from MySQL.
+	// Local/development only — never exposed in production-like envs.
+	if path == "/gopress-internal/cache-flush" {
+		s.handleCacheFlush(w, r)
+		return
+	}
+
 	if isStaticPath(path) {
 		s.serveStatic(w, r, path)
 		return
@@ -306,4 +314,30 @@ func isStaticPath(path string) bool {
 		}
 	}
 	return false
+}
+
+func (s *Server) handleCacheFlush(w http.ResponseWriter, r *http.Request) {
+	if r.Method != http.MethodPost {
+		w.Header().Set("Allow", http.MethodPost)
+		http.Error(w, "method not allowed\n", http.StatusMethodNotAllowed)
+		return
+	}
+	if s.WP == nil {
+		http.NotFound(w, r)
+		return
+	}
+	env := wp.GetEnvironmentType(s.WP)
+	if env != "local" && env != "development" {
+		http.NotFound(w, r)
+		return
+	}
+	if s.WP.Cache != nil {
+		s.WP.Cache.Flush()
+	}
+	if s.WP.Options != nil {
+		_ = s.WP.Options.LoadAutoload()
+	}
+	w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("flushed\n"))
 }
