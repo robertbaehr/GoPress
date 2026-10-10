@@ -59,23 +59,7 @@
   remove_by: "2027-06-01"
 
 - id: rest-media-list-anon
-  reason: Media REST schema incomplete (media_details/sizes/_links)
-  remove_by: "2027-06-01"
-
-- id: rest-comments-list-anon
-  reason: Comments REST schema incomplete (_links/author_avatar)
-  remove_by: "2027-06-01"
-
-- id: rest-categories-list-anon
-  reason: Categories REST schema incomplete (_links/meta)
-  remove_by: "2027-06-01"
-
-- id: rest-tags-list-anon
-  reason: Tags REST schema incomplete (_links/meta)
-  remove_by: "2027-06-01"
-
-- id: rest-search-anon
-  reason: Search REST schema incomplete (_links/subtype details)
+  reason: Media REST description/caption HTML still diverges (media_details/_links landed in P4.26)
   remove_by: "2027-06-01"
 
 - id: rest-revisions-admin
