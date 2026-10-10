@@ -7,7 +7,7 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// FontCollectionResponse is the REST shape for wp/v2/font-collections (P4.55).
+// FontCollectionResponse is the REST shape for wp/v2/font-collections (P4.55 / P4.113).
 type FontCollectionResponse struct {
 	Slug         string                      `json:"slug"`
 	Name         string                      `json:"name"`
@@ -25,7 +25,10 @@ func canReadFontCollections(c *wp.Context) bool {
 }
 
 func (s *Server) serveFontCollections(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+	// P4.113: GET, HEAD, OPTIONS like WP_REST_Font_Collections_Controller.
+	switch r.Method {
+	case http.MethodGet, http.MethodHead, http.MethodOptions:
+	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
@@ -35,6 +38,14 @@ func (s *Server) serveFontCollections(w http.ResponseWriter, r *http.Request, c 
 	}
 	if !canReadFontCollections(c) {
 		writeFontsForbidden(w, c, "Sorry, you are not allowed to access font collections.")
+		return
+	}
+	w.Header().Set("Allow", "GET, HEAD, OPTIONS")
+	if r.Method == http.MethodOptions {
+		writeJSON(w, http.StatusOK, fontCollectionSchema())
+		return
+	}
+	if !validateFontCollectionContext(w, r) {
 		return
 	}
 	lib := c.FontLibrary
@@ -48,6 +59,15 @@ func (s *Server) serveFontCollections(w http.ResponseWriter, r *http.Request, c 
 	totalPages := 0
 	if perPage > 0 {
 		totalPages = (total + perPage - 1) / perPage
+	}
+	// WP: rest_post_invalid_page_number when page > max_pages and total > 0.
+	if total > 0 && totalPages > 0 && page > totalPages {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_post_invalid_page_number",
+			"message": "The page number requested is larger than the number of pages available.",
+			"data":    map[string]any{"status": 400},
+		})
+		return
 	}
 	start := (page - 1) * perPage
 	if start > total {
@@ -63,7 +83,6 @@ func (s *Server) serveFontCollections(w http.ResponseWriter, r *http.Request, c 
 		out = append(out, fontCollectionResponse(col))
 	}
 	setCollectionHeaders(w, r, c, total, totalPages, page)
-	w.Header().Set("Allow", "GET")
 	w.Header().Set("X-GoPress-Font-Collections", "remote-families-skipped")
 	if r.Method == http.MethodHead {
 		w.WriteHeader(http.StatusOK)
@@ -73,7 +92,9 @@ func (s *Server) serveFontCollections(w http.ResponseWriter, r *http.Request, c 
 }
 
 func (s *Server) serveFontCollectionItem(w http.ResponseWriter, r *http.Request, c *wp.Context, slug string) {
-	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+	switch r.Method {
+	case http.MethodGet, http.MethodHead, http.MethodOptions:
+	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
@@ -83,6 +104,14 @@ func (s *Server) serveFontCollectionItem(w http.ResponseWriter, r *http.Request,
 	}
 	if !canReadFontCollections(c) {
 		writeFontsForbidden(w, c, "Sorry, you are not allowed to access font collections.")
+		return
+	}
+	w.Header().Set("Allow", "GET, HEAD, OPTIONS")
+	if r.Method == http.MethodOptions {
+		writeJSON(w, http.StatusOK, fontCollectionSchema())
+		return
+	}
+	if !validateFontCollectionContext(w, r) {
 		return
 	}
 	slug = strings.Trim(slug, "/")
@@ -112,13 +141,69 @@ func (s *Server) serveFontCollectionItem(w http.ResponseWriter, r *http.Request,
 		})
 		return
 	}
-	w.Header().Set("Allow", "GET")
 	w.Header().Set("X-GoPress-Font-Collections", "remote-families-skipped")
 	if r.Method == http.MethodHead {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 	writeJSON(w, http.StatusOK, fontCollectionResponse(col))
+}
+
+func validateFontCollectionContext(w http.ResponseWriter, r *http.Request) bool {
+	ctx := r.URL.Query().Get("context")
+	if ctx == "" {
+		ctx = "view"
+	}
+	switch ctx {
+	case "view", "edit", "embed":
+		return true
+	default:
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_invalid_param",
+			"message": "Invalid parameter(s): context",
+			"data": map[string]any{
+				"status": 400,
+				"params": map[string]any{"context": "context is not one of view, edit, embed."},
+			},
+		})
+		return false
+	}
+}
+
+func fontCollectionSchema() map[string]any {
+	return map[string]any{
+		"$schema": "http://json-schema.org/draft-04/schema#",
+		"title":   "font-collection",
+		"type":    "object",
+		"properties": map[string]any{
+			"slug": map[string]any{
+				"description": "Unique identifier for the font collection.",
+				"type":        "string",
+				"readonly":    true,
+				"context":     []string{"view", "edit", "embed"},
+			},
+			"name": map[string]any{
+				"description": "The name for the font collection.",
+				"type":        "string",
+				"context":     []string{"view", "edit", "embed"},
+			},
+			"description": map[string]any{
+				"description": "The description for the font collection.",
+				"type":        "string",
+				"context":     []string{"view", "edit", "embed"},
+			},
+			"font_families": map[string]any{
+				"description": "The font families for the font collection.",
+				"type":        "array",
+				"context":     []string{"view", "edit", "embed"},
+			},
+			"categories": map[string]any{
+				"description": "The categories for the font collection.",
+				"type":        "array",
+				"context":     []string{"view", "edit", "embed"},
+			},
+		},
+	}
 }
 
 func fontCollectionResponse(col wp.FontCollection) FontCollectionResponse {

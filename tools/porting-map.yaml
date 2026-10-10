@@ -4479,8 +4479,9 @@ wp-login.php#language-switcher-post
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-font-collections-controller.php
   go: internal/rest/font_collections.go
   status: partial
-  task: P4.55
+  task: P4.113
   api: exported
+  notes: "P4.113 — OPTIONS schema, context view|edit|embed, invalid page number"
 
 # P4.56: richer url-details (same-site enrichment + HTML head parsers; no remote fetch).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-url-details-controller.php
