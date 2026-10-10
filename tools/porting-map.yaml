@@ -451,6 +451,28 @@
   api: exported
   notes: "P4.70 — 207 responses, Allow/Link envelopes, validation=require-all-validate"
 
+# P4.80: DELETE /wp/v2/comments/{id} (trash or force hard-delete).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-comments-controller.php#delete_item
+  go: internal/rest/comments_write.go
+  status: partial
+  task: P4.80
+  api: exported
+  notes: "P4.80 — trash without force; force=true hard-deletes; moderate_comments"
+
+- prefix: wp-includes/comment.php#wp_delete_comment
+  go: internal/wp/comment.go
+  status: partial
+  task: P4.80
+  api: exported
+  notes: "P4.80 — DeleteComment + TrashComment"
+
+- prefix: wp-includes/comment.php#wp_trash_comment
+  go: internal/wp/comment.go
+  status: partial
+  task: P4.80
+  api: exported
+  notes: "P4.80 — TrashComment sets comment_approved=trash"
+
 # P4.79: DELETE /wp/v2/users/{id}?force=true&reassign= (wp_delete_user).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-users-controller.php#delete_item
   go: internal/rest/users_write.go
