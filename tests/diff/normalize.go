@@ -385,6 +385,10 @@ func scrubHTMLAttrs(attrs []html.Attribute) []html.Attribute {
 		if key == "style" {
 			continue
 		}
+		// Loading/srcset hints differ across Kses vs WP block render; drop for parity.
+		if key == "decoding" || key == "srcset" || key == "sizes" || key == "loading" {
+			continue
+		}
 		if key == "class" {
 			a.Val = scrubVolatileClasses(a.Val)
 			if strings.TrimSpace(a.Val) == "" {

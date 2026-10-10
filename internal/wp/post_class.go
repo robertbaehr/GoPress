@@ -22,14 +22,19 @@ func GetPostClass(c *Context, postID int64) []string {
 	if p.Type == "post" {
 		classes = append(classes, "format-standard")
 	}
-	for _, id := range stickyPostIDs(c) {
-		if id == p.ID {
-			classes = append(classes, "sticky")
-			break
-		}
-	}
+	// sticky class is added by callers only on the main blog query (is_home).
 	classes = append(classes, "hentry")
 	classes = append(classes, objectTermClasses(c, postID)...)
+	return classes
+}
+
+// AppendStickyClass adds "sticky" when postID is in sticky_posts (home query).
+func AppendStickyClass(c *Context, postID int64, classes []string) []string {
+	for _, id := range stickyPostIDs(c) {
+		if id == postID {
+			return append(classes, "sticky")
+		}
+	}
 	return classes
 }
 

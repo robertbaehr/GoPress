@@ -116,7 +116,9 @@ func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, templa
 	blogname := optionString(c, "blogname", "GoPress")
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	stylesheet := activeStylesheet(c)
-	body := blocks.RenderWith(blockRenderEnv(c), template)
+	env := blockRenderEnv(c)
+	env.IsFrontPage = func() bool { return true }
+	body := blocks.RenderWith(env, template)
 	safe := wp.KsesPost(body)
 
 	bodyClasses := "home blog wp-embed-responsive"
@@ -425,7 +427,12 @@ func commentFormHTML(c *wp.Context, post *singularPost) string {
 	}
 	cancelHref := "#respond"
 	if home != "" {
-		cancelHref = singularPermalink(home, post) + "#respond"
+		// WP prints a root-relative cancel URL on front templates.
+		perm := singularPermalink(home, post)
+		cancelHref = strings.TrimPrefix(perm, home) + "#respond"
+		if !strings.HasPrefix(cancelHref, "/") {
+			cancelHref = "/" + cancelHref
+		}
 	}
 	var b strings.Builder
 	b.WriteString(`<div id="respond" class="comment-respond wp-block-post-comments-form">` + "\n")
@@ -455,7 +462,7 @@ func commentFormHTML(c *wp.Context, post *singularPost) string {
 	b.WriteString(strconv.FormatInt(post.ID, 10))
 	b.WriteString(`" id="comment_post_ID" />` + "\n")
 	b.WriteString(`<input type="hidden" name="comment_parent" id="comment_parent" value="0" />` + "\n")
-	b.WriteString(`</p></form></div>` + "\n")
+	b.WriteString(`</p></form></div><!-- #respond -->` + "\n")
 	return b.String()
 }
 
@@ -1151,7 +1158,8 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 				PostStatus:   "publish",
 				PostsPerPage: limit,
 				Offset:       q.Offset,
-				StickyFirst:  q.Inherit && postType == "post",
+				// Sticky posts are prepended for front query loops (inherit or not).
+				StickyFirst: postType == "post",
 			})
 			if err != nil {
 				return nil
@@ -1164,6 +1172,10 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 				if thumbID := wp.GetPostThumbnailID(c, p.ID); thumbID > 0 && c.Meta != nil {
 					alt = asMetaString(c.Meta.GetMetadata(wp.MetaPost, thumbID, "_wp_attachment_image_alt", true))
 				}
+				classes := wp.GetPostClass(c, p.ID)
+				if q.Inherit {
+					classes = wp.AppendStickyClass(c, p.ID, classes)
+				}
 				out = append(out, blocks.QueryPost{
 					ID:               p.ID,
 					Title:            p.Title,
@@ -1173,7 +1185,7 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 					Link:             postPermalink(home, p),
 					FeaturedImageURL: thumbURL,
 					FeaturedImageAlt: alt,
-					ClassList:        wp.GetPostClass(c, p.ID),
+					ClassList:        classes,
 				})
 			}
 			return out
@@ -1209,6 +1221,10 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 		HomeURL: func() string {
 			return strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 		},
+		IsFrontPage: func() bool {
+			// Front block templates set this via env flag when rendering home.
+			return false
+		},
 		FilterPostHTML: func(htmlBody string) string {
 			return wp.Texturize(htmlBody)
 		},
@@ -1220,12 +1236,51 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			out := make([]blocks.CommentItem, 0, len(rows))
 			for _, cm := range rows {
 				out = append(out, blocks.CommentItem{
-					ID:      cm.ID,
-					Author:  cm.Author,
-					Content: wp.KsesData(cm.Content),
+					ID:          cm.ID,
+					Author:      cm.Author,
+					AuthorEmail: cm.AuthorEmail,
+					AuthorURL:   cm.AuthorURL,
+					Content:     wp.KsesPost(cm.Content),
+					Date:        cm.Date,
 				})
 			}
 			return out
+		},
+		AdjacentPost: func(postID int64, previous bool) *blocks.QueryPost {
+			// previous = older (date ASC toward past); next = newer.
+			op, order := "<", "DESC"
+			if !previous {
+				op, order = ">", "ASC"
+			}
+			p, err := wp.GetPostByID(c, postID)
+			if err != nil || p == nil {
+				return nil
+			}
+			q, args, err := c.DB.Prepare(
+				"SELECT ID, post_title, post_name, post_date FROM "+c.DB.Posts()+
+					" WHERE post_type = %s AND post_status = %s AND post_date "+op+" %s "+
+					"ORDER BY post_date "+order+" LIMIT 1",
+				"post", "publish", p.Date,
+			)
+			if err != nil {
+				return nil
+			}
+			row, err := c.DB.GetRow(q, args...)
+			if err != nil || row == nil {
+				return nil
+			}
+			home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+			id := rowInt64DB(row["ID"])
+			name := rowStringDB(row["post_name"])
+			date := rowStringDB(row["post_date"])
+			title := rowStringDB(row["post_title"])
+			link := home + "/?p=" + strconv.FormatInt(id, 10)
+			if name != "" && date != "" {
+				if t, err := time.Parse("2006-01-02 15:04:05", date); err == nil {
+					link = fmt.Sprintf("%s/%04d/%02d/%02d/%s/", home, t.Year(), int(t.Month()), t.Day(), name)
+				}
+			}
+			return &blocks.QueryPost{ID: id, Title: title, Link: link, Date: date}
 		},
 		AuthorName: func(postID int64) string {
 			p, err := wp.GetPostByID(c, postID)
@@ -1294,5 +1349,23 @@ func rowStringDB(v any) string {
 			return ""
 		}
 		return s
+	}
+}
+
+func rowInt64DB(v any) int64 {
+	switch t := v.(type) {
+	case int64:
+		return t
+	case int:
+		return int64(t)
+	case []byte:
+		n, _ := strconv.ParseInt(string(t), 10, 64)
+		return n
+	case string:
+		n, _ := strconv.ParseInt(t, 10, 64)
+		return n
+	default:
+		n, _ := strconv.ParseInt(fmt.Sprint(t), 10, 64)
+		return n
 	}
 }

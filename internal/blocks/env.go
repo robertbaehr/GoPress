@@ -25,8 +25,11 @@ type Env struct {
 	RenderCommentForm func(postID int64) string
 
 	// SiteName / HomeURL power core/site-title and related blocks (P5.19).
-	SiteName func() string
-	HomeURL  func() string
+	SiteName    func() string
+	HomeURL     func() string
+	IsFrontPage func() bool
+	// AdjacentPost returns prev/next post for post-navigation-link (type previous|next).
+	AdjacentPost func(postID int64, previous bool) *QueryPost
 
 	// FilterPostHTML runs after rendering post_content blocks (texturize etc.).
 	FilterPostHTML func(html string) string
@@ -62,9 +65,12 @@ type NavLink struct {
 
 // CommentItem is a comment row for core/comment-template (P5.19).
 type CommentItem struct {
-	ID      int64
-	Author  string
-	Content string
+	ID          int64
+	Author      string
+	AuthorEmail string
+	AuthorURL   string
+	Content     string
+	Date        string
 }
 
 func (e *Env) ensure() *Env {

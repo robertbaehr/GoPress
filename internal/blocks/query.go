@@ -1,6 +1,8 @@
 package blocks
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"html"
 	"strconv"
@@ -238,7 +240,11 @@ func (e *Env) renderSiteTitle(block Block) string {
 	}
 	inner := html.EscapeString(name)
 	if home != "" {
-		inner = `<a href="` + html.EscapeString(home) + `" target="_self" rel="home">` + inner + `</a>`
+		aria := ""
+		if e.IsFrontPage != nil && e.IsFrontPage() {
+			aria = ` aria-current="page"`
+		}
+		inner = `<a` + aria + ` href="` + html.EscapeString(home) + `" target="_self" rel="home">` + inner + `</a>`
 	}
 	return `<` + tag + ` class="wp-block-site-title">` + inner + `</` + tag + `>`
 }
@@ -447,6 +453,68 @@ func (e *Env) renderPostTerms(block Block) string {
 	return b.String()
 }
 
+func (e *Env) renderCommentsTitle(block Block) string {
+	e = e.ensure()
+	if e.currentPost == nil || e.ListComments == nil {
+		return ""
+	}
+	n := len(e.ListComments(e.currentPost.ID))
+	if n == 0 {
+		return ""
+	}
+	level := attrInt64(block.Attrs, "level")
+	tag := "h2"
+	if level >= 1 && level <= 6 {
+		tag = "h" + strconv.FormatInt(level, 10)
+	}
+	title := e.currentPost.Title
+	var text string
+	if n == 1 {
+		text = "One response to “" + title + "”"
+	} else {
+		text = strconv.Itoa(n) + " responses to “" + title + "”"
+	}
+	return `<` + tag + ` class="wp-block-comments-title" id="comments">` + html.EscapeString(text) + `</` + tag + `>`
+}
+
+func (e *Env) renderPostNavigationLink(block Block) string {
+	e = e.ensure()
+	if e.currentPost == nil || e.AdjacentPost == nil {
+		return ""
+	}
+	prev := false
+	if t, ok := block.Attrs["type"].(string); ok && strings.EqualFold(t, "previous") {
+		prev = true
+	}
+	adj := e.AdjacentPost(e.currentPost.ID, prev)
+	class := "post-navigation-link-next wp-block-post-navigation-link"
+	rel := "next"
+	arrowClass := "is-arrow-arrow wp-block-post-navigation-link__arrow-next"
+	arrow := "→"
+	if prev {
+		class = "post-navigation-link-previous wp-block-post-navigation-link"
+		rel = "prev"
+		arrowClass = "is-arrow-arrow wp-block-post-navigation-link__arrow-previous"
+		arrow = "←"
+	}
+	if adj == nil {
+		return `<div class="` + class + `"></div>`
+	}
+	var b strings.Builder
+	b.WriteString(`<div class="` + class + `">`)
+	if prev {
+		b.WriteString(`<span aria-hidden="true" class="` + arrowClass + `">` + arrow + `</span>`)
+	}
+	b.WriteString(`<a href="` + html.EscapeString(adj.Link) + `" rel="` + rel + `">`)
+	b.WriteString(html.EscapeString(adj.Title))
+	b.WriteString(`</a>`)
+	if !prev {
+		b.WriteString(`<span aria-hidden="true" class="` + arrowClass + `">` + arrow + `</span>`)
+	}
+	b.WriteString(`</div>`)
+	return b.String()
+}
+
 func (e *Env) renderCommentTemplate(block Block) string {
 	e = e.ensure()
 	if e.currentPost == nil || e.ListComments == nil {
@@ -456,29 +524,69 @@ func (e *Env) renderCommentTemplate(block Block) string {
 	if len(comments) == 0 {
 		return ""
 	}
+	home := ""
+	if e.HomeURL != nil {
+		home = strings.TrimRight(e.HomeURL(), "/")
+	}
 	var b strings.Builder
-	b.WriteString(`<ol class="wp-block-comment-template" id="comments">`)
+	b.WriteString(`<ol class="wp-block-comment-template">`)
 	for _, cm := range comments {
 		b.WriteString(`<li id="comment-`)
 		b.WriteString(strconv.FormatInt(cm.ID, 10))
 		b.WriteString(`" class="comment even thread-even depth-1">`)
-		if len(block.InnerBlocks) > 0 {
-			// Prefer block tree when present; still inject author/content for parity.
-			b.WriteString(`<div class="wp-block-group comment-body">`)
-			b.WriteString(`<div class="wp-block-comment-author-name"><b class="fn">`)
-			b.WriteString(html.EscapeString(cm.Author))
-			b.WriteString(`</b></div>`)
-			b.WriteString(`<div class="wp-block-comment-content">`)
-			b.WriteString(cm.Content)
-			b.WriteString(`</div></div>`)
-		} else {
-			b.WriteString(`<article class="comment-body"><footer class="comment-meta"><b class="fn">`)
-			b.WriteString(html.EscapeString(cm.Author))
-			b.WriteString(`</b></footer><div class="comment-content">`)
-			b.WriteString(cm.Content)
-			b.WriteString(`</div></article>`)
+		b.WriteString(`<div class="wp-block-group is-layout-flow wp-block-group-is-layout-flow">`)
+		b.WriteString(`<div class="wp-block-group is-nowrap is-layout-flex wp-block-group-is-layout-flex">`)
+		b.WriteString(`<div class="wp-block-avatar">`)
+		if cm.AuthorEmail != "" {
+			hash := gravatarHash(cm.AuthorEmail)
+			src := "https://secure.gravatar.com/avatar/" + hash + "?s=50&d=mm&r=g"
+			srcset := "https://secure.gravatar.com/avatar/" + hash + "?s=100&d=mm&r=g 2x"
+			b.WriteString(`<img alt="` + html.EscapeString(cm.Author) + ` Avatar" class="avatar avatar-50 photo wp-block-avatar__image" decoding="async" height="50" src="` + html.EscapeString(src) + `" srcset="` + html.EscapeString(srcset) + `" width="50"/>`)
 		}
+		b.WriteString(`</div>`)
+		b.WriteString(`<div class="wp-block-group is-layout-flow wp-block-group-is-layout-flow">`)
+		if cm.Date != "" {
+			b.WriteString(`<div class="wp-block-comment-date"><time datetime="`)
+			b.WriteString(html.EscapeString(formatPostDateTimeAttr(cm.Date)))
+			b.WriteString(`"><a href="`)
+			b.WriteString(html.EscapeString(e.currentPost.Link + "#comment-" + strconv.FormatInt(cm.ID, 10)))
+			b.WriteString(`">`)
+			b.WriteString(html.EscapeString(formatPostDateDisplay(cm.Date)))
+			b.WriteString(`</a></time></div>`)
+		}
+		b.WriteString(`<div class="wp-block-comment-author-name">`)
+		if cm.AuthorURL != "" {
+			b.WriteString(`<a href="` + html.EscapeString(cm.AuthorURL) + `" rel="external nofollow ugc" target="_self">`)
+			b.WriteString(html.EscapeString(cm.Author))
+			b.WriteString(`</a>`)
+		} else {
+			b.WriteString(html.EscapeString(cm.Author))
+		}
+		b.WriteString(`</div>`)
+		b.WriteString(`<div class="wp-block-comment-content"><p>`)
+		b.WriteString(commentContentHTML(cm.Content))
+		b.WriteString(`</p></div>`)
+		b.WriteString(`<div class="wp-block-group is-nowrap is-layout-flex wp-block-group-is-layout-flex">`)
+		b.WriteString(`<div class="wp-block-comment-reply-link">`)
+		reply := e.currentPost.Link
+		if home != "" {
+			reply = strings.TrimPrefix(reply, home)
+			if !strings.HasPrefix(reply, "/") {
+				reply = "/" + reply
+			}
+		}
+		href := e.currentPost.Link + "?replytocom=" + strconv.FormatInt(cm.ID, 10) + "#respond"
+		b.WriteString(`<a aria-label="Reply to ` + html.EscapeString(cm.Author) + `" class="comment-reply-link"`)
+		b.WriteString(` data-belowelement="comment-` + strconv.FormatInt(cm.ID, 10) + `"`)
+		b.WriteString(` data-commentid="` + strconv.FormatInt(cm.ID, 10) + `"`)
+		b.WriteString(` data-postid="` + strconv.FormatInt(e.currentPost.ID, 10) + `"`)
+		b.WriteString(` data-replyto="Reply to ` + html.EscapeString(cm.Author) + `"`)
+		b.WriteString(` data-respondelement="respond"`)
+		b.WriteString(` href="` + html.EscapeString(href) + `" rel="nofollow">Reply</a></div></div>`)
+		_ = reply
+		b.WriteString(`</div></div></div>`)
 		b.WriteString(`</li>`)
+		_ = block
 	}
 	b.WriteString(`</ol>`)
 	return b.String()
@@ -508,6 +616,22 @@ func displayDate(mysql string) string {
 		return mysql[0:10]
 	}
 	return mysql
+}
+
+func gravatarHash(email string) string {
+	// WP 6.8+ uses SHA-256 for Gravatar hashes.
+	sum := sha256.Sum256([]byte(strings.ToLower(strings.TrimSpace(email))))
+	return hex.EncodeToString(sum[:])
+}
+
+func commentContentHTML(content string) string {
+	content = strings.ReplaceAll(content, "\r\n", "\n")
+	content = strings.ReplaceAll(content, "\r", "\n")
+	parts := strings.Split(content, "\n")
+	for i, p := range parts {
+		parts[i] = strings.TrimSpace(p)
+	}
+	return strings.Join(parts, "<br/>\n")
 }
 
 func stripTags(s string) string {

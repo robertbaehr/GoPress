@@ -135,6 +135,10 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderPostAuthorName(block)
 	case "core/post-terms":
 		out = e.renderPostTerms(block)
+	case "core/post-navigation-link":
+		return e.renderPostNavigationLink(block)
+	case "core/comments-title":
+		out = e.renderCommentsTitle(block)
 	default:
 		// Unknown blocks: prefer saved markup with nested reconstruction.
 		if len(block.InnerBlocks) > 0 || len(block.InnerContent) > 0 {
