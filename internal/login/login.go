@@ -55,6 +55,10 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 				h.serveCheckEmailConfirm(w, r, c)
 				return
 			}
+			if r.URL.Query().Get("checkemail") == "registered" {
+				h.serveCheckEmailRegistered(w, r, c)
+				return
+			}
 			errMsg := ""
 			if r.URL.Query().Get("registration") == "disabled" {
 				errMsg = loginErrorHTML("registerdisabled", "User registration is currently not allowed.", "", "")
@@ -272,21 +276,190 @@ func filterIntervalSeconds(v any, fallback int64) int64 {
 	return fallback
 }
 
-// serveRegister handles wp-login.php?action=register (P6.9).
+// serveRegister handles wp-login.php?action=register (P6.9 / P6.43).
 // Non-multisite sites with users_can_register disabled redirect to
-// ?registration=disabled and show an error on the login form (WP parity).
+// ?registration=disabled. When enabled, shows the registration form and
+// creates a subscriber on POST (register_new_user subset).
 func (h *Handler) serveRegister(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	if usersCanRegister(c) {
-		// Full registration form is out of scope; still refuse until implemented.
-		h.serveForm(w, r, c, loginErrorHTML("registerdisabled", "User registration is currently not allowed.", "", ""), false)
+	if !usersCanRegister(c) {
+		home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+		target := home + "/wp-login.php?registration=disabled"
+		if home == "" {
+			target = "/wp-login.php?registration=disabled"
+		}
+		http.Redirect(w, r, target, http.StatusFound)
 		return
 	}
-	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
-	target := home + "/wp-login.php?registration=disabled"
-	if home == "" {
-		target = "/wp-login.php?registration=disabled"
+	userLogin := ""
+	userEmail := ""
+	errMsg := ""
+	if r.Method == http.MethodPost {
+		_ = r.ParseForm()
+		userLogin = strings.TrimSpace(r.FormValue("user_login"))
+		userEmail = strings.TrimSpace(r.FormValue("user_email"))
+		if userLogin == "" {
+			errMsg = loginErrorHTML("empty_username", "Please enter a username.", "", "")
+		} else if userEmail == "" {
+			errMsg = loginErrorHTML("empty_email", "Please type your email address.", "", "")
+		} else if !strings.Contains(userEmail, "@") {
+			errMsg = loginErrorHTML("invalid_email", "The email address isn&#8217;t correct.", "", "")
+		} else {
+			id, err := c.InsertUser(wp.UserInsert{
+				Login: userLogin,
+				Email: userEmail,
+				Role:  "subscriber",
+			})
+			if err != nil {
+				msg := err.Error()
+				switch {
+				case strings.Contains(msg, "login exists"):
+					errMsg = loginErrorHTML("username_exists", "This username is already registered. Please choose another one.", "", "")
+				case strings.Contains(msg, "email exists"):
+					errMsg = loginErrorHTML("email_exists", "This email address is already registered.", "", "")
+				default:
+					errMsg = loginErrorHTML("register_fail", "Registration failed. Please try again.", "", "")
+				}
+			} else if id > 0 {
+				home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+				redirectTo := strings.TrimSpace(r.FormValue("redirect_to"))
+				if redirectTo == "" {
+					redirectTo = home + "/wp-login.php?checkemail=registered"
+					if home == "" {
+						redirectTo = "/wp-login.php?checkemail=registered"
+					}
+				} else {
+					redirectTo = sanitizeRedirect(redirectTo, home)
+				}
+				http.Redirect(w, r, redirectTo, http.StatusFound)
+				return
+			}
+		}
 	}
-	http.Redirect(w, r, target, http.StatusFound)
+	h.serveRegisterForm(w, r, c, userLogin, userEmail, errMsg)
+}
+
+// serveRegisterForm renders wp-login.php?action=register (P6.43).
+func (h *Handler) serveRegisterForm(w http.ResponseWriter, r *http.Request, c *wp.Context, userLogin, userEmail, errMsg string) {
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "/")), "/")
+	blogname := optionString(c, "blogname", "GoPress")
+	loginURL := home + "/wp-login.php"
+	actionURL := loginURL + "?action=register"
+	lostURL := loginURL + "?action=lostpassword"
+	redirectTo := ""
+	if r != nil {
+		redirectTo = strings.TrimSpace(r.URL.Query().Get("redirect_to"))
+		if redirectTo == "" {
+			redirectTo = strings.TrimSpace(r.FormValue("redirect_to"))
+		}
+	}
+
+	var b strings.Builder
+	writeLoginHead(&b, home, blogname, "Registration Form", "register")
+	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Registration Form</h1>\n")
+	b.WriteString("\t\t\t<div id=\"login\">\n")
+	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
+	b.WriteString("<div class=\"notice notice-info message register\"><p>Register For This Site</p></div>\n")
+	if errMsg != "" {
+		b.WriteString("\t\t<div id=\"login_error\">")
+		b.WriteString(errMsg)
+		b.WriteString("</div>\n")
+	}
+	b.WriteString("\t\t<form name=\"registerform\" id=\"registerform\" action=\"")
+	b.WriteString(html.EscapeString(actionURL))
+	b.WriteString("\" method=\"post\" novalidate=\"novalidate\">\n")
+	b.WriteString("\t\t\t<p>\n")
+	b.WriteString("\t\t\t\t<label for=\"user_login\">Username</label>\n")
+	b.WriteString("\t\t\t\t<input type=\"text\" name=\"user_login\" id=\"user_login\" class=\"input ltr\" value=\"")
+	b.WriteString(html.EscapeString(userLogin))
+	b.WriteString("\" size=\"20\" autocapitalize=\"off\" autocomplete=\"username\" required=\"required\" />\n")
+	b.WriteString("\t\t\t</p>\n")
+	b.WriteString("\t\t\t<p>\n")
+	b.WriteString("\t\t\t\t<label for=\"user_email\">Email</label>\n")
+	b.WriteString("\t\t\t\t<input type=\"email\" name=\"user_email\" id=\"user_email\" class=\"input\" value=\"")
+	b.WriteString(html.EscapeString(userEmail))
+	b.WriteString("\" size=\"25\" autocomplete=\"email\" required=\"required\" />\n")
+	b.WriteString("\t\t\t</p>\n")
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("register_form")
+	}
+	b.WriteString("\t\t\t<p id=\"reg_passmail\">\n")
+	b.WriteString("\t\t\t\tRegistration confirmation will be emailed to you.\n")
+	b.WriteString("\t\t\t</p>\n")
+	b.WriteString("\t\t\t<input type=\"hidden\" name=\"redirect_to\" value=\"")
+	b.WriteString(html.EscapeString(redirectTo))
+	b.WriteString("\" />\n")
+	b.WriteString("\t\t\t<p class=\"submit\">\n")
+	b.WriteString("\t\t\t\t<input type=\"submit\" name=\"wp-submit\" id=\"wp-submit\" class=\"button button-primary button-large\" value=\"Register\" />\n")
+	b.WriteString("\t\t\t</p>\n")
+	b.WriteString("\t\t</form>\n\n")
+	b.WriteString("\t\t<p id=\"nav\">\n")
+	b.WriteString("\t\t\t<a class=\"wp-login-log-in\" href=\"")
+	b.WriteString(html.EscapeString(loginURL))
+	b.WriteString("\">Log in</a>\n")
+	b.WriteString("\t\t\t | \n")
+	b.WriteString("\t\t\t<a class=\"wp-login-lost-password\" href=\"")
+	b.WriteString(html.EscapeString(lostURL))
+	b.WriteString("\">Lost your password?</a>\n")
+	b.WriteString("\t\t</p>\n")
+	b.WriteString("\t\t\t\t<p id=\"backtoblog\">\n")
+	b.WriteString("\t\t\t<a href=\"")
+	b.WriteString(html.EscapeString(home + "/"))
+	b.WriteString("\">&larr; Go to ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString("</a>\t\t</p>\n")
+	if link := wp.PrivacyPolicyPageLinkHTML(c); link != "" {
+		b.WriteString("\t\t")
+		b.WriteString(link)
+		b.WriteString("\n")
+	}
+	b.WriteString("\t\t\t</div>\n")
+	b.WriteString("\t<script>\n")
+	b.WriteString("\t\ttry{document.getElementById('user_login').focus();}catch(e){}\n")
+	b.WriteString("\t\tif(typeof wpOnload==='function')wpOnload();\n")
+	b.WriteString("\t</script>\n")
+	b.WriteString("\t</body>\n")
+	b.WriteString("\t</html>\n")
+	writeLoginHTML(w, r, b.String(), loginShouldShake(extractLoginErrorCode(errMsg)), c)
+}
+
+func extractLoginErrorCode(errHTML string) string {
+	// loginErrorHTML embeds id="login_error" and often a code in class; shake on empty fields.
+	if strings.Contains(errHTML, "empty_username") || strings.Contains(errHTML, "The username field is empty") || strings.Contains(errHTML, "Please enter a username") {
+		return "empty_username"
+	}
+	if strings.Contains(errHTML, "empty_email") || strings.Contains(errHTML, "Please type your email") {
+		return "empty_email"
+	}
+	if strings.Contains(errHTML, "invalid_email") {
+		return "invalid_email"
+	}
+	return ""
+}
+
+// serveCheckEmailRegistered shows the post-registration notice (P6.43).
+func (h *Handler) serveCheckEmailRegistered(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "/")), "/")
+	blogname := optionString(c, "blogname", "GoPress")
+	loginURL := home + "/wp-login.php"
+	var b strings.Builder
+	writeLoginHead(&b, home, blogname, "Log In", "login")
+	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Log In</h1>\n")
+	b.WriteString("\t\t\t<div id=\"login\">\n")
+	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
+	b.WriteString("<div class=\"notice notice-info message\"><p>Registration complete. Please check your email.</p></div>\n")
+	b.WriteString("\t\t<p id=\"backtoblog\">\n")
+	b.WriteString("\t\t\t<a href=\"")
+	b.WriteString(html.EscapeString(home + "/"))
+	b.WriteString("\">&larr; Go to ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString("</a>\t\t</p>\n")
+	b.WriteString("\t\t<p id=\"nav\"><a class=\"wp-login-log-in\" href=\"")
+	b.WriteString(html.EscapeString(loginURL))
+	b.WriteString("\">Log in</a></p>\n")
+	b.WriteString("\t\t\t</div>\n")
+	b.WriteString("\t</body>\n")
+	b.WriteString("\t</html>\n")
+	writeLoginHTML(w, r, b.String(), false, c)
 }
 
 func usersCanRegister(c *wp.Context) bool {

@@ -2,6 +2,7 @@ package login_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -362,6 +363,76 @@ func TestRegisterDisabledRedirect(t *testing.T) {
 	loc := rec.Header().Get("Location")
 	if !strings.Contains(loc, "registration=disabled") {
 		t.Fatalf("Location=%q", loc)
+	}
+}
+
+func TestRegisterFormWhenEnabled(t *testing.T) {
+	// P6.43: users_can_register=1 shows Registration Form.
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	orig := c.Options.GetOption("users_can_register", 0)
+	_, _ = c.Options.UpdateOption("users_can_register", "1", "yes")
+	defer func() { _, _ = c.Options.UpdateOption("users_can_register", orig, "yes") }()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?action=register", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`name="registerform"`,
+		`id="registerform"`,
+		`name="user_login"`,
+		`name="user_email"`,
+		`Registration Form`,
+		`Register For This Site`,
+		`id="reg_passmail"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in %q", want, body)
+		}
+	}
+}
+
+func TestRegisterPostCreatesSubscriber(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	orig := c.Options.GetOption("users_can_register", 0)
+	_, _ = c.Options.UpdateOption("users_can_register", "1", "yes")
+	defer func() { _, _ = c.Options.UpdateOption("users_can_register", orig, "yes") }()
+
+	loginName := fmt.Sprintf("gopress_reg_%d", time.Now().UnixNano())
+	email := loginName + "@example.invalid"
+	form := url.Values{}
+	form.Set("user_login", loginName)
+	form.Set("user_email", email)
+	form.Set("wp-submit", "Register")
+	req := httptest.NewRequest(http.MethodPost, "/wp-login.php?action=register", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	if loc := rec.Header().Get("Location"); !strings.Contains(loc, "checkemail=registered") {
+		t.Fatalf("Location=%q", loc)
+	}
+	user, err := c.GetUserBy("login", loginName)
+	if err != nil || user == nil {
+		t.Fatalf("user missing: %v", err)
+	}
+	t.Cleanup(func() { _ = c.DeleteUser(user.ID, nil) })
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-login.php?checkemail=registered", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK || !strings.Contains(rec.Body.String(), "Registration complete") {
+		t.Fatalf("registered notice: status=%d body=%q", rec.Code, rec.Body.String())
 	}
 }
 
