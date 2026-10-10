@@ -134,9 +134,14 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	}
 	loginURL := home + "/wp-login.php"
 	reauth := r.URL.Query().Get("reauth") == "1"
+	interim := isInterimLogin(r)
 
 	var b strings.Builder
-	writeLoginHead(&b, home, blogname, "Log In", "login")
+	extraClass := ""
+	if interim {
+		extraClass = "interim-login"
+	}
+	writeLoginHead(&b, home, blogname, "Log In", "login", extraClass)
 	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Log In</h1>\n")
 	b.WriteString("\t\t\t<div id=\"login\">\n")
 	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
@@ -146,8 +151,12 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		b.WriteString(html.EscapeString(errMsg))
 		b.WriteString("<br /></div>\n")
 	}
+	actionURL := loginURL
+	if interim {
+		actionURL = loginURL + "?interim-login=1"
+	}
 	b.WriteString("\t\t<form name=\"loginform\" id=\"loginform\" action=\"")
-	b.WriteString(html.EscapeString(loginURL))
+	b.WriteString(html.EscapeString(actionURL))
 	b.WriteString("\" method=\"post\">\n")
 	b.WriteString("\t\t\t<p>\n")
 	b.WriteString("\t\t\t\t<label for=\"user_login\">Username or Email Address</label>\n")
@@ -174,23 +183,30 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	b.WriteString(html.EscapeString(redirectTo))
 	b.WriteString("\" />\n")
 	b.WriteString("\t\t\t\t\t\t\t\t\t<input type=\"hidden\" name=\"testcookie\" value=\"1\" />\n")
+	if interim {
+		b.WriteString("\t\t\t\t\t\t\t\t\t<input type=\"hidden\" name=\"interim-login\" value=\"1\" />\n")
+	}
 	b.WriteString("\t\t\t</p>\n")
 	b.WriteString("\t\t</form>\n\n")
-	b.WriteString("\t\t\t\t\t<p id=\"nav\">\n")
-	b.WriteString("\t\t\t\t<a class=\"wp-login-lost-password\" href=\"")
-	b.WriteString(html.EscapeString(loginURL + "?action=lostpassword"))
-	b.WriteString("\">Lost your password?</a>\t\t\t</p>\n")
+	if !interim {
+		b.WriteString("\t\t\t\t\t<p id=\"nav\">\n")
+		b.WriteString("\t\t\t\t<a class=\"wp-login-lost-password\" href=\"")
+		b.WriteString(html.EscapeString(loginURL + "?action=lostpassword"))
+		b.WriteString("\">Lost your password?</a>\t\t\t</p>\n")
+	}
 	b.WriteString("\t\t\t<script>\n")
 	b.WriteString("function wp_attempt_focus() {setTimeout( function() {try {d = document.getElementById( \"user_login\" );d.focus(); d.select();} catch( er ) {}}, 200);}\n")
 	b.WriteString("wp_attempt_focus();\n")
 	b.WriteString("if ( typeof wpOnload === 'function' ) { wpOnload() }\n")
 	b.WriteString("</script>\n")
-	b.WriteString("\t\t<p id=\"backtoblog\">\n")
-	b.WriteString("\t\t\t<a href=\"")
-	b.WriteString(html.EscapeString(home + "/"))
-	b.WriteString("\">&larr; Go to ")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString("</a>\t\t</p>\n")
+	if !interim {
+		b.WriteString("\t\t<p id=\"backtoblog\">\n")
+		b.WriteString("\t\t\t<a href=\"")
+		b.WriteString(html.EscapeString(home + "/"))
+		b.WriteString("\">&larr; Go to ")
+		b.WriteString(html.EscapeString(blogname))
+		b.WriteString("</a>\t\t</p>\n")
+	}
 	b.WriteString("\t\t\t</div>\n")
 	b.WriteString("\t\t\n")
 	writeLoginScripts(&b, home, c)
@@ -306,7 +322,7 @@ func (h *Handler) serveLostPassword(w http.ResponseWriter, r *http.Request, c *w
 	writeLoginHTML(w, b.String(), false, c)
 }
 
-func writeLoginHead(b *strings.Builder, home, blogname, title, action string) {
+func writeLoginHead(b *strings.Builder, home, blogname, title, action string, extraClasses ...string) {
 	ver := "7.2-alpha-64260"
 	styles := home + "/wp-admin/load-styles.php?c=0&dir=ltr&load%5Bchunk_0%5D=dashicons,buttons,forms,l10n,wp-base-styles,wp-tooltip,login&ver=" + ver
 	b.WriteString("<!DOCTYPE html>\n")
@@ -327,6 +343,14 @@ func writeLoginHead(b *strings.Builder, home, blogname, title, action string) {
 	b.WriteString("\t\t</head>\n")
 	b.WriteString("\t<body class=\"login no-js login-action-")
 	b.WriteString(html.EscapeString(action))
+	for _, cls := range extraClasses {
+		cls = strings.TrimSpace(cls)
+		if cls == "" {
+			continue
+		}
+		b.WriteByte(' ')
+		b.WriteString(html.EscapeString(cls))
+	}
 	b.WriteString(" wp-core-ui admin-color-modern locale-en-us\">\n")
 	b.WriteString("\t<script>\n")
 	b.WriteString("document.body.className = document.body.className.replace('no-js','js');\n")
@@ -488,6 +512,7 @@ func (h *Handler) servePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		redirectTo = r.URL.Query().Get("redirect_to")
 	}
 	redirectTo = sanitizeRedirect(redirectTo)
+	interim := isInterimLogin(r)
 
 	secure := r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
 	set, err := c.Login(login, password, remember, secure, 0)
@@ -495,12 +520,52 @@ func (h *Handler) servePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		// Re-display form with error; preserve redirect_to via query for GET-shaped form.
 		q := r.URL.Query()
 		q.Set("redirect_to", redirectTo)
+		if interim {
+			q.Set("interim-login", "1")
+		}
 		r.URL.RawQuery = q.Encode()
 		h.serveForm(w, r, c, "The username or password you entered is incorrect.")
 		return
 	}
 	set.WriteAuthCookies(w, "/")
+	if interim {
+		h.serveInterimLoginSuccess(w, r, c)
+		return
+	}
 	http.Redirect(w, r, redirectTo, http.StatusFound)
+}
+
+// serveInterimLoginSuccess shows the interim modal success stub (P6.10).
+func (h *Handler) serveInterimLoginSuccess(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "/")), "/")
+	blogname := optionString(c, "blogname", "GoPress")
+	var b strings.Builder
+	writeLoginHead(&b, home, blogname, "Log In", "login", "interim-login", "interim-login-success")
+	b.WriteString("\t\t\t<div id=\"login\">\n")
+	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
+	b.WriteString("<p class=\"message\">You have logged in successfully.</p>\n")
+	b.WriteString("\t\t\t</div>\n")
+	b.WriteString("\t</body>\n")
+	b.WriteString("\t</html>\n")
+	writeLoginHTML(w, b.String(), false, c)
+}
+
+func isInterimLogin(r *http.Request) bool {
+	if r == nil {
+		return false
+	}
+	if r.URL != nil {
+		v := r.URL.Query().Get("interim-login")
+		if v == "1" || strings.EqualFold(v, "true") {
+			return true
+		}
+	}
+	if r.Form != nil {
+		v := r.FormValue("interim-login")
+		return v == "1" || strings.EqualFold(v, "true")
+	}
+	// Form may not be parsed yet for GET.
+	return false
 }
 
 func sanitizeRedirect(raw string) string {
