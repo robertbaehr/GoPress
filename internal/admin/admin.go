@@ -9,6 +9,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/robertbaehr/GoPress/internal/plugins"
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
@@ -347,8 +348,36 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString("<table class=\"wp-list-table widefat plugins\">\n")
 	b.WriteString("<thead><tr><th scope=\"col\">Plugin</th><th scope=\"col\">Description</th></tr></thead>\n")
 	b.WriteString("<tbody id=\"the-list\">\n")
-	b.WriteString("<tr class=\"inactive\"><td class=\"plugin-title\"><strong>No plugins installed</strong></td>")
-	b.WriteString("<td class=\"column-description desc\"><p>GoPress plugin management stub (P7.1).</p></td></tr>\n")
+	installed, err := plugins.ListInstalledPlugins(c)
+	if err != nil {
+		http.Error(w, "plugins: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	if len(installed) == 0 {
+		b.WriteString("<tr class=\"inactive\"><td class=\"plugin-title\"><strong>No plugins installed</strong></td>")
+		b.WriteString("<td class=\"column-description desc\"><p>GoPress plugin management stub (P7.1).</p></td></tr>\n")
+	}
+	for _, p := range installed {
+		b.WriteString("<tr class=\"inactive\" data-plugin=\"")
+		b.WriteString(html.EscapeString(p.File))
+		b.WriteString("\"><td class=\"plugin-title\"><strong>")
+		b.WriteString(html.EscapeString(p.Name))
+		b.WriteString("</strong>")
+		if p.Version != "" {
+			b.WriteString(" <span class=\"plugin-version\">")
+			b.WriteString(html.EscapeString(p.Version))
+			b.WriteString("</span>")
+		}
+		b.WriteString("</td><td class=\"column-description desc\"><p>")
+		b.WriteString(html.EscapeString(p.Description))
+		b.WriteString("</p>")
+		if p.Author != "" {
+			b.WriteString("<p class=\"authors\">By ")
+			b.WriteString(html.EscapeString(p.Author))
+			b.WriteString("</p>")
+		}
+		b.WriteString("</td></tr>\n")
+	}
 	b.WriteString("</tbody>\n</table>\n")
 	writeAdminPage(w, c, newAdminChrome(c, "Plugins", "plugins-php"), b.String())
 }
