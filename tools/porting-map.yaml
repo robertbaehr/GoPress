@@ -1435,6 +1435,28 @@
   api: exported
   notes: "P4.85 — listPostCollection honors ?author= for posts/pages"
 
+# P4.86: REST GET /wp/v2/posts?categories= collection filter (tax_query term_id IN).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#categories
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.86
+  api: exported
+  notes: "P4.86 — ?categories= → QueryArgs.CategoryIn (category term_id IN)"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#categories-list
+  go: internal/rest/posts_write.go
+  status: partial
+  task: P4.86
+  api: exported
+  notes: "P4.86 — listPostCollection honors ?categories= for posts"
+
+- prefix: wp-includes/class-wp-query.php#category__in
+  go: internal/wp/query.go
+  status: partial
+  task: P4.86
+  api: exported
+  notes: "P4.86 — QueryArgs.CategoryIn joins term relationships by term_id"
+
 # P4.83: REST GET /wp/v2/posts?orderby=title|date|id|slug (+ order=asc|desc).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#orderby
   go: internal/rest/posts.go
