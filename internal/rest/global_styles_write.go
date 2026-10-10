@@ -13,9 +13,9 @@ import (
 
 // globalStylesWriteBody is the editable subset of WP_REST_Global_Styles_Controller (P4.51).
 type globalStylesWriteBody struct {
-	Styles   map[string]any    `json:"styles"`
-	Settings map[string]any    `json:"settings"`
-	Title    json.RawMessage   `json:"title"`
+	Styles   map[string]any  `json:"styles"`
+	Settings map[string]any  `json:"settings"`
+	Title    json.RawMessage `json:"title"`
 }
 
 func canEditGlobalStyles(c *wp.Context) bool {

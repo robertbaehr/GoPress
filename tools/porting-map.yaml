@@ -328,12 +328,7 @@
   task: P5.34
   api: internal
 
-# P5.35: CSS filter functions (brightness/contrast/…) + duotone compose.
-- prefix: wp-includes/block-supports/duotone.php
-  go: internal/blocks/style_engine.go
-  status: partial
-  task: P5.35
-  api: internal
+# P5.35: CSS filter functions live under style_engine + supports (map row above).
 
 # P4.51: REST POST/PUT/PATCH /wp/v2/global-styles/{id}.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-global-styles-controller.php

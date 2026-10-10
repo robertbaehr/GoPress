@@ -847,8 +847,8 @@ func extraIndexRoutes() map[string]RouteIndex {
 		"/wp/v2/templates/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)": itemRoute(ns),
 		"/wp/v2/template-parts": collectionRoute(ns),
 		"/wp/v2/template-parts/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)": itemRoute(ns),
-		"/wp/v2/navigation":                       collectionRoute(ns),
-		"/wp/v2/navigation/(?P<id>[\\d]+)":        itemRoute(ns),
+		"/wp/v2/navigation":                collectionRoute(ns),
+		"/wp/v2/navigation/(?P<id>[\\d]+)": itemRoute(ns),
 		"/wp/v2/global-styles/(?P<id>[\\/\\d+]+)": {
 			Namespace: ns,
 			Methods:   []string{"GET", "POST", "PUT", "PATCH"},

@@ -85,7 +85,7 @@ func UninstallPlugin(c *wp.Context, pluginFile string) error {
 	}
 
 	if c != nil && c.Hooks != nil {
-		c.Hooks.DoAction("uninstall_"+pluginFile)
+		c.Hooks.DoAction("uninstall_" + pluginFile)
 	}
 
 	delete(m, pluginFile)
