@@ -61,43 +61,6 @@ func (s *Server) serveTagItem(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	s.serveTermItem(w, r, c, "post_tag", id)
 }
 
-func (s *Server) serveTermCollection(w http.ResponseWriter, r *http.Request, c *wp.Context, taxonomy string) {
-	if r.Method != http.MethodGet {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
-			"code":    "rest_no_route",
-			"message": "No route was found matching the URL and request method.",
-			"data":    map[string]any{"status": 405},
-		})
-		return
-	}
-	perPage := parsePerPage(r, 10)
-	page := parsePage(r)
-	total, err := countTerms(c, taxonomy)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]any{
-			"code":    "rest_term_query",
-			"message": err.Error(),
-			"data":    map[string]any{"status": 500},
-		})
-		return
-	}
-	terms, err := listTermsPaged(c, taxonomy, perPage, page)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]any{
-			"code":    "rest_term_query",
-			"message": err.Error(),
-			"data":    map[string]any{"status": 500},
-		})
-		return
-	}
-	totalPages := 0
-	if perPage > 0 {
-		totalPages = (total + perPage - 1) / perPage
-	}
-	setCollectionHeaders(w, r, c, total, totalPages, page)
-	writeJSON(w, http.StatusOK, terms)
-}
-
 func (s *Server) serveTermItem(w http.ResponseWriter, r *http.Request, c *wp.Context, taxonomy string, id int64) {
 	if r.Method != http.MethodGet {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
