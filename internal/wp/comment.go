@@ -53,6 +53,37 @@ func ListApprovedComments(c *Context, postID int64) ([]Comment, error) {
 	return out, nil
 }
 
+// ListRecentComments returns approved site comments newest-first (comments feed, P3.27).
+// Includes pingbacks/trackbacks (any non-empty or empty comment_type with approved=1).
+func ListRecentComments(c *Context, limit int) ([]Comment, error) {
+	if c == nil || c.DB == nil {
+		return nil, fmt.Errorf("wp: ListRecentComments: nil DB")
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT comment_ID, comment_post_ID, comment_author, comment_author_email, comment_author_url, "+
+			"comment_date, comment_date_gmt, comment_content, comment_approved, comment_type, comment_parent, user_id "+
+			"FROM "+c.DB.Comments()+
+			" WHERE comment_approved = %s "+
+			"ORDER BY comment_date_gmt DESC LIMIT %d",
+		"1", limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := c.DB.GetResults(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]Comment, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, commentFromRow(row))
+	}
+	return out, nil
+}
+
 // CommentInsert holds fields for inserting a new comment.
 type CommentInsert struct {
 	PostID      int64
