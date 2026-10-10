@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-// applySupports injects basic color/spacing/fontSize/layout/shadow/position classes and styles
-// from block attributes onto the rendered root element (P5.10 / P5.19 / P5.27 / P5.28 / P5.29).
+// applySupports injects basic color/spacing/typography/layout/shadow/position classes and styles
+// from block attributes onto the rendered root element (P5.10 / P5.19 / P5.27–P5.30).
 func applySupports(htmlFragment string, attrs map[string]any, blockName string) string {
 	if htmlFragment == "" {
 		return htmlFragment
@@ -40,8 +40,15 @@ func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string
 		if fs, ok := attrs["fontSize"].(string); ok && fs != "" {
 			classes = append(classes, "has-"+slugifySupport(fs)+"-font-size")
 		}
+		if ff, ok := attrs["fontFamily"].(string); ok && ff != "" {
+			classes = appendUnique(classes, "has-"+slugifySupport(ff)+"-font-family")
+		}
 		if ta, ok := attrs["textAlign"].(string); ok && ta != "" {
 			classes = appendUnique(classes, "has-text-align-"+slugifySupport(ta))
+		}
+		// Top-level textShadow preset (P5.30).
+		if ts, ok := attrs["textShadow"].(string); ok && ts != "" {
+			styles = mergeCSSDecls(styles, "text-shadow:"+cssValue("var:preset|text-shadow|"+ts))
 		}
 
 		if style, ok := attrs["style"].(map[string]any); ok {
@@ -56,7 +63,12 @@ func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string
 					classes = appendUnique(classes, "has-background")
 				}
 			}
-			styles = CompileStyle(style)
+			if typo, ok := style["typography"].(map[string]any); ok {
+				if ta, ok := typo["textAlign"].(string); ok && ta != "" {
+					classes = appendUnique(classes, "has-text-align-"+slugifySupport(ta))
+				}
+			}
+			styles = mergeCSSDecls(styles, CompileStyle(style))
 			if filterID, filterCSS := duotoneFromStyle(style); filterID != "" {
 				classes = appendUnique(classes, filterID)
 				if filterCSS != "" {

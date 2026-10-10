@@ -78,6 +78,26 @@ func TestBlockSupportsDuotoneCustomColors(t *testing.T) {
 	}
 }
 
+func TestBlockSupportsTypographyExtended(t *testing.T) {
+	in := `<!-- wp:paragraph {"fontFamily":"manrope","style":{"typography":{"letterSpacing":"0.05em","fontStyle":"italic","textDecoration":"underline","textTransform":"uppercase","writingMode":"horizontal-tb","textColumns":"2"}}} -->
+<p>Hi</p>
+<!-- /wp:paragraph -->`
+	out := blocks.Render(in)
+	for _, want := range []string{
+		"has-manrope-font-family",
+		"letter-spacing:0.05em",
+		"font-style:italic",
+		"text-decoration:underline",
+		"text-transform:uppercase",
+		"writing-mode:horizontal-tb",
+		"column-count:2",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
+
 func TestBlockSupportsShadowPreset(t *testing.T) {
 	in := `<!-- wp:group {"style":{"shadow":"var:preset|shadow|natural"}} -->
 <div class="wp-block-group">X</div>
