@@ -269,9 +269,9 @@
   api: internal
 
 - prefix: wp-includes/block-supports/duotone.php
-  go: internal/blocks/supports.go
+  go: internal/blocks/style_engine.go
   status: partial
-  task: P5.22
+  task: P5.35
   api: internal
 
 - prefix: wp-includes/block-supports/shadow.php
