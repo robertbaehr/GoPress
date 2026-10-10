@@ -168,6 +168,14 @@ func (c *Context) SetAuthCookie(user *User, remember, secure bool, now int64, to
 		}
 	}
 
+	// P6.38: secure_auth_cookie filter (wp_set_auth_cookie).
+	if c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("secure_auth_cookie", secure, user.ID); v != nil {
+			if b, ok := v.(bool); ok {
+				secure = b
+			}
+		}
+	}
 	scheme := "auth"
 	if secure {
 		scheme = "secure_auth"
@@ -181,6 +189,14 @@ func (c *Context) SetAuthCookie(user *User, remember, secure bool, now int64, to
 			home = optionValueString(c.Options.GetOption("siteurl", ""))
 		}
 		secureLoggedIn = strings.HasPrefix(strings.ToLower(home), "https://")
+	}
+	// P6.38: secure_logged_in_cookie filter.
+	if c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("secure_logged_in_cookie", secureLoggedIn, user.ID, secure); v != nil {
+			if b, ok := v.(bool); ok {
+				secureLoggedIn = b
+			}
+		}
 	}
 	authVal := c.Auth.GenerateAuthCookie(user.Login, user.Pass, expiration, scheme, token)
 	loggedIn := c.Auth.GenerateAuthCookie(user.Login, user.Pass, expiration, "logged_in", token)

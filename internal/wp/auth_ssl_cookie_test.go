@@ -80,6 +80,53 @@ func TestSecureAuthCookieWhenHTTPS(t *testing.T) {
 	}
 }
 
+func TestSecureAuthCookieFilters(t *testing.T) {
+	if os.Getenv("GOPRESS_SKIP_DB") != "" {
+		t.Skip("GOPRESS_SKIP_DB set")
+	}
+	c, err := wp.Boot(context.Background(), testBootConfig())
+	if err != nil {
+		t.Skipf("Boot unavailable: %v", err)
+	}
+	defer c.DB.Close()
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	c.Hooks.AddFilter("secure_auth_cookie", func(value any, _ ...any) any {
+		return true
+	}, 10, 2)
+	c.Hooks.AddFilter("secure_logged_in_cookie", func(value any, _ ...any) any {
+		return true
+	}, 10, 3)
+
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil || set == nil {
+		t.Fatalf("SetAuthCookie: %v", err)
+	}
+	if set.Scheme != "secure_auth" {
+		t.Fatalf("secure_auth_cookie filter ignored: scheme=%q", set.Scheme)
+	}
+	if !set.SecureLoggedIn {
+		t.Fatal("secure_logged_in_cookie filter ignored")
+	}
+	rec := httptest.NewRecorder()
+	set.WriteAuthCookies(rec, "/")
+	var sawSec, sawLoggedInSecure bool
+	for _, ck := range rec.Result().Cookies() {
+		if strings.HasPrefix(ck.Name, "wordpress_sec_") && ck.Secure {
+			sawSec = true
+		}
+		if strings.HasPrefix(ck.Name, "wordpress_logged_in_") && ck.Secure {
+			sawLoggedInSecure = true
+		}
+	}
+	if !sawSec || !sawLoggedInSecure {
+		t.Fatalf("expected Secure flags after filters; sec=%v logged_in=%v", sawSec, sawLoggedInSecure)
+	}
+}
+
 func TestSecureLoggedInWhenHomeHTTPS(t *testing.T) {
 	if os.Getenv("GOPRESS_SKIP_DB") != "" {
 		t.Skip("GOPRESS_SKIP_DB set")

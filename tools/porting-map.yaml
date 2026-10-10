@@ -965,6 +965,21 @@
   api: n/a
   notes: "P6.26 — TLS/X-Forwarded-Proto → secure SetAuthCookie / WriteAuthCookies"
 
+# P6.38: login cookie secure via is_ssl + secure_* filters.
+- prefix: wp-includes/pluggable.php#wp_set_auth_cookie_secure_p638
+  go: internal/wp/auth_cookie.go
+  status: partial
+  task: P6.38
+  api: exported
+  notes: "P6.38 — secure_auth_cookie + secure_logged_in_cookie filters"
+
+- prefix: wp-login.php#secure_auth_cookie_p638
+  go: internal/login/login.go
+  status: partial
+  task: P6.38
+  api: n/a
+  notes: "P6.38 — Login uses IsSSL (HTTPS CGI / :443 / X-Forwarded-Proto / TLS)"
+
 # P6.25: interim login success polish (transparent chrome, login_message, auth cookies).
 - prefix: wp-login.php#interim-success
   go: internal/login/login.go
