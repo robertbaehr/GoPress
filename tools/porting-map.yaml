@@ -4635,6 +4635,14 @@
   task: P7.26
   api: n/a
 
+# P7.89: deepen tools.php — privacy guide redirect, import-cap converter, tool_box.
+- prefix: wp-admin/tools.php#deepen
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.89
+  api: n/a
+  notes: "P7.89 — wp-privacy-policy-guide 301; converter gated on import+manage_categories; do_action tool_box"
+
 # P7.54: import.php WordPress WXR upload stub (reject or parse minimal).
 - prefix: wp-admin/import.php
   go: internal/admin/import_wxr.go
