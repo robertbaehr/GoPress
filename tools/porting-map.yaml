@@ -4447,6 +4447,21 @@
   api: n/a
   notes: "P7.79 — postRow.MenuOrder from posts.menu_order"
 
+# P2.74: wp_get_raw_referer from _wp_http_referer or HTTP Referer.
+- prefix: wp-includes/functions.php#wp_get_raw_referer
+  go: internal/wp/referer.go
+  status: partial
+  task: P2.74
+  api: exported
+  notes: "P2.74 — GetRawReferer prefers _wp_http_referer then Referer; unslashed"
+
+- prefix: wp-includes/functions.php#wp_get_referer
+  go: internal/wp/referer.go
+  status: partial
+  task: P2.74
+  api: exported
+  notes: "P2.74 — raw helper only; validated wp_get_referer deferred"
+
 # P4.93: REST pages ?parent= / ?parent_exclude= (post_parent__in / __not_in).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#parent
   go: internal/rest/posts.go
