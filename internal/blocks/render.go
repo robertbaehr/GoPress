@@ -63,11 +63,13 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderImage(block)
 	case "core/gallery":
 		out = e.renderGallery(block)
+	case "core/cover":
+		out = e.renderCover(block)
 	case "core/heading", "core/list", "core/list-item",
 		"core/code", "core/html",
 		"core/group", "core/columns", "core/column", "core/buttons", "core/button",
 		"core/pullquote", "core/preformatted", "core/verse", "core/table",
-		"core/cover", "core/media-text",
+		"core/media-text",
 		"core/details":
 		out = e.renderSaved(block)
 	case "core/audio":

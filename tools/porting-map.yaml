@@ -1344,6 +1344,14 @@
   api: internal
   notes: "P5.53 — renderVideo synthesize + width/height aspect-ratio"
 
+# P5.54: core/cover synthesize + useFeaturedImage injection.
+- prefix: wp-includes/blocks/cover.php
+  go: internal/blocks/cover.go
+  status: partial
+  task: P5.54
+  api: internal
+  notes: "P5.54 — renderCover synthesize from url/id + featured image before inner container"
+
 # P5.42: calendar / archives / latest-posts / latest-comments / tag-cloud / search.
 - prefix: wp-includes/blocks/calendar.php
   go: internal/blocks/widget_blocks.go
