@@ -102,6 +102,35 @@ func isSingularVars(vars map[string]string) bool {
 }
 
 func (f *Front) renderHome(w http.ResponseWriter, c *wp.Context) {
+	// P5.5: prefer block theme home/index template (DB or theme HTML) over shim.
+	if tpl, ok := wp.ResolveBlockTemplate(c, "home", "index"); ok && strings.TrimSpace(tpl) != "" {
+		f.renderBlockTemplate(w, c, tpl)
+		return
+	}
+	f.renderHomeShim(w, c)
+}
+
+// renderBlockTemplate parses and renders a block theme template document.
+func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, template string) {
+	blogname := optionString(c, "blogname", "GoPress")
+	body := blocks.Render(template)
+	safe := wp.KsesPost(body)
+
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString("</title>\n</head>\n<body class=\"wp-template\">\n")
+	b.WriteString(safe)
+	b.WriteString("\n</body>\n</html>\n")
+
+	setFrontAPILink(w, c)
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(b.String()))
+}
+
+func (f *Front) renderHomeShim(w http.ResponseWriter, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
 	posts, err := latestPosts(c, 5)
 	if err != nil {
