@@ -169,6 +169,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	s.Front.ServeFront(w, r, c)
+	// Mirror WP's shutdown spawn_cron when due jobs exist (P2.16).
+	wp.MaybeSpawnCron(c)
 }
 
 func (s *Server) requestContext(w http.ResponseWriter, r *http.Request) *wp.Context {
