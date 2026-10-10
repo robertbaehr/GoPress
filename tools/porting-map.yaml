@@ -779,6 +779,21 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P4.108 — list/item global styles revisions; isGlobalStylesUserThemeJSON gate"
 
+# P4.111: GET /wp/v2/templates|template-parts/{parent}/revisions[/id].
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-template-revisions-controller.php
+  go: internal/rest/template_revisions.go
+  status: partial
+  task: P4.111
+  api: exported
+  notes: "P4.111 — list/item template revisions; theme-file parents → rest_invalid_template"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-template-revisions-controller.php#tests
+  go: internal/rest/template_revisions_test.go
+  status: partial
+  task: P4.111
+  api: n/a
+  notes: "P4.111 — unit coverage for template revisions auth/theme-file/list/item"
+
 # P4.52: REST POST/PUT/PATCH for /wp/v2/templates and template-parts.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-templates-controller.php#delete_item
   go: internal/rest/templates_write.go
