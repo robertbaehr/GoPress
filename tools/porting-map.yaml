@@ -869,6 +869,13 @@
   task: P10.36
   api: n/a
 
+# P10.37: e2e GET /wp/v2/plugins (+ hello item).
+- prefix: tests/e2e/plugins-rest.spec.js
+  go: tests/e2e/plugins-rest.spec.js
+  status: partial
+  task: P10.37
+  api: n/a
+
 # P10.22: E2E author archive /author/admin/.
 - prefix: tests/e2e/author.spec.js
   go: tests/e2e/author.spec.js
