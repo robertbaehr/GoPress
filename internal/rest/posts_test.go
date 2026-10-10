@@ -95,6 +95,44 @@ func TestPostSingle(t *testing.T) {
 	}
 }
 
+func TestPostsStickyQueryParam(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	// Fixture sticky_posts = [13] (Fixture Post 01).
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?sticky=true&per_page=10", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("sticky=true status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var stickyPosts []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &stickyPosts); err != nil {
+		t.Fatal(err)
+	}
+	if len(stickyPosts) != 1 || stickyPosts[0].ID != 13 || !stickyPosts[0].Sticky {
+		t.Fatalf("sticky=true got %+v", stickyPosts)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?sticky=false&per_page=20", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("sticky=false status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var nonSticky []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &nonSticky); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range nonSticky {
+		if p.ID == 13 || p.Sticky {
+			t.Fatalf("sticky=false included sticky post %+v", p)
+		}
+	}
+}
+
 func TestPostSingleMissing(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()

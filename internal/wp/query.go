@@ -35,6 +35,10 @@ type QueryArgs struct {
 	StickyFirst bool
 	// IgnoreSticky excludes sticky posts from results (non-inherit query loops).
 	IgnoreSticky bool
+	// PostIn limits results to these IDs (post__in; REST sticky=true, P4.82).
+	PostIn []int64
+	// PostNotIn excludes these IDs (post__not_in; REST sticky=false, P4.82).
+	PostNotIn []int64
 }
 
 // Post is a row from wp_posts used by front and REST helpers.
@@ -102,6 +106,10 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		where = append(where, "post_author = %d")
 		vals = append(vals, args.Author)
 	}
+	if clause, cvals := postInNotInSQL("ID", args.PostIn, args.PostNotIn); clause != "" {
+		where = append(where, clause)
+		vals = append(vals, cvals...)
+	}
 	from := c.DB.Posts()
 	if tag := strings.TrimSpace(args.Tag); tag != "" {
 		from = c.DB.Posts() + " p INNER JOIN " + c.DB.TermRelationships() + " tr ON tr.object_id = p.ID" +
@@ -117,6 +125,8 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "post_excerpt", "p.post_excerpt")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_content", "p.post_content")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_date", "p.post_date")
+		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
+		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
 		q := "SELECT COUNT(DISTINCT p.ID) AS total FROM " + from + " WHERE " + whereSQL
 		sqlStr, sqlArgs, err := c.DB.Prepare(q, vals...)
 		if err != nil {
@@ -143,6 +153,8 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "post_excerpt", "p.post_excerpt")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_content", "p.post_content")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_date", "p.post_date")
+		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
+		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
 		q := "SELECT COUNT(DISTINCT p.ID) AS total FROM " + from + " WHERE " + whereSQL
 		sqlStr, sqlArgs, err := c.DB.Prepare(q, vals...)
 		if err != nil {
@@ -251,6 +263,10 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 		where = append(where, "post_author = %d")
 		vals = append(vals, args.Author)
 	}
+	if clause, cvals := postInNotInSQL("ID", args.PostIn, args.PostNotIn); clause != "" {
+		where = append(where, clause)
+		vals = append(vals, cvals...)
+	}
 	from := c.DB.Posts() + " p"
 	idCol := "p.ID"
 	if tag := strings.TrimSpace(args.Tag); tag != "" {
@@ -280,6 +296,8 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "post_name", "p.post_name")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_date", "p.post_date")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID =", "p.ID =")
+		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
+		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
 	} else {
 		from = c.DB.Posts()
 		idCol = "ID"
@@ -427,6 +445,36 @@ func orderByPostDate(aliased bool) string {
 		return "p.post_date"
 	}
 	return "post_date"
+}
+
+// postInNotInSQL builds post__in / post__not_in fragments (P4.82).
+// Empty PostIn yields "ID IN (0)" so WP_Query returns no rows.
+func postInNotInSQL(col string, in, notIn []int64) (string, []any) {
+	if col == "" {
+		col = "ID"
+	}
+	if in != nil {
+		if len(in) == 0 {
+			return col + " IN (%d)", []any{int64(0)}
+		}
+		ph := make([]string, len(in))
+		vals := make([]any, len(in))
+		for i, id := range in {
+			ph[i] = "%d"
+			vals[i] = id
+		}
+		return col + " IN (" + strings.Join(ph, ",") + ")", vals
+	}
+	if len(notIn) == 0 {
+		return "", nil
+	}
+	ph := make([]string, len(notIn))
+	vals := make([]any, len(notIn))
+	for i, id := range notIn {
+		ph[i] = "%d"
+		vals[i] = id
+	}
+	return col + " NOT IN (" + strings.Join(ph, ",") + ")", vals
 }
 
 // GetPost returns the first post matching args, or nil if none.
