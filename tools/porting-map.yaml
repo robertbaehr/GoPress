@@ -5122,3 +5122,11 @@
   task: P10.77
   api: n/a
   notes: "P10.77 — STATUS refresh after social-links, users/me, users bulk role, parse_url, comments RSS2, attachment metadata, corpus 63/63"
+
+# P10.78: expand diff corpus + users/me Allow parity for anon.
+- prefix: tests/corpus#p10.78
+  go: tests/corpus
+  status: partial
+  task: P10.78
+  api: n/a
+  notes: "P10.78 — +search term/post-format, rest_route search, status draft, plugins/themes/templates/menu-locations anon headers, sitemap tag/format, interim-login; users/me Allow GET when anon; 74/74"
