@@ -4692,3 +4692,11 @@
   task: P8.20
   api: n/a
   notes: "P8.20 — download action 404s when file past wp_privacy_export_expiration"
+
+# P10.71: STATUS/PORTING refresh after P5.79–P8.20.
+- prefix: docs/STATUS.md
+  go: docs/STATUS.md
+  status: partial
+  task: P10.71
+  api: n/a
+  notes: "P10.71 — STATUS refresh after rss block, modified_*, columns, referer, content_feed, export expire"
