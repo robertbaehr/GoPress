@@ -627,19 +627,43 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 }
 
 func (h *Handler) serveProfile(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	blogname := optionString(c, "blogname", "GoPress")
-	user := c.CurrentUser
-	login := ""
-	email := ""
-	display := ""
-	if user != nil {
-		login = user.Login
-		email = user.Email
-		display = user.DisplayName
+	if c == nil || c.CurrentUser == nil {
+		http.Error(w, "Unauthorized\n", http.StatusUnauthorized)
+		return
 	}
+	updated := false
+	if r.Method == http.MethodPost {
+		_ = r.ParseForm()
+		if c.VerifyNonce(r.FormValue("_wpnonce"), "update-user_"+strconv.FormatInt(c.CurrentUser.ID, 10)) == 0 {
+			http.Error(w, "Invalid nonce\n", http.StatusForbidden)
+			return
+		}
+		displayName := strings.TrimSpace(r.FormValue("display_name"))
+		if displayName == "" {
+			displayName = c.CurrentUser.Login
+		}
+		if err := c.UpdateDisplayName(c.CurrentUser.ID, displayName); err != nil {
+			http.Error(w, "profile: "+err.Error()+"\n", http.StatusInternalServerError)
+			return
+		}
+		updated = true
+	}
+
+	user := c.CurrentUser
+	login := user.Login
+	email := user.Email
+	display := user.DisplayName
+	nonce := c.CreateNonce("update-user_" + strconv.FormatInt(user.ID, 10))
+
 	var b strings.Builder
 	b.WriteString("<h1>Profile</h1>\n")
-	b.WriteString("<form id=\"your-profile\">\n")
+	if updated {
+		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p><strong>Profile updated.</strong></p></div>\n")
+	}
+	b.WriteString("<form id=\"your-profile\" method=\"post\" action=\"/wp-admin/profile.php\">\n")
+	b.WriteString("<input type=\"hidden\" id=\"_wpnonce\" name=\"_wpnonce\" value=\"")
+	b.WriteString(html.EscapeString(nonce))
+	b.WriteString("\" />\n")
 	b.WriteString("<h2>Personal Options</h2>\n")
 	b.WriteString("<table class=\"form-table\" role=\"presentation\">\n")
 	b.WriteString("<tr><th><label for=\"user_login\">Username</label></th><td><input type=\"text\" name=\"user_login\" id=\"user_login\" value=\"")
@@ -651,8 +675,9 @@ func (h *Handler) serveProfile(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString("<tr><th><label for=\"display_name\">Display name</label></th><td><input type=\"text\" name=\"display_name\" id=\"display_name\" value=\"")
 	b.WriteString(html.EscapeString(display))
 	b.WriteString("\" class=\"regular-text\"></td></tr>\n")
-	b.WriteString("</table>\n</form>\n")
-	_ = blogname
+	b.WriteString("</table>\n")
+	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Update Profile\"></p>\n")
+	b.WriteString("</form>\n")
 	writeAdminPage(w, c, newAdminChrome(c, "Profile", "profile-php"), b.String())
 }
 

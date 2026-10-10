@@ -356,3 +356,63 @@ func TestPluginsListsHelloDollyHeaders(t *testing.T) {
 		t.Fatalf("expected author from headers, got %q", body)
 	}
 }
+
+func TestProfileUpdateDisplayName(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	original := user.DisplayName
+	t.Cleanup(func() {
+		_ = c.UpdateDisplayName(user.ID, original)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/profile.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `method="post"`) || !strings.Contains(body, `name="_wpnonce"`) {
+		t.Fatalf("expected POST form with nonce: %q", body[:min(500, len(body))])
+	}
+	nonceStart := strings.Index(body, `name="_wpnonce" value="`)
+	if nonceStart < 0 {
+		t.Fatal("nonce not found")
+	}
+	nonceStart += len(`name="_wpnonce" value="`)
+	nonceEnd := strings.Index(body[nonceStart:], `"`)
+	nonce := body[nonceStart : nonceStart+nonceEnd]
+
+	wantName := "GoPress Profile Test"
+	form := url.Values{}
+	form.Set("_wpnonce", nonce)
+	form.Set("display_name", wantName)
+	req = httptest.NewRequest(http.MethodPost, "/wp-admin/profile.php", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("POST status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "Profile updated") {
+		t.Fatalf("missing updated notice: %q", rec.Body.String()[:min(400, rec.Body.Len())])
+	}
+	if !strings.Contains(rec.Body.String(), wantName) {
+		t.Fatalf("missing new display name in form: %q", rec.Body.String()[:min(600, rec.Body.Len())])
+	}
+	fresh, err := c.GetUserBy("id", user.ID)
+	if err != nil || fresh == nil {
+		t.Fatalf("reload user: %v", err)
+	}
+	if fresh.DisplayName != wantName {
+		t.Fatalf("display_name=%q want %q", fresh.DisplayName, wantName)
+	}
+}
