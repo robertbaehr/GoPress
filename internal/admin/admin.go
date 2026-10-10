@@ -276,6 +276,10 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	if postType != "post" && postType != "page" {
 		postType = "post"
 	}
+	// P7.77: Screen Options posts_per_page (edit_{type}_per_page).
+	if handleEditScreenOptions(w, r, c, postType) {
+		return
+	}
 	// P7.74: bulk trash / untrash (restore) via list-table Apply.
 	if handleEditPostsBulkTrash(w, r, c, postType) {
 		return
@@ -292,7 +296,8 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	monthFilter := parseEditDateFilter(r)
 	// P7.73: status view links (?post_status=publish|draft|trash).
 	postStatus := parseEditPostStatus(r)
-	posts, err := recentPostsByType(c, postType, 20, search, authorID, catID, tagID, postStatus, monthFilter)
+	perPage := wp.EditPostsPerPage(c, postType)
+	posts, err := recentPostsByType(c, postType, perPage, search, authorID, catID, tagID, postStatus, monthFilter)
 	if err != nil {
 		http.Error(w, "posts: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
@@ -313,6 +318,7 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		searchLabel = "Search Pages"
 	}
 	var b strings.Builder
+	writeEditScreenOptions(&b, c, postType, perPage)
 	b.WriteString("<h1>")
 	b.WriteString(html.EscapeString(heading))
 	b.WriteString("</h1>\n")
@@ -4709,6 +4715,88 @@ func countPostsByStatus(c *wp.Context, postType string) editStatusCounts {
 		}
 	}
 	return out
+}
+
+// handleEditScreenOptions saves edit_{post_type}_per_page via set_screen_options (P7.77).
+func handleEditScreenOptions(w http.ResponseWriter, r *http.Request, c *wp.Context, postType string) bool {
+	if r.Method != http.MethodPost || c == nil || c.CurrentUser == nil {
+		return false
+	}
+	if err := r.ParseForm(); err != nil {
+		return false
+	}
+	option := strings.TrimSpace(r.Form.Get("wp_screen_options[option]"))
+	value := strings.TrimSpace(r.Form.Get("wp_screen_options[value]"))
+	if option == "" || value == "" {
+		return false
+	}
+	want := "edit_" + postType + "_per_page"
+	if option != want && option != "edit_post_per_page" && option != "edit_page_per_page" {
+		return false
+	}
+	if c.VerifyNonce(r.Form.Get("screenoptionnonce"), "screen-options-nonce") == 0 {
+		http.Error(w, "Invalid screen options nonce\n", http.StatusForbidden)
+		return true
+	}
+	n, err := strconv.Atoi(value)
+	if err != nil || n < 1 || n > 999 {
+		http.Error(w, "Invalid per page value\n", http.StatusBadRequest)
+		return true
+	}
+	if err := wp.UpdateUserOption(c, c.CurrentUser.ID, option, strconv.Itoa(n)); err != nil {
+		http.Error(w, "screen options: "+err.Error()+"\n", http.StatusInternalServerError)
+		return true
+	}
+	redir := "/wp-admin/edit.php"
+	if postType != "" && postType != "post" {
+		redir += "?post_type=" + url.QueryEscape(postType)
+	}
+	http.Redirect(w, r, redir, http.StatusFound)
+	return true
+}
+
+// writeEditScreenOptions emits Screen Options pagination for edit.php (P7.77).
+func writeEditScreenOptions(b *strings.Builder, c *wp.Context, postType string, perPage int) {
+	if b == nil {
+		return
+	}
+	if postType == "" {
+		postType = "post"
+	}
+	option := "edit_" + postType + "_per_page"
+	nonce := ""
+	if c != nil {
+		nonce = c.CreateNonce("screen-options-nonce")
+	}
+	b.WriteString(`<div id="screen-meta" class="metabox-prefs">` + "\n")
+	b.WriteString(`<div id="screen-options-wrap" class="" tabindex="-1" aria-label="Screen Options Tab">` + "\n")
+	b.WriteString(`<form id="adv-settings" method="post">` + "\n")
+	b.WriteString(`<fieldset class="screen-options">` + "\n")
+	b.WriteString(`<legend>Pagination</legend>` + "\n")
+	b.WriteString(`<label for="`)
+	b.WriteString(html.EscapeString(option))
+	b.WriteString(`">Number of items per page:</label>` + "\n")
+	b.WriteString(`<input type="number" step="1" min="1" max="999" class="screen-per-page small-text" name="wp_screen_options[value]" id="`)
+	b.WriteString(html.EscapeString(option))
+	b.WriteString(`" value="`)
+	b.WriteString(strconv.Itoa(perPage))
+	b.WriteString(`" />` + "\n")
+	b.WriteString(`<input type="hidden" name="wp_screen_options[option]" value="`)
+	b.WriteString(html.EscapeString(option))
+	b.WriteString(`" />` + "\n")
+	b.WriteString(`</fieldset>` + "\n")
+	b.WriteString(`<p class="submit"><input type="submit" name="screen-options-apply" id="screen-options-apply" class="button button-primary" value="Apply" /></p>` + "\n")
+	b.WriteString(`<input type="hidden" id="screenoptionnonce" name="screenoptionnonce" value="`)
+	b.WriteString(html.EscapeString(nonce))
+	b.WriteString(`" />` + "\n")
+	b.WriteString(`</form>` + "\n")
+	b.WriteString(`</div>` + "\n")
+	b.WriteString(`</div>` + "\n")
+	b.WriteString(`<div id="screen-meta-links">` + "\n")
+	b.WriteString(`<div id="screen-options-link-wrap" class="hide-if-no-js screen-meta-toggle">` + "\n")
+	b.WriteString(`<button type="button" id="show-settings-link" class="button button-compact show-settings" aria-controls="screen-options-wrap" aria-expanded="true">Screen Options</button>` + "\n")
+	b.WriteString(`</div>` + "\n")
+	b.WriteString(`</div>` + "\n")
 }
 
 // writeEditStatusViews emits WP_Posts_List_Table::get_views subset (P7.73).
