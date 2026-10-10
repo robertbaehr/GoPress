@@ -3045,8 +3045,16 @@
 - prefix: wp-includes/canonical.php
   go: internal/server/front.go
   status: partial
-  task: P3.38
+  task: P3.79
   api: internal
+  notes: "P3.79 — bidirectional trailing-slash policy + collapse // in path"
+
+- prefix: wp-includes/canonical.php#trailing-slash
+  go: internal/server/front.go
+  status: partial
+  task: P3.79
+  api: internal
+  notes: "P3.79 — add slash when structure ends with /; strip when it does not"
 
 - prefix: wp-includes/class-wp-duotone.php
   go: internal/blocks/supports.go
