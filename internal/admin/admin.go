@@ -303,13 +303,22 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		b.WriteString(html.EscapeString(p.Status))
 		b.WriteString(" type-")
 		b.WriteString(html.EscapeString(postType))
-		b.WriteString(" hentry\">")
+		b.WriteString(" hentry")
+		// P7.67: sticky class on list row when post is sticky.
+		isSticky := postType == "post" && wp.IsSticky(c, p.ID)
+		if isSticky {
+			b.WriteString(" sticky")
+		}
+		b.WriteString("\">")
 		b.WriteString("<td class=\"title column-title has-row-actions column-primary page-title\" data-colname=\"Title\"><strong>")
 		b.WriteString("<a class=\"row-title\" href=\"/wp-admin/post.php?post=")
 		b.WriteString(strconv.FormatInt(p.ID, 10))
 		b.WriteString("&amp;action=edit\">")
 		b.WriteString(html.EscapeString(p.Title))
 		b.WriteString("</a></strong>")
+		if isSticky {
+			b.WriteString(" — <span class=\"post-state\">Sticky</span>")
+		}
 		// P7.66: Quick Edit row action + hidden inline data stub.
 		b.WriteString("<div class=\"row-actions\">")
 		b.WriteString("<span class=\"edit\"><a href=\"/wp-admin/post.php?post=")
@@ -339,7 +348,12 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		b.WriteString("<div class=\"hh\"></div><div class=\"mn\"></div><div class=\"ss\"></div>")
 		b.WriteString("<div class=\"post_password\"></div><div class=\"page_template\">default</div>")
 		b.WriteString("<div class=\"post_category\">1</div><div class=\"tags_input\"></div>")
-		b.WriteString("<div class=\"sticky\"></div><div class=\"post_format\"></div>")
+		// P7.67: inline sticky value for Quick Edit checkbox.
+		b.WriteString("<div class=\"sticky\">")
+		if isSticky {
+			b.WriteString("sticky")
+		}
+		b.WriteString("</div><div class=\"post_format\"></div>")
 		b.WriteString("</div></td>")
 		b.WriteString("<td class=\"author column-author\" data-colname=\"Author\">")
 		b.WriteString(html.EscapeString(p.Author))
@@ -378,6 +392,11 @@ func postQuickEditStubHTML(postType string) string {
 	b.WriteString(`<label><span class="title">Title</span><span class="input-text-wrap"><input type="text" name="post_title" class="ptitle" value="" /></span></label>` + "\n")
 	b.WriteString(`<label><span class="title">Slug</span><span class="input-text-wrap"><input type="text" name="post_name" value="" autocomplete="off" spellcheck="false" /></span></label>` + "\n")
 	b.WriteString(`<label class="inline-edit-status"><span class="title">Status</span><select name="_status"><option value="publish">Published</option><option value="pending">Pending Review</option><option value="draft">Draft</option><option value="private">Private</option></select></label>` + "\n")
+	// P7.67: sticky checkbox for posts (Make this post sticky).
+	if postType == "post" {
+		b.WriteString(`<label class="alignleft"><input type="checkbox" name="sticky" value="sticky" />` + "\n")
+		b.WriteString(`<span class="checkbox-title">Make this post sticky</span></label>` + "\n")
+	}
 	b.WriteString(`</div></fieldset>` + "\n")
 	b.WriteString(`<div class="submit inline-edit-save">` + "\n")
 	b.WriteString(`<button type="button" class="button cancel alignleft">Cancel</button>` + "\n")
