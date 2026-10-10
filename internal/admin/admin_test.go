@@ -285,3 +285,23 @@ func TestUsersListsAdmin(t *testing.T) {
 		t.Fatalf("expected admin user, got %q", rec.Body.String())
 	}
 }
+
+func TestPluginsListsHelloDollyHeaders(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/plugins.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "Hello Dolly") {
+		t.Fatalf("expected Hello Dolly from plugin headers, got %q", body)
+	}
+	if !strings.Contains(body, "Matt Mullenweg") {
+		t.Fatalf("expected author from headers, got %q", body)
+	}
+}
