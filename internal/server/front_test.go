@@ -395,6 +395,37 @@ func TestFrontCommentsFeed(t *testing.T) {
 	}
 }
 
+func TestFrontCommentsFeedAtom(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/comments/feed/atom/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	ct := rec.Header().Get("Content-Type")
+	if !strings.Contains(ct, "atom") {
+		t.Fatalf("Content-Type=%q", ct)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `<feed`) || !strings.Contains(body, `xmlns="http://www.w3.org/2005/Atom"`) {
+		t.Fatalf("expected Atom feed: %q", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, "Comments for ") {
+		t.Fatalf("expected comments title: %q", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, "/comments/feed/atom/") {
+		t.Fatalf("expected self atom link: %q", body[:min(500, len(body))])
+	}
+	if !strings.Contains(body, "<entry>") || !strings.Contains(body, "thr:in-reply-to") {
+		t.Fatalf("expected comment entries: %q", body[:min(800, len(body))])
+	}
+	if strings.Contains(body, `<rss`) {
+		t.Fatalf("atom comments feed must not be RSS")
+	}
+}
+
 func TestFrontTrailingSlashCanonical(t *testing.T) {
 	c := testBoot(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
