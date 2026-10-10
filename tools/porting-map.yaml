@@ -3644,8 +3644,9 @@
 - prefix: wp-includes/blocks/post-author-name.php
   go: internal/blocks/query.go
   status: partial
-  task: P5.43
+  task: P5.91
   api: internal
+  notes: "P5.91 — textAlign/has-link-color/className (see also P5.46 entry)"
 
 - prefix: wp-includes/blocks/post-title.php
   go: internal/blocks/query.go
@@ -3769,12 +3770,13 @@
   api: internal
 
 
-# P5.46: core/avatar, post-author-name, post-author-biography.
+# P5.46 / P5.91: core/avatar, post-author-name, post-author-biography.
 - prefix: wp-includes/blocks/avatar.php
   go: internal/blocks/query.go
   status: partial
-  task: P5.46
+  task: P5.91
   api: internal
+  notes: "P5.91 — textAlign/has-link-color/className; isLink+linkTarget aria"
 
 - prefix: wp-includes/blocks/post-author-biography.php
   go: internal/blocks/query.go
@@ -3785,8 +3787,17 @@
 - prefix: wp-includes/blocks/post-author-name.php
   go: internal/blocks/query.go
   status: partial
-  task: P5.46
+  task: P5.91
   api: internal
+  notes: "P5.91 — textAlign/has-link-color/className polish"
+
+# P5.91: polish entry (alias of avatar / post-author-name deepen).
+- prefix: wp-includes/blocks/avatar.php#p5.91
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.91
+  api: internal
+  notes: "P5.91 — avatar + post-author-name wrapper class polish"
 
 # P5.47: core/read-more, core/more, core/nextpage.
 - prefix: wp-includes/blocks/read-more.php
