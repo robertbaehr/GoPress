@@ -158,6 +158,10 @@ func TestPrivacyPolicyGuideSections(t *testing.T) {
 		`id="table_of_contents"`,
 		"Table of Contents",
 		`id="privacy-policy-guide-1"`,
+		// P8.18 accordion toggle script
+		`id="privacy-settings-accordion-js"`,
+		"privacy-settings-accordion-trigger",
+		`aria-expanded`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("missing %q", want)

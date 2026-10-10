@@ -3455,8 +3455,42 @@ func (h *Handler) servePrivacyPolicyGuide(w http.ResponseWriter, r *http.Request
 	b.WriteString(wp.PrivacyPolicyGuideHTML(c))
 	b.WriteString("</div>\n")
 	b.WriteString("<p class=\"description\">GoPress privacy policy guide content (P8.12).</p>\n")
-	b.WriteString("</div>\n</body>\n</html>\n")
+	b.WriteString("</div>\n")
+	// P8.18: privacy-tools.js accordion toggle (vanilla; no jQuery dependency).
+	b.WriteString(privacySettingsAccordionScript())
+	b.WriteString("</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
+}
+
+// privacySettingsAccordionScript mirrors wp-admin/js/privacy-tools.js accordion
+// click handling for .privacy-settings-accordion-trigger (P8.18).
+func privacySettingsAccordionScript() string {
+	return `<script id="privacy-settings-accordion-js">
+(function () {
+  function onTriggerClick(e) {
+    var btn = e.target.closest(".privacy-settings-accordion-trigger");
+    if (!btn) return;
+    var panelId = btn.getAttribute("aria-controls");
+    if (!panelId) return;
+    var panel = document.getElementById(panelId);
+    if (!panel) return;
+    var expanded = btn.getAttribute("aria-expanded") === "true";
+    if (expanded) {
+      btn.setAttribute("aria-expanded", "false");
+      panel.setAttribute("hidden", "hidden");
+    } else {
+      btn.setAttribute("aria-expanded", "true");
+      panel.removeAttribute("hidden");
+    }
+  }
+  document.addEventListener("click", function (e) {
+    if (e.target && e.target.closest && e.target.closest(".privacy-settings-accordion")) {
+      onTriggerClick(e);
+    }
+  });
+})();
+</script>
+`
 }
 
 // serveCustomizerGone rejects the Customizer as out of scope (P7.6).
