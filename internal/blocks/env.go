@@ -18,6 +18,9 @@ type Env struct {
 	// LoadPattern returns serialized markup for a core/pattern slug.
 	LoadPattern func(slug string) (string, bool)
 
+	// LoadFootnotes returns the footnotes post meta JSON for a post ID (P5.15).
+	LoadFootnotes func(postID int64) string
+
 	// seenPart tracks template-part slugs currently being rendered (cycle guard).
 	seenPart map[string]bool
 
@@ -45,4 +48,12 @@ func (e *Env) ensure() *Env {
 		return &Env{}
 	}
 	return e
+}
+
+// SetCurrentPost sets the post in scope for post-* and footnotes blocks (tests/front).
+func (e *Env) SetCurrentPost(p *QueryPost) {
+	if e == nil {
+		return
+	}
+	e.currentPost = p
 }

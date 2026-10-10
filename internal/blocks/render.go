@@ -1,6 +1,7 @@
 package blocks
 
 import (
+	"encoding/json"
 	"fmt"
 	"html"
 	"strings"
@@ -54,8 +55,19 @@ func (e *Env) RenderBlock(block Block) string {
 		"core/image", "core/code", "core/html",
 		"core/group", "core/columns", "core/column", "core/buttons", "core/button",
 		"core/pullquote", "core/preformatted", "core/verse", "core/table",
-		"core/file", "core/audio", "core/video", "core/cover", "core/media-text":
+		"core/file", "core/audio", "core/video", "core/cover", "core/media-text",
+		"core/details":
 		out = e.renderSaved(block)
+	case "core/freeform":
+		// Classic editor block: prefer attribute content, else inner HTML.
+		if content, ok := block.Attrs["content"].(string); ok && content != "" {
+			return content
+		}
+		return block.InnerHTML
+	case "core/missing":
+		return e.renderMissing(block)
+	case "core/footnotes":
+		return e.renderFootnotes(block)
 	case "core/separator":
 		out = e.renderSeparator(block)
 	case "core/spacer":
@@ -253,6 +265,54 @@ func blockName(b Block) string {
 		return ""
 	}
 	return *b.BlockName
+}
+
+// renderMissing outputs the originalContent attribute (unsupported block placeholder).
+func (e *Env) renderMissing(block Block) string {
+	if oc, ok := block.Attrs["originalContent"].(string); ok && oc != "" {
+		return oc
+	}
+	if block.InnerHTML != "" {
+		return block.InnerHTML
+	}
+	return e.renderSaved(block)
+}
+
+// renderFootnotes renders core/footnotes from post meta JSON (core/footnote format data).
+func (e *Env) renderFootnotes(block Block) string {
+	e = e.ensure()
+	_ = block
+	if e.currentPost == nil || e.LoadFootnotes == nil {
+		return ""
+	}
+	raw := strings.TrimSpace(e.LoadFootnotes(e.currentPost.ID))
+	if raw == "" {
+		return ""
+	}
+	var notes []struct {
+		ID      string `json:"id"`
+		Content string `json:"content"`
+	}
+	if err := json.Unmarshal([]byte(raw), &notes); err != nil || len(notes) == 0 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString(`<ol class="wp-block-footnotes">`)
+	for i, note := range notes {
+		id := html.EscapeString(note.ID)
+		aria := html.EscapeString(fmt.Sprintf("Jump to footnote reference %d", i+1))
+		b.WriteString(`<li id="`)
+		b.WriteString(id)
+		b.WriteString(`">`)
+		b.WriteString(note.Content)
+		b.WriteString(` <a href="#`)
+		b.WriteString(id)
+		b.WriteString(`-link" aria-label="`)
+		b.WriteString(aria)
+		b.WriteString(`">↩︎</a></li>`)
+	}
+	b.WriteString(`</ol>`)
+	return b.String()
 }
 
 // addRootClass injects className onto the first HTML opening tag if absent.

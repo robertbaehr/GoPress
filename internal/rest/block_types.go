@@ -47,6 +47,10 @@ func knownBlockTypes() []BlockType {
 		{"core/navigation", "Navigation", "theme", true},
 		{"core/navigation-link", "Custom Link", "design", false},
 		{"core/page-list", "Page List", "widgets", true},
+		{"core/details", "Details", "text", false},
+		{"core/footnotes", "Footnotes", "text", true},
+		{"core/freeform", "Classic", "text", false},
+		{"core/missing", "Unsupported", "text", false},
 	}
 	out := make([]BlockType, 0, len(defs))
 	for _, d := range defs {
