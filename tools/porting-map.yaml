@@ -4753,3 +4753,18 @@
   task: P2.76
   api: internal
   notes: "P2.76 — resolve relative paths via REQUEST_URI dirname; reject bad components"
+
+# P3.74: the_excerpt_rss filter on feed item description / summary.
+- prefix: wp-includes/feed.php#the_excerpt_rss
+  go: internal/server/front.go
+  status: partial
+  task: P3.74
+  api: n/a
+  notes: "P3.74 — applyTheExcerptRSS on RSS/Atom/RDF item description/summary"
+
+- prefix: wp-includes/feed-rss2.php#description#the_excerpt_rss
+  go: internal/server/front.go
+  status: partial
+  task: P3.74
+  api: n/a
+  notes: "P3.74 — <description> CDATA runs the_excerpt_rss"

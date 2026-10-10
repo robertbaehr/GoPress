@@ -1866,7 +1866,8 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 		// P3.62: isPermaLink=false even when GUID is a pretty permalink URL.
 		b.WriteString(rssGUIDTag(guid, link))
 		b.WriteString("\t\t\t\t\t<description><![CDATA[")
-		b.WriteString(p.ExcerptRSS)
+		// P3.74: the_excerpt_rss filter on item description.
+		b.WriteString(applyTheExcerptRSS(c, p.ExcerptRSS))
 		b.WriteString("]]></description>\n")
 		b.WriteString("\t\t\t\t\t\t\t\t\t\t")
 		// P3.63: content:encoded when available (skipped when rss_use_excerpt).
@@ -2018,7 +2019,8 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 			b.WriteString("\" />\n")
 		}
 		b.WriteString("\t\t<summary type=\"html\"><![CDATA[")
-		b.WriteString(p.ExcerptRSS)
+		// P3.74: the_excerpt_rss filter on Atom summary.
+		b.WriteString(applyTheExcerptRSS(c, p.ExcerptRSS))
 		b.WriteString("]]></summary>\n\n")
 		b.WriteString("\t\t\t\t\t<content type=\"html\" xml:base=\"")
 		b.WriteString(xmlEscape(link))
@@ -2155,7 +2157,8 @@ func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		}
 		b.WriteString("\n")
 		b.WriteString("\t\t<description><![CDATA[")
-		b.WriteString(p.ExcerptRSS)
+		// P3.74: the_excerpt_rss filter on RDF description.
+		b.WriteString(applyTheExcerptRSS(c, p.ExcerptRSS))
 		b.WriteString("]]></description>\n")
 		// P3.63 / P3.73: RDF content:encoded via the_content_feed('rdf').
 		if body, ok := rssContentEncodedBodyTyped(c, p, "rdf"); ok {
@@ -2278,6 +2281,24 @@ func applyTheContentFeed(c *wp.Context, content, feedType string) string {
 		}
 	}
 	return content
+}
+
+// applyTheExcerptRSS mirrors the_excerpt_rss() (P3.74): escape CDATA
+// terminators, then apply the_excerpt_rss filter.
+func applyTheExcerptRSS(c *wp.Context, excerpt string) string {
+	excerpt = strings.ReplaceAll(excerpt, "]]>", "]]&gt;")
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("the_excerpt_rss", excerpt); v != nil {
+			if s, ok := v.(string); ok {
+				return s
+			}
+			s := strings.TrimSpace(fmt.Sprint(v))
+			if s != "" && s != "<nil>" {
+				return s
+			}
+		}
+	}
+	return excerpt
 }
 
 // rssUseExcerpt reports get_option('rss_use_excerpt') (P3.63).
