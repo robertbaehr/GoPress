@@ -2095,16 +2095,126 @@ func (h *Handler) servePrivacyErasePage(w http.ResponseWriter, c *wp.Context, no
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveOptionsPrivacy is a privacy settings stub (P8.2 / P8.7).
+// serveOptionsPrivacy is the Settings → Privacy screen (P8.2 / P8.7 / P7.41).
+// POST action=set-privacy-page saves wp_page_for_privacy_policy.
 func (h *Handler) serveOptionsPrivacy(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	if r.URL.Query().Get("tab") == "policyguide" {
 		http.Redirect(w, r, "/wp-admin/privacy-policy-guide.php", http.StatusFound)
 		return
 	}
-	h.servePrivacyStub(w, c, "Privacy",
-		"Privacy settings and policy page.",
-		"GoPress privacy settings stub.",
-		true)
+	note := ""
+	noteType := "updated"
+	if r.Method == http.MethodPost {
+		_ = r.ParseForm()
+		if r.Form.Get("action") == "set-privacy-page" {
+			raw := strings.TrimSpace(r.Form.Get("page_for_privacy_policy"))
+			id, _ := strconv.ParseInt(raw, 10, 64)
+			if id < 0 {
+				id = 0
+			}
+			prev := wp.PrivacyPolicyPageID(c)
+			if c.Options != nil {
+				_, _ = c.Options.UpdateOption("wp_page_for_privacy_policy", strconv.FormatInt(id, 10), "yes")
+			}
+			switch {
+			case id > 0:
+				note = "Privacy Policy page updated successfully."
+			case prev > 0:
+				note = "Privacy Policy page removed."
+			default:
+				note = "No Privacy Policy page is currently set."
+				noteType = "notice-info"
+			}
+		}
+	}
+
+	blogname := optionString(c, "blogname", "GoPress")
+	selected := wp.PrivacyPolicyPageID(c)
+	pages := listPrivacyPolicyPages(c)
+
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Privacy &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui privacy-settings\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"privacy-settings-header\">\n")
+	b.WriteString("<div class=\"privacy-settings-title-section\"><h1>Privacy</h1></div>\n")
+	b.WriteString("<nav class=\"privacy-settings-tabs-wrapper\" aria-label=\"Secondary menu\">\n")
+	b.WriteString("<a href=\"/wp-admin/options-privacy.php\" class=\"privacy-settings-tab active\" aria-current=\"true\">Settings</a>\n")
+	b.WriteString("<a href=\"/wp-admin/privacy-policy-guide.php\" class=\"privacy-settings-tab\">Policy Guide</a>\n")
+	b.WriteString("</nav>\n</div>\n<hr class=\"wp-header-end\">\n")
+	b.WriteString("<div class=\"wrap\" id=\"privacy-settings\">\n")
+	b.WriteString("<p>Privacy settings and policy page.</p>\n")
+	if note != "" {
+		b.WriteString("<div id=\"message\" class=\"")
+		b.WriteString(html.EscapeString(noteType))
+		b.WriteString(" notice is-dismissible\"><p>")
+		b.WriteString(html.EscapeString(note))
+		b.WriteString("</p></div>\n")
+	}
+	b.WriteString("<p class=\"privacy-policy-page-link\">")
+	b.WriteString(wp.PrivacyPolicyAdminSummary(c))
+	b.WriteString("</p>\n")
+	b.WriteString("<h2>Privacy Policy page</h2>\n")
+	b.WriteString("<table class=\"form-table\" role=\"presentation\">\n<tr>\n")
+	b.WriteString("<th scope=\"row\"><label for=\"page_for_privacy_policy\">")
+	if selected > 0 {
+		b.WriteString("Change your Privacy Policy page")
+	} else {
+		b.WriteString("Select a Privacy Policy page")
+	}
+	b.WriteString("</label></th>\n<td>\n")
+	b.WriteString("<form method=\"post\" action=\"/wp-admin/options-privacy.php\">\n")
+	b.WriteString("<input type=\"hidden\" name=\"action\" value=\"set-privacy-page\" />\n")
+	b.WriteString("<select name=\"page_for_privacy_policy\" id=\"page_for_privacy_policy\">\n")
+	b.WriteString("<option value=\"0\">&mdash; Select &mdash;</option>\n")
+	for _, p := range pages {
+		b.WriteString("<option value=\"")
+		b.WriteString(strconv.FormatInt(p.ID, 10))
+		b.WriteString("\"")
+		if p.ID == selected {
+			b.WriteString(" selected=\"selected\"")
+		}
+		b.WriteString(">")
+		title := strings.TrimSpace(p.Title)
+		if title == "" {
+			title = p.Name
+		}
+		b.WriteString(html.EscapeString(title))
+		if p.Status != "publish" {
+			b.WriteString(" (")
+			b.WriteString(html.EscapeString(p.Status))
+			b.WriteString(")")
+		}
+		b.WriteString("</option>\n")
+	}
+	b.WriteString("</select>\n")
+	b.WriteString("<input type=\"submit\" name=\"submit\" id=\"set-page\" class=\"button button-primary\" value=\"Use This Page\" />\n")
+	b.WriteString("</form>\n</td>\n</tr>\n</table>\n")
+	b.WriteString("</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
+// listPrivacyPolicyPages returns draft+publish pages for the privacy dropdown (P7.41).
+func listPrivacyPolicyPages(c *wp.Context) []wp.Post {
+	if c == nil {
+		return nil
+	}
+	var out []wp.Post
+	for _, status := range []string{"publish", "draft"} {
+		pages, err := wp.GetPosts(c, wp.QueryArgs{
+			PostType:     "page",
+			PostStatus:   status,
+			PostsPerPage: 100,
+		})
+		if err != nil {
+			continue
+		}
+		out = append(out, pages...)
+	}
+	return out
 }
 
 // serveRevisionCompare is the wp-admin/revision.php compare screen stub (P7.33).

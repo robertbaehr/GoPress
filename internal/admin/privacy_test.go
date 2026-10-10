@@ -74,6 +74,49 @@ func TestOptionsPrivacyLinksPolicyPage(t *testing.T) {
 	if !strings.Contains(body, "post.php?post=3") {
 		t.Fatalf("expected edit link for policy page, got %q", body)
 	}
+	if !strings.Contains(body, `name="page_for_privacy_policy"`) || !strings.Contains(body, `value="set-privacy-page"`) {
+		t.Fatalf("expected privacy page save form, got %q", body)
+	}
+}
+
+func TestOptionsPrivacySavePolicyPage(t *testing.T) {
+	c := bootOrSkip(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	h := &admin.Handler{}
+	// Switch to Sample Page (ID 2).
+	form := strings.NewReader("action=set-privacy-page&page_for_privacy_policy=2")
+	req := httptest.NewRequest(http.MethodPost, "/wp-admin/options-privacy.php", form)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !h.Handle(rec, req, rc, "/wp-admin/options-privacy.php") {
+		t.Fatal("not handled")
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "Privacy Policy page updated successfully") {
+		t.Fatalf("expected success notice: %q", body)
+	}
+	if !strings.Contains(body, `value="2" selected`) && !strings.Contains(body, "selected=\"selected\">Sample Page") {
+		t.Fatalf("expected page 2 selected: %q", body)
+	}
+	// Restore Privacy Policy page (ID 3).
+	form = strings.NewReader("action=set-privacy-page&page_for_privacy_policy=3")
+	req = httptest.NewRequest(http.MethodPost, "/wp-admin/options-privacy.php", form)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec = httptest.NewRecorder()
+	rc = c.ForRequest(rec, req)
+	if !h.Handle(rec, req, rc, "/wp-admin/options-privacy.php") {
+		t.Fatal("restore not handled")
+	}
 }
 
 func TestPrivacyPolicyGuideSections(t *testing.T) {
