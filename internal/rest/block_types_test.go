@@ -89,6 +89,66 @@ func TestBlockTypeItem(t *testing.T) {
 	}
 }
 
+// TestBlockTypesLibraryRegister covers P5.70: more core block metadata
+// (title/category/description) for blocks GoPress renders.
+func TestBlockTypesLibraryRegister(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/block-types", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var types []rest.BlockType
+	if err := json.Unmarshal(rec.Body.Bytes(), &types); err != nil {
+		t.Fatal(err)
+	}
+	byName := map[string]rest.BlockType{}
+	for _, bt := range types {
+		byName[bt.Name] = bt
+	}
+	want := []struct {
+		name, title, category string
+		dynamic               bool
+	}{
+		{"core/table", "Table", "text", false},
+		{"core/gallery", "Gallery", "media", false},
+		{"core/query", "Query Loop", "theme", true},
+		{"core/latest-posts", "Latest Posts", "widgets", true},
+		{"core/site-logo", "Site Logo", "theme", true},
+		{"core/social-links", "Social Icons", "widgets", false},
+	}
+	for _, w := range want {
+		bt, ok := byName[w.name]
+		if !ok {
+			t.Fatalf("missing %s in block-types (%d total)", w.name, len(types))
+		}
+		if bt.Title != w.title || bt.Category != w.category {
+			t.Fatalf("%s metadata: title=%q category=%q want %q/%q", w.name, bt.Title, bt.Category, w.title, w.category)
+		}
+		if bt.Description == "" {
+			t.Fatalf("%s: expected non-empty description", w.name)
+		}
+		if bt.IsDynamic != w.dynamic {
+			t.Fatalf("%s is_dynamic=%v want %v", w.name, bt.IsDynamic, w.dynamic)
+		}
+	}
+	if len(types) < 40 {
+		t.Fatalf("expected expanded library (≥40), got %d", len(types))
+	}
+}
+
 func TestBlockTypesNamespacePath(t *testing.T) {
 	c := bootOrSkip(t)
 	t.Cleanup(func() { _ = c.DB.Close() })

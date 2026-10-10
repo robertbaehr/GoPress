@@ -2333,6 +2333,21 @@
   api: n/a
   notes: "P5.69 — originalContent, then originalUndelimitedContent, then saved/inner HTML"
 
+# P5.70: register more core block type metadata on GET /wp/v2/block-types.
+- prefix: wp-includes/blocks
+  go: internal/rest/block_types.go
+  status: partial
+  task: P5.70
+  api: n/a
+  notes: "P5.70 — expand knownBlockTypes titles/categories/descriptions for rendered core blocks"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-types-controller.php#library
+  go: internal/rest/block_types.go
+  status: partial
+  task: P5.70
+  api: exported
+  notes: "P5.70 — block-types collection includes table/gallery/query/site/post widgets metadata"
+
 - prefix: wp-includes/blocks/footnotes.php
   go: internal/blocks/footnotes.go
   status: partial
