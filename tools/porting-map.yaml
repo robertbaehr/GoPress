@@ -5083,6 +5083,14 @@
   api: n/a
   notes: "P6.35 — applyLostPasswordRedirect filter"
 
+# P6.36: interim login modal via wp_auth_check_html deepen.
+- prefix: wp-includes/functions.php#wp_auth_check_html
+  go: internal/wp/auth_check.go
+  status: partial
+  task: P6.36
+  api: exported
+  notes: "P6.36 — same_domain wrap class, wp_auth_check_same_domain filter, wp_lang on interim iframe src"
+
 # P10.74: expand diff corpus with 8 matching cases (statuses, feeds, cron, admin).
 - prefix: tests/corpus
   go: tests/corpus
