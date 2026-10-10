@@ -343,6 +343,11 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		heading = "Pages"
 		searchLabel = "Search Pages"
 	}
+	// P7.106: parent titles for "Child of …" hierarchy labels on pages list.
+	pageTitles := map[int64]string{}
+	if postType == "page" {
+		pageTitles = pageTitleIndex(c, posts)
+	}
 	hiddenCols := getEditHiddenColumns(c, postType)
 	hiddenSet := hiddenColumnSet(hiddenCols)
 	var b strings.Builder
@@ -534,9 +539,28 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		}
 		b.WriteString("<a class=\"row-title\" href=\"/wp-admin/post.php?post=")
 		b.WriteString(strconv.FormatInt(p.ID, 10))
-		b.WriteString("&amp;action=edit\">")
+		b.WriteString("&amp;action=edit\"")
+		// P7.106: aria-describedby → hidden "Child of {parent}" (WP_Posts_List_Table::column_title).
+		if postType == "page" && p.Parent > 0 {
+			if parentTitle := pageTitles[p.Parent]; parentTitle != "" {
+				b.WriteString(` aria-describedby="post-hierarchy-`)
+				b.WriteString(strconv.FormatInt(p.ID, 10))
+				b.WriteString(`"`)
+			}
+		}
+		b.WriteString(">")
 		b.WriteString(html.EscapeString(p.Title))
-		b.WriteString("</a></strong>")
+		b.WriteString("</a>")
+		if postType == "page" && p.Parent > 0 {
+			if parentTitle := pageTitles[p.Parent]; parentTitle != "" {
+				b.WriteString(`<span id="post-hierarchy-`)
+				b.WriteString(strconv.FormatInt(p.ID, 10))
+				b.WriteString(`" class="hidden">Child of `)
+				b.WriteString(html.EscapeString(parentTitle))
+				b.WriteString(`</span>`)
+			}
+		}
+		b.WriteString("</strong>")
 		if isSticky {
 			b.WriteString(" — <span class=\"post-state\">Sticky</span>")
 		}
@@ -569,7 +593,9 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		b.WriteString("<div class=\"post_title\">")
 		b.WriteString(html.EscapeString(p.Title))
 		b.WriteString("</div>")
-		b.WriteString("<div class=\"post_name\"></div>")
+		b.WriteString("<div class=\"post_name\">")
+		b.WriteString(html.EscapeString(p.Slug))
+		b.WriteString("</div>")
 		b.WriteString("<div class=\"post_author\">")
 		b.WriteString(html.EscapeString(p.Author))
 		b.WriteString("</div>")
@@ -580,7 +606,19 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		b.WriteString("</div>")
 		b.WriteString("<div class=\"jj\"></div><div class=\"mm\"></div><div class=\"aa\"></div>")
 		b.WriteString("<div class=\"hh\"></div><div class=\"mn\"></div><div class=\"ss\"></div>")
-		b.WriteString("<div class=\"post_password\"></div><div class=\"page_template\">default</div>")
+		b.WriteString("<div class=\"post_password\"></div>")
+		// P7.106: post_parent + menu_order inline fields for pages Quick Edit.
+		if postType == "page" {
+			b.WriteString(`<div class="post_parent">`)
+			b.WriteString(strconv.FormatInt(p.Parent, 10))
+			b.WriteString(`</div>`)
+		}
+		b.WriteString("<div class=\"page_template\">default</div>")
+		if postType == "page" {
+			b.WriteString(`<div class="menu_order">`)
+			b.WriteString(strconv.Itoa(p.MenuOrder))
+			b.WriteString(`</div>`)
+		}
 		b.WriteString("<div class=\"post_category\">1</div><div class=\"tags_input\"></div>")
 		// P7.67: inline sticky value for Quick Edit checkbox.
 		b.WriteString("<div class=\"sticky\">")
@@ -5245,6 +5283,8 @@ type postRow struct {
 	Date   string
 	Status string
 	Author string
+	// Slug is post_name for inline Quick Edit data (P7.106).
+	Slug string
 	// Parent / Level support hierarchical page indent (P7.78).
 	Parent int64
 	Level  int
@@ -5299,7 +5339,7 @@ func recentPostsByType(c *wp.Context, postType string, limit int, search string,
 		postType = "post"
 	}
 	term := strings.TrimSpace(search)
-	sql := "SELECT DISTINCT p.ID, p.post_title, p.post_date, p.post_status, p.post_author, p.post_parent, p.menu_order, u.display_name, u.user_login FROM " +
+	sql := "SELECT DISTINCT p.ID, p.post_title, p.post_name, p.post_date, p.post_status, p.post_author, p.post_parent, p.menu_order, u.display_name, u.user_login FROM " +
 		c.DB.Posts() + " p LEFT JOIN " + c.DB.Users() + " u ON p.post_author = u.ID "
 	if catID > 0 {
 		sql += "INNER JOIN " + c.DB.TermRelationships() + " tr ON tr.object_id = p.ID " +
@@ -5404,6 +5444,7 @@ func recentPostsByType(c *wp.Context, postType string, limit int, search string,
 		out = append(out, postRow{
 			ID:        asInt64(row["ID"]),
 			Title:     title,
+			Slug:      asString(row["post_name"]),
 			Date:      asString(row["post_date"]),
 			Status:    asString(row["post_status"]),
 			Author:    author,
@@ -5458,6 +5499,44 @@ func pageHierarchyPad(level int) string {
 		return ""
 	}
 	return strings.Repeat(`<span aria-hidden="true">&#8212;</span> `, level)
+}
+
+// pageTitleIndex maps page IDs → titles for hierarchy labels (P7.106).
+// Loads missing parents from the DB when they are outside the current page set.
+func pageTitleIndex(c *wp.Context, pages []postRow) map[int64]string {
+	out := make(map[int64]string, len(pages))
+	need := map[int64]bool{}
+	for _, p := range pages {
+		out[p.ID] = p.Title
+		if p.Parent > 0 {
+			need[p.Parent] = true
+		}
+	}
+	for id := range need {
+		if _, ok := out[id]; ok {
+			continue
+		}
+		if c == nil || c.DB == nil {
+			continue
+		}
+		q, args, err := c.DB.Prepare(
+			"SELECT post_title FROM "+c.DB.Posts()+" WHERE ID = %d AND post_type = %s LIMIT 1",
+			id, "page",
+		)
+		if err != nil {
+			continue
+		}
+		row, err := c.DB.GetRow(q, args...)
+		if err != nil || row == nil {
+			continue
+		}
+		title := asString(row["post_title"])
+		if strings.TrimSpace(title) == "" {
+			title = "(no title)"
+		}
+		out[id] = title
+	}
+	return out
 }
 
 type editAuthorOpt struct {
