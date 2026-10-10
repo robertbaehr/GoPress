@@ -3095,9 +3095,11 @@ func stripTagsSimple(s string) string {
 	return b.String()
 }
 
-// tryTrailingSlashRedirect issues a 301 when a pretty content path is missing
-// the trailing slash expected by permalink_structure (WP redirect_canonical subset).
+// tryTrailingSlashRedirect issues a 301 when a pretty content path disagrees
+// with permalink_structure trailing-slash policy (WP redirect_canonical subset).
 // P3.38: also covers /page/N home pagination and emits an absolute Location.
+// P3.79: also strips a trailing slash when the structure does not use one, and
+// collapses repeated slashes in the request path.
 func (f *Front) tryTrailingSlashRedirect(w http.ResponseWriter, r *http.Request, c *wp.Context, parsed *wp.ParseResult) bool {
 	if r == nil || r.URL == nil || parsed == nil {
 		return false
@@ -3106,8 +3108,17 @@ func (f *Front) tryTrailingSlashRedirect(w http.ResponseWriter, r *http.Request,
 		return false
 	}
 	path := r.URL.Path
-	if path == "" || path == "/" || strings.HasSuffix(path, "/") {
+	if path == "" {
 		return false
+	}
+	// P3.79: collapse // in path (keep leading slash).
+	if cleaned := collapsePathSlashes(path); cleaned != path {
+		target := cleaned
+		if r.URL.RawQuery != "" {
+			target += "?" + r.URL.RawQuery
+		}
+		http.Redirect(w, r, absoluteCanonicalURL(c, target), http.StatusMovedPermanently)
+		return true
 	}
 	// Query-style URLs (?p=, ?page_id=) do not use trailing slashes.
 	if r.URL.RawQuery != "" && (strings.Contains(r.URL.RawQuery, "p=") ||
@@ -3116,18 +3127,59 @@ func (f *Front) tryTrailingSlashRedirect(w http.ResponseWriter, r *http.Request,
 		strings.Contains(r.URL.RawQuery, "feed=")) {
 		return false
 	}
-	if !permalinkUsesTrailingSlash(c) {
+	usesSlash := permalinkUsesTrailingSlash(c)
+	if path == "/" {
 		return false
 	}
 	if !needsTrailingSlashCanonical(parsed) {
 		return false
 	}
-	target := path + "/"
+	hasSlash := strings.HasSuffix(path, "/")
+	var target string
+	switch {
+	case usesSlash && !hasSlash:
+		target = path + "/"
+	case !usesSlash && hasSlash:
+		// P3.79: strip trailing slash when structure omits it.
+		target = strings.TrimRight(path, "/")
+		if target == "" {
+			target = "/"
+		}
+	default:
+		return false
+	}
 	if r.URL.RawQuery != "" {
 		target += "?" + r.URL.RawQuery
 	}
 	http.Redirect(w, r, absoluteCanonicalURL(c, target), http.StatusMovedPermanently)
 	return true
+}
+
+// collapsePathSlashes replaces repeated "/" in a URL path with a single slash (P3.79).
+func collapsePathSlashes(path string) string {
+	if path == "" || !strings.Contains(path, "//") {
+		return path
+	}
+	var b strings.Builder
+	b.Grow(len(path))
+	prevSlash := false
+	for i := 0; i < len(path); i++ {
+		c := path[i]
+		if c == '/' {
+			if prevSlash {
+				continue
+			}
+			prevSlash = true
+		} else {
+			prevSlash = false
+		}
+		b.WriteByte(c)
+	}
+	out := b.String()
+	if out == "" {
+		return "/"
+	}
+	return out
 }
 
 // absoluteCanonicalURL prefixes a site-relative redirect with home (P3.38).
