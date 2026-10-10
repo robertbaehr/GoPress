@@ -356,6 +356,13 @@
   task: P6.12
   api: n/a
 
+# P10.25: E2E home pagination /page/2/.
+- prefix: tests/e2e/pagination.spec.js
+  go: tests/e2e/pagination.spec.js
+  status: partial
+  task: P10.25
+  api: n/a
+
 # P4.48: create post revision on REST post update.
 - prefix: wp-includes/revision.php#wp_save_post_revision
   go: internal/rest/posts_write.go
