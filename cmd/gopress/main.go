@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/robertbaehr/GoPress/internal/config"
+	"github.com/robertbaehr/GoPress/internal/server"
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
@@ -65,15 +66,13 @@ func serveCmd(args []string) {
 	blogname, _ := wpCtx.Options.GetOption("blogname", "").(string)
 	log.Printf("gopress boot ok root=%s db=%s blogname=%q", *root, cfg.DBName, blogname)
 
-	mux := http.NewServeMux()
-	mux.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(http.StatusServiceUnavailable)
-		fmt.Fprintf(w, "GoPress not implemented\n")
-	})
+	srv := &server.Server{
+		WP:      wpCtx,
+		AbsPath: cfg.ABSPATH,
+	}
 
 	fmt.Fprintf(os.Stderr, "gopress serve listening on %s (root=%s)\n", *addr, *root)
-	if err := http.ListenAndServe(*addr, mux); err != nil {
+	if err := http.ListenAndServe(*addr, srv); err != nil {
 		fmt.Fprintf(os.Stderr, "serve error: %v\n", err)
 		os.Exit(1)
 	}
