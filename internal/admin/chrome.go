@@ -27,13 +27,18 @@ func newAdminChrome(c *wp.Context, title, screen string) adminChrome {
 	if c != nil && c.CurrentUser != nil {
 		login = c.CurrentUser.Login
 	}
+	head := adminHeadStyles(c, screen)
+	if c != nil {
+		// P9.12: fire admin_head so plugins (Hello Dolly CSS) can inject.
+		head += c.CaptureAdminHead()
+	}
 	return adminChrome{
 		Title:     title,
 		BodyClass: "wp-admin wp-core-ui no-js " + screen + " admin-bar admin-color-modern locale-en-us",
 		Blogname:  blogname,
 		Screen:    screen,
 		UserLogin: login,
-		HeadExtra: adminHeadStyles(c, screen),
+		HeadExtra: head,
 	}
 }
 

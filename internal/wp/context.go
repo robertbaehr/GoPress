@@ -318,3 +318,15 @@ func (c *Context) CaptureAdminNotices() string {
 	c.Hooks.DoAction("admin_notices")
 	return buf.String()
 }
+
+// CaptureAdminHead runs the admin_head action and returns buffered HTML (P9.12).
+func (c *Context) CaptureAdminHead() string {
+	if c == nil || c.Hooks == nil {
+		return ""
+	}
+	var buf strings.Builder
+	c.Hooks.BeginNoticeCapture(&buf)
+	defer c.Hooks.EndNoticeCapture()
+	c.Hooks.DoAction("admin_head")
+	return buf.String()
+}
