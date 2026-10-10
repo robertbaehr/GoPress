@@ -19,8 +19,32 @@ func TestTrackbackGone(t *testing.T) {
 		if rec.Code != http.StatusForbidden {
 			t.Fatalf("%s status=%d body=%q", method, rec.Code, rec.Body.String())
 		}
-		if !strings.Contains(rec.Body.String(), "disabled") {
-			t.Fatalf("%s body=%q", method, rec.Body.String())
+		ct := rec.Header().Get("Content-Type")
+		if !strings.Contains(ct, "text/xml") {
+			t.Fatalf("%s Content-Type=%q", method, ct)
 		}
+		body := rec.Body.String()
+		if !strings.Contains(body, "<error>1</error>") || !strings.Contains(body, "trackbacks are closed") {
+			t.Fatalf("%s body=%q", method, body)
+		}
+		if rec.Header().Get("X-Robots-Tag") != "noindex" {
+			t.Fatalf("%s X-Robots-Tag=%q", method, rec.Header().Get("X-Robots-Tag"))
+		}
+		if got := rec.Header().Get("Allow"); got != "GET, POST" {
+			t.Fatalf("%s Allow=%q", method, got)
+		}
+	}
+
+	req := httptest.NewRequest(http.MethodHead, "/wp-trackback.php", nil)
+	rec := httptest.NewRecorder()
+	s.ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("HEAD status=%d", rec.Code)
+	}
+	if rec.Body.Len() != 0 {
+		t.Fatalf("HEAD body should be empty: %q", rec.Body.String())
+	}
+	if !strings.Contains(rec.Header().Get("Content-Type"), "text/xml") {
+		t.Fatalf("HEAD Content-Type=%q", rec.Header().Get("Content-Type"))
 	}
 }

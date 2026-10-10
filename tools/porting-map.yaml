@@ -5165,8 +5165,9 @@ wp-login.php#language-switcher-post
 - prefix: wp-trackback.php
   go: internal/server/trackback.go
   status: out-of-scope
-  task: P3.19
+  task: P3.93
   api: n/a
+  notes: "P3.93 — XML trackback_response error stub (403); Allow/HEAD/noindex; trackbacks remain out of scope (P3.19)"
 
 - prefix: wp-links-opml.php
   go: internal/server/opml.go
