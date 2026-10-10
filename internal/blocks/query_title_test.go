@@ -54,3 +54,20 @@ func TestRenderQueryTitlePostType(t *testing.T) {
 		t.Fatalf("showPrefix=false post-type: %q", out)
 	}
 }
+
+func TestRenderQueryTitleWrapperAttrs(t *testing.T) {
+	env := &blocks.Env{SearchQuery: "hello"}
+	out := blocks.RenderWith(env, `<!-- wp:query-title {"type":"search","className":"extra","textColor":"contrast","style":{"elements":{"link":{"color":{"text":"var:preset|color|vivid-red"}}},"color":{"background":"#eee"}}} /-->`)
+	for _, want := range []string{
+		"wp-block-query-title",
+		"extra",
+		"has-link-color",
+		"has-text-color",
+		"has-contrast-color",
+		"has-background",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}

@@ -135,7 +135,8 @@ func polishQueryWrapper(inner string, attrs map[string]any) string {
 	return inner
 }
 
-// renderQueryTitle renders core/query-title (search/archive/post-type, P3.21 / P5.71).
+// renderQueryTitle renders core/query-title (search/archive/post-type, P3.21 / P5.71 / P5.96).
+// P5.96: className / has-link-color / textColor / backgroundColor like get_block_wrapper_attributes.
 func (e *Env) renderQueryTitle(block Block) string {
 	e = e.ensure()
 	titleType, _ := block.Attrs["type"].(string)
@@ -168,10 +169,7 @@ func (e *Env) renderQueryTitle(block Block) string {
 		}
 	}
 
-	classes := "wp-block-query-title"
-	if ta, ok := block.Attrs["textAlign"].(string); ok && strings.TrimSpace(ta) != "" {
-		classes += " has-text-align-" + strings.TrimSpace(ta)
-	}
+	classes := queryTitleWrapperClasses(block.Attrs)
 
 	text := ""
 	switch titleType {
@@ -215,6 +213,33 @@ func (e *Env) renderQueryTitle(block Block) string {
 		return ""
 	}
 	return fmt.Sprintf(`<%s class="%s">%s</%s>`, tag, html.EscapeString(classes), html.EscapeString(text), tag)
+}
+
+// queryTitleWrapperClasses mirrors get_block_wrapper_attributes class list for query-title (P5.96).
+func queryTitleWrapperClasses(attrs map[string]any) string {
+	parts := []string{"wp-block-query-title"}
+	if ta := strings.TrimSpace(attrString(attrs, "textAlign")); ta != "" {
+		parts = append(parts, "has-text-align-"+sanitizeClassToken(ta))
+	}
+	if hasLinkColorAttr(attrs) {
+		parts = append(parts, "has-link-color")
+	}
+	if tc := strings.TrimSpace(attrString(attrs, "textColor")); tc != "" {
+		parts = append(parts, "has-text-color", "has-"+sanitizeClassToken(tc)+"-color")
+	}
+	if bg := strings.TrimSpace(attrString(attrs, "backgroundColor")); bg != "" {
+		parts = append(parts, "has-background", "has-"+sanitizeClassToken(bg)+"-background-color")
+	}
+	if hasCustomTextColor(attrs) {
+		parts = append(parts, "has-text-color")
+	}
+	if hasCustomBackgroundColor(attrs) {
+		parts = append(parts, "has-background")
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		parts = append(parts, cn)
+	}
+	return strings.Join(parts, " ")
 }
 
 func (e *Env) renderPostTemplate(block Block) string {
@@ -322,12 +347,43 @@ func postLIClass(post QueryPost) string {
 	return "wp-block-post"
 }
 
+// renderQueryNoResults renders core/query-no-results (P5.3 / P5.96).
+// P5.96: wrap inner content in a div with get_block_wrapper_attributes classes
+// (has-link-color / className / colors) when the parent query has no posts.
 func (e *Env) renderQueryNoResults(block Block) string {
 	e = e.ensure()
 	if e.queryHasPosts {
 		return ""
 	}
-	return e.renderSaved(block)
+	inner := e.renderSaved(block)
+	if strings.TrimSpace(inner) == "" {
+		return ""
+	}
+	classes := queryNoResultsWrapperClasses(block.Attrs)
+	return `<div class="` + html.EscapeString(classes) + `">` + inner + `</div>`
+}
+
+func queryNoResultsWrapperClasses(attrs map[string]any) string {
+	parts := []string{"wp-block-query-no-results"}
+	if hasLinkColorAttr(attrs) {
+		parts = append(parts, "has-link-color")
+	}
+	if tc := strings.TrimSpace(attrString(attrs, "textColor")); tc != "" {
+		parts = append(parts, "has-text-color", "has-"+sanitizeClassToken(tc)+"-color")
+	}
+	if bg := strings.TrimSpace(attrString(attrs, "backgroundColor")); bg != "" {
+		parts = append(parts, "has-background", "has-"+sanitizeClassToken(bg)+"-background-color")
+	}
+	if hasCustomTextColor(attrs) {
+		parts = append(parts, "has-text-color")
+	}
+	if hasCustomBackgroundColor(attrs) {
+		parts = append(parts, "has-background")
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		parts = append(parts, cn)
+	}
+	return strings.Join(parts, " ")
 }
 
 func (e *Env) renderPattern(block Block) string {

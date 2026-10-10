@@ -3467,20 +3467,28 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P5.69 — originalContent, then originalUndelimitedContent, then saved/inner HTML"
 
-# P5.71: polish core/query-title (level=0→p, showSearchTerm, showPrefix, post-type, textAlign).
+# P5.71 / P5.96: polish core/query-title (level=0→p, showSearchTerm, showPrefix, post-type, textAlign, wrapper attrs).
 - prefix: wp-includes/blocks/query-title.php
   go: internal/blocks/query.go
   status: partial
-  task: P5.71
+  task: P5.96
   api: internal
-  notes: "P5.71 — showSearchTerm/showPrefix defaults, level 0→p, post-type title, textAlign class"
+  notes: "P5.96 — className/has-link-color/textColor/backgroundColor wrapper attrs; P5.71 showSearchTerm/showPrefix/level/post-type/textAlign"
 
 - prefix: wp-includes/blocks/query-title
   go: internal/blocks/query_title_test.go
   status: partial
-  task: P5.71
+  task: P5.96
   api: n/a
-  notes: "P5.71 — unit coverage for query-title polish attrs"
+  notes: "P5.96 — unit coverage for query-title wrapper attrs"
+
+# P5.96: wrap core/query-no-results with get_block_wrapper_attributes classes.
+- prefix: wp-includes/blocks/query-no-results.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.96
+  api: internal
+  notes: "P5.96 — div wrapper with has-link-color/className/colors when query empty"
 
 # P5.72: polish core/post-navigation-link (label, showTitle, linkLabel, arrow, textAlign).
 - prefix: wp-includes/blocks/post-navigation-link.php

@@ -114,4 +114,30 @@ func TestRenderQueryNoResults(t *testing.T) {
 	if !strings.Contains(out, "Nothing here") {
 		t.Fatalf("expected no-results: %q", out)
 	}
+	if !strings.Contains(out, `class="wp-block-query-no-results"`) {
+		t.Fatalf("expected wrapper class: %q", out)
+	}
+}
+
+func TestRenderQueryNoResultsWrapperAttrs(t *testing.T) {
+	env := &blocks.Env{
+		ListPosts: func(q blocks.QueryLoopArgs) []blocks.QueryPost { return nil },
+	}
+	in := `<!-- wp:query {"query":{"perPage":1}} -->
+<div class="wp-block-query">
+<!-- wp:post-template --><!-- wp:post-title /--><!-- /wp:post-template -->
+<!-- wp:query-no-results {"className":"empty-state","style":{"elements":{"link":{"color":{"text":"#111"}}}}} --><!-- wp:paragraph --><p>Empty</p><!-- /wp:paragraph --><!-- /wp:query-no-results -->
+</div>
+<!-- /wp:query -->`
+	out := blocks.RenderWith(env, in)
+	for _, want := range []string{
+		"wp-block-query-no-results",
+		"empty-state",
+		"has-link-color",
+		"Empty",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
 }
