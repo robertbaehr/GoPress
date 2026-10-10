@@ -4853,6 +4853,14 @@ wp-login.php#language-switcher-post
   task: P2.22
   api: exported
 
+# P2.99: wp_nonce_tick applies nonce_life filter (action-aware).
+- prefix: wp-includes/pluggable.php#wp_nonce_tick
+  go: internal/wp/auth_cookie.go
+  status: partial
+  task: P2.99
+  api: exported
+  notes: "P2.99 — Context.NonceTick / CreateNonce / VerifyNonce honor nonce_life filter"
+
 - prefix: wp-includes/
   go: internal/wp
   status: partial
