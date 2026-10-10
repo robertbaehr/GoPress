@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 
+	"github.com/robertbaehr/GoPress/internal/db"
 	"github.com/robertbaehr/GoPress/internal/plugins"
 	"github.com/robertbaehr/GoPress/internal/theme"
 	"github.com/robertbaehr/GoPress/internal/wp"
@@ -275,14 +276,18 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	if postType != "post" && postType != "page" {
 		postType = "post"
 	}
-	posts, err := recentPostsByType(c, postType, 20)
+	// P7.69: list-table search box (?s=) filters titles/content.
+	search := strings.TrimSpace(r.URL.Query().Get("s"))
+	posts, err := recentPostsByType(c, postType, 20, search)
 	if err != nil {
 		http.Error(w, "posts: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
 	heading := "Posts"
+	searchLabel := "Search Posts"
 	if postType == "page" {
 		heading = "Pages"
+		searchLabel = "Search Pages"
 	}
 	var b strings.Builder
 	b.WriteString("<h1>")
@@ -293,6 +298,18 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	b.WriteString(`<input type="hidden" name="post_type" value="`)
 	b.WriteString(html.EscapeString(postType))
 	b.WriteString(`" />` + "\n")
+	// P7.69: WP_List_Table::search_box (input_id=post → post-search-input).
+	b.WriteString(`<p class="search-box">` + "\n")
+	b.WriteString(`<label class="screen-reader-text" for="post-search-input">`)
+	b.WriteString(html.EscapeString(searchLabel))
+	b.WriteString(`:</label>` + "\n")
+	b.WriteString(`<input type="search" id="post-search-input" name="s" value="`)
+	b.WriteString(html.EscapeString(search))
+	b.WriteString(`" />` + "\n")
+	b.WriteString(`<input type="submit" id="search-submit" class="button" value="`)
+	b.WriteString(html.EscapeString(searchLabel))
+	b.WriteString(`" />` + "\n")
+	b.WriteString(`</p>` + "\n")
 	b.WriteString(`<div class="tablenav top"><div class="alignleft actions bulkactions">` + "\n")
 	b.WriteString(`<label for="bulk-action-selector-top" class="screen-reader-text">Select bulk action</label>` + "\n")
 	b.WriteString(`<select name="action" id="bulk-action-selector-top">` + "\n")
@@ -3946,7 +3963,7 @@ func countComments(c *wp.Context, approved string) int {
 	return int(asInt64(row["n"]))
 }
 
-func recentPostsByType(c *wp.Context, postType string, limit int) ([]postRow, error) {
+func recentPostsByType(c *wp.Context, postType string, limit int, search ...string) ([]postRow, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
@@ -3956,13 +3973,22 @@ func recentPostsByType(c *wp.Context, postType string, limit int) ([]postRow, er
 	if postType == "" {
 		postType = "post"
 	}
-	q, args, err := c.DB.Prepare(
-		"SELECT p.ID, p.post_title, p.post_date, p.post_status, p.post_author, u.display_name, u.user_login FROM "+
-			c.DB.Posts()+" p LEFT JOIN "+c.DB.Users()+" u ON p.post_author = u.ID "+
-			" WHERE p.post_type = %s AND p.post_status IN (%s, %s, %s, %s, %s) "+
-			"ORDER BY p.post_date DESC LIMIT %d",
-		postType, "publish", "draft", "pending", "private", "future", limit,
-	)
+	term := ""
+	if len(search) > 0 {
+		term = strings.TrimSpace(search[0])
+	}
+	sql := "SELECT p.ID, p.post_title, p.post_date, p.post_status, p.post_author, u.display_name, u.user_login FROM " +
+		c.DB.Posts() + " p LEFT JOIN " + c.DB.Users() + " u ON p.post_author = u.ID " +
+		" WHERE p.post_type = %s AND p.post_status IN (%s, %s, %s, %s, %s) "
+	prepArgs := []any{postType, "publish", "draft", "pending", "private", "future"}
+	if term != "" {
+		like := "%" + db.EscapeLike(term) + "%"
+		sql += "AND (p.post_title LIKE %s OR p.post_excerpt LIKE %s OR p.post_content LIKE %s) "
+		prepArgs = append(prepArgs, like, like, like)
+	}
+	sql += "ORDER BY p.post_date DESC LIMIT %d"
+	prepArgs = append(prepArgs, limit)
+	q, args, err := c.DB.Prepare(sql, prepArgs...)
 	if err != nil {
 		return nil, err
 	}

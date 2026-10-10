@@ -451,6 +451,59 @@ func TestEditPostsQuickEditStub(t *testing.T) {
 	}
 }
 
+func TestEditPostsSearchBox(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`class="search-box"`,
+		`id="post-search-input"`,
+		`name="s"`,
+		`id="search-submit"`,
+		"Search Posts",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected search box %q in edit.php", want)
+		}
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?s=Hello", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("search status=%d", rec.Code)
+	}
+	body = rec.Body.String()
+	if !strings.Contains(body, `value="Hello"`) {
+		t.Fatalf("expected search value preserved: %q", body[:min(600, len(body))])
+	}
+	if !strings.Contains(body, "Hello world!") {
+		t.Fatalf("expected Hello world in search results")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?s=zzznomatchterm999", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("miss status=%d", rec.Code)
+	}
+	body = rec.Body.String()
+	if strings.Contains(body, "Hello world!") {
+		t.Fatalf("miss search should not list Hello world")
+	}
+}
+
 func TestEditPostsBulkEditStub(t *testing.T) {
 	c := bootOrSkip(t)
 	ck := loginCookie(t, c)
