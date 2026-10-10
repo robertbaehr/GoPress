@@ -1,8 +1,12 @@
 package rest
 
 import (
+	"encoding/json"
+	"fmt"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
@@ -94,7 +98,7 @@ func (s *Server) serveMenus(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	}
 	out := make([]ClassicMenu, 0, len(terms))
 	for _, t := range terms {
-		out = append(out, classicMenuFromTerm(t))
+		out = append(out, classicMenuFromTerm(c, t))
 	}
 	totalPages := 0
 	if perPage > 0 {
@@ -134,10 +138,16 @@ func (s *Server) serveMenuItem(w http.ResponseWriter, r *http.Request, c *wp.Con
 		})
 		return
 	}
-	writeJSON(w, http.StatusOK, classicMenuFromTerm(*term))
+	writeJSON(w, http.StatusOK, classicMenuFromTerm(c, *term))
 }
 
-func classicMenuFromTerm(t Term) ClassicMenu {
+func classicMenuFromTerm(c *wp.Context, t Term) ClassicMenu {
+	locs := []any{}
+	for name, menuID := range wp.GetNavMenuLocations(c) {
+		if menuID == t.ID {
+			locs = append(locs, name)
+		}
+	}
 	return ClassicMenu{
 		ID:          t.ID,
 		Count:       t.Count,
@@ -146,7 +156,7 @@ func classicMenuFromTerm(t Term) ClassicMenu {
 		Slug:        t.Slug,
 		Taxonomy:    "nav_menu",
 		AutoAdd:     false,
-		Locations:   []any{},
+		Locations:   locs,
 	}
 }
 
@@ -284,7 +294,136 @@ func (s *Server) serveMenuLocations(w http.ResponseWriter, r *http.Request, c *w
 		writeMenusForbidden(w, c)
 		return
 	}
-	// Classic theme menu locations are not registered in GoPress yet; return empty map.
-	_ = c
-	writeJSON(w, http.StatusOK, map[string]MenuLocation{})
+	assigned := wp.GetNavMenuLocations(c)
+	out := map[string]MenuLocation{}
+	for name, desc := range wp.RegisteredNavMenus(c) {
+		out[name] = MenuLocation{
+			Name:        name,
+			Description: desc,
+			Menu:        assigned[name],
+		}
+	}
+	w.Header().Set("Allow", "GET")
+	writeJSON(w, http.StatusOK, out)
+}
+
+func (s *Server) serveMenuLocationItem(w http.ResponseWriter, r *http.Request, c *wp.Context, location string) {
+	location = strings.TrimSpace(location)
+	registered := wp.RegisteredNavMenus(c)
+	desc, ok := registered[location]
+	if !ok {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"code":    "rest_menu_location_invalid",
+			"message": "Invalid menu location.",
+			"data":    map[string]any{"status": 404},
+		})
+		return
+	}
+	switch r.Method {
+	case http.MethodGet:
+		if !canViewMenus(c) {
+			writeMenusForbidden(w, c)
+			return
+		}
+		w.Header().Set("Allow", "GET, POST, PUT, PATCH")
+		writeJSON(w, http.StatusOK, MenuLocation{
+			Name:        location,
+			Description: desc,
+			Menu:        wp.GetNavMenuLocations(c)[location],
+		})
+	case http.MethodPost, http.MethodPut, http.MethodPatch:
+		s.updateMenuLocation(w, r, c, location, desc)
+	default:
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
+			"code":    "rest_no_route",
+			"message": "No route was found matching the URL and request method.",
+			"data":    map[string]any{"status": 405},
+		})
+	}
+}
+
+func (s *Server) updateMenuLocation(w http.ResponseWriter, r *http.Request, c *wp.Context, location, desc string) {
+	if c == nil || c.CurrentUser == nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]any{
+			"code":    "rest_cannot_edit",
+			"message": "Sorry, you are not allowed to edit menu locations.",
+			"data":    map[string]any{"status": 401},
+		})
+		return
+	}
+	if !c.UserCan(c.CurrentUser, "edit_theme_options") {
+		writeJSON(w, http.StatusForbidden, map[string]any{
+			"code":    "rest_cannot_edit",
+			"message": "Sorry, you are not allowed to edit menu locations.",
+			"data":    map[string]any{"status": 403},
+		})
+		return
+	}
+	menuID, err := decodeMenuLocationMenuID(r)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_invalid_param",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 400},
+		})
+		return
+	}
+	if err := wp.SetNavMenuLocation(c, location, menuID); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_menu_location_invalid",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 400},
+		})
+		return
+	}
+	w.Header().Set("Allow", "GET, POST, PUT, PATCH")
+	writeJSON(w, http.StatusOK, MenuLocation{
+		Name:        location,
+		Description: desc,
+		Menu:        wp.GetNavMenuLocations(c)[location],
+	})
+}
+
+func decodeMenuLocationMenuID(r *http.Request) (int64, error) {
+	if r == nil || r.Body == nil {
+		return 0, nil
+	}
+	defer r.Body.Close()
+	data, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+	if err != nil {
+		return 0, err
+	}
+	if len(strings.TrimSpace(string(data))) == 0 {
+		return 0, nil
+	}
+	var body struct {
+		Menu any `json:"menu"`
+	}
+	if err := json.Unmarshal(data, &body); err != nil {
+		return 0, fmt.Errorf("invalid JSON body")
+	}
+	switch t := body.Menu.(type) {
+	case nil:
+		return 0, nil
+	case float64:
+		return int64(t), nil
+	case string:
+		n, err := strconv.ParseInt(strings.TrimSpace(t), 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("invalid menu id")
+		}
+		return n, nil
+	case json.Number:
+		n, err := t.Int64()
+		if err != nil {
+			return 0, fmt.Errorf("invalid menu id")
+		}
+		return n, nil
+	default:
+		n, err := strconv.ParseInt(strings.TrimSpace(fmt.Sprint(t)), 10, 64)
+		if err != nil {
+			return 0, fmt.Errorf("invalid menu id")
+		}
+		return n, nil
+	}
 }
