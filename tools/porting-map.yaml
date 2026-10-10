@@ -1313,6 +1313,13 @@
   api: n/a
 
 # P4.41: REST write for menu-locations + theme_mod nav_menu_locations.
+# P4.57: REST write for classic menu-items (create/update/delete).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-menu-items-controller.php
+  go: internal/rest/menu_items_write.go
+  status: partial
+  task: P4.57
+  api: exported
+
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-menu-locations-controller.php
   go: internal/rest/menus.go
   status: partial
