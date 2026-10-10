@@ -81,6 +81,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		wp.ServeCron(w, r, c)
 		return
 	}
+	if path == "/xmlrpc.php" {
+		serveXMLRPCGone(w, r)
+		return
+	}
 	if path == "/wp-comments-post.php" {
 		c := s.requestContext(w, r)
 		s.serveCommentsPost(w, r, c)
