@@ -13,6 +13,72 @@ import (
 	"github.com/robertbaehr/GoPress/internal/rest"
 )
 
+func TestRESTMediaUploadWithCreateFields(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+
+	var body bytes.Buffer
+	w := multipart.NewWriter(&body)
+	part, err := w.CreateFormFile("file", "rest-upload-fields.png")
+	if err != nil {
+		t.Fatal(err)
+	}
+	payload := []byte{0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a}
+	if _, err := part.Write(payload); err != nil {
+		t.Fatal(err)
+	}
+	_ = w.WriteField("title", "Create Fields Title")
+	_ = w.WriteField("alt_text", "create alt")
+	_ = w.WriteField("caption", "create caption")
+	_ = w.WriteField("description", "create description")
+	_ = w.WriteField("post", "1")
+	_ = w.Close()
+
+	req := httptest.NewRequest(http.MethodPost, "/wp-json/wp/v2/media", &body)
+	req.Header.Set("Content-Type", w.FormDataContentType())
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var m rest.Media
+	if err := json.Unmarshal(rec.Body.Bytes(), &m); err != nil {
+		t.Fatal(err)
+	}
+	if m.Title.Rendered != "Create Fields Title" {
+		t.Fatalf("title=%q", m.Title.Rendered)
+	}
+	if m.AltText != "create alt" {
+		t.Fatalf("alt=%q", m.AltText)
+	}
+	if !strings.Contains(m.Caption.Rendered, "create caption") {
+		t.Fatalf("caption=%q", m.Caption.Rendered)
+	}
+	if m.Post == nil || *m.Post != 1 {
+		t.Fatalf("post=%v", m.Post)
+	}
+	t.Cleanup(func() {
+		if c.DB != nil {
+			q, args, _ := c.DB.Prepare("DELETE FROM "+c.DB.Posts()+" WHERE ID = %d", m.ID)
+			_, _ = c.DB.Exec(q, args...)
+			q2, a2, _ := c.DB.Prepare("DELETE FROM "+c.DB.PostMeta()+" WHERE post_id = %d", m.ID)
+			_, _ = c.DB.Exec(q2, a2...)
+		}
+		_ = os.Remove("/workspace/wp-content/uploads/2024/06/rest-upload-fields.png")
+		_ = os.Remove("/workspace/wp-content/uploads/2024/06/rest-upload-fields-1.png")
+	})
+}
+
 func TestRESTMediaUpload(t *testing.T) {
 	c := bootOrSkip(t)
 	t.Cleanup(func() { _ = c.DB.Close() })
