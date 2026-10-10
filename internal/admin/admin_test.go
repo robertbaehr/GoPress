@@ -441,6 +441,9 @@ func TestPluginsListsHelloDollyHeaders(t *testing.T) {
 	if !strings.Contains(body, "Hello Dolly") {
 		t.Fatalf("expected Hello Dolly from plugin headers, got %q", body)
 	}
+	if !strings.Contains(body, "gopress-akismet-gone") || !strings.Contains(body, "not bundled") {
+		t.Fatalf("expected Akismet not-bundled notice, got %q", body)
+	}
 	if !strings.Contains(body, "Matt Mullenweg") {
 		t.Fatalf("expected author from headers, got %q", body)
 	}

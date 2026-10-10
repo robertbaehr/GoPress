@@ -1182,6 +1182,13 @@
   task: P9.7
   api: n/a
 
+# P9.8: Akismet is not bundled with GoPress.
+- prefix: wp-content/plugins/akismet
+  go: internal/plugins/akismet.go
+  status: out-of-scope
+  task: P9.8
+  api: n/a
+
 - prefix: wp-content/themes/twentytwentytwo/
   go: internal/theme
   status: partial
