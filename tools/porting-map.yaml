@@ -1859,6 +1859,21 @@
   api: n/a
   notes: "P3.50 — RSS2 atom:link href uses feedSelfLink(RequestURI)"
 
+# P3.59: feed item categories include post tags (get_the_category_rss).
+- prefix: wp-includes/feed.php#get_the_category_rss
+  go: internal/server/front.go
+  status: partial
+  task: P3.59
+  api: internal
+  notes: "P3.59 — feedCategoryNames merges category + post_tag; unique by name"
+
+- prefix: wp-includes/feed-rss2.php#category
+  go: internal/server/front.go
+  status: partial
+  task: P3.59
+  api: internal
+  notes: "P3.59 — RSS/Atom/RDF item categories include tags"
+
 - prefix: wp-includes/feed-rss2.php#atom:link
   go: internal/server/front.go
   status: partial
