@@ -215,4 +215,23 @@ func TestGetPostsOrderBy(t *testing.T) {
 			t.Fatalf("title ASC broken: %q then %q", byTitle[i-1].Title, byTitle[i].Title)
 		}
 	}
+
+	// P4.94: menu_order ASC on pages.
+	byMenu, err := wp.GetPosts(c, wp.QueryArgs{
+		PostType:     "page",
+		PostsPerPage: 5,
+		OrderBy:      "menu_order",
+		Order:        "ASC",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(byMenu) < 2 {
+		t.Fatalf("need ≥2 pages for menu_order, got %d", len(byMenu))
+	}
+	for i := 1; i < len(byMenu); i++ {
+		if byMenu[i-1].MenuOrder > byMenu[i].MenuOrder {
+			t.Fatalf("menu_order ASC broken: %d then %d", byMenu[i-1].MenuOrder, byMenu[i].MenuOrder)
+		}
+	}
 }

@@ -4417,6 +4417,21 @@
   api: internal
   notes: "P5.78 — widget-group block.json registered via empty render"
 
+# P4.94: REST pages orderby=menu_order.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#orderby-menu_order
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.94
+  api: n/a
+  notes: "P4.94 — parsePostsOrderby accepts menu_order for pages"
+
+- prefix: wp-includes/class-wp-query.php#orderby-menu_order
+  go: internal/wp/query.go
+  status: partial
+  task: P4.94
+  api: internal
+  notes: "P4.94 — orderByClause menu_order column"
+
 # P4.93: REST pages ?parent= / ?parent_exclude= (post_parent__in / __not_in).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#parent
   go: internal/rest/posts.go
