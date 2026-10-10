@@ -349,6 +349,13 @@
   task: P9.5
   api: n/a
 
+# P10.24: E2E category archive /category/fixture-leaf/.
+- prefix: tests/e2e/category.spec.js
+  go: tests/e2e/category.spec.js
+  status: partial
+  task: P10.24
+  api: n/a
+
 # P4.47: REST PATCH/PUT /wp/v2/media/{id} title + alt_text.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-attachments-controller.php#update
   go: internal/rest/media_write.go
