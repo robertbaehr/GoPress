@@ -34,10 +34,14 @@ func TestMediaListHasBulkActions(t *testing.T) {
 	body := rec.Body.String()
 	for _, want := range []string{
 		`name="action"`,
+		`name="action2"`,
 		`value="delete"`,
 		`Delete permanently`,
 		`name="media[]"`,
 		`id="posts-filter"`,
+		`name="_wpnonce"`,
+		`name="mode"`,
+		`value="list"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("missing %q in list HTML", want)
@@ -84,8 +88,17 @@ func TestMediaBulkDelete(t *testing.T) {
 		_, _ = c.DB.Exec(dq, dargs...)
 	})
 
+	probe := httptest.NewRequest(http.MethodGet, "/wp-admin/upload.php?mode=list", nil)
+	probe.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	probeRec := httptest.NewRecorder()
+	pc := c.ForRequest(probeRec, probe)
+	pc.AuthenticateRequest()
+	nonce := pc.CreateNonce("bulk-media")
+
 	form := url.Values{}
 	form.Set("action", "delete")
+	form.Set("mode", "list")
+	form.Set("_wpnonce", nonce)
 	form.Add("media[]", strconv.FormatInt(id, 10))
 	req := httptest.NewRequest(http.MethodPost, "/wp-admin/upload.php?mode=list", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -99,7 +112,7 @@ func TestMediaBulkDelete(t *testing.T) {
 		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
 	}
 	loc := rec.Header().Get("Location")
-	if !strings.Contains(loc, "deleted=1") {
+	if !strings.Contains(loc, "deleted=1") || !strings.Contains(loc, "mode=list") {
 		t.Fatalf("Location=%q", loc)
 	}
 
@@ -116,5 +129,101 @@ func TestMediaBulkDelete(t *testing.T) {
 	}
 	if row != nil {
 		t.Fatalf("attachment %d still present", id)
+	}
+}
+
+func TestMediaBulkDeleteAction2(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+
+	now := time.Now().UTC().Format("2006-01-02 15:04:05")
+	q, args, err := c.DB.Prepare(
+		"INSERT INTO "+c.DB.Posts()+
+			" (post_author, post_date, post_date_gmt, post_content, post_title, post_excerpt, post_status, "+
+			"comment_status, ping_status, post_password, post_name, to_ping, pinged, post_modified, post_modified_gmt, "+
+			"post_content_filtered, post_parent, guid, menu_order, post_type, post_mime_type, comment_count) VALUES "+
+			"(%d, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %d, %s, %d, %s, %s, %d)",
+		user.ID, now, now, "", "Bulk Action2 Me", "", "inherit",
+		"open", "closed", "", "bulk-action2-me", "", "", now, now,
+		"", 0, "http://example.com/bulk-action2-me.jpg", 0, "attachment", "image/jpeg", 0,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := c.DB.Exec(q, args...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id, err := res.LastInsertId()
+	if err != nil || id <= 0 {
+		t.Fatalf("insert id: %v", err)
+	}
+	t.Cleanup(func() {
+		dq, dargs, _ := c.DB.Prepare("DELETE FROM "+c.DB.Posts()+" WHERE ID = %d", id)
+		_, _ = c.DB.Exec(dq, dargs...)
+	})
+
+	probe := httptest.NewRequest(http.MethodGet, "/wp-admin/upload.php?mode=list", nil)
+	probe.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	probeRec := httptest.NewRecorder()
+	pc := c.ForRequest(probeRec, probe)
+	pc.AuthenticateRequest()
+	nonce := pc.CreateNonce("bulk-media")
+
+	form := url.Values{}
+	form.Set("action", "-1")
+	form.Set("action2", "delete")
+	form.Set("mode", "list")
+	form.Set("_wpnonce", nonce)
+	form.Add("media[]", strconv.FormatInt(id, 10))
+	req := httptest.NewRequest(http.MethodPost, "/wp-admin/upload.php?mode=list", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/upload.php") {
+		t.Fatal("upload.php not handled")
+	}
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Header().Get("Location"), "deleted=1") {
+		t.Fatalf("Location=%q", rec.Header().Get("Location"))
+	}
+}
+
+func TestMediaBulkDeleteBadNonce(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	form := url.Values{}
+	form.Set("action", "delete")
+	form.Set("_wpnonce", "not-a-valid-nonce")
+	form.Add("media[]", "1")
+	req := httptest.NewRequest(http.MethodPost, "/wp-admin/upload.php?mode=list", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/upload.php") {
+		t.Fatal("upload.php not handled")
+	}
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status=%d want 403 body=%s", rec.Code, rec.Body.String())
 	}
 }
