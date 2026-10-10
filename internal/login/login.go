@@ -270,7 +270,9 @@ func usersCanRegister(c *wp.Context) bool {
 	}
 }
 
-// serveLogout clears auth cookies and redirects (wp-login.php?action=logout, P6.6).
+// serveLogout clears auth cookies and redirects (wp-login.php?action=logout, P6.6 / P6.16).
+// When redirect_to is provided, honor it (wp_safe_redirect). When omitted, send the
+// user to wp-login.php?loggedout=true like core.
 func (h *Handler) serveLogout(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	c.AuthenticateRequest()
 	if c.CurrentUser != nil && c.SessionToken != "" {
@@ -280,18 +282,20 @@ func (h *Handler) serveLogout(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	c.CurrentUser = nil
 	c.SessionToken = ""
 
-	redirectTo := r.URL.Query().Get("redirect_to")
-	if redirectTo == "" {
+	requested := strings.TrimSpace(r.URL.Query().Get("redirect_to"))
+	if requested == "" {
 		_ = r.ParseForm()
-		redirectTo = r.FormValue("redirect_to")
+		requested = strings.TrimSpace(r.FormValue("redirect_to"))
 	}
-	redirectTo = sanitizeRedirect(redirectTo)
-	if redirectTo == "/wp-admin/" || strings.HasPrefix(redirectTo, "/wp-admin") {
-		home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	var redirectTo string
+	if requested == "" {
 		redirectTo = home + "/wp-login.php?loggedout=true"
 		if home == "" {
 			redirectTo = "/wp-login.php?loggedout=true"
 		}
+	} else {
+		redirectTo = sanitizeRedirect(requested)
 	}
 	http.Redirect(w, r, redirectTo, http.StatusFound)
 }

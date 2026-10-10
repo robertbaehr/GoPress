@@ -441,7 +441,7 @@ func TestLogoutClearsCookies(t *testing.T) {
 		t.Fatalf("cookie: %v", err)
 	}
 
-	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?action=logout&redirect_to=/wp-admin/", nil)
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?action=logout", nil)
 	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
 	rec := httptest.NewRecorder()
 	c = c.ForRequest(rec, req)
@@ -465,6 +465,62 @@ func TestLogoutClearsCookies(t *testing.T) {
 	}
 	if !cleared[set.LoggedInName] {
 		t.Fatalf("expected cleared logged_in cookie, got %#v", rec.Result().Cookies())
+	}
+}
+
+func TestLogoutHonorsRedirectTo(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?action=logout&redirect_to=/sample-page/", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	loc := rec.Header().Get("Location")
+	if loc != "/sample-page/" {
+		t.Fatalf("Location=%q want /sample-page/", loc)
+	}
+}
+
+func TestLogoutRedirectToAdminHonored(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?action=logout&redirect_to=/wp-admin/", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	loc := rec.Header().Get("Location")
+	if loc != "/wp-admin/" {
+		t.Fatalf("Location=%q want /wp-admin/ (P6.16 honors redirect_to)", loc)
 	}
 }
 
