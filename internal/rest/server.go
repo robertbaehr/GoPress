@@ -935,7 +935,14 @@ func extraIndexRoutes() map[string]RouteIndex {
 		"/wp/v2/users":                            collectionRoute(ns),
 		"/wp/v2/users/(?P<id>[\\d]+)":             itemRoute(ns),
 		"/wp/v2/themes":                           getOnly(ns),
-		"/wp/v2/themes/(?P<stylesheet>[^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)": getOnly(ns),
+		"/wp/v2/themes/(?P<stylesheet>[^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)": {
+			Namespace: ns,
+			Methods:   []string{"GET", "POST", "PUT", "PATCH"},
+			Endpoints: []RouteEndpoint{
+				{Methods: []string{"GET"}},
+				{Methods: []string{"POST", "PUT", "PATCH"}},
+			},
+		},
 		"/wp/v2/plugins":                   collectionRoute(ns),
 		"/wp/v2/menu-items":                collectionRoute(ns),
 		"/wp/v2/menu-items/(?P<id>[\\d]+)": itemRoute(ns),
@@ -1194,10 +1201,11 @@ func adminExtraRoutes() map[string]RouteIndex {
 		},
 		"/wp/v2/themes/(?P<stylesheet>[^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)": {
 			Namespace: "wp/v2",
-			Methods:   []string{"GET"},
-			Endpoints: []RouteEndpoint{{
-				Methods: []string{"GET"},
-			}},
+			Methods:   []string{"GET", "POST", "PUT", "PATCH"},
+			Endpoints: []RouteEndpoint{
+				{Methods: []string{"GET"}},
+				{Methods: []string{"POST", "PUT", "PATCH"}},
+			},
 		},
 		"/wp/v2/users": collectionRoute("wp/v2"),
 	}

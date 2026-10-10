@@ -974,6 +974,14 @@
   api: n/a
   notes: "P7.62 — Activate link + nonce; SwitchTheme updates stylesheet/template/current_theme"
 
+# P4.78: REST POST/PUT/PATCH /wp/v2/themes/{stylesheet} status=active (switch_theme).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-themes-controller.php#update
+  go: internal/rest/themes_write.go
+  status: partial
+  task: P4.78
+  api: exported
+  notes: "P4.78 — POST/PUT/PATCH status active → SwitchTheme; inactive rejected"
+
 # P2.29: sanitize_file_name.
 - prefix: wp-includes/formatting.php#sanitize_file_name
   go: internal/wp/formatting.go

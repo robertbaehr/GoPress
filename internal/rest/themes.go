@@ -113,7 +113,13 @@ func (s *Server) serveThemes(w http.ResponseWriter, r *http.Request, c *wp.Conte
 }
 
 func (s *Server) serveThemeItem(w http.ResponseWriter, r *http.Request, c *wp.Context, stylesheet string) {
-	if r.Method != http.MethodGet {
+	switch r.Method {
+	case http.MethodGet:
+		// continue
+	case http.MethodPost, http.MethodPut, http.MethodPatch:
+		s.updateTheme(w, r, c, stylesheet)
+		return
+	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
