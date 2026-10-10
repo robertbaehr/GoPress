@@ -1749,6 +1749,14 @@
   api: n/a
   notes: "P10.54 — summarize code/preformatted/verse, themes REST activate, plugins bulk, mime types, RDF generator, interim success, e2e"
 
+# P10.59: STATUS/PORTING refresh after P5.67–P8.17.
+- prefix: docs/STATUS.md#P10.59
+  go: docs/STATUS.md
+  status: partial
+  task: P10.59
+  api: n/a
+  notes: "P10.59 — summarize details polish, posts orderby, bulk edit, ini changeable, feed comments, policy TOC"
+
 # P10.58: e2e edit.php Quick Edit + STATUS/PORTING refresh after P5.66–P6.27.
 - prefix: tests/e2e/quick-edit.spec.js
   go: tests/e2e/quick-edit.spec.js
