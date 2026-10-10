@@ -4269,6 +4269,7 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			for _, cm := range rows {
 				out = append(out, blocks.CommentItem{
 					ID:          cm.ID,
+					Parent:      cm.Parent,
 					Author:      cm.Author,
 					AuthorEmail: cm.AuthorEmail,
 					AuthorURL:   cm.AuthorURL,
@@ -4278,6 +4279,7 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			}
 			return out
 		},
+		CommentOrder: optionString(c, "comment_order", "asc"),
 		AdjacentPost: func(postID int64, previous bool) *blocks.QueryPost {
 			// previous = older (date ASC toward past); next = newer.
 			op, order := "<", "DESC"

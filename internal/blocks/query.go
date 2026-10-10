@@ -1292,11 +1292,30 @@ func (e *Env) renderPostCommentsForm(block Block) string {
 
 func (e *Env) renderComments(block Block) string {
 	e = e.ensure()
+	// P5.90: no post context → empty (mirrors render_block_core_comments).
+	if e.currentPost == nil {
+		return ""
+	}
 	inner := e.renderSaved(block)
-	if strings.Contains(inner, "wp-block-comments") {
+	if strings.Contains(inner, "wp-block-comments") || strings.Contains(inner, "wp-block-post-comments") {
 		return inner
 	}
-	return `<div class="wp-block-comments">` + inner + `</div>`
+	classes := []string{"wp-block-comments"}
+	// Legacy core/post-comments / attributes.legacy keep the old class (P5.90).
+	legacyName := ""
+	if block.BlockName != nil {
+		legacyName = *block.BlockName
+	}
+	if attrBool(block.Attrs, "legacy") || legacyName == "core/post-comments" {
+		classes = append(classes, "wp-block-post-comments")
+	}
+	if ta := strings.TrimSpace(attrString(block.Attrs, "textAlign")); ta != "" {
+		classes = append(classes, "has-text-align-"+sanitizeClassToken(ta))
+	}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		classes = append(classes, cn)
+	}
+	return `<div class="` + html.EscapeString(strings.Join(classes, " ")) + `">` + inner + `</div>`
 }
 
 func (e *Env) renderQueryPagination(block Block) string {
@@ -1707,14 +1726,32 @@ func (e *Env) renderCommentsTitle(block Block) string {
 	if level >= 1 && level <= 6 {
 		tag = "h" + strconv.FormatInt(level, 10)
 	}
+	showPostTitle := true
+	if _, ok := block.Attrs["showPostTitle"]; ok {
+		showPostTitle = attrBool(block.Attrs, "showPostTitle")
+	}
 	title := e.currentPost.Title
 	var text string
-	if n == 1 {
-		text = "One response to “" + title + "”"
+	if showPostTitle {
+		if n == 1 {
+			text = "One response to “" + title + "”"
+		} else {
+			text = strconv.Itoa(n) + " responses to “" + title + "”"
+		}
+	} else if n == 1 {
+		text = "One response"
 	} else {
-		text = strconv.Itoa(n) + " responses to “" + title + "”"
+		text = strconv.Itoa(n) + " responses"
 	}
-	return `<` + tag + ` class="wp-block-comments-title" id="comments">` + html.EscapeString(text) + `</` + tag + `>`
+	classes := []string{"wp-block-comments-title"}
+	if ta := strings.TrimSpace(attrString(block.Attrs, "textAlign")); ta != "" {
+		classes = append(classes, "has-text-align-"+sanitizeClassToken(ta))
+	}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		classes = append(classes, cn)
+	}
+	return `<` + tag + ` class="` + html.EscapeString(strings.Join(classes, " ")) +
+		`" id="comments">` + html.EscapeString(text) + `</` + tag + `>`
 }
 
 // renderPostNavigationLink renders core/post-navigation-link (P5.3 / P5.72).
@@ -1839,61 +1876,130 @@ func (e *Env) renderCommentTemplate(block Block) string {
 	if e.currentPost == nil || e.ListComments == nil {
 		return ""
 	}
+	if e.PasswordRequired != nil && e.PasswordRequired(e.currentPost.ID) {
+		return ""
+	}
 	comments := e.ListComments(e.currentPost.ID)
 	if len(comments) == 0 {
 		return ""
 	}
-	home := ""
-	if e.HomeURL != nil {
-		home = strings.TrimRight(e.HomeURL(), "/")
+	// P5.90: honor comment_order=desc (WP reverses top-level list).
+	if strings.EqualFold(strings.TrimSpace(e.CommentOrder), "desc") {
+		for i, j := 0, len(comments)-1; i < j; i, j = i+1, j-1 {
+			comments[i], comments[j] = comments[j], comments[i]
+		}
+	}
+	byParent := map[int64][]CommentItem{}
+	var roots []CommentItem
+	for _, cm := range comments {
+		if cm.Parent > 0 {
+			byParent[cm.Parent] = append(byParent[cm.Parent], cm)
+		} else {
+			roots = append(roots, cm)
+		}
+	}
+	if len(roots) == 0 {
+		// Flat fallback when parents are missing from the approved set.
+		roots = comments
+		byParent = nil
+	}
+	classes := []string{"wp-block-comment-template"}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		classes = append(classes, cn)
 	}
 	var b strings.Builder
-	b.WriteString(`<ol class="wp-block-comment-template">`)
-	for _, cm := range comments {
-		b.WriteString(`<li id="comment-`)
-		b.WriteString(strconv.FormatInt(cm.ID, 10))
-		b.WriteString(`" class="comment even thread-even depth-1">`)
-		b.WriteString(`<div class="wp-block-group is-layout-flow wp-block-group-is-layout-flow">`)
-		b.WriteString(`<div class="wp-block-group is-nowrap is-layout-flex wp-block-group-is-layout-flex">`)
-		b.WriteString(`<div class="wp-block-avatar">`)
-		if cm.AuthorEmail != "" {
-			hash := gravatarHash(cm.AuthorEmail)
-			src := "https://secure.gravatar.com/avatar/" + hash + "?s=50&d=mm&r=g"
-			srcset := "https://secure.gravatar.com/avatar/" + hash + "?s=100&d=mm&r=g 2x"
-			b.WriteString(`<img alt="` + html.EscapeString(cm.Author) + ` Avatar" class="avatar avatar-50 photo wp-block-avatar__image" decoding="async" height="50" src="` + html.EscapeString(src) + `" srcset="` + html.EscapeString(srcset) + `" width="50"/>`)
+	b.WriteString(`<ol class="` + html.EscapeString(strings.Join(classes, " ")) + `">`)
+	e.writeCommentTemplateItems(&b, roots, byParent, 1, true)
+	b.WriteString(`</ol>`)
+	return b.String()
+}
+
+func (e *Env) writeCommentTemplateItems(b *strings.Builder, items []CommentItem, byParent map[int64][]CommentItem, depth int, threadEven bool) {
+	e = e.ensure()
+	for i, cm := range items {
+		even := i%2 == 0
+		parity := "odd"
+		if even {
+			parity = "even"
 		}
-		b.WriteString(`</div>`)
-		b.WriteString(`<div class="wp-block-group is-layout-flow wp-block-group-is-layout-flow">`)
-		if cm.Date != "" {
-			b.WriteString(`<div class="wp-block-comment-date"><time datetime="`)
-			b.WriteString(html.EscapeString(formatPostDateTimeAttr(cm.Date)))
-			b.WriteString(`"><a href="`)
-			b.WriteString(html.EscapeString(e.currentPost.Link + "#comment-" + strconv.FormatInt(cm.ID, 10)))
-			b.WriteString(`">`)
-			b.WriteString(html.EscapeString(formatPostDateDisplay(cm.Date)))
-			b.WriteString(`</a></time></div>`)
-		}
-		b.WriteString(`<div class="wp-block-comment-author-name">`)
-		if cm.AuthorURL != "" {
-			b.WriteString(`<a href="` + html.EscapeString(cm.AuthorURL) + `" rel="external nofollow ugc" target="_self">`)
-			b.WriteString(html.EscapeString(cm.Author))
-			b.WriteString(`</a>`)
+		threadParity := "thread-odd"
+		if threadEven == even || depth > 1 {
+			if even {
+				threadParity = "thread-even"
+			} else {
+				threadParity = "thread-odd"
+			}
 		} else {
-			b.WriteString(html.EscapeString(cm.Author))
-		}
-		b.WriteString(`</div>`)
-		b.WriteString(`<div class="wp-block-comment-content"><p>`)
-		b.WriteString(commentContentHTML(cm.Content))
-		b.WriteString(`</p></div>`)
-		b.WriteString(`<div class="wp-block-group is-nowrap is-layout-flex wp-block-group-is-layout-flex">`)
-		b.WriteString(`<div class="wp-block-comment-reply-link">`)
-		reply := e.currentPost.Link
-		if home != "" {
-			reply = strings.TrimPrefix(reply, home)
-			if !strings.HasPrefix(reply, "/") {
-				reply = "/" + reply
+			if threadEven {
+				threadParity = "thread-even"
+			} else {
+				threadParity = "thread-odd"
 			}
 		}
+		if depth == 1 {
+			if even {
+				threadParity = "thread-even"
+			} else {
+				threadParity = "thread-odd"
+			}
+		}
+		b.WriteString(`<li id="comment-`)
+		b.WriteString(strconv.FormatInt(cm.ID, 10))
+		b.WriteString(`" class="comment `)
+		b.WriteString(parity)
+		b.WriteString(` `)
+		b.WriteString(threadParity)
+		b.WriteString(` depth-`)
+		b.WriteString(strconv.Itoa(depth))
+		b.WriteString(`">`)
+		b.WriteString(e.renderCommentTemplateItemBody(cm))
+		if kids := byParent[cm.ID]; len(kids) > 0 && depth < 10 {
+			b.WriteString(`<ol>`)
+			e.writeCommentTemplateItems(b, kids, byParent, depth+1, threadEven)
+			b.WriteString(`</ol>`)
+		}
+		b.WriteString(`</li>`)
+	}
+}
+
+func (e *Env) renderCommentTemplateItemBody(cm CommentItem) string {
+	e = e.ensure()
+	var b strings.Builder
+	b.WriteString(`<div class="wp-block-group is-layout-flow wp-block-group-is-layout-flow">`)
+	b.WriteString(`<div class="wp-block-group is-nowrap is-layout-flex wp-block-group-is-layout-flex">`)
+	b.WriteString(`<div class="wp-block-avatar">`)
+	if cm.AuthorEmail != "" {
+		hash := gravatarHash(cm.AuthorEmail)
+		src := "https://secure.gravatar.com/avatar/" + hash + "?s=50&d=mm&r=g"
+		srcset := "https://secure.gravatar.com/avatar/" + hash + "?s=100&d=mm&r=g 2x"
+		b.WriteString(`<img alt="` + html.EscapeString(cm.Author) + ` Avatar" class="avatar avatar-50 photo wp-block-avatar__image" decoding="async" height="50" src="` + html.EscapeString(src) + `" srcset="` + html.EscapeString(srcset) + `" width="50"/>`)
+	}
+	b.WriteString(`</div>`)
+	b.WriteString(`<div class="wp-block-group is-layout-flow wp-block-group-is-layout-flow">`)
+	if cm.Date != "" && e.currentPost != nil {
+		b.WriteString(`<div class="wp-block-comment-date"><time datetime="`)
+		b.WriteString(html.EscapeString(formatPostDateTimeAttr(cm.Date)))
+		b.WriteString(`"><a href="`)
+		b.WriteString(html.EscapeString(e.currentPost.Link + "#comment-" + strconv.FormatInt(cm.ID, 10)))
+		b.WriteString(`">`)
+		b.WriteString(html.EscapeString(formatPostDateDisplay(cm.Date)))
+		b.WriteString(`</a></time></div>`)
+	}
+	b.WriteString(`<div class="wp-block-comment-author-name">`)
+	if cm.AuthorURL != "" {
+		b.WriteString(`<a href="` + html.EscapeString(cm.AuthorURL) + `" rel="external nofollow ugc" target="_self">`)
+		b.WriteString(html.EscapeString(cm.Author))
+		b.WriteString(`</a>`)
+	} else {
+		b.WriteString(html.EscapeString(cm.Author))
+	}
+	b.WriteString(`</div>`)
+	b.WriteString(`<div class="wp-block-comment-content"><p>`)
+	b.WriteString(commentContentHTML(cm.Content))
+	b.WriteString(`</p></div>`)
+	b.WriteString(`<div class="wp-block-group is-nowrap is-layout-flex wp-block-group-is-layout-flex">`)
+	b.WriteString(`<div class="wp-block-comment-reply-link">`)
+	if e.currentPost != nil {
 		href := e.currentPost.Link + "?replytocom=" + strconv.FormatInt(cm.ID, 10) + "#respond"
 		b.WriteString(`<a aria-label="Reply to ` + html.EscapeString(cm.Author) + `" class="comment-reply-link"`)
 		b.WriteString(` data-belowelement="comment-` + strconv.FormatInt(cm.ID, 10) + `"`)
@@ -1901,13 +2007,10 @@ func (e *Env) renderCommentTemplate(block Block) string {
 		b.WriteString(` data-postid="` + strconv.FormatInt(e.currentPost.ID, 10) + `"`)
 		b.WriteString(` data-replyto="Reply to ` + html.EscapeString(cm.Author) + `"`)
 		b.WriteString(` data-respondelement="respond"`)
-		b.WriteString(` href="` + html.EscapeString(href) + `" rel="nofollow">Reply</a></div></div>`)
-		_ = reply
-		b.WriteString(`</div></div></div>`)
-		b.WriteString(`</li>`)
-		_ = block
+		b.WriteString(` href="` + html.EscapeString(href) + `" rel="nofollow">Reply</a>`)
 	}
-	b.WriteString(`</ol>`)
+	b.WriteString(`</div></div>`)
+	b.WriteString(`</div></div></div>`)
 	return b.String()
 }
 

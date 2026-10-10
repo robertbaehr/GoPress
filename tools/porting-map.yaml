@@ -3649,6 +3649,35 @@
   api: n/a
   notes: "P5.89 — unit coverage for post-excerpt polish"
 
+# P5.90: polish core/comments + comment-template (+ comments-title).
+- prefix: wp-includes/blocks/comments.php#p5.90
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.90
+  api: internal
+  notes: "P5.90 — textAlign/className/legacy wp-block-post-comments; empty without post"
+
+- prefix: wp-includes/blocks/comment-template.php#p5.90
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.90
+  api: internal
+  notes: "P5.90 — comment_order desc, Parent nesting, even/odd/depth classes, className wrapper"
+
+- prefix: wp-includes/blocks/comments-title.php#p5.90
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.90
+  api: internal
+  notes: "P5.90 — showPostTitle + textAlign/className/level"
+
+- prefix: internal/blocks/comment_template_polish_test.go
+  go: internal/blocks/comment_template_polish_test.go
+  status: partial
+  task: P5.90
+  api: n/a
+  notes: "P5.90 — unit coverage for comments/comment-template polish"
+
 # P5.87: core/post-title + post-content polish (level/textAlign/link/tagName/reentrancy).
 - prefix: wp-includes/blocks/post-title.php#p5.87
   go: internal/blocks/query.go
