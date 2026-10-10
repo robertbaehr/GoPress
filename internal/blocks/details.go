@@ -12,10 +12,10 @@ var (
 	reImgTagOpen = regexp.MustCompile(`(?i)<img\b([^>]*)>`)
 )
 
-// renderDetails renders core/details (P5.67).
-// Prefers saved markup; ensures wp-block-details + align/className/name;
-// honors showContent → open; synthesizes from summary + inner blocks;
-// sets fetchpriority="low" on nested imgs when collapsed (showContent false).
+// renderDetails renders core/details (P5.67 / P5.99).
+// Prefers saved markup; ensures wp-block-details + align/className/name/anchor;
+// honors showContent → open (strips open when collapsed); synthesizes from
+// summary + inner blocks; sets fetchpriority="low" on nested imgs when collapsed.
 func (e *Env) renderDetails(block Block) string {
 	e = e.ensure()
 	out := e.renderSaved(block)
@@ -46,8 +46,15 @@ func polishDetailsMarkup(out string, attrs map[string]any) string {
 	if name := strings.TrimSpace(attrString(attrs, "name")); name != "" {
 		out = ensureRootAttribute(out, "name", name)
 	}
+	// P5.99: block supports.anchor → id on the details root.
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
+		out = ensureRootAttribute(out, "id", anchor)
+	}
 	if attrBool(attrs, "showContent") {
 		out = ensureRootBooleanAttribute(out, "open")
+	} else {
+		// P5.99: collapsed details must not keep a stale open attribute from saved HTML.
+		out = stripRootBooleanAttribute(out, "open")
 	}
 	return out
 }
@@ -75,6 +82,11 @@ func synthesizeDetailsBlock(e *Env, block Block) string {
 	if name := strings.TrimSpace(attrString(block.Attrs, "name")); name != "" {
 		b.WriteString(` name="`)
 		b.WriteString(html.EscapeString(name))
+		b.WriteString(`"`)
+	}
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		b.WriteString(` id="`)
+		b.WriteString(html.EscapeString(anchor))
 		b.WriteString(`"`)
 	}
 	if attrBool(block.Attrs, "showContent") {
@@ -204,6 +216,52 @@ func ensureRootBooleanAttribute(htmlFragment, attr string) string {
 		return htmlFragment
 	}
 	open = strings.TrimRight(open, " \t") + " " + attr
+	if selfClose {
+		open += " /"
+	}
+	return htmlFragment[:i+1] + open + htmlFragment[i+1+end:]
+}
+
+// stripRootBooleanAttribute removes a boolean attribute (e.g. open) from the root tag (P5.99).
+func stripRootBooleanAttribute(htmlFragment, attr string) string {
+	if htmlFragment == "" || attr == "" {
+		return htmlFragment
+	}
+	i := strings.Index(htmlFragment, "<")
+	if i < 0 {
+		return htmlFragment
+	}
+	rest := htmlFragment[i+1:]
+	if rest == "" || rest[0] == '/' || rest[0] == '!' {
+		return htmlFragment
+	}
+	end := strings.Index(rest, ">")
+	if end < 0 {
+		return htmlFragment
+	}
+	open := rest[:end]
+	selfClose := strings.HasSuffix(open, "/")
+	if selfClose {
+		open = strings.TrimSpace(strings.TrimSuffix(open, "/"))
+	}
+	// Remove attr="…" / attr='…' forms first, then bare boolean token.
+	tagged := "<" + open + ">"
+	tagged = stripHTMLAttribute(tagged, attr)
+	open = strings.TrimPrefix(tagged, "<")
+	open = strings.TrimSuffix(open, ">")
+	lower := strings.ToLower(open)
+	token := strings.ToLower(attr)
+	fields := strings.Fields(open)
+	outFields := make([]string, 0, len(fields))
+	for _, f := range fields {
+		fl := strings.ToLower(f)
+		if fl == token || strings.HasPrefix(fl, token+"=") {
+			continue
+		}
+		outFields = append(outFields, f)
+	}
+	_ = lower
+	open = strings.Join(outFields, " ")
 	if selfClose {
 		open += " /"
 	}

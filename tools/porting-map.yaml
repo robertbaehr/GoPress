@@ -3535,9 +3535,9 @@ wp-login.php#language-switcher-post
 - prefix: wp-includes/blocks/details.php
   go: internal/blocks/details.go
   status: partial
-  task: P5.67
+  task: P5.99
   api: internal
-  notes: "P5.67 polish — showContent/open, name, align/className, synthesize, fetchpriority=low when collapsed"
+  notes: "P5.99 — strip open when collapsed, anchor id, color supports; P5.67 showContent/name/align/synthesize/fetchpriority=low"
 
 # P5.68: polish core/html + core/freeform (content attr fallback / Classic).
 - prefix: wp-includes/blocks/html
