@@ -302,6 +302,15 @@ func TestPrivacyEraseConfirmUIPolish(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cookie: %v", err)
 	}
+	t.Cleanup(func() {
+		q, args, err := c.DB.Prepare(
+			"DELETE FROM "+c.DB.Posts()+" WHERE post_type = %s AND post_title = %s",
+			"user_request", "erase-ui@example.com",
+		)
+		if err == nil {
+			_, _ = c.DB.Exec(q, args...)
+		}
+	})
 	form := strings.NewReader("username_or_email_for_privacy_request=erase-ui%40example.com&send_confirmation_email=1")
 	req := httptest.NewRequest(http.MethodPost, "/wp-admin/erase-personal-data.php", form)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
