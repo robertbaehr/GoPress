@@ -30,6 +30,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/options-writing.php":
 		h.requireLogin(w, r, c, h.serveOptionsWriting)
 		return true
+	case "/wp-admin/options-reading.php":
+		h.requireLogin(w, r, c, h.serveOptionsReading)
+		return true
 	case "/wp-admin/plugins.php":
 		h.requireLogin(w, r, c, h.servePlugins)
 		return true
@@ -291,6 +294,53 @@ func (h *Handler) serveOptionsWriting(w http.ResponseWriter, r *http.Request, c 
 	}
 	b.WriteString(">Standard</option>\n")
 	b.WriteString("</select></td>\n</tr>\n")
+	b.WriteString("</table>\n")
+	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Save Changes\"></p>\n")
+	b.WriteString("</form>\n</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
+// serveOptionsReading is the Settings → Reading screen stub (P7.14).
+func (h *Handler) serveOptionsReading(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	showOnFront := optionString(c, "show_on_front", "posts")
+	postsPerPage := optionString(c, "posts_per_page", "10")
+	blogPublic := optionString(c, "blog_public", "1")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Reading Settings &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap\">\n")
+	b.WriteString("<h1>Reading Settings</h1>\n")
+	b.WriteString("<p class=\"description\">GoPress reading settings stub — save lands with options.php.</p>\n")
+	b.WriteString("<form method=\"post\" action=\"options.php\">\n")
+	b.WriteString("<table class=\"form-table\" role=\"presentation\">\n")
+	b.WriteString("<tr>\n<th scope=\"row\">Your homepage displays</th>\n<td><fieldset>\n")
+	b.WriteString("<label><input name=\"show_on_front\" type=\"radio\" value=\"posts\"")
+	if showOnFront != "page" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString("> Your latest posts</label><br>\n")
+	b.WriteString("<label><input name=\"show_on_front\" type=\"radio\" value=\"page\"")
+	if showOnFront == "page" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString("> A static page</label>\n")
+	b.WriteString("</fieldset></td>\n</tr>\n")
+	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"posts_per_page\">Blog pages show at most</label></th>\n")
+	b.WriteString("<td><input name=\"posts_per_page\" type=\"number\" step=\"1\" min=\"1\" id=\"posts_per_page\" value=\"")
+	b.WriteString(html.EscapeString(postsPerPage))
+	b.WriteString("\" class=\"small-text\"> posts</td>\n</tr>\n")
+	b.WriteString("<tr>\n<th scope=\"row\">Search engine visibility</th>\n<td>\n")
+	b.WriteString("<label for=\"blog_public\"><input name=\"blog_public\" type=\"checkbox\" id=\"blog_public\" value=\"0\"")
+	if blogPublic == "0" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString("> Discourage search engines from indexing this site</label>\n")
+	b.WriteString("</td>\n</tr>\n")
 	b.WriteString("</table>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Save Changes\"></p>\n")
 	b.WriteString("</form>\n</div>\n</body>\n</html>\n")
