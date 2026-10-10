@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-// applySupports injects basic color/spacing/typography/layout/shadow/position classes and styles
-// from block attributes onto the rendered root element (P5.10 / P5.19 / P5.27–P5.30).
+// applySupports injects basic color/spacing/typography/layout/shadow/position/border classes and styles
+// from block attributes onto the rendered root element (P5.10 / P5.19 / P5.27–P5.31).
 func applySupports(htmlFragment string, attrs map[string]any, blockName string) string {
 	if htmlFragment == "" {
 		return htmlFragment
@@ -51,6 +51,16 @@ func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string
 			styles = mergeCSSDecls(styles, "text-shadow:"+cssValue("var:preset|text-shadow|"+ts))
 		}
 
+		// Top-level borderColor preset (P5.31 / wp_register_border_support).
+		if bc, ok := attrs["borderColor"].(string); ok && strings.TrimSpace(bc) != "" {
+			slug := slugifySupport(bc)
+			classes = appendUnique(classes, "has-border-color")
+			if slug != "" {
+				classes = appendUnique(classes, "has-"+slug+"-border-color")
+			}
+			styles = mergeCSSDecls(styles, "border-color:"+cssValue("var:preset|color|"+strings.TrimSpace(bc)))
+		}
+
 		if style, ok := attrs["style"].(map[string]any); ok {
 			if color, ok := style["color"].(map[string]any); ok {
 				if bg, ok := color["background"].(string); ok && bg != "" {
@@ -66,6 +76,14 @@ func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string
 			if typo, ok := style["typography"].(map[string]any); ok {
 				if ta, ok := typo["textAlign"].(string); ok && ta != "" {
 					classes = appendUnique(classes, "has-text-align-"+slugifySupport(ta))
+				}
+			}
+			if border, ok := style["border"].(map[string]any); ok {
+				if color := borderScalar(border["color"]); color != "" {
+					classes = appendUnique(classes, "has-border-color")
+					if slug := presetColorSlug(color); slug != "" {
+						classes = appendUnique(classes, "has-"+slug+"-border-color")
+					}
 				}
 			}
 			styles = mergeCSSDecls(styles, CompileStyle(style))
@@ -99,6 +117,20 @@ func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string
 // duotoneFromStyle extracts WP duotone support (P5.22): class wp-duotone-{slug}
 // plus an inline filter declaration for preset / unset values.
 // Attr paths: style.color.duotone (legacy) and style.filter.duotone (current).
+// presetColorSlug extracts a color slug from var:preset|color|slug or CSS var form.
+func presetColorSlug(attr string) string {
+	attr = strings.TrimSpace(attr)
+	if strings.HasPrefix(attr, "var:preset|color|") {
+		return slugifySupport(strings.TrimPrefix(attr, "var:preset|color|"))
+	}
+	const prefix = "var(--wp--preset--color--"
+	if strings.HasPrefix(attr, prefix) && strings.HasSuffix(attr, ")") {
+		inner := strings.TrimSuffix(strings.TrimPrefix(attr, prefix), ")")
+		return slugifySupport(inner)
+	}
+	return ""
+}
+
 func duotoneFromStyle(style map[string]any) (filterID, filterCSS string) {
 	attr := duotoneAttr(style)
 	if attr == nil {

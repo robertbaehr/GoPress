@@ -162,28 +162,80 @@ func CompileCSSRules(rules []struct {
 	return b.String()
 }
 
+// borderStyles mirrors WP border block support / style engine (P5.31).
 func borderStyles(border map[string]any) []string {
+	if border == nil {
+		return nil
+	}
 	var out []string
-	if color, ok := border["color"].(string); ok && color != "" {
-		out = append(out, "border-color:"+cssValue(color))
+	if v := borderScalar(border["color"]); v != "" {
+		out = append(out, "border-color:"+cssValue(v))
 	}
-	if width, ok := border["width"].(string); ok && width != "" {
-		out = append(out, "border-width:"+cssValue(width))
+	if v := borderScalar(border["width"]); v != "" {
+		out = append(out, "border-width:"+cssValue(maybePx(v)))
 	}
-	if style, ok := border["style"].(string); ok && style != "" {
-		out = append(out, "border-style:"+cssValue(style))
+	if v := borderScalar(border["style"]); v != "" {
+		out = append(out, "border-style:"+cssValue(v))
 	}
-	if radius, ok := border["radius"].(string); ok && radius != "" {
-		out = append(out, "border-radius:"+cssValue(radius))
-	} else if radiusMap, ok := border["radius"].(map[string]any); ok {
+	switch radius := border["radius"].(type) {
+	case string:
+		if radius != "" {
+			out = append(out, "border-radius:"+cssValue(maybePx(radius)))
+		}
+	case float64:
+		out = append(out, "border-radius:"+cssValue(maybePx(fmt.Sprintf("%g", radius))))
+	case map[string]any:
 		for _, corner := range []string{"topLeft", "topRight", "bottomRight", "bottomLeft"} {
-			if v, ok := radiusMap[corner].(string); ok && v != "" {
+			if v := borderScalar(radius[corner]); v != "" {
 				prop := "border-" + camelToKebab(corner) + "-radius"
-				out = append(out, prop+":"+cssValue(v))
+				out = append(out, prop+":"+cssValue(maybePx(v)))
 			}
 		}
 	}
+	// Individual sides: style.border.{top|right|bottom|left}.{color|width|style}.
+	for _, side := range []string{"top", "right", "bottom", "left"} {
+		sideMap, ok := border[side].(map[string]any)
+		if !ok || sideMap == nil {
+			continue
+		}
+		if v := borderScalar(sideMap["color"]); v != "" {
+			out = append(out, "border-"+side+"-color:"+cssValue(v))
+		}
+		if v := borderScalar(sideMap["width"]); v != "" {
+			out = append(out, "border-"+side+"-width:"+cssValue(maybePx(v)))
+		}
+		if v := borderScalar(sideMap["style"]); v != "" {
+			out = append(out, "border-"+side+"-style:"+cssValue(v))
+		}
+	}
 	return out
+}
+
+func borderScalar(v any) string {
+	switch t := v.(type) {
+	case string:
+		return strings.TrimSpace(t)
+	case float64:
+		return fmt.Sprintf("%g", t)
+	case nil:
+		return ""
+	default:
+		return strings.TrimSpace(fmt.Sprint(t))
+	}
+}
+
+// maybePx appends px to bare numeric border widths/radii (WP unitless legacy).
+func maybePx(v string) string {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return v
+	}
+	for _, r := range v {
+		if (r < '0' || r > '9') && r != '.' && r != '-' {
+			return v
+		}
+	}
+	return v + "px"
 }
 
 func camelToKebab(s string) string {
