@@ -94,6 +94,86 @@ func TestUserCanGoldenCaps(t *testing.T) {
 	}
 }
 
+func TestMapMetaCapEditPostOwnership(t *testing.T) {
+	if os.Getenv("GOPRESS_SKIP_DB") != "" {
+		t.Skip("GOPRESS_SKIP_DB set")
+	}
+	c, err := wp.Boot(context.Background(), testBootConfig())
+	if err != nil {
+		t.Skipf("Boot unavailable: %v", err)
+	}
+	defer c.DB.Close()
+
+	author, err := c.GetUserBy("login", "author")
+	if err != nil || author == nil {
+		t.Fatalf("author: %v", err)
+	}
+	editor, err := c.GetUserBy("login", "editor")
+	if err != nil || editor == nil {
+		t.Fatalf("editor: %v", err)
+	}
+
+	// Find a published post owned by admin (user 1) and one owned by author if any.
+	adminPost, err := wp.GetPost(c, wp.QueryArgs{PostType: "post", PostStatus: "publish", PostsPerPage: 1})
+	if err != nil || adminPost == nil {
+		t.Fatalf("admin post: %v", err)
+	}
+	// Author cannot edit someone else's published post without edit_others_posts.
+	if adminPost.Author != author.ID {
+		if c.UserCan(author, "edit_post", adminPost.ID) {
+			t.Fatalf("author should not edit_post %d (author=%d)", adminPost.ID, adminPost.Author)
+		}
+		if c.UserCan(author, "delete_post", adminPost.ID) {
+			t.Fatalf("author should not delete_post %d", adminPost.ID)
+		}
+	}
+	// Editor has edit_others_posts and can edit.
+	if !c.UserCan(editor, "edit_post", adminPost.ID) {
+		t.Fatalf("editor should edit_post %d", adminPost.ID)
+	}
+	if !c.UserCan(editor, "delete_post", adminPost.ID) {
+		t.Fatalf("editor should delete_post %d", adminPost.ID)
+	}
+
+	// Author can edit/delete their own draft.
+	ownDraft, err := wp.GetPost(c, wp.QueryArgs{
+		PostType: "post", PostStatus: "draft", PostsPerPage: 50,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_ = ownDraft
+	posts, err := wp.GetPosts(c, wp.QueryArgs{PostType: "post", PostStatus: "draft", PostsPerPage: 50})
+	if err != nil {
+		t.Fatal(err)
+	}
+	var found bool
+	for _, p := range posts {
+		if p.Author == author.ID {
+			found = true
+			if !c.UserCan(author, "edit_post", p.ID) {
+				t.Fatalf("author should edit own draft %d", p.ID)
+			}
+			if !c.UserCan(author, "delete_post", p.ID) {
+				t.Fatalf("author should delete own draft %d", p.ID)
+			}
+			caps := c.MapMetaCap("edit_post", author.ID, p.ID)
+			if len(caps) != 1 || caps[0] != "edit_posts" {
+				t.Fatalf("own draft map_meta_cap=%v want [edit_posts]", caps)
+			}
+			break
+		}
+	}
+	if !found {
+		t.Fatal("no draft owned by author in fixture")
+	}
+
+	// Missing object ID denies.
+	if c.UserCan(author, "edit_post") {
+		t.Fatal("edit_post without ID should deny")
+	}
+}
+
 func TestPHPUnserializeRolesRoundTrip(t *testing.T) {
 	// Smoke: parse a tiny PHP array like wp_capabilities.
 	// Exported via Roles path; exercise through InitUser on a synthetic meta cache.

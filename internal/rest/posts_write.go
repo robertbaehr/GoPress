@@ -225,14 +225,6 @@ func (s *Server) updatePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		})
 		return
 	}
-	if !c.UserCan(c.CurrentUser, "edit_posts") {
-		writeJSON(w, http.StatusForbidden, map[string]any{
-			"code":    "rest_cannot_edit",
-			"message": "Sorry, you are not allowed to edit this post.",
-			"data":    map[string]any{"status": 403},
-		})
-		return
-	}
 	existing, err := loadPostRow(c, "post", id)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
@@ -247,6 +239,14 @@ func (s *Server) updatePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 			"code":    "rest_post_invalid_id",
 			"message": "Invalid post ID.",
 			"data":    map[string]any{"status": 404},
+		})
+		return
+	}
+	if !c.UserCan(c.CurrentUser, "edit_post", id) {
+		writeJSON(w, http.StatusForbidden, map[string]any{
+			"code":    "rest_cannot_edit",
+			"message": "Sorry, you are not allowed to edit this post.",
+			"data":    map[string]any{"status": 403},
 		})
 		return
 	}
@@ -314,14 +314,6 @@ func (s *Server) deletePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		})
 		return
 	}
-	if !c.UserCan(c.CurrentUser, "delete_posts") {
-		writeJSON(w, http.StatusForbidden, map[string]any{
-			"code":    "rest_cannot_delete",
-			"message": "Sorry, you are not allowed to delete this post.",
-			"data":    map[string]any{"status": 403},
-		})
-		return
-	}
 	existing, err := loadPostRow(c, "post", id)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
@@ -336,6 +328,14 @@ func (s *Server) deletePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 			"code":    "rest_post_invalid_id",
 			"message": "Invalid post ID.",
 			"data":    map[string]any{"status": 404},
+		})
+		return
+	}
+	if !c.UserCan(c.CurrentUser, "delete_post", id) {
+		writeJSON(w, http.StatusForbidden, map[string]any{
+			"code":    "rest_cannot_delete",
+			"message": "Sorry, you are not allowed to delete this post.",
+			"data":    map[string]any{"status": 403},
 		})
 		return
 	}

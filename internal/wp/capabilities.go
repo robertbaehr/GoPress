@@ -146,12 +146,17 @@ func (r *Roles) InitUser(user *User, meta *Meta) error {
 }
 
 // MapMetaCap returns primitive caps required for cap (subset + GoPress denials).
-func (r *Roles) MapMetaCap(cap string, userID int64) []string {
+// Object IDs (e.g. post ID for edit_post) are accepted for API compatibility but
+// ignored here — use Context.MapMetaCap for ownership-aware meta caps (P1.13).
+func (r *Roles) MapMetaCap(cap string, userID int64, _ ...int64) []string {
 	_ = userID
 	if deniedCaps[cap] {
 		return []string{"do_not_allow"}
 	}
 	switch cap {
+	case "edit_post", "edit_page", "delete_post", "delete_page":
+		// Without a Context/post lookup, meta caps cannot be resolved safely.
+		return []string{"do_not_allow"}
 	case "manage_links":
 		if r != nil && r.Options != nil {
 			v := r.Options.GetOption("link_manager_enabled", "0")
@@ -169,14 +174,19 @@ func (r *Roles) MapMetaCap(cap string, userID int64) []string {
 }
 
 // UserCan reports whether user has capability (current_user_can / user_can subset).
-func (r *Roles) UserCan(user *User, cap string) bool {
+// For object meta caps (edit_post / delete_post), prefer Context.UserCan with an ID.
+func (r *Roles) UserCan(user *User, cap string, args ...int64) bool {
 	if user == nil || cap == "" {
 		return false
 	}
 	if user.AllCaps == nil {
 		return false
 	}
-	required := r.MapMetaCap(cap, user.ID)
+	required := r.MapMetaCap(cap, user.ID, args...)
+	return userHasCaps(user, required)
+}
+
+func userHasCaps(user *User, required []string) bool {
 	for _, need := range required {
 		if need == "do_not_allow" {
 			return false
@@ -184,22 +194,118 @@ func (r *Roles) UserCan(user *User, cap string) bool {
 		if need == "exist" {
 			continue
 		}
-		if !user.AllCaps[need] {
+		if user == nil || !user.AllCaps[need] {
 			return false
 		}
 	}
 	return true
 }
 
+// MapMetaCap maps a capability to primitives, including edit_post/delete_post
+// ownership based on post_author (P1.13).
+func (c *Context) MapMetaCap(cap string, userID int64, args ...int64) []string {
+	if c == nil || c.Roles == nil {
+		return []string{"do_not_allow"}
+	}
+	switch cap {
+	case "edit_post", "edit_page":
+		return c.mapEditDeletePost(cap, userID, args...)
+	case "delete_post", "delete_page":
+		return c.mapEditDeletePost(cap, userID, args...)
+	default:
+		return c.Roles.MapMetaCap(cap, userID, args...)
+	}
+}
+
+func (c *Context) mapEditDeletePost(cap string, userID int64, args ...int64) []string {
+	if len(args) == 0 || args[0] <= 0 {
+		return []string{"do_not_allow"}
+	}
+	post, err := GetPostByID(c, args[0])
+	if err != nil || post == nil {
+		return []string{"do_not_allow"}
+	}
+	isEdit := strings.HasPrefix(cap, "edit_")
+	// Revisions: edit maps to the parent post; delete is never allowed.
+	if post.Type == "revision" {
+		if !isEdit {
+			return []string{"do_not_allow"}
+		}
+		if post.Parent <= 0 {
+			return []string{"do_not_allow"}
+		}
+		parent, err := GetPostByID(c, post.Parent)
+		if err != nil || parent == nil {
+			return []string{"do_not_allow"}
+		}
+		post = parent
+	}
+	caps := postTypeCaps(post.Type)
+	owns := post.Author != 0 && post.Author == userID
+	if owns {
+		if isEdit {
+			if post.Status == "publish" || post.Status == "future" {
+				return []string{caps.editPublished}
+			}
+			return []string{caps.edit}
+		}
+		if post.Status == "publish" || post.Status == "future" {
+			return []string{caps.deletePublished}
+		}
+		return []string{caps.delete}
+	}
+	// Editing / deleting someone else's post.
+	if isEdit {
+		out := []string{caps.editOthers}
+		if post.Status == "publish" || post.Status == "future" {
+			out = append(out, caps.editPublished)
+		} else if post.Status == "private" {
+			out = append(out, caps.editPrivate)
+		}
+		return out
+	}
+	out := []string{caps.deleteOthers}
+	if post.Status == "publish" || post.Status == "future" {
+		out = append(out, caps.deletePublished)
+	} else if post.Status == "private" {
+		out = append(out, caps.deletePrivate)
+	}
+	return out
+}
+
+type postCapSet struct {
+	edit, editOthers, editPublished, editPrivate         string
+	delete, deleteOthers, deletePublished, deletePrivate string
+}
+
+func postTypeCaps(postType string) postCapSet {
+	if postType == "page" {
+		return postCapSet{
+			edit: "edit_pages", editOthers: "edit_others_pages",
+			editPublished: "edit_published_pages", editPrivate: "edit_private_pages",
+			delete: "delete_pages", deleteOthers: "delete_others_pages",
+			deletePublished: "delete_published_pages", deletePrivate: "delete_private_pages",
+		}
+	}
+	return postCapSet{
+		edit: "edit_posts", editOthers: "edit_others_posts",
+		editPublished: "edit_published_posts", editPrivate: "edit_private_posts",
+		delete: "delete_posts", deleteOthers: "delete_others_posts",
+		deletePublished: "delete_published_posts", deletePrivate: "delete_private_posts",
+	}
+}
+
 // UserCan is a Context helper: ensures caps are loaded, then checks.
-func (c *Context) UserCan(user *User, cap string) bool {
+// Optional args are object IDs (e.g. post ID for edit_post / delete_post).
+func (c *Context) UserCan(user *User, cap string, args ...int64) bool {
 	if c == nil || c.Roles == nil || user == nil {
 		return false
 	}
 	if user.AllCaps == nil {
 		_ = c.Roles.InitUser(user, c.Meta)
 	}
-	return c.Roles.UserCan(user, cap)
+	required := c.MapMetaCap(cap, user.ID, args...)
+	return userHasCaps(user, required)
 }
 
 // GetUserBy loads a user and initializes role/capability maps when Roles/Meta exist.

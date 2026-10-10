@@ -129,6 +129,32 @@ func GetPost(c *Context, args QueryArgs) (*Post, error) {
 	return &posts[0], nil
 }
 
+// GetPostByID loads a post row by ID with no type/status filter (get_post).
+func GetPostByID(c *Context, id int64) (*Post, error) {
+	if c == nil || c.DB == nil || id <= 0 {
+		return nil, nil
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT ID, post_author, post_date, post_date_gmt, post_modified, post_modified_gmt, "+
+			"post_name, post_status, post_type, post_title, post_content, post_excerpt, "+
+			"guid, comment_status, ping_status, post_password, post_parent, menu_order FROM "+
+			c.DB.Posts()+" WHERE ID = %d LIMIT 1",
+		id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	row, err := c.DB.GetRow(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	if row == nil {
+		return nil, nil
+	}
+	p := postFromRow(row)
+	return &p, nil
+}
+
 func postFromRow(row map[string]any) Post {
 	return Post{
 		ID:            rowInt64(row["ID"]),
