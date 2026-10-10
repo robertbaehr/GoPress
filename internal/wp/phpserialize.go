@@ -156,3 +156,79 @@ func phpMapStringBool(v any) map[string]bool {
 	}
 	return out
 }
+
+// phpSerialize encodes v as PHP serialize (arrays, strings, ints, bools, null, floats).
+func phpSerialize(v any) (string, error) {
+	var b strings.Builder
+	if err := phpWrite(&b, v); err != nil {
+		return "", err
+	}
+	return b.String(), nil
+}
+
+func phpWrite(b *strings.Builder, v any) error {
+	switch t := v.(type) {
+	case nil:
+		b.WriteString("N;")
+		return nil
+	case bool:
+		if t {
+			b.WriteString("b:1;")
+		} else {
+			b.WriteString("b:0;")
+		}
+		return nil
+	case int:
+		b.WriteString("i:")
+		b.WriteString(strconv.FormatInt(int64(t), 10))
+		b.WriteByte(';')
+		return nil
+	case int64:
+		b.WriteString("i:")
+		b.WriteString(strconv.FormatInt(t, 10))
+		b.WriteByte(';')
+		return nil
+	case float64:
+		b.WriteString("d:")
+		b.WriteString(strconv.FormatFloat(t, 'g', -1, 64))
+		b.WriteByte(';')
+		return nil
+	case string:
+		b.WriteString("s:")
+		b.WriteString(strconv.Itoa(len(t)))
+		b.WriteString(":\"")
+		b.WriteString(t)
+		b.WriteString("\";")
+		return nil
+	case map[string]any:
+		b.WriteString("a:")
+		b.WriteString(strconv.Itoa(len(t)))
+		b.WriteString(":{")
+		for k, val := range t {
+			if err := phpWrite(b, k); err != nil {
+				return err
+			}
+			if err := phpWrite(b, val); err != nil {
+				return err
+			}
+		}
+		b.WriteByte('}')
+		return nil
+	case map[any]any:
+		b.WriteString("a:")
+		b.WriteString(strconv.Itoa(len(t)))
+		b.WriteString(":{")
+		for k, val := range t {
+			if err := phpWrite(b, k); err != nil {
+				return err
+			}
+			if err := phpWrite(b, val); err != nil {
+				return err
+			}
+		}
+		b.WriteByte('}')
+		return nil
+	default:
+		return fmt.Errorf("php serialize: unsupported type %T", v)
+	}
+}
