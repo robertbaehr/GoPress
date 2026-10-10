@@ -2344,6 +2344,21 @@
   api: internal
   notes: "P5.65 — ensure wp-block-image/align*; width/height/aspectRatio/scale/title/isDecorative/linkClass"
 
+# P5.66: polish core/table (hasFixedLayout, align, stripes, synthesize head/body/foot).
+- prefix: wp-includes/blocks/table
+  go: internal/blocks/table.go
+  status: partial
+  task: P5.66
+  api: internal
+  notes: "P5.66 — figure.wp-block-table; has-fixed-layout; align/className; synthesize from attrs"
+
+- prefix: wp-includes/blocks/table/block.json
+  go: internal/blocks/table.go
+  status: partial
+  task: P5.66
+  api: internal
+  notes: "P5.66 — hasFixedLayout default true + caption/head/body/foot"
+
 # P5.49: core/embed provider/type/align classes + URL inference.
 - prefix: wp-includes/blocks/embed
   go: internal/blocks/embed.go

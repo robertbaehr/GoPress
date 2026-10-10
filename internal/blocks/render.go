@@ -76,7 +76,9 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderListItem(block)
 	case "core/heading":
 		out = e.renderHeading(block)
-	case "core/html", "core/table",
+	case "core/table":
+		out = e.renderTable(block)
+	case "core/html",
 		"core/details":
 		out = e.renderSaved(block)
 	case "core/code":
