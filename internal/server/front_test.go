@@ -63,6 +63,13 @@ func TestFrontHomeRendersBlogname(t *testing.T) {
 	if strings.Contains(body, `<ul class="posts">`) {
 		t.Fatalf("shim home should not render when a block template exists")
 	}
+	// P5.13: home pattern expands core/query + post-template with published posts.
+	if !strings.Contains(body, `wp-block-post-template`) {
+		t.Fatalf("expected query post-template on home, got %q", body)
+	}
+	if !strings.Contains(body, "Hello world") && !strings.Contains(body, "Hello World") {
+		t.Fatalf("expected a post title from query loop, got %q", body)
+	}
 	if ct := rec.Header().Get("Content-Type"); !strings.Contains(ct, "text/html") {
 		t.Fatalf("content-type=%q", ct)
 	}

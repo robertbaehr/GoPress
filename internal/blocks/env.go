@@ -12,11 +12,26 @@ type Env struct {
 	// ListPages returns fallback navigation links (published pages).
 	ListPages func() []NavLink
 
+	// ListPosts returns posts for core/query / core/post-template (P5.13).
+	ListPosts func(QueryLoopArgs) []QueryPost
+
+	// LoadPattern returns serialized markup for a core/pattern slug.
+	LoadPattern func(slug string) (string, bool)
+
 	// seenPart tracks template-part slugs currently being rendered (cycle guard).
 	seenPart map[string]bool
 
 	// seenNav tracks navigation post refs currently being rendered (cycle guard).
 	seenNav map[int64]bool
+
+	// currentPost is the post in scope for post-title/content/date (P5.13).
+	currentPost *QueryPost
+
+	// queryArgs is set while rendering a core/query tree.
+	queryArgs QueryLoopArgs
+
+	// queryHasPosts is set by post-template for query-no-results.
+	queryHasPosts bool
 }
 
 // NavLink is a simple navigation item (label + URL).

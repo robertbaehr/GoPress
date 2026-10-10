@@ -75,6 +75,24 @@ func (e *Env) RenderBlock(block Block) string {
 			return ""
 		}
 		out = `<ul class="wp-block-page-list">` + items + `</ul>`
+	case "core/query":
+		return e.renderQuery(block)
+	case "core/post-template":
+		return e.renderPostTemplate(block)
+	case "core/query-no-results":
+		return e.renderQueryNoResults(block)
+	case "core/pattern":
+		return e.renderPattern(block)
+	case "core/post-title":
+		out = e.renderPostTitle(block)
+	case "core/post-content":
+		out = e.renderPostContent(block)
+	case "core/post-excerpt":
+		out = e.renderPostExcerpt(block)
+	case "core/post-date":
+		out = e.renderPostDate(block)
+	case "core/post-featured-image":
+		return e.renderPostFeaturedImage(block)
 	default:
 		// Unknown blocks: prefer saved markup with nested reconstruction.
 		if len(block.InnerBlocks) > 0 || len(block.InnerContent) > 0 {
