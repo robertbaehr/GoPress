@@ -30,12 +30,23 @@ func GetPostClass(c *Context, postID int64) []string {
 
 // AppendStickyClass adds "sticky" when postID is in sticky_posts (home query).
 func AppendStickyClass(c *Context, postID int64, classes []string) []string {
-	for _, id := range stickyPostIDs(c) {
-		if id == postID {
-			return append(classes, "sticky")
-		}
+	if IsSticky(c, postID) {
+		return append(classes, "sticky")
 	}
 	return classes
+}
+
+// IsSticky reports whether postID is in the sticky_posts option (is_sticky, P7.67).
+func IsSticky(c *Context, postID int64) bool {
+	if postID <= 0 {
+		return false
+	}
+	for _, id := range stickyPostIDs(c) {
+		if id == postID {
+			return true
+		}
+	}
+	return false
 }
 
 func objectTermClasses(c *Context, postID int64) []string {

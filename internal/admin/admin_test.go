@@ -442,9 +442,59 @@ func TestEditPostsQuickEditStub(t *testing.T) {
 		`name="post_title"`,
 		`name="_status"`,
 		`id="inline_`,
+		`name="sticky"`,
+		`Make this post sticky`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("expected quick-edit stub %q, got %q", want, body[:min(800, len(body))])
+		}
+	}
+}
+
+func TestEditPostsStickyToggle(t *testing.T) {
+	c := bootOrSkip(t)
+	// Stick hello-world (id=1) so it appears in the first page of edit.php.
+	prev, _ := c.Options.GetOption("sticky_posts", "").(string)
+	if _, err := c.Options.UpdateOption("sticky_posts", "a:1:{i:0;i:1;}", "yes"); err != nil {
+		t.Fatalf("set sticky_posts: %v", err)
+	}
+	t.Cleanup(func() {
+		if prev != "" {
+			_, _ = c.Options.UpdateOption("sticky_posts", prev, "yes")
+		} else {
+			_, _ = c.Options.UpdateOption("sticky_posts", "a:0:{}", "yes")
+		}
+	})
+
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `id="post-1"`) {
+		t.Fatalf("expected post-1 row: %q", body[:min(600, len(body))])
+	}
+	if !strings.Contains(body, `id="inline_1"`) {
+		t.Fatalf("expected inline_1: %q", body[:min(600, len(body))])
+	}
+	if !strings.Contains(body, `<div class="sticky">sticky</div>`) {
+		t.Fatalf("expected sticky inline value: %q", body[:min(1200, len(body))])
+	}
+	if !strings.Contains(body, `class="post-state">Sticky`) {
+		t.Fatalf("expected Sticky post-state: %q", body[:min(1200, len(body))])
+	}
+	if !strings.Contains(body, `name="sticky" value="sticky"`) {
+		t.Fatalf("expected sticky checkbox: %q", body[:min(1200, len(body))])
+	}
+	if !strings.Contains(body, `sticky type-post`) && !strings.Contains(body, ` type-post sticky`) && !strings.Contains(body, ` hentry sticky`) {
+		// Row class should include sticky.
+		if !strings.Contains(body, `class="iedit author-self status-publish type-post hentry sticky"`) {
+			t.Fatalf("expected sticky row class: %q", body[:min(1200, len(body))])
 		}
 	}
 }
