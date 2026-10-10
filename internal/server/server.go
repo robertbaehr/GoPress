@@ -53,6 +53,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.serveStatic(w, r, path)
 		return
 	}
+	if path == "/wp-cron.php" {
+		c := s.requestContext(w, r)
+		wp.ServeCron(w, r, c)
+		return
+	}
 	if path == "/wp-login.php" {
 		c := s.requestContext(w, r)
 		h := s.Login
