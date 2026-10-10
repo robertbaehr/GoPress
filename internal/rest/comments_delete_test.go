@@ -25,11 +25,11 @@ func TestRESTCommentDeleteTrashAndForce(t *testing.T) {
 	ck := &http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue}
 
 	id, err := wp.InsertComment(c, wp.CommentInsert{
-		PostID:  1,
-		Author:  "Delete Me",
-		Content: "rest comment delete target",
+		PostID:   1,
+		Author:   "Delete Me",
+		Content:  "rest comment delete target",
 		Approved: "1",
-		UserID:  user.ID,
+		UserID:   user.ID,
 	})
 	if err != nil || id <= 0 {
 		t.Fatalf("insert: %v id=%d", err, id)

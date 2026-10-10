@@ -1575,6 +1575,21 @@
   api: n/a
   notes: "P10.54 — summarize code/preformatted/verse, themes REST activate, plugins bulk, mime types, RDF generator, interim success, e2e"
 
+# P10.56: e2e user-new.php createuser + STATUS/PORTING refresh after P5.64–P6.26.
+- prefix: tests/e2e/user-new.spec.js
+  go: tests/e2e/user-new.spec.js
+  status: partial
+  task: P10.56
+  api: n/a
+  notes: "P10.56 — Playwright coverage for user-new.php POST createuser (P7.64)"
+
+- prefix: docs/STATUS.md#P10.56
+  go: docs/STATUS.md
+  status: partial
+  task: P10.56
+  api: n/a
+  notes: "P10.56 — summarize heading/paragraph, comments DELETE, comment reply, upload_dir, atom self, SSL cookie, e2e"
+
 # P10.55: e2e users REST DELETE force+reassign + STATUS/PORTING refresh after P5.63–P8.16.
 - prefix: tests/e2e/users-delete.spec.js
   go: tests/e2e/users-delete.spec.js
