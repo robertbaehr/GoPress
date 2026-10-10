@@ -1322,6 +1322,13 @@
   task: P5.48
   api: internal
 
+# P5.49: core/embed provider/type/align classes + URL inference.
+- prefix: wp-includes/blocks/embed
+  go: internal/blocks/embed.go
+  status: partial
+  task: P5.49
+  api: internal
+
 - prefix: wp-includes/blocks/
   go: internal/blocks
   status: partial

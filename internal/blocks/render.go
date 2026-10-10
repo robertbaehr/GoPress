@@ -298,31 +298,6 @@ func attrLength(v any) string {
 	}
 }
 
-func (e *Env) renderEmbed(block Block) string {
-	if block.InnerHTML != "" {
-		return e.renderSaved(block)
-	}
-	url, _ := block.Attrs["url"].(string)
-	if url == "" {
-		return ""
-	}
-	esc := html.EscapeString(url)
-	caption, _ := block.Attrs["caption"].(string)
-	var b strings.Builder
-	b.WriteString(`<figure class="wp-block-embed"><div class="wp-block-embed__wrapper"><a href="`)
-	b.WriteString(esc)
-	b.WriteString(`">`)
-	b.WriteString(esc)
-	b.WriteString(`</a></div>`)
-	if caption != "" {
-		b.WriteString(`<figcaption class="wp-element-caption">`)
-		b.WriteString(html.EscapeString(caption))
-		b.WriteString(`</figcaption>`)
-	}
-	b.WriteString(`</figure>`)
-	return b.String()
-}
-
 // renderSaved reconstructs block HTML from innerContent + nested blocks.
 // Leaf blocks simply return InnerHTML.
 func (e *Env) renderSaved(block Block) string {
