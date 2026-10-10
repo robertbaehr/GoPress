@@ -2152,6 +2152,21 @@
   api: internal
   notes: "P5.67 polish — showContent/open, name, align/className, synthesize, fetchpriority=low when collapsed"
 
+# P5.68: polish core/html + core/freeform (content attr fallback / Classic).
+- prefix: wp-includes/blocks/html
+  go: internal/blocks/html_freeform.go
+  status: done
+  task: P5.68
+  api: n/a
+  notes: "P5.68 — prefer saved markup; content attribute for self-closing html"
+
+- prefix: wp-includes/blocks/freeform
+  go: internal/blocks/html_freeform.go
+  status: done
+  task: P5.68
+  api: n/a
+  notes: "P5.68 — Classic freeform: content attr, else saved/inner HTML"
+
 - prefix: wp-includes/blocks/footnotes.php
   go: internal/blocks/footnotes.go
   status: partial
