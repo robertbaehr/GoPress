@@ -561,3 +561,13 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.112: missing tag archive 404 headers.
+- id: front-tag-foo-404
+  role: anon
+  method: GET
+  path: /tag/foo/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

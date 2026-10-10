@@ -6433,3 +6433,11 @@ wp-login.php#language-switcher-post
   task: P10.111
   api: n/a
   notes: "P10.111 — regenerate porting-status after stacked P5.100–P10.110"
+
+# P10.112: expand diff corpus after P5.101–P8.30.
+- prefix: tests/corpus#p10.112
+  go: tests/corpus
+  status: done
+  task: P10.112
+  api: n/a
+  notes: "P10.112 — preformatted route; comments/search/statuses; login redirect_to; tag 404; 462/462"
