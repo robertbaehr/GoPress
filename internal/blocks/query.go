@@ -65,23 +65,49 @@ func (e *Env) renderQuery(block Block) string {
 	return `<div class="wp-block-query">` + inner + `</div>`
 }
 
-// renderQueryTitle renders core/query-title (search heading subset, P3.21).
+// renderQueryTitle renders core/query-title (search/archive/post-type, P3.21 / P5.71).
 func (e *Env) renderQueryTitle(block Block) string {
 	e = e.ensure()
 	titleType, _ := block.Attrs["type"].(string)
 	if titleType == "" {
 		titleType = "search"
 	}
-	level := 1
-	if n, ok := block.Attrs["level"].(float64); ok && n >= 1 && n <= 6 {
-		level = int(n)
+	// level 0 → <p>; 1–6 → <hN> (block.json / render_block_core_query_title, P5.71).
+	tag := "h1"
+	if block.Attrs != nil {
+		if _, ok := block.Attrs["level"]; ok {
+			level := attrInt64(block.Attrs, "level")
+			switch {
+			case level == 0:
+				tag = "p"
+			case level >= 1 && level <= 6:
+				tag = "h" + strconv.FormatInt(level, 10)
+			}
+		}
 	}
-	tag := fmt.Sprintf("h%d", level)
+	showPrefix := true
+	if block.Attrs != nil {
+		if _, ok := block.Attrs["showPrefix"]; ok {
+			showPrefix = attrBool(block.Attrs, "showPrefix")
+		}
+	}
+	showSearchTerm := true
+	if block.Attrs != nil {
+		if _, ok := block.Attrs["showSearchTerm"]; ok {
+			showSearchTerm = attrBool(block.Attrs, "showSearchTerm")
+		}
+	}
+
+	classes := "wp-block-query-title"
+	if ta, ok := block.Attrs["textAlign"].(string); ok && strings.TrimSpace(ta) != "" {
+		classes += " has-text-align-" + strings.TrimSpace(ta)
+	}
+
 	text := ""
 	switch titleType {
 	case "search":
 		term := strings.TrimSpace(e.SearchQuery)
-		if term == "" {
+		if term == "" || !showSearchTerm {
 			text = "Search results"
 		} else {
 			// Match core/query-title + TT5: curly quotes around the term (P3.36).
@@ -96,14 +122,29 @@ func (e *Env) renderQueryTitle(block Block) string {
 		if i := strings.Index(title, ": "); i > 0 {
 			label := title[:i+2]
 			rest := title[i+2:]
-			return fmt.Sprintf(`<%s class="wp-block-query-title">%s<span>%s</span></%s>`,
-				tag, html.EscapeString(label), html.EscapeString(rest), tag)
+			if !showPrefix {
+				return fmt.Sprintf(`<%s class="%s">%s</%s>`,
+					tag, html.EscapeString(classes), html.EscapeString(rest), tag)
+			}
+			return fmt.Sprintf(`<%s class="%s">%s<span>%s</span></%s>`,
+				tag, html.EscapeString(classes), html.EscapeString(label), html.EscapeString(rest), tag)
 		}
 		text = title
+	case "post-type":
+		// Subset: use ArchiveTitle when set (singular post type label), else "Post".
+		name := strings.TrimSpace(e.ArchiveTitle)
+		if name == "" {
+			name = "Post"
+		}
+		if showPrefix {
+			text = "Post Type: \u201C" + name + "\u201D"
+		} else {
+			text = name
+		}
 	default:
 		return ""
 	}
-	return fmt.Sprintf(`<%s class="wp-block-query-title">%s</%s>`, tag, html.EscapeString(text), tag)
+	return fmt.Sprintf(`<%s class="%s">%s</%s>`, tag, html.EscapeString(classes), html.EscapeString(text), tag)
 }
 
 func (e *Env) renderPostTemplate(block Block) string {
