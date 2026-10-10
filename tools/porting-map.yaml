@@ -520,6 +520,13 @@
   task: P2.37
   api: exported
 
+# P2.38: wp_array_slice_assoc.
+- prefix: wp-includes/functions.php#wp_array_slice_assoc
+  go: internal/wp/array_slice_assoc.go
+  status: partial
+  task: P2.38
+  api: exported
+
 - prefix: wp-includes/class-wp-list-util.php
   go: internal/wp/list_pluck.go
   status: partial
