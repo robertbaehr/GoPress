@@ -3743,8 +3743,14 @@ func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, c *wp.Context, n
 }
 
 // serveErasePersonalData is a privacy tools stub (P8.2) with erasure (P8.5),
-// confirm (P8.8), confirm UI polish (P8.13), and user_request create (P8.21).
+// confirm (P8.8), confirm UI polish (P8.13), user_request create (P8.21),
+// and cap/status-view deepen (P7.97).
 func (h *Handler) serveErasePersonalData(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	// P7.97: erase-personal-data.php requires erase_others_personal_data + delete_users.
+	if !canErasePersonalDataAdmin(c) {
+		http.Error(w, "Sorry, you are not allowed to erase personal data on this site.\n", http.StatusForbidden)
+		return
+	}
 	note := "This tool helps site owners comply with local laws and regulations by deleting or anonymizing known data for a given user."
 	pendingEmail := ""
 	if r.Method == http.MethodPost {
@@ -3818,10 +3824,15 @@ func (h *Handler) serveErasePersonalData(w http.ResponseWriter, r *http.Request,
 			}
 		}
 	}
-	h.servePrivacyErasePage(w, c, note, pendingEmail)
+	filterStatus := ""
+	if r != nil {
+		filterStatus = strings.TrimSpace(r.URL.Query().Get("filter-status"))
+	}
+	h.servePrivacyErasePage(w, r, c, note, pendingEmail, filterStatus)
 }
 
-func (h *Handler) servePrivacyErasePage(w http.ResponseWriter, c *wp.Context, note, pendingEmail string) {
+func (h *Handler) servePrivacyErasePage(w http.ResponseWriter, r *http.Request, c *wp.Context, note, pendingEmail, filterStatus string) {
+	_ = r
 	blogname := optionString(c, "blogname", "GoPress")
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
@@ -3862,9 +3873,18 @@ func (h *Handler) servePrivacyErasePage(w http.ResponseWriter, c *wp.Context, no
 	b.WriteString("</td></tr>\n</table>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Send Request\"></p>\n")
 	b.WriteString("</div>\n</form>\n")
-	b.WriteString(renderErasePrivacyRequestsTable(c, pendingEmail))
+	b.WriteString(renderErasePrivacyRequestsTable(c, pendingEmail, filterStatus))
 	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
+}
+
+// canErasePersonalDataAdmin mirrors erase-personal-data.php capability checks (P7.97).
+func canErasePersonalDataAdmin(c *wp.Context) bool {
+	if c == nil || c.CurrentUser == nil {
+		return false
+	}
+	return c.UserCan(c.CurrentUser, "erase_others_personal_data") &&
+		c.UserCan(c.CurrentUser, "delete_users")
 }
 
 // serveOptionsPrivacy is the Settings → Privacy screen (P8.2 / P8.7 / P7.41).

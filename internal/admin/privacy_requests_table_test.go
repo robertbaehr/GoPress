@@ -32,6 +32,7 @@ func TestPrivacyRequestsTableColumns(t *testing.T) {
 	for _, want := range []string{
 		"privacy-requests",
 		"requests-table",
+		"subsubsub",
 		"column-email",
 		"column-status",
 		"column-created_timestamp",
@@ -45,6 +46,30 @@ func TestPrivacyRequestsTableColumns(t *testing.T) {
 		if !strings.Contains(htmlOut, want) {
 			t.Fatalf("missing %q in %q", want, trunc(htmlOut, 500))
 		}
+	}
+}
+
+func TestPrivacyRequestsTableFilterStatus(t *testing.T) {
+	table := admin.PrivacyRequestsTable{
+		RequestType: "remove_personal_data",
+		AdminURL:    "/wp-admin/erase-personal-data.php",
+		Rows: []admin.PrivacyRequest{
+			{ID: 10, Email: "a@example.com", Status: "request-pending"},
+			{ID: 11, Email: "b@example.com", Status: "request-completed"},
+		},
+	}
+	out := table.RenderHTMLWithFilter("request-pending")
+	if !strings.Contains(out, "a@example.com") {
+		t.Fatalf("expected pending row: %q", trunc(out, 400))
+	}
+	if strings.Contains(out, "b@example.com") {
+		t.Fatalf("completed row should be filtered out: %q", trunc(out, 400))
+	}
+	if !strings.Contains(out, `value="10"`) {
+		t.Fatalf("expected real request id checkbox: %q", trunc(out, 400))
+	}
+	if !strings.Contains(out, "filter-status=request-pending") {
+		t.Fatalf("expected status view link: %q", trunc(out, 400))
 	}
 }
 
