@@ -121,6 +121,12 @@
   task: P1.11
   api: exported
 
+- prefix: wp-includes/interactivity-api/
+  go: internal/wp/interactivity.go
+  status: partial
+  task: P5.21
+  api: partial
+
 - prefix: wp-includes/formatting.php
   go: internal/wp/formatting.go
   status: done

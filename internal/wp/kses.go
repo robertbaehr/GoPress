@@ -380,6 +380,15 @@ func ksesAttrAllowed(name string, rules AttrRule) bool {
 	if _, ok := rules[name]; ok {
 		return true
 	}
+	// Interactivity API directives (data-wp-*) always pass through (P5.21).
+	if strings.HasPrefix(name, "data-wp-") {
+		for _, r := range name[len("data-wp-"):] {
+			if !(unicode.IsLetter(r) || unicode.IsDigit(r) || r == '_' || r == '-') {
+				return false
+			}
+		}
+		return true
+	}
 	if strings.HasPrefix(name, "data-") {
 		if _, ok := rules["data-*"]; ok {
 			for _, r := range name[5:] {
