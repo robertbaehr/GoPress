@@ -230,12 +230,138 @@ func (s *Server) updateBlockTemplate(w http.ResponseWriter, r *http.Request, c *
 	writeJSON(w, http.StatusOK, updated)
 }
 
+// deleteBlockTemplate handles DELETE /wp/v2/templates/{id} and template-parts (P4.73).
+func (s *Server) deleteBlockTemplate(w http.ResponseWriter, r *http.Request, c *wp.Context, postType, id string) {
+	if !canEditTemplates(c) {
+		writeTemplatesCannotEdit(w, c)
+		return
+	}
+	id = strings.Trim(id, "/")
+	existing := findBlockTemplate(c, postType, id)
+	if existing == nil {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"code":    "rest_template_not_found",
+			"message": "No templates exist with that id.",
+			"data":    map[string]any{"status": 404},
+		})
+		return
+	}
+	if existing.Source != "custom" || existing.WPID <= 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_invalid_template",
+			"message": "Templates based on theme files can't be removed.",
+			"data":    map[string]any{"status": 400},
+		})
+		return
+	}
+	force := r.URL.Query().Get("force") == "true"
+	if force {
+		prev := *existing
+		if err := hardDeletePost(c, existing.WPID); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{
+				"code":    "rest_cannot_delete",
+				"message": err.Error(),
+				"data":    map[string]any{"status": 500},
+			})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"deleted":  true,
+			"previous": prev,
+		})
+		return
+	}
+	if existing.Status == "trash" {
+		writeJSON(w, http.StatusGone, map[string]any{
+			"code":    "rest_template_already_trashed",
+			"message": "The template has already been deleted.",
+			"data":    map[string]any{"status": 410},
+		})
+		return
+	}
+	now := time.Now().UTC().Format("2006-01-02 15:04:05")
+	if err := updateTypedPostStatus(c, existing.WPID, postType, "trash", now); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_cannot_delete",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	existing.Status = "trash"
+	w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
+	writeJSON(w, http.StatusOK, existing)
+}
+
+func updateTypedPostStatus(c *wp.Context, id int64, postType, status, modified string) error {
+	if c == nil || c.DB == nil || id <= 0 {
+		return fmt.Errorf("invalid status update")
+	}
+	q, args, err := c.DB.Prepare(
+		"UPDATE "+c.DB.Posts()+
+			" SET post_status = %s, post_modified = %s, post_modified_gmt = %s WHERE ID = %d AND post_type = %s",
+		status, modified, modified, id, postType,
+	)
+	if err != nil {
+		return err
+	}
+	_, err = c.DB.Exec(q, args...)
+	return err
+}
+
 func findBlockTemplate(c *wp.Context, postType, id string) *BlockTemplate {
 	for _, t := range listBlockTemplates(c, postType) {
 		if t.ID == id || t.Slug == id {
 			cp := t
 			return &cp
 		}
+	}
+	// Also resolve custom templates in trash (needed for DELETE / trash→force).
+	if bt := findTrashedBlockTemplate(c, postType, id); bt != nil {
+		return bt
+	}
+	return nil
+}
+
+func findTrashedBlockTemplate(c *wp.Context, postType, id string) *BlockTemplate {
+	if c == nil {
+		return nil
+	}
+	stylesheet := wp.ActiveStylesheet(c)
+	rows, err := wp.GetPosts(c, wp.QueryArgs{
+		PostType:     postType,
+		PostStatus:   "trash",
+		PostsPerPage: 100,
+	})
+	if err != nil {
+		return nil
+	}
+	for _, row := range rows {
+		tplID := stylesheet + "//" + row.Name
+		if tplID != id && row.Name != id {
+			continue
+		}
+		title := row.Title
+		if title == "" {
+			title = humanizeSlug(row.Name)
+		}
+		bt := BlockTemplate{
+			ID:           tplID,
+			Theme:        stylesheet,
+			Slug:         row.Name,
+			Source:       "custom",
+			Type:         postType,
+			Title:        map[string]string{"raw": title, "rendered": title},
+			Content:      map[string]any{"raw": row.Content, "block_version": 1},
+			Status:       "trash",
+			WPID:         row.ID,
+			HasThemeFile: false,
+			IsCustom:     postType == "wp_template",
+		}
+		if postType == "wp_template_part" {
+			bt.Area = inferTemplatePartArea(row.Name)
+		}
+		return &bt
 	}
 	return nil
 }

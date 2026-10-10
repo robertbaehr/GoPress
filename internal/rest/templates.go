@@ -101,6 +101,8 @@ func (s *Server) serveBlockTemplateItem(w http.ResponseWriter, r *http.Request, 
 		})
 	case http.MethodPost, http.MethodPut, http.MethodPatch:
 		s.updateBlockTemplate(w, r, c, postType, id)
+	case http.MethodDelete:
+		s.deleteBlockTemplate(w, r, c, postType, id)
 	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
