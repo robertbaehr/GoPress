@@ -1459,6 +1459,15 @@
   task: P3.27
   api: n/a
 
+# P3.77: comments RSS2 get_comment_guid + In reply to prefix.
+- prefix: wp-includes/feed-rss2-comments.php#p3.77
+  go: internal/server/front.go
+  status: partial
+  task: P3.77
+  api: n/a
+  notes: "P3.77 — comment GUID from post GUID; get_comment_text reply prefix; preserve HTML in content:encoded"
+
+
 # P3.34 / P10.33: /comments/feed/atom/ Atom comments feed + e2e.
 - prefix: wp-includes/feed-atom-comments.php
   go: internal/server/front.go

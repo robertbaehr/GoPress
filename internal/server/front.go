@@ -220,9 +220,11 @@ func (f *Front) renderCommentsFeedRSS2(w http.ResponseWriter, r *http.Request, c
 	for _, cm := range comments {
 		post, _ := wp.GetPostByID(c, cm.PostID)
 		postTitle := ""
+		storedGUID := ""
 		link := fmt.Sprintf("%s/?p=%d#comment-%d", home, cm.PostID, cm.ID)
 		if post != nil {
 			postTitle = post.Title
+			storedGUID = post.GUID
 			if plink := postPermalink(home, *post); plink != "" {
 				link = strings.TrimRight(plink, "/") + "/#comment-" + strconv.FormatInt(cm.ID, 10)
 			}
@@ -232,9 +234,11 @@ func (f *Front) renderCommentsFeedRSS2(w http.ResponseWriter, r *http.Request, c
 			author = "Anonymous"
 		}
 		title := "Comment on " + postTitle + " by " + author
-		guid := fmt.Sprintf("%s/?p=%d#comment-%d", home, cm.PostID, cm.ID)
-		contentHTML := commentFeedContent(cm.Content)
-		descText := commentFeedDescription(cm.Content)
+		// P3.77: get_comment_guid = get_the_guid(post) + #comment-ID.
+		guid := commentFeedGUID(c, home, cm.PostID, cm.ID, storedGUID)
+		text := commentFeedGetText(c, home, cm)
+		contentHTML := commentFeedContent(text)
+		descText := commentFeedDescription(text)
 
 		b.WriteString("\t<item>\n")
 		b.WriteString("\t\t<title>\n")
@@ -332,9 +336,11 @@ func (f *Front) renderCommentsFeedAtom(w http.ResponseWriter, r *http.Request, c
 		postTitle := ""
 		postLink := fmt.Sprintf("%s/?p=%d", home, cm.PostID)
 		postGUID := postLink
+		storedGUID := ""
 		link := fmt.Sprintf("%s/?p=%d#comment-%d", home, cm.PostID, cm.ID)
 		if post != nil {
 			postTitle = post.Title
+			storedGUID = post.GUID
 			if plink := postPermalink(home, *post); plink != "" {
 				postLink = strings.TrimRight(plink, "/") + "/"
 				link = strings.TrimRight(plink, "/") + "/#comment-" + strconv.FormatInt(cm.ID, 10)
@@ -348,8 +354,8 @@ func (f *Front) renderCommentsFeedAtom(w http.ResponseWriter, r *http.Request, c
 			author = "Anonymous"
 		}
 		title := "Comment on " + postTitle + " by " + author
-		guid := fmt.Sprintf("%s/?p=%d#comment-%d", home, cm.PostID, cm.ID)
-		contentHTML := commentFeedContent(cm.Content)
+		guid := commentFeedGUID(c, home, cm.PostID, cm.ID, storedGUID)
+		contentHTML := commentFeedContent(commentFeedGetText(c, home, cm))
 
 		b.WriteString("\t<entry>\n")
 		b.WriteString("\t\t<title>\n")
@@ -414,16 +420,49 @@ func (f *Front) renderCommentsFeedAtom(w http.ResponseWriter, r *http.Request, c
 	_, _ = w.Write([]byte(b.String()))
 }
 
+// commentFeedGUID mirrors get_comment_guid (P3.77).
+func commentFeedGUID(c *wp.Context, home string, postID, commentID int64, storedGUID string) string {
+	base := feedItemGUID(c, home, postID, storedGUID)
+	if base == "" {
+		base = fmt.Sprintf("%s/?p=%d", home, postID)
+	}
+	return base + "#comment-" + strconv.FormatInt(commentID, 10)
+}
+
+// commentFeedGetText mirrors get_comment_text for comment feeds (P3.77):
+// child comments get an "In reply to {author}." HTML prefix.
+func commentFeedGetText(c *wp.Context, home string, cm wp.Comment) string {
+	text := cm.Content
+	if cm.Parent <= 0 {
+		return text
+	}
+	parent, err := wp.GetCommentByID(c, cm.Parent)
+	if err != nil || parent == nil {
+		return text
+	}
+	parentLink := fmt.Sprintf("%s/?p=%d#comment-%d", home, parent.PostID, parent.ID)
+	if post, _ := wp.GetPostByID(c, parent.PostID); post != nil {
+		if plink := postPermalink(home, *post); plink != "" {
+			parentLink = strings.TrimRight(plink, "/") + "/#comment-" + strconv.FormatInt(parent.ID, 10)
+		}
+	}
+	name := parent.Author
+	if name == "" {
+		name = "Anonymous"
+	}
+	prefix := "In reply to <a href=\"" + html.EscapeString(parentLink) + "\">" + html.EscapeString(name) + "</a>."
+	return prefix + "\n\n" + text
+}
+
 func commentFeedContent(raw string) string {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
 		return ""
 	}
-	// Minimal the_content-ish: paragraphs + br for newlines.
-	escaped := html.EscapeString(raw)
-	escaped = strings.ReplaceAll(escaped, "\r\n", "\n")
-	escaped = strings.ReplaceAll(escaped, "\r", "\n")
-	parts := strings.Split(escaped, "\n\n")
+	// comment_text / wpautop: preserve existing HTML (reply prefix, anchors).
+	raw = strings.ReplaceAll(raw, "\r\n", "\n")
+	raw = strings.ReplaceAll(raw, "\r", "\n")
+	parts := strings.Split(raw, "\n\n")
 	var b strings.Builder
 	for _, p := range parts {
 		p = strings.TrimSpace(p)
@@ -439,7 +478,7 @@ func commentFeedContent(raw string) string {
 }
 
 func commentFeedDescription(raw string) string {
-	// comment_text_rss: HTML-escaped plain text in CDATA.
+	// comment_text_rss: HTML-escaped text in CDATA (entities for tags/quotes).
 	raw = strings.TrimSpace(raw)
 	raw = strings.ReplaceAll(raw, "\r\n", "\n")
 	raw = strings.ReplaceAll(raw, "\r", "\n")
