@@ -444,6 +444,12 @@
   task: P7.23
   api: n/a
 
+- prefix: wp-admin/post.php
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.24
+  api: n/a
+
 - prefix: wp-admin/options-writing.php
   go: internal/admin/admin.go
   status: partial
