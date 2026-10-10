@@ -75,6 +75,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/import.php":
 		h.requireLogin(w, r, c, h.serveImport)
 		return true
+	case "/wp-admin/site-health.php":
+		h.requireLogin(w, r, c, h.serveSiteHealth)
+		return true
 	default:
 		return false
 	}
@@ -464,6 +467,29 @@ func listNavMenus(c *wp.Context) ([]navMenuTerm, error) {
 		})
 	}
 	return out, nil
+}
+
+// serveSiteHealth is the Tools → Site Health screen stub (P8.3).
+func (h *Handler) serveSiteHealth(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Site Health &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui site-health\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap health-check-header\" id=\"site-health\">\n")
+	b.WriteString("<h1>Site Health</h1>\n")
+	b.WriteString("<p>GoPress site-health stub — async REST checks land later.</p>\n")
+	b.WriteString("<div class=\"health-check-body\">\n")
+	b.WriteString("<div class=\"site-health-progress-wrapper\">\n")
+	b.WriteString("<div class=\"site-health-progress\"><span class=\"screen-reader-text\">Good</span></div>\n")
+	b.WriteString("</div>\n")
+	b.WriteString("<ul class=\"health-check-accordion\">\n")
+	b.WriteString("<li class=\"health-check-accordion-item\"><h2>Status</h2><p>All stub checks report good.</p></li>\n")
+	b.WriteString("</ul>\n</div>\n</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
 }
 
 // serveImport is the Tools → Import screen stub (P7.11).
