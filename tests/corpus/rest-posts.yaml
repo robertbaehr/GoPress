@@ -1966,3 +1966,76 @@
   compare: headers
   nonce: null
 
+# P10.100: template revisions + menus + term-description rest_route header cases.
+- id: rest-route-templates-index-revisions
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/templates/twentytwentyfive//index/revisions
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-template-parts-header-revisions
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/template-parts/twentytwentyfive//header/revisions
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-templates-index-revisions
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/templates/twentytwentyfive//index/revisions
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-block-types-term-description
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/term-description
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-menus
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/menus
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-menu-locations
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/menu-locations
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+
+- id: rest-json-template-parts-header-revisions
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/template-parts/twentytwentyfive//header/revisions
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-block-types-query-title
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/query-title
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
