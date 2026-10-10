@@ -1262,6 +1262,21 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P2.92 — map[string]string/map[any]any; numeric key order; RecursiveKSortInPlace"
 
+# P2.93: WP_Error + is_wp_error.
+- prefix: wp-includes/class-wp-error.php
+  go: internal/wp/error.go
+  status: partial
+  task: P2.93
+  api: exported
+  notes: "P2.93 — WPError add/get/remove/has_errors; Error() interface"
+
+- prefix: wp-includes/load.php#is_wp_error
+  go: internal/wp/error.go
+  status: partial
+  task: P2.93
+  api: exported
+  notes: "P2.93 — IsWPError / IsWPErrorWithHooks fires is_wp_error_instance"
+
 # P2.46: array_key_first / array_key_last helpers.
 - prefix: wp-includes/compat.php#array_key_first
   go: internal/wp/array_key.go
