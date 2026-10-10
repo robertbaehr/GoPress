@@ -3,27 +3,43 @@ package rest
 import (
 	"fmt"
 	"net/http"
+	"path"
 	"strings"
 
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// Media is a minimal wp/v2 media (attachment) object.
+// Media is a wp/v2 media (attachment) object (view context).
 type Media struct {
 	ID            int64          `json:"id"`
 	Date          string         `json:"date"`
+	DateGMT       string         `json:"date_gmt"`
+	GUID          RenderedString `json:"guid"`
+	Modified      string         `json:"modified"`
+	ModifiedGMT   string         `json:"modified_gmt"`
 	Slug          string         `json:"slug"`
 	Status        string         `json:"status"`
 	Type          string         `json:"type"`
 	Link          string         `json:"link"`
 	Title         RenderedString `json:"title"`
 	Author        int64          `json:"author"`
+	FeaturedMedia int64          `json:"featured_media"`
 	CommentStatus string         `json:"comment_status"`
 	PingStatus    string         `json:"ping_status"`
-	MimeType      string         `json:"mime_type"`
+	Template      string         `json:"template"`
+	Meta          any            `json:"meta"`
+	ClassList     []string       `json:"class_list"`
+	Description   RenderedString `json:"description"`
+	Caption       RenderedString `json:"caption"`
+	AltText       string         `json:"alt_text"`
 	MediaType     string         `json:"media_type"`
+	MimeType      string         `json:"mime_type"`
+	MediaDetails  any            `json:"media_details"`
+	Post          *int64         `json:"post"`
 	SourceURL     string         `json:"source_url"`
-	GUID          RenderedString `json:"guid"`
+	Filename      string         `json:"filename"`
+	Filesize      any            `json:"filesize,omitempty"`
+	Links         map[string]any `json:"_links"`
 }
 
 func (s *Server) serveMedia(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -165,9 +181,9 @@ func listMediaPaged(c *wp.Context, limit, page int) ([]Media, error) {
 	}
 	offset := (page - 1) * limit
 	q, args, err := c.DB.Prepare(
-		"SELECT ID, post_author, post_date, post_name, post_status, post_title, post_mime_type, guid, "+
-			"comment_status, ping_status FROM "+c.DB.Posts()+
-			" WHERE post_type = %s AND post_status = %s ORDER BY post_date DESC LIMIT %d OFFSET %d",
+		"SELECT ID, post_author, post_date, post_date_gmt, post_modified, post_modified_gmt, post_name, post_status, "+
+			"post_title, post_content, post_excerpt, post_mime_type, guid, post_parent, comment_status, ping_status FROM "+
+			c.DB.Posts()+" WHERE post_type = %s AND post_status = %s ORDER BY post_date DESC LIMIT %d OFFSET %d",
 		"attachment", "inherit", limit, offset,
 	)
 	if err != nil {
@@ -180,7 +196,7 @@ func listMediaPaged(c *wp.Context, limit, page int) ([]Media, error) {
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	out := make([]Media, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, mediaFromRow(row, home))
+		out = append(out, mediaFromRow(c, row, home))
 	}
 	return out, nil
 }
@@ -214,9 +230,9 @@ func getMediaByID(c *wp.Context, id int64) (*Media, error) {
 		return nil, nil
 	}
 	q, args, err := c.DB.Prepare(
-		"SELECT ID, post_author, post_date, post_name, post_status, post_title, post_mime_type, guid, "+
-			"comment_status, ping_status FROM "+c.DB.Posts()+
-			" WHERE ID = %d AND post_type = %s AND post_status = %s LIMIT 1",
+		"SELECT ID, post_author, post_date, post_date_gmt, post_modified, post_modified_gmt, post_name, post_status, "+
+			"post_title, post_content, post_excerpt, post_mime_type, guid, post_parent, comment_status, ping_status FROM "+
+			c.DB.Posts()+" WHERE ID = %d AND post_type = %s AND post_status = %s LIMIT 1",
 		id, "attachment", "inherit",
 	)
 	if err != nil {
@@ -230,32 +246,253 @@ func getMediaByID(c *wp.Context, id int64) (*Media, error) {
 		return nil, nil
 	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
-	m := mediaFromRow(row, home)
+	m := mediaFromRow(c, row, home)
 	return &m, nil
 }
 
-func mediaFromRow(row map[string]any, home string) Media {
+func mediaFromRow(c *wp.Context, row map[string]any, home string) Media {
 	id := asInt64(row["ID"])
 	slug := asString(row["post_name"])
 	guid := asString(row["guid"])
 	mime := asString(row["post_mime_type"])
 	title := asString(row["post_title"])
-	return Media{
+	excerpt := asString(row["post_excerpt"])
+	content := asString(row["post_content"])
+	parent := asInt64(row["post_parent"])
+	sourceURL := sourceURLFromGUID(guid, home)
+	if u := wp.GetAttachmentURL(c, id); u != "" {
+		sourceURL = u
+	}
+	attached := attachmentRelativeFile(c, id)
+	filename := path.Base(attached)
+	if filename == "." || filename == "/" {
+		filename = path.Base(sourceURL)
+	}
+	details := buildMediaDetails(c, id, mime, sourceURL, attached)
+	filesize := mediaFilesize(details)
+	alt := ""
+	if c != nil && c.Meta != nil {
+		alt = asString(c.Meta.GetMetadata(wp.MetaPost, id, "_wp_attachment_image_alt", true))
+	}
+	var postParent *int64
+	if parent > 0 {
+		p := parent
+		postParent = &p
+	}
+	m := Media{
 		ID:            id,
 		Date:          mysqlDateToREST(asString(row["post_date"])),
+		DateGMT:       mysqlDateToREST(asString(row["post_date_gmt"])),
+		GUID:          RenderedString{Rendered: guid},
+		Modified:      mysqlDateToREST(asString(row["post_modified"])),
+		ModifiedGMT:   mysqlDateToREST(asString(row["post_modified_gmt"])),
 		Slug:          slug,
 		Status:        asString(row["post_status"]),
 		Type:          "attachment",
 		Link:          mediaPermalink(home, slug, id),
 		Title:         RenderedString{Rendered: title},
 		Author:        asInt64(row["post_author"]),
+		FeaturedMedia: 0,
 		CommentStatus: asString(row["comment_status"]),
 		PingStatus:    asString(row["ping_status"]),
-		MimeType:      mime,
-		MediaType:     mediaTypeFromMime(mime),
-		SourceURL:     sourceURLFromGUID(guid, home),
-		GUID:          RenderedString{Rendered: guid},
+		Template:      "",
+		Meta:          []any{},
+		ClassList: []string{
+			fmt.Sprintf("post-%d", id),
+			"attachment",
+			"type-attachment",
+			"status-inherit",
+			"hentry",
+		},
+		Description:  RenderedString{Rendered: mediaDescriptionHTML(mime, sourceURL, title, content, details)},
+		Caption:      RenderedString{Rendered: mediaCaptionHTML(excerpt, mime, sourceURL)},
+		AltText:      alt,
+		MediaType:    mediaTypeFromMime(mime),
+		MimeType:     mime,
+		MediaDetails: details,
+		Post:         postParent,
+		SourceURL:    sourceURL,
+		Filename:     filename,
+		Filesize:     filesize,
+		Links:        buildMediaLinks(home, id, asInt64(row["post_author"])),
 	}
+	return m
+}
+
+func buildMediaLinks(home string, id, author int64) map[string]any {
+	restRoot := strings.TrimRight(home, "/") + "/wp-json/wp/v2"
+	return map[string]any{
+		"self": []map[string]any{{
+			"href":        fmt.Sprintf("%s/media/%d", restRoot, id),
+			"targetHints": map[string]any{"allow": []string{"GET"}},
+		}},
+		"collection": []map[string]any{{"href": restRoot + "/media"}},
+		"about":      []map[string]any{{"href": restRoot + "/types/attachment"}},
+		"author": []map[string]any{{
+			"embeddable": true,
+			"href":       fmt.Sprintf("%s/users/%d", restRoot, author),
+		}},
+		"replies": []map[string]any{{
+			"embeddable": true,
+			"href":       fmt.Sprintf("%s/comments?post=%d", restRoot, id),
+		}},
+	}
+}
+
+func attachmentRelativeFile(c *wp.Context, id int64) string {
+	if c == nil || c.Meta == nil || id <= 0 {
+		return ""
+	}
+	file, _ := c.Meta.GetMetadata(wp.MetaPost, id, "_wp_attached_file", true).(string)
+	return strings.TrimSpace(file)
+}
+
+func buildMediaDetails(c *wp.Context, id int64, mime, sourceURL, attached string) any {
+	raw := ""
+	if c != nil && c.Meta != nil {
+		raw = asString(c.Meta.GetMetadata(wp.MetaPost, id, "_wp_attachment_metadata", true))
+	}
+	if strings.TrimSpace(raw) == "" {
+		return map[string]any{}
+	}
+	parsed, err := wp.UnserializePHP(raw)
+	if err != nil || parsed == nil {
+		return map[string]any{}
+	}
+	details, ok := phpToJSONMap(parsed)
+	if !ok {
+		return map[string]any{}
+	}
+	// Enrich sizes with source_url and mime_type (WP REST prepare_item_for_response).
+	uploadsBase := strings.TrimRight(wp.GetUploadDir(c).Baseurl, "/")
+	dir := path.Dir(attached)
+	if dir == "." {
+		dir = ""
+	}
+	sizesRaw, hasSizes := details["sizes"]
+	sizesMap, _ := sizesRaw.(map[string]any)
+	if !hasSizes || sizesMap == nil {
+		sizesMap = map[string]any{}
+	}
+	if len(sizesMap) == 0 {
+		// Non-image metadata may omit sizes; WP emits {}.
+		if !strings.HasPrefix(strings.ToLower(mime), "image/") {
+			details["sizes"] = map[string]any{}
+			return details
+		}
+	}
+	for sizeName, sizeVal := range sizesMap {
+		sm, ok := sizeVal.(map[string]any)
+		if !ok {
+			continue
+		}
+		if mt, ok := sm["mime-type"]; ok {
+			sm["mime_type"] = mt
+			delete(sm, "mime-type")
+		}
+		fileName := asString(sm["file"])
+		if fileName != "" {
+			if dir != "" {
+				sm["source_url"] = uploadsBase + "/" + dir + "/" + fileName
+			} else {
+				sm["source_url"] = uploadsBase + "/" + fileName
+			}
+		}
+		sizesMap[sizeName] = sm
+	}
+	if strings.HasPrefix(strings.ToLower(mime), "image/") && sourceURL != "" {
+		full := map[string]any{
+			"file":       path.Base(sourceURL),
+			"mime_type":  mime,
+			"source_url": sourceURL,
+		}
+		if w, ok := details["width"]; ok {
+			full["width"] = w
+		}
+		if h, ok := details["height"]; ok {
+			full["height"] = h
+		}
+		sizesMap["full"] = full
+	}
+	if len(sizesMap) == 0 {
+		details["sizes"] = map[string]any{}
+	} else {
+		details["sizes"] = sizesMap
+	}
+	// image_meta.keywords must be a JSON array when empty.
+	if im, ok := details["image_meta"].(map[string]any); ok {
+		if kw, exists := im["keywords"]; exists {
+			if m, isMap := kw.(map[string]any); isMap && len(m) == 0 {
+				im["keywords"] = []any{}
+			}
+		} else {
+			im["keywords"] = []any{}
+		}
+		details["image_meta"] = im
+	}
+	return details
+}
+
+func mediaFilesize(details any) any {
+	m, ok := details.(map[string]any)
+	if !ok {
+		return nil
+	}
+	if fs, ok := m["filesize"]; ok {
+		return fs
+	}
+	return nil
+}
+
+func mediaDescriptionHTML(mime, sourceURL, title, content string, details any) string {
+	content = strings.TrimSpace(content)
+	if content != "" {
+		return content + "\n"
+	}
+	if strings.HasPrefix(strings.ToLower(mime), "image/") && sourceURL != "" {
+		mediumURL := sourceURL
+		width, height := 0, 0
+		if m, ok := details.(map[string]any); ok {
+			if sizes, ok := m["sizes"].(map[string]any); ok {
+				if med, ok := sizes["medium"].(map[string]any); ok {
+					if u := asString(med["source_url"]); u != "" {
+						mediumURL = u
+					}
+					width = int(asInt64(med["width"]))
+					height = int(asInt64(med["height"]))
+				}
+			}
+			if width == 0 {
+				width = int(asInt64(m["width"]))
+				height = int(asInt64(m["height"]))
+			}
+		}
+		wh := ""
+		if width > 0 && height > 0 {
+			wh = fmt.Sprintf(` width="%d" height="%d"`, width, height)
+		}
+		return fmt.Sprintf(
+			`<p class="attachment"><a href='%s'><img loading="lazy" decoding="async"%s src="%s" class="attachment-medium size-medium" alt="" /></a></p>`+"\n",
+			sourceURL, wh, mediumURL,
+		)
+	}
+	if sourceURL != "" && (strings.HasPrefix(mime, "video/") || strings.HasPrefix(mime, "audio/")) {
+		return fmt.Sprintf("<p>%s</p>\n", sourceURL)
+	}
+	_ = title
+	return ""
+}
+
+func mediaCaptionHTML(excerpt, mime, sourceURL string) string {
+	excerpt = strings.TrimSpace(excerpt)
+	if excerpt != "" {
+		return "<p>" + excerpt + "</p>\n"
+	}
+	// WP often surfaces the media URL as the caption for A/V when excerpt is empty.
+	if sourceURL != "" && (strings.HasPrefix(mime, "video/") || strings.HasPrefix(mime, "audio/")) {
+		return fmt.Sprintf("<p>%s</p>\n", sourceURL)
+	}
+	return ""
 }
 
 func mediaPermalink(home, slug string, id int64) string {
@@ -267,16 +504,11 @@ func mediaPermalink(home, slug string, id int64) string {
 
 func mediaTypeFromMime(mime string) string {
 	mime = strings.ToLower(strings.TrimSpace(mime))
-	switch {
-	case strings.HasPrefix(mime, "image/"):
+	if strings.HasPrefix(mime, "image/") {
 		return "image"
-	case strings.HasPrefix(mime, "video/"):
-		return "video"
-	case strings.HasPrefix(mime, "audio/"):
-		return "audio"
-	default:
-		return "file"
 	}
+	// WP REST only distinguishes image vs file.
+	return "file"
 }
 
 // sourceURLFromGUID prefers the post guid when it looks like a URL; otherwise
@@ -296,4 +528,76 @@ func sourceURLFromGUID(guid, home string) string {
 		return home + "/" + strings.TrimPrefix(guid, "/")
 	}
 	return home + "/wp-content/uploads/" + strings.TrimPrefix(guid, "/")
+}
+
+// phpToJSONMap converts a PHP-unserialized value into a JSON-object map.
+func phpToJSONMap(v any) (map[string]any, bool) {
+	converted := phpToJSON(v)
+	m, ok := converted.(map[string]any)
+	return m, ok
+}
+
+// phpToJSON converts PHP unserialize output into JSON-friendly values.
+// Empty PHP arrays become JSON arrays; maps with contiguous int keys become arrays;
+// string-keyed maps become objects.
+func phpToJSON(v any) any {
+	switch t := v.(type) {
+	case nil:
+		return nil
+	case bool, string, float64:
+		return t
+	case int:
+		return int64(t)
+	case int64:
+		return t
+	case map[any]any:
+		if len(t) == 0 {
+			return []any{}
+		}
+		if list, ok := phpMapAsList(t); ok {
+			out := make([]any, len(list))
+			for i, item := range list {
+				out[i] = phpToJSON(item)
+			}
+			return out
+		}
+		out := make(map[string]any, len(t))
+		for k, val := range t {
+			out[fmt.Sprint(k)] = phpToJSON(val)
+		}
+		return out
+	case map[string]any:
+		out := make(map[string]any, len(t))
+		for k, val := range t {
+			out[k] = phpToJSON(val)
+		}
+		return out
+	case []any:
+		out := make([]any, len(t))
+		for i, item := range t {
+			out[i] = phpToJSON(item)
+		}
+		return out
+	default:
+		return fmt.Sprint(t)
+	}
+}
+
+func phpMapAsList(m map[any]any) ([]any, bool) {
+	n := len(m)
+	if n == 0 {
+		return nil, true
+	}
+	out := make([]any, n)
+	for i := 0; i < n; i++ {
+		v, ok := m[i]
+		if !ok {
+			v, ok = m[int64(i)]
+		}
+		if !ok {
+			return nil, false
+		}
+		out[i] = v
+	}
+	return out, true
 }
