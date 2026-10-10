@@ -74,6 +74,7 @@ func TestAdminRedirectsAnonymous(t *testing.T) {
 		"/wp-admin/themes.php",
 		"/wp-admin/users.php",
 		"/wp-admin/site-editor.php",
+		"/wp-admin/nav-menus.php",
 		"/wp-admin/customize.php",
 	} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -107,6 +108,7 @@ func TestAdminScreensLoggedIn(t *testing.T) {
 		{"/wp-admin/themes.php", "Themes"},
 		{"/wp-admin/users.php", "Users"},
 		{"/wp-admin/site-editor.php", "Site Editor"},
+		{"/wp-admin/nav-menus.php", "menu-management"},
 		{"/wp-admin/", "At a Glance"},
 	}
 	for _, tc := range cases {

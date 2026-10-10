@@ -48,6 +48,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/site-editor.php":
 		h.requireLogin(w, r, c, h.serveSiteEditor)
 		return true
+	case "/wp-admin/nav-menus.php":
+		h.requireLogin(w, r, c, h.serveNavMenus)
+		return true
 	case "/wp-admin/customize.php":
 		h.requireLogin(w, r, c, h.serveCustomizerGone)
 		return true
@@ -385,6 +388,76 @@ func (h *Handler) serveSiteEditor(w http.ResponseWriter, r *http.Request, c *wp.
 	b.WriteString("<p>GoPress site editor stub (P7.5) — full block canvas lands later.</p>\n")
 	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
+}
+
+// serveNavMenus is a classic menus admin stub (P7.9).
+func (h *Handler) serveNavMenus(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	menus, err := listNavMenus(c)
+	if err != nil {
+		http.Error(w, "menus: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Menus &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui nav-menus-php\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap\" id=\"menu-management\">\n")
+	b.WriteString("<h1>Menus</h1>\n")
+	b.WriteString("<p>GoPress nav-menus stub (P7.9) — drag-and-drop editor lands later.</p>\n")
+	b.WriteString("<div id=\"nav-menus-frame\" class=\"wp-clearfix\">\n")
+	b.WriteString("<ul class=\"menu\">\n")
+	if len(menus) == 0 {
+		b.WriteString("<li class=\"no-items\">No menus found.</li>\n")
+	} else {
+		for _, m := range menus {
+			b.WriteString("<li class=\"menu-item\" data-menu-id=\"")
+			b.WriteString(strconv.FormatInt(m.ID, 10))
+			b.WriteString("\"><strong>")
+			b.WriteString(html.EscapeString(m.Name))
+			b.WriteString("</strong> <span class=\"menu-slug\">")
+			b.WriteString(html.EscapeString(m.Slug))
+			b.WriteString("</span></li>\n")
+		}
+	}
+	b.WriteString("</ul>\n</div>\n</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
+type navMenuTerm struct {
+	ID   int64
+	Name string
+	Slug string
+}
+
+func listNavMenus(c *wp.Context) ([]navMenuTerm, error) {
+	if c == nil || c.DB == nil {
+		return nil, nil
+	}
+	q := "SELECT t.term_id, t.name, t.slug FROM " + c.DB.Terms() + " t " +
+		"INNER JOIN " + c.DB.TermTaxonomy() + " tt ON t.term_id = tt.term_id " +
+		"WHERE tt.taxonomy = %s ORDER BY t.name ASC LIMIT 50"
+	sqlStr, args, err := c.DB.Prepare(q, "nav_menu")
+	if err != nil {
+		return nil, err
+	}
+	rows, err := c.DB.GetResults(sqlStr, args...)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]navMenuTerm, 0, len(rows))
+	for _, row := range rows {
+		id, _ := strconv.ParseInt(fmt.Sprint(row["term_id"]), 10, 64)
+		out = append(out, navMenuTerm{
+			ID:   id,
+			Name: fmt.Sprint(row["name"]),
+			Slug: fmt.Sprint(row["slug"]),
+		})
+	}
+	return out, nil
 }
 
 // serveExportPersonalData is a privacy tools stub (P8.2).
