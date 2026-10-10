@@ -450,6 +450,15 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	case path == "/wp/v2/templates":
 		s.serveTemplates(w, r, c)
 	case strings.HasPrefix(path, "/wp/v2/templates/"):
+		// P4.111: {parent}/revisions[/id] before item parse (item rejects /revisions).
+		if parentID, revID, hasRev, ok := parseTemplateRevisionsPath(path, "/wp/v2/templates/"); ok {
+			if hasRev {
+				s.serveTemplateRevisionItem(w, r, c, parentID, revID)
+			} else {
+				s.serveTemplateRevisions(w, r, c, parentID)
+			}
+			return
+		}
 		id, ok := parseTemplateIDPath(path, "/wp/v2/templates/")
 		if !ok {
 			writeJSON(w, http.StatusNotFound, map[string]any{
@@ -463,6 +472,14 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	case path == "/wp/v2/template-parts":
 		s.serveTemplateParts(w, r, c)
 	case strings.HasPrefix(path, "/wp/v2/template-parts/"):
+		if parentID, revID, hasRev, ok := parseTemplateRevisionsPath(path, "/wp/v2/template-parts/"); ok {
+			if hasRev {
+				s.serveTemplatePartRevisionItem(w, r, c, parentID, revID)
+			} else {
+				s.serveTemplatePartRevisions(w, r, c, parentID)
+			}
+			return
+		}
 		id, ok := parseTemplateIDPath(path, "/wp/v2/template-parts/")
 		if !ok {
 			writeJSON(w, http.StatusNotFound, map[string]any{
@@ -977,9 +994,13 @@ func extraIndexRoutes() map[string]RouteIndex {
 			Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}},
 		},
 		"/wp/v2/templates": collectionRoute(ns),
-		"/wp/v2/templates/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)": itemRoute(ns),
+		"/wp/v2/templates/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)":                              itemRoute(ns),
+		"/wp/v2/templates/(?P<parent>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)/revisions":                getOnly(ns),
+		"/wp/v2/templates/(?P<parent>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)/revisions/(?P<id>[\\d]+)": getOnly(ns),
 		"/wp/v2/template-parts": collectionRoute(ns),
-		"/wp/v2/template-parts/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)": itemRoute(ns),
+		"/wp/v2/template-parts/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)":                              itemRoute(ns),
+		"/wp/v2/template-parts/(?P<parent>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)/revisions":                getOnly(ns),
+		"/wp/v2/template-parts/(?P<parent>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)/revisions/(?P<id>[\\d]+)": getOnly(ns),
 		"/wp/v2/navigation":                collectionRoute(ns),
 		"/wp/v2/navigation/(?P<id>[\\d]+)": itemRoute(ns),
 		"/wp/v2/global-styles/(?P<id>[\\/\\d+]+)": {
