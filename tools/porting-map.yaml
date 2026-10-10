@@ -344,6 +344,13 @@
   task: P4.51
   api: exported
 
+# P4.52: REST POST/PUT/PATCH for /wp/v2/templates and template-parts.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-templates-controller.php
+  go: internal/rest/templates_write.go
+  status: partial
+  task: P4.52
+  api: exported
+
 # P7.36: options-permalink.php structure stub.
 - prefix: wp-admin/options-permalink.php
   go: internal/admin/admin.go
