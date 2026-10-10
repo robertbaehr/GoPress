@@ -4,8 +4,6 @@ import (
 	"strconv"
 	"testing"
 	"time"
-
-	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
 func TestTransientSetGetDelete(t *testing.T) {
