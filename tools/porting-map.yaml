@@ -275,8 +275,9 @@
 - prefix: wp-login.php#confirm_admin_email
   go: internal/login/login.go
   status: partial
-  task: P6.14
+  task: P6.42
   api: n/a
+  notes: "P6.42 — sanitize redirect_to; remind/check interval filters; hide remind at 0; confirm actions; P6.14 base"
 
 # P6.15: password-protected post form + wp-login.php?action=postpass cookie.
 - prefix: wp-login.php#postpass
@@ -399,8 +400,9 @@ wp-login.php#language-switcher-post
 - prefix: wp-login.php
   go: internal/login
   status: partial
-  task: P6.14
+  task: P6.42
   api: n/a
+  notes: "P6.42 — confirm_admin_email deepen; earlier login actions remain"
 
 - prefix: wp-cron.php
   go: internal/wp/cron.go
