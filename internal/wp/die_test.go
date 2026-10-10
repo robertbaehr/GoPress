@@ -1,6 +1,7 @@
 package wp_test
 
 import (
+	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -46,7 +47,7 @@ func TestDieJSONAndAjax(t *testing.T) {
 		t.Fatalf("status data=%v", data)
 	}
 
-	c := wp.NewContext(nil)
+	c := wp.NewContext(context.TODO())
 	c.Scope.SetAjax(true)
 	ajax := wp.Die(c, nil, "0", "", nil)
 	if ajax.Handler != wp.DieHandlerAjax || string(ajax.Body) != "0" || ajax.Status != 200 {
@@ -68,7 +69,7 @@ func TestDieWPErrorAndFilter(t *testing.T) {
 		t.Fatalf("additional error missing: %q", res.Body)
 	}
 
-	c := wp.NewContext(nil)
+	c := wp.NewContext(context.TODO())
 	c.Hooks = wp.NewHooks()
 	c.Hooks.AddFilter("wp_die_handler", func(value any, _ ...any) any { return "json" }, 10, 1)
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
