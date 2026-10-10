@@ -219,6 +219,11 @@ func commentFromRow(c *wp.Context, row map[string]any, home string) Comment {
 	parent := asInt64(row["comment_parent"])
 	author := asInt64(row["user_id"])
 	email := asString(row["comment_author_email"])
+	if author > 0 {
+		if userEmail := userEmailByID(c, author); userEmail != "" {
+			email = userEmail
+		}
+	}
 	ctype := asString(row["comment_type"])
 	if ctype == "" {
 		ctype = "comment"
@@ -240,6 +245,21 @@ func commentFromRow(c *wp.Context, row map[string]any, home string) Comment {
 		Meta:             map[string]any{"_wp_note_status": nil},
 		Links:            buildCommentLinks(c, home, id, postID, parent, author),
 	}
+}
+
+func userEmailByID(c *wp.Context, userID int64) string {
+	if c == nil || c.DB == nil || userID <= 0 {
+		return ""
+	}
+	q, args, err := c.DB.Prepare("SELECT user_email FROM "+c.DB.Users()+" WHERE ID = %d LIMIT 1", userID)
+	if err != nil {
+		return ""
+	}
+	row, err := c.DB.GetRow(q, args...)
+	if err != nil || row == nil {
+		return ""
+	}
+	return asString(row["user_email"])
 }
 
 func commentContentHTML(raw string) string {
