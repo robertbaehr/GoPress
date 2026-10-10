@@ -67,3 +67,13 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.116: heartbeat dashboard screen_id headers.
+- id: ajax-p10116-heartbeat-dashboard
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=dashboard
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
