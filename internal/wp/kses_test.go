@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/robertbaehr/GoPress/internal/wp"
@@ -98,5 +99,41 @@ func TestKsesSmoke(t *testing.T) {
 	}
 	if got := wp.KsesData(`<p onclick="x">hi</p>`); got != `hi` {
 		t.Fatalf("data: %q", got)
+	}
+	if got := wp.KsesUserDescription(`<strong>ok</strong><script>x</script>`); !strings.Contains(got, "<strong>") || strings.Contains(got, "<script>") {
+		t.Fatalf("user_description: %q", got)
+	}
+}
+
+func TestKsesAllowedMatchesGolden(t *testing.T) {
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller failed")
+	}
+	path := filepath.Join(filepath.Dir(file), "..", "..", "tests", "golden", "kses", "allowed.json")
+	raw, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read golden: %v", err)
+	}
+	var golden struct {
+		AllowedHTML struct {
+			Data map[string]json.RawMessage `json:"data"`
+			Post map[string]json.RawMessage `json:"post"`
+		} `json:"allowed_html"`
+	}
+	if err := json.Unmarshal(raw, &golden); err != nil {
+		t.Fatalf("golden json: %v", err)
+	}
+	post := wp.AllowedHTMLPost()
+	data := wp.AllowedHTMLData()
+	for tag := range golden.AllowedHTML.Post {
+		if _, ok := post[tag]; !ok {
+			t.Fatalf("embed post missing golden tag %q", tag)
+		}
+	}
+	for tag := range golden.AllowedHTML.Data {
+		if _, ok := data[tag]; !ok {
+			t.Fatalf("embed data missing golden tag %q", tag)
+		}
 	}
 }

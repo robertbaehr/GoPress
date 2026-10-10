@@ -86,6 +86,13 @@ func AllowedHTMLData() AllowedHTML {
 	return ksesDataHTML
 }
 
+// AllowedHTMLUserDescription returns the user_description context allow list.
+// WordPress aliases this to $allowedtags (same as data); golden allowed.json
+// has no extra tags beyond data for this context (P2.14).
+func AllowedHTMLUserDescription() AllowedHTML {
+	return AllowedHTMLData()
+}
+
 // KsesPost sanitizes content with the post allow list (wp_kses_post).
 func KsesPost(data string) string {
 	return Kses(data, AllowedHTMLPost(), nil)
@@ -95,6 +102,11 @@ func KsesPost(data string) string {
 // current_filter() is empty / default).
 func KsesData(data string) string {
 	return Kses(data, AllowedHTMLData(), nil)
+}
+
+// KsesUserDescription sanitizes with the user_description allow list.
+func KsesUserDescription(data string) string {
+	return Kses(data, AllowedHTMLUserDescription(), nil)
 }
 
 // Kses filters HTML content according to allowed tags/attrs (wp_kses subset).
