@@ -38,6 +38,13 @@
   api: n/a
   notes: "P7.66 — Quick Edit button, inline_* data, #inline-edit form stub"
 
+- prefix: wp-admin/edit.php
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.66
+  api: n/a
+  notes: "P7.66 — serveEditPosts Quick Edit stub + list table"
+
 - prefix: wp-admin/edit.php#quick_edit
   go: internal/admin/admin.go
   status: partial
@@ -362,10 +369,11 @@
   api: exported
 
 - prefix: wp-includes/functions.php
-  go: internal/wp/auth_check.go
+  go: internal/wp
   status: partial
-  task: P2.19
+  task: P2.61
   api: exported
+  notes: "P2.61 latest — wp_mkdir_p; also upload_dir/mime/auth_check helpers"
 
 - prefix: wp-includes/pluggable.php
   go: internal/wp/auth.go
@@ -1219,6 +1227,13 @@
   api: exported
   notes: "P9.15 — RowMeta applies plugin_row_meta; fires after_plugin_row_meta"
 
+- prefix: wp-admin/includes/class-wp-plugins-list-table.php
+  go: internal/plugins
+  status: partial
+  task: P9.15
+  api: exported
+  notes: "P9.15 — plugin_row_meta; also action_links (P9.14)"
+
 # P9.5: show parsed plugin headers meta on plugins.php.
 - prefix: wp-admin/plugins.php#headers
   go: internal/admin/admin.go
@@ -1254,6 +1269,13 @@
   task: P4.81
   api: n/a
   notes: "P4.81 — multipart title/alt_text/caption/description/post on create"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-attachments-controller.php
+  go: internal/rest/media.go
+  status: partial
+  task: P4.81
+  api: exported
+  notes: "P4.81 — media create fields; also update/delete"
 
 # P4.69: REST POST /wp/v2/posts/{id}/autosaves.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-autosaves-controller.php#create_item
@@ -1614,6 +1636,14 @@
   api: n/a
   notes: "P10.54 — summarize code/preformatted/verse, themes REST activate, plugins bulk, mime types, RDF generator, interim success, e2e"
 
+# P10.57: STATUS/PORTING refresh after P5.65–P9.15.
+- prefix: docs/STATUS.md#P10.57
+  go: docs/STATUS.md
+  status: partial
+  task: P10.57
+  api: n/a
+  notes: "P10.57 — summarize image polish, media create fields, quick edit, mkdir_p, feed tags, plugin_row_meta"
+
 # P10.56: e2e user-new.php createuser + STATUS/PORTING refresh after P5.64–P6.26.
 - prefix: tests/e2e/user-new.spec.js
   go: tests/e2e/user-new.spec.js
@@ -1874,6 +1904,13 @@
   task: P3.59
   api: internal
   notes: "P3.59 — feedCategoryNames merges category + post_tag; unique by name"
+
+- prefix: wp-includes/feed.php
+  go: internal/server/front.go
+  status: partial
+  task: P3.59
+  api: internal
+  notes: "P3.59 — category+tag feed items; also lastBuildDate/self/site_icon helpers"
 
 - prefix: wp-includes/feed-rss2.php#category
   go: internal/server/front.go
@@ -2295,8 +2332,9 @@
 - prefix: wp-includes/blocks/image.php
   go: internal/blocks/gallery_image.go
   status: partial
-  task: P5.48
+  task: P5.65
   api: internal
+  notes: "P5.65 — align/dimensions/decorative/linkClass polish on P5.48 gallery/image base"
 
 # P5.65: further polish core/image (align, dimensions, title, decorative, linkClass).
 - prefix: wp-includes/blocks/image.php#render
