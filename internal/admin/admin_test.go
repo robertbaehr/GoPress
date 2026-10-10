@@ -74,6 +74,7 @@ func TestAdminRedirectsAnonymous(t *testing.T) {
 		"/wp-admin/themes.php",
 		"/wp-admin/users.php",
 		"/wp-admin/site-editor.php",
+		"/wp-admin/customize.php",
 	} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		rec := httptest.NewRecorder()
@@ -119,6 +120,26 @@ func TestAdminScreensLoggedIn(t *testing.T) {
 		if !strings.Contains(rec.Body.String(), tc.want) {
 			t.Fatalf("%s missing %q in %q", tc.path, tc.want, rec.Body.String())
 		}
+	}
+}
+
+func TestCustomizerOutOfScope(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/customize.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "out of scope") {
+		t.Fatalf("expected out-of-scope message, got %q", body)
+	}
+	if !strings.Contains(body, "site-editor.php") {
+		t.Fatalf("expected site editor link, got %q", body)
 	}
 }
 

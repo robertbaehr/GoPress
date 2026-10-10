@@ -48,6 +48,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/site-editor.php":
 		h.requireLogin(w, r, c, h.serveSiteEditor)
 		return true
+	case "/wp-admin/customize.php":
+		h.requireLogin(w, r, c, h.serveCustomizerGone)
+		return true
 	case "/wp-admin/admin-ajax.php":
 		h.serveAdminAjax(w, r, c)
 		return true
@@ -315,6 +318,21 @@ func (h *Handler) serveSiteEditor(w http.ResponseWriter, r *http.Request, c *wp.
 	b.WriteString("<p>GoPress site editor stub (P7.5) — full block canvas lands later.</p>\n")
 	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
+}
+
+// serveCustomizerGone rejects the Customizer as out of scope (P7.6).
+func (h *Handler) serveCustomizerGone(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Customizer &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin\">\n")
+	b.WriteString("<h1>Customizer unavailable</h1>\n")
+	b.WriteString("<p>The Customizer is out of scope for GoPress. Use the <a href=\"/wp-admin/site-editor.php\">Site Editor</a> instead.</p>\n")
+	b.WriteString("</body>\n</html>\n")
+	writeHTML(w, http.StatusForbidden, b.String())
 }
 
 func (h *Handler) serveUsers(w http.ResponseWriter, r *http.Request, c *wp.Context) {
