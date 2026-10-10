@@ -1203,10 +1203,11 @@
   api: internal
 
 - prefix: wp-includes/blocks/footnotes.php
-  go: internal/blocks
+  go: internal/blocks/footnotes.go
   status: partial
-  task: P5.15
+  task: P5.51
   api: internal
+  notes: "P5.51 polish — applySupports, anchor, password-gated; no core/table-of-contents in this WP tree"
 
 # P5.42: calendar / archives / latest-posts / latest-comments / tag-cloud / search.
 - prefix: wp-includes/blocks/calendar.php
