@@ -319,6 +319,12 @@
   task: P7.18
   api: n/a
 
+- prefix: wp-admin/plugin-install.php
+  go: internal/admin
+  status: out-of-scope
+  task: P7.19
+  api: n/a
+
 - prefix: wp-admin/includes/schema.php
   go: internal/db
   status: partial
