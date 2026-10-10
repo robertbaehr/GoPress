@@ -1560,6 +1560,14 @@
   api: exported
   notes: "P3.54 — FeedCopyright; RSS2 <copyright> / Atom <rights> when rss_copyright set (auto|custom)"
 
+# P3.55: stabilize lastBuildDate from newest post (get_feed_build_date subset).
+- prefix: wp-includes/feed.php#get_feed_build_date
+  go: internal/server/front.go
+  status: partial
+  task: P3.55
+  api: n/a
+  notes: "P3.55 — lastBuildDate/Atom updated from max post_modified_gmt; no wall-clock fallback"
+
 - prefix: wp-includes/feed-atom.php#rights
   go: internal/server/front.go
   status: partial
