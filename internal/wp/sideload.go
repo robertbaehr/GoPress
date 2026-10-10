@@ -155,7 +155,7 @@ func MediaHandleSideload(c *Context, file SideloadFile, postID int64, desc strin
 func MediaSideloadImage(c *Context, file string, postID int64, desc, returnType string) (any, error) {
 	file = strings.TrimSpace(file)
 	if file == "" {
-		return nil, fmt.Errorf("image_sideload_failed: Invalid image URL.")
+		return nil, fmt.Errorf("image_sideload_failed: invalid image URL")
 	}
 	lower := strings.ToLower(file)
 	if strings.HasPrefix(lower, "http://") || strings.HasPrefix(lower, "https://") || strings.HasPrefix(lower, "//") {
@@ -165,7 +165,7 @@ func MediaSideloadImage(c *Context, file string, postID int64, desc, returnType 
 	path := strings.TrimPrefix(file, "file://")
 	st, err := os.Stat(path)
 	if err != nil || st.IsDir() {
-		return nil, fmt.Errorf("image_sideload_failed: Invalid image URL.")
+		return nil, fmt.Errorf("image_sideload_failed: invalid image URL")
 	}
 	ext := strings.ToLower(strings.TrimPrefix(filepath.Ext(path), "."))
 	allowed := map[string]bool{"jpg": true, "jpeg": true, "jpe": true, "png": true, "gif": true, "webp": true}
