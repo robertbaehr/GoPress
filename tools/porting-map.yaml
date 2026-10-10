@@ -878,6 +878,12 @@
   task: P7.37
   api: n/a
 
+- prefix: wp-admin/plugin-editor.php
+  go: internal/admin/admin.go
+  status: out-of-scope
+  task: P7.38
+  api: n/a
+
 - prefix: wp-admin/plugin-install.php
   go: internal/admin
   status: out-of-scope
