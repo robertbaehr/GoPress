@@ -15,6 +15,8 @@ import (
 var passwordResetKeySanitize = regexp.MustCompile(`(?i)[^a-z0-9]`)
 
 const passwordResetAlphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+const passwordSpecialChars = "!@#$%^&*()"
+const passwordExtraSpecialChars = "-_ []{}<>~`+=,.;:/?|"
 
 // defaultPasswordHint is the stock wp_get_password_hint text (P6.41).
 const defaultPasswordHint = `Hint: The password should be at least twelve characters long. To make it stronger, use upper and lower case letters, numbers, and symbols like ! " ? $ % ^ &amp; ).`
@@ -31,15 +33,40 @@ func GetPasswordHint(c *Context) string {
 	return hint
 }
 
-// GeneratePassword returns a random password (wp_generate_password subset).
-// When special is false, only alphanumerics are used.
-func GeneratePassword(length int, special bool) string {
+// GeneratePassword returns a random password (wp_generate_password, P2.102).
+// When special is false, only alphanumerics are used. Optional extraSpecial
+// (PHP $extra_special_chars) adds -_ []{}<>~`+=,.;:/?| for salts/keys.
+// Does not apply random_password; use GeneratePasswordFiltered for that.
+func GeneratePassword(length int, special bool, extraSpecial ...bool) string {
+	extra := false
+	if len(extraSpecial) > 0 {
+		extra = extraSpecial[0]
+	}
+	return generatePassword(length, special, extra)
+}
+
+// GeneratePasswordFiltered is wp_generate_password with the random_password filter (P2.102).
+func GeneratePasswordFiltered(c *Context, length int, special, extraSpecial bool) string {
+	password := generatePassword(length, special, extraSpecial)
+	if c != nil && c.Hooks != nil {
+		filtered := c.Hooks.ApplyFilters("random_password", password, length, special, extraSpecial)
+		if s, ok := filtered.(string); ok {
+			password = s
+		}
+	}
+	return password
+}
+
+func generatePassword(length int, special, extraSpecial bool) string {
 	if length <= 0 {
 		length = 12
 	}
 	alphabet := passwordResetAlphabet
 	if special {
-		alphabet += "!@#$%^&*()"
+		alphabet += passwordSpecialChars
+	}
+	if extraSpecial {
+		alphabet += passwordExtraSpecialChars
 	}
 	var b strings.Builder
 	b.Grow(length)

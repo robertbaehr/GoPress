@@ -19,6 +19,59 @@ func TestGeneratePasswordLength(t *testing.T) {
 	}
 }
 
+func TestGeneratePasswordExtraSpecialAndFilter(t *testing.T) {
+	// P2.102: extra_special_chars + random_password filter.
+	p := wp.GeneratePassword(64, true, true)
+	if len(p) != 64 {
+		t.Fatalf("len=%d", len(p))
+	}
+	specialSeen := false
+	extraSeen := false
+	for _, r := range p {
+		switch r {
+		case '!', '@', '#', '$', '%', '^', '&', '*', '(', ')':
+			specialSeen = true
+		case '-', '_', ' ', '[', ']', '{', '}', '<', '>', '~', '`', '+', '=', ',', '.', ';', ':', '/', '?', '|':
+			extraSeen = true
+		}
+	}
+	// Probabilistic for 64 chars from a large alphabet — retry a few times if needed.
+	for i := 0; i < 8 && !(specialSeen && extraSeen); i++ {
+		p = wp.GeneratePassword(64, true, true)
+		for _, r := range p {
+			switch r {
+			case '!', '@', '#', '$', '%', '^', '&', '*', '(', ')':
+				specialSeen = true
+			case '-', '_', '[', ']', '{', '}', '<', '>', '~', '`', '+', '=', ',', '.', ';', ':', '/', '?', '|':
+				extraSeen = true
+			}
+		}
+	}
+	if !specialSeen {
+		t.Fatal("expected special chars when special=true")
+	}
+	if !extraSeen {
+		t.Fatal("expected extra special chars when extraSpecial=true")
+	}
+
+	c := &wp.Context{Hooks: wp.NewHooks()}
+	c.Hooks.AddFilter("random_password", func(value any, args ...any) any {
+		if len(args) != 3 {
+			t.Fatalf("filter args=%d want 3", len(args))
+		}
+		if args[0] != 12 || args[1] != true || args[2] != false {
+			t.Fatalf("filter args=%v", args)
+		}
+		return "filtered-password"
+	}, 10, 4)
+	if got := wp.GeneratePasswordFiltered(c, 12, true, false); got != "filtered-password" {
+		t.Fatalf("filtered=%q", got)
+	}
+	if got := wp.GeneratePasswordFiltered(nil, 8, false, false); len(got) != 8 {
+		t.Fatalf("nil context len=%d", len(got))
+	}
+}
+
 func TestGetPasswordHint(t *testing.T) {
 	hint := wp.GetPasswordHint(nil)
 	if !strings.Contains(hint, "twelve characters") {
