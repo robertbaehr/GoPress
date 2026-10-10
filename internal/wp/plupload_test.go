@@ -1,6 +1,7 @@
 package wp_test
 
 import (
+	"context"
 	"strings"
 	"testing"
 
@@ -33,7 +34,7 @@ func TestMaxUploadSizeAndPluploadSettings(t *testing.T) {
 		t.Fatalf("MaxUploadSize=%d", size)
 	}
 
-	c := wp.NewContext(nil)
+	c := wp.NewContext(context.TODO())
 	c.Hooks = wp.NewHooks()
 	settings := wp.PluploadDefaultSettings(c)
 	if settings.Defaults["file_data_name"] != "async-upload" {
@@ -70,7 +71,7 @@ func TestMaxUploadSizeAndPluploadSettings(t *testing.T) {
 }
 
 func TestPluploadDefaultSettingsFilter(t *testing.T) {
-	c := wp.NewContext(nil)
+	c := wp.NewContext(context.TODO())
 	c.Hooks = wp.NewHooks()
 	c.Hooks.AddFilter("plupload_default_settings", func(value any, _ ...any) any {
 		m, _ := value.(map[string]any)
