@@ -4962,6 +4962,14 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P2.101 — HashPassword $wp$+bcrypt; PasswordNeedsRehash companion; P2.1/P2.21 base"
 
+# P2.102: wp_generate_password extra_special_chars + random_password filter.
+- prefix: wp-includes/pluggable.php#wp_generate_password
+  go: internal/wp/password_reset.go
+  status: partial
+  task: P2.102
+  api: exported
+  notes: "P2.102 — GeneratePassword(length, special, extraSpecial); GeneratePasswordFiltered + random_password"
+
 # P2.100: wp_salt unknown schemes + salt filter.
 - prefix: wp-includes/pluggable.php#wp_salt
   go: internal/wp/auth.go
