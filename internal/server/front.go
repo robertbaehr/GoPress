@@ -152,7 +152,7 @@ func (f *Front) renderFeed(w http.ResponseWriter, r *http.Request, c *wp.Context
 	case "rdf":
 		f.renderFeedRDF(w, r, c)
 	default:
-		f.renderFeedRSS2(w, c)
+		f.renderFeedRSS2(w, r, c)
 	}
 }
 
@@ -1731,7 +1731,7 @@ func commentFormHTML(c *wp.Context, post *singularPost) string {
 	return b.String()
 }
 
-func (f *Front) renderFeedRSS2(w http.ResponseWriter, c *wp.Context) {
+func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	desc := optionString(c, "blogdescription", "")
@@ -1740,6 +1740,9 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, c *wp.Context) {
 		http.Error(w, "feed: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
+
+	// P3.50: atom:link rel=self via get_self_link() (request URI).
+	self := feedSelfLink(r, c)
 
 	var b strings.Builder
 	// Match WP feed-rss2.php channel shape (P3.13).
@@ -1756,7 +1759,7 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, c *wp.Context) {
 	b.WriteString(xmlEscape(blogname))
 	b.WriteString("</title>\n")
 	b.WriteString("\t<atom:link href=\"")
-	b.WriteString(xmlEscape(home + "/feed/"))
+	b.WriteString(xmlEscape(self))
 	b.WriteString("\" rel=\"self\" type=\"application/rss+xml\" />\n")
 	b.WriteString("\t<link>")
 	b.WriteString(xmlEscape(home))
@@ -2239,21 +2242,18 @@ func feedAtomDate(gmt, local string) string {
 
 func feedSelfLink(r *http.Request, c *wp.Context) string {
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
-	if r == nil {
-		return home + "/feed/atom/"
+	if r == nil || r.URL == nil {
+		return home + "/feed/"
 	}
-	// Prefer absolute URL matching the request (WP self_link).
-	if r.URL != nil {
-		path := r.URL.RequestURI()
-		if path == "" {
-			path = "/"
-		}
-		if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
-			return path
-		}
-		return home + path
+	// Prefer absolute URL matching the request (WP get_self_link / self_link).
+	path := r.URL.RequestURI()
+	if path == "" {
+		path = "/"
 	}
-	return home + "/feed/atom/"
+	if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
+		return path
+	}
+	return home + path
 }
 
 func feedCategoryNames(c *wp.Context, postID int64) []string {

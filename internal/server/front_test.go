@@ -336,6 +336,10 @@ func TestFrontFeedQueryRSS2(t *testing.T) {
 	if !strings.Contains(body, "<content:encoded>") {
 		t.Fatalf("expected content:encoded, got %q", body[:min(800, len(body))])
 	}
+	// P3.50: atom:link rel=self mirrors the request URI (WP get_self_link).
+	if !strings.Contains(body, `rel="self"`) || !strings.Contains(body, "/?feed=rss2") {
+		t.Fatalf("expected self atom:link with request URI, got %q", body[:min(500, len(body))])
+	}
 }
 
 func TestFrontFeedPrettyPath(t *testing.T) {
@@ -350,6 +354,9 @@ func TestFrontFeedPrettyPath(t *testing.T) {
 	body := rec.Body.String()
 	if !strings.Contains(body, `<rss version="2.0"`) || !strings.Contains(body, "xmlns:atom=") {
 		t.Fatalf("expected RSS2 with namespaces, got %q", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, `rel="self"`) || !strings.Contains(body, "/feed/") {
+		t.Fatalf("expected self atom:link for /feed/, got %q", body[:min(500, len(body))])
 	}
 }
 
