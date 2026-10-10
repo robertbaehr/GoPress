@@ -2964,6 +2964,28 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 		SiteName: func() string {
 			return optionString(c, "blogname", "GoPress")
 		},
+		SiteTagline: func() string {
+			return optionString(c, "blogdescription", "")
+		},
+		SiteLogoURL: func() string {
+			id := int64(0)
+			if c != nil && c.Options != nil {
+				switch v := c.Options.GetOption("site_logo", 0).(type) {
+				case int64:
+					id = v
+				case int:
+					id = int64(v)
+				case float64:
+					id = int64(v)
+				case string:
+					id, _ = strconv.ParseInt(strings.TrimSpace(v), 10, 64)
+				}
+			}
+			if id <= 0 {
+				return ""
+			}
+			return wp.GetAttachmentURL(c, id)
+		},
 		HomeURL: func() string {
 			return strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 		},

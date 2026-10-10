@@ -128,6 +128,8 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderSiteTitle(block)
 	case "core/site-tagline":
 		out = e.renderSiteTagline(block)
+	case "core/site-logo":
+		return e.renderSiteLogo(block)
 	case "core/query-pagination":
 		out = e.renderQueryPagination(block)
 	case "core/query-pagination-next":

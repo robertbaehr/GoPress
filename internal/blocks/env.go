@@ -27,8 +27,10 @@ type Env struct {
 	// RenderCommentForm returns WP comment_form HTML for the current post (P5.18).
 	RenderCommentForm func(postID int64) string
 
-	// SiteName / HomeURL power core/site-title and related blocks (P5.19).
+	// SiteName / HomeURL / SiteTagline / SiteLogoURL power branding blocks (P5.19/P5.45).
 	SiteName    func() string
+	SiteTagline func() string
+	SiteLogoURL func() string // custom logo / site_logo attachment URL
 	HomeURL     func() string
 	IsFrontPage func() bool
 	// AdjacentPost returns prev/next post for post-navigation-link (type previous|next).
