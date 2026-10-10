@@ -54,6 +54,41 @@ func TestRobotsTXTDisallowAllWhenNotPublic(t *testing.T) {
 	}
 }
 
+func TestRobotsTXTFilter(t *testing.T) {
+	c := testBoot(t)
+	c.Hooks.AddFilter("robots_txt", func(value any, args ...any) any {
+		out, _ := value.(string)
+		return out + "Disallow: /private/\n"
+	}, 10, 2)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/robots.txt", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if !strings.Contains(body, "Disallow: /private/") {
+		t.Fatalf("expected robots_txt filter line: %q", body)
+	}
+	if !strings.Contains(body, "Sitemap:") {
+		t.Fatalf("expected Sitemap after filter: %q", body)
+	}
+}
+
+func TestSitemapDisabledWhenNotPublic(t *testing.T) {
+	c := testBoot(t)
+	orig := c.Options.GetOption("blog_public", "1")
+	t.Cleanup(func() { _, _ = c.Options.UpdateOption("blog_public", orig, "yes") })
+	if _, err := c.Options.UpdateOption("blog_public", "0", "yes"); err != nil {
+		t.Fatalf("UpdateOption: %v", err)
+	}
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/wp-sitemap.xml", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status=%d want 404 body=%q", rec.Code, rec.Body.String())
+	}
+}
+
 func TestSitemapIndexAndPosts(t *testing.T) {
 	c := testBoot(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
