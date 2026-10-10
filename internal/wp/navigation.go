@@ -61,23 +61,3 @@ func PagePermalink(c *Context, page NavPage) string {
 	}
 	return fmt.Sprintf("%s/?page_id=%d", home, page.ID)
 }
-
-func optionStringValue(c *Context, name, fallback string) string {
-	if c == nil || c.Options == nil {
-		return fallback
-	}
-	v := c.Options.GetOption(name, fallback)
-	switch t := v.(type) {
-	case string:
-		if t == "" {
-			return fallback
-		}
-		return t
-	default:
-		s := fmt.Sprint(t)
-		if s == "" || s == "<nil>" {
-			return fallback
-		}
-		return s
-	}
-}
