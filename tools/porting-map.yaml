@@ -5820,6 +5820,14 @@
   api: n/a
   notes: "P10.92 — avatar/author-name/details/… block-types + rest_route + search headers"
 
+# P10.94: expand diff corpus after P5.92–P9.20.
+- prefix: tests/corpus/#p10.94
+  go: tests/corpus/
+  status: partial
+  task: P10.94
+  api: n/a
+  notes: "P10.94 — social/nav/query-pagination/… block-types + global-styles revisions + login headers; 276/276"
+
 # P10.91: STATUS/PORTING refresh after P5.90–P10.90.
 - prefix: docs/STATUS.md#p10.91
   go: docs/STATUS.md
