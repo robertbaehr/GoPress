@@ -4338,14 +4338,23 @@
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-pattern-categories-controller.php
   go: internal/rest/block_patterns.go
   status: partial
-  task: P5.38
+  task: P4.107
   api: exported
+  notes: "P4.107 — OPTIONS schema, context validation, description always present"
 
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-patterns-controller.php
   go: internal/rest/block_patterns.go
   status: partial
   task: P5.38
   api: exported
+
+# P4.107: block-pattern-categories REST deepen.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-pattern-categories-controller.php#p4.107
+  go: internal/rest/block_patterns.go
+  status: partial
+  task: P4.107
+  api: exported
+  notes: "P4.107 — prepare_item schema/context/OPTIONS"
 
 - prefix: wp-includes/class-wp-session-tokens.php
   go: internal/wp/auth_cookie.go

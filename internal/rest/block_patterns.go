@@ -31,9 +31,19 @@ var patternCategoryMigration = map[string]string{
 	"query":   "posts",
 }
 
+// RESTBlockPatternCategory is a wp/v2/block-patterns/categories item (P4.107).
+// Description is always present (empty string when unset) to match the public schema.
+type RESTBlockPatternCategory struct {
+	Name        string `json:"name"`
+	Label       string `json:"label"`
+	Description string `json:"description"`
+}
+
 func (s *Server) serveBlockPatternCategories(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	// P4.106: accept HEAD like other collection routes.
-	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+	// P4.106 / P4.107: GET, HEAD, OPTIONS like WP_REST_Block_Pattern_Categories_Controller.
+	switch r.Method {
+	case http.MethodGet, http.MethodHead, http.MethodOptions:
+	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
@@ -53,19 +63,83 @@ func (s *Server) serveBlockPatternCategories(w http.ResponseWriter, r *http.Requ
 		})
 		return
 	}
+	w.Header().Set("Allow", "GET, HEAD, OPTIONS")
+	if r.Method == http.MethodOptions {
+		writeJSON(w, http.StatusOK, blockPatternCategorySchema())
+		return
+	}
+	// P4.107: validate context (view|edit|embed); default view.
+	ctx := r.URL.Query().Get("context")
+	if ctx == "" {
+		ctx = "view"
+	}
+	switch ctx {
+	case "view", "edit", "embed":
+	default:
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_invalid_param",
+			"message": "Invalid parameter(s): context",
+			"data": map[string]any{
+				"status": 400,
+				"params": map[string]any{"context": "context is not one of view, edit, embed."},
+			},
+		})
+		return
+	}
 	if c.PatternCategories == nil {
 		c.PatternCategories = wp.NewPatternCategoryRegistry()
 		wp.RegisterDefaultPatternCategories(c.PatternCategories, wp.ActiveStylesheet(c))
 	}
 	cats := c.PatternCategories.All()
-	out := make([]wp.PatternCategory, 0, len(cats))
-	out = append(out, cats...)
-	w.Header().Set("Allow", "GET, HEAD")
+	out := make([]RESTBlockPatternCategory, 0, len(cats))
+	for _, cat := range cats {
+		out = append(out, prepareBlockPatternCategory(cat))
+	}
 	if r.Method == http.MethodHead {
 		w.WriteHeader(http.StatusOK)
 		return
 	}
 	writeJSON(w, http.StatusOK, out)
+}
+
+func prepareBlockPatternCategory(cat wp.PatternCategory) RESTBlockPatternCategory {
+	label := cat.Label
+	if label == "" {
+		label = cat.Name
+	}
+	return RESTBlockPatternCategory{
+		Name:        cat.Name,
+		Label:       label,
+		Description: cat.Description, // always emit (may be "")
+	}
+}
+
+func blockPatternCategorySchema() map[string]any {
+	return map[string]any{
+		"$schema": "http://json-schema.org/draft-04/schema#",
+		"title":   "block-pattern-category",
+		"type":    "object",
+		"properties": map[string]any{
+			"name": map[string]any{
+				"description": "The category name.",
+				"type":        "string",
+				"readonly":    true,
+				"context":     []string{"view", "edit", "embed"},
+			},
+			"label": map[string]any{
+				"description": "The category label, in human readable format.",
+				"type":        "string",
+				"readonly":    true,
+				"context":     []string{"view", "edit", "embed"},
+			},
+			"description": map[string]any{
+				"description": "The category description, in human readable format.",
+				"type":        "string",
+				"readonly":    true,
+				"context":     []string{"view", "edit", "embed"},
+			},
+		},
+	}
 }
 
 func (s *Server) serveBlockPatterns(w http.ResponseWriter, r *http.Request, c *wp.Context) {
