@@ -37,24 +37,21 @@ func supportsFromAttrs(attrs map[string]any) (classes []string, styles string) {
 		classes = append(classes, "has-"+slugifySupport(fs)+"-font-size")
 	}
 
-	var styleParts []string
 	if style, ok := attrs["style"].(map[string]any); ok {
 		if color, ok := style["color"].(map[string]any); ok {
 			if bg, ok := color["background"].(string); ok && bg != "" {
-				styleParts = append(styleParts, "background-color:"+cssValue(bg))
 				classes = appendUnique(classes, "has-background")
 			}
 			if tx, ok := color["text"].(string); ok && tx != "" {
-				styleParts = append(styleParts, "color:"+cssValue(tx))
 				classes = appendUnique(classes, "has-text-color")
 			}
+			if grad, ok := color["gradient"].(string); ok && grad != "" {
+				classes = appendUnique(classes, "has-background")
+			}
 		}
-		if spacing, ok := style["spacing"].(map[string]any); ok {
-			styleParts = append(styleParts, spacingStyles("padding", spacing["padding"])...)
-			styleParts = append(styleParts, spacingStyles("margin", spacing["margin"])...)
-		}
+		styles = CompileStyle(style)
 	}
-	return classes, strings.Join(styleParts, ";")
+	return classes, styles
 }
 
 func spacingStyles(prop string, v any) []string {
