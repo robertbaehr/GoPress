@@ -51,3 +51,32 @@ func TestRenderDetailsFetchPriorityLowWhenCollapsed(t *testing.T) {
 		t.Fatalf("open details should not force fetchpriority=low: %q", outOpen)
 	}
 }
+
+func TestRenderDetailsStripOpenWhenCollapsed(t *testing.T) {
+	raw := `<!-- wp:details {"summary":"Q"} -->
+<details class="wp-block-details" open><summary>Q</summary><p>A</p></details>
+<!-- /wp:details -->`
+	out := blocks.Render(raw)
+	if strings.Contains(out, " open") || strings.Contains(out, " open>") || strings.Contains(out, "<details open") {
+		t.Fatalf("collapsed details should strip open: %q", out)
+	}
+	if !strings.Contains(out, "<summary>Q</summary>") {
+		t.Fatalf("summary missing: %q", out)
+	}
+}
+
+func TestRenderDetailsAnchorAndColors(t *testing.T) {
+	raw := `<!-- wp:details {"summary":"FAQ","anchor":"faq-1","textColor":"contrast","backgroundColor":"base","name":"group-a"} /-->`
+	out := blocks.Render(raw)
+	for _, want := range []string{
+		`id="faq-1"`,
+		`name="group-a"`,
+		"has-contrast-color",
+		"has-base-background-color",
+		"<summary>FAQ</summary>",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
