@@ -451,6 +451,36 @@ func TestEditPostsQuickEditStub(t *testing.T) {
 	}
 }
 
+func TestEditPostsBulkEditStub(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`id="posts-filter"`,
+		`id="bulk-action-selector-top"`,
+		`value="edit"`,
+		`name="post[]"`,
+		`id="bulk-edit"`,
+		`id="bulk-edit-legend"`,
+		"Bulk Edit",
+		`id="bulk-titles"`,
+		`name="bulk_edit"`,
+		`&mdash; No Change &mdash;`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected bulk-edit stub %q in body", want)
+		}
+	}
+}
+
 func TestEditPostsStickyToggle(t *testing.T) {
 	c := bootOrSkip(t)
 	// Stick hello-world (id=1) so it appears in the first page of edit.php.

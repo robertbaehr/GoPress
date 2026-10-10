@@ -67,6 +67,21 @@
   api: n/a
   notes: "P7.66 — serveEditPosts Quick Edit stub"
 
+# P7.68: edit.php Bulk Edit stub (bulk actions + #bulk-edit row).
+- prefix: wp-admin/includes/class-wp-posts-list-table.php#bulk_edit
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.68
+  api: n/a
+  notes: "P7.68 — #bulk-edit row stub + bulk-titles + No Change status"
+
+- prefix: wp-admin/edit.php#bulk_edit
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.68
+  api: n/a
+  notes: "P7.68 — posts-filter bulkactions + post[] checkboxes + bulk_edit submit"
+
 # P7.30: comment.php moderation stub.
 - prefix: wp-admin/comment.php
   go: internal/admin/admin.go
