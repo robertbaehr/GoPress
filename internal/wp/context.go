@@ -58,6 +58,9 @@ type Context struct {
 	// Theme is the active theme.json settings/styles subset (P5.4).
 	Theme *theme.JSON
 
+	// Patterns is the block pattern registry (P5.9).
+	Patterns *PatternRegistry
+
 	// Mailer records wp_mail sends (P3.9).
 	Mailer *Mailer
 
@@ -102,22 +105,23 @@ func (c *Context) ForRequest(w http.ResponseWriter, r *http.Request) *Context {
 		parent = r.Context()
 	}
 	return &Context{
-		Parent:  parent,
-		Config:  c.Config,
-		DB:      c.DB,
-		Hooks:   c.Hooks,
-		Cache:   c.Cache,
-		Options: c.Options,
-		Meta:    c.Meta,
-		Locale:  c.Locale,
-		Auth:    c.Auth,
-		Users:   c.Users,
-		Roles:   c.Roles,
-		Theme:   c.Theme,
-		Mailer:  c.Mailer,
-		Req:     r,
-		Res:     w,
-		Scope:   NewRequestScope(),
+		Parent:   parent,
+		Config:   c.Config,
+		DB:       c.DB,
+		Hooks:    c.Hooks,
+		Cache:    c.Cache,
+		Options:  c.Options,
+		Meta:     c.Meta,
+		Locale:   c.Locale,
+		Auth:     c.Auth,
+		Users:    c.Users,
+		Roles:    c.Roles,
+		Theme:    c.Theme,
+		Patterns: c.Patterns,
+		Mailer:   c.Mailer,
+		Req:      r,
+		Res:      w,
+		Scope:    NewRequestScope(),
 	}
 }
 

@@ -74,5 +74,18 @@ func builtinPostTypes() map[string]PostType {
 			Template:      []any{},
 			TemplateLock:  false,
 		},
+		"wp_block": {
+			Description:   "",
+			Hierarchical:  false,
+			HasArchive:    false,
+			Name:          "Patterns",
+			Slug:          "wp_block",
+			Icon:          "dashicons-layout",
+			Taxonomies:    []string{"wp_pattern_category"},
+			RestBase:      "blocks",
+			RestNamespace: "wp/v2",
+			Template:      []any{},
+			TemplateLock:  false,
+		},
 	}
 }

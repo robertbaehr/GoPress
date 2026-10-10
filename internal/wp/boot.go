@@ -53,5 +53,9 @@ func Boot(ctx context.Context, cfg *config.Config) (*Context, error) {
 		c.Theme = tj
 	}
 
+	// Block patterns from theme + wp_block posts (P5.9). Non-fatal on load errors.
+	c.Patterns = NewPatternRegistry()
+	_ = LoadPatterns(c)
+
 	return c, nil
 }
