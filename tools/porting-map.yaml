@@ -65,6 +65,19 @@
   task: P6.14
   api: n/a
 
+# P6.15: password-protected post form + wp-login.php?action=postpass cookie.
+- prefix: wp-login.php#postpass
+  go: internal/login/login.go
+  status: partial
+  task: P6.15
+  api: n/a
+
+- prefix: wp-includes/post-template.php#get_the_password_form
+  go: internal/wp/post_password.go
+  status: partial
+  task: P6.15
+  api: exported
+
 - prefix: wp-login.php#resetpass
   go: internal/login/login.go
   status: partial

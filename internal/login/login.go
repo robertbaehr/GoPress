@@ -63,6 +63,8 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 			h.serveRegister(w, r, c)
 		case "confirm_admin_email":
 			h.serveConfirmAdminEmail(w, r, c)
+		case "postpass":
+			h.servePostPass(w, r, c)
 		default:
 			h.servePost(w, r, c)
 		}
@@ -70,6 +72,48 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 		w.Header().Set("Allow", "GET, HEAD, POST")
 		http.Error(w, "Method Not Allowed\n", http.StatusMethodNotAllowed)
 	}
+}
+
+// servePostPass handles wp-login.php?action=postpass (P6.15).
+// Sets the wp-postpass_{COOKIEHASH} cookie from the submitted post password and redirects.
+func (h *Handler) servePostPass(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	_ = r.ParseForm()
+	redirectTo := strings.TrimSpace(r.FormValue("redirect_to"))
+	if redirectTo == "" {
+		redirectTo = r.Referer()
+	}
+	if redirectTo == "" {
+		home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+		if home == "" {
+			home = "/"
+		}
+		redirectTo = home
+	}
+	pwd := r.FormValue("post_password")
+	if pwd == "" {
+		http.Redirect(w, r, redirectTo, http.StatusFound)
+		return
+	}
+	cookieHash := ""
+	if c != nil {
+		cookieHash = c.CookieHash()
+	}
+	if cookieHash == "" {
+		cookieHash = "0"
+	}
+	hashed := wp.HashPasswordPortable(pwd, 8)
+	secure := strings.HasPrefix(strings.ToLower(redirectTo), "https://")
+	expire := time.Now().Add(10 * 24 * time.Hour)
+	http.SetCookie(w, &http.Cookie{
+		Name:     "wp-postpass_" + cookieHash,
+		Value:    hashed,
+		Path:     "/",
+		Expires:  expire,
+		MaxAge:   10 * 24 * 60 * 60,
+		HttpOnly: true,
+		Secure:   secure,
+	})
+	http.Redirect(w, r, redirectTo, http.StatusFound)
 }
 
 // serveConfirmAdminEmail handles wp-login.php?action=confirm_admin_email (P6.14).
