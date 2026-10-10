@@ -98,6 +98,118 @@ type CommentInsert struct {
 	Approved    string // "1" or "0"
 }
 
+// CommentUpdate holds fields for updating an existing comment (P4.64).
+// Zero-value / nil pointer fields are left unchanged.
+type CommentUpdate struct {
+	Content     *string
+	Author      *string
+	AuthorEmail *string
+	AuthorURL   *string
+	Parent      *int64
+	PostID      *int64
+	Approved    *string // "1", "0", "spam", "trash"
+}
+
+// UpdateComment updates a comment row (wp_update_comment subset, P4.64).
+func UpdateComment(c *Context, id int64, in CommentUpdate) error {
+	if c == nil || c.DB == nil || id <= 0 {
+		return fmt.Errorf("wp: UpdateComment: invalid input")
+	}
+	existing, err := GetCommentByID(c, id)
+	if err != nil {
+		return err
+	}
+	if existing == nil {
+		return fmt.Errorf("wp: UpdateComment: not found")
+	}
+	content := existing.Content
+	author := existing.Author
+	email := existing.AuthorEmail
+	url := existing.AuthorURL
+	parent := existing.Parent
+	postID := existing.PostID
+	approved := existing.Approved
+	if in.Content != nil {
+		content = *in.Content
+	}
+	if in.Author != nil {
+		author = *in.Author
+	}
+	if in.AuthorEmail != nil {
+		email = *in.AuthorEmail
+	}
+	if in.AuthorURL != nil {
+		url = *in.AuthorURL
+	}
+	if in.Parent != nil {
+		parent = *in.Parent
+		if parent < 0 {
+			parent = 0
+		}
+	}
+	if in.PostID != nil {
+		postID = *in.PostID
+	}
+	if in.Approved != nil {
+		approved = *in.Approved
+	}
+	q, args, err := c.DB.Prepare(
+		"UPDATE "+c.DB.Comments()+" SET comment_content = %s, comment_author = %s, comment_author_email = %s, "+
+			"comment_author_url = %s, comment_parent = %d, comment_post_ID = %d, comment_approved = %s "+
+			"WHERE comment_ID = %d",
+		content, author, email, url, parent, postID, approved, id,
+	)
+	if err != nil {
+		return err
+	}
+	if _, err := c.DB.Exec(q, args...); err != nil {
+		return err
+	}
+	wasApproved := existing.Approved == "1"
+	nowApproved := approved == "1"
+	if wasApproved != nowApproved {
+		delta := 1
+		if wasApproved {
+			delta = -1
+		}
+		_ = bumpCommentCount(c, existing.PostID, delta)
+		if postID != existing.PostID && nowApproved {
+			_ = bumpCommentCount(c, postID, 1)
+			_ = bumpCommentCount(c, existing.PostID, -1)
+		}
+	} else if postID != existing.PostID && nowApproved {
+		_ = bumpCommentCount(c, existing.PostID, -1)
+		_ = bumpCommentCount(c, postID, 1)
+	}
+	return nil
+}
+
+// GetCommentByID loads a comment by ID regardless of approval status.
+func GetCommentByID(c *Context, id int64) (*Comment, error) {
+	if c == nil || c.DB == nil || id <= 0 {
+		return nil, nil
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT comment_ID, comment_post_ID, comment_author, comment_author_email, comment_author_url, "+
+			"comment_date, comment_date_gmt, comment_content, comment_approved, comment_type, comment_parent, user_id "+
+			"FROM "+c.DB.Comments()+
+			" WHERE comment_ID = %d AND comment_type IN (%s, %s) LIMIT 1",
+		id, "comment", "",
+	)
+	if err != nil {
+		return nil, err
+	}
+	row, err := c.DB.GetRow(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	if row == nil {
+		return nil, nil
+	}
+	cm := commentFromRow(row)
+	return &cm, nil
+}
+
 // InsertComment inserts a comment row and bumps comment_count when approved.
 func InsertComment(c *Context, in CommentInsert) (int64, error) {
 	if c == nil || c.DB == nil {
