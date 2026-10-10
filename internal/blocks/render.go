@@ -163,6 +163,15 @@ func templatePartTag(block Block) string {
 			return "footer"
 		}
 	}
+	// WP defaults the wrapping tag from the part slug when tagName/area unset (P5.16).
+	if slug, ok := block.Attrs["slug"].(string); ok {
+		switch strings.ToLower(strings.TrimSpace(slug)) {
+		case "header":
+			return "header"
+		case "footer":
+			return "footer"
+		}
+	}
 	return "div"
 }
 

@@ -29,6 +29,22 @@ func TestRenderTemplatePart(t *testing.T) {
 	}
 }
 
+func TestRenderTemplatePartSlugDefaultsTag(t *testing.T) {
+	env := &blocks.Env{
+		LoadTemplatePart: func(slug string) (string, bool) {
+			return `<!-- wp:paragraph --><p>H</p><!-- /wp:paragraph -->`, true
+		},
+	}
+	out := blocks.RenderWith(env, `<!-- wp:template-part {"slug":"header"} /-->`)
+	if !strings.Contains(out, `<header class="wp-block-template-part">`) {
+		t.Fatalf("header slug should default to <header>: %q", out)
+	}
+	out = blocks.RenderWith(env, `<!-- wp:template-part {"slug":"footer"} /-->`)
+	if !strings.Contains(out, `<footer class="wp-block-template-part">`) {
+		t.Fatalf("footer slug should default to <footer>: %q", out)
+	}
+}
+
 func TestRenderTemplatePartMissing(t *testing.T) {
 	env := &blocks.Env{
 		LoadTemplatePart: func(slug string) (string, bool) { return "", false },

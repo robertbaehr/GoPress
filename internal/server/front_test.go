@@ -42,9 +42,12 @@ func TestFrontHomeRendersBlogname(t *testing.T) {
 	if !strings.Contains(body, "<title>") || !strings.Contains(body, "GoPress Fixture") {
 		t.Fatalf("expected blogname in HTML, got %q", body)
 	}
-	// P5.5: active theme has templates/home.html — render blocks instead of shim.
-	if !strings.Contains(body, `class="wp-template"`) {
-		t.Fatalf("expected wp-template body, got %q", body)
+	// P5.16: TT5 home document chrome (body classes + site-blocks wrapper).
+	if !strings.Contains(body, `wp-theme-twentytwentyfive`) || !strings.Contains(body, `home blog`) {
+		t.Fatalf("expected TT5 home body classes, got %q", body)
+	}
+	if !strings.Contains(body, `class="wp-site-blocks"`) {
+		t.Fatalf("expected wp-site-blocks wrapper, got %q", body)
 	}
 	if !strings.Contains(body, "wp-block-group") {
 		t.Fatalf("expected rendered block template markup, got %q", body)
@@ -54,8 +57,11 @@ func TestFrontHomeRendersBlogname(t *testing.T) {
 	if !strings.Contains(body, "Customized header part") {
 		t.Fatalf("expected rendered template part, got %q", body)
 	}
-	if !strings.Contains(body, `class="wp-block-template-part"`) {
-		t.Fatalf("expected template-part wrapper, got %q", body)
+	if !strings.Contains(body, `<header class="wp-block-template-part"`) {
+		t.Fatalf("expected header template-part wrapper from slug default, got %q", body)
+	}
+	if !strings.Contains(body, ">Blog</h1>") {
+		t.Fatalf("expected hidden-blog-heading pattern text Blog, got %q", body)
 	}
 	if strings.Contains(body, "<!-- wp:") {
 		t.Fatalf("block comments should be rendered away, got %q", body)
