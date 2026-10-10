@@ -2286,6 +2286,7 @@ func stripTagsSimple(s string) string {
 
 // tryTrailingSlashRedirect issues a 301 when a pretty content path is missing
 // the trailing slash expected by permalink_structure (WP redirect_canonical subset).
+// P3.38: also covers /page/N home pagination and emits an absolute Location.
 func (f *Front) tryTrailingSlashRedirect(w http.ResponseWriter, r *http.Request, c *wp.Context, parsed *wp.ParseResult) bool {
 	if r == nil || r.URL == nil || parsed == nil {
 		return false
@@ -2314,8 +2315,23 @@ func (f *Front) tryTrailingSlashRedirect(w http.ResponseWriter, r *http.Request,
 	if r.URL.RawQuery != "" {
 		target += "?" + r.URL.RawQuery
 	}
-	http.Redirect(w, r, target, http.StatusMovedPermanently)
+	http.Redirect(w, r, absoluteCanonicalURL(c, target), http.StatusMovedPermanently)
 	return true
+}
+
+// absoluteCanonicalURL prefixes a site-relative redirect with home (P3.38).
+func absoluteCanonicalURL(c *wp.Context, target string) string {
+	if strings.HasPrefix(target, "http://") || strings.HasPrefix(target, "https://") {
+		return target
+	}
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	if home == "" {
+		return target
+	}
+	if !strings.HasPrefix(target, "/") {
+		target = "/" + target
+	}
+	return home + target
 }
 
 func permalinkUsesTrailingSlash(c *wp.Context) bool {
@@ -2330,13 +2346,21 @@ func permalinkUsesTrailingSlash(c *wp.Context) bool {
 }
 
 func needsTrailingSlashCanonical(parsed *wp.ParseResult) bool {
-	if parsed == nil || parsed.IsHome {
+	if parsed == nil {
+		return false
+	}
+	// Bare home "/" never needs a trailing-slash redirect.
+	if parsed.IsHome {
+		// P3.38: /page/N (home pagination) should redirect to /page/N/.
+		if parsed.QueryVars != nil && parsed.QueryVars["paged"] != "" {
+			return true
+		}
 		return false
 	}
 	if isSingularVars(parsed.QueryVars) || isFeedVars(parsed.QueryVars) {
 		return true
 	}
-	for _, k := range []string{"category_name", "tag", "year", "monthnum", "author_name"} {
+	for _, k := range []string{"category_name", "tag", "year", "monthnum", "author_name", "paged"} {
 		if parsed.QueryVars[k] != "" {
 			return true
 		}
@@ -2370,7 +2394,7 @@ func (f *Front) tryCanonicalPostRedirect(w http.ResponseWriter, r *http.Request,
 	if target == "" {
 		target = "/?p=" + strconv.FormatInt(post.ID, 10)
 	}
-	http.Redirect(w, r, target, http.StatusMovedPermanently)
+	http.Redirect(w, r, absoluteCanonicalURL(c, target), http.StatusMovedPermanently)
 	return true
 }
 
