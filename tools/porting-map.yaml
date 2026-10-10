@@ -756,6 +756,13 @@
 - prefix: tests/corpus/front-pages.yaml#front-search-hello
   go: tests/corpus/front-pages.yaml
   status: partial
+
+# P10.34: e2e coverage for theme search.html (query-title, form, results).
+- prefix: tests/e2e/search-template.spec.js
+  go: tests/e2e/search-template.spec.js
+  status: partial
+  task: P10.34
+  api: n/a
   task: P10.21
   api: n/a
 
