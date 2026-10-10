@@ -916,6 +916,13 @@ func (h *Handler) servePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 
 	secure := r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
 	set, err := c.Login(login, password, remember, secure, 0)
+	// P6.21: mirror wp-login.php testcookie handling. After signon, request
+	// cookies still lack the logged-in cookie; if the form posted testcookie
+	// without wordpress_test_cookie present, treat cookies as blocked.
+	if r.FormValue("testcookie") != "" && !hasTestCookie(r) {
+		err = &wp.AuthError{Code: "test_cookie", Login: login}
+		set = nil
+	}
 	if err != nil || set == nil {
 		// Re-display form with error; preserve redirect_to via query for GET-shaped form.
 		q := r.URL.Query()
@@ -938,6 +945,16 @@ func (h *Handler) servePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		return
 	}
 	http.Redirect(w, r, redirectTo, http.StatusFound)
+}
+
+const testCookieName = "wordpress_test_cookie"
+
+func hasTestCookie(r *http.Request) bool {
+	if r == nil {
+		return false
+	}
+	ck, err := r.Cookie(testCookieName)
+	return err == nil && ck != nil && strings.TrimSpace(ck.Value) != ""
 }
 
 // formatLoginAuthError builds WP-shaped login_error HTML (P6.12).
@@ -971,6 +988,9 @@ func formatLoginAuthError(err error, login, password, lostURL string) string {
 			msg += `<a href="` + html.EscapeString(lostURL) + `">Lost your password?</a>`
 		}
 		return loginErrorHTML("incorrect_password", msg, "", "")
+	case "test_cookie":
+		msg := `Cookies are blocked or not supported by your browser. You must <a href="https://developer.wordpress.org/advanced-administration/wordpress/cookies/#enable-cookies-in-your-browser">enable cookies</a> to use WordPress.`
+		return loginErrorHTML("test_cookie", msg, "", "")
 	default:
 		return loginErrorHTML(ae.Code, "The username or password you entered is incorrect.", "", "")
 	}

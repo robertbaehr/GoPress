@@ -114,6 +114,14 @@
   task: P6.16
   api: n/a
 
+# P6.21: testcookie / wordpress_test_cookie handling on login POST.
+- prefix: wp-login.php#testcookie
+  go: internal/login/login.go
+  status: partial
+  task: P6.21
+  api: n/a
+  notes: "P6.21 — POST testcookie without wordpress_test_cookie → cookies blocked error"
+
 # P6.20: reject external redirect_to (wp_validate_redirect subset).
 - prefix: wp-includes/pluggable.php#wp_validate_redirect
   go: internal/login/login.go
