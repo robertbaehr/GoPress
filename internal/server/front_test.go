@@ -327,6 +327,37 @@ func TestFrontFeedAtomPrettyPath(t *testing.T) {
 	}
 }
 
+func TestFrontCommentsFeed(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/comments/feed/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `<rss version="2.0"`) {
+		t.Fatalf("expected RSS2: %q", body[:min(300, len(body))])
+	}
+	if !strings.Contains(body, "Comments for ") {
+		t.Fatalf("expected comments feed title: %q", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, "/comments/feed/") {
+		t.Fatalf("expected self comments/feed link: %q", body[:min(500, len(body))])
+	}
+	if !strings.Contains(body, "Comment on ") || !strings.Contains(body, "#comment-") {
+		t.Fatalf("expected comment items: %q", body[:min(800, len(body))])
+	}
+	// Must not be the posts feed.
+	if strings.Contains(body, "xmlns:wfw=") || strings.Contains(body, "xmlns:slash=") {
+		t.Fatalf("comments feed should not include wfw/slash namespaces")
+	}
+	if strings.Contains(body, "<slash:comments>") {
+		t.Fatalf("comments feed should not list post slash:comments")
+	}
+}
+
 func TestFrontTrailingSlashCanonical(t *testing.T) {
 	c := testBoot(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}

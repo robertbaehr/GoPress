@@ -38,6 +38,10 @@ func (f *Front) ServeFront(w http.ResponseWriter, r *http.Request, c *wp.Context
 	}
 
 	if isFeedVars(parsed.QueryVars) {
+		if isCommentsFeedVars(parsed.QueryVars) {
+			f.renderCommentsFeedRSS2(w, r, c)
+			return
+		}
 		f.renderFeed(w, r, c, parsed.QueryVars["feed"])
 		return
 	}
@@ -134,6 +138,160 @@ func (f *Front) renderFeed(w http.ResponseWriter, r *http.Request, c *wp.Context
 	default:
 		f.renderFeedRSS2(w, c)
 	}
+}
+
+func isCommentsFeedVars(vars map[string]string) bool {
+	if vars == nil {
+		return false
+	}
+	v := strings.TrimSpace(vars["withcomments"])
+	return v == "1" || strings.EqualFold(v, "true")
+}
+
+// renderCommentsFeedRSS2 emits feed-rss2-comments.php shape (P3.27).
+func (f *Front) renderCommentsFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	desc := optionString(c, "blogdescription", "")
+	comments, err := wp.ListRecentComments(c, 10)
+	if err != nil {
+		http.Error(w, "comments feed: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+
+	self := home + "/comments/feed/"
+	if r != nil && r.URL != nil {
+		path := r.URL.Path
+		if path == "" {
+			path = "/comments/feed/"
+		}
+		if !strings.HasSuffix(path, "/") {
+			path += "/"
+		}
+		self = home + path
+	}
+
+	var b strings.Builder
+	b.WriteString(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"` + "\n")
+	b.WriteString("\txmlns:content=\"http://purl.org/rss/1.0/modules/content/\"\n")
+	b.WriteString("\txmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n")
+	b.WriteString("\txmlns:atom=\"http://www.w3.org/2005/Atom\"\n")
+	b.WriteString("\txmlns:sy=\"http://purl.org/rss/1.0/modules/syndication/\"\n")
+	b.WriteString("\t\n")
+	b.WriteString("\t>\n")
+	b.WriteString("<channel>\n")
+	b.WriteString("\t<title>\n")
+	b.WriteString("\tComments for ")
+	b.WriteString(xmlEscape(blogname))
+	b.WriteString("\t</title>\n")
+	b.WriteString("\t<atom:link href=\"")
+	b.WriteString(xmlEscape(self))
+	b.WriteString("\" rel=\"self\" type=\"application/rss+xml\" />\n")
+	b.WriteString("\t<link>")
+	b.WriteString(xmlEscape(home))
+	b.WriteString("</link>\n")
+	b.WriteString("\t<description>")
+	b.WriteString(xmlEscape(desc))
+	b.WriteString("</description>\n")
+	b.WriteString("\t<lastBuildDate>")
+	b.WriteString(xmlEscape(commentsFeedBuildDate(comments)))
+	b.WriteString("</lastBuildDate>\n")
+	b.WriteString("\t<sy:updatePeriod>\n")
+	b.WriteString("\thourly\t</sy:updatePeriod>\n")
+	b.WriteString("\t<sy:updateFrequency>\n")
+	b.WriteString("\t1\t</sy:updateFrequency>\n")
+	b.WriteString("\t<generator>https://wordpress.org/?v=7.2-alpha-64260</generator>\n")
+
+	for _, cm := range comments {
+		post, _ := wp.GetPostByID(c, cm.PostID)
+		postTitle := ""
+		link := fmt.Sprintf("%s/?p=%d#comment-%d", home, cm.PostID, cm.ID)
+		if post != nil {
+			postTitle = post.Title
+			if plink := postPermalink(home, *post); plink != "" {
+				link = strings.TrimRight(plink, "/") + "/#comment-" + strconv.FormatInt(cm.ID, 10)
+			}
+		}
+		author := cm.Author
+		if author == "" {
+			author = "Anonymous"
+		}
+		title := "Comment on " + postTitle + " by " + author
+		guid := fmt.Sprintf("%s/?p=%d#comment-%d", home, cm.PostID, cm.ID)
+		contentHTML := commentFeedContent(cm.Content)
+		descText := commentFeedDescription(cm.Content)
+
+		b.WriteString("\t<item>\n")
+		b.WriteString("\t\t<title>\n")
+		b.WriteString("\t\t")
+		b.WriteString(xmlEscape(title))
+		b.WriteString("\t\t</title>\n")
+		b.WriteString("\t\t<link>")
+		b.WriteString(xmlEscape(link))
+		b.WriteString("</link>\n\n")
+		b.WriteString("\t\t<dc:creator><![CDATA[")
+		b.WriteString(author)
+		b.WriteString("]]></dc:creator>\n")
+		b.WriteString("\t\t<pubDate>")
+		b.WriteString(xmlEscape(feedRFC822(cm.DateGMT, cm.Date)))
+		b.WriteString("</pubDate>\n")
+		b.WriteString("\t\t<guid isPermaLink=\"false\">")
+		b.WriteString(xmlEscape(guid))
+		b.WriteString("</guid>\n\n")
+		b.WriteString("\t\t\t\t\t<description><![CDATA[")
+		b.WriteString(descText)
+		b.WriteString("]]></description>\n")
+		b.WriteString("\t\t\t<content:encoded><![CDATA[")
+		b.WriteString(contentHTML)
+		b.WriteString("]]></content:encoded>\n")
+		b.WriteString("\t\t\n")
+		b.WriteString("\t\t\t</item>\n")
+	}
+	b.WriteString("\t</channel>\n</rss>\n")
+
+	setFrontAPILink(w, c)
+	w.Header().Set("Content-Type", "application/rss+xml; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(b.String()))
+}
+
+func commentsFeedBuildDate(comments []wp.Comment) string {
+	if len(comments) == 0 {
+		return time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05 +0000")
+	}
+	return feedRFC822(comments[0].DateGMT, comments[0].Date)
+}
+
+func commentFeedContent(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	// Minimal the_content-ish: paragraphs + br for newlines.
+	escaped := html.EscapeString(raw)
+	escaped = strings.ReplaceAll(escaped, "\r\n", "\n")
+	escaped = strings.ReplaceAll(escaped, "\r", "\n")
+	parts := strings.Split(escaped, "\n\n")
+	var b strings.Builder
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" {
+			continue
+		}
+		p = strings.ReplaceAll(p, "\n", "<br />\n")
+		b.WriteString("<p>")
+		b.WriteString(p)
+		b.WriteString("</p>\n")
+	}
+	return b.String()
+}
+
+func commentFeedDescription(raw string) string {
+	// comment_text_rss: HTML-escaped plain text in CDATA.
+	raw = strings.TrimSpace(raw)
+	raw = strings.ReplaceAll(raw, "\r\n", "\n")
+	raw = strings.ReplaceAll(raw, "\r", "\n")
+	return html.EscapeString(raw)
 }
 
 func isSingularVars(vars map[string]string) bool {

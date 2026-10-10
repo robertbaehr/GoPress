@@ -342,6 +342,13 @@
   task: P2.29
   api: exported
 
+# P3.27: /comments/feed/ RSS comments feed.
+- prefix: wp-includes/feed-rss2-comments.php
+  go: internal/server/front.go
+  status: partial
+  task: P3.27
+  api: n/a
+
 # P4.48: create post revision on REST post update.
 - prefix: wp-includes/revision.php#wp_save_post_revision
   go: internal/rest/posts_write.go
