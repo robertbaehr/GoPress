@@ -794,7 +794,7 @@ func extraIndexRoutes() map[string]RouteIndex {
 			Methods:   []string{"GET"},
 			Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}},
 		},
-		"/wp/v2/templates":                        collectionRoute(ns),
+		"/wp/v2/templates": collectionRoute(ns),
 		"/wp/v2/templates/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)": itemRoute(ns),
 		"/wp/v2/template-parts": collectionRoute(ns),
 		"/wp/v2/template-parts/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)": itemRoute(ns),
@@ -850,12 +850,12 @@ func extraIndexRoutes() map[string]RouteIndex {
 				}},
 			},
 		},
-		"/wp/v2/plugins/(?P<plugin>[^.\\/]+(?:\\/[^.\\/]+)?)":                       itemRoute(ns),
-		"/wp/v2/global-styles/(?P<parent>[\\d]+)/revisions":                         getOnly(ns),
-		"/wp/v2/global-styles/(?P<parent>[\\d]+)/revisions/(?P<id>[\\d]+)":          getOnly(ns),
-		"/wp-abilities/v1/abilities/(?P<name>[a-zA-Z0-9\\-\\/]+)":                   getOnly("wp-abilities/v1"),
-		"/wp-abilities/v1/abilities/(?P<name>[a-zA-Z0-9\\-\\/]+?)/run":              getOnly("wp-abilities/v1"),
-		"/wp-abilities/v1/categories/(?P<slug>[a-z0-9]+(?:-[a-z0-9]+)*)":            getOnly("wp-abilities/v1"),
+		"/wp/v2/plugins/(?P<plugin>[^.\\/]+(?:\\/[^.\\/]+)?)":              itemRoute(ns),
+		"/wp/v2/global-styles/(?P<parent>[\\d]+)/revisions":                getOnly(ns),
+		"/wp/v2/global-styles/(?P<parent>[\\d]+)/revisions/(?P<id>[\\d]+)": getOnly(ns),
+		"/wp-abilities/v1/abilities/(?P<name>[a-zA-Z0-9\\-\\/]+)":          getOnly("wp-abilities/v1"),
+		"/wp-abilities/v1/abilities/(?P<name>[a-zA-Z0-9\\-\\/]+?)/run":     getOnly("wp-abilities/v1"),
+		"/wp-abilities/v1/categories/(?P<slug>[a-z0-9]+(?:-[a-z0-9]+)*)":   getOnly("wp-abilities/v1"),
 	}
 }
 
