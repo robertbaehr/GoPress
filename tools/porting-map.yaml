@@ -2618,6 +2618,14 @@
   task: P4.60
   api: exported
 
+# P4.77: REST activate/deactivate plugins via status on item route.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-plugins-controller.php#update_item
+  go: internal/rest/plugins_write.go
+  status: partial
+  task: P4.77
+  api: exported
+  notes: "P4.77 — PUT/PATCH/POST status active|inactive → ActivatePlugin/DeactivatePlugin"
+
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-menu-locations-controller.php
   go: internal/rest/menus.go
   status: partial
