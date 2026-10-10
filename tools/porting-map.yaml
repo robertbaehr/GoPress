@@ -329,14 +329,14 @@
   api: internal
 
 # P5.35: CSS filter functions (brightness/contrast/…) + duotone compose.
-- prefix: wp-includes/block-supports/duotone.php#filter
+- prefix: wp-includes/block-supports/duotone.php
   go: internal/blocks/style_engine.go
   status: partial
   task: P5.35
   api: internal
 
 # P4.51: REST POST/PUT/PATCH /wp/v2/global-styles/{id}.
-- prefix: wp-includes/rest-api/endpoints/class-wp-rest-global-styles-controller.php#update
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-global-styles-controller.php
   go: internal/rest/global_styles_write.go
   status: partial
   task: P4.51
@@ -369,6 +369,13 @@
   status: partial
   task: P9.6
   api: exported
+
+# P10.27: refresh docs/STATUS.md + PORTING.md.
+- prefix: docs/STATUS.md
+  go: docs/STATUS.md
+  status: partial
+  task: P10.27
+  api: n/a
 
 # P4.50: REST POST /wp/v2/block-renderer/{name} with attributes + post_id.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-renderer-controller.php
