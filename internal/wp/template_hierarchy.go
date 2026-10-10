@@ -28,6 +28,20 @@ func DateTemplateSlugs() []string {
 	return []string{"date", "archive", "index"}
 }
 
+// AuthorTemplateSlugs returns the author archive hierarchy for block themes (P3.23).
+// WP: author-{nicename}, author-{id}, author, archive, index.
+func AuthorTemplateSlugs(nicename string, id int64) []string {
+	var slugs []string
+	if nicename = strings.TrimSpace(nicename); nicename != "" {
+		slugs = append(slugs, "author-"+nicename)
+	}
+	if id > 0 {
+		slugs = append(slugs, "author-"+strconv.FormatInt(id, 10))
+	}
+	slugs = append(slugs, "author", "archive", "index")
+	return slugs
+}
+
 // SingularTemplateSlugs returns the singular hierarchy for a post or page.
 // Pages: page-{slug}, page-{id}, page, singular, index.
 // Posts/CPTs: single-{type}-{slug}, single-{type}, single, singular, index.

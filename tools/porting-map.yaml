@@ -299,6 +299,13 @@
   task: P3.22
   api: n/a
 
+# P3.23: /author/{nicename}/ author archives.
+- prefix: wp-includes/author-template.php
+  go: internal/server/front.go
+  status: partial
+  task: P3.23
+  api: n/a
+
 - prefix: wp-includes/feed-atom.php
   go: internal/server/front.go
   status: partial
