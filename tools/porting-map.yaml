@@ -3486,12 +3486,14 @@ wp-login.php#language-switcher-post
   task: P5.22
   api: internal
 
-# P5.41: expand Block Hooks — nested anchors, set_ignored metadata, callbacks.
+# P5.41 / P9.21: expand Block Hooks — nested anchors, set_ignored metadata, callbacks,
+# unregister, theme attr inject, apply during Env.Render.
 - prefix: wp-includes/blocks.php
   go: internal/blocks/hooks.go
   status: partial
-  task: P5.41
+  task: P9.21
   api: exported
+  notes: "P9.21 — UnregisterHookedBlock; template-part theme inject; Render applies hooks"
 
 - prefix: wp-includes/blocks.php#set_ignored_hooked_blocks_metadata
   go: internal/blocks/hooks.go
@@ -3502,8 +3504,16 @@ wp-login.php#language-switcher-post
 - prefix: wp-includes/blocks.php#apply_block_hooks_to_content
   go: internal/blocks/hooks.go
   status: partial
-  task: P5.41
+  task: P9.21
   api: exported
+  notes: "P9.21 — Env.Render applies hooks when registry non-empty"
+
+- prefix: wp-includes/blocks.php#make_before_block_visitor
+  go: internal/blocks/hooks.go
+  status: partial
+  task: P9.21
+  api: internal
+  notes: "P9.21 — theme attr inject subset during applyHooksToBlock"
 
 - prefix: wp-includes/blocks/details.php
   go: internal/blocks/details.go

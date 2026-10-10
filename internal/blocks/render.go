@@ -17,10 +17,14 @@ func RenderWith(env *Env, content string) string {
 }
 
 // Render parses serialized block content using this env.
+// P9.21: when hooked blocks are registered, apply_block_hooks_to_content first.
 func (e *Env) Render(content string) string {
 	e = e.ensure()
 	if content == "" {
 		return ""
+	}
+	if HasHookedBlocks() {
+		content = ApplyBlockHooksToContent(content)
 	}
 	parsed := Parse(content)
 	var b strings.Builder

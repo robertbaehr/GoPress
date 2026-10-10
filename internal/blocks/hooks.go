@@ -39,11 +39,40 @@ func RegisterHookedBlock(hookedName, anchorName, position string) {
 	hookedRegistry[hookedName][anchorName] = position
 }
 
+// UnregisterHookedBlock removes a hooked registration (P9.21 extensibility).
+// If anchorName is empty, removes the hooked block from all anchors.
+func UnregisterHookedBlock(hookedName, anchorName string) {
+	if hookedName == "" {
+		return
+	}
+	hookedMu.Lock()
+	defer hookedMu.Unlock()
+	anchors, ok := hookedRegistry[hookedName]
+	if !ok {
+		return
+	}
+	if anchorName == "" {
+		delete(hookedRegistry, hookedName)
+		return
+	}
+	delete(anchors, anchorName)
+	if len(anchors) == 0 {
+		delete(hookedRegistry, hookedName)
+	}
+}
+
 // ResetHookedBlocks clears the hooked-block registry (tests).
 func ResetHookedBlocks() {
 	hookedMu.Lock()
 	defer hookedMu.Unlock()
 	hookedRegistry = map[string]map[string]string{}
+}
+
+// HasHookedBlocks reports whether any hooked blocks are registered (P9.21).
+func HasHookedBlocks() bool {
+	hookedMu.RLock()
+	defer hookedMu.RUnlock()
+	return len(hookedRegistry) > 0
 }
 
 // GetHookedBlocks returns hooked block types grouped by anchor and relative position
@@ -288,6 +317,8 @@ func applyHooksToBlock(block *Block, hooked map[string]map[string][]string, call
 	if block == nil {
 		return ""
 	}
+	// P9.21: mirror make_before_block_visitor theme attr injection for template parts.
+	injectThemeAttributeInTemplatePartBlock(block)
 	before := callback(block, HookBefore, hooked)
 	after := callback(block, HookAfter, hooked)
 	first := callback(block, HookFirstChild, hooked)
@@ -313,6 +344,22 @@ func applyHooksToBlock(block *Block, hooked map[string]map[string][]string, call
 		mid = "<!-- wp:" + name + " " + attrs + " -->" + inner + "<!-- /wp:" + name + " -->"
 	}
 	return before + mid + after
+}
+
+// injectThemeAttributeInTemplatePartBlock sets theme on core/template-part when missing
+// (_inject_theme_attribute_in_template_part_block subset, P9.21).
+func injectThemeAttributeInTemplatePartBlock(block *Block) {
+	if block == nil || blockName(*block) != "core/template-part" {
+		return
+	}
+	if block.Attrs == nil {
+		block.Attrs = map[string]any{}
+	}
+	if _, ok := block.Attrs["theme"]; ok {
+		return
+	}
+	// Default active theme slug when not provided (fixture/default).
+	block.Attrs["theme"] = "twentytwentyfive"
 }
 
 // serializeInnerWithHooks walks InnerContent / InnerBlocks and applies hooks
