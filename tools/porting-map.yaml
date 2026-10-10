@@ -837,6 +837,13 @@
   task: P8.9
   api: exported
 
+# P3.40: wp_get_shortlink + Link rel=shortlink / head shortlink.
+- prefix: wp-includes/link-template.php#wp_get_shortlink
+  go: internal/wp/shortlink.go
+  status: partial
+  task: P3.40
+  api: exported
+
 # P3.37 / P10.35: file-level link-template row (fragments above are docs-only).
 - prefix: wp-includes/link-template.php
   go: internal/wp/link_template.go
