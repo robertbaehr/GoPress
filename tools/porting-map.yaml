@@ -2535,6 +2535,21 @@
   api: n/a
   notes: "P5.71 — unit coverage for query-title polish attrs"
 
+# P5.72: polish core/post-navigation-link (label, showTitle, linkLabel, arrow, textAlign).
+- prefix: wp-includes/blocks/post-navigation-link.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.72
+  api: internal
+  notes: "P5.72 — label/showTitle/linkLabel/arrow/textAlign; empty adjacent keeps wrapper"
+
+- prefix: wp-includes/blocks/post-navigation-link
+  go: internal/blocks/post_navigation_link_test.go
+  status: partial
+  task: P5.72
+  api: n/a
+  notes: "P5.72 — unit coverage for post-navigation-link polish attrs"
+
 # P5.70: register more core block type metadata on GET /wp/v2/block-types.
 - prefix: wp-includes/blocks
   go: internal/rest/block_types.go
