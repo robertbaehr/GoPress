@@ -539,6 +539,13 @@
   task: P8.8
   api: n/a
 
+# P8.10: WP_Privacy_Requests_Table-shaped list table for export/erase.
+- prefix: wp-admin/includes/class-wp-privacy-requests-table.php
+  go: internal/admin/privacy_requests_table.go
+  status: partial
+  task: P8.10
+  api: n/a
+
 # P10.26: E2E comments RSS feed /comments/feed/.
 - prefix: tests/e2e/comments-feed.spec.js
   go: tests/e2e/comments-feed.spec.js

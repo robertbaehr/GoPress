@@ -2068,26 +2068,8 @@ func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, c *wp.Context, n
 	b.WriteString("</td></tr>\n</table>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Send Request\"></p>\n")
 	b.WriteString("</div>\n</form>\n")
-	b.WriteString("<table class=\"wp-list-table widefat fixed striped privacy-requests\">\n")
-	b.WriteString("<thead><tr><th scope=\"col\">Requester</th><th scope=\"col\">File</th><th scope=\"col\">Status</th><th scope=\"col\">Next steps</th></tr></thead>\n")
-	b.WriteString("<tbody>\n")
-	files := wp.ListPersonalDataExportFiles(c, 20)
-	if pendingEmail != "" {
-		b.WriteString("<tr class=\"request-pending\"><td>")
-		b.WriteString(html.EscapeString(pendingEmail))
-		b.WriteString("</td><td>—</td><td>Pending confirmation</td><td>Waiting for confirmation</td></tr>\n")
-	} else if len(files) == 0 {
-		b.WriteString("<tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"4\">No requests found.</td></tr>\n")
-	}
-	for _, name := range files {
-		dl := wp.PersonalDataExportDownloadURL(name)
-		b.WriteString("<tr><td>—</td><td>")
-		b.WriteString(html.EscapeString(name))
-		b.WriteString("</td><td>Complete</td><td><a class=\"export-personal-data-download\" href=\"")
-		b.WriteString(html.EscapeString(dl))
-		b.WriteString("\">Download personal data</a></td></tr>\n")
-	}
-	b.WriteString("</tbody>\n</table>\n</div>\n</body>\n</html>\n")
+	b.WriteString(renderExportPrivacyRequestsTable(c, pendingEmail))
+	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
 
@@ -2164,17 +2146,8 @@ func (h *Handler) servePrivacyErasePage(w http.ResponseWriter, c *wp.Context, no
 	b.WriteString("<label for=\"send_confirmation_email\">Send personal data erasure confirmation email.</label></p>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Send Request\"></p>\n")
 	b.WriteString("</form>\n")
-	b.WriteString("<table class=\"wp-list-table widefat fixed striped privacy-requests\">\n")
-	b.WriteString("<thead><tr><th scope=\"col\">Requester</th><th scope=\"col\">Status</th></tr></thead>\n")
-	statusRow := `<tr class="no-items"><td class="colspanchange" colspan="2">No requests found.</td></tr>`
-	if pendingEmail != "" {
-		statusRow = "<tr class=\"request-pending\"><td>" + html.EscapeString(pendingEmail) +
-			"</td><td>Pending confirmation</td></tr>"
-	}
-	b.WriteString("<tbody>")
-	b.WriteString(statusRow)
-	b.WriteString("</tbody>\n")
-	b.WriteString("</table>\n</div>\n</body>\n</html>\n")
+	b.WriteString(renderErasePrivacyRequestsTable(pendingEmail))
+	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
 
