@@ -762,6 +762,32 @@ func extraIndexRoutes() map[string]RouteIndex {
 		"/wp/v2/widgets/(?P<id>[\\w\\-]+)":           getOnly(ns),
 		"/wp/v2/widget-types":                        getOnly(ns),
 		"/wp/v2/widget-types/(?P<id>[a-zA-Z0-9_-]+)": getOnly(ns),
+		// Additional WP route keys (handlers may remain stubs) — P4.33.
+		"/wp/v2/block-types/(?P<namespace>[a-zA-Z0-9_-]+)":                          getOnly(ns),
+		"/wp/v2/block-types/(?P<namespace>[a-zA-Z0-9_-]+)/(?P<name>[a-zA-Z0-9_-]+)": getOnly(ns),
+		"/wp/v2/block-directory/search":                                             getOnly(ns),
+		"/wp/v2/pattern-directory/patterns":                                         getOnly(ns),
+		"/wp/v2/font-collections":                                                   collectionRoute(ns),
+		"/wp/v2/font-collections/(?P<slug>[\\/\\w-]+)":                              itemRoute(ns),
+		"/wp/v2/font-families/(?P<font_family_id>[\\d]+)/font-faces":                collectionRoute(ns),
+		"/wp/v2/font-families/(?P<font_family_id>[\\d]+)/font-faces/(?P<id>[\\d]+)": itemRoute(ns),
+		"/wp/v2/pages/(?P<parent>[\\d]+)/revisions":                                 getOnly(ns),
+		"/wp/v2/pages/(?P<parent>[\\d]+)/revisions/(?P<id>[\\d]+)":                  getOnly(ns),
+		"/wp/v2/pages/(?P<id>[\\d]+)/autosaves":                                     getOnly(ns),
+		"/wp/v2/pages/(?P<parent>[\\d]+)/autosaves/(?P<id>[\\d]+)":                  getOnly(ns),
+		"/wp/v2/blocks/(?P<parent>[\\d]+)/revisions":                                getOnly(ns),
+		"/wp/v2/blocks/(?P<parent>[\\d]+)/revisions/(?P<id>[\\d]+)":                 getOnly(ns),
+		"/wp/v2/blocks/(?P<id>[\\d]+)/autosaves":                                    getOnly(ns),
+		"/wp/v2/blocks/(?P<parent>[\\d]+)/autosaves/(?P<id>[\\d]+)":                 getOnly(ns),
+		"/wp/v2/media/(?P<id>[\\d]+)/edit":                                          getOnly(ns),
+		"/wp/v2/media/(?P<id>[\\d]+)/post-process":                                  getOnly(ns),
+		"/wp/v2/menu-locations/(?P<location>[\\w-]+)":                               getOnly(ns),
+		"/wp/v2/plugins/(?P<plugin>[^.\\/]+(?:\\/[^.\\/]+)?)":                       itemRoute(ns),
+		"/wp/v2/global-styles/(?P<parent>[\\d]+)/revisions":                         getOnly(ns),
+		"/wp/v2/global-styles/(?P<parent>[\\d]+)/revisions/(?P<id>[\\d]+)":          getOnly(ns),
+		"/wp-abilities/v1/abilities/(?P<name>[a-zA-Z0-9\\-\\/]+)":                   getOnly("wp-abilities/v1"),
+		"/wp-abilities/v1/abilities/(?P<name>[a-zA-Z0-9\\-\\/]+?)/run":              getOnly("wp-abilities/v1"),
+		"/wp-abilities/v1/categories/(?P<slug>[a-z0-9]+(?:-[a-z0-9]+)*)":            getOnly("wp-abilities/v1"),
 	}
 }
 
@@ -772,21 +798,11 @@ func collectionRoute(ns string) RouteIndex {
 		Endpoints: []RouteEndpoint{
 			{
 				Methods: []string{"GET"},
-				Args: map[string]any{
-					"context":  map[string]any{"default": "view", "required": false},
-					"page":     map[string]any{"default": 1, "required": false},
-					"per_page": map[string]any{"default": 10, "required": false},
-					"search":   map[string]any{"required": false},
-					"slug":     map[string]any{"required": false},
-				},
+				Args:    collectionListArgs(),
 			},
 			{
 				Methods: []string{"POST"},
-				Args: map[string]any{
-					"title":   map[string]any{"required": false},
-					"content": map[string]any{"required": false},
-					"status":  map[string]any{"required": false},
-				},
+				Args:    collectionCreateArgs(),
 			},
 		},
 	}
@@ -796,13 +812,131 @@ func itemRoute(ns string) RouteIndex {
 	return RouteIndex{
 		Namespace: ns,
 		Methods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
-		Endpoints: []RouteEndpoint{{
-			Methods: []string{"GET"},
-			Args: map[string]any{
-				"id":      map[string]any{"required": false},
-				"context": map[string]any{"default": "view", "required": false},
+		Endpoints: []RouteEndpoint{
+			{
+				Methods: []string{"GET"},
+				Args: map[string]any{
+					"id": map[string]any{
+						"description": "Unique identifier for the post.",
+						"type":        "integer",
+						"required":    false,
+					},
+					"context": map[string]any{
+						"description": "Scope under which the request is made; determines fields present in response.",
+						"type":        "string",
+						"default":     "view",
+						"required":    false,
+						"enum":        []string{"view", "embed", "edit"},
+					},
+					"password": map[string]any{
+						"description": "The password for the post if it is password protected.",
+						"type":        "string",
+						"required":    false,
+					},
+				},
 			},
-		}},
+			{
+				Methods: []string{"POST", "PUT", "PATCH"},
+				Args:    collectionCreateArgs(),
+			},
+			{
+				Methods: []string{"DELETE"},
+				Args: map[string]any{
+					"force": map[string]any{
+						"type":        "boolean",
+						"default":     false,
+						"required":    false,
+						"description": "Whether to bypass Trash and force deletion.",
+					},
+				},
+			},
+		},
+	}
+}
+
+// collectionListArgs is the shared WP list query arg catalog (P4.33 expansion).
+func collectionListArgs() map[string]any {
+	intArray := map[string]any{"type": "array", "default": []any{}, "required": false, "items": map[string]any{"type": "integer"}}
+	return map[string]any{
+		"context": map[string]any{
+			"description": "Scope under which the request is made; determines fields present in response.",
+			"type":        "string", "default": "view", "required": false,
+			"enum": []string{"view", "embed", "edit"},
+		},
+		"page":     map[string]any{"description": "Current page of the collection.", "type": "integer", "default": 1, "required": false, "minimum": 1},
+		"per_page": map[string]any{"description": "Maximum number of items to be returned in result set.", "type": "integer", "default": 10, "required": false, "minimum": 1, "maximum": 100},
+		"search":   map[string]any{"description": "Limit results to those matching a string.", "type": "string", "required": false},
+		"after":    map[string]any{"description": "Limit response to posts published after a given ISO8601 compliant date.", "type": "string", "format": "date-time", "required": false},
+		"before":   map[string]any{"description": "Limit response to posts published before a given ISO8601 compliant date.", "type": "string", "format": "date-time", "required": false},
+		"modified_after": map[string]any{
+			"description": "Limit response to posts modified after a given ISO8601 compliant date.",
+			"type":        "string", "format": "date-time", "required": false,
+		},
+		"modified_before": map[string]any{
+			"description": "Limit response to posts modified before a given ISO8601 compliant date.",
+			"type":        "string", "format": "date-time", "required": false,
+		},
+		"author":         intArray,
+		"author_exclude": intArray,
+		"exclude":        intArray,
+		"include":        intArray,
+		"offset":         map[string]any{"description": "Offset the result set by a specific number of items.", "type": "integer", "required": false},
+		"order":          map[string]any{"description": "Order sort attribute ascending or descending.", "type": "string", "default": "desc", "required": false, "enum": []string{"asc", "desc"}},
+		"orderby": map[string]any{
+			"description": "Sort collection by post attribute.",
+			"type":        "string", "default": "date", "required": false,
+			"enum": []string{"author", "date", "id", "include", "modified", "parent", "relevance", "slug", "include_slugs", "title"},
+		},
+		"search_columns":     map[string]any{"type": "array", "default": []any{}, "required": false, "items": map[string]any{"type": "string"}},
+		"search_semantics":   map[string]any{"description": "How to interpret the search input.", "type": "string", "required": false, "enum": []string{"exact"}},
+		"slug":               map[string]any{"description": "Limit result set to posts with one or more specific slugs.", "type": "array", "required": false, "items": map[string]any{"type": "string"}},
+		"status":             map[string]any{"description": "Limit result set to posts assigned one or more statuses.", "type": "array", "default": "publish", "required": false},
+		"tax_relation":       map[string]any{"description": "Limit result set based on relationship between multiple taxonomies.", "type": "string", "required": false, "enum": []string{"AND", "OR"}},
+		"categories":         intArray,
+		"categories_exclude": intArray,
+		"tags":               intArray,
+		"tags_exclude":       intArray,
+		"sticky":             map[string]any{"description": "Limit result set to items that are sticky.", "type": "boolean", "required": false},
+		"ignore_sticky":      map[string]any{"description": "Whether to ignore sticky posts or not.", "type": "boolean", "default": false, "required": false},
+		"format":             map[string]any{"description": "Limit result set to items assigned one or more given formats.", "type": "array", "required": false, "items": map[string]any{"type": "string"}},
+		"parent":             intArray,
+		"parent_exclude":     intArray,
+		"menu_order":         map[string]any{"type": "integer", "required": false},
+		"media_type":         map[string]any{"type": "string", "required": false},
+		"mime_type":          map[string]any{"type": "string", "required": false},
+		"post":               intArray,
+		"type":               map[string]any{"type": "string", "required": false},
+		"author_email":       map[string]any{"type": "string", "format": "email", "required": false},
+		"password":           map[string]any{"type": "string", "required": false},
+	}
+}
+
+func collectionCreateArgs() map[string]any {
+	return map[string]any{
+		"date":           map[string]any{"description": "The date the post was published, in the site's timezone.", "type": []any{"string", "null"}, "format": "date-time", "required": false},
+		"date_gmt":       map[string]any{"description": "The date the post was published, as GMT.", "type": []any{"string", "null"}, "format": "date-time", "required": false},
+		"slug":           map[string]any{"description": "An alphanumeric identifier for the post unique to its type.", "type": "string", "required": false},
+		"status":         map[string]any{"description": "A named status for the post.", "type": "string", "required": false, "enum": []string{"publish", "future", "draft", "pending", "private"}},
+		"password":       map[string]any{"description": "A password to protect access to the content and excerpt.", "type": "string", "required": false},
+		"title":          map[string]any{"description": "The title for the post.", "type": "object", "required": false},
+		"content":        map[string]any{"description": "The content for the post.", "type": "object", "required": false},
+		"author":         map[string]any{"description": "The ID for the author of the post.", "type": "integer", "required": false},
+		"excerpt":        map[string]any{"description": "The excerpt for the post.", "type": "object", "required": false},
+		"featured_media": map[string]any{"description": "The ID of the featured media for the post.", "type": "integer", "required": false},
+		"comment_status": map[string]any{"description": "Whether or not comments are open on the post.", "type": "string", "required": false, "enum": []string{"open", "closed"}},
+		"ping_status":    map[string]any{"description": "Whether or not the post can be pinged.", "type": "string", "required": false, "enum": []string{"open", "closed"}},
+		"format":         map[string]any{"description": "The format for the post.", "type": "string", "required": false},
+		"meta":           map[string]any{"description": "Meta fields.", "type": "object", "required": false},
+		"sticky":         map[string]any{"description": "Whether or not the post should be treated as sticky.", "type": "boolean", "required": false},
+		"template":       map[string]any{"description": "The theme file to use to display the post.", "type": "string", "required": false},
+		"categories":     map[string]any{"description": "The terms assigned to the post in the category taxonomy.", "type": "array", "required": false, "items": map[string]any{"type": "integer"}},
+		"tags":           map[string]any{"description": "The terms assigned to the post in the post_tag taxonomy.", "type": "array", "required": false, "items": map[string]any{"type": "integer"}},
+		"parent":         map[string]any{"type": "integer", "required": false},
+		"menu_order":     map[string]any{"type": "integer", "required": false},
+		"alt_text":       map[string]any{"type": "string", "required": false},
+		"caption":        map[string]any{"type": "object", "required": false},
+		"description":    map[string]any{"type": "object", "required": false},
+		"post":           map[string]any{"type": "integer", "required": false},
 	}
 }
 
