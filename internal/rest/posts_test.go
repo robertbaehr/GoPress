@@ -676,3 +676,85 @@ func containsT(s string) bool {
 	}
 	return false
 }
+
+func TestPostsAfterBeforeQueryParams(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	// Fixture dates span 2024-02-01 .. later; after mid-February should drop early posts.
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?after=2024-02-03T00:00:00&per_page=100", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("after status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var afterHits []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &afterHits); err != nil {
+		t.Fatal(err)
+	}
+	if len(afterHits) == 0 {
+		t.Fatal("expected posts after 2024-02-03")
+	}
+	for _, p := range afterHits {
+		if p.Date != "" && p.Date < "2024-02-03T00:00:00" {
+			t.Fatalf("post %d date %q before after bound", p.ID, p.Date)
+		}
+	}
+	afterTotal := rec.Header().Get("X-WP-Total")
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?before=2024-02-02T00:00:00&per_page=100", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("before status=%d", rec.Code)
+	}
+	var beforeHits []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &beforeHits); err != nil {
+		t.Fatal(err)
+	}
+	if len(beforeHits) == 0 {
+		t.Fatal("expected posts before 2024-02-02")
+	}
+	for _, p := range beforeHits {
+		if p.Date != "" && p.Date > "2024-02-02T00:00:00" {
+			t.Fatalf("post %d date %q after before bound", p.ID, p.Date)
+		}
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?after=2024-02-01T00:00:00&before=2024-02-02T23:59:59&per_page=100", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("range status=%d", rec.Code)
+	}
+	var rangeHits []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &rangeHits); err != nil {
+		t.Fatal(err)
+	}
+	if len(rangeHits) == 0 {
+		t.Fatal("expected posts in Feb 1-2 range")
+	}
+	if afterTotal == "" || afterTotal == "0" {
+		t.Fatalf("expected after X-WP-Total > 0, got %q", afterTotal)
+	}
+
+	// Far-future after → empty.
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?after=2099-01-01T00:00:00&per_page=10", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	var miss []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &miss); err != nil {
+		t.Fatal(err)
+	}
+	if len(miss) != 0 {
+		t.Fatalf("expected empty for future after, got %d", len(miss))
+	}
+	if rec.Header().Get("X-WP-Total") != "0" {
+		t.Fatalf("expected X-WP-Total=0, got %q", rec.Header().Get("X-WP-Total"))
+	}
+}
+

@@ -1599,6 +1599,28 @@
   api: exported
   notes: "P4.87 — QueryArgs.TagIn joins term relationships by post_tag term_id"
 
+# P4.91: REST GET /wp/v2/posts?after=&before=&modified_after=&modified_before=.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#after
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.91
+  api: exported
+  notes: "P4.91 — ?after=/?before= → QueryArgs.DateAfter/DateBefore (inclusive)"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#modified_after
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.91
+  api: exported
+  notes: "P4.91 — ?modified_after=/?modified_before= → ModifiedAfter/Before"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#date_query
+  go: internal/wp/query.go
+  status: partial
+  task: P4.91
+  api: exported
+  notes: "P4.91 — appendDateQueryFilters on GetPosts/CountPosts"
+
 # P4.90: REST GET /wp/v2/posts?include=&exclude= (post__in / post__not_in).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#include
   go: internal/rest/posts.go

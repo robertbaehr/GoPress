@@ -196,7 +196,7 @@ func parsePage(r *http.Request) int {
 	return page
 }
 
-func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, author int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude []int64) ([]Post, error) {
+func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, author int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string) ([]Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -208,20 +208,24 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 	}
 	offset := (page - 1) * limit
 	args := wp.QueryArgs{
-		PostType:     postType,
-		PostStatus:   "publish",
-		PostStatuses: statuses,
-		PostsPerPage: limit,
-		Offset:       offset,
-		OrderBy:      orderby,
-		Order:        order,
-		Search:       search,
-		Author:       author,
-		CategoryIn:   categoryIn,
-		TagIn:        tagIn,
-		NameIn:       slugs,
-		PostIn:       include,
-		PostNotIn:    exclude,
+		PostType:       postType,
+		PostStatus:     "publish",
+		PostStatuses:   statuses,
+		PostsPerPage:   limit,
+		Offset:         offset,
+		OrderBy:        orderby,
+		Order:          order,
+		Search:         search,
+		Author:         author,
+		CategoryIn:     categoryIn,
+		TagIn:          tagIn,
+		NameIn:         slugs,
+		PostIn:         include,
+		PostNotIn:      exclude,
+		DateAfter:      dateAfter,
+		DateBefore:     dateBefore,
+		ModifiedAfter:  modifiedAfter,
+		ModifiedBefore: modifiedBefore,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	rows, err := wp.GetPosts(c, args)
@@ -308,6 +312,50 @@ func parsePostsInclude(r *http.Request) []int64 {
 // parsePostsExclude reads REST ?exclude= (maps to post__not_in, P4.90).
 func parsePostsExclude(r *http.Request) []int64 {
 	return parsePostsTermIDs(r, "exclude")
+}
+
+// parsePostsAfter reads REST ?after= (ISO8601 → MySQL datetime, P4.91).
+func parsePostsAfter(r *http.Request) string {
+	return parseRESTDateTimeQuery(r, "after")
+}
+
+// parsePostsBefore reads REST ?before= (ISO8601 → MySQL datetime, P4.91).
+func parsePostsBefore(r *http.Request) string {
+	return parseRESTDateTimeQuery(r, "before")
+}
+
+// parsePostsModifiedAfter reads REST ?modified_after= (P4.91).
+func parsePostsModifiedAfter(r *http.Request) string {
+	return parseRESTDateTimeQuery(r, "modified_after")
+}
+
+// parsePostsModifiedBefore reads REST ?modified_before= (P4.91).
+func parsePostsModifiedBefore(r *http.Request) string {
+	return parseRESTDateTimeQuery(r, "modified_before")
+}
+
+// parseRESTDateTimeQuery parses an ISO8601 / MySQL datetime query arg to MySQL form.
+func parseRESTDateTimeQuery(r *http.Request, key string) string {
+	if r == nil || key == "" {
+		return ""
+	}
+	raw := strings.TrimSpace(r.URL.Query().Get(key))
+	if raw == "" {
+		return ""
+	}
+	// Zoned timestamps → UTC MySQL; bare wall times keep the clock as written
+	// (matches WP date_query against post_date / post_modified).
+	for _, layout := range []string{time.RFC3339Nano, time.RFC3339} {
+		if t, err := time.Parse(layout, raw); err == nil {
+			return t.UTC().Format("2006-01-02 15:04:05")
+		}
+	}
+	for _, layout := range []string{"2006-01-02T15:04:05", "2006-01-02 15:04:05", "2006-01-02"} {
+		if t, err := time.ParseInLocation(layout, raw, time.UTC); err == nil {
+			return t.Format("2006-01-02 15:04:05")
+		}
+	}
+	return ""
 }
 
 // parsePostsSlug reads REST ?slug= (maps to post_name__in, P4.89).
@@ -422,7 +470,7 @@ func parsePostsTermIDs(r *http.Request, key string) []int64 {
 	return out
 }
 
-func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, author int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude []int64) (int, error) {
+func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, author int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
@@ -430,16 +478,20 @@ func countPosts(c *wp.Context, postType string, stickyFilter *bool, search strin
 		postType = "post"
 	}
 	args := wp.QueryArgs{
-		PostType:     postType,
-		PostStatus:   "publish",
-		PostStatuses: statuses,
-		Search:       search,
-		Author:       author,
-		CategoryIn:   categoryIn,
-		TagIn:        tagIn,
-		NameIn:       slugs,
-		PostIn:       include,
-		PostNotIn:    exclude,
+		PostType:       postType,
+		PostStatus:     "publish",
+		PostStatuses:   statuses,
+		Search:         search,
+		Author:         author,
+		CategoryIn:     categoryIn,
+		TagIn:          tagIn,
+		NameIn:         slugs,
+		PostIn:         include,
+		PostNotIn:      exclude,
+		DateAfter:      dateAfter,
+		DateBefore:     dateBefore,
+		ModifiedAfter:  modifiedAfter,
+		ModifiedBefore: modifiedBefore,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	return wp.CountPosts(c, args)
