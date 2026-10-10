@@ -244,3 +244,23 @@ func TestBlockSupportsLayoutFlexHorizontalJustify(t *testing.T) {
 		}
 	}
 }
+
+func TestBlockSupportsElementsLinkAndButtonColors(t *testing.T) {
+	in := `<!-- wp:group {"style":{"elements":{"link":{"color":{"text":"var:preset|color|luminous-vivid-amber"},":hover":{"color":{"text":"#ff0000"}}},"button":{"color":{"text":"#ffffff","background":"#111111"}}}}} -->
+<div class="wp-block-group">X</div>
+<!-- /wp:group -->`
+	out := blocks.Render(in)
+	for _, want := range []string{
+		"wp-elements-",
+		"has-link-color",
+		"a:where(:not(.wp-element-button)){color:var(--wp--preset--color--luminous-vivid-amber)}",
+		"a:where(:not(.wp-element-button)):hover{color:#ff0000}",
+		".wp-element-button, .",
+		"color:#ffffff",
+		"background-color:#111111",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}

@@ -307,6 +307,13 @@
   task: P5.31
   api: internal
 
+# P5.32: link/button element colors (wp-elements-* + has-link-color).
+- prefix: wp-includes/block-supports/elements.php
+  go: internal/blocks/supports.go
+  status: partial
+  task: P5.32
+  api: internal
+
 # P4.47: REST PATCH/PUT /wp/v2/media/{id} title + alt_text.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-attachments-controller.php#update
   go: internal/rest/media_write.go

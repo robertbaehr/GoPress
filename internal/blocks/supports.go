@@ -4,15 +4,19 @@ import (
 	"fmt"
 	"html"
 	"strings"
+	"sync/atomic"
 )
 
-// applySupports injects basic color/spacing/typography/layout/shadow/position/border classes and styles
-// from block attributes onto the rendered root element (P5.10 / P5.19 / P5.27–P5.31).
+// elementsSeq is the per-process counter for wp-elements-* class names (P5.32).
+var elementsSeq uint64
+
+// applySupports injects basic color/spacing/typography/layout/shadow/position/border/elements
+// classes and styles from block attributes onto the rendered root element (P5.10 / P5.19 / P5.27–P5.32).
 func applySupports(htmlFragment string, attrs map[string]any, blockName string) string {
 	if htmlFragment == "" {
 		return htmlFragment
 	}
-	classes, styles := supportsFromAttrs(attrs, blockName)
+	classes, styles, elementsCSS := supportsFromAttrs(attrs, blockName)
 	out := htmlFragment
 	for _, c := range classes {
 		out = addRootClass(out, c)
@@ -20,10 +24,13 @@ func applySupports(htmlFragment string, attrs map[string]any, blockName string) 
 	if styles != "" {
 		out = addRootStyle(out, styles)
 	}
+	if elementsCSS != "" {
+		out = `<style id="core-block-supports-inline-css">` + elementsCSS + `</style>` + out
+	}
 	return out
 }
 
-func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string, styles string) {
+func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string, styles, elementsCSS string) {
 	if attrs != nil {
 		if cn, ok := attrs["className"].(string); ok && cn != "" {
 			classes = append(classes, strings.Fields(cn)...)
@@ -106,17 +113,109 @@ func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string
 		if shadow, ok := attrs["shadow"].(string); ok && shadow != "" {
 			styles = mergeCSSDecls(styles, "box-shadow:"+cssValue(shadow))
 		}
+
+		// Elements block support: link/button colors (P5.32).
+		if elClasses, elCSS := elementsSupport(attrs); len(elClasses) > 0 || elCSS != "" {
+			for _, c := range elClasses {
+				classes = appendUnique(classes, c)
+			}
+			elementsCSS = elCSS
+		}
 	}
 	classes = append(classes, layoutClasses(blockName, attrs)...)
 	if layoutCSS := layoutInlineStyles(blockName, attrs); layoutCSS != "" {
 		styles = mergeCSSDecls(styles, layoutCSS)
 	}
-	return classes, styles
+	return classes, styles, elementsCSS
 }
 
-// duotoneFromStyle extracts WP duotone support (P5.22): class wp-duotone-{slug}
-// plus an inline filter declaration for preset / unset values.
-// Attr paths: style.color.duotone (legacy) and style.filter.duotone (current).
+// elementsSupport mirrors wp-includes/block-supports/elements.php for link/button colors (P5.32).
+func elementsSupport(attrs map[string]any) (classes []string, css string) {
+	if attrs == nil {
+		return nil, ""
+	}
+	style, ok := attrs["style"].(map[string]any)
+	if !ok || style == nil {
+		return nil, ""
+	}
+	elements, ok := style["elements"].(map[string]any)
+	if !ok || elements == nil {
+		return nil, ""
+	}
+
+	linkStyle, _ := elements["link"].(map[string]any)
+	buttonStyle, _ := elements["button"].(map[string]any)
+	needClass := elementHasColor(linkStyle) || elementHasHoverColor(linkStyle) || elementHasColor(buttonStyle)
+	if !needClass {
+		return nil, ""
+	}
+
+	n := atomic.AddUint64(&elementsSeq, 1)
+	className := fmt.Sprintf("wp-elements-%d", n)
+	classes = append(classes, className)
+
+	if elementHasColor(linkStyle) {
+		classes = append(classes, "has-link-color")
+	}
+
+	var rules []string
+	if linkStyle != nil {
+		sel := fmt.Sprintf(".%s a:where(:not(.wp-element-button))", className)
+		if rule := CompileCSS(sel, elementColorStyle(linkStyle)); rule != "" {
+			rules = append(rules, rule)
+		}
+		if hover, ok := linkStyle[":hover"].(map[string]any); ok && elementHasColor(hover) {
+			hoverSel := fmt.Sprintf(".%s a:where(:not(.wp-element-button)):hover", className)
+			if rule := CompileCSS(hoverSel, elementColorStyle(hover)); rule != "" {
+				rules = append(rules, rule)
+			}
+		}
+	}
+	if buttonStyle != nil && elementHasColor(buttonStyle) {
+		sel := fmt.Sprintf(".%s .wp-element-button, .%s .wp-block-button__link", className, className)
+		if rule := CompileCSS(sel, elementColorStyle(buttonStyle)); rule != "" {
+			rules = append(rules, rule)
+		}
+	}
+	return classes, strings.Join(rules, "")
+}
+
+func elementHasColor(el map[string]any) bool {
+	if el == nil {
+		return false
+	}
+	color, ok := el["color"].(map[string]any)
+	if !ok || color == nil {
+		return false
+	}
+	for _, key := range []string{"text", "background", "gradient"} {
+		if v, ok := color[key].(string); ok && strings.TrimSpace(v) != "" {
+			return true
+		}
+	}
+	return false
+}
+
+func elementHasHoverColor(el map[string]any) bool {
+	if el == nil {
+		return false
+	}
+	hover, _ := el[":hover"].(map[string]any)
+	return elementHasColor(hover)
+}
+
+// elementColorStyle extracts the color subtree for style-engine compilation.
+func elementColorStyle(el map[string]any) map[string]any {
+	if el == nil {
+		return nil
+	}
+	color, ok := el["color"].(map[string]any)
+	if !ok || color == nil {
+		return nil
+	}
+	return map[string]any{"color": color}
+}
+
 // presetColorSlug extracts a color slug from var:preset|color|slug or CSS var form.
 func presetColorSlug(attr string) string {
 	attr = strings.TrimSpace(attr)
@@ -131,6 +230,9 @@ func presetColorSlug(attr string) string {
 	return ""
 }
 
+// duotoneFromStyle extracts WP duotone support (P5.22): class wp-duotone-{slug}
+// plus an inline filter declaration for preset / unset values.
+// Attr paths: style.color.duotone (legacy) and style.filter.duotone (current).
 func duotoneFromStyle(style map[string]any) (filterID, filterCSS string) {
 	attr := duotoneAttr(style)
 	if attr == nil {
