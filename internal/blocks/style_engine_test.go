@@ -61,6 +61,30 @@ func TestCompileCSSRule(t *testing.T) {
 	}
 }
 
+func TestCompileStyleCSSFilterFunctions(t *testing.T) {
+	got := blocks.CompileStyle(map[string]any{
+		"filter": map[string]any{
+			"duotone":    "var:preset|duotone|blue-orange", // ignored here; supports path
+			"brightness": "1.2",
+			"saturate":   "saturate(80%)",
+			"hueRotate":  "15deg",
+		},
+	})
+	for _, want := range []string{
+		"filter:",
+		"brightness(1.2)",
+		"saturate(80%)",
+		"hue-rotate(15deg)",
+	} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("missing %q in %q", want, got)
+		}
+	}
+	if strings.Contains(got, "duotone") {
+		t.Fatalf("duotone should not be emitted by CompileStyle: %q", got)
+	}
+}
+
 func TestSupportsUsesStyleEngine(t *testing.T) {
 	in := `<!-- wp:group {"style":{"typography":{"fontSize":"18px"},"border":{"radius":"8px"}}} -->
 <div class="wp-block-group">X</div>

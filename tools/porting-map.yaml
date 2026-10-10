@@ -328,6 +328,13 @@
   task: P5.34
   api: internal
 
+# P5.35: CSS filter functions (brightness/contrast/…) + duotone compose.
+- prefix: wp-includes/block-supports/duotone.php#filter
+  go: internal/blocks/style_engine.go
+  status: partial
+  task: P5.35
+  api: internal
+
 # P4.50: REST POST /wp/v2/block-renderer/{name} with attributes + post_id.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-renderer-controller.php
   go: internal/rest/block_types.go

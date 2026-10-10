@@ -78,6 +78,40 @@ func TestBlockSupportsDuotoneCustomColors(t *testing.T) {
 	}
 }
 
+func TestBlockSupportsCSSFilterFunctions(t *testing.T) {
+	// P5.35: safecss-allowed CSS filter functions via style.filter.{brightness,…}.
+	in := `<!-- wp:image {"style":{"filter":{"brightness":"1.1","contrast":"0.9","blur":"2px"}}} -->
+<figure class="wp-block-image"><img src="/x.png" alt=""/></figure>
+<!-- /wp:image -->`
+	out := blocks.Render(in)
+	for _, want := range []string{
+		"filter:",
+		"blur(2px)",
+		"brightness(1.1)",
+		"contrast(0.9)",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
+
+func TestBlockSupportsDuotoneComposesWithCSSFilters(t *testing.T) {
+	in := `<!-- wp:image {"style":{"filter":{"duotone":"var:preset|duotone|grayscale","brightness":"1.05"}}} -->
+<figure class="wp-block-image"><img src="/x.png" alt=""/></figure>
+<!-- /wp:image -->`
+	out := blocks.Render(in)
+	if !strings.Contains(out, "wp-duotone-grayscale") {
+		t.Fatalf("missing duotone class: %q", out)
+	}
+	if !strings.Contains(out, "var(--wp--preset--duotone--grayscale)") {
+		t.Fatalf("missing duotone filter value: %q", out)
+	}
+	if !strings.Contains(out, "brightness(1.05)") {
+		t.Fatalf("missing brightness filter: %q", out)
+	}
+}
+
 func TestBlockSupportsTypographyExtended(t *testing.T) {
 	in := `<!-- wp:paragraph {"fontFamily":"manrope","style":{"typography":{"letterSpacing":"0.05em","fontStyle":"italic","textDecoration":"underline","textTransform":"uppercase","writingMode":"horizontal-tb","textColumns":"2"}}} -->
 <p>Hi</p>

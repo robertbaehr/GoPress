@@ -50,7 +50,63 @@ func CompileStyle(style map[string]any) string {
 	}
 	// Position block support (P5.28): style.position → position/z-index/sides.
 	parts = append(parts, positionStyles(style["position"])...)
+	// Filter CSS functions (P5.35): style.filter.{brightness,contrast,…}.
+	// Duotone class + filter:var(--wp--preset--duotone--*) stay in supports.go.
+	if filter, ok := style["filter"].(map[string]any); ok {
+		parts = append(parts, filterStyles(filter)...)
+	}
 	return strings.Join(parts, ";")
+}
+
+// filterStyles emits CSS filter functions from style.filter (P5.35).
+//
+// WordPress theme.json VALID_STYLES currently documents only filter.duotone
+// (see class-wp-theme-json.php); duotone is applied via duotoneFromStyle so
+// wp-duotone-* classes stay correct. safecss_filter_attr allows the CSS
+// `filter` property, including brightness()/contrast()/… — when those appear
+// as style.filter keys we compose them into one filter: declaration.
+func filterStyles(filter map[string]any) []string {
+	if filter == nil {
+		return nil
+	}
+	// Order matches common CSS filter authoring; skip duotone (supports path).
+	type fnSpec struct {
+		key string
+		css string
+	}
+	specs := []fnSpec{
+		{"blur", "blur"},
+		{"brightness", "brightness"},
+		{"contrast", "contrast"},
+		{"grayscale", "grayscale"},
+		{"hueRotate", "hue-rotate"},
+		{"invert", "invert"},
+		{"opacity", "opacity"},
+		{"saturate", "saturate"},
+		{"sepia", "sepia"},
+	}
+	var funcs []string
+	for _, sp := range specs {
+		raw, ok := filter[sp.key]
+		if !ok || raw == nil {
+			continue
+		}
+		v := borderScalar(raw)
+		if v == "" {
+			continue
+		}
+		// Already a full function call, or a bare value → wrap.
+		lower := strings.ToLower(v)
+		if strings.Contains(lower, sp.css+"(") || strings.HasPrefix(lower, "var(") {
+			funcs = append(funcs, cssValue(v))
+			continue
+		}
+		funcs = append(funcs, sp.css+"("+cssValue(v)+")")
+	}
+	if len(funcs) == 0 {
+		return nil
+	}
+	return []string{"filter:" + strings.Join(funcs, " ")}
 }
 
 // dimensionsStyles mirrors WP dimensions block support / style engine (P5.34).
