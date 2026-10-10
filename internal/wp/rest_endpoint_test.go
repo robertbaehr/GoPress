@@ -1,6 +1,7 @@
 package wp_test
 
 import (
+	"context"
 	"testing"
 
 	"github.com/robertbaehr/GoPress/internal/wp"
@@ -10,7 +11,7 @@ func TestIsServingRESTRequest(t *testing.T) {
 	if wp.IsServingRESTRequest(nil) {
 		t.Fatal("nil context")
 	}
-	c := wp.NewContext(nil)
+	c := wp.NewContext(context.TODO())
 	if wp.IsServingRESTRequest(c) {
 		t.Fatal("fresh context should not be REST")
 	}
@@ -21,7 +22,7 @@ func TestIsServingRESTRequest(t *testing.T) {
 }
 
 func TestIsRESTEndpoint(t *testing.T) {
-	c := wp.NewContext(nil)
+	c := wp.NewContext(context.TODO())
 	if wp.IsRESTEndpoint(c) {
 		t.Fatal("fresh context")
 	}
@@ -43,7 +44,7 @@ func TestIsRESTEndpoint(t *testing.T) {
 }
 
 func TestIsRESTEndpointFilter(t *testing.T) {
-	c := wp.NewContext(nil)
+	c := wp.NewContext(context.TODO())
 	c.Hooks = wp.NewHooks()
 	c.Hooks.AddFilter("wp_is_rest_endpoint", func(value any, _ ...any) any {
 		return true
