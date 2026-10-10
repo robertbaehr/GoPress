@@ -227,6 +227,37 @@ func (c *Context) AuthenticateRequest() {
 		return
 	}
 	c.CurrentUser = user
+	if parts, err := ParseAuthCookie(cookie.Value, "logged_in"); err == nil && parts != nil {
+		c.SessionToken = parts.Token
+	}
+}
+
+// NonceTick returns the WordPress nonce tick (ceil(time / (nonce_life/2))).
+// Default nonce_life is one day (86400).
+func NonceTick(now int64, action string) int64 {
+	_ = action
+	if now <= 0 {
+		now = time.Now().Unix()
+	}
+	const nonceLife = 86400
+	half := int64(nonceLife / 2)
+	// PHP ceil(time / half)
+	return (now + half - 1) / half
+}
+
+// CreateNonce builds a wp_create_nonce value for the current user/session.
+func (c *Context) CreateNonce(action string) string {
+	if c == nil || c.Auth == nil {
+		return ""
+	}
+	uid := 0
+	token := ""
+	if c.CurrentUser != nil {
+		uid = int(c.CurrentUser.ID)
+		token = c.SessionToken
+	}
+	tick := NonceTick(0, action)
+	return c.Auth.CreateNonce(tick, action, uid, token)
 }
 
 // Login authenticates login/password, sets CurrentUser, and returns auth cookies.
