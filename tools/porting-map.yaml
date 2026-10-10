@@ -452,6 +452,12 @@
   task: P2.30
   api: exported
 
+- prefix: wp-includes/functions.php#wp_validate_boolean
+  go: internal/wp/validate_boolean.go
+  status: partial
+  task: P2.34
+  api: exported
+
 # P3.28: legacy Windows Live Writer manifest stub.
 - prefix: wp-includes/wlwmanifest.xml
   go: internal/server/wlwmanifest.go
