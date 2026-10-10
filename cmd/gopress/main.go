@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/robertbaehr/GoPress/internal/config"
+	"github.com/robertbaehr/GoPress/internal/plugins"
 	"github.com/robertbaehr/GoPress/internal/server"
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
@@ -62,6 +63,11 @@ func serveCmd(args []string) {
 		os.Exit(1)
 	}
 	defer func() { _ = wpCtx.DB.Close() }()
+
+	if err := plugins.LoadActive(wpCtx); err != nil {
+		fmt.Fprintf(os.Stderr, "plugins: %v\n", err)
+		os.Exit(1)
+	}
 
 	blogname, _ := wpCtx.Options.GetOption("blogname", "").(string)
 	log.Printf("gopress boot ok root=%s db=%s blogname=%q", *root, cfg.DBName, blogname)

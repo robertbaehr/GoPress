@@ -21,6 +21,11 @@ func phpUnserialize(data string) (any, error) {
 	return v, err
 }
 
+// UnserializePHP exposes phpUnserialize for packages outside wp (e.g. plugins).
+func UnserializePHP(data string) (any, error) {
+	return phpUnserialize(data)
+}
+
 func phpParse(data string, i int) (any, int, error) {
 	if i >= len(data) {
 		return nil, i, fmt.Errorf("php unserialize: unexpected end")

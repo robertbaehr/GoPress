@@ -8,6 +8,7 @@ package wp
 import (
 	"reflect"
 	"sort"
+	"strings"
 	"sync"
 )
 
@@ -35,6 +36,9 @@ type Hooks struct {
 
 	// current is the nested current_filter / current_action stack (top at end).
 	current []string
+
+	// noticeCapture collects HTML during CaptureAdminNotices (P9.7).
+	noticeCapture *strings.Builder
 }
 
 type callback struct {
@@ -295,4 +299,40 @@ func funcID(fn any) uintptr {
 		return 0
 	}
 	return v.Pointer()
+}
+
+// BeginNoticeCapture starts buffering AdminNotice writes.
+func (h *Hooks) BeginNoticeCapture(buf *strings.Builder) {
+	if h == nil {
+		return
+	}
+	h.mu.Lock()
+	h.noticeCapture = buf
+	h.mu.Unlock()
+}
+
+// EndNoticeCapture clears the notice capture buffer pointer.
+func (h *Hooks) EndNoticeCapture() {
+	if h == nil {
+		return
+	}
+	h.mu.Lock()
+	h.noticeCapture = nil
+	h.mu.Unlock()
+}
+
+// WriteNotice appends HTML to the active notice capture buffer.
+func (h *Hooks) WriteNotice(html string) {
+	if h == nil || html == "" {
+		return
+	}
+	h.mu.Lock()
+	buf := h.noticeCapture
+	h.mu.Unlock()
+	if buf != nil {
+		buf.WriteString(html)
+		if !strings.HasSuffix(html, "\n") {
+			buf.WriteByte('\n')
+		}
+	}
 }
