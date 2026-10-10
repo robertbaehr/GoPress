@@ -51,7 +51,7 @@ var (
 	nonceAttrRe   = regexp.MustCompile(`(?i)((?:name|id)=["'](?:_wpnonce|_ajax_nonce|nonce)["'][^>]*value=["'])[^"']+(["'])`)
 	nonceAttr2Re  = regexp.MustCompile(`(?i)(value=["'])[a-zA-Z0-9]{10}(["'][^>]*(?:name|id)=["'](?:_wpnonce|_ajax_nonce|nonce)["'])`)
 	nonceHeaderRe = regexp.MustCompile(`(?i)(X-WP-Nonce:\s*)[a-zA-Z0-9_-]+`)
-	// Standalone WP nonces are typically 10 URL-safe characters from wp_hash.
+	// Standalone WP nonces are typically 10 hex characters from wp_hash.
 	wpNonceTokenRe = regexp.MustCompile(`\b[0-9a-f]{10}\b`)
 
 	cookieAssignRe = regexp.MustCompile(`(?i)((?:wordpress(?:_logged_in|_sec)?_|wp-settings-(?:time-)?)[^=\s;]+=)[^;\s]+`)
@@ -184,7 +184,17 @@ func scrubVolatile(s string) string {
 	s = cookieAssignRe.ReplaceAllString(s, `${1}COOKIE`)
 	s = cookieHeaderRe.ReplaceAllString(s, `${1}COOKIE`)
 	// Remaining 10-char hex tokens in nonce-like contexts (localized scripts, etc.).
-	s = wpNonceTokenRe.ReplaceAllString(s, "NONCE")
+	// Skip pure-digit matches so values like created_timestamp:-2082844800
+	// in media metadata are not turned into invalid JSON (-NONCE).
+	s = wpNonceTokenRe.ReplaceAllStringFunc(s, func(m string) string {
+		for i := 0; i < len(m); i++ {
+			c := m[i]
+			if c >= 'a' && c <= 'f' {
+				return "NONCE"
+			}
+		}
+		return m
+	})
 	return s
 }
 

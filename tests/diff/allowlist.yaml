@@ -57,15 +57,3 @@
 - id: front-sitemap
   reason: Sitemap index/child URL set still a stub vs full WP sitemap provider
   remove_by: "2027-06-01"
-
-- id: rest-media-list-anon
-  reason: Media REST description/caption HTML still diverges (media_details/_links landed in P4.26)
-  remove_by: "2027-06-01"
-
-- id: rest-revisions-admin
-  reason: Revisions REST schema still diverges (X-WP-Total/body fields)
-  remove_by: "2027-06-01"
-
-- id: rest-autosaves-admin
-  reason: Autosaves REST is a stub until full autosave storage
-  remove_by: "2027-06-01"
