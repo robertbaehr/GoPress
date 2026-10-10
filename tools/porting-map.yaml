@@ -2201,6 +2201,14 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P4.68 — force=true hard-delete; authorize via parent delete_post"
 
+# P4.115: deepen REST revisions OPTIONS/context/HEAD/pagination.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-revisions-controller.php
+  go: internal/rest/revisions.go
+  status: partial
+  task: P4.115
+  api: n/a
+  notes: "P4.115 — OPTIONS schema + context validation + HEAD totals + per_page/page/offset"
+
 # P7.32: attachment edit screen stub (post.php for media).
 - prefix: wp-admin/post.php#attachment
   go: internal/admin/admin.go
