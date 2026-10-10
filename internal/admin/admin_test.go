@@ -107,7 +107,7 @@ func TestAdminScreensLoggedIn(t *testing.T) {
 		{"/wp-admin/themes.php", "Themes"},
 		{"/wp-admin/users.php", "Users"},
 		{"/wp-admin/site-editor.php", "Site Editor"},
-		{"/wp-admin/", "Dashboard"},
+		{"/wp-admin/", "At a Glance"},
 	}
 	for _, tc := range cases {
 		req := httptest.NewRequest(http.MethodGet, tc.path, nil)

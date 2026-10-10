@@ -95,6 +95,9 @@ func (h *Handler) serveDashboard(w http.ResponseWriter, r *http.Request, c *wp.C
 	blogname := optionString(c, "blogname", "GoPress")
 	restNonce := c.CreateNonce("wp_rest")
 	hbNonce := c.CreateNonce("heartbeat-nonce")
+	posts := countPostsByTypeStatus(c, "post", "publish")
+	pages := countPostsByTypeStatus(c, "page", "publish")
+	comments := countComments(c, "1")
 	writeHTML(w, http.StatusOK, fmt.Sprintf(`<!DOCTYPE html>
 <html>
 <head>
@@ -105,10 +108,23 @@ func (h *Handler) serveDashboard(w http.ResponseWriter, r *http.Request, c *wp.C
 <body class="wp-admin">
 %s<h1>Dashboard</h1>
 <p>%s</p>
-<p>GoPress admin stub (P6.2) — full screens land in P7.</p>
+<div id="dashboard-widgets-wrap">
+<div id="dashboard-widgets" class="metabox-holder">
+<div id="dashboard_right_now" class="postbox">
+<h2 class="hndle"><span>At a Glance</span></h2>
+<div class="inside">
+<ul>
+<li class="post-count"><a href="/wp-admin/edit.php">%d Posts</a></li>
+<li class="page-count"><a href="/wp-admin/edit.php?post_type=page">%d Pages</a></li>
+<li class="comment-count"><a href="/wp-admin/edit-comments.php">%d Comments</a></li>
+</ul>
+</div>
+</div>
+</div>
+</div>
 </body>
 </html>
-`, html.EscapeString(blogname), html.EscapeString(restNonce), html.EscapeString(hbNonce), adminNoticesHTML(c), html.EscapeString(blogname)))
+`, html.EscapeString(blogname), html.EscapeString(restNonce), html.EscapeString(hbNonce), adminNoticesHTML(c), html.EscapeString(blogname), posts, pages, comments))
 }
 
 func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -470,6 +486,42 @@ type postRow struct {
 	ID    int64
 	Title string
 	Date  string
+}
+
+func countPostsByTypeStatus(c *wp.Context, postType, status string) int {
+	if c == nil || c.DB == nil {
+		return 0
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT COUNT(*) AS n FROM "+c.DB.Posts()+" WHERE post_type = %s AND post_status = %s",
+		postType, status,
+	)
+	if err != nil {
+		return 0
+	}
+	row, err := c.DB.GetRow(q, args...)
+	if err != nil || row == nil {
+		return 0
+	}
+	return int(asInt64(row["n"]))
+}
+
+func countComments(c *wp.Context, approved string) int {
+	if c == nil || c.DB == nil {
+		return 0
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT COUNT(*) AS n FROM "+c.DB.Comments()+" WHERE comment_approved = %s",
+		approved,
+	)
+	if err != nil {
+		return 0
+	}
+	row, err := c.DB.GetRow(q, args...)
+	if err != nil || row == nil {
+		return 0
+	}
+	return int(asInt64(row["n"]))
 }
 
 func recentPosts(c *wp.Context, limit int) ([]postRow, error) {
