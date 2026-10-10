@@ -16,7 +16,7 @@ Short overview of what is implemented versus remaining. Detail lives in `PORTING
 
 ## Explicitly out of scope / gone
 
-- Multisite, XML-RPC, trackbacks (`wp-trackback.php` + `trackback_rdf`), Customizer, Links Manager
+- Multisite, XML-RPC, trackbacks (`wp-trackback.php` + `trackback_rdf`), Customizer, Links Manager (`link_manager_enabled` always off)
 - Theme/plugin install from wordpress.org, core updates, widgets REST
 - Remote block/pattern directory fetches (`api.wordpress.org`)
 - PHP drop-ins (`advanced-cache.php`, `object-cache.php`, `db.php`, …) — detected, never loaded

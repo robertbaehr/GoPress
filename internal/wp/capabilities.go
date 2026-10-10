@@ -158,12 +158,8 @@ func (r *Roles) MapMetaCap(cap string, userID int64, _ ...int64) []string {
 		// Without a Context/post lookup, meta caps cannot be resolved safely.
 		return []string{"do_not_allow"}
 	case "manage_links":
-		if r != nil && r.Options != nil {
-			v := r.Options.GetOption("link_manager_enabled", "0")
-			if optionTruthy(v) {
-				return []string{cap}
-			}
-		}
+		// P3.48: link_manager_enabled is permanently gone; never grant manage_links.
+		_ = LinkManagerEnabled()
 		return []string{"do_not_allow"}
 	case "customize":
 		// WordPress maps customize → edit_theme_options; parity filter denies first.
