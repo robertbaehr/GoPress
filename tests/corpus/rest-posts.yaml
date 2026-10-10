@@ -2021,3 +2021,21 @@
   compare: headers
   nonce: null
 
+
+- id: rest-json-template-parts-header-revisions
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/template-parts/twentytwentyfive//header/revisions
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-block-types-query-title
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/query-title
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
