@@ -4602,3 +4602,11 @@
   task: P10.69
   api: n/a
   notes: "P10.69 — STATUS refresh after legacy-widget, parent=, hierarchical pages, session token, category domain, uninstall button"
+
+# P5.79: core/rss — local feed link list; remote fetch blocked.
+- prefix: wp-includes/blocks/rss.php
+  go: internal/blocks/rss.go
+  status: partial
+  task: P5.79
+  api: internal
+  notes: "P5.79 — local /feed/ from ListPosts; remote feeds blocked; homepage loop guard"
