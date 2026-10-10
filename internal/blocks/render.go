@@ -39,6 +39,7 @@ func RenderBlock(block Block) string {
 // RenderBlock renders a single parsed block to HTML.
 func (e *Env) RenderBlock(block Block) string {
 	e = e.ensure()
+	block = e.applyBindings(block)
 	name := blockName(block)
 	var out string
 	switch name {

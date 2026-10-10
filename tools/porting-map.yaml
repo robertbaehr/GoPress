@@ -241,6 +241,24 @@
   task: P3.12
   api: n/a
 
+- prefix: wp-includes/block-bindings.php
+  go: internal/blocks/bindings.go
+  status: partial
+  task: P5.20
+  api: partial
+
+- prefix: wp-includes/block-bindings/
+  go: internal/blocks/bindings.go
+  status: partial
+  task: P5.20
+  api: partial
+
+- prefix: wp-includes/class-wp-block-bindings-
+  go: internal/blocks/bindings.go
+  status: partial
+  task: P5.20
+  api: partial
+
 - prefix: wp-includes/
   go: internal/wp
   status: partial

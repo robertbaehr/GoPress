@@ -41,6 +41,13 @@ type Env struct {
 	AuthorName func(postID int64) string
 	PostTerms  func(postID int64, taxonomy string) []NavLink
 
+	// GetPostMeta resolves core/post-meta block bindings (P5.20).
+	GetPostMeta func(postID int64, key string) string
+
+	// PatternOverrides is context for core/pattern-overrides bindings (P5.20).
+	// Keys are metadata.name values; values map attribute → override string.
+	PatternOverrides map[string]map[string]string
+
 	// seenPart tracks template-part slugs currently being rendered (cycle guard).
 	seenPart map[string]bool
 

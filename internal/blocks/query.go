@@ -250,7 +250,7 @@ func (e *Env) renderSiteTitle(block Block) string {
 }
 
 func (e *Env) renderSiteTagline(block Block) string {
-	e = e.ensure()
+	_ = e.ensure()
 	_ = block
 	// Empty tagline is common on fixture sites; omit markup when unset.
 	return ""

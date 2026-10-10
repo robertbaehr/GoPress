@@ -220,7 +220,7 @@ func (f *Front) renderSingular(w http.ResponseWriter, c *wp.Context, vars map[st
 
 	// P5.17: prefer block theme single/page templates when available.
 	if post.Type == "page" || post.Type == "post" {
-		slugs := []string{"single"}
+		var slugs []string
 		if post.Type == "page" {
 			slugs = []string{"page", "single"}
 		} else {
@@ -260,9 +260,7 @@ func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context
 	}
 	body := blocks.RenderWith(env, template)
 	safe := wp.KsesPost(body)
-	if strings.Contains(safe, commentFormSlot) {
-		safe = strings.Replace(safe, commentFormSlot, commentFormHTML(c, post), 1)
-	}
+	safe = strings.Replace(safe, commentFormSlot, commentFormHTML(c, post), 1)
 	safe = ensureMainSkipTarget(safe)
 
 	bodyClasses := "wp-singular wp-embed-responsive"
@@ -1208,6 +1206,15 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 				return ""
 			}
 			return asMetaString(c.Meta.GetMetadata(wp.MetaPost, postID, "footnotes", true))
+		},
+		GetPostMeta: func(postID int64, key string) string {
+			if c == nil || c.Meta == nil || postID <= 0 || key == "" {
+				return ""
+			}
+			if strings.HasPrefix(key, "_") {
+				return ""
+			}
+			return asMetaString(c.Meta.GetMetadata(wp.MetaPost, postID, key, true))
 		},
 		RenderCommentForm: func(postID int64) string {
 			if postID <= 0 {
