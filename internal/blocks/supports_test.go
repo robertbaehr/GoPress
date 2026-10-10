@@ -142,3 +142,61 @@ func TestBlockSupportsPositionFixed(t *testing.T) {
 		t.Fatalf("missing right style: %q", out)
 	}
 }
+
+func TestBlockSupportsLayoutFlexClasses(t *testing.T) {
+	in := `<!-- wp:group {"layout":{"type":"flex","orientation":"vertical","justifyContent":"center","flexWrap":"nowrap","verticalAlignment":"top"}} -->
+<div class="wp-block-group">X</div>
+<!-- /wp:group -->`
+	out := blocks.Render(in)
+	for _, want := range []string{
+		"is-layout-flex",
+		"wp-block-group-is-layout-flex",
+		"is-vertical",
+		"is-content-justification-center",
+		"is-nowrap",
+		"display:flex",
+		"flex-direction:column",
+		"flex-wrap:nowrap",
+		"align-items:center",
+		"justify-content:flex-start",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
+
+func TestBlockSupportsLayoutGridClasses(t *testing.T) {
+	in := `<!-- wp:group {"layout":{"type":"grid","columnCount":3}} -->
+<div class="wp-block-group">X</div>
+<!-- /wp:group -->`
+	out := blocks.Render(in)
+	for _, want := range []string{
+		"is-layout-grid",
+		"wp-block-group-is-layout-grid",
+		"display:grid",
+		"grid-template-columns:repeat(3, minmax(0, 1fr))",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
+
+func TestBlockSupportsLayoutFlexHorizontalJustify(t *testing.T) {
+	in := `<!-- wp:group {"layout":{"type":"flex","justifyContent":"space-between","verticalAlignment":"center"}} -->
+<div class="wp-block-group">X</div>
+<!-- /wp:group -->`
+	out := blocks.Render(in)
+	for _, want := range []string{
+		"is-layout-flex",
+		"is-content-justification-space-between",
+		"display:flex",
+		"justify-content:space-between",
+		"align-items:center",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}

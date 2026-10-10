@@ -7,7 +7,7 @@ import (
 )
 
 // applySupports injects basic color/spacing/fontSize/layout/shadow/position classes and styles
-// from block attributes onto the rendered root element (P5.10 / P5.19 / P5.27 / P5.28).
+// from block attributes onto the rendered root element (P5.10 / P5.19 / P5.27 / P5.28 / P5.29).
 func applySupports(htmlFragment string, attrs map[string]any, blockName string) string {
 	if htmlFragment == "" {
 		return htmlFragment
@@ -78,6 +78,9 @@ func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string
 		}
 	}
 	classes = append(classes, layoutClasses(blockName, attrs)...)
+	if layoutCSS := layoutInlineStyles(blockName, attrs); layoutCSS != "" {
+		styles = mergeCSSDecls(styles, layoutCSS)
+	}
 	return classes, styles
 }
 
@@ -157,32 +160,33 @@ func duotoneSlugFromAttr(attr string) string {
 	return ""
 }
 
-// layoutClasses mirrors WP block layout support classnames (P5.19).
+// layoutClasses mirrors WP block layout support classnames (P5.19 / P5.29).
 func layoutClasses(blockName string, attrs map[string]any) []string {
-	layoutType, justify, orientation, flexWrap, fromAttrs := layoutTypeFromAttrs(blockName, attrs)
-	if layoutType == "" {
+	info := layoutInfoFromAttrs(blockName, attrs)
+	if info.Type == "" {
 		return nil
 	}
-	slug := layoutType
-	switch layoutType {
+	slug := info.Type
+	switch info.Type {
 	case "default":
 		slug = "flow"
 	}
 	className := "is-layout-" + slug
 	var out []string
-	if fromAttrs || blockHasDefaultLayout(blockName) {
+	if info.FromAttrs || blockHasDefaultLayout(blockName) {
 		if slug == "constrained" {
 			out = append(out, "has-global-padding")
 		}
-		if orientation != "" {
-			out = append(out, "is-"+slugifySupport(orientation))
+		if info.Orientation != "" {
+			out = append(out, "is-"+slugifySupport(info.Orientation))
 		}
-		if justify != "" {
-			out = append(out, "is-content-justification-"+slugifySupport(justify))
+		if info.Justify != "" {
+			out = append(out, "is-content-justification-"+slugifySupport(info.Justify))
 		}
-		if flexWrap == "nowrap" {
+		if info.FlexWrap == "nowrap" {
 			out = append(out, "is-nowrap")
 		}
+		// verticalAlignment maps to CSS align-items/justify-content only (no classname in WP).
 		out = append(out, className)
 		if bn := blockClassStem(blockName); bn != "" {
 			out = append(out, bn+"-is-layout-"+slug)
@@ -191,31 +195,134 @@ func layoutClasses(blockName string, attrs map[string]any) []string {
 	return out
 }
 
-func layoutTypeFromAttrs(blockName string, attrs map[string]any) (layoutType, justify, orientation, flexWrap string, fromAttrs bool) {
+// layoutInlineStyles emits root-level flex/grid CSS when layout attrs are set (P5.29).
+// WP stores these via the style engine; GoPress applies them inline on the wrapper.
+// Only runs for explicit layout attrs so default block layouts stay class-only (front HTML parity).
+func layoutInlineStyles(blockName string, attrs map[string]any) string {
+	if attrs == nil {
+		return ""
+	}
+	layout, ok := attrs["layout"].(map[string]any)
+	if !ok || layout == nil {
+		return ""
+	}
+	info := layoutInfoFromAttrs(blockName, attrs)
+	var parts []string
+	switch info.Type {
+	case "flex":
+		parts = append(parts, "display:flex")
+		orient := info.Orientation
+		if orient == "" {
+			orient = "horizontal"
+		}
+		justifyMap := map[string]string{
+			"left": "flex-start", "right": "flex-end", "center": "center",
+			"space-between": "space-between", "stretch": "stretch",
+		}
+		alignMap := map[string]string{
+			"top": "flex-start", "center": "center", "bottom": "flex-end",
+			"stretch": "stretch", "space-between": "space-between",
+		}
+		if orient == "vertical" {
+			parts = append(parts, "flex-direction:column")
+			if j, ok := justifyMap[info.Justify]; ok {
+				parts = append(parts, "align-items:"+j)
+			} else if info.Justify == "" {
+				parts = append(parts, "align-items:flex-start")
+			}
+			if a, ok := alignMap[info.VerticalAlign]; ok {
+				parts = append(parts, "justify-content:"+a)
+			}
+		} else {
+			if j, ok := justifyMap[info.Justify]; ok {
+				parts = append(parts, "justify-content:"+j)
+			}
+			if a, ok := alignMap[info.VerticalAlign]; ok {
+				parts = append(parts, "align-items:"+a)
+			}
+		}
+		if info.FlexWrap == "nowrap" {
+			parts = append(parts, "flex-wrap:nowrap")
+		}
+	case "grid":
+		parts = append(parts, "display:grid")
+		if info.ColumnCount > 0 && info.MinimumColumnWidth != "" {
+			parts = append(parts, fmt.Sprintf(
+				"grid-template-columns:repeat(auto-fill, minmax(min(%s, 100%%), 1fr))",
+				cssValue(info.MinimumColumnWidth),
+			))
+		} else if info.ColumnCount > 0 {
+			parts = append(parts, fmt.Sprintf(
+				"grid-template-columns:repeat(%d, minmax(0, 1fr))", info.ColumnCount,
+			))
+		} else if info.MinimumColumnWidth != "" {
+			parts = append(parts, fmt.Sprintf(
+				"grid-template-columns:repeat(auto-fill, minmax(min(%s, 100%%), 1fr))",
+				cssValue(info.MinimumColumnWidth),
+			))
+		}
+	default:
+		return ""
+	}
+	return strings.Join(parts, ";")
+}
+
+type layoutInfo struct {
+	Type               string
+	Justify            string
+	Orientation        string
+	FlexWrap           string
+	VerticalAlign      string
+	ColumnCount        int
+	MinimumColumnWidth string
+	FromAttrs          bool
+}
+
+func layoutInfoFromAttrs(blockName string, attrs map[string]any) layoutInfo {
+	var info layoutInfo
 	if attrs != nil {
 		if layout, ok := attrs["layout"].(map[string]any); ok && layout != nil {
-			fromAttrs = true
+			info.FromAttrs = true
 			if t, ok := layout["type"].(string); ok {
-				layoutType = strings.TrimSpace(t)
+				info.Type = strings.TrimSpace(t)
 			}
 			if j, ok := layout["justifyContent"].(string); ok {
-				justify = strings.TrimSpace(j)
+				info.Justify = strings.TrimSpace(j)
 			}
 			if o, ok := layout["orientation"].(string); ok {
-				orientation = strings.TrimSpace(o)
+				info.Orientation = strings.TrimSpace(o)
 			}
 			if w, ok := layout["flexWrap"].(string); ok {
-				flexWrap = strings.TrimSpace(w)
+				info.FlexWrap = strings.TrimSpace(w)
+			}
+			if v, ok := layout["verticalAlignment"].(string); ok {
+				info.VerticalAlign = strings.TrimSpace(v)
+			}
+			switch n := layout["columnCount"].(type) {
+			case float64:
+				if n > 0 {
+					info.ColumnCount = int(n)
+				}
+			case int:
+				if n > 0 {
+					info.ColumnCount = n
+				}
+			}
+			if w, ok := layout["minimumColumnWidth"].(string); ok {
+				info.MinimumColumnWidth = strings.TrimSpace(w)
 			}
 		}
 	}
-	if layoutType == "" {
-		layoutType = defaultLayoutType(blockName)
+	if info.Type == "" {
+		info.Type = defaultLayoutType(blockName)
 	}
-	if layoutType == "" {
-		return "", "", "", "", false
+	if info.Type == "" {
+		return layoutInfo{}
 	}
-	return layoutType, justify, orientation, flexWrap, fromAttrs || blockHasDefaultLayout(blockName)
+	if !info.FromAttrs {
+		info.FromAttrs = blockHasDefaultLayout(blockName)
+	}
+	return info
 }
 
 func defaultLayoutType(blockName string) string {
