@@ -1854,6 +1854,14 @@
   api: n/a
   notes: "P7.70 — restrict_manage_posts-shaped author dropdown on edit.php"
 
+# P10.61: STATUS/PORTING refresh after P5.69–P9.16.
+- prefix: docs/STATUS.md#P10.61
+  go: docs/STATUS.md
+  status: partial
+  task: P10.61
+  api: n/a
+  notes: "P10.61 — summarize missing polish, posts author, edit author filter, rest endpoint, content:encoded, auto-update gone"
+
 # P10.60: e2e edit.php Bulk Edit + search box + STATUS/PORTING refresh after P5.68–P6.28.
 - prefix: tests/e2e/bulk-edit.spec.js
   go: tests/e2e/bulk-edit.spec.js
