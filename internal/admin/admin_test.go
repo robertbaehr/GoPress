@@ -611,6 +611,61 @@ func TestEditPostsCategoryFilter(t *testing.T) {
 	}
 }
 
+func TestEditPostsTagFilter(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`id="tag_id"`,
+		`name="tag_id"`,
+		"All Tags",
+		"Fixture Tag 01",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected tag filter %q in edit.php", want)
+		}
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?tag_id=5", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("tag_id=5 status=%d", rec.Code)
+	}
+	body = rec.Body.String()
+	if !strings.Contains(body, `selected="selected"`) || !strings.Contains(body, `value="5"`) {
+		t.Fatalf("expected tag_id=5 selected: %q", body[:min(800, len(body))])
+	}
+	if !strings.Contains(body, "Fixture Post 01") {
+		t.Fatalf("expected Fixture Post 01 for tag_id=5")
+	}
+	if strings.Contains(body, "Hello world!") {
+		t.Fatalf("Hello world should not appear for tag_id=5")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?tag_id=99999", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("tag miss status=%d", rec.Code)
+	}
+	body = rec.Body.String()
+	if strings.Contains(body, "Fixture Post 01") {
+		t.Fatalf("unknown tag should not list Fixture Post 01")
+	}
+}
+
 func TestEditPostsBulkEditStub(t *testing.T) {
 	c := bootOrSkip(t)
 	ck := loginCookie(t, c)

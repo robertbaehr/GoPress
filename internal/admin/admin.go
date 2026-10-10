@@ -282,15 +282,19 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	authorID := parseEditAuthorFilter(r)
 	// P7.71: category dropdown filter (?cat=).
 	catID := parseEditCategoryFilter(r)
-	posts, err := recentPostsByType(c, postType, 20, search, authorID, catID)
+	// P7.72: tag dropdown filter (?tag_id=).
+	tagID := parseEditTagFilter(r)
+	posts, err := recentPostsByType(c, postType, 20, search, authorID, catID, tagID)
 	if err != nil {
 		http.Error(w, "posts: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
 	authors, _ := editPostAuthors(c, postType)
 	var categories []editCategoryOpt
+	var tags []editTagOpt
 	if postType == "post" {
 		categories, _ = editPostCategories(c)
+		tags, _ = editPostTags(c)
 	}
 	heading := "Posts"
 	searchLabel := "Search Posts"
@@ -328,7 +332,7 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	b.WriteString(`</select>` + "\n")
 	b.WriteString(`<input type="submit" id="doaction" class="button action" value="Apply" />` + "\n")
 	b.WriteString(`</div>` + "\n")
-	// P7.70 / P7.71: author + category filters (restrict_manage_posts-shaped).
+	// P7.70 / P7.71 / P7.72: author + category + tag filters (restrict_manage_posts-shaped).
 	b.WriteString(`<div class="alignleft actions">` + "\n")
 	b.WriteString(`<label for="filter-by-author" class="screen-reader-text">Filter by author</label>` + "\n")
 	b.WriteString(`<select name="author" id="filter-by-author">` + "\n")
@@ -359,6 +363,22 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 			}
 			b.WriteString(`>`)
 			b.WriteString(html.EscapeString(cat.Name))
+			b.WriteString(`</option>` + "\n")
+		}
+		b.WriteString(`</select>` + "\n")
+		// P7.72: tag filter (name=tag_id, id=tag_id) — WP_Query tag_id.
+		b.WriteString(`<label class="screen-reader-text" for="tag_id">Filter by tag</label>` + "\n")
+		b.WriteString(`<select name="tag_id" id="tag_id" class="postform">` + "\n")
+		b.WriteString(`<option value="0">All Tags</option>` + "\n")
+		for _, tag := range tags {
+			b.WriteString(`<option value="`)
+			b.WriteString(strconv.FormatInt(tag.ID, 10))
+			b.WriteString(`"`)
+			if tag.ID == tagID {
+				b.WriteString(` selected="selected"`)
+			}
+			b.WriteString(`>`)
+			b.WriteString(html.EscapeString(tag.Name))
 			b.WriteString(`</option>` + "\n")
 		}
 		b.WriteString(`</select>` + "\n")
@@ -4016,7 +4036,7 @@ func countComments(c *wp.Context, approved string) int {
 	return int(asInt64(row["n"]))
 }
 
-func recentPostsByType(c *wp.Context, postType string, limit int, search string, authorID, catID int64) ([]postRow, error) {
+func recentPostsByType(c *wp.Context, postType string, limit int, search string, authorID, catID, tagID int64) ([]postRow, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
@@ -4034,11 +4054,20 @@ func recentPostsByType(c *wp.Context, postType string, limit int, search string,
 			"INNER JOIN " + c.DB.TermTaxonomy() + " tt ON tt.term_taxonomy_id = tr.term_taxonomy_id " +
 			"INNER JOIN " + c.DB.Terms() + " t ON t.term_id = tt.term_id "
 	}
+	if tagID > 0 {
+		sql += "INNER JOIN " + c.DB.TermRelationships() + " trt ON trt.object_id = p.ID " +
+			"INNER JOIN " + c.DB.TermTaxonomy() + " ttt ON ttt.term_taxonomy_id = trt.term_taxonomy_id " +
+			"INNER JOIN " + c.DB.Terms() + " tg ON tg.term_id = ttt.term_id "
+	}
 	sql += " WHERE p.post_type = %s AND p.post_status IN (%s, %s, %s, %s, %s) "
 	prepArgs := []any{postType, "publish", "draft", "pending", "private", "future"}
 	if catID > 0 {
 		sql += "AND tt.taxonomy = %s AND t.term_id = %d "
 		prepArgs = append(prepArgs, "category", catID)
+	}
+	if tagID > 0 {
+		sql += "AND ttt.taxonomy = %s AND tg.term_id = %d "
+		prepArgs = append(prepArgs, "post_tag", tagID)
 	}
 	if authorID > 0 {
 		sql += "AND p.post_author = %d "
@@ -4150,6 +4179,56 @@ func editPostCategories(c *wp.Context) ([]editCategoryOpt, error) {
 			name = "—"
 		}
 		out = append(out, editCategoryOpt{ID: asInt64(row["term_id"]), Name: name})
+	}
+	return out, nil
+}
+
+type editTagOpt struct {
+	ID   int64
+	Name string
+}
+
+// parseEditTagFilter reads ?tag_id= from edit.php (P7.72).
+func parseEditTagFilter(r *http.Request) int64 {
+	if r == nil {
+		return 0
+	}
+	raw := strings.TrimSpace(r.URL.Query().Get("tag_id"))
+	if raw == "" {
+		return 0
+	}
+	n, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || n <= 0 {
+		return 0
+	}
+	return n
+}
+
+// editPostTags returns tags for the edit.php filter dropdown (P7.72).
+func editPostTags(c *wp.Context) ([]editTagOpt, error) {
+	if c == nil || c.DB == nil {
+		return nil, fmt.Errorf("nil DB")
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT t.term_id, t.name FROM "+c.DB.Terms()+" t "+
+			"INNER JOIN "+c.DB.TermTaxonomy()+" tt ON tt.term_id = t.term_id "+
+			"WHERE tt.taxonomy = %s ORDER BY t.name ASC",
+		"post_tag",
+	)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := c.DB.GetResults(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]editTagOpt, 0, len(rows))
+	for _, row := range rows {
+		name := asString(row["name"])
+		if name == "" {
+			name = "—"
+		}
+		out = append(out, editTagOpt{ID: asInt64(row["term_id"]), Name: name})
 	}
 	return out, nil
 }
