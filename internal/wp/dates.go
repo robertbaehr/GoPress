@@ -1,14 +1,25 @@
-// Date/time helpers (P2.13) — subset of wp-includes/functions.php date APIs.
+// Date/time helpers (P2.13 / P2.27) — subset of wp-includes/functions.php date APIs.
 package wp
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
 )
 
 const mysqlDateLayout = "2006-01-02 15:04:05"
+
+// WP time unit constants (wp-includes/default-constants.php).
+const (
+	MinuteInSeconds = 60
+	HourInSeconds   = 3600
+	DayInSeconds    = 86400
+	WeekInSeconds   = 604800
+	MonthInSeconds  = 2592000
+	YearInSeconds   = 31536000
+)
 
 // WPDate formats a Unix timestamp in timezone tz using a PHP date() format
 // subset (wp_date). When tz is nil, UTC is used.
@@ -141,4 +152,64 @@ func formatPHPDate(format string, t time.Time) string {
 		}
 	}
 	return b.String()
+}
+
+// HumanTimeDiff returns a human-readable difference between two Unix timestamps
+// (human_time_diff). When to is 0, time.Now() is used.
+func HumanTimeDiff(from, to int64) string {
+	if to == 0 {
+		to = time.Now().Unix()
+	}
+	diff := int64(math.Abs(float64(to - from)))
+	switch {
+	case diff < MinuteInSeconds:
+		secs := diff
+		if secs <= 1 {
+			secs = 1
+		}
+		return pluralDiff(secs, "second", "seconds")
+	case diff < HourInSeconds:
+		mins := int64(math.Round(float64(diff) / MinuteInSeconds))
+		if mins <= 1 {
+			mins = 1
+		}
+		return pluralDiff(mins, "minute", "minutes")
+	case diff < DayInSeconds:
+		hours := int64(math.Round(float64(diff) / HourInSeconds))
+		if hours <= 1 {
+			hours = 1
+		}
+		return pluralDiff(hours, "hour", "hours")
+	case diff < WeekInSeconds:
+		days := int64(math.Round(float64(diff) / DayInSeconds))
+		if days <= 1 {
+			days = 1
+		}
+		return pluralDiff(days, "day", "days")
+	case diff < MonthInSeconds:
+		weeks := int64(math.Round(float64(diff) / WeekInSeconds))
+		if weeks <= 1 {
+			weeks = 1
+		}
+		return pluralDiff(weeks, "week", "weeks")
+	case diff < YearInSeconds:
+		months := int64(math.Round(float64(diff) / MonthInSeconds))
+		if months <= 1 {
+			months = 1
+		}
+		return pluralDiff(months, "month", "months")
+	default:
+		years := int64(math.Round(float64(diff) / YearInSeconds))
+		if years <= 1 {
+			years = 1
+		}
+		return pluralDiff(years, "year", "years")
+	}
+}
+
+func pluralDiff(n int64, one, many string) string {
+	if n == 1 {
+		return fmt.Sprintf("1 %s", one)
+	}
+	return fmt.Sprintf("%d %s", n, many)
 }

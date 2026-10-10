@@ -321,6 +321,13 @@
   task: P7.32
   api: n/a
 
+# P2.27: human_time_diff helper.
+- prefix: wp-includes/formatting.php#human_time_diff
+  go: internal/wp/dates.go
+  status: partial
+  task: P2.27
+  api: exported
+
 - prefix: wp-includes/template.php
   go: internal/wp/template_hierarchy.go
   status: partial
