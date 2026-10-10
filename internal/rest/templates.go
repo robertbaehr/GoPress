@@ -50,22 +50,25 @@ func (s *Server) serveTemplateParts(w http.ResponseWriter, r *http.Request, c *w
 }
 
 func (s *Server) serveBlockTemplateCollection(w http.ResponseWriter, r *http.Request, c *wp.Context, postType string) {
-	if r.Method != http.MethodGet {
+	switch r.Method {
+	case http.MethodGet:
+		if !canViewTemplates(c) {
+			writeTemplatesForbidden(w, c)
+			return
+		}
+		out := listBlockTemplates(c, postType)
+		w.Header().Set("Allow", "GET, POST")
+		setCollectionHeaders(w, r, c, len(out), 1, 1)
+		writeJSON(w, http.StatusOK, out)
+	case http.MethodPost:
+		s.createBlockTemplate(w, r, c, postType)
+	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
 			"data":    map[string]any{"status": 405},
 		})
-		return
 	}
-	if !canViewTemplates(c) {
-		writeTemplatesForbidden(w, c)
-		return
-	}
-	out := listBlockTemplates(c, postType)
-	w.Header().Set("Allow", "GET")
-	setCollectionHeaders(w, r, c, len(out), 1, 1)
-	writeJSON(w, http.StatusOK, out)
 }
 
 func (s *Server) serveTemplateItem(w http.ResponseWriter, r *http.Request, c *wp.Context, id string) {
@@ -77,31 +80,34 @@ func (s *Server) serveTemplatePartItem(w http.ResponseWriter, r *http.Request, c
 }
 
 func (s *Server) serveBlockTemplateItem(w http.ResponseWriter, r *http.Request, c *wp.Context, postType, id string) {
-	if r.Method != http.MethodGet {
+	switch r.Method {
+	case http.MethodGet:
+		if !canViewTemplates(c) {
+			writeTemplatesForbidden(w, c)
+			return
+		}
+		id = strings.Trim(id, "/")
+		for _, t := range listBlockTemplates(c, postType) {
+			if t.ID == id || t.Slug == id {
+				w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
+				writeJSON(w, http.StatusOK, t)
+				return
+			}
+		}
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"code":    "rest_template_not_found",
+			"message": "No templates exist with that id.",
+			"data":    map[string]any{"status": 404},
+		})
+	case http.MethodPost, http.MethodPut, http.MethodPatch:
+		s.updateBlockTemplate(w, r, c, postType, id)
+	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
 			"data":    map[string]any{"status": 405},
 		})
-		return
 	}
-	if !canViewTemplates(c) {
-		writeTemplatesForbidden(w, c)
-		return
-	}
-	id = strings.Trim(id, "/")
-	for _, t := range listBlockTemplates(c, postType) {
-		if t.ID == id || t.Slug == id {
-			w.Header().Set("Allow", "GET")
-			writeJSON(w, http.StatusOK, t)
-			return
-		}
-	}
-	writeJSON(w, http.StatusNotFound, map[string]any{
-		"code":    "rest_template_not_found",
-		"message": "No templates exist with that id.",
-		"data":    map[string]any{"status": 404},
-	})
 }
 
 func listBlockTemplates(c *wp.Context, postType string) []BlockTemplate {
