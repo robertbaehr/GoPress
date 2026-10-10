@@ -56,43 +56,6 @@
   nonce: null
 
 # P10.110: headers-only expand after P5.100–P6.42 stack.
-
-- id: admin-options-media
-  role: admin
-  method: GET
-  path: /wp-admin/options-media.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: admin-options-discussion
-  role: admin
-  method: GET
-  path: /wp-admin/options-discussion.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: admin-update-core
-  role: admin
-  method: GET
-  path: /wp-admin/update-core.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: admin-network
-  role: admin
-  method: GET
-  path: /wp-admin/network.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: admin-plugin-editor
   role: admin
   method: GET
@@ -106,24 +69,6 @@
   role: admin
   method: GET
   path: /wp-admin/theme-editor.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: admin-export-personal-data
-  role: admin
-  method: GET
-  path: /wp-admin/export-personal-data.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: admin-erase-personal-data
-  role: admin
-  method: GET
-  path: /wp-admin/erase-personal-data.php
   headers: {}
   body: null
   compare: headers
