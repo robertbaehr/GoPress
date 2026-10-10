@@ -151,7 +151,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if path == "/rsd.xml" {
-		serveRSDXMLStub(w, r)
+		c := s.requestContext(w, r)
+		serveRSDXMLStub(w, r, c)
 		return
 	}
 	if path == "/wp-comments-post.php" {
