@@ -12,9 +12,11 @@ var (
 	reColumnTag  = regexp.MustCompile(`(?i)wp-block-column\b`)
 )
 
-// renderColumns renders core/columns (P5.57).
+// renderColumns renders core/columns (P5.57 / P5.106).
 // Prefers saved markup; synthesizes a flex wrapper from inner columns when
-// missing; applies is-not-stacked-on-mobile and are-vertically-aligned-* from attrs.
+// missing; applies is-not-stacked-on-mobile, are-vertically-aligned-*,
+// align/className/anchor from attrs.
+// Color/typography/spacing/border land via applySupports on the caller.
 func (e *Env) renderColumns(block Block) string {
 	e = e.ensure()
 	out := e.renderSaved(block)
@@ -27,9 +29,10 @@ func (e *Env) renderColumns(block Block) string {
 	return applyColumnsAttrs(out, block.Attrs)
 }
 
-// renderColumn renders core/column (P5.57).
-// Prefers saved markup; synthesizes from inner blocks; applies width flex-basis
-// and is-vertically-aligned-* from attrs.
+// renderColumn renders core/column (P5.57 / P5.106).
+// Prefers saved markup; synthesizes from inner blocks; applies width flex-basis,
+// is-vertically-aligned-*, className/anchor from attrs.
+// Color/typography/spacing/border land via applySupports on the caller.
 func (e *Env) renderColumn(block Block) string {
 	e = e.ensure()
 	out := e.renderSaved(block)
@@ -48,7 +51,19 @@ func synthesizeColumnsBlock(e *Env, block Block) string {
 		return ""
 	}
 	class := columnsClassFromAttrs(block.Attrs)
-	return `<div class="` + class + `">` + inner + `</div>`
+	var b strings.Builder
+	b.WriteString(`<div`)
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		b.WriteString(` id="`)
+		b.WriteString(html.EscapeString(anchor))
+		b.WriteString(`"`)
+	}
+	b.WriteString(` class="`)
+	b.WriteString(class)
+	b.WriteString(`">`)
+	b.WriteString(inner)
+	b.WriteString(`</div>`)
+	return b.String()
 }
 
 func synthesizeColumnBlock(e *Env, block Block) string {
@@ -56,7 +71,13 @@ func synthesizeColumnBlock(e *Env, block Block) string {
 	class := columnClassFromAttrs(block.Attrs)
 	style := columnWidthStyle(block.Attrs)
 	var b strings.Builder
-	b.WriteString(`<div class="`)
+	b.WriteString(`<div`)
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		b.WriteString(` id="`)
+		b.WriteString(html.EscapeString(anchor))
+		b.WriteString(`"`)
+	}
+	b.WriteString(` class="`)
 	b.WriteString(class)
 	b.WriteString(`"`)
 	if style != "" {
@@ -81,6 +102,12 @@ func columnsClassFromAttrs(attrs map[string]any) string {
 			class += " is-not-stacked-on-mobile"
 		}
 	}
+	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
+		class += " align" + sanitizeClassToken(align)
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		class += " " + html.EscapeString(cn)
+	}
 	return class
 }
 
@@ -88,6 +115,9 @@ func columnClassFromAttrs(attrs map[string]any) string {
 	class := "wp-block-column"
 	if vAlign := strings.TrimSpace(attrString(attrs, "verticalAlignment")); vAlign != "" {
 		class += " is-vertically-aligned-" + sanitizeClassToken(vAlign)
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		class += " " + html.EscapeString(cn)
 	}
 	return class
 }
@@ -161,6 +191,18 @@ func applyColumnsAttrs(htmlFragment string, attrs map[string]any) string {
 			}
 		}
 	}
+	// P5.106: align / className / anchor polish on saved + synthesized markup.
+	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
+		out = addRootClass(out, "align"+sanitizeClassToken(align))
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		for _, part := range strings.Fields(cn) {
+			out = addRootClass(out, part)
+		}
+	}
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
+		out = ensureRootAttribute(out, "id", anchor)
+	}
 	return out
 }
 
@@ -176,6 +218,15 @@ func applyColumnAttrs(htmlFragment string, attrs map[string]any) string {
 		if !strings.Contains(strings.ToLower(out), "flex-basis") {
 			out = addRootStyle(out, style)
 		}
+	}
+	// P5.106: className / anchor polish.
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		for _, part := range strings.Fields(cn) {
+			out = addRootClass(out, part)
+		}
+	}
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
+		out = ensureRootAttribute(out, "id", anchor)
 	}
 	return out
 }

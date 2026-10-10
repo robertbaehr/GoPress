@@ -4066,20 +4066,20 @@ wp-login.php#language-switcher-post
   api: internal
   notes: "P5.100 — polish saved textAlign/className/anchor; synthesize anchor; colors via applySupports; P5.62 base"
 
-# P5.57: polish core/columns + core/column (synthesize, stack, width, v-align).
+# P5.57 / P5.106: polish core/columns + core/column (synthesize, stack, width, v-align, anchor).
 - prefix: wp-includes/blocks/columns
   go: internal/blocks/columns.go
   status: partial
-  task: P5.57
+  task: P5.106
   api: internal
-  notes: "P5.57 — synthesize columns wrapper; is-not-stacked-on-mobile; are-vertically-aligned-*"
+  notes: "P5.106 — synthesize + polish align/className/anchor; is-not-stacked-on-mobile; are-vertically-aligned-*; colors via applySupports"
 
 - prefix: wp-includes/blocks/column
   go: internal/blocks/columns.go
   status: partial
-  task: P5.57
+  task: P5.106
   api: internal
-  notes: "P5.57 — synthesize column; width flex-basis; is-vertically-aligned-*"
+  notes: "P5.106 — synthesize + polish className/anchor; width flex-basis; is-vertically-aligned-*; colors via applySupports"
 
 # P5.42: calendar / archives / latest-posts / latest-comments / tag-cloud / search.
 - prefix: wp-includes/blocks/calendar.php
