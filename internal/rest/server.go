@@ -61,6 +61,34 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 		s.serveSettings(w, r, c)
 	case path == "/wp/v2/users/me":
 		s.serveUsersMe(w, r, c)
+	case path == "/wp/v2/taxonomies":
+		s.serveTaxonomies(w, r, c)
+	case path == "/wp/v2/categories":
+		s.serveCategories(w, r, c)
+	case strings.HasPrefix(path, "/wp/v2/categories/"):
+		id, ok := parseTrailingID(path, "/wp/v2/categories/")
+		if !ok {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"code":    "rest_no_route",
+				"message": "No route was found matching the URL and request method.",
+				"data":    map[string]any{"status": 404},
+			})
+			return
+		}
+		s.serveCategoryItem(w, r, c, id)
+	case path == "/wp/v2/tags":
+		s.serveTags(w, r, c)
+	case strings.HasPrefix(path, "/wp/v2/tags/"):
+		id, ok := parseTrailingID(path, "/wp/v2/tags/")
+		if !ok {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"code":    "rest_no_route",
+				"message": "No route was found matching the URL and request method.",
+				"data":    map[string]any{"status": 404},
+			})
+			return
+		}
+		s.serveTagItem(w, r, c, id)
 	default:
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"code":    "rest_no_route",
@@ -192,6 +220,24 @@ func buildIndex(c *wp.Context) Index {
 		},
 		"/wp/v2/pages":                collectionRoute("wp/v2"),
 		"/wp/v2/pages/(?P<id>[\\d]+)": itemRoute("wp/v2"),
+		"/wp/v2/taxonomies": {
+			Namespace: "wp/v2",
+			Methods:   []string{"GET"},
+			Endpoints: []RouteEndpoint{{
+				Methods: []string{"GET"},
+				Args: map[string]any{
+					"context": map[string]any{
+						"default":  "view",
+						"required": false,
+						"enum":     []string{"view", "embed", "edit"},
+					},
+				},
+			}},
+		},
+		"/wp/v2/categories":                collectionRoute("wp/v2"),
+		"/wp/v2/categories/(?P<id>[\\d]+)": itemRoute("wp/v2"),
+		"/wp/v2/tags":                      collectionRoute("wp/v2"),
+		"/wp/v2/tags/(?P<id>[\\d]+)":       itemRoute("wp/v2"),
 	}
 
 	// When authenticated, advertise additional admin-oriented routes (best-effort).
