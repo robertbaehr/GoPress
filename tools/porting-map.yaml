@@ -167,7 +167,13 @@
 - prefix: wp-includes/class-wp-application-passwords.php
   go: internal/wp/application_passwords.go
   status: partial
-  task: P2.21
+  task: P4.43
+  api: exported
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-application-passwords-controller.php
+  go: internal/rest/application_passwords.go
+  status: partial
+  task: P4.43
   api: exported
 
 - prefix: wp-includes/user.php
