@@ -346,3 +346,23 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.110: headers-only expand after P5.100–P6.42 stack.
+
+- id: login-lostpassword-invalidkey
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword&error=invalidkey
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-action-rp
+  role: anon
+  method: GET
+  path: /wp-login.php?action=rp
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
