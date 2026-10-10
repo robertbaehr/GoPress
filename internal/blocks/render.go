@@ -51,6 +51,14 @@ func (e *Env) RenderBlock(block Block) string {
 		html := e.renderSaved(block)
 		html = addRootClass(html, "is-layout-flow")
 		out = addRootClass(html, "wp-block-quote-is-layout-flow")
+	case "core/terms-query":
+		// WP layout support defaults to flow for terms-query (P10.8 / feed parity).
+		html := e.renderSaved(block)
+		if strings.TrimSpace(html) == "" {
+			html = `<div class="wp-block-terms-query"></div>`
+		}
+		html = addRootClass(html, "is-layout-flow")
+		out = addRootClass(html, "wp-block-terms-query-is-layout-flow")
 	case "core/heading", "core/list", "core/list-item",
 		"core/image", "core/code", "core/html",
 		"core/group", "core/columns", "core/column", "core/buttons", "core/button",

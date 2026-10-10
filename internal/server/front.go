@@ -381,13 +381,18 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, c *wp.Context) {
 	b.WriteString("\t<sy:updateFrequency>\n")
 	b.WriteString("\t1\t</sy:updateFrequency>\n")
 	b.WriteString("\t<generator>https://wordpress.org/?v=7.2-alpha-64260</generator>\n")
-	for _, p := range posts {
+	for i, p := range posts {
 		link := postPermalink(home, p.Post)
 		guid := home + "/?p=" + strconv.FormatInt(p.ID, 10)
 		if p.GUID != "" {
 			guid = p.GUID
 		}
-		b.WriteString("\t<item>\n")
+		// WP feed-rss2.php indents the first item with one tab and later items with two.
+		if i == 0 {
+			b.WriteString("\t<item>\n")
+		} else {
+			b.WriteString("\t\t<item>\n")
+		}
 		b.WriteString("\t\t<title>")
 		b.WriteString(xmlEscape(p.Title))
 		b.WriteString("</title>\n")
@@ -447,7 +452,7 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, c *wp.Context) {
 		b.WriteString("\t\t\n\t\t\n")
 		b.WriteString("\t\t\t</item>\n")
 	}
-	b.WriteString("</channel>\n</rss>\n")
+	b.WriteString("\t</channel>\n</rss>\n")
 
 	setFrontAPILink(w, c)
 	w.Header().Set("Content-Type", "application/rss+xml; charset=UTF-8")
