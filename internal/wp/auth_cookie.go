@@ -1,4 +1,4 @@
-// Auth cookie session helpers (P2.4) — parse/validate/set cookies and login.
+// Auth cookie session helpers (P2.4 / P2.22) — parse/validate/set cookies and login.
 package wp
 
 import (
@@ -7,6 +7,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"net"
 	"net/http"
 	"strconv"
 	"strings"
@@ -249,6 +250,68 @@ func (c *Context) DestroySessionToken(userID int64, token string) error {
 	return c.saveSessionTokens(userID, sessions)
 }
 
+// DestroyOtherSessionTokens keeps token_to_keep and removes every other session
+// (WP_Session_Tokens::destroy_others).
+func (c *Context) DestroyOtherSessionTokens(userID int64, tokenToKeep string) error {
+	if c == nil || c.Meta == nil || userID <= 0 {
+		return nil
+	}
+	if tokenToKeep == "" {
+		return c.DestroyAllSessionTokens(userID)
+	}
+	sessions, err := c.loadSessionTokens(userID)
+	if err != nil {
+		return err
+	}
+	key := sessionTokenVerifier(tokenToKeep)
+	keep, ok := sessions[key]
+	if !ok {
+		return c.DestroyAllSessionTokens(userID)
+	}
+	return c.saveSessionTokens(userID, map[string]any{key: keep})
+}
+
+// DestroyAllSessionTokens clears session_tokens usermeta for one user
+// (WP_User_Meta_Session_Tokens::destroy_all_sessions).
+func (c *Context) DestroyAllSessionTokens(userID int64) error {
+	if c == nil || c.Meta == nil || userID <= 0 {
+		return nil
+	}
+	return c.saveSessionTokens(userID, map[string]any{})
+}
+
+// SessionTokenInfo is one usermeta session_tokens entry (subset of WP session array).
+type SessionTokenInfo struct {
+	Verifier   string
+	Expiration int64
+	Login      int64
+	IP         string
+	UA         string
+}
+
+// GetAllSessionTokens returns unexpired sessions for a user (WP_Session_Tokens::get_all).
+func (c *Context) GetAllSessionTokens(userID int64, now int64) ([]SessionTokenInfo, error) {
+	if c == nil || c.Meta == nil || userID <= 0 {
+		return nil, nil
+	}
+	if now <= 0 {
+		now = time.Now().Unix()
+	}
+	sessions, err := c.loadSessionTokens(userID)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]SessionTokenInfo, 0, len(sessions))
+	for verifier, raw := range sessions {
+		info := sessionTokenInfo(verifier, raw)
+		if info.Expiration < now {
+			continue
+		}
+		out = append(out, info)
+	}
+	return out, nil
+}
+
 // AuthenticateRequest reads the logged_in auth cookie and sets CurrentUser when valid.
 // Invalid or missing cookies leave CurrentUser nil (anonymous).
 func (c *Context) AuthenticateRequest() {
@@ -374,6 +437,7 @@ func (c *Context) CreateSessionToken(userID, expiration, now int64) (string, err
 }
 
 // StoreSessionToken records token under session_tokens usermeta (sha256 verifier key).
+// When c.Req is set, IP and User-Agent are stored like WP_Session_Tokens::create.
 func (c *Context) StoreSessionToken(userID int64, token string, expiration, now int64) error {
 	if c == nil || c.Meta == nil || userID <= 0 || token == "" {
 		return fmt.Errorf("wp: StoreSessionToken: invalid state")
@@ -385,11 +449,30 @@ func (c *Context) StoreSessionToken(userID int64, token string, expiration, now 
 	if err != nil {
 		return err
 	}
+	// Drop expired sessions while writing (WP get_sessions filters is_still_valid).
+	for k, raw := range sessions {
+		if sessionExpiration(raw) < now {
+			delete(sessions, k)
+		}
+	}
 	verifier := sessionTokenVerifier(token)
-	sessions[verifier] = map[string]any{
+	entry := map[string]any{
 		"expiration": expiration,
 		"login":      now,
 	}
+	if c.Req != nil {
+		if ip := strings.TrimSpace(c.Req.RemoteAddr); ip != "" {
+			// Strip :port from host:port when present.
+			if host, _, err := net.SplitHostPort(ip); err == nil {
+				ip = host
+			}
+			entry["ip"] = ip
+		}
+		if ua := strings.TrimSpace(c.Req.UserAgent()); ua != "" {
+			entry["ua"] = ua
+		}
+	}
+	sessions[verifier] = entry
 	return c.saveSessionTokens(userID, sessions)
 }
 
@@ -411,7 +494,13 @@ func (c *Context) VerifySessionToken(userID int64, token string, now int64) (boo
 		return false, nil
 	}
 	exp := sessionExpiration(sess)
-	return exp >= now, nil
+	if exp < now {
+		// Lazy purge of the expired verifier.
+		delete(sessions, verifier)
+		_ = c.saveSessionTokens(userID, sessions)
+		return false, nil
+	}
+	return true, nil
 }
 
 func (c *Context) loadSessionTokens(userID int64) (map[string]any, error) {
@@ -435,12 +524,16 @@ func (c *Context) loadSessionTokens(userID int64) (map[string]any, error) {
 	}
 	out := make(map[string]any, len(m))
 	for k, val := range m {
-		out[fmt.Sprint(k)] = val
+		out[fmt.Sprint(k)] = prepareSessionToken(val)
 	}
 	return out, nil
 }
 
 func (c *Context) saveSessionTokens(userID int64, sessions map[string]any) error {
+	if len(sessions) == 0 {
+		_, err := c.Meta.DeleteMetadata(MetaUser, userID, "session_tokens", "")
+		return err
+	}
 	encoded := make(map[any]any, len(sessions))
 	for k, v := range sessions {
 		encoded[k] = v
@@ -451,6 +544,43 @@ func (c *Context) saveSessionTokens(userID int64, sessions map[string]any) error
 	}
 	_, _, _, err = c.Meta.UpdateMetadata(MetaUser, userID, "session_tokens", s, "")
 	return err
+}
+
+// prepareSessionToken normalizes int expiration sessions to map form (WP prepare_session).
+func prepareSessionToken(session any) any {
+	switch t := session.(type) {
+	case int64:
+		return map[string]any{"expiration": t}
+	case int:
+		return map[string]any{"expiration": int64(t)}
+	case map[any]any:
+		out := make(map[string]any, len(t))
+		for k, v := range t {
+			out[fmt.Sprint(k)] = v
+		}
+		return out
+	default:
+		return session
+	}
+}
+
+func sessionTokenInfo(verifier string, raw any) SessionTokenInfo {
+	info := SessionTokenInfo{Verifier: verifier, Expiration: sessionExpiration(raw)}
+	switch t := raw.(type) {
+	case map[string]any:
+		info.Login = asInt64OrZero(t["login"])
+		info.IP, _ = t["ip"].(string)
+		info.UA, _ = t["ua"].(string)
+	case map[any]any:
+		info.Login = asInt64OrZero(t["login"])
+		if v, ok := t["ip"].(string); ok {
+			info.IP = v
+		}
+		if v, ok := t["ua"].(string); ok {
+			info.UA = v
+		}
+	}
+	return info
 }
 
 func sessionTokenVerifier(token string) string {

@@ -409,6 +409,18 @@
   task: P5.26
   api: exported
 
+- prefix: wp-includes/class-wp-session-tokens.php
+  go: internal/wp/auth_cookie.go
+  status: partial
+  task: P2.22
+  api: exported
+
+- prefix: wp-includes/class-wp-user-meta-session-tokens.php
+  go: internal/wp/auth_cookie.go
+  status: partial
+  task: P2.22
+  api: exported
+
 - prefix: wp-includes/
   go: internal/wp
   status: partial
