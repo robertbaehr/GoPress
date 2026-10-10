@@ -88,6 +88,38 @@ func TestInterimLoginForm(t *testing.T) {
 	if strings.Contains(body, `id="login_error"`) {
 		t.Fatalf("interim info message should not use login_error: %q", body)
 	}
+	// P6.22: interim form footer forces links to open in a new tab.
+	if !strings.Contains(body, "links[i].target = '_blank'") {
+		t.Fatalf("expected interim blank-target script: %q", body)
+	}
+}
+
+func TestInterimLoginPostBodyOnly(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	// interim-login only in POST body (not query) — mirrors $_REQUEST in wp-login.php.
+	form := url.Values{}
+	form.Set("log", "admin")
+	form.Set("pwd", "password")
+	form.Set("interim-login", "1")
+	form.Set("testcookie", "1")
+	req := httptest.NewRequest(http.MethodPost, "/wp-login.php", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: "wordpress_test_cookie", Value: "WP Cookie check"})
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "interim-login-success") {
+		t.Fatalf("expected interim success from POST-only flag: %q", body)
+	}
+	if loc := rec.Header().Get("Location"); loc != "" {
+		t.Fatalf("interim success should not redirect, Location=%q", loc)
+	}
 }
 
 func TestInterimLoginSuccess(t *testing.T) {

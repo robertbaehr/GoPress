@@ -638,6 +638,14 @@
   task: P6.19
   api: n/a
 
+# P6.22: interim-login POST body + blank-target footer script.
+- prefix: wp-login.php#interim-post
+  go: internal/login/login.go
+  status: partial
+  task: P6.22
+  api: n/a
+  notes: "P6.22 — POST-only interim-login; links target=_blank in interim form"
+
 # P2.40: wp_parse_url (protocol-relative + path-only placeholders).
 - prefix: wp-includes/http.php#wp_parse_url
   go: internal/wp/parse_url.go
