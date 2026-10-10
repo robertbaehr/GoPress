@@ -1203,6 +1203,34 @@ func TestEditPagesHierarchicalIndent(t *testing.T) {
 	}
 }
 
+func TestEditPagesChildOfHierarchy(t *testing.T) {
+	// P7.106: Child of {parent} + post_parent/post_name/menu_order inline data.
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?post_type=page", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`aria-describedby="post-hierarchy-437"`,
+		`id="post-hierarchy-437" class="hidden">Child of Fixture Parent</span>`,
+		`aria-describedby="post-hierarchy-438"`,
+		`id="post-hierarchy-438" class="hidden">Child of Fixture Child</span>`,
+		`<div class="post_name">fixture-child</div>`,
+		`<div class="post_parent">436</div>`,
+		`<div class="menu_order">`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing pages hierarchy/inline %q", want)
+		}
+	}
+}
+
 func TestEditPagesMenuOrderColumn(t *testing.T) {
 	c := bootOrSkip(t)
 	ck := loginCookie(t, c)
