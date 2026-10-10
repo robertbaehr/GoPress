@@ -10,8 +10,8 @@ import (
 // elementsSeq is the per-process counter for wp-elements-* class names (P5.32).
 var elementsSeq uint64
 
-// applySupports injects basic color/spacing/typography/layout/shadow/position/border/elements/background/dimensions
-// classes and styles from block attributes onto the rendered root element (P5.10 / P5.19 / P5.27–P5.34).
+// applySupports injects basic color/spacing/typography/layout/shadow/position/border/elements/background/dimensions/filter
+// classes and styles from block attributes onto the rendered root element (P5.10 / P5.19 / P5.27–P5.35).
 func applySupports(htmlFragment string, attrs map[string]any, blockName string) string {
 	if htmlFragment == "" {
 		return htmlFragment
@@ -108,10 +108,11 @@ func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string
 				}
 			}
 			styles = mergeCSSDecls(styles, CompileStyle(style))
-			if filterID, filterCSS := duotoneFromStyle(style); filterID != "" {
+			// Duotone class + compose filter: with any CSS filter functions (P5.22 / P5.35).
+			if filterID, filterVal := duotoneFromStyle(style); filterID != "" {
 				classes = appendUnique(classes, filterID)
-				if filterCSS != "" {
-					styles = mergeCSSDecls(styles, filterCSS)
+				if filterVal != "" {
+					styles = mergeFilterDecl(styles, filterVal)
 				}
 			}
 			if pos, ok := style["position"].(map[string]any); ok {
@@ -311,9 +312,9 @@ func presetColorSlug(attr string) string {
 }
 
 // duotoneFromStyle extracts WP duotone support (P5.22): class wp-duotone-{slug}
-// plus an inline filter declaration for preset / unset values.
+// plus the CSS filter *value* (no "filter:" prefix) for preset / unset values.
 // Attr paths: style.color.duotone (legacy) and style.filter.duotone (current).
-func duotoneFromStyle(style map[string]any) (filterID, filterCSS string) {
+func duotoneFromStyle(style map[string]any) (filterID, filterValue string) {
 	attr := duotoneAttr(style)
 	if attr == nil {
 		return "", ""
@@ -326,15 +327,15 @@ func duotoneFromStyle(style map[string]any) (filterID, filterCSS string) {
 		}
 		if slug := duotoneSlugFromAttr(v); slug != "" {
 			filterID = "wp-duotone-" + slug
-			filterCSS = "filter:var(--wp--preset--duotone--" + slug + ")"
-			return filterID, filterCSS
+			filterValue = "var(--wp--preset--duotone--" + slug + ")"
+			return filterID, filterValue
 		}
 		// CSS values like "unset".
 		slug := slugifySupport(v)
 		if slug == "" {
 			slug = "custom"
 		}
-		return "wp-duotone-" + slug, "filter:" + html.EscapeString(v)
+		return "wp-duotone-" + slug, html.EscapeString(v)
 	case []any:
 		parts := make([]string, 0, len(v))
 		for _, c := range v {
@@ -354,6 +355,41 @@ func duotoneFromStyle(style map[string]any) (filterID, filterCSS string) {
 	default:
 		return "", ""
 	}
+}
+
+// mergeFilterDecl prepends duotoneValue onto an existing filter: declaration
+// (or adds filter:duotoneValue). CSS filter functions compose as a space list.
+func mergeFilterDecl(existing, duotoneValue string) string {
+	duotoneValue = strings.TrimSpace(duotoneValue)
+	if duotoneValue == "" {
+		return existing
+	}
+	existing = strings.TrimSpace(existing)
+	var before []string
+	var filterVal string
+	for _, part := range strings.Split(existing, ";") {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		if i := strings.Index(part, ":"); i > 0 {
+			prop := strings.ToLower(strings.TrimSpace(part[:i]))
+			if prop == "filter" {
+				filterVal = strings.TrimSpace(part[i+1:])
+				continue
+			}
+		}
+		before = append(before, part)
+	}
+	composed := duotoneValue
+	if filterVal != "" {
+		composed = duotoneValue + " " + filterVal
+	}
+	out := strings.Join(before, ";")
+	if out != "" && !strings.HasSuffix(out, ";") {
+		out += ";"
+	}
+	return out + "filter:" + composed
 }
 
 func duotoneAttr(style map[string]any) any {
