@@ -98,3 +98,50 @@ func TestRenderGalleryFromIDs(t *testing.T) {
 		t.Fatalf("missing data-id: %q", out)
 	}
 }
+
+func TestRenderImagePolishAlignWidthTitleDecorative(t *testing.T) {
+	env := &blocks.Env{
+		GetAttachmentURL: func(id int64) string {
+			if id == 7 {
+				return "http://example.test/x.jpg"
+			}
+			return ""
+		},
+	}
+	out := env.Render(`<!-- wp:image {"id":7,"align":"center","width":"320","height":"200","aspectRatio":"16/9","scale":"cover","title":"Hero","isDecorative":true,"linkDestination":"media","linkClass":"custom-link"} /-->`)
+	for _, want := range []string{
+		`wp-block-image`,
+		`aligncenter`,
+		`is-resized`,
+		`src="http://example.test/x.jpg"`,
+		`alt=""`,
+		`role="presentation"`,
+		`style="`,
+		`width:320px`,
+		`height:200px`,
+		`aspect-ratio:16/9`,
+		`object-fit:cover`,
+		`class="custom-link"`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+	if strings.Contains(out, `title="Hero"`) {
+		t.Fatalf("decorative image should omit title: %q", out)
+	}
+}
+
+func TestRenderImageEnsureClassOnSaved(t *testing.T) {
+	env := &blocks.Env{}
+	markup := `<!-- wp:image {"align":"wide"} -->
+<figure class="size-large"><img src="http://example.test/a.jpg" alt="A"/></figure>
+<!-- /wp:image -->`
+	out := env.Render(markup)
+	if !strings.Contains(out, "wp-block-image") {
+		t.Fatalf("expected wp-block-image: %q", out)
+	}
+	if !strings.Contains(out, "alignwide") {
+		t.Fatalf("expected alignwide: %q", out)
+	}
+}
