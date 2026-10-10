@@ -1019,6 +1019,31 @@
   task: P5.43
   api: internal
 
+# P5.44: query-pagination (+ previous / next / numbers) honor paged + max pages.
+- prefix: wp-includes/blocks/query-pagination.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.44
+  api: internal
+
+- prefix: wp-includes/blocks/query-pagination-next.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.44
+  api: internal
+
+- prefix: wp-includes/blocks/query-pagination-previous.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.44
+  api: internal
+
+- prefix: wp-includes/blocks/query-pagination-numbers.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.44
+  api: internal
+
 - prefix: wp-includes/blocks/
   go: internal/blocks
   status: partial

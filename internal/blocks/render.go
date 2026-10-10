@@ -133,7 +133,7 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/query-pagination-next":
 		return e.renderQueryPaginationNext(block)
 	case "core/query-pagination-previous":
-		return ""
+		return e.renderQueryPaginationPrevious(block)
 	case "core/query-pagination-numbers":
 		return e.renderQueryPaginationNumbers(block)
 	case "core/post-author":

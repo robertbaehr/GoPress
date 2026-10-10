@@ -2705,6 +2705,50 @@ func latestPosts(c *wp.Context, limit int) ([]postListItem, error) {
 	return out, nil
 }
 
+// mainQueryPagination returns paged + max_num_pages for inherit query blocks (P5.44).
+func mainQueryPagination(c *wp.Context) (paged, maxPages int) {
+	paged = 1
+	if c != nil && c.Scope != nil && c.Scope.Paged > 1 {
+		paged = c.Scope.Paged
+	}
+	ppp := 10
+	if v := optionString(c, "posts_per_page", "10"); v != "" {
+		if n, err := strconv.Atoi(v); err == nil && n > 0 {
+			ppp = n
+		}
+	}
+	args := wp.QueryArgs{PostType: "post", PostStatus: "publish"}
+	if c != nil && c.Scope != nil {
+		if c.Scope.IsSearch {
+			args.Search = c.Scope.SearchQuery
+		}
+		if c.Scope.IsDate {
+			args.Year = c.Scope.DateYear
+			args.MonthNum = c.Scope.DateMonth
+			args.Day = c.Scope.DateDay
+		}
+		if c.Scope.IsAuthor {
+			args.Author = c.Scope.AuthorID
+		}
+		if c.Scope.IsTag {
+			args.Tag = c.Scope.TagSlug
+		}
+		if c.Scope.IsCategory {
+			args.Category = c.Scope.CategorySlug
+		}
+	}
+	total, err := wp.CountPosts(c, args)
+	if err != nil || total <= 0 {
+		maxPages = 1
+		return paged, maxPages
+	}
+	maxPages = (total + ppp - 1) / ppp
+	if maxPages < 1 {
+		maxPages = 1
+	}
+	return paged, maxPages
+}
+
 func optionString(c *wp.Context, name, fallback string) string {
 	if c == nil || c.Options == nil {
 		return fallback
@@ -2727,7 +2771,10 @@ func optionString(c *wp.Context, name, fallback string) string {
 
 // blockRenderEnv wires dynamic block resolvers (template parts, navigation, query).
 func blockRenderEnv(c *wp.Context) *blocks.Env {
+	paged, maxPages := mainQueryPagination(c)
 	return &blocks.Env{
+		Paged:    paged,
+		MaxPages: maxPages,
 		LoadTemplatePart: func(slug string) (string, bool) {
 			return wp.ResolveTemplatePart(c, slug)
 		},

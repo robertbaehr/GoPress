@@ -59,6 +59,133 @@ type Post struct {
 	MenuOrder     int
 }
 
+// CountPosts returns the number of posts matching args (ignores Limit/Offset).
+// Used for query-pagination max_num_pages (P5.44).
+func CountPosts(c *Context, args QueryArgs) (int, error) {
+	if c == nil || c.DB == nil {
+		return 0, fmt.Errorf("wp: CountPosts: nil DB")
+	}
+	postType := args.PostType
+	if postType == "" {
+		if args.PageName != "" {
+			postType = "page"
+		} else {
+			postType = "post"
+		}
+	}
+	status := args.PostStatus
+	if status == "" {
+		status = "publish"
+	}
+	var where []string
+	var vals []any
+	where = append(where, "post_type = %s", "post_status = %s")
+	vals = append(vals, postType, status)
+	if term := strings.TrimSpace(args.Search); term != "" {
+		like := "%" + db.EscapeLike(term) + "%"
+		where = append(where, "(post_title LIKE %s OR post_excerpt LIKE %s OR post_content LIKE %s)")
+		vals = append(vals, like, like, like)
+	}
+	if args.Year > 0 {
+		where = append(where, "YEAR(post_date) = %d")
+		vals = append(vals, args.Year)
+	}
+	if args.MonthNum > 0 {
+		where = append(where, "MONTH(post_date) = %d")
+		vals = append(vals, args.MonthNum)
+	}
+	if args.Day > 0 {
+		where = append(where, "DAY(post_date) = %d")
+		vals = append(vals, args.Day)
+	}
+	if args.Author > 0 {
+		where = append(where, "post_author = %d")
+		vals = append(vals, args.Author)
+	}
+	from := c.DB.Posts()
+	if tag := strings.TrimSpace(args.Tag); tag != "" {
+		from = c.DB.Posts() + " p INNER JOIN " + c.DB.TermRelationships() + " tr ON tr.object_id = p.ID" +
+			" INNER JOIN " + c.DB.TermTaxonomy() + " tt ON tt.term_taxonomy_id = tr.term_taxonomy_id" +
+			" INNER JOIN " + c.DB.Terms() + " t ON t.term_id = tt.term_id"
+		where = append(where, "tt.taxonomy = %s", "t.slug = %s")
+		vals = append(vals, "post_tag", tag)
+		whereSQL := strings.Join(where, " AND ")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_type", "p.post_type")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_status", "p.post_status")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_author", "p.post_author")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_title", "p.post_title")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_excerpt", "p.post_excerpt")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_content", "p.post_content")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_date", "p.post_date")
+		q := "SELECT COUNT(DISTINCT p.ID) AS total FROM " + from + " WHERE " + whereSQL
+		sqlStr, sqlArgs, err := c.DB.Prepare(q, vals...)
+		if err != nil {
+			return 0, err
+		}
+		v, err := c.DB.GetVar(sqlStr, sqlArgs...)
+		if err != nil {
+			return 0, err
+		}
+		return intFromAny(v), nil
+	}
+	if cat := strings.TrimSpace(args.Category); cat != "" {
+		cat = lastPathSegment(cat)
+		from = c.DB.Posts() + " p INNER JOIN " + c.DB.TermRelationships() + " tr ON tr.object_id = p.ID" +
+			" INNER JOIN " + c.DB.TermTaxonomy() + " tt ON tt.term_taxonomy_id = tr.term_taxonomy_id" +
+			" INNER JOIN " + c.DB.Terms() + " t ON t.term_id = tt.term_id"
+		where = append(where, "tt.taxonomy = %s", "t.slug = %s")
+		vals = append(vals, "category", cat)
+		whereSQL := strings.Join(where, " AND ")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_type", "p.post_type")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_status", "p.post_status")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_author", "p.post_author")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_title", "p.post_title")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_excerpt", "p.post_excerpt")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_content", "p.post_content")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_date", "p.post_date")
+		q := "SELECT COUNT(DISTINCT p.ID) AS total FROM " + from + " WHERE " + whereSQL
+		sqlStr, sqlArgs, err := c.DB.Prepare(q, vals...)
+		if err != nil {
+			return 0, err
+		}
+		v, err := c.DB.GetVar(sqlStr, sqlArgs...)
+		if err != nil {
+			return 0, err
+		}
+		return intFromAny(v), nil
+	}
+	q := "SELECT COUNT(*) AS total FROM " + from + " WHERE " + strings.Join(where, " AND ")
+	sqlStr, sqlArgs, err := c.DB.Prepare(q, vals...)
+	if err != nil {
+		return 0, err
+	}
+	v, err := c.DB.GetVar(sqlStr, sqlArgs...)
+	if err != nil {
+		return 0, err
+	}
+	return intFromAny(v), nil
+}
+
+func intFromAny(v any) int {
+	switch t := v.(type) {
+	case int64:
+		return int(t)
+	case int:
+		return t
+	case uint64:
+		return int(t)
+	case []byte:
+		n, _ := strconv.Atoi(string(t))
+		return n
+	case string:
+		n, _ := strconv.Atoi(t)
+		return n
+	default:
+		n, _ := strconv.Atoi(fmt.Sprint(t))
+		return n
+	}
+}
+
 // GetPosts runs a WP_Query-like SELECT against wp_posts.
 func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 	if c == nil || c.DB == nil {
