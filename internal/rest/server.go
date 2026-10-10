@@ -207,22 +207,22 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 
 // Index is the GET /wp-json/ response body (WP_REST_Server::get_index subset).
 type Index struct {
-	Name            string                `json:"name"`
-	Description     string                `json:"description"`
-	URL             string                `json:"url"`
-	Home            string                `json:"home"`
-	GMTOffset       float64               `json:"gmt_offset"`
-	TimezoneString  string                `json:"timezone_string"`
-	Namespaces      []string              `json:"namespaces"`
-	Authentication  map[string]any        `json:"authentication"`
-	Routes          map[string]RouteIndex `json:"routes"`
-	SiteLogo        int64                 `json:"site_logo"`
-	SiteIcon        int64                 `json:"site_icon"`
-	SiteIconURL     string                `json:"site_icon_url"`
-	PageForPosts    int64                 `json:"page_for_posts"`
-	PageOnFront     int64                 `json:"page_on_front"`
-	ShowOnFront     string                `json:"show_on_front"`
-	Links           map[string]any        `json:"_links"`
+	Name           string                `json:"name"`
+	Description    string                `json:"description"`
+	URL            string                `json:"url"`
+	Home           string                `json:"home"`
+	GMTOffset      float64               `json:"gmt_offset"`
+	TimezoneString string                `json:"timezone_string"`
+	Namespaces     []string              `json:"namespaces"`
+	Authentication map[string]any        `json:"authentication"`
+	Routes         map[string]RouteIndex `json:"routes"`
+	SiteLogo       int64                 `json:"site_logo"`
+	SiteIcon       int64                 `json:"site_icon"`
+	SiteIconURL    string                `json:"site_icon_url"`
+	PageForPosts   int64                 `json:"page_for_posts"`
+	PageOnFront    int64                 `json:"page_on_front"`
+	ShowOnFront    string                `json:"show_on_front"`
+	Links          map[string]any        `json:"_links"`
 }
 
 // RouteIndex describes one registered route in the index.
@@ -498,52 +498,52 @@ func extraIndexRoutes() map[string]RouteIndex {
 		}
 	}
 	return map[string]RouteIndex{
-		"/batch/v1":                getOnly("batch/v1"),
-		"/oembed/1.0/proxy":        getOnly("oembed/1.0"),
-		"/wp-site-health/v1":       getOnly("wp-site-health/v1"),
-		"/wp-site-health/v1/tests/background-updates": getOnly("wp-site-health/v1"),
-		"/wp-site-health/v1/tests/loopback-requests":  getOnly("wp-site-health/v1"),
-		"/wp-site-health/v1/tests/https-status":       getOnly("wp-site-health/v1"),
+		"/batch/v1":          getOnly("batch/v1"),
+		"/oembed/1.0/proxy":  getOnly("oembed/1.0"),
+		"/wp-site-health/v1": getOnly("wp-site-health/v1"),
+		"/wp-site-health/v1/tests/background-updates":   getOnly("wp-site-health/v1"),
+		"/wp-site-health/v1/tests/loopback-requests":    getOnly("wp-site-health/v1"),
+		"/wp-site-health/v1/tests/https-status":         getOnly("wp-site-health/v1"),
 		"/wp-site-health/v1/tests/dotorg-communication": getOnly("wp-site-health/v1"),
 		"/wp-site-health/v1/tests/authorization-header": getOnly("wp-site-health/v1"),
 		"/wp-site-health/v1/directory-sizes":            getOnly("wp-site-health/v1"),
 		"/wp-site-health/v1/tests/page-cache":           getOnly("wp-site-health/v1"),
-		"/wp-block-editor/v1":              getOnly("wp-block-editor/v1"),
-		"/wp-block-editor/v1/export":       getOnly("wp-block-editor/v1"),
-		"/wp-block-editor/v1/url-details":  getOnly("wp-block-editor/v1"),
-		"/wp-block-editor/v1/navigation-fallback": getOnly("wp-block-editor/v1"),
-		"/wp-abilities/v1":                 getOnly("wp-abilities/v1"),
-		"/wp-abilities/v1/abilities":       getOnly("wp-abilities/v1"),
-		"/wp-abilities/v1/categories":      getOnly("wp-abilities/v1"),
-		"/wp/v2/users":                     collectionRoute(ns),
-		"/wp/v2/users/(?P<id>[\\d]+)":      itemRoute(ns),
-		"/wp/v2/themes":                    getOnly(ns),
-		"/wp/v2/plugins":                   collectionRoute(ns),
-		"/wp/v2/menu-items":                collectionRoute(ns),
-		"/wp/v2/menu-items/(?P<id>[\\d]+)": itemRoute(ns),
-		"/wp/v2/menus":                     collectionRoute(ns),
-		"/wp/v2/menus/(?P<id>[\\d]+)":      itemRoute(ns),
-		"/wp/v2/menu-locations":            getOnly(ns),
-		"/wp/v2/templates": collectionRoute(ns),
+		"/wp-block-editor/v1":                           getOnly("wp-block-editor/v1"),
+		"/wp-block-editor/v1/export":                    getOnly("wp-block-editor/v1"),
+		"/wp-block-editor/v1/url-details":               getOnly("wp-block-editor/v1"),
+		"/wp-block-editor/v1/navigation-fallback":       getOnly("wp-block-editor/v1"),
+		"/wp-abilities/v1":                              getOnly("wp-abilities/v1"),
+		"/wp-abilities/v1/abilities":                    getOnly("wp-abilities/v1"),
+		"/wp-abilities/v1/categories":                   getOnly("wp-abilities/v1"),
+		"/wp/v2/users":                                  collectionRoute(ns),
+		"/wp/v2/users/(?P<id>[\\d]+)":                   itemRoute(ns),
+		"/wp/v2/themes":                                 getOnly(ns),
+		"/wp/v2/plugins":                                collectionRoute(ns),
+		"/wp/v2/menu-items":                             collectionRoute(ns),
+		"/wp/v2/menu-items/(?P<id>[\\d]+)":              itemRoute(ns),
+		"/wp/v2/menus":                                  collectionRoute(ns),
+		"/wp/v2/menus/(?P<id>[\\d]+)":                   itemRoute(ns),
+		"/wp/v2/menu-locations":                         getOnly(ns),
+		"/wp/v2/templates":                              collectionRoute(ns),
 		"/wp/v2/templates/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)": itemRoute(ns),
 		"/wp/v2/template-parts": collectionRoute(ns),
 		"/wp/v2/template-parts/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)": itemRoute(ns),
-		"/wp/v2/navigation":                collectionRoute(ns),
-		"/wp/v2/navigation/(?P<id>[\\d]+)": itemRoute(ns),
-		"/wp/v2/global-styles/(?P<id>[\\/\\d+]+)": getOnly(ns),
-		"/wp/v2/block-patterns/patterns":   getOnly(ns),
-		"/wp/v2/block-patterns/categories": getOnly(ns),
-		"/wp/v2/font-families":             collectionRoute(ns),
-		"/wp/v2/font-families/(?P<id>[\\d]+)": itemRoute(ns),
-		"/wp/v2/types/(?P<type>[\\w-]+)":   getOnly(ns),
-		"/wp/v2/statuses":                  getOnly(ns),
-		"/wp/v2/statuses/(?P<status>[\\w-]+)": getOnly(ns),
-		"/wp/v2/taxonomies/(?P<taxonomy>[\\w-]+)": getOnly(ns),
-		"/wp/v2/sidebars":                  getOnly(ns),
-		"/wp/v2/sidebars/(?P<id>[\\w-]+)":  getOnly(ns),
-		"/wp/v2/widgets":                   getOnly(ns),
-		"/wp/v2/widgets/(?P<id>[\\w\\-]+)": getOnly(ns),
-		"/wp/v2/widget-types":              getOnly(ns),
+		"/wp/v2/navigation":                          collectionRoute(ns),
+		"/wp/v2/navigation/(?P<id>[\\d]+)":           itemRoute(ns),
+		"/wp/v2/global-styles/(?P<id>[\\/\\d+]+)":    getOnly(ns),
+		"/wp/v2/block-patterns/patterns":             getOnly(ns),
+		"/wp/v2/block-patterns/categories":           getOnly(ns),
+		"/wp/v2/font-families":                       collectionRoute(ns),
+		"/wp/v2/font-families/(?P<id>[\\d]+)":        itemRoute(ns),
+		"/wp/v2/types/(?P<type>[\\w-]+)":             getOnly(ns),
+		"/wp/v2/statuses":                            getOnly(ns),
+		"/wp/v2/statuses/(?P<status>[\\w-]+)":        getOnly(ns),
+		"/wp/v2/taxonomies/(?P<taxonomy>[\\w-]+)":    getOnly(ns),
+		"/wp/v2/sidebars":                            getOnly(ns),
+		"/wp/v2/sidebars/(?P<id>[\\w-]+)":            getOnly(ns),
+		"/wp/v2/widgets":                             getOnly(ns),
+		"/wp/v2/widgets/(?P<id>[\\w\\-]+)":           getOnly(ns),
+		"/wp/v2/widget-types":                        getOnly(ns),
 		"/wp/v2/widget-types/(?P<id>[a-zA-Z0-9_-]+)": getOnly(ns),
 	}
 }

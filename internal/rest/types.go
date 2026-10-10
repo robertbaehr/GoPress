@@ -69,16 +69,16 @@ func builtinPostTypes(c *wp.Context) map[string]PostType {
 	}
 
 	return map[string]PostType{
-		"post": mk("", "Posts", "post", "dashicons-admin-post", false, []string{"category", "post_tag"}, "posts"),
-		"page": mk("", "Pages", "page", "dashicons-admin-page", true, []string{}, "pages"),
-		"attachment": mk("", "Media", "attachment", "dashicons-admin-media", false, []string{}, "media"),
-		"nav_menu_item": mk("", "Navigation Menu Items", "nav_menu_item", nil, false, []string{"nav_menu"}, "menu-items"),
-		"wp_block": mk("", "Patterns", "wp_block", nil, false, []string{"wp_pattern_category"}, "blocks"),
-		"wp_template": mk("Templates to include in your theme.", "Templates", "wp_template", nil, false, []string{}, "templates"),
+		"post":             mk("", "Posts", "post", "dashicons-admin-post", false, []string{"category", "post_tag"}, "posts"),
+		"page":             mk("", "Pages", "page", "dashicons-admin-page", true, []string{}, "pages"),
+		"attachment":       mk("", "Media", "attachment", "dashicons-admin-media", false, []string{}, "media"),
+		"nav_menu_item":    mk("", "Navigation Menu Items", "nav_menu_item", nil, false, []string{"nav_menu"}, "menu-items"),
+		"wp_block":         mk("", "Patterns", "wp_block", nil, false, []string{"wp_pattern_category"}, "blocks"),
+		"wp_template":      mk("Templates to include in your theme.", "Templates", "wp_template", nil, false, []string{}, "templates"),
 		"wp_template_part": mk("Template parts to include in your templates.", "Template Parts", "wp_template_part", nil, false, []string{}, "template-parts"),
 		"wp_global_styles": mk("Global styles to include in themes.", "Global Styles", "wp_global_styles", nil, false, []string{}, "global-styles"),
-		"wp_navigation": mk("Navigation menus that can be inserted into your site.", "Navigation Menus", "wp_navigation", nil, false, []string{}, "navigation"),
-		"wp_font_family": mk("", "Font Families", "wp_font_family", nil, false, []string{}, "font-families"),
-		"wp_font_face": mk("", "Font Faces", "wp_font_face", nil, false, []string{}, "font-families/(?P<font_family_id>[\\d]+)/font-faces"),
+		"wp_navigation":    mk("Navigation menus that can be inserted into your site.", "Navigation Menus", "wp_navigation", nil, false, []string{}, "navigation"),
+		"wp_font_family":   mk("", "Font Families", "wp_font_family", nil, false, []string{}, "font-families"),
+		"wp_font_face":     mk("", "Font Faces", "wp_font_face", nil, false, []string{}, "font-families/(?P<font_family_id>[\\d]+)/font-faces"),
 	}
 }

@@ -65,32 +65,32 @@ type Post struct {
 func (p Post) MarshalJSON() ([]byte, error) {
 	if p.Type == "page" {
 		type pageOut struct {
-			ID            int64             `json:"id"`
-			Date          string            `json:"date"`
-			DateGMT       string            `json:"date_gmt"`
-			GUID          RenderedString    `json:"guid"`
-			Modified      string            `json:"modified"`
-			ModifiedGMT   string            `json:"modified_gmt"`
-			Slug          string            `json:"slug"`
-			Status        string            `json:"status"`
-			Type          string            `json:"type"`
-			Link          string            `json:"link"`
-			Title         RenderedString    `json:"title"`
-			Content       ProtectedRendered `json:"content"`
-			Excerpt       ProtectedRendered `json:"excerpt"`
-			Author        int64             `json:"author"`
-			FeaturedMedia int64             `json:"featured_media"`
-			Parent        int64             `json:"parent"`
-			MenuOrder     int               `json:"menu_order"`
-			CommentStatus string            `json:"comment_status"`
-			PingStatus    string            `json:"ping_status"`
-			Template      string            `json:"template"`
-			Meta          map[string]any    `json:"meta"`
-			ClassList     []string          `json:"class_list"`
-			Links         map[string]any    `json:"_links"`
-			Password          *string `json:"password,omitempty"`
-			PermalinkTemplate string  `json:"permalink_template,omitempty"`
-			GeneratedSlug     string  `json:"generated_slug,omitempty"`
+			ID                int64             `json:"id"`
+			Date              string            `json:"date"`
+			DateGMT           string            `json:"date_gmt"`
+			GUID              RenderedString    `json:"guid"`
+			Modified          string            `json:"modified"`
+			ModifiedGMT       string            `json:"modified_gmt"`
+			Slug              string            `json:"slug"`
+			Status            string            `json:"status"`
+			Type              string            `json:"type"`
+			Link              string            `json:"link"`
+			Title             RenderedString    `json:"title"`
+			Content           ProtectedRendered `json:"content"`
+			Excerpt           ProtectedRendered `json:"excerpt"`
+			Author            int64             `json:"author"`
+			FeaturedMedia     int64             `json:"featured_media"`
+			Parent            int64             `json:"parent"`
+			MenuOrder         int               `json:"menu_order"`
+			CommentStatus     string            `json:"comment_status"`
+			PingStatus        string            `json:"ping_status"`
+			Template          string            `json:"template"`
+			Meta              map[string]any    `json:"meta"`
+			ClassList         []string          `json:"class_list"`
+			Links             map[string]any    `json:"_links"`
+			Password          *string           `json:"password,omitempty"`
+			PermalinkTemplate string            `json:"permalink_template,omitempty"`
+			GeneratedSlug     string            `json:"generated_slug,omitempty"`
 		}
 		return json.Marshal(pageOut{
 			ID: p.ID, Date: p.Date, DateGMT: p.DateGMT, GUID: p.GUID,
@@ -105,34 +105,34 @@ func (p Post) MarshalJSON() ([]byte, error) {
 		})
 	}
 	type postOut struct {
-		ID            int64             `json:"id"`
-		Date          string            `json:"date"`
-		DateGMT       string            `json:"date_gmt"`
-		GUID          RenderedString    `json:"guid"`
-		Modified      string            `json:"modified"`
-		ModifiedGMT   string            `json:"modified_gmt"`
-		Slug          string            `json:"slug"`
-		Status        string            `json:"status"`
-		Type          string            `json:"type"`
-		Link          string            `json:"link"`
-		Title         RenderedString    `json:"title"`
-		Content       ProtectedRendered `json:"content"`
-		Excerpt       ProtectedRendered `json:"excerpt"`
-		Author        int64             `json:"author"`
-		FeaturedMedia int64             `json:"featured_media"`
-		CommentStatus string            `json:"comment_status"`
-		PingStatus    string            `json:"ping_status"`
-		Sticky        bool              `json:"sticky"`
-		Template      string            `json:"template"`
-		Format        string            `json:"format"`
-		Meta          map[string]any    `json:"meta"`
-		Categories    []int64           `json:"categories"`
-		Tags          []int64           `json:"tags"`
-		ClassList     []string          `json:"class_list"`
-		Links         map[string]any    `json:"_links"`
-		Password          *string `json:"password,omitempty"`
-		PermalinkTemplate string  `json:"permalink_template,omitempty"`
-		GeneratedSlug     string  `json:"generated_slug,omitempty"`
+		ID                int64             `json:"id"`
+		Date              string            `json:"date"`
+		DateGMT           string            `json:"date_gmt"`
+		GUID              RenderedString    `json:"guid"`
+		Modified          string            `json:"modified"`
+		ModifiedGMT       string            `json:"modified_gmt"`
+		Slug              string            `json:"slug"`
+		Status            string            `json:"status"`
+		Type              string            `json:"type"`
+		Link              string            `json:"link"`
+		Title             RenderedString    `json:"title"`
+		Content           ProtectedRendered `json:"content"`
+		Excerpt           ProtectedRendered `json:"excerpt"`
+		Author            int64             `json:"author"`
+		FeaturedMedia     int64             `json:"featured_media"`
+		CommentStatus     string            `json:"comment_status"`
+		PingStatus        string            `json:"ping_status"`
+		Sticky            bool              `json:"sticky"`
+		Template          string            `json:"template"`
+		Format            string            `json:"format"`
+		Meta              map[string]any    `json:"meta"`
+		Categories        []int64           `json:"categories"`
+		Tags              []int64           `json:"tags"`
+		ClassList         []string          `json:"class_list"`
+		Links             map[string]any    `json:"_links"`
+		Password          *string           `json:"password,omitempty"`
+		PermalinkTemplate string            `json:"permalink_template,omitempty"`
+		GeneratedSlug     string            `json:"generated_slug,omitempty"`
 	}
 	return json.Marshal(postOut{
 		ID: p.ID, Date: p.Date, DateGMT: p.DateGMT, GUID: p.GUID,
@@ -287,7 +287,7 @@ func postFromWP(c *wp.Context, row wp.Post, home string, edit bool, sticky map[i
 			Rendered:  rendered,
 			Protected: protected,
 		},
-		Excerpt: buildExcerpt(row.Excerpt, rendered, protected),
+		Excerpt:       buildExcerpt(row.Excerpt, rendered, protected),
 		Author:        row.Author,
 		FeaturedMedia: featuredMediaID(c, row.ID),
 		CommentStatus: row.CommentStatus,
@@ -353,8 +353,8 @@ func buildPostLinks(home string, row wp.Post, edit bool) map[string]any {
 	}
 	links := map[string]any{
 		"self": []map[string]any{{
-			"href":         fmt.Sprintf("%s/%s/%d", restRoot, base, row.ID),
-			"targetHints":  map[string]any{"allow": allow},
+			"href":        fmt.Sprintf("%s/%s/%d", restRoot, base, row.ID),
+			"targetHints": map[string]any{"allow": allow},
 		}},
 		"collection": []map[string]any{{"href": restRoot + "/" + base}},
 		"about":      []map[string]any{{"href": restRoot + "/types/" + row.Type}},
