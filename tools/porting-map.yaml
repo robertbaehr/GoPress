@@ -1352,6 +1352,14 @@
   task: P4.67
   api: n/a
 
+# P4.100: REST /wp/v2/search include/exclude ID filters.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-search-controller.php#include-exclude
+  go: internal/rest/search.go
+  status: partial
+  task: P4.100
+  api: exported
+  notes: "P4.100 — ?include= / ?exclude= for type=post and type=term"
+
 # P7.34: themes.php lists installed themes with name/author/version/description.
 - prefix: wp-admin/themes.php#details
   go: internal/admin/admin.go
