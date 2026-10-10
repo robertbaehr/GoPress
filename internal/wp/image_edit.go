@@ -154,7 +154,7 @@ func RecordImageEditBackupSizes(c *Context, attachmentID int64) (map[string]any,
 	}
 	meta, ok := GetAttachmentMetadata(c, attachmentID)
 	if !ok || meta == nil {
-		return nil, fmt.Errorf("wp: Image data does not exist. Please re-upload the image.")
+		return nil, fmt.Errorf("wp: image data does not exist; please re-upload the image")
 	}
 	backup := GetAttachmentBackupSizes(c, attachmentID)
 	if backup == nil {

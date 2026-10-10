@@ -204,10 +204,6 @@ func listBlockTemplates(c *wp.Context, postType string) []BlockTemplate {
 	})
 	if err == nil {
 		for _, row := range rows {
-			title := row.Title
-			if title == "" {
-				title = humanizeSlug(row.Name)
-			}
 			_, hasFile := bySlug[row.Name]
 			bt := blockTemplateFromPost(stylesheet, postType, row, hasFile)
 			bySlug[row.Name] = bt
