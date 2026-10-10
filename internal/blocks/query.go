@@ -21,6 +21,8 @@ type QueryPost struct {
 	Link             string
 	FeaturedImageURL string
 	FeaturedImageAlt string
+	// Password is post_password; non-empty hides footnotes when PasswordRequired is unset (P5.51).
+	Password string
 	// ClassList is the get_post_class() list for the post (P5.19).
 	ClassList []string
 }

@@ -1416,8 +1416,16 @@ func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context
 		Link:             singularPermalink(home, post),
 		FeaturedImageURL: post.FeaturedImageURL,
 		FeaturedImageAlt: post.FeaturedImageAlt,
+		Password:         post.Password,
 		ClassList:        wp.GetPostClass(c, post.ID),
 	})
+	env.PasswordRequired = func(postID int64) bool {
+		if postID != post.ID {
+			return false
+		}
+		wpPost := &wp.Post{ID: post.ID, Title: post.Title, Type: post.Type, Name: post.Name, Password: post.Password}
+		return wp.PostPasswordRequired(c, c.Req, wpPost)
+	}
 	// Slot marker survives Kses; real form is spliced in after (P5.18 / P5.19).
 	const commentFormSlot = `<div class="gopress-comment-form-slot"></div>`
 	env.RenderCommentForm = func(postID int64) string {
