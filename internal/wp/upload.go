@@ -104,6 +104,14 @@ func SaveUploadedMedia(c *Context, filename string, r io.Reader, size int64) (*U
 	}
 	if c.Meta != nil {
 		_, _, _ = c.Meta.AddMetadata(MetaPost, id, "_wp_attached_file", rel, true)
+		// P8.25: generate attachment metadata (width/height/image_meta) for images.
+		if strings.HasPrefix(strings.ToLower(mimeType), "image/") {
+			meta := GenerateAttachmentMetadata(c, id, abs)
+			if meta != nil {
+				meta["file"] = rel
+				_ = StoreAttachmentMetadata(c, id, meta)
+			}
+		}
 	}
 	return &UploadedFile{
 		ID:       id,
