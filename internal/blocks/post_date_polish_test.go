@@ -27,6 +27,7 @@ func TestRenderPostDatePolish(t *testing.T) {
 		`href="/?p=3"`,
 		`target="_blank"`,
 		`rel="noopener"`,
+		`<a href="/?p=3" target="_blank" rel="noopener">`,
 	}
 	for _, want := range wants {
 		if !strings.Contains(out, want) {

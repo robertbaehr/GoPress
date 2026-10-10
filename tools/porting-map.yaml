@@ -5490,3 +5490,11 @@
   task: P10.84
   api: n/a
   notes: "P10.84 — +categories/comments/media/oembed/sidebars; pretty permalinks; login; heartbeat"
+
+# P10.86: expand diff corpus after P5.88–P6.37 (widget-types item, search, reauth).
+- prefix: tests/corpus#p10.86
+  go: tests/corpus
+  status: partial
+  task: P10.86
+  api: n/a
+  notes: "P10.86 — widget-types/search anon; rest_route; empty/miss search; date archives; reauth=true"
