@@ -4886,6 +4886,21 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P2.99 — Context.NonceTick / CreateNonce / VerifyNonce honor nonce_life filter"
 
+# P2.100: wp_salt unknown schemes + salt filter.
+- prefix: wp-includes/pluggable.php#wp_salt
+  go: internal/wp/auth.go
+  status: partial
+  task: P2.100
+  api: exported
+  notes: "P2.100 — unknown scheme SECRET_KEY/AUTH_KEY + HMAC-MD5; Context.Salt applies salt filter; P2.1 base"
+
+- prefix: wp-includes/pluggable.php#wp_salt#filter
+  go: internal/wp/auth_cookie.go
+  status: partial
+  task: P2.100
+  api: exported
+  notes: "P2.100 — Context.Salt ApplyFilters('salt', salt, scheme)"
+
 - prefix: wp-includes/
   go: internal/wp
   status: partial

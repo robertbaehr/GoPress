@@ -431,6 +431,22 @@ func (c *Context) NonceTick(now int64, action string) int64 {
 	return NonceTickLife(now, action, c.nonceLifeForAction(action))
 }
 
+// Salt returns wp_salt for this context, applying the salt filter (P2.100).
+func (c *Context) Salt(scheme string) string {
+	salt := ""
+	if c != nil && c.Auth != nil {
+		salt = c.Auth.Salt(scheme)
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("salt", salt, scheme); v != nil {
+			if s, ok := v.(string); ok {
+				return s
+			}
+		}
+	}
+	return salt
+}
+
 // CreateNonce builds a wp_create_nonce value for the current user/session.
 func (c *Context) CreateNonce(action string) string {
 	if c == nil || c.Auth == nil {
