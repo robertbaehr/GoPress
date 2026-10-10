@@ -185,6 +185,13 @@
   task: P4.44
   api: exported
 
+# P4.45: POST /wp/v2/comments when logged in.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-comments-controller.php
+  go: internal/rest/comments_write.go
+  status: partial
+  task: P4.45
+  api: exported
+
 - prefix: wp-includes/user.php
   go: internal/wp/user.go
   status: partial
