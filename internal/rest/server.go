@@ -57,6 +57,10 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 			return
 		}
 		s.servePageItem(w, r, c, id)
+	case path == "/wp/v2/settings":
+		s.serveSettings(w, r, c)
+	case path == "/wp/v2/users/me":
+		s.serveUsersMe(w, r, c)
 	default:
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"code":    "rest_no_route",
