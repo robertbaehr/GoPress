@@ -8,7 +8,7 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// serveAdminAjax implements a minimal /wp-admin/admin-ajax.php (P7.2).
+// serveAdminAjax implements a minimal /wp-admin/admin-ajax.php (P7.2 / P7.17).
 func (h *Handler) serveAdminAjax(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	if c == nil {
 		http.Error(w, "GoPress context unavailable\n", http.StatusServiceUnavailable)
@@ -63,17 +63,66 @@ func (h *Handler) serveAdminAjax(w http.ResponseWriter, r *http.Request, c *wp.C
 }
 
 func (h *Handler) ajaxHeartbeat(w http.ResponseWriter, r *http.Request, c *wp.Context, loggedIn bool) {
-	_ = c
-	_ = r
-	// Match wp_ajax_heartbeat / wp_ajax_nopriv_heartbeat + wp_auth_check key order.
-	resp := struct {
-		WPAuthCheck bool  `json:"wp-auth-check"`
-		ServerTime  int64 `json:"server_time"`
-	}{
-		WPAuthCheck: loggedIn,
-		ServerTime:  time.Now().Unix(),
+	_ = r.ParseForm()
+	resp := map[string]any{}
+
+	if loggedIn {
+		nonce := r.FormValue("_nonce")
+		if nonce == "" {
+			// wp_ajax_heartbeat → wp_send_json_error() when _nonce missing.
+			w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+			w.WriteHeader(http.StatusOK)
+			_, _ = w.Write([]byte(`{"success":false}`))
+			return
+		}
+		if !verifyHeartbeatNonce(c, nonce) {
+			resp["nonces_expired"] = true
+			resp["wp-auth-check"] = true
+			resp["server_time"] = time.Now().Unix()
+			// Refresh transport nonces (wp_refresh_nonces subset).
+			resp["heartbeat-nonce"] = c.CreateNonce("heartbeat-nonce")
+			resp["rest-nonce"] = c.CreateNonce("wp_rest")
+			writeJSON(w, resp)
+			return
+		}
 	}
-	body, err := json.Marshal(resp)
+
+	// wp_auth_check filter: logged-in and not in grace period.
+	resp["wp-auth-check"] = loggedIn
+	resp["server_time"] = time.Now().Unix()
+	writeJSON(w, resp)
+}
+
+func verifyHeartbeatNonce(c *wp.Context, nonce string) bool {
+	if c == nil || nonce == "" {
+		return false
+	}
+	// Accept current or previous tick (wp_verify_nonce 1 / 2).
+	if c.CreateNonce("heartbeat-nonce") == nonce {
+		return true
+	}
+	// Previous tick: recreate with age by temporarily checking Auth ticks.
+	if c.Auth == nil {
+		return false
+	}
+	uid := 0
+	token := ""
+	if c.CurrentUser != nil {
+		uid = int(c.CurrentUser.ID)
+		token = c.SessionToken
+	}
+	tick := wp.NonceTick(0, "heartbeat-nonce")
+	if tick > 1 {
+		prev := c.Auth.CreateNonce(tick-1, "heartbeat-nonce", uid, token)
+		if prev == nonce {
+			return true
+		}
+	}
+	return false
+}
+
+func writeJSON(w http.ResponseWriter, v any) {
+	body, err := json.Marshal(v)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		_, _ = w.Write([]byte("0"))
