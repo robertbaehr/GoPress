@@ -78,6 +78,12 @@ func (f *Front) ServeFront(w http.ResponseWriter, r *http.Request, c *wp.Context
 		return
 	}
 
+	// Author archives: /author/{nicename}/ (P3.23).
+	if author := parsed.QueryVars["author_name"]; author != "" {
+		f.renderAuthorArchive(w, c, author)
+		return
+	}
+
 	// redirect_canonical lite: unmatched pretty paths whose last segment is a
 	// published post slug (e.g. /blog/uncategorized/hello-world/ → date permalink).
 	if parsed.Request != "" {
@@ -86,7 +92,6 @@ func (f *Front) ServeFront(w http.ResponseWriter, r *http.Request, c *wp.Context
 		}
 	}
 
-	// Later tasks: author archives.
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusNotImplemented)
 	fmt.Fprintf(w, "GoPress: front route not implemented (request=%q rule=%q)\n",
@@ -337,6 +342,155 @@ func (f *Front) renderDateArchiveBlockTemplate(w http.ResponseWriter, c *wp.Cont
 
 	setFrontAPILink(w, c)
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(b.String()))
+}
+
+// renderAuthorArchive serves /author/{nicename}/ front archives (P3.23).
+func (f *Front) renderAuthorArchive(w http.ResponseWriter, c *wp.Context, nicename string) {
+	nicename = strings.TrimSpace(nicename)
+	if nicename == "" {
+		f.render404(w, c)
+		return
+	}
+	user, err := c.GetUserBy("slug", nicename)
+	if err != nil || user == nil {
+		// Also try login as nicename fallback.
+		user, err = c.GetUserBy("login", nicename)
+	}
+	if err != nil || user == nil {
+		if c != nil && c.Scope != nil {
+			c.Scope.Is404 = true
+		}
+		f.render404(w, c)
+		return
+	}
+	if c != nil && c.Scope != nil {
+		c.Scope.IsArchive = true
+		c.Scope.IsAuthor = true
+		c.Scope.AuthorID = user.ID
+		c.Scope.AuthorName = user.Nicename
+		if c.Scope.AuthorName == "" {
+			c.Scope.AuthorName = user.Login
+		}
+		c.Scope.QueriedObjectID = user.ID
+	}
+	posts, err := wp.GetPosts(c, wp.QueryArgs{
+		PostType: "post", PostStatus: "publish", PostsPerPage: 1,
+		Author: user.ID,
+	})
+	if err != nil {
+		http.Error(w, "archive: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	if len(posts) == 0 {
+		if c != nil && c.Scope != nil {
+			c.Scope.Is404 = true
+		}
+		f.render404(w, c)
+		return
+	}
+	display := user.DisplayName
+	if display == "" {
+		display = user.Login
+	}
+	title := "Author: " + display
+	slugs := wp.AuthorTemplateSlugs(user.Nicename, user.ID)
+	if tpl, ok := wp.ResolveBlockTemplate(c, slugs...); ok && strings.TrimSpace(tpl) != "" {
+		f.renderAuthorArchiveBlockTemplate(w, c, tpl, title, user)
+		return
+	}
+	f.renderAuthorArchiveShim(w, c, title, user.ID)
+}
+
+func (f *Front) renderAuthorArchiveBlockTemplate(w http.ResponseWriter, c *wp.Context, template, archiveTitle string, user *wp.User) {
+	blogname := optionString(c, "blogname", "GoPress")
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	stylesheet := activeStylesheet(c)
+	env := blockRenderEnv(c)
+	env.ArchiveTitle = archiveTitle
+	body := blocks.RenderWith(env, template)
+	safe := wp.ProcessInteractivityHTML(wp.KsesPost(body))
+	safe = ensureMainSkipTarget(safe)
+
+	nicename := ""
+	if user != nil {
+		nicename = user.Nicename
+		if nicename == "" {
+			nicename = user.Login
+		}
+	}
+	bodyClasses := "archive author wp-embed-responsive"
+	if nicename != "" {
+		bodyClasses += " author-" + nicename
+	}
+	if user != nil && user.ID > 0 {
+		bodyClasses += " author-" + strconv.FormatInt(user.ID, 10)
+	}
+	if stylesheet != "" {
+		bodyClasses += " wp-theme-" + stylesheet
+	}
+	bodyClasses = wp.BodyClassWithAdminBar(c, bodyClasses)
+
+	pageTitle := html.EscapeString(archiveTitle) + " &#8211; " + html.EscapeString(blogname)
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
+	b.WriteString("<meta charset=\"UTF-8\" />\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
+	b.WriteString("<meta name='robots' content='max-image-preview:large' />\n")
+	b.WriteString("<title>")
+	b.WriteString(pageTitle)
+	b.WriteString("</title>\n")
+	writeFrontHeadLinks(&b, home, blogname, "", "", "")
+	b.WriteString(wp.EmojiHeadHTML())
+	b.WriteString("</head>\n<body class=\"")
+	b.WriteString(html.EscapeString(bodyClasses))
+	b.WriteString("\">\n")
+	b.WriteString(wp.AdminBarHTML(c))
+	b.WriteString("<a class=\"skip-link screen-reader-text\" id=\"wp-skip-link\" href=\"#wp--skip-link--target\">Skip to content</a>")
+	b.WriteString("<div class=\"wp-site-blocks\">")
+	b.WriteString(safe)
+	b.WriteString("</div>\n")
+	b.WriteString("</body>\n</html>\n")
+
+	setFrontAPILink(w, c)
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(b.String()))
+}
+
+func (f *Front) renderAuthorArchiveShim(w http.ResponseWriter, c *wp.Context, title string, authorID int64) {
+	blogname := optionString(c, "blogname", "GoPress")
+	posts, err := wp.GetPosts(c, wp.QueryArgs{
+		PostType: "post", PostStatus: "publish", PostsPerPage: 10,
+		Author: authorID,
+	})
+	if err != nil {
+		http.Error(w, "archive: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>")
+	b.WriteString(html.EscapeString(title))
+	b.WriteString(" &#8211; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString("</title>\n</head>\n<body class=\"")
+	b.WriteString(html.EscapeString(wp.BodyClassWithAdminBar(c, "archive author")))
+	b.WriteString("\">\n")
+	b.WriteString(wp.AdminBarHTML(c))
+	b.WriteString("<h1 class=\"page-title\">")
+	b.WriteString(html.EscapeString(title))
+	b.WriteString("</h1>\n<ul class=\"posts\">\n")
+	for _, p := range posts {
+		b.WriteString("<li><a href=\"?p=")
+		b.WriteString(strconv.FormatInt(p.ID, 10))
+		b.WriteString("\">")
+		b.WriteString(html.EscapeString(p.Title))
+		b.WriteString("</a></li>\n")
+	}
+	b.WriteString("</ul>\n</body>\n</html>\n")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(b.String()))
 }
@@ -1789,6 +1943,7 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			}
 			search := ""
 			year, month, day := 0, 0, 0
+			var authorID int64
 			// Inherit search results on /?s= (P3.21).
 			if q.Inherit && c != nil && c.Scope != nil && c.Scope.IsSearch {
 				search = c.Scope.SearchQuery
@@ -1799,6 +1954,10 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 				month = c.Scope.DateMonth
 				day = c.Scope.DateDay
 			}
+			// Inherit author archive filters (P3.23).
+			if q.Inherit && c != nil && c.Scope != nil && c.Scope.IsAuthor {
+				authorID = c.Scope.AuthorID
+			}
 			posts, err := wp.GetPosts(c, wp.QueryArgs{
 				PostType:     postType,
 				PostStatus:   "publish",
@@ -1808,8 +1967,9 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 				Year:         year,
 				MonthNum:     month,
 				Day:          day,
+				Author:       authorID,
 				// Sticky posts are prepended for front query loops (inherit or not).
-				StickyFirst: postType == "post" && search == "" && year == 0,
+				StickyFirst: postType == "post" && search == "" && year == 0 && authorID == 0,
 			})
 			if err != nil {
 				return nil

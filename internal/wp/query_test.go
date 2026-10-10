@@ -128,3 +128,30 @@ func TestGetPostsDateArchive(t *testing.T) {
 		t.Fatalf("expected no 2019 posts, got %d", len(empty))
 	}
 }
+
+func TestGetPostsAuthorArchive(t *testing.T) {
+	c := testBootQuery(t)
+	admin, err := c.GetUserBy("login", "admin")
+	if err != nil || admin == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	posts, err := wp.GetPosts(c, wp.QueryArgs{PostsPerPage: 5, Author: admin.ID})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(posts) == 0 {
+		t.Fatal("expected admin author posts")
+	}
+	for _, p := range posts {
+		if p.Author != admin.ID {
+			t.Fatalf("post %d author=%d want %d", p.ID, p.Author, admin.ID)
+		}
+	}
+	empty, err := wp.GetPosts(c, wp.QueryArgs{PostsPerPage: 5, Author: 999999})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(empty) != 0 {
+		t.Fatalf("expected no posts for missing author, got %d", len(empty))
+	}
+}

@@ -25,6 +25,8 @@ type QueryArgs struct {
 	Year     int
 	MonthNum int
 	Day      int
+	// Author is the post_author user ID for author archives (P3.23).
+	Author int64
 	// StickyFirst prepends sticky posts (home/blog inherit queries, P5.19).
 	StickyFirst bool
 	// IgnoreSticky excludes sticky posts from results (non-inherit query loops).
@@ -113,6 +115,10 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 	if args.Day > 0 {
 		where = append(where, "DAY(post_date) = %d")
 		vals = append(vals, args.Day)
+	}
+	if args.Author > 0 {
+		where = append(where, "post_author = %d")
+		vals = append(vals, args.Author)
 	}
 
 	q := "SELECT ID, post_author, post_date, post_date_gmt, post_modified, post_modified_gmt, " +

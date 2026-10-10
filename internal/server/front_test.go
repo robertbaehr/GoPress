@@ -381,6 +381,38 @@ func TestFrontSearchResults(t *testing.T) {
 	}
 }
 
+func TestFrontAuthorArchive(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+
+	req := httptest.NewRequest(http.MethodGet, "/author/admin/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "archive") || !strings.Contains(body, "author") {
+		t.Fatalf("expected archive author body class: %q", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, "Author:") {
+		t.Fatalf("expected Author heading: %q", body[:min(800, len(body))])
+	}
+	if !strings.Contains(body, "Hello world") && !strings.Contains(body, "Hello World") {
+		t.Fatalf("expected post in author archive: %q", body)
+	}
+	if strings.Contains(body, "GoPress: front route not implemented") {
+		t.Fatal("author archive should not 501")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/author/nobody-here/", nil)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("missing author want 404, got %d", rec.Code)
+	}
+}
+
 func TestFrontDateArchiveYearMonth(t *testing.T) {
 	c := testBoot(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}

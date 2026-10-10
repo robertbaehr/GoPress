@@ -179,6 +179,11 @@ type RequestScope struct {
 	IsMonth   bool
 	IsDay     bool
 
+	// Author archive query vars (P3.23).
+	AuthorID   int64
+	AuthorName string
+	IsAuthor   bool
+
 	// Is* flags mirror WP_Query conditionals (filled by query parse).
 	IsHome       bool
 	IsSingular   bool

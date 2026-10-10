@@ -252,6 +252,14 @@ func (c *Context) ParseRequest(rules RewriteRules) *ParseResult {
 			c.Scope.IsMonth = c.Scope.DateYear > 0 && c.Scope.DateMonth > 0 && c.Scope.DateDay == 0
 			c.Scope.IsDay = c.Scope.DateYear > 0 && c.Scope.DateMonth > 0 && c.Scope.DateDay > 0
 		}
+		// Author archives (P3.23).
+		if !c.Scope.IsSingular && hasAny(res.QueryVars, "author_name", "author") {
+			c.Scope.IsAuthor = true
+			c.Scope.AuthorName = res.QueryVars["author_name"]
+			if id, err := strconv.ParseInt(res.QueryVars["author"], 10, 64); err == nil && id > 0 {
+				c.Scope.AuthorID = id
+			}
+		}
 		if p := res.QueryVars["p"]; p != "" {
 			if id, err := strconv.ParseInt(p, 10, 64); err == nil {
 				c.Scope.QueriedObjectID = id
