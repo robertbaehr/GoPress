@@ -19,6 +19,20 @@ func TestGeneratePasswordLength(t *testing.T) {
 	}
 }
 
+func TestGetPasswordHint(t *testing.T) {
+	hint := wp.GetPasswordHint(nil)
+	if !strings.Contains(hint, "twelve characters") {
+		t.Fatalf("hint=%q", hint)
+	}
+	c := &wp.Context{Hooks: wp.NewHooks()}
+	c.Hooks.AddFilter("password_hint", func(value any, _ ...any) any {
+		return "custom-hint"
+	}, 10, 1)
+	if got := wp.GetPasswordHint(c); got != "custom-hint" {
+		t.Fatalf("filtered=%q", got)
+	}
+}
+
 func TestGetPasswordResetKeyStoresActivation(t *testing.T) {
 	c := cronBoot(t)
 	defer c.DB.Close()

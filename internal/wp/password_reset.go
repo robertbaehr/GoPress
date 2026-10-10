@@ -16,6 +16,21 @@ var passwordResetKeySanitize = regexp.MustCompile(`(?i)[^a-z0-9]`)
 
 const passwordResetAlphabet = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
 
+// defaultPasswordHint is the stock wp_get_password_hint text (P6.41).
+const defaultPasswordHint = `Hint: The password should be at least twelve characters long. To make it stronger, use upper and lower case letters, numbers, and symbols like ! " ? $ % ^ &amp; ).`
+
+// GetPasswordHint returns the password complexity hint (wp_get_password_hint, P6.41).
+func GetPasswordHint(c *Context) string {
+	hint := defaultPasswordHint
+	if c != nil && c.Hooks != nil {
+		filtered := c.Hooks.ApplyFilters("password_hint", hint)
+		if s, ok := filtered.(string); ok {
+			hint = s
+		}
+	}
+	return hint
+}
+
 // GeneratePassword returns a random password (wp_generate_password subset).
 // When special is false, only alphanumerics are used.
 func GeneratePassword(length int, special bool) string {

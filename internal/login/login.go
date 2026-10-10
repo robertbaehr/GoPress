@@ -667,7 +667,8 @@ func (h *Handler) serveResetPassForm(w http.ResponseWriter, r *http.Request, c *
 	blogname := optionString(c, "blogname", "GoPress")
 	loginURL := home + "/wp-login.php"
 	actionURL := loginURL + "?action=resetpass"
-	hint := wp.GeneratePassword(16, false)
+	generated := wp.GeneratePassword(16, false)
+	passHint := wp.GetPasswordHint(c)
 
 	var b strings.Builder
 	writeLoginHead(&b, home, blogname, "Reset Password", "resetpass")
@@ -675,11 +676,12 @@ func (h *Handler) serveResetPassForm(w http.ResponseWriter, r *http.Request, c *
 	b.WriteString("\t\t\t<div id=\"login\">\n")
 	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
 	if formErr != "" {
-		b.WriteString("<div id=\"login_error\"><strong>Error:</strong> ")
+		b.WriteString("<div class=\"notice notice-error\" id=\"login_error\"><p><strong>Error:</strong> ")
 		b.WriteString(html.EscapeString(formErr))
-		b.WriteString("<br /></div>\n")
+		b.WriteString("</p></div>\n")
 	} else {
-		b.WriteString("<p class=\"message reset-pass\">Enter your new password below or generate one.</p>\n")
+		// P6.41: match WP login_header notice classes for reset-pass.
+		b.WriteString("<div class=\"notice notice-info message reset-pass\"><p>Enter your new password below or generate one.</p></div>\n")
 	}
 	b.WriteString("\t\t<form name=\"resetpassform\" id=\"resetpassform\" action=\"")
 	b.WriteString(html.EscapeString(actionURL))
@@ -687,20 +689,43 @@ func (h *Handler) serveResetPassForm(w http.ResponseWriter, r *http.Request, c *
 	b.WriteString("\t\t\t<input type=\"hidden\" id=\"user_login\" value=\"")
 	b.WriteString(html.EscapeString(rpLogin))
 	b.WriteString("\" autocomplete=\"off\" />\n")
-	b.WriteString("\t\t\t<p>\n")
-	b.WriteString("\t\t\t\t<label for=\"pass1\">New password</label>\n")
-	b.WriteString("\t\t\t\t<input type=\"password\" name=\"pass1\" id=\"pass1\" class=\"input password-input ltr\" size=\"24\" value=\"\" autocomplete=\"new-password\" spellcheck=\"false\" data-pw=\"")
-	b.WriteString(html.EscapeString(hint))
-	b.WriteString("\" />\n")
-	b.WriteString("\t\t\t</p>\n")
-	b.WriteString("\t\t\t<p>\n")
+	// P6.41: user-pass1-wrap / strength meter / weak confirm / generate button.
+	b.WriteString("\t\t\t<div class=\"user-pass1-wrap\">\n")
+	b.WriteString("\t\t\t\t<p>\n")
+	b.WriteString("\t\t\t\t\t<label for=\"pass1\">New password</label>\n")
+	b.WriteString("\t\t\t\t</p>\n")
+	b.WriteString("\t\t\t\t<div class=\"wp-pwd\">\n")
+	b.WriteString("\t\t\t\t\t<input type=\"password\" name=\"pass1\" id=\"pass1\" class=\"input password-input ltr\" size=\"24\" value=\"\" autocomplete=\"new-password\" spellcheck=\"false\" data-reveal=\"1\" data-pw=\"")
+	b.WriteString(html.EscapeString(generated))
+	b.WriteString("\" aria-describedby=\"pass-strength-result\" />\n")
+	b.WriteString("\t\t\t\t\t<button type=\"button\" class=\"button button-secondary wp-hide-pw hide-if-no-js\" data-toggle=\"0\" aria-label=\"Hide password\">\n")
+	b.WriteString("\t\t\t\t\t\t<span class=\"dashicons dashicons-hidden\" aria-hidden=\"true\"></span>\n")
+	b.WriteString("\t\t\t\t\t</button>\n")
+	b.WriteString("\t\t\t\t\t<div id=\"pass-strength-result\" class=\"hide-if-no-js\" aria-live=\"polite\">Strength indicator</div>\n")
+	b.WriteString("\t\t\t\t</div>\n")
+	b.WriteString("\t\t\t\t<div class=\"pw-weak\">\n")
+	b.WriteString("\t\t\t\t\t<input type=\"checkbox\" name=\"pw_weak\" id=\"pw-weak\" class=\"pw-checkbox\" />\n")
+	b.WriteString("\t\t\t\t\t<label for=\"pw-weak\">Confirm use of weak password</label>\n")
+	b.WriteString("\t\t\t\t</div>\n")
+	b.WriteString("\t\t\t</div>\n")
+	b.WriteString("\t\t\t<p class=\"user-pass2-wrap\">\n")
 	b.WriteString("\t\t\t\t<label for=\"pass2\">Confirm new password</label>\n")
 	b.WriteString("\t\t\t\t<input type=\"password\" name=\"pass2\" id=\"pass2\" class=\"input\" size=\"20\" value=\"\" autocomplete=\"new-password\" spellcheck=\"false\" />\n")
 	b.WriteString("\t\t\t</p>\n")
+	b.WriteString("\t\t\t<p class=\"description indicator-hint\">")
+	b.WriteString(passHint)
+	b.WriteString("</p>\n")
+	if c != nil && c.Hooks != nil {
+		// P6.41: resetpass_form action (user object when available).
+		if u, err := c.GetUserBy("login", rpLogin); err == nil && u != nil {
+			c.Hooks.DoAction("resetpass_form", u)
+		}
+	}
 	b.WriteString("\t\t\t<input type=\"hidden\" name=\"rp_key\" value=\"")
 	b.WriteString(html.EscapeString(rpKey))
 	b.WriteString("\" />\n")
 	b.WriteString("\t\t\t<p class=\"submit reset-pass-submit\">\n")
+	b.WriteString("\t\t\t\t<button type=\"button\" class=\"button wp-generate-pw hide-if-no-js skip-aria-expanded\">Generate Password</button>\n")
 	b.WriteString("\t\t\t\t<input type=\"submit\" name=\"wp-submit\" id=\"wp-submit\" class=\"button button-primary button-large\" value=\"Save Password\" />\n")
 	b.WriteString("\t\t\t</p>\n")
 	b.WriteString("\t\t</form>\n")

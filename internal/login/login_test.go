@@ -606,6 +606,20 @@ func TestResetPassFlow(t *testing.T) {
 	if !strings.Contains(body, `name="rp_key"`) {
 		t.Fatalf("expected rp_key hidden field: %q", body)
 	}
+	for _, want := range []string{
+		`id="pass-strength-result"`,
+		`name="pw_weak"`,
+		`class="button wp-generate-pw`,
+		`data-reveal="1"`,
+		`aria-describedby="pass-strength-result"`,
+		`indicator-hint`,
+		`user-pass1-wrap`,
+		`notice notice-info message reset-pass`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("resetpass form missing %q in %q", want, body)
+		}
+	}
 
 	// Step 3: POST new password.
 	newPass := "GoPress-Login-Reset-42"
