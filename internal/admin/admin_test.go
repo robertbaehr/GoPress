@@ -251,10 +251,44 @@ func TestThemesScreenDetails(t *testing.T) {
 		"data-slug=",
 		"action=activate",
 		"theme-actions",
+		"theme-count",
+		"search-themes",
+		"wp-filter-search",
+		"Add Theme",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("missing %q in themes.php", want)
 		}
+	}
+}
+
+func TestThemesScreenSearch(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/themes.php?s=twentytwentyfive", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `data-slug="twentytwentyfive"`) {
+		t.Fatalf("expected search hit: %q", body)
+	}
+	if !strings.Contains(body, "&hellip;") && !strings.Contains(body, "…") {
+		// theme-count shows hellip HTML entity while searching
+		if !strings.Contains(body, "theme-count") {
+			t.Fatalf("missing theme-count while searching: %q", body)
+		}
+	}
+	miss := httptest.NewRequest(http.MethodGet, "/wp-admin/themes.php?s=no-such-theme-zzz", nil)
+	miss.AddCookie(ck)
+	rec2 := httptest.NewRecorder()
+	srv.ServeHTTP(rec2, miss)
+	if strings.Contains(rec2.Body.String(), `data-slug=`) {
+		t.Fatalf("expected no theme cards for nonsense search")
 	}
 }
 
