@@ -185,7 +185,7 @@
 - prefix: wp-includes/capabilities.php
   go: internal/wp/capabilities.go
   status: partial
-  task: P2.3
+  task: P2.23
   api: exported
 
 - prefix: wp-includes/html-api/

@@ -216,7 +216,7 @@ func resolveAppPasswordUser(c *wp.Context, userKey string) (user *wp.User, statu
 	}
 	// P4.43 focuses on current-user management; other users require edit_user.
 	if id != c.CurrentUser.ID {
-		if !c.UserCan(c.CurrentUser, "edit_users") && !c.UserCan(c.CurrentUser, "edit_user", id) {
+		if !c.CurrentUserCan("edit_user", id) {
 			return nil, http.StatusForbidden, "rest_cannot_manage_application_passwords",
 				"Sorry, you are not allowed to manage application passwords for this user."
 		}
