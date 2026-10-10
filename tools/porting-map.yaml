@@ -3722,6 +3722,35 @@
   task: P3.7
   api: n/a
 
+# P8.23: intermediate image sizes registry helpers.
+- prefix: wp-includes/media.php#get_intermediate_image_sizes
+  go: internal/wp/media.go
+  status: partial
+  task: P8.23
+  api: exported
+  notes: "P8.23 — GetIntermediateImageSizes + intermediate_image_sizes filter"
+
+- prefix: wp-includes/media.php#has_image_size
+  go: internal/wp/media.go
+  status: partial
+  task: P8.23
+  api: exported
+  notes: "P8.23 — HasImageSize / RemoveImageSize bool; additional sizes only"
+
+- prefix: wp-includes/media.php#wp_get_registered_image_subsizes
+  go: internal/wp/media.go
+  status: partial
+  task: P8.23
+  api: exported
+  notes: "P8.23 — GetRegisteredImageSubsizes skips unset dimensions"
+
+- prefix: wp-includes/media.php#image_size_names_choose
+  go: internal/wp/media.go
+  status: partial
+  task: P8.23
+  api: exported
+  notes: "P8.23 — ImageSizeNamesChoose + image_size_names_choose filter"
+
 # P8.22: wp_get_attachment_metadata read path + filter.
 - prefix: wp-includes/post.php#wp_get_attachment_metadata
   go: internal/wp/media.go

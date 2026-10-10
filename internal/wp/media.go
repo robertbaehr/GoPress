@@ -37,11 +37,30 @@ func AddImageSize(name string, width, height int, crop bool) {
 	additionalSizesMu.Unlock()
 }
 
-// RemoveImageSize unregisters an additional image size.
-func RemoveImageSize(name string) {
+// RemoveImageSize unregisters an additional image size (remove_image_size).
+// Returns true when the size was registered (P8.23).
+func RemoveImageSize(name string) bool {
+	name = strings.TrimSpace(name)
 	additionalSizesMu.Lock()
+	defer additionalSizesMu.Unlock()
+	if _, ok := additionalSizes[name]; !ok {
+		return false
+	}
 	delete(additionalSizes, name)
-	additionalSizesMu.Unlock()
+	return true
+}
+
+// HasImageSize reports whether an additional image size is registered
+// (has_image_size — additional sizes only, not defaults, P8.23).
+func HasImageSize(name string) bool {
+	name = strings.TrimSpace(name)
+	if name == "" {
+		return false
+	}
+	additionalSizesMu.RLock()
+	defer additionalSizesMu.RUnlock()
+	_, ok := additionalSizes[name]
+	return ok
 }
 
 // GetAdditionalImageSizes returns a copy of sizes registered via AddImageSize.
@@ -55,34 +74,67 @@ func GetAdditionalImageSizes() map[string]ImageSize {
 	return out
 }
 
+// GetIntermediateImageSizes returns intermediate size names
+// (get_intermediate_image_sizes + intermediate_image_sizes filter, P8.23).
+func GetIntermediateImageSizes(c *Context) []string {
+	names := []string{"thumbnail", "medium", "medium_large", "large"}
+	for name := range GetAdditionalImageSizes() {
+		names = append(names, name)
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("intermediate_image_sizes", names); v != nil {
+			switch t := v.(type) {
+			case []string:
+				names = t
+			case []any:
+				out := make([]string, 0, len(t))
+				for _, item := range t {
+					s := strings.TrimSpace(fmt.Sprint(item))
+					if s != "" && s != "<nil>" {
+						out = append(out, s)
+					}
+				}
+				names = out
+			}
+		}
+	}
+	return names
+}
+
 // GetRegisteredImageSizes returns default sizes from options plus additional sizes.
 // Defaults: thumbnail, medium, medium_large, large (get_intermediate_image_sizes).
+// P8.23: delegates to GetRegisteredImageSubsizes (filter-aware).
 func GetRegisteredImageSizes(c *Context) map[string]ImageSize {
-	out := map[string]ImageSize{
-		"thumbnail": {
-			Name:   "thumbnail",
-			Width:  optionInt(c, "thumbnail_size_w", 150),
-			Height: optionInt(c, "thumbnail_size_h", 150),
-			Crop:   optionBool(c, "thumbnail_crop", true),
-		},
-		"medium": {
-			Name:   "medium",
-			Width:  optionInt(c, "medium_size_w", 300),
-			Height: optionInt(c, "medium_size_h", 300),
-		},
-		"medium_large": {
-			Name:   "medium_large",
-			Width:  optionInt(c, "medium_large_size_w", 768),
-			Height: optionInt(c, "medium_large_size_h", 0),
-		},
-		"large": {
-			Name:   "large",
-			Width:  optionInt(c, "large_size_w", 1024),
-			Height: optionInt(c, "large_size_h", 1024),
-		},
-	}
-	for k, v := range GetAdditionalImageSizes() {
-		out[k] = v
+	return GetRegisteredImageSubsizes(c)
+}
+
+// GetRegisteredImageSubsizes returns wp_get_registered_image_subsizes (P8.23).
+// Skips sizes with both width and height unset.
+func GetRegisteredImageSubsizes(c *Context) map[string]ImageSize {
+	additional := GetAdditionalImageSizes()
+	out := make(map[string]ImageSize)
+	for _, name := range GetIntermediateImageSizes(c) {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			continue
+		}
+		var size ImageSize
+		size.Name = name
+		if add, ok := additional[name]; ok {
+			size = add
+		} else {
+			size.Width = optionInt(c, name+"_size_w", 0)
+			size.Height = optionInt(c, name+"_size_h", 0)
+			if name == "thumbnail" {
+				size.Crop = optionBool(c, "thumbnail_crop", true)
+			} else {
+				size.Crop = optionBool(c, name+"_crop", false)
+			}
+		}
+		if size.Width <= 0 && size.Height <= 0 {
+			continue
+		}
+		out[name] = size
 	}
 	return out
 }
@@ -92,6 +144,25 @@ func GetImageSize(c *Context, name string) (ImageSize, bool) {
 	sizes := GetRegisteredImageSizes(c)
 	s, ok := sizes[name]
 	return s, ok
+}
+
+// ImageSizeNamesChoose returns labels for the media size dropdown
+// (image_size_names_choose filter defaults, P8.23).
+func ImageSizeNamesChoose(c *Context) map[string]string {
+	names := map[string]string{
+		"thumbnail": "Thumbnail",
+		"medium":    "Medium",
+		"large":     "Large",
+		"full":      "Full Size",
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("image_size_names_choose", names); v != nil {
+			if m, ok := v.(map[string]string); ok {
+				names = m
+			}
+		}
+	}
+	return names
 }
 
 // UploadDir describes the uploads path and URL (wp_upload_dir / wp_get_upload_dir, P2.60).
