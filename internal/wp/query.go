@@ -12,13 +12,13 @@ import (
 
 // QueryArgs is a minimal subset of WP_Query / get_posts arguments.
 type QueryArgs struct {
-	PostType     string // default "post"
-	PostStatus   string // default "publish"; ignored when PostStatuses is set
+	PostType   string // default "post"
+	PostStatus string // default "publish"; ignored when PostStatuses is set
 	// PostStatuses is WP_Query post_status as a list (REST ?status=, P4.88).
 	// A single value "any" means all statuses except trash and auto-draft.
-	PostStatuses  []string
-	PostsPerPage int // default 10; -1 means no LIMIT
-	Offset       int // SQL OFFSET (ignored when PostsPerPage < 0)
+	PostStatuses []string
+	PostsPerPage int    // default 10; -1 means no LIMIT
+	Offset       int    // SQL OFFSET (ignored when PostsPerPage < 0)
 	P            int64  // post ID (query var "p")
 	Name         string // post slug (query var "name")
 	PageName     string // page slug (query var "pagename"); implies post_type=page when PostType unset
