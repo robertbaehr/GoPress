@@ -69,10 +69,14 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderMediaText(block)
 	case "core/heading", "core/list", "core/list-item",
 		"core/code", "core/html",
-		"core/group", "core/columns", "core/column", "core/buttons", "core/button",
+		"core/group", "core/columns", "core/column",
 		"core/pullquote", "core/preformatted", "core/verse", "core/table",
 		"core/details":
 		out = e.renderSaved(block)
+	case "core/buttons":
+		out = e.renderButtons(block)
+	case "core/button":
+		out = e.renderButton(block)
 	case "core/audio":
 		out = e.renderAudio(block)
 	case "core/video":

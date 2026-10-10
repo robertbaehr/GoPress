@@ -1432,6 +1432,21 @@
   api: internal
   notes: "P5.55 — renderMediaText synthesize from mediaUrl/mediaId + featured image in figure"
 
+# P5.56: polish core/buttons + core/button (empty, synthesize, width).
+- prefix: wp-includes/blocks/button.php
+  go: internal/blocks/button.go
+  status: partial
+  task: P5.56
+  api: internal
+  notes: "P5.56 — empty button → ''; synthesize text/url; style.dimensions.width classes"
+
+- prefix: wp-includes/blocks/buttons
+  go: internal/blocks/button.go
+  status: partial
+  task: P5.56
+  api: internal
+  notes: "P5.56 — synthesize flex buttons wrapper from inner button blocks"
+
 # P5.42: calendar / archives / latest-posts / latest-comments / tag-cloud / search.
 - prefix: wp-includes/blocks/calendar.php
   go: internal/blocks/widget_blocks.go
