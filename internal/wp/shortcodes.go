@@ -160,6 +160,123 @@ func ParseShortcodeAtts(text string) map[string]string {
 	return out
 }
 
+// ShortcodeAtts merges user atts onto defaults (shortcode_atts, P9.22).
+// Only keys present in pairs are returned; missing keys take the pair default.
+func ShortcodeAtts(pairs, atts map[string]string) map[string]string {
+	out := map[string]string{}
+	if pairs == nil {
+		return out
+	}
+	for name, def := range pairs {
+		if atts != nil {
+			if v, ok := atts[name]; ok {
+				out[name] = v
+				continue
+			}
+			if v, ok := atts[strings.ToLower(name)]; ok {
+				out[name] = v
+				continue
+			}
+		}
+		out[name] = def
+	}
+	return out
+}
+
+// ShortcodeAttsFiltered is shortcode_atts with optional shortcode_atts_{$tag} filter (P9.22).
+func ShortcodeAttsFiltered(c *Context, pairs, atts map[string]string, shortcode string) map[string]string {
+	out := ShortcodeAtts(pairs, atts)
+	shortcode = strings.TrimSpace(shortcode)
+	if c == nil || c.Hooks == nil || shortcode == "" {
+		return out
+	}
+	tag := "shortcode_atts_" + shortcode
+	if v := c.Hooks.ApplyFilters(tag, out, pairs, atts, shortcode); v != nil {
+		if m, ok := v.(map[string]string); ok {
+			return m
+		}
+	}
+	return out
+}
+
+// StripShortcodes removes registered shortcode tags from content (strip_shortcodes, P9.22).
+func (s *Shortcodes) StripShortcodes(content string) string {
+	if s == nil || content == "" || !strings.Contains(content, "[") {
+		return content
+	}
+	s.mu.RLock()
+	tags := make([]string, 0, len(s.tags))
+	for k := range s.tags {
+		tags = append(tags, k)
+	}
+	s.mu.RUnlock()
+	if len(tags) == 0 {
+		return content
+	}
+	return stripShortcodeTags(content, tags)
+}
+
+// StripShortcodes removes shortcodes using c.Shortcodes (nil-safe).
+func StripShortcodes(c *Context, content string) string {
+	if c == nil || c.Shortcodes == nil {
+		return content
+	}
+	tags := c.Shortcodes.tagNames()
+	if c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("strip_shortcodes_tagnames", tags, content); v != nil {
+			if filtered, ok := v.([]string); ok {
+				tags = filtered
+			}
+		}
+	}
+	return stripShortcodeTags(content, tags)
+}
+
+func (s *Shortcodes) tagNames() []string {
+	if s == nil {
+		return nil
+	}
+	s.mu.RLock()
+	defer s.mu.RUnlock()
+	out := make([]string, 0, len(s.tags))
+	for k := range s.tags {
+		out = append(out, k)
+	}
+	return out
+}
+
+func stripShortcodeTags(content string, tags []string) string {
+	if content == "" || len(tags) == 0 || !strings.Contains(content, "[") {
+		return content
+	}
+	needed := map[string]bool{}
+	for _, tag := range tags {
+		if tag != "" {
+			needed[tag] = true
+		}
+	}
+	found := shortcodeFind.FindAllStringSubmatch(content, -1)
+	use := map[string]bool{}
+	for _, m := range found {
+		if len(m) > 1 && needed[m[1]] {
+			use[m[1]] = true
+		}
+	}
+	if len(use) == 0 {
+		return content
+	}
+	for tag := range use {
+		q := regexp.QuoteMeta(tag)
+		enclosing := regexp.MustCompile(`(?s)\[` + q + `(\s[^\]]*)?\].*?\[/` + q + `\]`)
+		content = enclosing.ReplaceAllString(content, "")
+		selfClose := regexp.MustCompile(`\[` + q + `(\s[^\]]*)?/\s*\]`)
+		content = selfClose.ReplaceAllString(content, "")
+		bare := regexp.MustCompile(`\[` + q + `(\s[^\]]*)?\]`)
+		content = bare.ReplaceAllString(content, "")
+	}
+	return content
+}
+
 func validShortcodeTag(tag string) bool {
 	for i := 0; i < len(tag); i++ {
 		c := tag[i]
