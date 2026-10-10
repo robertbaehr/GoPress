@@ -1683,12 +1683,13 @@ wp-login.php#language-switcher-post
   notes: "P3.77 — comment GUID from post GUID; get_comment_text reply prefix; preserve HTML in content:encoded"
 
 
-# P3.34 / P10.33: /comments/feed/atom/ Atom comments feed + e2e.
+# P3.34 / P10.33 / P3.88: /comments/feed/atom/ Atom comments feed + e2e.
 - prefix: wp-includes/feed-atom-comments.php
   go: internal/server/front.go
   status: partial
-  task: P10.33
+  task: P3.88
   api: n/a
+  notes: "P3.88 — the_title_rss; get_comment_guid thr:in-reply-to; password form content"
 
 - prefix: tests/e2e/atom-comments.spec.js
   go: tests/e2e/atom-comments.spec.js

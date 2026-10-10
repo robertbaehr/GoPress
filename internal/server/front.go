@@ -335,7 +335,6 @@ func (f *Front) renderCommentsFeedAtom(w http.ResponseWriter, r *http.Request, c
 		post, _ := wp.GetPostByID(c, cm.PostID)
 		postTitle := ""
 		postLink := fmt.Sprintf("%s/?p=%d", home, cm.PostID)
-		postGUID := postLink
 		storedGUID := ""
 		link := fmt.Sprintf("%s/?p=%d#comment-%d", home, cm.PostID, cm.ID)
 		if post != nil {
@@ -345,17 +344,26 @@ func (f *Front) renderCommentsFeedAtom(w http.ResponseWriter, r *http.Request, c
 				postLink = strings.TrimRight(plink, "/") + "/"
 				link = strings.TrimRight(plink, "/") + "/#comment-" + strconv.FormatInt(cm.ID, 10)
 			}
-			if post.GUID != "" {
-				postGUID = post.GUID
-			}
+		}
+		// P3.88: thr:in-reply-to ref uses get_the_guid / get_comment_guid.
+		postGUID := feedItemGUID(c, home, cm.PostID, storedGUID)
+		if postGUID == "" {
+			postGUID = postLink
 		}
 		author := cm.Author
 		if author == "" {
 			author = "Anonymous"
 		}
-		title := "Comment on " + postTitle + " by " + author
+		// P3.88: the_title_rss on the post title inside "Comment on … by …".
+		title := "Comment on " + applyTheTitleRSS(c, postTitle) + " by " + author
 		guid := commentFeedGUID(c, home, cm.PostID, cm.ID, storedGUID)
-		contentHTML := commentFeedContent(commentFeedGetText(c, home, cm))
+		contentHTML := ""
+		if post != nil && wp.PostPasswordRequired(c, r, post) {
+			// feed-atom-comments.php: password form when post_password_required.
+			contentHTML = commentFeedContent(wp.GetThePasswordForm(c, post, postLink))
+		} else {
+			contentHTML = commentFeedContent(commentFeedGetText(c, home, cm))
+		}
 
 		b.WriteString("\t<entry>\n")
 		b.WriteString("\t\t<title>\n")
@@ -397,7 +405,7 @@ func (f *Front) renderCommentsFeedAtom(w http.ResponseWriter, r *http.Request, c
 			b.WriteString(xmlEscape(postLink))
 			b.WriteString("\" type=\"text/html\" />\n")
 		} else {
-			parentGUID := fmt.Sprintf("%s/?p=%d#comment-%d", home, cm.PostID, cm.Parent)
+			parentGUID := commentFeedGUID(c, home, cm.PostID, cm.Parent, storedGUID)
 			parentLink := fmt.Sprintf("%s/?p=%d#comment-%d", home, cm.PostID, cm.Parent)
 			if post != nil {
 				if plink := postPermalink(home, *post); plink != "" {
