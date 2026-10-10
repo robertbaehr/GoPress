@@ -4738,3 +4738,18 @@
   task: P7.81
   api: n/a
   notes: "P7.81 — filter-by-format select; used formats only; ?post_format= slug filter"
+
+# P2.76: wp_validate_redirect + wp_sanitize_redirect completeness.
+- prefix: wp-includes/pluggable.php#wp_sanitize_redirect
+  go: internal/wp/referer.go
+  status: partial
+  task: P2.76
+  api: internal
+  notes: "P2.76 — SanitizeRedirect strips unsafe chars + %0d/%0a; space→%20"
+
+- prefix: wp-includes/pluggable.php#wp_validate_redirect#relative
+  go: internal/wp/referer.go
+  status: partial
+  task: P2.76
+  api: internal
+  notes: "P2.76 — resolve relative paths via REQUEST_URI dirname; reject bad components"

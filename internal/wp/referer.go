@@ -3,6 +3,8 @@ package wp
 import (
 	"net/http"
 	"net/url"
+	"path"
+	"regexp"
 	"strings"
 )
 
@@ -73,11 +75,27 @@ func GetReferer(c *Context) string {
 	return ValidateRedirect(c, ref, "")
 }
 
-// ValidateRedirect mirrors wp_validate_redirect (P2.75 / P6.20 subset).
-// Relative same-origin paths are kept; absolute URLs must match home's host
-// (plus allowed_redirect_hosts filter). Invalid locations return fallback.
+// redirectSafeChars matches characters kept by wp_sanitize_redirect.
+var redirectSafeChars = regexp.MustCompile(`(?i)[^a-z0-9-~+_.?#=&;,/:%!*\[\]()@]`)
+
+// SanitizeRedirect mirrors wp_sanitize_redirect (P2.76).
+// Encodes spaces, strips control/unsafe chars, and removes %0d/%0a.
+func SanitizeRedirect(location string) string {
+	location = strings.ReplaceAll(location, " ", "%20")
+	location = redirectSafeChars.ReplaceAllString(location, "")
+	// Strip CRLF encodings used for header injection.
+	for _, bad := range []string{"%0d", "%0a", "%0D", "%0A"} {
+		location = strings.ReplaceAll(location, bad, "")
+	}
+	return location
+}
+
+// ValidateRedirect mirrors wp_validate_redirect (P2.75 / P2.76 / P6.20).
+// Sanitizes the location, resolves relative paths against REQUEST_URI, keeps
+// same-origin relative/absolute URLs (plus allowed_redirect_hosts), and
+// returns fallback for invalid or off-site targets.
 func ValidateRedirect(c *Context, location, fallback string) string {
-	location = strings.TrimSpace(location)
+	location = SanitizeRedirect(strings.Trim(location, " \t\n\r\x00\x08\x0B"))
 	if location == "" {
 		return fallback
 	}
@@ -99,9 +117,54 @@ func ValidateRedirect(c *Context, location, fallback string) string {
 	if lp.Scheme != "" && lp.Scheme != "http" && lp.Scheme != "https" {
 		return fallback
 	}
+
+	// Relative path without leading slash → resolve against REQUEST_URI dirname (P2.76).
+	if lp.Host == "" && lp.Path != "" && !strings.HasPrefix(lp.Path, "/") {
+		base := "/"
+		if c != nil && c.Req != nil && c.Req.URL != nil {
+			reqPath := c.Req.URL.Path
+			if reqPath == "" {
+				reqPath = "/"
+			}
+			dir := path.Dir(reqPath)
+			if dir == "." {
+				dir = "/"
+			}
+			base = NormalizePath(dir)
+			if !strings.HasPrefix(base, "/") {
+				base = "/" + base
+			}
+		}
+		prefix := strings.TrimRight(base, "/") + "/"
+		location = prefix + strings.TrimLeft(location, "/")
+		// Re-parse after resolution.
+		cut = strings.IndexByte(location, '?')
+		test = location
+		if cut >= 0 {
+			test = location[:cut]
+		}
+		lp, err = url.Parse(test)
+		if err != nil {
+			return fallback
+		}
+	}
+
 	// Reject scheme-only / malformed hosts (https:evil.com).
 	if lp.Host == "" && (lp.Scheme != "" || lp.User != nil || lp.Opaque != "") {
 		return fallback
+	}
+
+	// Reject malformed components parse_url can return on odd inputs (P2.76).
+	if strings.ContainsAny(lp.Hostname(), ":/?#@") {
+		return fallback
+	}
+	if lp.User != nil {
+		if u := lp.User.Username(); strings.ContainsAny(u, ":/?#@") {
+			return fallback
+		}
+		if p, ok := lp.User.Password(); ok && strings.ContainsAny(p, ":/?#@") {
+			return fallback
+		}
 	}
 
 	// Relative path — allow.
