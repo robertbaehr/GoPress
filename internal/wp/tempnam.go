@@ -27,7 +27,8 @@ func TempNam(filename, dir string) string {
 	if strings.TrimSpace(dir) == "" {
 		dir = GetTempDir()
 	}
-	dir = trailingslashitPath(dir)
+	// P2.80: normalize dir before creating the temp file.
+	dir = trailingslashitPath(NormalizePath(dir))
 
 	if filename == "" || filename == "." || filename == "/" || filename == `\` {
 		filename = GeneratePassword(13, false) // uniqid()-shaped stand-in

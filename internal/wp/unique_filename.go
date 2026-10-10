@@ -15,6 +15,10 @@ var reImageSubsizeName = regexp.MustCompile(`(?i)-(?:\d+x\d+|scaled|rotated)$`)
 // Sanitizes the name, lowercases the extension when needed, forces a numeric
 // suffix for names that look like image sub-sizes, and increments until free.
 func UniqueFilename(dir, filename string) string {
+	// P2.80: normalize dir separators (wp_normalize_path).
+	if dir != "" {
+		dir = NormalizePath(dir)
+	}
 	filename = SanitizeFileName(filename)
 	if filename == "" {
 		filename = "file"

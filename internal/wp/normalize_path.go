@@ -1,4 +1,4 @@
-// wp_normalize_path / wp_is_stream (P2.41) — subset of wp-includes/functions.php.
+// wp_normalize_path / wp_is_stream (P2.41 / P2.80) — subset of wp-includes/functions.php.
 package wp
 
 import (
@@ -13,6 +13,7 @@ var (
 )
 
 // Common PHP stream wrappers recognized by wp_is_stream (stream_get_wrappers subset).
+// Keys match PHP in_array(..., true) — case-sensitive (P2.80).
 var knownStreamWrappers = map[string]bool{
 	"http": true, "https": true, "ftp": true, "ftps": true,
 	"file": true, "php": true, "zlib": true, "data": true,
@@ -21,13 +22,14 @@ var knownStreamWrappers = map[string]bool{
 }
 
 // IsStream reports whether path uses a registered stream wrapper (wp_is_stream).
+// Scheme matching is case-sensitive, matching PHP in_array(..., true).
 func IsStream(path string) bool {
 	i := strings.Index(path, "://")
 	if i <= 0 {
 		return false
 	}
 	scheme := path[:i]
-	return knownStreamWrappers[strings.ToLower(scheme)]
+	return knownStreamWrappers[scheme]
 }
 
 // NormalizePath standardizes directory separators and collapses duplicate slashes
