@@ -3,13 +3,17 @@ package wp
 import (
 	"fmt"
 	"reflect"
+	"strings"
 )
 
-// ListPluck extracts a field from each element of a list (wp_list_pluck, P2.37).
+// ListPluck extracts a field from each element of a list (wp_list_pluck, P2.37 / P2.87).
 //
 // input may be a slice/array of maps or structs. When indexKey is empty, values
 // are returned in input order (slice). When indexKey is set, results are keyed
 // by that field (map[any]any), matching array_column / WP_List_Util::pluck.
+//
+// P2.87: struct fields also match json tags (e.g. field "name" → `json:"name"`),
+// and pointer-to-struct / map[string]string elements are supported.
 func ListPluck(input any, field string, indexKey string) any {
 	if field == "" || input == nil {
 		if indexKey == "" {

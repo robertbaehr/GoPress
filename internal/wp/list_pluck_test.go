@@ -72,3 +72,36 @@ func TestListPluckEmptyAndInvalid(t *testing.T) {
 		t.Fatalf("empty: %#v", got)
 	}
 }
+
+func TestListPluckJSONTagsAndPointers(t *testing.T) {
+	type row struct {
+		ID   int    `json:"id"`
+		Name string `json:"name"`
+	}
+	in := []*row{{ID: 1, Name: "alpha"}, {ID: 2, Name: "beta"}}
+	got := wp.ListPluck(in, "name", "")
+	want := []any{"alpha", "beta"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("json tag pluck: %#v want %#v", got, want)
+	}
+	keyed := wp.ListPluck(in, "name", "id").(map[any]any)
+	if keyed[1] != "alpha" || keyed[2] != "beta" {
+		t.Fatalf("json keyed=%#v", keyed)
+	}
+}
+
+func TestListPluckStringMaps(t *testing.T) {
+	in := []map[string]string{
+		{"slug": "go", "label": "Go"},
+		{"slug": "php", "label": "PHP"},
+	}
+	got := wp.ListPluck(in, "label", "")
+	want := []any{"Go", "PHP"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("string map pluck: %#v", got)
+	}
+	keyed := wp.ListPluck(in, "label", "slug").(map[any]any)
+	if keyed["go"] != "Go" || keyed["php"] != "PHP" {
+		t.Fatalf("string map keyed=%#v", keyed)
+	}
+}
