@@ -1,4 +1,4 @@
-// wp_get_development_mode / wp_is_development_mode (P2.70) — subset of wp-includes/load.php.
+// wp_get_development_mode / wp_is_development_mode (P2.70 / P2.71) — subset of wp-includes/load.php.
 package wp
 
 import (
@@ -39,16 +39,50 @@ func GetDevelopmentMode(c *Context) string {
 }
 
 // IsDevelopmentMode reports whether the site is in the given development mode
-// (wp_is_development_mode). mode should be core, plugin, theme, or all.
+// (wp_is_development_mode, P2.71). mode should be core, plugin, theme, or all.
 // When the current mode is "all", every mode check returns true.
+//
+// Applies the wp_is_development_mode filter when Hooks are available so callers
+// can force-enable/disable a mode (e.g. tests / tooling).
 func IsDevelopmentMode(c *Context, mode string) bool {
 	current := GetDevelopmentMode(c)
 	if current == "" {
-		return false
+		return applyIsDevelopmentModeFilter(c, false, mode)
 	}
 	mode = strings.ToLower(strings.TrimSpace(mode))
+	enabled := false
 	if current == "all" {
-		return true
+		enabled = true
+	} else {
+		enabled = mode == current
 	}
-	return mode == current
+	return applyIsDevelopmentModeFilter(c, enabled, mode)
+}
+
+func applyIsDevelopmentModeFilter(c *Context, enabled bool, mode string) bool {
+	if c == nil || c.Hooks == nil {
+		return enabled
+	}
+	v := c.Hooks.ApplyFilters("wp_is_development_mode", enabled, mode)
+	switch t := v.(type) {
+	case bool:
+		return t
+	case int:
+		return t != 0
+	case string:
+		switch strings.ToLower(strings.TrimSpace(t)) {
+		case "1", "true", "yes", "on":
+			return true
+		case "0", "false", "no", "off", "":
+			return false
+		}
+	}
+	return enabled
+}
+
+// ShouldCacheThemeData reports whether theme.json / global styles may use
+// persistent caches. Returns false when wp_is_development_mode('theme')
+// (mirrors WP theme.json cache bypass, P2.71).
+func ShouldCacheThemeData(c *Context) bool {
+	return !IsDevelopmentMode(c, "theme")
 }

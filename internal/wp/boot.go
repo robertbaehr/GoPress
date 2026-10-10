@@ -46,12 +46,17 @@ func Boot(ctx context.Context, cfg *config.Config) (*Context, error) {
 	}
 
 	// Active theme.json (P5.4). Missing theme.json is non-fatal (classic themes).
+	// P2.71: when theme development mode is on, always reload from disk (no cache).
 	stylesheet, _ := c.Options.GetOption("stylesheet", "").(string)
 	if stylesheet == "" {
 		stylesheet = "twentytwentytwo"
 	}
 	if tj, err := theme.LoadActive(cfg.ABSPATH, stylesheet); err == nil {
 		c.Theme = tj
+		if !ShouldCacheThemeData(c) && c.Theme != nil {
+			// Drop file hash so downstream caches treat the load as uncacheable.
+			c.Theme.FileSHA256 = ""
+		}
 	}
 
 	// Block patterns from theme + wp_block posts (P5.9). Non-fatal on load errors.

@@ -71,3 +71,26 @@ func TestGetDevelopmentModeFromProcessEnv(t *testing.T) {
 		t.Fatalf("config should win, got %q", got)
 	}
 }
+
+func TestIsDevelopmentModeFilterAndThemeCache(t *testing.T) {
+	os.Unsetenv("WP_DEVELOPMENT_MODE")
+	c := &wp.Context{
+		Config: &config.Config{DevelopmentMode: "theme"},
+		Hooks:  wp.NewHooks(),
+	}
+	if !wp.IsDevelopmentMode(c, "theme") {
+		t.Fatal("expected theme development mode")
+	}
+	if wp.ShouldCacheThemeData(c) {
+		t.Fatal("theme development mode should disable theme cache")
+	}
+	c.Hooks.AddFilter("wp_is_development_mode", func(value any, _ ...any) any {
+		return false
+	}, 10, 2)
+	if wp.IsDevelopmentMode(c, "theme") {
+		t.Fatal("filter should force false")
+	}
+	if !wp.ShouldCacheThemeData(c) {
+		t.Fatal("filtered-off theme mode should allow cache")
+	}
+}
