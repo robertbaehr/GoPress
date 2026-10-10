@@ -2413,6 +2413,28 @@
   task: P3.45
   api: n/a
 
+# P3.65: emit all enclosure meta rows (multi) + rss_enclosure/atom_enclosure filters.
+- prefix: wp-includes/feed.php#rss_enclosure-multi
+  go: internal/server/front.go
+  status: partial
+  task: P3.65
+  api: n/a
+  notes: "P3.65 — multiple enclosure meta → multiple <enclosure>/<link rel=enclosure>; CRLF; filters"
+
+- prefix: wp-includes/feed.php#atom_enclosure-multi
+  go: internal/server/front.go
+  status: partial
+  task: P3.65
+  api: n/a
+  notes: "P3.65 — Atom multi-enclosure + atom_enclosure filter"
+
+- prefix: tests/server/feed_enclosure_multi_test.go
+  go: internal/server/feed_enclosure_multi_test.go
+  status: partial
+  task: P3.65
+  api: n/a
+  notes: "P3.65 — RSS+Atom coverage for two enclosure meta rows"
+
 # P3.38: strengthen redirect_canonical trailing-slash (absolute Location, /page/N).
 - prefix: wp-includes/canonical.php
   go: internal/server/front.go
