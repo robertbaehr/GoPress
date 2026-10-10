@@ -190,6 +190,8 @@ func (f *Front) renderSingular(w http.ResponseWriter, c *wp.Context, vars map[st
 	} else if blocks.HasBlocks(content) {
 		content = blocks.Render(content)
 	}
+	// the_content: do_shortcode (P2.11) before display.
+	content = wp.DoShortcode(c, content)
 	safeContent := wp.KsesPost(content)
 
 	bodyClass := "singular"
