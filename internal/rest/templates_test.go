@@ -95,6 +95,49 @@ func TestTemplatesAndPartsList(t *testing.T) {
 	if !foundHeader {
 		t.Fatalf("missing header part in %#v", parts)
 	}
+	// P4.112: pure theme-file parts (wp_id=0) expose null origin/modified/date.
+	foundThemeOnly := false
+	for _, p := range parts {
+		if p.WPID != 0 {
+			// Customized theme file: origin stays "theme".
+			if p.HasThemeFile && (p.Origin == nil || *p.Origin != "theme") {
+				t.Fatalf("customized part %q origin=%v", p.Slug, p.Origin)
+			}
+			continue
+		}
+		foundThemeOnly = true
+		if p.Origin != nil {
+			t.Fatalf("theme-only %q origin want nil, got %#v", p.Slug, p.Origin)
+		}
+		if p.Modified != nil || p.Date != nil {
+			t.Fatalf("theme-only %q dates want nil: modified=%v date=%v", p.Slug, p.Modified, p.Date)
+		}
+	}
+	if !foundThemeOnly {
+		t.Fatal("expected at least one theme-only template part (wp_id=0)")
+	}
+
+	// P4.112: area collection filter.
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/template-parts?area=header", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("area filter status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var headerParts []rest.BlockTemplate
+	if err := json.Unmarshal(rec.Body.Bytes(), &headerParts); err != nil {
+		t.Fatal(err)
+	}
+	if len(headerParts) < 1 {
+		t.Fatal("expected at least one header area part")
+	}
+	for _, p := range headerParts {
+		if p.Area != "header" {
+			t.Fatalf("area filter leaked area=%q slug=%q", p.Area, p.Slug)
+		}
+	}
 
 	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/templates/twentytwentyfive//index", nil)
 	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
