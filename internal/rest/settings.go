@@ -11,7 +11,7 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// settingsOptionMap maps REST setting keys to wp_options names (P4.40 / P4.63).
+// settingsOptionMap maps REST setting keys to wp_options names (P4.40 / P4.63 / P4.123).
 // Keys match WP show_in_rest names plus the raw option aliases we already expose.
 var settingsOptionMap = map[string]string{
 	"title":                   "blogname",
@@ -39,9 +39,21 @@ var settingsOptionMap = map[string]string{
 	"site_icon":               "site_icon",
 }
 
+// settingsReadonly keys cannot be updated via REST (P4.123; matches WP url readonly).
+var settingsReadonly = map[string]bool{
+	"url":     true,
+	"siteurl": true,
+	"home":    true,
+}
+
 func (s *Server) serveSettings(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	switch r.Method {
-	case http.MethodGet:
+	case http.MethodOptions:
+		// P4.123: OPTIONS returns public item schema (like WP_REST_Settings_Controller).
+		w.Header().Set("Allow", "GET, POST, PUT, PATCH, HEAD, OPTIONS")
+		writeJSON(w, http.StatusOK, settingsItemSchema())
+		return
+	case http.MethodGet, http.MethodHead:
 		s.getSettings(w, r, c)
 	case http.MethodPost, http.MethodPut, http.MethodPatch:
 		s.updateSettings(w, r, c)
@@ -63,7 +75,12 @@ func (s *Server) getSettings(w http.ResponseWriter, r *http.Request, c *wp.Conte
 		})
 		return
 	}
-	w.Header().Set("Allow", "GET, POST, PUT, PATCH")
+	w.Header().Set("Allow", "GET, POST, PUT, PATCH, HEAD, OPTIONS")
+	// P4.123: HEAD returns early with empty body.
+	if r.Method == http.MethodHead {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 	writeJSON(w, http.StatusOK, buildSettings(c))
 }
 
@@ -86,9 +103,19 @@ func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request, c *wp.Co
 		return
 	}
 	for key, val := range params {
+		if settingsReadonly[key] {
+			continue
+		}
 		opt, ok := settingsOptionMap[key]
 		if !ok {
 			continue
+		}
+		// P4.123: rest_pre_update_setting may short-circuit (return true → skip).
+		if c != nil && c.Hooks != nil {
+			pre := c.Hooks.ApplyFilters("rest_pre_update_setting", false, key, val, opt)
+			if b, ok := pre.(bool); ok && b {
+				continue
+			}
 		}
 		serialized := settingsValueString(val)
 		if _, err := c.Options.UpdateOption(opt, serialized, ""); err != nil {
@@ -100,7 +127,7 @@ func (s *Server) updateSettings(w http.ResponseWriter, r *http.Request, c *wp.Co
 			return
 		}
 	}
-	w.Header().Set("Allow", "GET, POST, PUT, PATCH")
+	w.Header().Set("Allow", "GET, POST, PUT, PATCH, HEAD, OPTIONS")
 	writeJSON(w, http.StatusOK, buildSettings(c))
 }
 
@@ -108,7 +135,7 @@ func canManageOptions(c *wp.Context) bool {
 	return c != nil && c.CurrentUser != nil && c.UserCan(c.CurrentUser, "manage_options")
 }
 
-// buildSettings returns the WP REST settings object shape (P4.63).
+// buildSettings returns the WP REST settings object shape (P4.63 / P4.123).
 func buildSettings(c *wp.Context) map[string]any {
 	siteURL := strings.TrimRight(optionString(c, "siteurl", ""), "/")
 	home := strings.TrimRight(optionString(c, "home", siteURL), "/")
@@ -123,7 +150,7 @@ func buildSettings(c *wp.Context) map[string]any {
 	} else {
 		siteLogoVal = nil
 	}
-	return map[string]any{
+	raw := map[string]any{
 		// WP show_in_rest names.
 		"title":                   optionString(c, "blogname", ""),
 		"description":             optionString(c, "blogdescription", ""),
@@ -151,6 +178,67 @@ func buildSettings(c *wp.Context) map[string]any {
 		"blogdescription": optionString(c, "blogdescription", ""),
 		"siteurl":         siteURL,
 		"home":            home,
+	}
+	// P4.123: rest_pre_get_setting may override individual values.
+	if c != nil && c.Hooks != nil {
+		for name := range settingsOptionMap {
+			if _, ok := raw[name]; !ok {
+				continue
+			}
+			filtered := c.Hooks.ApplyFilters("rest_pre_get_setting", nil, name, map[string]any{
+				"option_name": settingsOptionMap[name],
+			})
+			if filtered != nil {
+				raw[name] = filtered
+			}
+		}
+	}
+	return raw
+}
+
+// settingsItemSchema is the public REST schema for /wp/v2/settings (P4.123).
+func settingsItemSchema() map[string]any {
+	ctx := []string{"view", "edit"}
+	prop := func(desc, typ string, extra ...map[string]any) map[string]any {
+		m := map[string]any{
+			"description": desc,
+			"type":        typ,
+			"context":     ctx,
+		}
+		for _, e := range extra {
+			for k, v := range e {
+				m[k] = v
+			}
+		}
+		return m
+	}
+	return map[string]any{
+		"$schema": "http://json-schema.org/draft-04/schema#",
+		"title":   "settings",
+		"type":    "object",
+		"properties": map[string]any{
+			"title":                   prop("Site title.", "string"),
+			"description":             prop("Site tagline.", "string"),
+			"url":                     prop("Site URL.", "string", map[string]any{"format": "uri", "readonly": true}),
+			"email":                   prop("This address is used for admin purposes.", "string", map[string]any{"format": "email"}),
+			"timezone":                prop("A city in the same timezone as you.", "string"),
+			"date_format":             prop("A date format for all date strings.", "string"),
+			"time_format":             prop("A time format for all time strings.", "string"),
+			"start_of_week":           prop("A day number of the week that the week should start on.", "integer"),
+			"language":                prop("WordPress locale code.", "string"),
+			"use_smilies":             prop("Convert emoticons like :-) and :-P to graphics on display.", "boolean"),
+			"default_category":        prop("Default post category.", "integer"),
+			"default_post_format":     prop("Default post format.", "string"),
+			"posts_per_page":          prop("Blog pages show at most.", "integer"),
+			"show_on_front":           prop("What to show on the front page", "string"),
+			"page_on_front":           prop("The ID of the page that should be displayed on the front page", "integer"),
+			"page_for_posts":          prop("The ID of the page that should display the latest posts", "integer"),
+			"page_for_privacy_policy": prop("The ID of the page that should display the privacy policy", "integer"),
+			"default_ping_status":     prop("Allow link notifications from other blogs (pingbacks and trackbacks) on new articles.", "string"),
+			"default_comment_status":  prop("Allow people to submit comments on new posts.", "string"),
+			"site_logo":               prop("Site logo media attachment ID.", "integer"),
+			"site_icon":               prop("Site icon.", "integer"),
+		},
 	}
 }
 
