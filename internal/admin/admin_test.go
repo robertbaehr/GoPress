@@ -611,6 +611,76 @@ func TestEditPostsCategoryFilter(t *testing.T) {
 	}
 }
 
+func TestEditPostsStatusViews(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`class="subsubsub"`,
+		`class="all"`,
+		`class="publish"`,
+		`class="draft"`,
+		`class="trash"`,
+		"All ",
+		"Published ",
+		"Drafts ",
+		"Trash ",
+		`class="current"`,
+		"post_status=publish",
+		"post_status=draft",
+		"post_status=trash",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected status views %q in edit.php", want)
+		}
+	}
+	if !strings.Contains(body, "Hello world!") {
+		t.Fatalf("All view should list Hello world")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?post_status=draft", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("draft status=%d", rec.Code)
+	}
+	body = rec.Body.String()
+	if strings.Contains(body, "Hello world!") {
+		t.Fatalf("draft view should not list published Hello world")
+	}
+	if !strings.Contains(body, "Fixture Post") {
+		t.Fatalf("draft view should list fixture drafts")
+	}
+	if !strings.Contains(body, `name="post_status"`) || !strings.Contains(body, `value="draft"`) {
+		t.Fatalf("expected post_status hidden in filter form: %q", body[:min(600, len(body))])
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?post_status=trash", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("trash status=%d", rec.Code)
+	}
+	body = rec.Body.String()
+	if strings.Contains(body, "Hello world!") {
+		t.Fatalf("trash view should not list Hello world")
+	}
+	if !strings.Contains(body, "Fixture Post") {
+		t.Fatalf("trash view should list trashed fixture posts")
+	}
+}
+
 func TestEditPostsTagFilter(t *testing.T) {
 	c := bootOrSkip(t)
 	ck := loginCookie(t, c)

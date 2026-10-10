@@ -2003,6 +2003,21 @@
   api: n/a
   notes: "P7.72 — honor ?tag_id= on edit.php posts list"
 
+# P7.73: edit.php status views (All / Published / Drafts / Trash).
+- prefix: wp-admin/edit.php#status-views
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.73
+  api: n/a
+  notes: "P7.73 — subsubsub All/Published/Drafts/Trash + ?post_status= filter"
+
+- prefix: wp-admin/includes/class-wp-posts-list-table.php#get_views
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.73
+  api: n/a
+  notes: "P7.73 — get_views subset with counts for common statuses"
+
 # P10.62: e2e edit.php search + STATUS/PORTING refresh after P5.70–P6.29.
 - prefix: tests/e2e/edit-search.spec.js
   go: tests/e2e/edit-search.spec.js
