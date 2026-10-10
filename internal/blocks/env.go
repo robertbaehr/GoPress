@@ -90,6 +90,11 @@ type Env struct {
 
 	// queryHasPosts is set by post-template for query-no-results.
 	queryHasPosts bool
+
+	// Paged is the current main-query page (1-based) for query-pagination (P5.44).
+	Paged int
+	// MaxPages is max_num_pages for inherit query pagination (P5.44).
+	MaxPages int
 }
 
 // NavLink is a simple navigation item (label + URL).

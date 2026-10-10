@@ -521,8 +521,10 @@ func (e *Env) renderQueryPagination(block Block) string {
 	e = e.ensure()
 	inner := e.renderSaved(block)
 	if strings.TrimSpace(inner) == "" {
-		// Synthesize basic next/numbers when inner dynamic blocks are empty.
-		inner = e.renderQueryPaginationNumbers(block) + e.renderQueryPaginationNext(block)
+		// Synthesize previous/numbers/next when inner dynamic blocks are empty (P5.44).
+		inner = e.renderQueryPaginationPrevious(block) +
+			e.renderQueryPaginationNumbers(block) +
+			e.renderQueryPaginationNext(block)
 	}
 	if strings.TrimSpace(inner) == "" {
 		return ""
@@ -534,38 +536,138 @@ func (e *Env) renderQueryPagination(block Block) string {
 	return `<nav aria-label="Pagination" class="` + html.EscapeString(classes) + `">` + inner + `</nav>`
 }
 
+func (e *Env) queryPaginationPage() int {
+	e = e.ensure()
+	if e.Paged > 1 {
+		return e.Paged
+	}
+	return 1
+}
+
+func (e *Env) queryPaginationMaxPages() int {
+	e = e.ensure()
+	if e.MaxPages > 0 {
+		return e.MaxPages
+	}
+	return 1
+}
+
+func (e *Env) queryPaginationHome() string {
+	e = e.ensure()
+	if e.HomeURL == nil {
+		return ""
+	}
+	return strings.TrimRight(e.HomeURL(), "/")
+}
+
+// queryPaginationPageURL builds / or /page/N/ under home (P5.44).
+func queryPaginationPageURL(home string, page int) string {
+	if page <= 1 {
+		if home == "" {
+			return "/"
+		}
+		return home + "/"
+	}
+	if home == "" {
+		return "/page/" + strconv.Itoa(page) + "/"
+	}
+	return home + "/page/" + strconv.Itoa(page) + "/"
+}
+
+func (e *Env) renderQueryPaginationPrevious(block Block) string {
+	e = e.ensure()
+	page := e.queryPaginationPage()
+	if page <= 1 {
+		return ""
+	}
+	label := "Previous Page"
+	if l, ok := block.Attrs["label"].(string); ok && strings.TrimSpace(l) != "" {
+		label = strings.TrimSpace(l)
+	}
+	href := queryPaginationPageURL(e.queryPaginationHome(), page-1)
+	return `<a href="` + html.EscapeString(href) + `" class="wp-block-query-pagination-previous">` +
+		`<span class="wp-block-query-pagination-previous-arrow is-arrow-arrow" aria-hidden="true">←</span>` +
+		html.EscapeString(label) + `</a>`
+}
+
 func (e *Env) renderQueryPaginationNext(block Block) string {
-	_ = block
-	home := ""
-	if e.HomeURL != nil {
-		home = strings.TrimRight(e.HomeURL(), "/")
+	e = e.ensure()
+	page := e.queryPaginationPage()
+	max := e.queryPaginationMaxPages()
+	if page >= max {
+		return ""
 	}
-	href := "/page/2/"
-	if home != "" {
-		href = home + "/page/2/"
+	label := "Next Page"
+	if l, ok := block.Attrs["label"].(string); ok && strings.TrimSpace(l) != "" {
+		label = strings.TrimSpace(l)
 	}
-	return `<a class="wp-block-query-pagination-next" href="` + html.EscapeString(href) + `">Next Page<span aria-hidden="true" class="is-arrow-arrow wp-block-query-pagination-next-arrow">→</span></a>`
+	href := queryPaginationPageURL(e.queryPaginationHome(), page+1)
+	return `<a href="` + html.EscapeString(href) + `" class="wp-block-query-pagination-next">` +
+		html.EscapeString(label) +
+		`<span class="wp-block-query-pagination-next-arrow is-arrow-arrow" aria-hidden="true">→</span></a>`
 }
 
 func (e *Env) renderQueryPaginationNumbers(block Block) string {
+	e = e.ensure()
 	_ = block
-	home := ""
-	if e.HomeURL != nil {
-		home = strings.TrimRight(e.HomeURL(), "/")
+	page := e.queryPaginationPage()
+	max := e.queryPaginationMaxPages()
+	if max <= 1 {
+		return ""
 	}
-	page2 := "/page/2/"
-	page3 := "/page/3/"
-	page39 := "/page/39/"
-	if home != "" {
-		page2, page3, page39 = home+"/page/2/", home+"/page/3/", home+"/page/39/"
+	home := e.queryPaginationHome()
+	midSize := 2
+	if n, ok := block.Attrs["midSize"].(float64); ok && n >= 0 {
+		midSize = int(n)
 	}
-	return `<div class="wp-block-query-pagination-numbers">` +
-		`<span aria-current="page" class="current page-numbers">1</span>` +
-		`<a class="page-numbers" href="` + html.EscapeString(page2) + `">2</a>` +
-		`<a class="page-numbers" href="` + html.EscapeString(page3) + `">3</a>` +
-		`<span class="dots page-numbers">…</span>` +
-		`<a class="page-numbers" href="` + html.EscapeString(page39) + `">39</a>` +
-		`</div>`
+
+	var b strings.Builder
+	b.WriteString(`<div class="wp-block-query-pagination-numbers">`)
+	writePage := func(n int, current bool) {
+		if current {
+			b.WriteString(`<span aria-current="page" class="page-numbers current">`)
+			b.WriteString(strconv.Itoa(n))
+			b.WriteString(`</span>`)
+			return
+		}
+		b.WriteString(`<a class="page-numbers" href="`)
+		b.WriteString(html.EscapeString(queryPaginationPageURL(home, n)))
+		b.WriteString(`">`)
+		b.WriteString(strconv.Itoa(n))
+		b.WriteString(`</a>`)
+	}
+
+	// paginate_links-shaped: always 1 + mid window around current + last (P5.44).
+	shown := map[int]bool{}
+	writePage(1, page == 1)
+	shown[1] = true
+
+	start := page - midSize
+	if start < 2 {
+		start = 2
+	}
+	end := page + midSize
+	if end > max-1 {
+		end = max - 1
+	}
+	if start > 2 {
+		b.WriteString(`<span class="page-numbers dots">&hellip;</span>`)
+	}
+	for n := start; n <= end; n++ {
+		if shown[n] {
+			continue
+		}
+		writePage(n, n == page)
+		shown[n] = true
+	}
+	if end < max-1 {
+		b.WriteString(`<span class="page-numbers dots">&hellip;</span>`)
+	}
+	if max > 1 && !shown[max] {
+		writePage(max, page == max)
+	}
+	b.WriteString(`</div>`)
+	return b.String()
 }
 
 func (e *Env) renderPostAuthorName(block Block) string {
