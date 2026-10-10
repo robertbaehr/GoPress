@@ -1605,6 +1605,14 @@
   api: internal
   notes: "P5.58 — synthesize group wrapper; tagName; default/flex/constrained layout classes"
 
+# P5.59: polish core/spacer (synthesize height/width, unitless → px, className).
+- prefix: wp-includes/blocks/spacer
+  go: internal/blocks/spacer.go
+  status: partial
+  task: P5.59
+  api: internal
+  notes: "P5.59 — prefer saved markup; default height 100px; normalize unitless lengths; className"
+
 # P5.57: polish core/columns + core/column (synthesize, stack, width, v-align).
 - prefix: wp-includes/blocks/columns
   go: internal/blocks/columns.go
