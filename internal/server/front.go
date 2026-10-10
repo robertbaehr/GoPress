@@ -576,7 +576,7 @@ func optionString(c *wp.Context, name, fallback string) string {
 	}
 }
 
-// blockRenderEnv wires dynamic block resolvers (template parts, navigation).
+// blockRenderEnv wires dynamic block resolvers (template parts, navigation, query).
 func blockRenderEnv(c *wp.Context) *blocks.Env {
 	return &blocks.Env{
 		LoadTemplatePart: func(slug string) (string, bool) {
@@ -598,6 +598,51 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 				})
 			}
 			return out
+		},
+		ListPosts: func(q blocks.QueryLoopArgs) []blocks.QueryPost {
+			limit := q.PerPage
+			if limit <= 0 {
+				limit = 10
+			}
+			postType := q.PostType
+			if postType == "" {
+				postType = "post"
+			}
+			posts, err := wp.GetPosts(c, wp.QueryArgs{
+				PostType:     postType,
+				PostStatus:   "publish",
+				PostsPerPage: limit,
+				Offset:       q.Offset,
+			})
+			if err != nil {
+				return nil
+			}
+			home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+			out := make([]blocks.QueryPost, 0, len(posts))
+			for _, p := range posts {
+				out = append(out, blocks.QueryPost{
+					ID:      p.ID,
+					Title:   p.Title,
+					Content: p.Content,
+					Excerpt: p.Excerpt,
+					Date:    p.Date,
+					Link:    postPermalink(home, p),
+				})
+			}
+			return out
+		},
+		LoadPattern: func(slug string) (string, bool) {
+			if err := wp.EnsurePatterns(c); err != nil {
+				return "", false
+			}
+			if c.Patterns == nil {
+				return "", false
+			}
+			p, ok := c.Patterns.Get(slug)
+			if !ok {
+				return "", false
+			}
+			return p.Content, true
 		},
 	}
 }
