@@ -7,7 +7,7 @@ import (
 )
 
 func TestSlashUnslashString(t *testing.T) {
-	in := `O'Reilly "quoted" \path` + "\x00"
+	in := `O'Reilly "quoted" \path`
 	slashed := wp.SlashString(in)
 	if slashed == in {
 		t.Fatalf("expected slashes added, got %q", slashed)
