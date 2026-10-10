@@ -245,6 +245,52 @@ func TestBlockSupportsLayoutFlexHorizontalJustify(t *testing.T) {
 	}
 }
 
+func TestBlockSupportsBackgroundImage(t *testing.T) {
+	in := `<!-- wp:group {"style":{"background":{"backgroundImage":{"url":"https://example.com/bg.jpg"},"backgroundRepeat":"no-repeat"}}} -->
+<div class="wp-block-group">X</div>
+<!-- /wp:group -->`
+	out := blocks.Render(in)
+	for _, want := range []string{
+		"has-background",
+		`background-image:url('https://example.com/bg.jpg')`,
+		"background-size:cover",
+		"background-repeat:no-repeat",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
+
+func TestBlockSupportsBackgroundContainCenters(t *testing.T) {
+	in := `<!-- wp:cover {"style":{"background":{"backgroundImage":{"url":"/media/a.png"},"backgroundSize":"contain"}}} -->
+<div class="wp-block-cover">X</div>
+<!-- /wp:cover -->`
+	out := blocks.Render(in)
+	for _, want := range []string{
+		"has-background",
+		"background-size:contain",
+		"background-position:50% 50%",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
+
+func TestBlockSupportsBackgroundGradient(t *testing.T) {
+	in := `<!-- wp:group {"style":{"background":{"gradient":"linear-gradient(red,blue)"}}} -->
+<div class="wp-block-group">X</div>
+<!-- /wp:group -->`
+	out := blocks.Render(in)
+	if !strings.Contains(out, "has-background") {
+		t.Fatalf("missing has-background: %q", out)
+	}
+	if !strings.Contains(out, "background-image:linear-gradient(red,blue)") {
+		t.Fatalf("missing gradient background-image: %q", out)
+	}
+}
+
 func TestBlockSupportsElementsLinkAndButtonColors(t *testing.T) {
 	in := `<!-- wp:group {"style":{"elements":{"link":{"color":{"text":"var:preset|color|luminous-vivid-amber"},":hover":{"color":{"text":"#ff0000"}}},"button":{"color":{"text":"#ffffff","background":"#111111"}}}}} -->
 <div class="wp-block-group">X</div>
