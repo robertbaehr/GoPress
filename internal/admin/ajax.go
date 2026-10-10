@@ -74,16 +74,54 @@ func (h *Handler) serveAdminAjax(w http.ResponseWriter, r *http.Request, c *wp.C
 }
 
 func (h *Handler) ajaxHeartbeat(w http.ResponseWriter, r *http.Request, c *wp.Context, loggedIn bool) {
-	_ = r
-	_ = loggedIn
-	// Match wp_ajax_heartbeat / wp_ajax_nopriv_heartbeat + wp_auth_check key order.
-	resp := struct {
-		WPAuthCheck bool  `json:"wp-auth-check"`
-		ServerTime  int64 `json:"server_time"`
-	}{
-		WPAuthCheck: c.AuthCheck(),
-		ServerTime:  time.Now().Unix(),
+	// P3.96: screen_id + heartbeat_* / heartbeat_nopriv_* filters/actions + wp-auth-check.
+	_ = r.ParseForm()
+	screenID := sanitizeKey(strings.TrimSpace(r.Form.Get("screen_id")))
+	if screenID == "" {
+		screenID = "front"
 	}
+	data := heartbeatDataFromForm(r)
+
+	resp := map[string]any{}
+	if c != nil && c.Hooks != nil {
+		if loggedIn {
+			if len(data) > 0 {
+				if v := c.Hooks.ApplyFilters("heartbeat_received", resp, data, screenID); v != nil {
+					if m, ok := v.(map[string]any); ok {
+						resp = m
+					}
+				}
+			}
+			if v := c.Hooks.ApplyFilters("heartbeat_send", resp, screenID); v != nil {
+				if m, ok := v.(map[string]any); ok {
+					resp = m
+				}
+			}
+			c.Hooks.DoAction("heartbeat_tick", resp, screenID)
+		} else {
+			if len(data) > 0 {
+				if v := c.Hooks.ApplyFilters("heartbeat_nopriv_received", resp, data, screenID); v != nil {
+					if m, ok := v.(map[string]any); ok {
+						resp = m
+					}
+				}
+			}
+			if v := c.Hooks.ApplyFilters("heartbeat_nopriv_send", resp, screenID); v != nil {
+				if m, ok := v.(map[string]any); ok {
+					resp = m
+				}
+			}
+			c.Hooks.DoAction("heartbeat_nopriv_tick", resp, screenID)
+		}
+	}
+	// Mirror wp_auth_check on heartbeat_send / heartbeat_nopriv_send.
+	if c != nil {
+		resp["wp-auth-check"] = c.AuthCheck()
+	} else {
+		resp["wp-auth-check"] = false
+	}
+	resp["server_time"] = time.Now().Unix()
+
 	body, err := json.Marshal(resp)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
@@ -93,6 +131,32 @@ func (h *Handler) ajaxHeartbeat(w http.ResponseWriter, r *http.Request, c *wp.Co
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(body)
+}
+
+// heartbeatDataFromForm collects POST data[...] keys into a flat map (P3.96).
+func heartbeatDataFromForm(r *http.Request) map[string]any {
+	if r == nil || r.Form == nil {
+		return nil
+	}
+	out := map[string]any{}
+	for key, vals := range r.Form {
+		if !strings.HasPrefix(key, "data[") || !strings.HasSuffix(key, "]") {
+			continue
+		}
+		inner := key[len("data[") : len(key)-1]
+		if inner == "" {
+			continue
+		}
+		if len(vals) == 1 {
+			out[inner] = vals[0]
+		} else {
+			out[inner] = vals
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 func (h *Handler) ajaxAuthCheck(w http.ResponseWriter, r *http.Request, c *wp.Context) {
