@@ -129,3 +129,38 @@ func TestContextCacheField(t *testing.T) {
 		t.Fatal("Cache not wired")
 	}
 }
+
+func TestObjectCacheGlobalAndNonPersistentGroups(t *testing.T) {
+	c := wp.NewObjectCache()
+	if c.IsGlobalGroup("users") {
+		t.Fatal("users should not be global before registration")
+	}
+	c.AddGlobalGroups("users", "useremail")
+	if !c.IsGlobalGroup("users") || !c.IsGlobalGroup("useremail") {
+		t.Fatal("expected global groups registered")
+	}
+	c.AddNonPersistentGroups("counts", "plugins")
+	if !c.IsNonPersistentGroup("counts") || !c.IsNonPersistentGroup("plugins") {
+		t.Fatal("expected non-persistent groups registered")
+	}
+	// Groups remain usable for Get/Set.
+	c.Set("1", "admin", "users")
+	v, ok := c.Get("1", "users")
+	if !ok || v != "admin" {
+		t.Fatalf("Get users: %v %v", v, ok)
+	}
+}
+
+func TestBootRegistersDefaultCacheGroups(t *testing.T) {
+	c := cronBoot(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+	if c.Cache == nil {
+		t.Fatal("nil cache")
+	}
+	if !c.Cache.IsGlobalGroup("users") {
+		t.Fatal("expected users global group from boot")
+	}
+	if !c.Cache.IsNonPersistentGroup("counts") {
+		t.Fatal("expected counts non-persistent group from boot")
+	}
+}

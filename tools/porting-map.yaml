@@ -100,7 +100,13 @@
 - prefix: wp-includes/cache.php
   go: internal/wp/cache.go
   status: done
-  task: P1.6
+  task: P2.18
+  api: exported
+
+- prefix: wp-includes/class-wp-object-cache.php
+  go: internal/wp/cache.go
+  status: partial
+  task: P2.18
   api: exported
 
 - prefix: wp-includes/option.php
