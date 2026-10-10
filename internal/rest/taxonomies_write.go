@@ -36,7 +36,17 @@ func (s *Server) serveTermCollection(w http.ResponseWriter, r *http.Request, c *
 func (s *Server) listTermCollection(w http.ResponseWriter, r *http.Request, c *wp.Context, taxonomy string) {
 	perPage := parsePerPage(r, 10)
 	page := parsePage(r)
-	total, err := countTerms(c, taxonomy)
+	args := parseTermListArgs(r, taxonomy)
+	// P4.120: invalid post id → rest_post_invalid_id.
+	if args.PostID < 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_post_invalid_id",
+			"message": "Invalid post ID.",
+			"data":    map[string]any{"status": 400},
+		})
+		return
+	}
+	total, err := countTermsFiltered(c, taxonomy, args)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_term_query",
@@ -45,7 +55,7 @@ func (s *Server) listTermCollection(w http.ResponseWriter, r *http.Request, c *w
 		})
 		return
 	}
-	terms, err := listTermsPaged(c, taxonomy, perPage, page)
+	terms, err := listTermsPagedFiltered(c, taxonomy, perPage, page, args)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_term_query",

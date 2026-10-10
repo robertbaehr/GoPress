@@ -238,3 +238,80 @@ func TestTermMissing(t *testing.T) {
 		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
 	}
 }
+
+func TestCategoriesCollectionFilters(t *testing.T) {
+	// P4.120: search, slug, parent, hide_empty, post filters.
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/categories?search=uncategorized", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("search status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var terms []rest.Term
+	if err := json.Unmarshal(rec.Body.Bytes(), &terms); err != nil {
+		t.Fatal(err)
+	}
+	if len(terms) == 0 || terms[0].Slug != "uncategorized" {
+		t.Fatalf("search terms=%+v", terms)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/categories?slug=uncategorized", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if err := json.Unmarshal(rec.Body.Bytes(), &terms); err != nil {
+		t.Fatal(err)
+	}
+	if len(terms) != 1 || terms[0].Slug != "uncategorized" {
+		t.Fatalf("slug filter: %+v", terms)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/categories?parent=0&per_page=100", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if err := json.Unmarshal(rec.Body.Bytes(), &terms); err != nil {
+		t.Fatal(err)
+	}
+	if len(terms) == 0 {
+		t.Fatal("expected top-level categories")
+	}
+	for _, term := range terms {
+		if term.Parent == nil || *term.Parent != 0 {
+			t.Fatalf("parent=0 leaked %+v", term)
+		}
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/categories?hide_empty=true&per_page=100", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if err := json.Unmarshal(rec.Body.Bytes(), &terms); err != nil {
+		t.Fatal(err)
+	}
+	for _, term := range terms {
+		if term.Count <= 0 {
+			t.Fatalf("hide_empty leaked empty term %+v", term)
+		}
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/categories?post=1", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("post filter status=%d body=%s", rec.Code, rec.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/categories?post=0", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("invalid post status=%d body=%s", rec.Code, rec.Body.String())
+	}
+}
