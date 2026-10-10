@@ -3960,27 +3960,27 @@ wp-login.php#language-switcher-post
   api: internal
   notes: "P5.64 — ensure wp-block-paragraph; synthesize content/dropCap/textAlign"
 
-# P5.63: polish core/list + core/list-item (wp-block-list class, synthesize ordered attrs).
+# P5.63 / P5.104: polish core/list + core/list-item (wp-block-list class, synthesize ordered attrs).
 - prefix: wp-includes/blocks/list.php
   go: internal/blocks/list.go
   status: partial
-  task: P5.63
+  task: P5.104
   api: internal
-  notes: "P5.63 — ensure wp-block-list on ul/ol; synthesize ordered/start/reversed/type/values"
+  notes: "P5.104 — saved polish align/className/anchor + colors; synthesize ordered/start/reversed/type/values/anchor; P5.63 base"
 
 - prefix: wp-includes/blocks/list
   go: internal/blocks/list.go
   status: partial
-  task: P5.63
+  task: P5.104
   api: internal
-  notes: "P5.63 — ensure wp-block-list on ul/ol; synthesize ordered/start/reversed/type/values"
+  notes: "P5.104 — saved polish align/className/anchor + colors; synthesize ordered attrs + anchor; P5.63 base"
 
 - prefix: wp-includes/blocks/list-item
   go: internal/blocks/list.go
   status: partial
-  task: P5.63
+  task: P5.104
   api: internal
-  notes: "P5.63 — prefer saved markup; synthesize li from content"
+  notes: "P5.104 — prefer saved markup; synthesize li from content; anchor polish + color supports; P5.63 base"
 
 # P5.62 / P5.102: polish core/code (+ preformatted/verse siblings below).
 - prefix: wp-includes/blocks/code
