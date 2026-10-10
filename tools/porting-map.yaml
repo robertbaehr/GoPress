@@ -909,6 +909,13 @@
   task: P3.13
   api: n/a
 
+# P3.38: strengthen redirect_canonical trailing-slash (absolute Location, /page/N).
+- prefix: wp-includes/canonical.php
+  go: internal/server/front.go
+  status: partial
+  task: P3.38
+  api: internal
+
 - prefix: wp-includes/class-wp-duotone.php
   go: internal/blocks/supports.go
   status: partial

@@ -458,8 +458,11 @@ func TestFrontTrailingSlashCanonical(t *testing.T) {
 		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
 	}
 	loc := rec.Header().Get("Location")
-	if loc != "/sample-page/" {
+	if !strings.HasSuffix(loc, "/sample-page/") {
 		t.Fatalf("Location=%q", loc)
+	}
+	if !strings.HasPrefix(loc, "http://") && !strings.HasPrefix(loc, "https://") {
+		t.Fatalf("expected absolute Location, got %q", loc)
 	}
 }
 
@@ -473,7 +476,22 @@ func TestFrontTrailingSlashCanonicalPreservesQuery(t *testing.T) {
 		t.Fatalf("status=%d", rec.Code)
 	}
 	loc := rec.Header().Get("Location")
-	if loc != "/sample-page/?utm=1" {
+	if !strings.HasSuffix(loc, "/sample-page/?utm=1") {
+		t.Fatalf("Location=%q", loc)
+	}
+}
+
+func TestFrontTrailingSlashHomePaged(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/page/2", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusMovedPermanently {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	loc := rec.Header().Get("Location")
+	if !strings.HasSuffix(loc, "/page/2/") {
 		t.Fatalf("Location=%q", loc)
 	}
 }
