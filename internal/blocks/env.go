@@ -24,6 +24,23 @@ type Env struct {
 	// RenderCommentForm returns WP comment_form HTML for the current post (P5.18).
 	RenderCommentForm func(postID int64) string
 
+	// SiteName / HomeURL power core/site-title and related blocks (P5.19).
+	SiteName    func() string
+	HomeURL     func() string
+	IsFrontPage func() bool
+	// AdjacentPost returns prev/next post for post-navigation-link (type previous|next).
+	AdjacentPost func(postID int64, previous bool) *QueryPost
+
+	// FilterPostHTML runs after rendering post_content blocks (texturize etc.).
+	FilterPostHTML func(html string) string
+
+	// ListComments returns approved comments for the current post (P5.19).
+	ListComments func(postID int64) []CommentItem
+
+	// AuthorName / PostTerms power singular meta blocks (P5.19).
+	AuthorName func(postID int64) string
+	PostTerms  func(postID int64, taxonomy string) []NavLink
+
 	// seenPart tracks template-part slugs currently being rendered (cycle guard).
 	seenPart map[string]bool
 
@@ -44,6 +61,16 @@ type Env struct {
 type NavLink struct {
 	Label string
 	URL   string
+}
+
+// CommentItem is a comment row for core/comment-template (P5.19).
+type CommentItem struct {
+	ID          int64
+	Author      string
+	AuthorEmail string
+	AuthorURL   string
+	Content     string
+	Date        string
 }
 
 func (e *Env) ensure() *Env {

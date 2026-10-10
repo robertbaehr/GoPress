@@ -29,7 +29,7 @@ func TestRenderQueryPostTemplate(t *testing.T) {
 </div>
 <!-- /wp:query -->`
 	out := blocks.RenderWith(env, in)
-	if !strings.Contains(out, `class="wp-block-post-template"`) {
+	if !strings.Contains(out, `wp-block-post-template`) {
 		t.Fatalf("missing post-template: %q", out)
 	}
 	if !strings.Contains(out, `Hello World`) || !strings.Contains(out, `Second`) {
@@ -38,7 +38,7 @@ func TestRenderQueryPostTemplate(t *testing.T) {
 	if !strings.Contains(out, `<a href="/?p=1"`) {
 		t.Fatalf("missing title link: %q", out)
 	}
-	if !strings.Contains(out, `2024-01-02`) {
+	if !strings.Contains(out, `January 2, 2024`) {
 		t.Fatalf("missing date: %q", out)
 	}
 	if !strings.Contains(out, `wp-block-post-content`) {

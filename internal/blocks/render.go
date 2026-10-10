@@ -96,9 +96,9 @@ func (e *Env) RenderBlock(block Block) string {
 		}
 		out = `<ul class="wp-block-page-list">` + items + `</ul>`
 	case "core/query":
-		return e.renderQuery(block)
+		out = e.renderQuery(block)
 	case "core/post-template":
-		return e.renderPostTemplate(block)
+		out = e.renderPostTemplate(block)
 	case "core/query-no-results":
 		return e.renderQueryNoResults(block)
 	case "core/pattern":
@@ -116,7 +116,29 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/post-comments-form":
 		return e.renderPostCommentsForm(block)
 	case "core/comments":
-		return e.renderComments(block)
+		out = e.renderComments(block)
+	case "core/comment-template":
+		return e.renderCommentTemplate(block)
+	case "core/site-title":
+		out = e.renderSiteTitle(block)
+	case "core/site-tagline":
+		out = e.renderSiteTagline(block)
+	case "core/query-pagination":
+		out = e.renderQueryPagination(block)
+	case "core/query-pagination-next":
+		return e.renderQueryPaginationNext(block)
+	case "core/query-pagination-previous":
+		return ""
+	case "core/query-pagination-numbers":
+		return e.renderQueryPaginationNumbers(block)
+	case "core/post-author-name":
+		out = e.renderPostAuthorName(block)
+	case "core/post-terms":
+		out = e.renderPostTerms(block)
+	case "core/post-navigation-link":
+		return e.renderPostNavigationLink(block)
+	case "core/comments-title":
+		out = e.renderCommentsTitle(block)
 	default:
 		// Unknown blocks: prefer saved markup with nested reconstruction.
 		if len(block.InnerBlocks) > 0 || len(block.InnerContent) > 0 {
@@ -125,7 +147,7 @@ func (e *Env) RenderBlock(block Block) string {
 			out = block.InnerHTML
 		}
 	}
-	return applySupports(out, block.Attrs)
+	return applySupports(out, block.Attrs, name)
 }
 
 func (e *Env) renderTemplatePart(block Block) string {

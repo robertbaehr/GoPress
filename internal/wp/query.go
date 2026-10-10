@@ -3,6 +3,7 @@ package wp
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -16,6 +17,10 @@ type QueryArgs struct {
 	P            int64  // post ID (query var "p")
 	Name         string // post slug (query var "name")
 	PageName     string // page slug (query var "pagename"); implies post_type=page when PostType unset
+	// StickyFirst prepends sticky posts (home/blog inherit queries, P5.19).
+	StickyFirst bool
+	// IgnoreSticky excludes sticky posts from results (non-inherit query loops).
+	IgnoreSticky bool
 }
 
 // Post is a row from wp_posts used by front and REST helpers.
@@ -111,7 +116,101 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 	for _, row := range rows {
 		out = append(out, postFromRow(row))
 	}
+	if postType == "post" && (args.StickyFirst || args.IgnoreSticky) && args.P == 0 && args.Name == "" && args.PageName == "" {
+		out = applyStickyOrdering(c, out, args)
+	}
 	return out, nil
+}
+
+func applyStickyOrdering(c *Context, posts []Post, args QueryArgs) []Post {
+	sticky := stickyPostIDs(c)
+	if len(sticky) == 0 {
+		return posts
+	}
+	stickySet := map[int64]bool{}
+	for _, id := range sticky {
+		stickySet[id] = true
+	}
+	if args.IgnoreSticky {
+		out := make([]Post, 0, len(posts))
+		for _, p := range posts {
+			if !stickySet[p.ID] {
+				out = append(out, p)
+			}
+		}
+		return out
+	}
+	if !args.StickyFirst {
+		return posts
+	}
+	// Prepend sticky posts that are published, then non-sticky in date order.
+	seen := map[int64]bool{}
+	var head []Post
+	for _, id := range sticky {
+		if seen[id] {
+			continue
+		}
+		p, err := GetPostByID(c, id)
+		if err != nil || p == nil || p.Status != "publish" || p.Type != "post" {
+			continue
+		}
+		head = append(head, *p)
+		seen[id] = true
+	}
+	var rest []Post
+	for _, p := range posts {
+		if seen[p.ID] {
+			continue
+		}
+		rest = append(rest, p)
+	}
+	// Sticky posts on the main blog query are shown in addition to posts_per_page.
+	limit := args.PostsPerPage
+	if limit <= 0 {
+		return append(head, rest...)
+	}
+	max := limit + len(head)
+	out := append(head, rest...)
+	if len(out) > max {
+		out = out[:max]
+	}
+	return out
+}
+
+func stickyPostIDs(c *Context) []int64 {
+	if c == nil {
+		return nil
+	}
+	raw := ""
+	if c.Options != nil {
+		if v := c.Options.GetOption("sticky_posts", nil); v != nil {
+			raw = fmt.Sprint(v)
+		}
+	}
+	if raw == "" || raw == "<nil>" {
+		return nil
+	}
+	// PHP serialized: a:1:{i:0;i:13;}
+	if strings.Contains(raw, "a:") {
+		return parsePHPIntArray(raw)
+	}
+	return nil
+}
+
+func parsePHPIntArray(ser string) []int64 {
+	// Match i:<digits>; that are values in a:N:{i:k;i:val;...}
+	re := regexp.MustCompile(`i:(\d+);i:(\d+);`)
+	matches := re.FindAllStringSubmatch(ser, -1)
+	out := make([]int64, 0, len(matches))
+	seen := map[int64]bool{}
+	for _, m := range matches {
+		n, _ := strconv.ParseInt(m[2], 10, 64)
+		if n > 0 && !seen[n] {
+			seen[n] = true
+			out = append(out, n)
+		}
+	}
+	return out
 }
 
 // GetPost returns the first post matching args, or nil if none.

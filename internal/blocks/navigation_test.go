@@ -32,7 +32,7 @@ func TestRenderNavigationFromRef(t *testing.T) {
 	}
 	in := `<!-- wp:navigation {"ref":446} /-->`
 	out := blocks.RenderWith(env, in)
-	if !strings.Contains(out, `<nav class="wp-block-navigation">`) {
+	if !strings.Contains(out, `wp-block-navigation`) || !strings.Contains(out, `<nav`) {
 		t.Fatalf("missing nav: %q", out)
 	}
 	if !strings.Contains(out, `>Home</span>`) {

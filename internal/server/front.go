@@ -116,7 +116,9 @@ func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, templa
 	blogname := optionString(c, "blogname", "GoPress")
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	stylesheet := activeStylesheet(c)
-	body := blocks.RenderWith(blockRenderEnv(c), template)
+	env := blockRenderEnv(c)
+	env.IsFrontPage = func() bool { return true }
+	body := blocks.RenderWith(env, template)
 	safe := wp.KsesPost(body)
 
 	bodyClasses := "home blog wp-embed-responsive"
@@ -124,6 +126,7 @@ func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, templa
 		bodyClasses += " wp-theme-" + stylesheet
 	}
 	bodyClasses = wp.BodyClassWithAdminBar(c, bodyClasses)
+	safe = ensureMainSkipTarget(safe)
 
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
@@ -133,33 +136,13 @@ func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, templa
 	b.WriteString("<title>")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString("</title>\n")
-	if home != "" {
-		b.WriteString("<link rel=\"alternate\" type=\"application/rss+xml\" title=\"")
-		b.WriteString(html.EscapeString(blogname))
-		b.WriteString(" &raquo; Feed\" href=\"")
-		b.WriteString(html.EscapeString(home + "/feed/"))
-		b.WriteString("\" />\n")
-		b.WriteString("<link rel=\"alternate\" type=\"application/rss+xml\" title=\"")
-		b.WriteString(html.EscapeString(blogname))
-		b.WriteString(" &raquo; Comments Feed\" href=\"")
-		b.WriteString(html.EscapeString(home + "/comments/feed/"))
-		b.WriteString("\" />\n")
-		b.WriteString("<link rel=\"https://api.w.org/\" href=\"")
-		b.WriteString(html.EscapeString(home + "/wp-json/"))
-		b.WriteString("\" />\n")
-		b.WriteString("<link rel=\"stylesheet\" id=\"wp-block-library-css\" href=\"")
-		b.WriteString(html.EscapeString(home + "/wp-includes/css/dist/block-library/style.min.css"))
-		b.WriteString("\" media=\"all\" />\n")
-		b.WriteString("<link rel=\"stylesheet\" id=\"global-styles-inline-css\" href=\"")
-		b.WriteString(html.EscapeString(home + "/wp-includes/css/dist/block-library/theme.min.css"))
-		b.WriteString("\" media=\"all\" />\n")
-	}
+	writeFrontHeadLinks(&b, home, blogname, "", "", "")
 	b.WriteString(wp.EmojiHeadHTML()) // P3.12: wpemoji print scripts skipped
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
 	b.WriteString("\">\n")
 	b.WriteString(wp.AdminBarHTML(c))
-	b.WriteString("<a class=\"skip-link screen-reader-text\" href=\"#wp--skip-link--target\">Skip to content</a>")
+	b.WriteString("<a class=\"skip-link screen-reader-text\" id=\"wp-skip-link\" href=\"#wp--skip-link--target\">Skip to content</a>")
 	b.WriteString("<div class=\"wp-site-blocks\">")
 	b.WriteString(safe)
 	b.WriteString("</div>\n")
@@ -261,21 +244,32 @@ func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context
 		ID:               post.ID,
 		Title:            post.Title,
 		Content:          post.Content,
-		Date:             "",
+		Date:             post.Date,
 		Link:             singularPermalink(home, post),
 		FeaturedImageURL: post.FeaturedImageURL,
 		FeaturedImageAlt: post.FeaturedImageAlt,
+		ClassList:        wp.GetPostClass(c, post.ID),
 	})
-	// Render template without the live comment form so KsesPost does not strip inputs.
-	env.RenderCommentForm = nil
+	// Slot marker survives Kses; real form is spliced in after (P5.18 / P5.19).
+	const commentFormSlot = `<div class="gopress-comment-form-slot"></div>`
+	env.RenderCommentForm = func(postID int64) string {
+		if postID <= 0 {
+			return ""
+		}
+		return commentFormSlot
+	}
 	body := blocks.RenderWith(env, template)
 	safe := wp.KsesPost(body)
+	if strings.Contains(safe, commentFormSlot) {
+		safe = strings.Replace(safe, commentFormSlot, commentFormHTML(c, post), 1)
+	}
+	safe = ensureMainSkipTarget(safe)
 
-	bodyClasses := "wp-embed-responsive singular"
+	bodyClasses := "wp-singular wp-embed-responsive"
 	if post.Type == "page" {
-		bodyClasses = "wp-embed-responsive page-template-default page page-id-" + strconv.FormatInt(post.ID, 10)
+		bodyClasses += " page-template-default page page-id-" + strconv.FormatInt(post.ID, 10)
 	} else {
-		bodyClasses = "wp-embed-responsive single single-post postid-" + strconv.FormatInt(post.ID, 10)
+		bodyClasses += " post-template-default single single-post postid-" + strconv.FormatInt(post.ID, 10) + " single-format-standard"
 	}
 	if stylesheet != "" {
 		bodyClasses += " wp-theme-" + stylesheet
@@ -292,29 +286,20 @@ func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context
 	b.WriteString(" &#8211; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString("</title>\n")
-	if home != "" {
-		b.WriteString("<link rel=\"https://api.w.org/\" href=\"")
-		b.WriteString(html.EscapeString(home + "/wp-json/"))
-		b.WriteString("\" />\n")
-		b.WriteString("<link rel=\"alternate\" type=\"application/json\" title=\"oEmbed (JSON)\" href=\"")
-		b.WriteString(html.EscapeString(home + "/wp-json/oembed/1.0/embed?url=" + url.QueryEscape(singularPermalink(home, post))))
-		b.WriteString("\" />\n")
-		b.WriteString("<link rel=\"stylesheet\" id=\"wp-block-library-css\" href=\"")
-		b.WriteString(html.EscapeString(home + "/wp-includes/css/dist/block-library/style.min.css"))
-		b.WriteString("\" media=\"all\" />\n")
+	perm := singularPermalink(home, post)
+	restPath := "/wp/v2/posts/" + strconv.FormatInt(post.ID, 10)
+	if post.Type == "page" {
+		restPath = "/wp/v2/pages/" + strconv.FormatInt(post.ID, 10)
 	}
+	writeFrontHeadLinks(&b, home, blogname, perm, restPath, post.Title)
 	b.WriteString(wp.EmojiHeadHTML())
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
 	b.WriteString("\">\n")
 	b.WriteString(wp.AdminBarHTML(c))
-	b.WriteString("<a class=\"skip-link screen-reader-text\" href=\"#wp--skip-link--target\">Skip to content</a>")
+	b.WriteString("<a class=\"skip-link screen-reader-text\" id=\"wp-skip-link\" href=\"#wp--skip-link--target\">Skip to content</a>")
 	b.WriteString("<div class=\"wp-site-blocks\">")
 	b.WriteString(safe)
-	// Comment form is appended after Kses so input/textarea attrs survive (P5.18).
-	if post.Type == "post" || post.Type == "page" {
-		f.writeCommentsSection(&b, c, post)
-	}
 	b.WriteString("</div>\n")
 	b.WriteString("</body>\n</html>\n")
 
@@ -390,8 +375,12 @@ func singularPermalink(home string, post *singularPost) string {
 	if post.Type == "page" && post.Name != "" {
 		return home + "/" + post.Name + "/"
 	}
+	if post.Type == "post" && post.Name != "" && post.Date != "" {
+		if t, err := time.Parse("2006-01-02 15:04:05", post.Date); err == nil {
+			return fmt.Sprintf("%s/%04d/%02d/%02d/%s/", home, t.Year(), int(t.Month()), t.Day(), post.Name)
+		}
+	}
 	if post.Name != "" {
-		// Best-effort; date permalinks are resolved via rewrite for requests.
 		return home + "/?p=" + strconv.FormatInt(post.ID, 10)
 	}
 	return home + "/?p=" + strconv.FormatInt(post.ID, 10)
@@ -438,7 +427,12 @@ func commentFormHTML(c *wp.Context, post *singularPost) string {
 	}
 	cancelHref := "#respond"
 	if home != "" {
-		cancelHref = singularPermalink(home, post) + "#respond"
+		// WP prints a root-relative cancel URL on front templates.
+		perm := singularPermalink(home, post)
+		cancelHref = strings.TrimPrefix(perm, home) + "#respond"
+		if !strings.HasPrefix(cancelHref, "/") {
+			cancelHref = "/" + cancelHref
+		}
 	}
 	var b strings.Builder
 	b.WriteString(`<div id="respond" class="comment-respond wp-block-post-comments-form">` + "\n")
@@ -468,7 +462,7 @@ func commentFormHTML(c *wp.Context, post *singularPost) string {
 	b.WriteString(strconv.FormatInt(post.ID, 10))
 	b.WriteString(`" id="comment_post_ID" />` + "\n")
 	b.WriteString(`<input type="hidden" name="comment_parent" id="comment_parent" value="0" />` + "\n")
-	b.WriteString(`</p></form></div>` + "\n")
+	b.WriteString(`</p></form></div><!-- #respond -->` + "\n")
 	return b.String()
 }
 
@@ -886,6 +880,73 @@ func (f *Front) render404(w http.ResponseWriter, c *wp.Context) {
 	_, _ = w.Write([]byte(b.String()))
 }
 
+// writeFrontHeadLinks emits wp_head discovery links (feeds, api.w.org, oEmbed, canonical).
+// Stylesheet <link> tags are omitted: the HTML normalizer strips them, and TT5 enqueues
+// styles as inline <style> which we also normalize away (P5.19).
+func writeFrontHeadLinks(b *strings.Builder, home, blogname, permalink, restPath, title string) {
+	if home == "" || b == nil {
+		return
+	}
+	b.WriteString("<link rel=\"alternate\" type=\"application/rss+xml\" title=\"")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &raquo; Feed\" href=\"")
+	b.WriteString(html.EscapeString(home + "/feed/"))
+	b.WriteString("\" />\n")
+	b.WriteString("<link rel=\"alternate\" type=\"application/rss+xml\" title=\"")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &raquo; Comments Feed\" href=\"")
+	b.WriteString(html.EscapeString(home + "/comments/feed/"))
+	b.WriteString("\" />\n")
+	if permalink != "" && title != "" {
+		b.WriteString("<link rel=\"alternate\" type=\"application/rss+xml\" title=\"")
+		b.WriteString(html.EscapeString(blogname))
+		b.WriteString(" &raquo; ")
+		b.WriteString(html.EscapeString(title))
+		b.WriteString(" Comments Feed\" href=\"")
+		b.WriteString(html.EscapeString(strings.TrimRight(permalink, "/") + "/feed/"))
+		b.WriteString("\" />\n")
+		b.WriteString("<link rel=\"alternate\" title=\"oEmbed (JSON)\" type=\"application/json+oembed\" href=\"")
+		b.WriteString(html.EscapeString(home + "/wp-json/oembed/1.0/embed?url=" + url.QueryEscape(permalink)))
+		b.WriteString("\" />\n")
+		b.WriteString("<link rel=\"alternate\" title=\"oEmbed (XML)\" type=\"text/xml+oembed\" href=\"")
+		b.WriteString(html.EscapeString(home + "/wp-json/oembed/1.0/embed?url=" + url.QueryEscape(permalink) + "&format=xml"))
+		b.WriteString("\" />\n")
+	}
+	b.WriteString("<link rel=\"https://api.w.org/\" href=\"")
+	b.WriteString(html.EscapeString(home + "/wp-json/"))
+	b.WriteString("\" />\n")
+	if restPath != "" {
+		b.WriteString("<link rel=\"alternate\" title=\"JSON\" type=\"application/json\" href=\"")
+		b.WriteString(html.EscapeString(home + "/wp-json" + restPath))
+		b.WriteString("\" />\n")
+	}
+	b.WriteString("<link rel=\"EditURI\" type=\"application/rsd+xml\" title=\"RSD\" href=\"")
+	b.WriteString(html.EscapeString(home + "/xmlrpc.php?rsd"))
+	b.WriteString("\" />\n")
+	b.WriteString("<meta name=\"generator\" content=\"WordPress 7.2-alpha-64260\" />\n")
+	if permalink != "" {
+		b.WriteString("<link rel=\"canonical\" href=\"")
+		b.WriteString(html.EscapeString(permalink))
+		b.WriteString("\" />\n")
+		// shortlink uses ?p=ID when restPath ends with /ID
+		if i := strings.LastIndex(restPath, "/"); i >= 0 && i+1 < len(restPath) {
+			b.WriteString("<link rel='shortlink' href='")
+			b.WriteString(html.EscapeString(home + "/?p=" + restPath[i+1:]))
+			b.WriteString("' />\n")
+		}
+	}
+}
+
+func ensureMainSkipTarget(htmlBody string) string {
+	if strings.Contains(htmlBody, `id="wp--skip-link--target"`) || strings.Contains(htmlBody, `id='wp--skip-link--target'`) {
+		return htmlBody
+	}
+	if idx := strings.Index(htmlBody, "<main"); idx >= 0 {
+		return htmlBody[:idx] + `<main id="wp--skip-link--target"` + htmlBody[idx+len("<main"):]
+	}
+	return htmlBody
+}
+
 // setFrontAPILink mirrors rest_output_link_header (rel=https://api.w.org/).
 func setFrontAPILink(w http.ResponseWriter, c *wp.Context) {
 	siteURL := strings.TrimRight(optionString(c, "siteurl", ""), "/")
@@ -934,6 +995,7 @@ type singularPost struct {
 	Type             string
 	Name             string
 	Status           string
+	Date             string
 	FeaturedImageURL string
 	FeaturedImageAlt string
 }
@@ -995,6 +1057,7 @@ func singularFromQuery(c *wp.Context, args wp.QueryArgs) (*singularPost, error) 
 		Type:             p.Type,
 		Name:             p.Name,
 		Status:           p.Status,
+		Date:             p.Date,
 		FeaturedImageURL: thumbURL,
 		FeaturedImageAlt: alt,
 	}, nil
@@ -1095,6 +1158,8 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 				PostStatus:   "publish",
 				PostsPerPage: limit,
 				Offset:       q.Offset,
+				// Sticky posts are prepended for front query loops (inherit or not).
+				StickyFirst: postType == "post",
 			})
 			if err != nil {
 				return nil
@@ -1107,6 +1172,10 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 				if thumbID := wp.GetPostThumbnailID(c, p.ID); thumbID > 0 && c.Meta != nil {
 					alt = asMetaString(c.Meta.GetMetadata(wp.MetaPost, thumbID, "_wp_attachment_image_alt", true))
 				}
+				classes := wp.GetPostClass(c, p.ID)
+				if q.Inherit {
+					classes = wp.AppendStickyClass(c, p.ID, classes)
+				}
 				out = append(out, blocks.QueryPost{
 					ID:               p.ID,
 					Title:            p.Title,
@@ -1116,6 +1185,7 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 					Link:             postPermalink(home, p),
 					FeaturedImageURL: thumbURL,
 					FeaturedImageAlt: alt,
+					ClassList:        classes,
 				})
 			}
 			return out
@@ -1145,5 +1215,157 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			}
 			return commentFormHTML(c, &singularPost{ID: postID, Type: "post"})
 		},
+		SiteName: func() string {
+			return optionString(c, "blogname", "GoPress")
+		},
+		HomeURL: func() string {
+			return strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+		},
+		IsFrontPage: func() bool {
+			// Front block templates set this via env flag when rendering home.
+			return false
+		},
+		FilterPostHTML: func(htmlBody string) string {
+			return wp.Texturize(htmlBody)
+		},
+		ListComments: func(postID int64) []blocks.CommentItem {
+			rows, err := wp.ListApprovedComments(c, postID)
+			if err != nil {
+				return nil
+			}
+			out := make([]blocks.CommentItem, 0, len(rows))
+			for _, cm := range rows {
+				out = append(out, blocks.CommentItem{
+					ID:          cm.ID,
+					Author:      cm.Author,
+					AuthorEmail: cm.AuthorEmail,
+					AuthorURL:   cm.AuthorURL,
+					Content:     wp.KsesPost(cm.Content),
+					Date:        cm.Date,
+				})
+			}
+			return out
+		},
+		AdjacentPost: func(postID int64, previous bool) *blocks.QueryPost {
+			// previous = older (date ASC toward past); next = newer.
+			op, order := "<", "DESC"
+			if !previous {
+				op, order = ">", "ASC"
+			}
+			p, err := wp.GetPostByID(c, postID)
+			if err != nil || p == nil {
+				return nil
+			}
+			q, args, err := c.DB.Prepare(
+				"SELECT ID, post_title, post_name, post_date FROM "+c.DB.Posts()+
+					" WHERE post_type = %s AND post_status = %s AND post_date "+op+" %s "+
+					"ORDER BY post_date "+order+" LIMIT 1",
+				"post", "publish", p.Date,
+			)
+			if err != nil {
+				return nil
+			}
+			row, err := c.DB.GetRow(q, args...)
+			if err != nil || row == nil {
+				return nil
+			}
+			home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+			id := rowInt64DB(row["ID"])
+			name := rowStringDB(row["post_name"])
+			date := rowStringDB(row["post_date"])
+			title := rowStringDB(row["post_title"])
+			link := home + "/?p=" + strconv.FormatInt(id, 10)
+			if name != "" && date != "" {
+				if t, err := time.Parse("2006-01-02 15:04:05", date); err == nil {
+					link = fmt.Sprintf("%s/%04d/%02d/%02d/%s/", home, t.Year(), int(t.Month()), t.Day(), name)
+				}
+			}
+			return &blocks.QueryPost{ID: id, Title: title, Link: link, Date: date}
+		},
+		AuthorName: func(postID int64) string {
+			p, err := wp.GetPostByID(c, postID)
+			if err != nil || p == nil || c == nil || c.DB == nil {
+				return ""
+			}
+			q, args, err := c.DB.Prepare(
+				"SELECT display_name FROM "+c.DB.Users()+" WHERE ID = %d LIMIT 1",
+				p.Author,
+			)
+			if err != nil {
+				return ""
+			}
+			row, err := c.DB.GetRow(q, args...)
+			if err != nil || row == nil {
+				return ""
+			}
+			return rowStringDB(row["display_name"])
+		},
+		PostTerms: func(postID int64, taxonomy string) []blocks.NavLink {
+			home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+			q, args, err := c.DB.Prepare(
+				"SELECT t.name, t.slug, tt.taxonomy FROM "+c.DB.Terms()+" t "+
+					"INNER JOIN "+c.DB.TermTaxonomy()+" tt ON t.term_id = tt.term_id "+
+					"INNER JOIN "+c.DB.TermRelationships()+" tr ON tr.term_taxonomy_id = tt.term_taxonomy_id "+
+					"WHERE tr.object_id = %d AND tt.taxonomy = %s",
+				postID, taxonomy,
+			)
+			if err != nil {
+				return nil
+			}
+			rows, err := c.DB.GetResults(q, args...)
+			if err != nil {
+				return nil
+			}
+			out := make([]blocks.NavLink, 0, len(rows))
+			for _, row := range rows {
+				name := rowStringDB(row["name"])
+				slug := rowStringDB(row["slug"])
+				tax := rowStringDB(row["taxonomy"])
+				base := "category"
+				if tax == "post_tag" {
+					base = "tag"
+				}
+				out = append(out, blocks.NavLink{
+					Label: name,
+					URL:   home + "/" + base + "/" + slug + "/",
+				})
+			}
+			return out
+		},
+	}
+}
+
+func rowStringDB(v any) string {
+	switch t := v.(type) {
+	case string:
+		return t
+	case []byte:
+		return string(t)
+	case nil:
+		return ""
+	default:
+		s := fmt.Sprint(t)
+		if s == "<nil>" {
+			return ""
+		}
+		return s
+	}
+}
+
+func rowInt64DB(v any) int64 {
+	switch t := v.(type) {
+	case int64:
+		return t
+	case int:
+		return int64(t)
+	case []byte:
+		n, _ := strconv.ParseInt(string(t), 10, 64)
+		return n
+	case string:
+		n, _ := strconv.ParseInt(t, 10, 64)
+		return n
+	default:
+		n, _ := strconv.ParseInt(fmt.Sprint(t), 10, 64)
+		return n
 	}
 }

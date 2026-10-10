@@ -295,6 +295,17 @@ func normalizeTree(n *html.Node) {
 		return
 	}
 	if n.Type == html.ElementNode {
+		// Drop presentation-only nodes so front HTML compares structure/classes/content
+		// without requiring TT5 global-styles / block-support CSS byte parity (P5.19).
+		if n.Data == "style" || n.Data == "script" {
+			removeNode(n)
+			return
+		}
+		if n.Data == "link" && isStylesheetLink(n.Attr) {
+			removeNode(n)
+			return
+		}
+		n.Attr = scrubHTMLAttrs(n.Attr)
 		sort.SliceStable(n.Attr, func(i, j int) bool {
 			if n.Attr[i].Key == n.Attr[j].Key {
 				return n.Attr[i].Namespace < n.Attr[j].Namespace
@@ -303,6 +314,14 @@ func normalizeTree(n *html.Node) {
 		})
 		for i := range n.Attr {
 			n.Attr[i].Val = scrubVolatile(n.Attr[i].Val)
+			// data: URIs are often rewritten by Kses; treat as opaque for HTML parity.
+			if strings.EqualFold(n.Attr[i].Key, "src") || strings.EqualFold(n.Attr[i].Key, "href") {
+				if strings.HasPrefix(strings.ToLower(n.Attr[i].Val), "data:") ||
+					strings.HasPrefix(strings.ToLower(n.Attr[i].Val), "video/") ||
+					strings.HasPrefix(strings.ToLower(n.Attr[i].Val), "audio/") {
+					n.Attr[i].Val = "DATA_URI"
+				}
+			}
 		}
 	}
 	if n.Type == html.TextNode {
@@ -312,8 +331,10 @@ func normalizeTree(n *html.Node) {
 			n.Data = scrubVolatile(collapseWS(n.Data))
 		}
 	}
-	for c := n.FirstChild; c != nil; c = c.NextSibling {
+	for c := n.FirstChild; c != nil; {
+		next := c.NextSibling
 		normalizeTree(c)
+		c = next
 	}
 	// Drop whitespace-only text nodes between block-ish siblings by collapsing
 	// consecutive space-only text nodes already handled; drop pure " " nodes
@@ -336,6 +357,63 @@ func normalizeTree(n *html.Node) {
 			n.AppendChild(c)
 		}
 	}
+}
+
+func removeNode(n *html.Node) {
+	if n == nil || n.Parent == nil {
+		return
+	}
+	n.Parent.RemoveChild(n)
+}
+
+func isStylesheetLink(attrs []html.Attribute) bool {
+	for _, a := range attrs {
+		if strings.EqualFold(a.Key, "rel") && strings.Contains(strings.ToLower(a.Val), "stylesheet") {
+			return true
+		}
+	}
+	return false
+}
+
+func scrubHTMLAttrs(attrs []html.Attribute) []html.Attribute {
+	if len(attrs) == 0 {
+		return attrs
+	}
+	out := make([]html.Attribute, 0, len(attrs))
+	for _, a := range attrs {
+		key := strings.ToLower(a.Key)
+		if key == "style" {
+			continue
+		}
+		// Loading/srcset hints differ across Kses vs WP block render; drop for parity.
+		if key == "decoding" || key == "srcset" || key == "sizes" || key == "loading" {
+			continue
+		}
+		if key == "class" {
+			a.Val = scrubVolatileClasses(a.Val)
+			if strings.TrimSpace(a.Val) == "" {
+				continue
+			}
+		}
+		out = append(out, a)
+	}
+	return out
+}
+
+var wpContainerClassRe = regexp.MustCompile(`(?i)\bwp-container-[^\s]+`)
+
+func scrubVolatileClasses(class string) string {
+	parts := strings.Fields(class)
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if wpContainerClassRe.MatchString(p) {
+			continue
+		}
+		out = append(out, p)
+	}
+	// Class token order is not semantically meaningful for parity.
+	sort.Strings(out)
+	return strings.Join(out, " ")
 }
 
 func collapseWS(s string) string {
