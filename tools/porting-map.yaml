@@ -4887,12 +4887,13 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P7.100 — manage_options gate; pingback flag; moderation/disallowed keys; avatar rating/default; P7.50 save"
 
-# P7.51: POST save media options via options.php (sizes + embeds).
+# P7.51 / P7.101: Media settings screen + options.php save.
 - prefix: wp-admin/options-media.php
   go: internal/admin/admin.go
   status: partial
-  task: P7.51
+  task: P7.101
   api: n/a
+  notes: "P7.101 — manage_options; yearmonth folders; empty sizes; optional upload paths; P7.51 save"
 
 - prefix: wp-admin/post.php
   go: internal/admin/admin.go
