@@ -472,7 +472,7 @@ func (h *Handler) serveOptionsGeneral(w http.ResponseWriter, r *http.Request, c 
 	writeAdminPage(w, c, newAdminChrome(c, "General Settings", "options-general-php"), b.String())
 }
 
-// serveOptionsPHP handles /wp-admin/options.php saves (P7.48 writing / P7.49 reading / P7.50 discussion).
+// serveOptionsPHP handles /wp-admin/options.php saves (P7.48 writing / P7.49 reading / P7.50 discussion / P7.51 media).
 func (h *Handler) serveOptionsPHP(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/wp-admin/options-general.php", http.StatusFound)
@@ -530,8 +530,38 @@ func (h *Handler) serveOptionsPHP(w http.ResponseWriter, r *http.Request, c *wp.
 		}
 		http.Redirect(w, r, "/wp-admin/options-discussion.php?settings-updated=true", http.StatusFound)
 		return
+	case "media":
+		if c.Options != nil {
+			saveMediaOptions(c, r)
+		}
+		http.Redirect(w, r, "/wp-admin/options-media.php?settings-updated=true", http.StatusFound)
+		return
 	default:
 		http.Error(w, "Unrecognized settings group.\n", http.StatusBadRequest)
+	}
+}
+
+// saveMediaOptions persists Settings → Media size/embed fields (P7.51).
+func saveMediaOptions(c *wp.Context, r *http.Request) {
+	if c == nil || c.Options == nil || r == nil {
+		return
+	}
+	for _, key := range []string{
+		"thumbnail_size_w", "thumbnail_size_h",
+		"medium_size_w", "medium_size_h",
+		"large_size_w", "large_size_h",
+	} {
+		if v := strings.TrimSpace(r.Form.Get(key)); v != "" {
+			_, _ = c.Options.UpdateOption(key, v, "yes")
+		}
+	}
+	// Checkboxes: present → 1, absent → 0.
+	for _, key := range []string{"thumbnail_crop", "embed_autourls"} {
+		v := "0"
+		if _, ok := r.Form[key]; ok {
+			v = "1"
+		}
+		_, _ = c.Options.UpdateOption(key, v, "yes")
 	}
 }
 
@@ -821,8 +851,12 @@ func (h *Handler) serveOptionsMedia(w http.ResponseWriter, r *http.Request, c *w
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1>Media Settings</h1>\n")
-	b.WriteString("<p class=\"description\">GoPress media settings stub — save lands with options.php.</p>\n")
+	if r.URL.Query().Get("settings-updated") == "true" {
+		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p><strong>Settings saved.</strong></p></div>\n")
+	}
+	b.WriteString("<p class=\"description\">GoPress media settings — POST saves via options.php.</p>\n")
 	b.WriteString("<form action=\"options.php\" method=\"post\">\n")
+	b.WriteString("<input type=\"hidden\" name=\"option_page\" value=\"media\" />\n")
 	b.WriteString("<h2 id=\"wp-settings-section-image-sizes\" class=\"title\">Image sizes</h2>\n")
 	b.WriteString("<p>The sizes listed below determine the maximum dimensions in pixels to use when adding an image to the Media Library.</p>\n")
 	b.WriteString("<table class=\"form-table\" role=\"presentation\">\n")
