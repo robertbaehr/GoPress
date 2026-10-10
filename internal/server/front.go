@@ -1758,13 +1758,15 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 	// P3.51: no PubSubHubbub atom:link rel="hub" (out of scope; never emit hub links).
 	self := feedSelfLink(r, c)
 
-	// P3.69: precompute Media RSS items; emit xmlns:media only when present
+	// P3.69 / P3.70: precompute Media RSS items; emit xmlns:media only when present
 	// so bare fixture feeds match WP (no Media RSS namespace by default).
 	mediaByPost := make([][]feedMediaContent, len(posts))
+	thumbByPost := make([]string, len(posts))
 	hasMedia := false
 	for i, p := range posts {
 		mediaByPost[i] = feedMediaContentForPost(c, p)
-		if len(mediaByPost[i]) > 0 {
+		thumbByPost[i] = feedThumbnailURLForPost(c, p)
+		if len(mediaByPost[i]) > 0 || thumbByPost[i] != "" {
 			hasMedia = true
 		}
 	}
@@ -1884,6 +1886,10 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 		for _, mc := range mediaByPost[i] {
 			b.WriteString(rssMediaContentTag(mc))
 		}
+		// P3.70: Media RSS <media:thumbnail> for the featured image.
+		if tag := rssMediaThumbnailTag(thumbByPost[i]); tag != "" {
+			b.WriteString(tag)
+		}
 		// P3.64: optional RSS 2.0 <source> when post meta provides attribution.
 		if tag := rssItemSourceTag(c, p.ID); tag != "" {
 			b.WriteString(tag)
@@ -1915,10 +1921,12 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 	atomID := home + "/feed/atom/"
 
 	mediaByPost := make([][]feedMediaContent, len(posts))
+	thumbByPost := make([]string, len(posts))
 	hasMedia := false
 	for i, p := range posts {
 		mediaByPost[i] = feedMediaContentForPost(c, p)
-		if len(mediaByPost[i]) > 0 {
+		thumbByPost[i] = feedThumbnailURLForPost(c, p)
+		if len(mediaByPost[i]) > 0 || thumbByPost[i] != "" {
 			hasMedia = true
 		}
 	}
@@ -2039,6 +2047,10 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 		// P3.69: Media RSS media:content on Atom entries too.
 		for _, mc := range mediaByPost[i] {
 			b.WriteString(rssMediaContentTag(mc))
+		}
+		// P3.70: Media RSS media:thumbnail on Atom entries too.
+		if tag := rssMediaThumbnailTag(thumbByPost[i]); tag != "" {
+			b.WriteString(tag)
 		}
 		b.WriteString("\t\t\t</entry>\n")
 	}
@@ -2382,6 +2394,19 @@ func feedMediaContentForPost(c *wp.Context, p feedPost) []feedMediaContent {
 		})
 	}
 	return out
+}
+
+// feedThumbnailURLForPost returns the featured image URL for media:thumbnail (P3.70).
+func feedThumbnailURLForPost(c *wp.Context, p feedPost) string {
+	return strings.TrimSpace(wp.GetPostThumbnailURL(c, p.ID))
+}
+
+func rssMediaThumbnailTag(url string) string {
+	url = strings.TrimSpace(url)
+	if url == "" {
+		return ""
+	}
+	return `<media:thumbnail url="` + xmlEscape(url) + `" />` + "\n"
 }
 
 func attachmentMimeType(c *wp.Context, attachmentID int64) string {
