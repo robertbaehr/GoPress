@@ -14,6 +14,10 @@ func (h *Handler) serveAdminAjax(w http.ResponseWriter, r *http.Request, c *wp.C
 		http.Error(w, "GoPress context unavailable\n", http.StatusServiceUnavailable)
 		return
 	}
+	// P2.66: DOING_AJAX / wp_doing_ajax for the duration of admin-ajax.php.
+	if c.Scope != nil {
+		c.Scope.SetAjax(true)
+	}
 	c.AuthenticateRequest()
 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
