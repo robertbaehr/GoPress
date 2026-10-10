@@ -96,6 +96,26 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		serveSitemapPosts(w, c, "page")
 		return
 	}
+	if path == "/wp-sitemap-taxonomies-category-1.xml" {
+		c := s.requestContext(w, r)
+		serveSitemapTaxonomy(w, c, "category")
+		return
+	}
+	if path == "/wp-sitemap-taxonomies-post_tag-1.xml" {
+		c := s.requestContext(w, r)
+		serveSitemapTaxonomy(w, c, "post_tag")
+		return
+	}
+	if path == "/wp-sitemap-taxonomies-post_format-1.xml" {
+		c := s.requestContext(w, r)
+		serveSitemapTaxonomy(w, c, "post_format")
+		return
+	}
+	if path == "/wp-sitemap-users-1.xml" {
+		c := s.requestContext(w, r)
+		serveSitemapUsers(w, c)
+		return
+	}
 	if path == "/wp-cron.php" {
 		c := s.requestContext(w, r)
 		wp.ServeCron(w, r, c)

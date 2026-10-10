@@ -45,6 +45,21 @@ func TestSitemapIndexAndPosts(t *testing.T) {
 	if !strings.Contains(body, "<sitemapindex") || !strings.Contains(body, "wp-sitemap-posts-post-1.xml") {
 		t.Fatalf("index body=%q", body)
 	}
+	for _, want := range []string{
+		"wp-sitemap-posts-page-1.xml",
+		"wp-sitemap-taxonomies-category-1.xml",
+		"wp-sitemap-taxonomies-post_tag-1.xml",
+		"wp-sitemap-taxonomies-post_format-1.xml",
+		"wp-sitemap-users-1.xml",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("index missing %s: %q", want, body)
+		}
+	}
+	// Compact (non-pretty) markup like WP.
+	if strings.Contains(body, "\t<sitemap>") {
+		t.Fatalf("expected compact sitemap index, got pretty-printed: %q", body)
+	}
 
 	req = httptest.NewRequest(http.MethodGet, "/wp-sitemap-posts-post-1.xml", nil)
 	rec = httptest.NewRecorder()
