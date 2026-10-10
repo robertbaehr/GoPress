@@ -43,8 +43,8 @@ func (h *Handler) serveAdminAjax(w http.ResponseWriter, r *http.Request, c *wp.C
 			_, _ = w.Write([]byte("0"))
 			return
 		}
+		// WP wp_ajax_rest_nonce exits raw nonce with default admin-ajax Content-Type (text/html).
 		nonce := c.CreateNonce("wp_rest")
-		w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte(nonce))
 	case "logged-in":
@@ -65,13 +65,10 @@ func (h *Handler) serveAdminAjax(w http.ResponseWriter, r *http.Request, c *wp.C
 func (h *Handler) ajaxHeartbeat(w http.ResponseWriter, r *http.Request, c *wp.Context, loggedIn bool) {
 	_ = c
 	_ = r
-	// WP-like heartbeat payload; also satisfy clients expecting success:true.
+	// Match wp_ajax_heartbeat / wp_ajax_nopriv_heartbeat + wp_auth_check shape.
 	resp := map[string]any{
-		"success":     true,
-		"server_time": time.Now().Unix(),
-	}
-	if loggedIn {
-		resp["wp-auth-check"] = true
+		"wp-auth-check": loggedIn,
+		"server_time":   time.Now().Unix(),
 	}
 	body, err := json.Marshal(resp)
 	if err != nil {
