@@ -72,6 +72,8 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	switch {
 	case path == "/" || path == "":
 		s.serveIndex(w, c)
+	case path == "/batch/v1" || path == "/batch/v1/":
+		s.serveBatch(w, r, c)
 	case path == "/oembed/1.0" || path == "/oembed/1.0/" || path == "/oembed/1.0/embed":
 		s.serveOEmbed(w, r, c)
 	case path == "/wp/v2/types":
@@ -729,7 +731,7 @@ func extraIndexRoutes() map[string]RouteIndex {
 		}
 	}
 	return map[string]RouteIndex{
-		"/batch/v1":          getOnly("batch/v1"),
+		"/batch/v1":          batchRouteIndex(),
 		"/oembed/1.0/proxy":  getOnly("oembed/1.0"),
 		"/wp-site-health/v1": getOnly("wp-site-health/v1"),
 		"/wp-site-health/v1/tests/background-updates":   getOnly("wp-site-health/v1"),
