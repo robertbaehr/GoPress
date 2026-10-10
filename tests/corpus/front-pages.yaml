@@ -292,3 +292,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.84: pretty permalinks, author, and 404 query headers.
+- id: front-hello-world-pretty
+  role: anon
+  method: GET
+  path: /hello-world/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p-missing-404
+  role: anon
+  method: GET
+  path: /?p=999999999
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-page-id-missing-404
+  role: anon
+  method: GET
+  path: /?page_id=999999
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

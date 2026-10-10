@@ -5391,3 +5391,11 @@
   task: P10.79
   api: n/a
   notes: "P10.79 — STATUS refresh after navigation-link, search include/exclude, media bulk nonce, normalize_path, robots/sitemaps enablement, auth-check interim modal, corpus 74/74"
+
+# P10.84: expand diff corpus (REST/oEmbed/front/login/ajax headers).
+- prefix: tests/corpus#p10.84
+  go: tests/corpus
+  status: partial
+  task: P10.84
+  api: n/a
+  notes: "P10.84 — +categories/comments/media/oembed/sidebars; pretty permalinks; login; heartbeat"
