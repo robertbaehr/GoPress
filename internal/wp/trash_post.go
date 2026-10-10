@@ -72,10 +72,8 @@ func UntrashPost(c *Context, id int64) error {
 	}
 	prev := "draft"
 	if c.Meta != nil {
-		if v := c.Meta.GetMetadata(MetaPost, id, trashMetaStatus, true); v != nil {
-			if s := strings.TrimSpace(fmt.Sprint(v)); s != "" && s != "<nil>" {
-				prev = s
-			}
+		if s := strings.TrimSpace(fmt.Sprint(c.Meta.GetMetadata(MetaPost, id, trashMetaStatus, true))); s != "" && s != "<nil>" {
+			prev = s
 		}
 	}
 	switch prev {
