@@ -136,3 +136,57 @@ func TestSitemapIndexAndPosts(t *testing.T) {
 		t.Fatalf("posts body=%q", body)
 	}
 }
+
+func TestSitemapIndexEntryFilter(t *testing.T) {
+	c := testBoot(t)
+	c.Hooks.AddFilter("wp_sitemaps_index_entry", func(value any, args ...any) any {
+		entry, _ := value.(map[string]any)
+		if entry == nil {
+			return value
+		}
+		if len(args) >= 2 {
+			if obj, _ := args[0].(string); obj == "post" {
+				if sub, _ := args[1].(string); sub == "post" {
+					entry["lastmod"] = "2026-01-02T03:04:05+00:00"
+				}
+			}
+		}
+		return entry
+	}, 10, 4)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/wp-sitemap.xml", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "<lastmod>2026-01-02T03:04:05+00:00</lastmod>") {
+		t.Fatalf("expected filtered lastmod: %q", body)
+	}
+	if !strings.Contains(body, "wp-sitemap-posts-post-1.xml") {
+		t.Fatalf("missing post sitemap loc: %q", body)
+	}
+}
+
+func TestSitemapPostsEntryFilter(t *testing.T) {
+	c := testBoot(t)
+	c.Hooks.AddFilter("wp_sitemaps_posts_entry", func(value any, args ...any) any {
+		entry, _ := value.(map[string]any)
+		if entry == nil {
+			return value
+		}
+		entry["lastmod"] = "2020-12-31T23:59:59+00:00"
+		return entry
+	}, 10, 3)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/wp-sitemap-posts-post-1.xml", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "<lastmod>2020-12-31T23:59:59+00:00</lastmod>") {
+		t.Fatalf("expected posts_entry lastmod: %q", rec.Body.String())
+	}
+}

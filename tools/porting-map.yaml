@@ -2433,6 +2433,21 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P3.78 — wp_sitemaps_enabled; 404 sitemap routes when blog_public=0"
 
+# P3.91: sitemap index entry filter + posts entry filter.
+- prefix: wp-includes/sitemaps/class-wp-sitemaps-provider.php#wp_sitemaps_index_entry
+  go: internal/server/robots_sitemap.go
+  status: partial
+  task: P3.91
+  api: exported
+  notes: "P3.91 — wp_sitemaps_index_entry (loc/lastmod); wp_sitemaps_posts_entry"
+
+- prefix: wp-includes/sitemaps/providers/class-wp-sitemaps-posts.php#wp_sitemaps_posts_entry
+  go: internal/server/robots_sitemap.go
+  status: partial
+  task: P3.91
+  api: exported
+  notes: "P3.91 — filter post urlset entries before render"
+
 # P3.37 / P10.35: file-level link-template row (fragments above are docs-only).
 - prefix: wp-includes/link-template.php
   go: internal/wp/link_template.go
