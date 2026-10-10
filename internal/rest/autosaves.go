@@ -3,33 +3,41 @@ package rest
 import (
 	"fmt"
 	"net/http"
-	"strconv"
 	"strings"
 
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// Autosave is a wp/v2 autosave object (GET stub).
+// Autosave is a wp/v2 autosave object (GET collection/item, view context).
+// Preview_link is edit-context only in WP, so it is omitted here.
 type Autosave struct {
-	ID          int64             `json:"id"`
-	Author      int64             `json:"author"`
-	Date        string            `json:"date"`
-	DateGMT     string            `json:"date_gmt"`
-	Modified    string            `json:"modified"`
-	ModifiedGMT string            `json:"modified_gmt"`
-	Parent      int64             `json:"parent"`
-	Slug        string            `json:"slug"`
-	GUID        RenderedString    `json:"guid"`
-	Title       RenderedString    `json:"title"`
-	Content     ProtectedRendered `json:"content"`
-	Excerpt     ProtectedRendered `json:"excerpt"`
-	PreviewLink string            `json:"preview_link"`
-	Links       map[string]any    `json:"_links"`
+	Author      int64          `json:"author"`
+	Date        string         `json:"date"`
+	DateGMT     string         `json:"date_gmt"`
+	ID          int64          `json:"id"`
+	Modified    string         `json:"modified"`
+	ModifiedGMT string         `json:"modified_gmt"`
+	Parent      int64          `json:"parent"`
+	Slug        string         `json:"slug"`
+	GUID        RenderedString `json:"guid"`
+	Title       RenderedString `json:"title"`
+	Content     RenderedString `json:"content"`
+	Excerpt     RenderedString `json:"excerpt"`
+	Meta        map[string]any `json:"meta"`
+	Links       map[string]any `json:"_links"`
 }
 
 func (s *Server) servePostAutosaves(w http.ResponseWriter, r *http.Request, c *wp.Context, parentID int64) {
+	if r.Method == http.MethodPost {
+		// Create/update autosave not implemented yet.
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
+			"code":    "rest_no_route",
+			"message": "No route was found matching the URL and request method.",
+			"data":    map[string]any{"status": 405},
+		})
+		return
+	}
 	if r.Method != http.MethodGet && r.Method != http.MethodHead && r.Method != http.MethodOptions {
-		// POST create is not implemented in this stub.
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
@@ -78,11 +86,10 @@ func (s *Server) servePostAutosaves(w http.ResponseWriter, r *http.Request, c *w
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	out := make([]Autosave, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, autosaveFromWP(row, home, parentID))
+		out = append(out, autosaveFromWP(c, row, home, parentID))
 	}
-	w.Header().Set("X-WP-Total", strconv.Itoa(len(out)))
-	w.Header().Set("X-WP-TotalPages", "1")
-	w.Header().Set("Allow", "GET")
+	// WP autosaves collection does not emit X-WP-Total headers.
+	w.Header().Set("Allow", "GET, POST")
 	writeJSON(w, http.StatusOK, out)
 }
 
@@ -143,7 +150,7 @@ func (s *Server) servePostAutosaveItem(w http.ResponseWriter, r *http.Request, c
 	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	w.Header().Set("Allow", "GET")
-	writeJSON(w, http.StatusOK, autosaveFromWP(*row, home, parentID))
+	writeJSON(w, http.StatusOK, autosaveFromWP(c, *row, home, parentID))
 }
 
 func listPostAutosaves(c *wp.Context, parentID int64) ([]wp.Post, error) {
@@ -188,30 +195,25 @@ func listPostAutosaves(c *wp.Context, parentID int64) ([]wp.Post, error) {
 	return out, nil
 }
 
-func autosaveFromWP(row wp.Post, home string, parentID int64) Autosave {
-	rendered := renderPostContent(row.Content) // stub: no request context for shortcodes
+func autosaveFromWP(c *wp.Context, row wp.Post, home string, parentID int64) Autosave {
+	rendered := renderPostContentCtx(c, row.Content)
 	titleRendered := restTexturize(row.Title)
-	excerpt := buildExcerpt(row.Excerpt, rendered, false)
 	restRoot := strings.TrimRight(home, "/") + "/wp-json/wp/v2"
-	preview := strings.TrimRight(home, "/") + "/?p=" + strconv.FormatInt(parentID, 10) + "&preview=true"
 	return Autosave{
-		ID:          row.ID,
 		Author:      row.Author,
 		Date:        mysqlDateToREST(row.Date),
 		DateGMT:     mysqlDateToREST(row.DateGMT),
+		ID:          row.ID,
 		Modified:    mysqlDateToREST(row.Modified),
 		ModifiedGMT: mysqlDateToREST(row.ModifiedGMT),
 		Parent:      parentID,
 		Slug:        row.Name,
 		GUID:        RenderedString{Rendered: row.GUID},
 		Title:       RenderedString{Rendered: titleRendered},
-		Content:     ProtectedRendered{Rendered: rendered, Protected: false},
-		Excerpt:     excerpt,
-		PreviewLink: preview,
+		Content:     RenderedString{Rendered: rendered},
+		Excerpt:     RenderedString{Rendered: revisionExcerptRendered(row.Excerpt)},
+		Meta:        map[string]any{"footnotes": ""},
 		Links: map[string]any{
-			"self": []map[string]any{{
-				"href": fmt.Sprintf("%s/posts/%d/autosaves/%d", restRoot, parentID, row.ID),
-			}},
 			"parent": []map[string]any{{
 				"href": fmt.Sprintf("%s/posts/%d", restRoot, parentID),
 			}},
