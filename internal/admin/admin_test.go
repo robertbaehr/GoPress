@@ -738,6 +738,103 @@ func TestEditPostsStatusViews(t *testing.T) {
 	}
 }
 
+func TestEditPostsPerPageScreenOptions(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`id="screen-options-wrap"`,
+		`name="wp_screen_options[value]"`,
+		`name="wp_screen_options[option]"`,
+		`value="edit_post_per_page"`,
+		`id="edit_post_per_page"`,
+		`id="screenoptionnonce"`,
+		"Number of items per page",
+		"Screen Options",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected screen options %q in edit.php", want)
+		}
+	}
+
+	// Authenticated context for nonce + cleanup of usermeta.
+	recN := httptest.NewRecorder()
+	reqN := httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	reqN.AddCookie(ck)
+	pc := c.ForRequest(recN, reqN)
+	pc.AuthenticateRequest()
+	if pc.CurrentUser == nil {
+		t.Fatal("expected authenticated user")
+	}
+	uid := pc.CurrentUser.ID
+	prev := wp.GetUserOption(pc, "edit_post_per_page", uid)
+	t.Cleanup(func() {
+		if prev == "" {
+			_, _ = pc.Meta.DeleteMetadata(wp.MetaUser, uid, pc.DB.TablePrefix+"edit_post_per_page", "")
+		} else {
+			_ = wp.UpdateUserOption(pc, uid, "edit_post_per_page", prev)
+		}
+	})
+
+	form := url.Values{}
+	form.Set("wp_screen_options[option]", "edit_post_per_page")
+	form.Set("wp_screen_options[value]", "3")
+	form.Set("screenoptionnonce", pc.CreateNonce("screen-options-nonce"))
+	form.Set("screen-options-apply", "Apply")
+	req = httptest.NewRequest(http.MethodPost, "/wp-admin/edit.php", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("screen options POST status=%d body=%q", rec.Code, rec.Body.String())
+	}
+
+	// Fresh context so usermeta cache reflects the POST write.
+	recR := httptest.NewRecorder()
+	reqR := httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	reqR.AddCookie(ck)
+	rc := c.ForRequest(recR, reqR)
+	rc.AuthenticateRequest()
+	if got := wp.GetUserOption(rc, "edit_post_per_page", uid); got != "3" {
+		t.Fatalf("saved per_page=%q want 3", got)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("reload status=%d", rec.Code)
+	}
+	body = rec.Body.String()
+	if !strings.Contains(body, `id="edit_post_per_page"`) || !strings.Contains(body, `value="3"`) {
+		t.Fatalf("expected per_page=3 in screen options: %q", body[:min(900, len(body))])
+	}
+	// LIMIT 3 → at most 3 rows in #the-list (header row excluded; count <tr> in tbody).
+	listStart := strings.Index(body, `id="the-list"`)
+	if listStart < 0 {
+		t.Fatal("missing #the-list")
+	}
+	chunk := body[listStart:]
+	if end := strings.Index(chunk, "</tbody>"); end > 0 {
+		chunk = chunk[:end]
+	}
+	rows := strings.Count(chunk, "<tr")
+	if rows > 3 {
+		t.Fatalf("expected ≤3 post rows with per_page=3, got %d", rows)
+	}
+}
+
 func TestEditPostsTrashRestore(t *testing.T) {
 	c := bootOrSkip(t)
 	ck := loginCookie(t, c)
