@@ -78,3 +78,44 @@ func TestCreateNonceRoundTrip(t *testing.T) {
 		t.Fatalf("VerifyNonce=%d want 1 (session=%q)", got, c.SessionToken)
 	}
 }
+
+func TestNonceLifeFilterShortensTick(t *testing.T) {
+	// P2.99: nonce_life filter changes the tick window.
+	c := bootWP(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Skipf("admin unavailable: %v", err)
+	}
+	c.CurrentUser = user
+	c.SessionToken = "nonce-life-session"
+
+	const shortLife int64 = 3600 // 1 hour → half = 1800
+	seenAction := ""
+	c.Hooks.AddFilter("nonce_life", func(value any, args ...any) any {
+		if len(args) > 0 {
+			if s, ok := args[0].(string); ok {
+				seenAction = s
+			}
+		}
+		return shortLife
+	}, 10, 2)
+
+	now := int64(1801)
+	got := c.NonceTick(now, "update-post")
+	want := wp.NonceTickLife(now, "update-post", shortLife)
+	if got != want {
+		t.Fatalf("filtered tick=%d want=%d", got, want)
+	}
+	if seenAction != "update-post" {
+		t.Fatalf("filter action=%q", seenAction)
+	}
+	// Default (unfiltered) tick for same now differs when life is shortened.
+	if def := wp.NonceTick(now, "update-post"); def == got {
+		t.Fatalf("expected filtered tick to differ from default %d", def)
+	}
+
+	nonce := c.CreateNonce("update-post")
+	if got := c.VerifyNonce(nonce, "update-post"); got != 1 {
+		t.Fatalf("VerifyNonce=%d want 1", got)
+	}
+}

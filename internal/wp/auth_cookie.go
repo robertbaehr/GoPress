@@ -377,7 +377,8 @@ func (c *Context) AuthenticateRequest() {
 const DefaultNonceLife int64 = 86400
 
 // NonceTick returns the WordPress nonce tick (ceil(time / (nonce_life/2))).
-// Default nonce_life is one day (86400). action is reserved for nonce_life filters.
+// Default nonce_life is one day (86400). Does not apply the nonce_life filter;
+// use Context.NonceTick for filtered lifespan (P2.99).
 func NonceTick(now int64, action string) int64 {
 	return NonceTickLife(now, action, DefaultNonceLife)
 }
@@ -399,6 +400,37 @@ func NonceTickLife(now int64, action string, nonceLife int64) int64 {
 	return (now + half - 1) / half
 }
 
+// nonceLifeForAction applies the nonce_life filter (P2.99 / wp_nonce_tick).
+func (c *Context) nonceLifeForAction(action string) int64 {
+	life := DefaultNonceLife
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("nonce_life", life, action); v != nil {
+			switch t := v.(type) {
+			case int:
+				life = int64(t)
+			case int64:
+				life = t
+			case float64:
+				life = int64(t)
+			case string:
+				var n int64
+				if _, err := fmt.Sscan(t, &n); err == nil {
+					life = n
+				}
+			}
+		}
+	}
+	if life <= 0 {
+		life = DefaultNonceLife
+	}
+	return life
+}
+
+// NonceTick returns the filtered wp_nonce_tick for this context (P2.99).
+func (c *Context) NonceTick(now int64, action string) int64 {
+	return NonceTickLife(now, action, c.nonceLifeForAction(action))
+}
+
 // CreateNonce builds a wp_create_nonce value for the current user/session.
 func (c *Context) CreateNonce(action string) string {
 	if c == nil || c.Auth == nil {
@@ -410,7 +442,7 @@ func (c *Context) CreateNonce(action string) string {
 		uid = int(c.CurrentUser.ID)
 		token = c.SessionToken
 	}
-	tick := NonceTick(0, action)
+	tick := c.NonceTick(0, action)
 	return c.Auth.CreateNonce(tick, action, uid, token)
 }
 
@@ -426,7 +458,7 @@ func (c *Context) VerifyNonce(nonce, action string) int {
 		uid = int(c.CurrentUser.ID)
 		token = c.SessionToken
 	}
-	tick := NonceTick(0, action)
+	tick := c.NonceTick(0, action)
 	if c.Auth.CreateNonce(tick, action, uid, token) == nonce {
 		return 1
 	}
