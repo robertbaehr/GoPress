@@ -3,10 +3,14 @@ package admin_test
 import (
 	"net/http"
 	"net/http/httptest"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/robertbaehr/GoPress/internal/admin"
+	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
 func TestPrivacyStubScreens(t *testing.T) {
@@ -486,5 +490,36 @@ func TestPrivacyExportDownload(t *testing.T) {
 	}
 	if rec.Body.Len() == 0 {
 		t.Fatal("empty download body")
+	}
+}
+
+func TestExportPersonalDataDownloadExpired(t *testing.T) {
+	c := bootOrSkip(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	res, err := wp.GeneratePersonalDataExportFile(c, "expired-dl@example.com")
+	if err != nil {
+		t.Fatal(err)
+	}
+	past := time.Now().Add(-4 * 24 * time.Hour)
+	_ = os.Chtimes(res.HTMLPath, past, past)
+	_ = os.Chtimes(res.JSONPath, past, past)
+
+	href := wp.PersonalDataExportDownloadURL(filepath.Base(res.HTMLPath))
+	req := httptest.NewRequest(http.MethodGet, href, nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/export-personal-data.php") {
+		t.Fatal("download not handled")
+	}
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("expired download status=%d want 404 body=%s", rec.Code, rec.Body.String())
 	}
 }
