@@ -412,3 +412,40 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.90: more matching front header cases.
+- id: front-feed-atom-alt
+  role: anon
+  method: GET
+  path: /feed/atom
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-comments-feed-atom-alt
+  role: anon
+  method: GET
+  path: /comments/feed/atom
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-search-hello-world
+  role: anon
+  method: GET
+  path: /?s=Hello+world
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-date-2024-06-14
+  role: anon
+  method: GET
+  path: /2024/06/14/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
