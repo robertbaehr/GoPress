@@ -217,6 +217,12 @@
   task: P5.22
   api: internal
 
+- prefix: wp-includes/blocks.php
+  go: internal/blocks/hooks.go
+  status: partial
+  task: P5.23
+  api: exported
+
 - prefix: wp-includes/blocks/
   go: internal/blocks
   status: partial
