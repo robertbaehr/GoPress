@@ -36,6 +36,14 @@
   api: n/a
   notes: "P7.55 — post-quickdraft-save creates draft + paragraph wrap"
 
+# P7.56: Activity widget shows recent comments.
+- prefix: wp-admin/includes/dashboard.php#wp_dashboard_recent_comments
+  go: internal/admin/activity.go
+  status: partial
+  task: P7.56
+  api: n/a
+  notes: "P7.56 — dashboard Activity lists recent non-spam comments"
+
 # P7.40: secondary dashboard widgets (Activity, Quick Draft, Events/News).
 - prefix: wp-admin/includes/dashboard.php
   go: internal/admin/admin.go
