@@ -6,7 +6,7 @@ Short overview of what is implemented versus remaining. Detail lives in `PORTING
 
 | Area | Coverage |
 |---|---|
-| Runtime core | Boot, config, DB, hooks, object cache, options/meta, i18n stub, KSES, formatting (`wp_strip_all_tags`, `wp_validate_boolean`, `wp_slash`, `wp_is_numeric_array`, `wp_list_pluck`, `wp_array_slice_assoc`, `wp_unique_id`, …), shortcodes, transients, cron stub |
+| Runtime core | Boot, config, DB, hooks, object cache, options/meta, i18n stub, KSES, formatting (`wp_strip_all_tags`, `wp_validate_boolean`, `wp_slash`, `wp_is_numeric_array`, `wp_list_pluck`, `wp_array_slice_assoc`, `wp_unique_id`, `wp_normalize_path`, …), shortcodes, transients, cron stub |
 | Auth / users | Password hashes (phpass / `$wp$`), roles/caps, auth cookies, usermeta `session_tokens`, nonces, login/logout/lost-password/resetpass/postpass, `confirm_admin_email` stub, application passwords |
 | Front | Home + singular + attachment HTML (password form), rewrite, feeds (RSS/Atom/RDF + comments RSS/Atom), robots/sitemap, comments, oEmbed discovery + endpoint, 404/embed/search (`search.html` + form)/date/author/tag/category archives, pagination, admin bar; `home_url`/`site_url`/`admin_url` helpers; `?rest_route=` REST front door; `/favicon.ico`; `/rsd.xml` stub (`xmlrpc.php?rsd` stays 403) |
 | Blocks / themes | Parser/render, core block subset (incl. post-title/content/excerpt/date/author/terms, calendar/archives/latest-posts/latest-comments/tag-cloud/search), supports (typography/border/layout/shadow/position/elements/background/dimensions/CSS filter+duotone), style engine, theme.json + style variations, patterns + pattern categories, template hierarchy/parts (404 header/footer), bindings, block styles/variations, expanded Block Hooks (nested + ignored metadata) |
@@ -43,8 +43,9 @@ make check
 - `make diff` / `gopress-tools diff` reloads `tests/fixtures/site.sql` into `gopress_ref` and `gopress_go` unless `--skip-db`.
 - After e2e uploads or other writes, restart `gopress serve` (or omit `--skip-db`) so object-cache/options match the reloaded fixture. Stale process memory can make a green corpus look red.
 
-## Recent stack (through P7.46)
+## Recent stack (through P2.41)
 
+- P2.41 `wp_normalize_path` / `wp_is_stream`
 - P7.46 `update.php` 403 (plugin/theme upgrades gone)
 - P4.61 GET `/wp/v2/block-types/{namespace}/{name}` (+ namespace list)
 - P5.45 core/site-logo + site-title + site-tagline renderers
