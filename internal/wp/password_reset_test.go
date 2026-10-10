@@ -66,3 +66,55 @@ func TestRetrievePasswordSendsMail(t *testing.T) {
 		t.Fatalf("message missing reset link: %q", sent[0].Message)
 	}
 }
+
+func TestCheckPasswordResetKeyAndResetPassword(t *testing.T) {
+	c := cronBoot(t)
+	defer c.DB.Close()
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	origPass := user.Pass
+	t.Cleanup(func() {
+		if c.DB == nil {
+			return
+		}
+		q, args, err := c.DB.Prepare(
+			"UPDATE "+c.DB.Users()+" SET user_pass = %s, user_activation_key = %s WHERE ID = %d",
+			origPass, "", user.ID,
+		)
+		if err == nil {
+			_, _ = c.DB.Exec(q, args...)
+		}
+		if c.Users != nil && c.Users.Cache != nil {
+			c.Users.Cache.Delete("1", "users")
+		}
+	})
+
+	key, err := wp.GetPasswordResetKey(c, user)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got, err := wp.CheckPasswordResetKey(c, key, "admin")
+	if err != nil || got == nil || got.ID != user.ID {
+		t.Fatalf("check: user=%v err=%v", got, err)
+	}
+	if _, err := wp.CheckPasswordResetKey(c, "not-a-real-key", "admin"); err == nil || err.Error() != "invalid_key" {
+		t.Fatalf("expected invalid_key, got %v", err)
+	}
+
+	newPass := "GoPress-Reset-Pass-99"
+	if err := wp.ResetPassword(c, user, newPass); err != nil {
+		t.Fatal(err)
+	}
+	reloaded, err := c.GetUserBy("login", "admin")
+	if err != nil || reloaded == nil {
+		t.Fatalf("reload: %v", err)
+	}
+	if reloaded.ActivationKey != "" {
+		t.Fatalf("activation key should be cleared: %q", reloaded.ActivationKey)
+	}
+	if !wp.CheckPassword(newPass, reloaded.Pass) {
+		t.Fatalf("new password did not verify")
+	}
+}

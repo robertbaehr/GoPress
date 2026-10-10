@@ -313,6 +313,128 @@ func TestLostPasswordPOSTGeneratesResetKey(t *testing.T) {
 	}
 }
 
+func TestResetPassFlow(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	origPass := user.Pass
+	t.Cleanup(func() {
+		q, args, err := c.DB.Prepare(
+			"UPDATE "+c.DB.Users()+" SET user_pass = %s, user_activation_key = %s WHERE ID = %d",
+			origPass, "", user.ID,
+		)
+		if err == nil {
+			_, _ = c.DB.Exec(q, args...)
+		}
+		if c.Users != nil && c.Users.Cache != nil {
+			c.Users.Cache.Delete("1", "users")
+		}
+	})
+
+	key, err := wp.GetPasswordResetKey(c, user)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	// Step 1: GET with key+login → redirect and set cookie.
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?action=rp&key="+key+"&login=admin", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("step1 status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	var rpCookie *http.Cookie
+	for _, ck := range rec.Result().Cookies() {
+		if strings.HasPrefix(ck.Name, "wp-resetpass-") {
+			rpCookie = ck
+		}
+	}
+	if rpCookie == nil || !strings.Contains(rpCookie.Value, "admin:") {
+		t.Fatalf("expected resetpass cookie, got %#v", rec.Result().Cookies())
+	}
+
+	// Step 2: GET with cookie → form.
+	req = httptest.NewRequest(http.MethodGet, "/wp-login.php?action=rp", nil)
+	req.AddCookie(rpCookie)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("step2 status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `name="resetpassform"`) || !strings.Contains(body, `name="pass1"`) {
+		t.Fatalf("expected resetpass form: %q", body)
+	}
+	if !strings.Contains(body, `name="rp_key"`) {
+		t.Fatalf("expected rp_key hidden field: %q", body)
+	}
+
+	// Step 3: POST new password.
+	newPass := "GoPress-Login-Reset-42"
+	form := url.Values{}
+	form.Set("pass1", newPass)
+	form.Set("pass2", newPass)
+	form.Set("rp_key", key)
+	form.Set("action", "resetpass")
+	req = httptest.NewRequest(http.MethodPost, "/wp-login.php?action=resetpass", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(rpCookie)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("step3 status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "Your password has been reset") {
+		t.Fatalf("expected success message: %q", rec.Body.String())
+	}
+
+	reloaded, err := c.GetUserBy("login", "admin")
+	if err != nil || reloaded == nil {
+		t.Fatalf("reload: %v", err)
+	}
+	if !wp.CheckPassword(newPass, reloaded.Pass) {
+		t.Fatal("password was not updated")
+	}
+
+	// Can log in with the new password.
+	form = url.Values{}
+	form.Set("log", "admin")
+	form.Set("pwd", newPass)
+	form.Set("redirect_to", "/wp-admin/")
+	req = httptest.NewRequest(http.MethodPost, "/wp-login.php", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("login after reset status=%d body=%q", rec.Code, rec.Body.String())
+	}
+}
+
+func TestResetPassInvalidKeyRedirects(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?action=rp", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	loc := rec.Header().Get("Location")
+	if !strings.Contains(loc, "action=lostpassword") || !strings.Contains(loc, "error=invalidkey") {
+		t.Fatalf("Location=%q", loc)
+	}
+}
+
 func TestLogoutClearsCookies(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()

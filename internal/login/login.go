@@ -31,7 +31,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 	case http.MethodGet, http.MethodHead:
 		switch action {
 		case "lostpassword", "retrievepassword":
-			h.serveLostPassword(w, r, c, "")
+			h.serveLostPassword(w, r, c, lostPasswordErrorFromQuery(r))
+		case "rp", "resetpass":
+			h.serveResetPass(w, r, c)
 		case "logout":
 			h.serveLogout(w, r, c)
 		case "register":
@@ -51,6 +53,8 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 		switch action {
 		case "lostpassword", "retrievepassword":
 			h.serveLostPasswordPost(w, r, c)
+		case "rp", "resetpass":
+			h.serveResetPass(w, r, c)
 		case "logout":
 			h.serveLogout(w, r, c)
 		case "register":
@@ -262,6 +266,192 @@ func (h *Handler) serveCheckEmailConfirm(w http.ResponseWriter, r *http.Request,
 	b.WriteString(html.EscapeString(loginURL))
 	b.WriteString("\">Log in</a>\n")
 	b.WriteString("\t\t\t\t\t</p>\n")
+	b.WriteString("\t\t\t</div>\n")
+	b.WriteString("\t</body>\n")
+	b.WriteString("\t</html>\n")
+	writeLoginHTML(w, b.String(), false, c)
+}
+
+func lostPasswordErrorFromQuery(r *http.Request) string {
+	switch r.URL.Query().Get("error") {
+	case "invalidkey":
+		return "Your password reset link appears to be invalid. Please request a new link below."
+	case "expiredkey":
+		return "Your password reset link has expired. Please request a new link below."
+	default:
+		return ""
+	}
+}
+
+func resetPassCookieName(c *wp.Context) string {
+	h := "0"
+	if c != nil {
+		if ch := c.CookieHash(); ch != "" {
+			h = ch
+		}
+	}
+	return "wp-resetpass-" + h
+}
+
+func clearResetPassCookie(w http.ResponseWriter, c *wp.Context) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     resetPassCookieName(c),
+		Value:    " ",
+		Path:     "/wp-login.php",
+		MaxAge:   -1,
+		Expires:  time.Unix(0, 0).UTC(),
+		HttpOnly: true,
+	})
+}
+
+// serveResetPass handles action=rp / resetpass (P6.13).
+func (h *Handler) serveResetPass(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	cookieName := resetPassCookieName(c)
+
+	// First visit from email link: stash key in cookie and strip from URL.
+	if r.Method == http.MethodGet || r.Method == http.MethodHead {
+		key := r.URL.Query().Get("key")
+		loginName := r.URL.Query().Get("login")
+		if key != "" && loginName != "" {
+			http.SetCookie(w, &http.Cookie{
+				Name:     cookieName,
+				Value:    loginName + ":" + key,
+				Path:     "/wp-login.php",
+				HttpOnly: true,
+			})
+			target := home + "/wp-login.php?action=rp"
+			if home == "" {
+				target = "/wp-login.php?action=rp"
+			}
+			http.Redirect(w, r, target, http.StatusFound)
+			return
+		}
+	}
+
+	rpLogin, rpKey := "", ""
+	if ck, err := r.Cookie(cookieName); err == nil && ck != nil && strings.Contains(ck.Value, ":") {
+		parts := strings.SplitN(ck.Value, ":", 2)
+		rpLogin, rpKey = parts[0], parts[1]
+	}
+
+	var user *wp.User
+	var keyErr error
+	if rpLogin != "" && rpKey != "" {
+		user, keyErr = wp.CheckPasswordResetKey(c, rpKey, rpLogin)
+		if r.Method == http.MethodPost {
+			_ = r.ParseForm()
+			if r.FormValue("pass1") != "" && r.FormValue("rp_key") != rpKey {
+				user = nil
+				keyErr = fmt.Errorf("invalid_key")
+			}
+		}
+	} else {
+		keyErr = fmt.Errorf("invalid_key")
+	}
+
+	if user == nil || keyErr != nil {
+		clearResetPassCookie(w, c)
+		errQ := "invalidkey"
+		if keyErr != nil && keyErr.Error() == "expired_key" {
+			errQ = "expiredkey"
+		}
+		target := home + "/wp-login.php?action=lostpassword&error=" + errQ
+		if home == "" {
+			target = "/wp-login.php?action=lostpassword&error=" + errQ
+		}
+		http.Redirect(w, r, target, http.StatusFound)
+		return
+	}
+
+	formErr := ""
+	if r.Method == http.MethodPost {
+		_ = r.ParseForm()
+		pass1 := strings.TrimSpace(r.FormValue("pass1"))
+		pass2 := r.FormValue("pass2")
+		if pass1 == "" && r.FormValue("pass1") != "" {
+			formErr = "The password cannot be a space or all spaces."
+		} else if pass1 != "" && strings.TrimSpace(pass2) != pass1 {
+			formErr = "The passwords do not match."
+		} else if pass1 != "" {
+			if err := wp.ResetPassword(c, user, pass1); err != nil {
+				formErr = "Could not reset password."
+			} else {
+				clearResetPassCookie(w, c)
+				h.serveResetPassDone(w, r, c)
+				return
+			}
+		}
+	}
+
+	h.serveResetPassForm(w, r, c, rpLogin, rpKey, formErr)
+}
+
+func (h *Handler) serveResetPassDone(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "/")), "/")
+	blogname := optionString(c, "blogname", "GoPress")
+	loginURL := home + "/wp-login.php"
+	var b strings.Builder
+	writeLoginHead(&b, home, blogname, "Password Reset", "resetpass")
+	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Password Reset</h1>\n")
+	b.WriteString("\t\t\t<div id=\"login\">\n")
+	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
+	b.WriteString("<p class=\"message reset-pass\">Your password has been reset. <a href=\"")
+	b.WriteString(html.EscapeString(loginURL))
+	b.WriteString("\">Log in</a></p>\n")
+	b.WriteString("\t\t\t</div>\n")
+	b.WriteString("\t</body>\n")
+	b.WriteString("\t</html>\n")
+	writeLoginHTML(w, b.String(), false, c)
+}
+
+func (h *Handler) serveResetPassForm(w http.ResponseWriter, r *http.Request, c *wp.Context, rpLogin, rpKey, formErr string) {
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "/")), "/")
+	blogname := optionString(c, "blogname", "GoPress")
+	loginURL := home + "/wp-login.php"
+	actionURL := loginURL + "?action=resetpass"
+	hint := wp.GeneratePassword(16, false)
+
+	var b strings.Builder
+	writeLoginHead(&b, home, blogname, "Reset Password", "resetpass")
+	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Reset Password</h1>\n")
+	b.WriteString("\t\t\t<div id=\"login\">\n")
+	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
+	if formErr != "" {
+		b.WriteString("<div id=\"login_error\"><strong>Error:</strong> ")
+		b.WriteString(html.EscapeString(formErr))
+		b.WriteString("<br /></div>\n")
+	} else {
+		b.WriteString("<p class=\"message reset-pass\">Enter your new password below or generate one.</p>\n")
+	}
+	b.WriteString("\t\t<form name=\"resetpassform\" id=\"resetpassform\" action=\"")
+	b.WriteString(html.EscapeString(actionURL))
+	b.WriteString("\" method=\"post\" autocomplete=\"off\">\n")
+	b.WriteString("\t\t\t<input type=\"hidden\" id=\"user_login\" value=\"")
+	b.WriteString(html.EscapeString(rpLogin))
+	b.WriteString("\" autocomplete=\"off\" />\n")
+	b.WriteString("\t\t\t<p>\n")
+	b.WriteString("\t\t\t\t<label for=\"pass1\">New password</label>\n")
+	b.WriteString("\t\t\t\t<input type=\"password\" name=\"pass1\" id=\"pass1\" class=\"input password-input ltr\" size=\"24\" value=\"\" autocomplete=\"new-password\" spellcheck=\"false\" data-pw=\"")
+	b.WriteString(html.EscapeString(hint))
+	b.WriteString("\" />\n")
+	b.WriteString("\t\t\t</p>\n")
+	b.WriteString("\t\t\t<p>\n")
+	b.WriteString("\t\t\t\t<label for=\"pass2\">Confirm new password</label>\n")
+	b.WriteString("\t\t\t\t<input type=\"password\" name=\"pass2\" id=\"pass2\" class=\"input\" size=\"20\" value=\"\" autocomplete=\"new-password\" spellcheck=\"false\" />\n")
+	b.WriteString("\t\t\t</p>\n")
+	b.WriteString("\t\t\t<input type=\"hidden\" name=\"rp_key\" value=\"")
+	b.WriteString(html.EscapeString(rpKey))
+	b.WriteString("\" />\n")
+	b.WriteString("\t\t\t<p class=\"submit reset-pass-submit\">\n")
+	b.WriteString("\t\t\t\t<input type=\"submit\" name=\"wp-submit\" id=\"wp-submit\" class=\"button button-primary button-large\" value=\"Save Password\" />\n")
+	b.WriteString("\t\t\t</p>\n")
+	b.WriteString("\t\t</form>\n")
+	b.WriteString("\t\t<p id=\"nav\">\n")
+	b.WriteString("\t\t\t<a class=\"wp-login-log-in\" href=\"")
+	b.WriteString(html.EscapeString(loginURL))
+	b.WriteString("\">Log in</a>\n")
+	b.WriteString("\t\t</p>\n")
 	b.WriteString("\t\t\t</div>\n")
 	b.WriteString("\t</body>\n")
 	b.WriteString("\t</html>\n")

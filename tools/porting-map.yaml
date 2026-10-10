@@ -38,10 +38,16 @@
   task: ""
   api: n/a
 
+- prefix: wp-login.php#resetpass
+  go: internal/login/login.go
+  status: partial
+  task: P6.13
+  api: n/a
+
 - prefix: wp-login.php
   go: internal/login
   status: partial
-  task: P6.11
+  task: P6.13
   api: n/a
 
 - prefix: wp-cron.php
