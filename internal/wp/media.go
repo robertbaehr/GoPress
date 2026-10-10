@@ -10,6 +10,7 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 )
 
 // ImageSize is a registered intermediate image size (wp_get_additional_image_sizes subset).
@@ -93,35 +94,67 @@ func GetImageSize(c *Context, name string) (ImageSize, bool) {
 	return s, ok
 }
 
-// UploadDir describes the uploads base path and URL (wp_upload_dir subset).
+// UploadDir describes the uploads path and URL (wp_upload_dir / wp_get_upload_dir, P2.60).
 type UploadDir struct {
+	Path    string // basedir + subdir
+	URL     string // baseurl + subdir
+	Subdir  string // e.g. "/2024/06" when year/month folders on
 	Basedir string
 	Baseurl string
 	Error   string
 }
 
-// GetUploadDir returns the uploads basedir/baseurl for the site.
+// GetUploadDir returns wp_get_upload_dir() — upload_dir without creating directories.
 func GetUploadDir(c *Context) UploadDir {
+	return GetUploadDirAt(c, time.Time{})
+}
+
+// GetUploadDirAt is GetUploadDir with an explicit time for year/month subdir
+// (yyyy-mm-dd… or empty → now). Matches _wp_upload_dir( $time ).
+func GetUploadDirAt(c *Context, when time.Time) UploadDir {
 	home := strings.TrimRight(optionStringValue(c, "home", optionStringValue(c, "siteurl", "")), "/")
+	siteurl := strings.TrimRight(optionStringValue(c, "siteurl", home), "/")
 	abspath := ""
 	if c != nil && c.Config != nil {
 		abspath = strings.TrimRight(c.Config.ABSPATH, "/")
 	}
+	uploadPath := strings.TrimSpace(optionStringValue(c, "upload_path", ""))
 	basedir := abspath + "/wp-content/uploads"
-	if custom := strings.TrimSpace(optionStringValue(c, "upload_path", "")); custom != "" {
-		if strings.HasPrefix(custom, "/") {
-			basedir = custom
+	if uploadPath != "" && uploadPath != "wp-content/uploads" {
+		if strings.HasPrefix(uploadPath, "/") || (abspath != "" && strings.HasPrefix(uploadPath, abspath)) {
+			basedir = uploadPath
 		} else if abspath != "" {
-			basedir = abspath + "/" + custom
+			basedir = abspath + "/" + uploadPath
 		} else {
-			basedir = custom
+			basedir = uploadPath
 		}
 	}
 	baseurl := home + "/wp-content/uploads"
 	if custom := strings.TrimSpace(optionStringValue(c, "upload_url_path", "")); custom != "" {
 		baseurl = strings.TrimRight(custom, "/")
+	} else if uploadPath != "" && uploadPath != "wp-content/uploads" && basedir != abspath+"/wp-content/uploads" {
+		baseurl = strings.TrimRight(siteurl, "/") + "/" + strings.TrimPrefix(uploadPath, "/")
 	}
-	return UploadDir{Basedir: basedir, Baseurl: baseurl}
+
+	subdir := ""
+	useYearMonth := true
+	if c != nil && c.Options != nil {
+		useYearMonth = optionTruthy(c.Options.GetOption("uploads_use_yearmonth_folders", "1"))
+	}
+	if useYearMonth {
+		t := when
+		if t.IsZero() {
+			t = time.Now()
+		}
+		subdir = "/" + t.Format("2006") + "/" + t.Format("01")
+	}
+	return UploadDir{
+		Path:    basedir + subdir,
+		URL:     baseurl + subdir,
+		Subdir:  subdir,
+		Basedir: basedir,
+		Baseurl: baseurl,
+	}
 }
 
 // GetAttachedFile returns the filesystem path for an attachment (_wp_attached_file).
