@@ -1,0 +1,154 @@
+{
+    "vectors": [
+        {
+            "i": 0,
+            "input": "Hello World!",
+            "sanitize_title": "hello-world",
+            "sanitize_title_with_dashes": "hello-world"
+        },
+        {
+            "i": 1,
+            "input": "Foo & Bar",
+            "sanitize_title": "foo-bar",
+            "sanitize_title_with_dashes": "foo-bar"
+        },
+        {
+            "i": 2,
+            "input": "A---B",
+            "sanitize_title": "a-b",
+            "sanitize_title_with_dashes": "a-b"
+        },
+        {
+            "i": 3,
+            "input": "  Multiple   Spaces  ",
+            "sanitize_title": "multiple-spaces",
+            "sanitize_title_with_dashes": "multiple-spaces"
+        },
+        {
+            "i": 4,
+            "input": "under_score",
+            "sanitize_title": "under_score",
+            "sanitize_title_with_dashes": "under_score"
+        },
+        {
+            "i": 5,
+            "input": "Unicode — emdash",
+            "sanitize_title": "unicode-emdash",
+            "sanitize_title_with_dashes": "unicode-%e2%80%94-emdash"
+        },
+        {
+            "i": 6,
+            "input": "你好世界",
+            "sanitize_title": "%e4%bd%a0%e5%a5%bd%e4%b8%96%e7%95%8c",
+            "sanitize_title_with_dashes": "%e4%bd%a0%e5%a5%bd%e4%b8%96%e7%95%8c"
+        },
+        {
+            "i": 7,
+            "input": "100%",
+            "sanitize_title": "100",
+            "sanitize_title_with_dashes": "100"
+        },
+        {
+            "i": 8,
+            "input": "C++ Primer",
+            "sanitize_title": "c-primer",
+            "sanitize_title_with_dashes": "c-primer"
+        },
+        {
+            "i": 9,
+            "input": "a/b/c",
+            "sanitize_title": "a-b-c",
+            "sanitize_title_with_dashes": "abc"
+        },
+        {
+            "i": 10,
+            "input": "Title: Subtitle",
+            "sanitize_title": "title-subtitle",
+            "sanitize_title_with_dashes": "title-subtitle"
+        },
+        {
+            "i": 11,
+            "input": "Post #1 (Draft)",
+            "sanitize_title": "post-1-draft",
+            "sanitize_title_with_dashes": "post-1-draft"
+        },
+        {
+            "i": 12,
+            "input": "Let's dance!",
+            "sanitize_title": "lets-dance",
+            "sanitize_title_with_dashes": "lets-dance"
+        },
+        {
+            "i": 13,
+            "input": "foo_bar-baz",
+            "sanitize_title": "foo_bar-baz",
+            "sanitize_title_with_dashes": "foo_bar-baz"
+        },
+        {
+            "i": 14,
+            "input": "...leading dots...",
+            "sanitize_title": "leading-dots",
+            "sanitize_title_with_dashes": "leading-dots"
+        },
+        {
+            "i": 15,
+            "input": "MiXeD Case Title",
+            "sanitize_title": "mixed-case-title",
+            "sanitize_title_with_dashes": "mixed-case-title"
+        },
+        {
+            "i": 16,
+            "input": "Straße München",
+            "sanitize_title": "strase-munchen",
+            "sanitize_title_with_dashes": "stra%c3%9fe-m%c3%bcnchen"
+        },
+        {
+            "i": 17,
+            "input": "year/month/day archive",
+            "sanitize_title": "year-month-day-archive",
+            "sanitize_title_with_dashes": "yearmonthday-archive"
+        },
+        {
+            "i": 18,
+            "input": "email@example.com subject",
+            "sanitize_title": "emailexample-com-subject",
+            "sanitize_title_with_dashes": "emailexample-com-subject"
+        },
+        {
+            "i": 19,
+            "input": "tabs\tand spaces",
+            "sanitize_title": "tabsand-spaces",
+            "sanitize_title_with_dashes": "tabsand-spaces"
+        },
+        {
+            "i": 20,
+            "input": "O'Reilly & Sons",
+            "sanitize_title": "oreilly-sons",
+            "sanitize_title_with_dashes": "oreilly-sons"
+        },
+        {
+            "i": 21,
+            "input": "--double-dash--",
+            "sanitize_title": "double-dash",
+            "sanitize_title_with_dashes": "double-dash"
+        },
+        {
+            "i": 22,
+            "input": "café résumé naïve",
+            "sanitize_title": "cafe-resume-naive",
+            "sanitize_title_with_dashes": "caf%c3%a9-r%c3%a9sum%c3%a9-na%c3%afve"
+        },
+        {
+            "i": 23,
+            "input": "emoji 😀",
+            "sanitize_title": "emoji-%f0%9f%98%80",
+            "sanitize_title_with_dashes": "emoji-%f0%9f%98%80"
+        },
+        {
+            "i": 24,
+            "input": "http://example.com/foo bar",
+            "sanitize_title": "http-example-com-foo-bar",
+            "sanitize_title_with_dashes": "httpexample-comfoo-bar"
+        }
+    ]
+}

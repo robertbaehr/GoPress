@@ -144,4 +144,44 @@ foreach ( $fns as $fn ) {
 }
 
 gopress_golden_write( 'formatting/vectors.json', $out );
+
+// P2.24: dedicated sanitize_title golden covering title/slug edge cases.
+$title_cases = array(
+	'Hello World!',
+	'Foo & Bar',
+	'A---B',
+	'  Multiple   Spaces  ',
+	'under_score',
+	"Unicode \u{2014} emdash",
+	'你好世界',
+	'100%',
+	'C++ Primer',
+	'a/b/c',
+	'Title: Subtitle',
+	'Post #1 (Draft)',
+	"Let's dance!",
+	'foo_bar-baz',
+	'...leading dots...',
+	'MiXeD Case Title',
+	'Straße München',
+	'year/month/day archive',
+	'email@example.com subject',
+	"tabs\tand spaces",
+	"O'Reilly & Sons",
+	'--double-dash--',
+	'café résumé naïve',
+	'emoji 😀',
+	'http://example.com/foo bar',
+);
+$title_out = array( 'vectors' => array() );
+foreach ( $title_cases as $i => $s ) {
+	$title_out['vectors'][] = array(
+		'i'                          => $i,
+		'input'                      => $s,
+		'sanitize_title'             => function_exists( 'sanitize_title' ) ? sanitize_title( $s ) : '',
+		'sanitize_title_with_dashes' => function_exists( 'sanitize_title_with_dashes' ) ? sanitize_title_with_dashes( $s ) : '',
+	);
+}
+gopress_golden_write( 'formatting/sanitize_title.json', $title_out );
+
 WP_CLI::success( 'formatting dump complete' );

@@ -182,6 +182,27 @@ function gopress_golden_corpus() {
 		'<!--more-->',
 		'<!--nextpage-->',
 		'Hello <!--comment--> world',
+		// P2.24: extra sanitize_title-oriented title/slug edge cases.
+		'Hello World!',
+		'Foo & Bar',
+		'A---B',
+		'  Multiple   Spaces  ',
+		'under_score',
+		'Unicode — emdash',
+		'你好世界',
+		'100%',
+		'C++ Primer',
+		'a/b/c',
+		'Title: Subtitle',
+		'Post #1 (Draft)',
+		"Let's dance!",
+		'foo_bar-baz',
+		'...leading dots...',
+		'MiXeD Case Title',
+		'Straße München',
+		'year/month/day archive',
+		'email@example.com subject',
+		'tabs	and spaces',
 	);
 }
 
