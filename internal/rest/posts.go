@@ -196,7 +196,7 @@ func parsePage(r *http.Request) int {
 	return page
 }
 
-func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool) ([]Post, error) {
+func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool) ([]Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -207,12 +207,14 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool) 
 		postType = "post"
 	}
 	offset := (page - 1) * limit
-	rows, err := wp.GetPosts(c, wp.QueryArgs{
+	args := wp.QueryArgs{
 		PostType:     postType,
 		PostStatus:   "publish",
 		PostsPerPage: limit,
 		Offset:       offset,
-	})
+	}
+	applyStickyQueryFilter(c, postType, stickyFilter, &args)
+	rows, err := wp.GetPosts(c, args)
 	if err != nil {
 		return nil, err
 	}
@@ -225,28 +227,73 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool) 
 	return out, nil
 }
 
-func countPosts(c *wp.Context, postType string) (int, error) {
+func countPosts(c *wp.Context, postType string, stickyFilter *bool) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
 	if postType == "" {
 		postType = "post"
 	}
-	q, args, err := c.DB.Prepare(
-		"SELECT COUNT(*) AS total FROM "+c.DB.Posts()+" WHERE post_type = %s AND post_status = %s",
-		postType, "publish",
-	)
-	if err != nil {
-		return 0, err
+	args := wp.QueryArgs{
+		PostType:   postType,
+		PostStatus: "publish",
 	}
-	row, err := c.DB.GetRow(q, args...)
-	if err != nil {
-		return 0, err
+	applyStickyQueryFilter(c, postType, stickyFilter, &args)
+	return wp.CountPosts(c, args)
+}
+
+// applyStickyQueryFilter maps REST ?sticky=true|false onto post__in / post__not_in (P4.82).
+func applyStickyQueryFilter(c *wp.Context, postType string, stickyFilter *bool, args *wp.QueryArgs) {
+	if stickyFilter == nil || args == nil || postType != "post" {
+		return
 	}
-	if row == nil {
-		return 0, nil
+	ids := stickyIDList(c)
+	if *stickyFilter {
+		// Empty sticky set → no results (WP uses post__in = [0]).
+		args.PostIn = ids
+		if args.PostIn == nil {
+			args.PostIn = []int64{}
+		}
+		return
 	}
-	return int(asInt64(row["total"])), nil
+	if len(ids) > 0 {
+		args.PostNotIn = ids
+	}
+}
+
+func stickyIDList(c *wp.Context) []int64 {
+	m := stickyPostIDs(c)
+	if len(m) == 0 {
+		return nil
+	}
+	out := make([]int64, 0, len(m))
+	for id := range m {
+		if id > 0 {
+			out = append(out, id)
+		}
+	}
+	return out
+}
+
+// parseStickyQuery reads REST ?sticky= as an optional boolean.
+func parseStickyQuery(r *http.Request) *bool {
+	if r == nil {
+		return nil
+	}
+	raw := strings.TrimSpace(r.URL.Query().Get("sticky"))
+	if raw == "" {
+		return nil
+	}
+	switch strings.ToLower(raw) {
+	case "1", "true", "yes", "on":
+		v := true
+		return &v
+	case "0", "false", "no", "off":
+		v := false
+		return &v
+	default:
+		return nil
+	}
 }
 
 func getPostByID(c *wp.Context, postType string, id int64, edit bool) (*Post, error) {

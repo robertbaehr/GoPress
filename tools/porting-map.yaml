@@ -1262,6 +1262,21 @@
   task: P4.66
   api: n/a
 
+# P4.82: REST GET /wp/v2/posts?sticky=true|false collection filter.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#sticky
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.82
+  api: exported
+  notes: "P4.82 — sticky query → post__in / post__not_in via QueryArgs.PostIn/PostNotIn"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#get_items_sticky
+  go: internal/rest/posts_write.go
+  status: partial
+  task: P4.82
+  api: n/a
+  notes: "P4.82 — listPostCollection honors ?sticky="
+
 # P4.81: REST POST /wp/v2/media create fields (title, alt_text, caption, description, post).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-attachments-controller.php#create_item
   go: internal/rest/media.go
