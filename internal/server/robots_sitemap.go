@@ -10,17 +10,22 @@ import (
 )
 
 // serveRobotsTXT writes a WordPress-compatible robots.txt (do_robots subset).
+// When blog_public=0, emit Disallow: / (P3.44 search-engine visibility off).
 func serveRobotsTXT(w http.ResponseWriter, c *wp.Context) {
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	public := optionTruthy(c, "blog_public")
 	var b strings.Builder
 	b.WriteString("User-agent: *\n")
-	b.WriteString("Disallow: /wp-admin/\n")
-	b.WriteString("Allow: /wp-admin/admin-ajax.php\n")
-	if public && home != "" {
-		b.WriteString("\nSitemap: ")
-		b.WriteString(home)
-		b.WriteString("/wp-sitemap.xml\n")
+	if !public {
+		b.WriteString("Disallow: /\n")
+	} else {
+		b.WriteString("Disallow: /wp-admin/\n")
+		b.WriteString("Allow: /wp-admin/admin-ajax.php\n")
+		if home != "" {
+			b.WriteString("\nSitemap: ")
+			b.WriteString(home)
+			b.WriteString("/wp-sitemap.xml\n")
+		}
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	if home != "" {

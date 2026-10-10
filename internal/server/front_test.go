@@ -698,3 +698,26 @@ func TestFrontDateArchiveYearMonth(t *testing.T) {
 		t.Fatalf("empty year want 404, got %d body=%q", rec.Code, rec.Body.String()[:min(200, rec.Body.Len())])
 	}
 }
+
+func TestFrontRobotsNoindexWhenNotPublic(t *testing.T) {
+	c := testBoot(t)
+	orig := c.Options.GetOption("blog_public", "1")
+	t.Cleanup(func() { _, _ = c.Options.UpdateOption("blog_public", orig, "yes") })
+	if _, err := c.Options.UpdateOption("blog_public", "0", "yes"); err != nil {
+		t.Fatalf("UpdateOption: %v", err)
+	}
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `content='noindex, nofollow'`) {
+		t.Fatalf("expected noindex meta, got %q", body)
+	}
+	if strings.Contains(body, `max-image-preview:large`) {
+		t.Fatalf("unexpected max-image-preview when private: %q", body)
+	}
+}

@@ -585,7 +585,7 @@ func (f *Front) renderSearchBlockTemplate(w http.ResponseWriter, c *wp.Context, 
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
-	b.WriteString("<meta name='robots' content='max-image-preview:large' />\n")
+	b.WriteString(frontRobotsMetaTag(c))
 	b.WriteString("<title>")
 	b.WriteString(title)
 	b.WriteString("</title>\n")
@@ -700,7 +700,7 @@ func (f *Front) renderDateArchiveBlockTemplate(w http.ResponseWriter, c *wp.Cont
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
-	b.WriteString("<meta name='robots' content='max-image-preview:large' />\n")
+	b.WriteString(frontRobotsMetaTag(c))
 	b.WriteString("<title>")
 	b.WriteString(pageTitle)
 	b.WriteString("</title>\n")
@@ -814,7 +814,7 @@ func (f *Front) renderAuthorArchiveBlockTemplate(w http.ResponseWriter, c *wp.Co
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
-	b.WriteString("<meta name='robots' content='max-image-preview:large' />\n")
+	b.WriteString(frontRobotsMetaTag(c))
 	b.WriteString("<title>")
 	b.WriteString(pageTitle)
 	b.WriteString("</title>\n")
@@ -931,7 +931,7 @@ func (f *Front) renderCategoryArchiveBlockTemplate(w http.ResponseWriter, c *wp.
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
-	b.WriteString("<meta name='robots' content='max-image-preview:large' />\n")
+	b.WriteString(frontRobotsMetaTag(c))
 	b.WriteString("<title>")
 	b.WriteString(pageTitle)
 	b.WriteString("</title>\n")
@@ -1067,7 +1067,7 @@ func (f *Front) renderTagArchiveBlockTemplate(w http.ResponseWriter, c *wp.Conte
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
-	b.WriteString("<meta name='robots' content='max-image-preview:large' />\n")
+	b.WriteString(frontRobotsMetaTag(c))
 	b.WriteString("<title>")
 	b.WriteString(pageTitle)
 	b.WriteString("</title>\n")
@@ -1300,7 +1300,7 @@ func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, templa
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
-	b.WriteString("<meta name='robots' content='max-image-preview:large' />\n")
+	b.WriteString(frontRobotsMetaTag(c))
 	b.WriteString("<title>")
 	b.WriteString(html.EscapeString(blogname))
 	if paged > 1 {
@@ -1446,7 +1446,7 @@ func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
-	b.WriteString("<meta name='robots' content='max-image-preview:large' />\n")
+	b.WriteString(frontRobotsMetaTag(c))
 	b.WriteString("<title>")
 	b.WriteString(html.EscapeString(post.Title))
 	b.WriteString(" &#8211; ")
@@ -2504,7 +2504,7 @@ func (f *Front) render404BlockTemplate(w http.ResponseWriter, c *wp.Context, tem
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
-	b.WriteString("<meta name='robots' content='max-image-preview:large' />\n")
+	b.WriteString(frontRobotsMetaTag(c))
 	b.WriteString("<title>Page not found &#8211; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString("</title>\n")
@@ -2563,6 +2563,15 @@ func writeArchiveRelLinks(b *strings.Builder, c *wp.Context, home string) {
 	base := wp.ArchiveBaseFromRequest(c, home)
 	paged, maxPages := mainQueryPagination(c)
 	b.WriteString(wp.ArchiveRelPrevNextHTML(base, paged, maxPages))
+}
+
+// frontRobotsMetaTag returns the <meta name='robots' …> line (wp_robots subset, P3.44).
+// When blog_public=0: noindex, nofollow. Otherwise: max-image-preview:large.
+func frontRobotsMetaTag(c *wp.Context) string {
+	if !optionTruthy(c, "blog_public") {
+		return "<meta name='robots' content='noindex, nofollow' />\n"
+	}
+	return "<meta name='robots' content='max-image-preview:large' />\n"
 }
 
 // writeFrontHeadLinks emits wp_head discovery links (feeds, api.w.org, oEmbed, canonical).
