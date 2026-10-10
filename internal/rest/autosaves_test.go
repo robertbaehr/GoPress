@@ -192,8 +192,8 @@ func TestAutosavesOPTIONSContextHEAD(t *testing.T) {
 	if !strings.Contains(rec.Body.String(), "preview_link") {
 		t.Fatalf("OPTIONS schema missing preview_link: %s", rec.Body.String())
 	}
-	if !strings.Contains(rec.Header().Get("Allow"), "OPTIONS") {
-		t.Fatalf("Allow=%q", rec.Header().Get("Allow"))
+	if got := rec.Header().Get("Allow"); !strings.Contains(got, "GET") || !strings.Contains(got, "POST") {
+		t.Fatalf("Allow=%q", got)
 	}
 
 	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts/13/autosaves?context=nope", nil)

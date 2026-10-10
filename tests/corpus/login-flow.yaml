@@ -326,3 +326,13 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.106: resetpass form entry (no cookie → lostpassword redirect).
+- id: login-action-resetpass
+  role: anon
+  method: GET
+  path: /wp-login.php?action=resetpass
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
