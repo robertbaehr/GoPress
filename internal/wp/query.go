@@ -21,7 +21,9 @@ type QueryArgs struct {
 	Offset       int    // SQL OFFSET (ignored when PostsPerPage < 0)
 	P            int64  // post ID (query var "p")
 	Name         string // post slug (query var "name")
-	PageName     string // page slug (query var "pagename"); implies post_type=page when PostType unset
+	// NameIn is post_name__in (REST ?slug=, P4.89).
+	NameIn   []string
+	PageName string // page slug (query var "pagename"); implies post_type=page when PostType unset
 	// Search is the `s` query var (title/content LIKE, P3.21).
 	Search string
 	// Year / MonthNum / Day filter post_date for date archives (P3.22).
@@ -96,6 +98,10 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		where = append(where, clause)
 		vals = append(vals, cvals...)
 	}
+	if clause, cvals := postNameFilterSQL(args.Name, args.PageName, args.NameIn); clause != "" {
+		where = append(where, clause)
+		vals = append(vals, cvals...)
+	}
 	if term := strings.TrimSpace(args.Search); term != "" {
 		like := "%" + db.EscapeLike(term) + "%"
 		where = append(where, "(post_title LIKE %s OR post_excerpt LIKE %s OR post_content LIKE %s)")
@@ -135,6 +141,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "post_title", "p.post_title")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_excerpt", "p.post_excerpt")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_content", "p.post_content")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_name", "p.post_name")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_date", "p.post_date")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
@@ -165,6 +172,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "post_title", "p.post_title")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_excerpt", "p.post_excerpt")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_content", "p.post_content")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_name", "p.post_name")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_date", "p.post_date")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
@@ -195,6 +203,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "post_title", "p.post_title")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_excerpt", "p.post_excerpt")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_content", "p.post_content")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_name", "p.post_name")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_date", "p.post_date")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
@@ -223,6 +232,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "post_title", "p.post_title")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_excerpt", "p.post_excerpt")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_content", "p.post_content")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_name", "p.post_name")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_date", "p.post_date")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
@@ -302,14 +312,9 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 		where = append(where, "ID = %d")
 		vals = append(vals, args.P)
 	}
-	slug := args.Name
-	if slug == "" {
-		slug = args.PageName
-	}
-	if slug != "" {
-		slug = lastPathSegment(slug)
-		where = append(where, "post_name = %s")
-		vals = append(vals, slug)
+	if clause, cvals := postNameFilterSQL(args.Name, args.PageName, args.NameIn); clause != "" {
+		where = append(where, clause)
+		vals = append(vals, cvals...)
 	}
 	if term := strings.TrimSpace(args.Search); term != "" {
 		like := "%" + db.EscapeLike(term) + "%"
@@ -416,7 +421,7 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 	for _, row := range rows {
 		out = append(out, postFromRow(row))
 	}
-	if postType == "post" && (args.StickyFirst || args.IgnoreSticky) && args.P == 0 && args.Name == "" && args.PageName == "" && args.Tag == "" && args.Category == "" && len(args.CategoryIn) == 0 && len(args.TagIn) == 0 {
+	if postType == "post" && (args.StickyFirst || args.IgnoreSticky) && args.P == 0 && args.Name == "" && args.PageName == "" && len(args.NameIn) == 0 && args.Tag == "" && args.Category == "" && len(args.CategoryIn) == 0 && len(args.TagIn) == 0 {
 		out = applyStickyOrdering(c, out, args)
 	}
 	return out, nil
@@ -598,6 +603,40 @@ func postStatusSQL(status string, statuses []string) (string, []any) {
 
 // postInNotInSQL builds post__in / post__not_in fragments (P4.82).
 // Empty PostIn yields "ID IN (0)" so WP_Query returns no rows.
+// postNameFilterSQL builds post_name = / post_name IN (…) for name/pagename/NameIn (P4.89).
+func postNameFilterSQL(name, pageName string, nameIn []string) (string, []any) {
+	if len(nameIn) > 0 {
+		seen := map[string]bool{}
+		slugs := make([]string, 0, len(nameIn))
+		for _, s := range nameIn {
+			s = lastPathSegment(strings.TrimSpace(s))
+			if s == "" || seen[s] {
+				continue
+			}
+			seen[s] = true
+			slugs = append(slugs, s)
+		}
+		if len(slugs) == 0 {
+			return "post_name IN (%s)", []any{""}
+		}
+		ph := make([]string, len(slugs))
+		vals := make([]any, len(slugs))
+		for i, s := range slugs {
+			ph[i] = "%s"
+			vals[i] = s
+		}
+		return "post_name IN (" + strings.Join(ph, ",") + ")", vals
+	}
+	slug := name
+	if slug == "" {
+		slug = pageName
+	}
+	if slug == "" {
+		return "", nil
+	}
+	return "post_name = %s", []any{lastPathSegment(slug)}
+}
+
 func postInNotInSQL(col string, in, notIn []int64) (string, []any) {
 	if col == "" {
 		col = "ID"

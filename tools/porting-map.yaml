@@ -1547,6 +1547,28 @@
   api: exported
   notes: "P4.87 — QueryArgs.TagIn joins term relationships by post_tag term_id"
 
+# P4.89: REST GET /wp/v2/posts?slug= filter (post_name__in).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#slug
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.89
+  api: exported
+  notes: "P4.89 — ?slug= → QueryArgs.NameIn (comma/repeated)"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#slug-list
+  go: internal/rest/posts_write.go
+  status: partial
+  task: P4.89
+  api: exported
+  notes: "P4.89 — listPostCollection honors ?slug="
+
+- prefix: wp-includes/class-wp-query.php#post_name__in
+  go: internal/wp/query.go
+  status: partial
+  task: P4.89
+  api: exported
+  notes: "P4.89 — NameIn → post_name IN (...)"
+
 # P4.88: REST GET /wp/v2/posts?status= filter (editors may query non-publish).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#status
   go: internal/rest/posts.go

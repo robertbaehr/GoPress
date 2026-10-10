@@ -390,6 +390,72 @@ func TestPostsCategoriesQueryParam(t *testing.T) {
 	}
 }
 
+func TestPostsSlugQueryParam(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?slug=hello-world&per_page=10", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("slug=hello-world status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var hits []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &hits); err != nil {
+		t.Fatal(err)
+	}
+	if len(hits) != 1 {
+		t.Fatalf("expected 1 post for hello-world, got %d (%+v)", len(hits), hits)
+	}
+	if hits[0].Slug != "hello-world" {
+		t.Fatalf("expected slug hello-world, got %q", hits[0].Slug)
+	}
+	if rec.Header().Get("X-WP-Total") != "1" {
+		t.Fatalf("expected X-WP-Total=1, got %q", rec.Header().Get("X-WP-Total"))
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?slug=hello-world,fixture-post-01&per_page=10", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("slug multi status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var multi []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &multi); err != nil {
+		t.Fatal(err)
+	}
+	if len(multi) < 2 {
+		t.Fatalf("expected >=2 posts for multi slug, got %d", len(multi))
+	}
+	seen := map[string]bool{}
+	for _, p := range multi {
+		seen[p.Slug] = true
+	}
+	if !seen["hello-world"] || !seen["fixture-post-01"] {
+		t.Fatalf("expected both slugs in multi result: %+v", seen)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?slug=no-such-slug-xyz&per_page=10", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("slug miss status=%d", rec.Code)
+	}
+	var miss []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &miss); err != nil {
+		t.Fatal(err)
+	}
+	if len(miss) != 0 {
+		t.Fatalf("expected empty for unknown slug, got %+v", miss)
+	}
+	if rec.Header().Get("X-WP-Total") != "0" {
+		t.Fatalf("expected X-WP-Total=0, got %q", rec.Header().Get("X-WP-Total"))
+	}
+}
+
 func TestPostsAuthorQueryParam(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
