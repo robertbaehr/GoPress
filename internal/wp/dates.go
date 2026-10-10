@@ -137,6 +137,33 @@ func Timezone(c *Context) *time.Location {
 	return loc
 }
 
+// DateFormat returns the site date_format option (P2.97). Defaults to "F j, Y".
+func DateFormat(c *Context) string {
+	return optionStringValue(c, "date_format", "F j, Y")
+}
+
+// TimeFormat returns the site time_format option (P2.97). Defaults to "g:i a".
+func TimeFormat(c *Context) string {
+	return optionStringValue(c, "time_format", "g:i a")
+}
+
+// WPDateOption formats timestamp with the site date_format in the site timezone
+// (get_the_date / wp_date subset when format is empty, P2.97).
+func WPDateOption(c *Context, timestamp int64) string {
+	if timestamp == 0 {
+		timestamp = time.Now().Unix()
+	}
+	return WPDate(DateFormat(c), timestamp, Timezone(c))
+}
+
+// WPTimeOption formats timestamp with the site time_format in the site timezone (P2.97).
+func WPTimeOption(c *Context, timestamp int64) string {
+	if timestamp == 0 {
+		timestamp = time.Now().Unix()
+	}
+	return WPDate(TimeFormat(c), timestamp, Timezone(c))
+}
+
 // formatGMTOffsetTimezone mirrors wp_timezone_string's UTC± fallback.
 func formatGMTOffsetTimezone(offset float64) string {
 	hours := int(offset) // PHP (int) truncates toward zero
@@ -189,7 +216,7 @@ func parseUTCOffsetLocation(name string) (*time.Location, bool) {
 	return time.FixedZone(name, secs), true
 }
 
-// formatPHPDate implements a small PHP date() format subset used by golden vectors.
+// formatPHPDate implements a PHP date() format subset used by golden vectors + date_format (P2.97).
 func formatPHPDate(format string, t time.Time) string {
 	switch format {
 	case "U":
@@ -197,6 +224,8 @@ func formatPHPDate(format string, t time.Time) string {
 	case "c":
 		// PHP date('c') uses numeric offsets (+00:00), not Z.
 		return t.Format("2006-01-02T15:04:05-07:00")
+	case "r":
+		return t.Format(time.RFC1123Z)
 	case "Y-m-d H:i:s":
 		return t.Format(mysqlDateLayout)
 	case "F j, Y":
@@ -214,29 +243,114 @@ func formatPHPDate(format string, t time.Time) string {
 			}
 		case 'Y':
 			b.WriteString(t.Format("2006"))
+		case 'y':
+			b.WriteString(t.Format("06"))
 		case 'm':
 			b.WriteString(t.Format("01"))
+		case 'n':
+			b.WriteString(strconv.Itoa(int(t.Month())))
 		case 'd':
 			b.WriteString(t.Format("02"))
+		case 'j':
+			b.WriteString(strconv.Itoa(t.Day()))
+		case 'S':
+			b.WriteString(englishDayOrdinal(t.Day()))
 		case 'H':
 			b.WriteString(t.Format("15"))
+		case 'G':
+			b.WriteString(strconv.Itoa(t.Hour()))
+		case 'h':
+			b.WriteString(t.Format("03"))
+		case 'g':
+			h := t.Hour() % 12
+			if h == 0 {
+				h = 12
+			}
+			b.WriteString(strconv.Itoa(h))
 		case 'i':
 			b.WriteString(t.Format("04"))
 		case 's':
 			b.WriteString(t.Format("05"))
+		case 'a':
+			b.WriteString(strings.ToLower(t.Format("pm")))
+		case 'A':
+			b.WriteString(t.Format("PM"))
 		case 'F':
 			b.WriteString(t.Format("January"))
-		case 'j':
-			b.WriteString(strconv.Itoa(t.Day()))
+		case 'M':
+			b.WriteString(t.Format("Jan"))
+		case 'D':
+			b.WriteString(t.Format("Mon"))
+		case 'l':
+			b.WriteString(t.Format("Monday"))
+		case 'w':
+			b.WriteString(strconv.Itoa(int(t.Weekday())))
+		case 'N':
+			// ISO-8601 numeric day: Mon=1 … Sun=7.
+			n := int(t.Weekday())
+			if n == 0 {
+				n = 7
+			}
+			b.WriteString(strconv.Itoa(n))
+		case 'z':
+			b.WriteString(strconv.Itoa(t.YearDay() - 1))
+		case 't':
+			b.WriteString(strconv.Itoa(daysInMonth(t)))
+		case 'L':
+			if isLeap(t.Year()) {
+				b.WriteString("1")
+			} else {
+				b.WriteString("0")
+			}
+		case 'o':
+			yo, _ := t.ISOWeek()
+			b.WriteString(strconv.Itoa(yo))
+		case 'W':
+			_, w := t.ISOWeek()
+			b.WriteString(fmt.Sprintf("%02d", w))
+		case 'O':
+			b.WriteString(t.Format("-0700"))
+		case 'P':
+			b.WriteString(t.Format("-07:00"))
+		case 'T':
+			b.WriteString(t.Format("MST"))
+		case 'e':
+			b.WriteString(t.Location().String())
 		case 'U':
 			b.WriteString(strconv.FormatInt(t.Unix(), 10))
 		case 'c':
 			b.WriteString(t.Format("2006-01-02T15:04:05-07:00"))
+		case 'r':
+			b.WriteString(t.Format(time.RFC1123Z))
 		default:
 			b.WriteByte(ch)
 		}
 	}
 	return b.String()
+}
+
+func englishDayOrdinal(day int) string {
+	if day%100 >= 11 && day%100 <= 13 {
+		return "th"
+	}
+	switch day % 10 {
+	case 1:
+		return "st"
+	case 2:
+		return "nd"
+	case 3:
+		return "rd"
+	default:
+		return "th"
+	}
+}
+
+func daysInMonth(t time.Time) int {
+	return time.Date(t.Year(), t.Month()+1, 0, 0, 0, 0, 0, time.UTC).Day()
+}
+
+func isLeap(year int) bool {
+	return year%4 == 0 && (year%100 != 0 || year%400 == 0)
 }
 
 // HumanTimeDiff returns a human-readable difference between two Unix timestamps

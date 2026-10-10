@@ -1329,6 +1329,21 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P2.96 — Timezone wraps TimezoneString via loadTZ"
 
+# P2.97: date_format / time_format option helpers + expanded PHP date tokens.
+- prefix: wp-includes/general-template.php#get_the_date
+  go: internal/wp/dates.go
+  status: partial
+  task: P2.97
+  api: exported
+  notes: "P2.97 — DateFormat/TimeFormat/WPDateOption/WPTimeOption; formatPHPDate n/g/G/a/A/M/S/…"
+
+- prefix: wp-includes/functions.php#wp_date
+  go: internal/wp/dates.go
+  status: partial
+  task: P2.97
+  api: exported
+  notes: "P2.97 — expanded date() tokens for common date_format/time_format presets"
+
 # P2.46: array_key_first / array_key_last helpers.
 - prefix: wp-includes/compat.php#array_key_first
   go: internal/wp/array_key.go
