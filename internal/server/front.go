@@ -120,7 +120,9 @@ func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, templa
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>")
 	b.WriteString(html.EscapeString(blogname))
-	b.WriteString("</title>\n</head>\n<body class=\"")
+	b.WriteString("</title>\n")
+	b.WriteString(wp.EmojiHeadHTML()) // P3.12: wpemoji print scripts skipped
+	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(wp.BodyClassWithAdminBar(c, "wp-template")))
 	b.WriteString("\">\n")
 	b.WriteString(wp.AdminBarHTML(c))
@@ -145,7 +147,9 @@ func (f *Front) renderHomeShim(w http.ResponseWriter, c *wp.Context) {
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>")
 	b.WriteString(html.EscapeString(blogname))
-	b.WriteString("</title>\n</head>\n<body")
+	b.WriteString("</title>\n")
+	b.WriteString(wp.EmojiHeadHTML()) // P3.12: wpemoji print scripts skipped
+	b.WriteString("</head>\n<body")
 	if cls := wp.BodyClassWithAdminBar(c, ""); cls != "" {
 		b.WriteString(` class="`)
 		b.WriteString(html.EscapeString(cls))
