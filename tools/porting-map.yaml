@@ -771,10 +771,23 @@
   task: P5.22
   api: internal
 
+# P5.41: expand Block Hooks — nested anchors, set_ignored metadata, callbacks.
 - prefix: wp-includes/blocks.php
   go: internal/blocks/hooks.go
   status: partial
-  task: P5.23
+  task: P5.41
+  api: exported
+
+- prefix: wp-includes/blocks.php#set_ignored_hooked_blocks_metadata
+  go: internal/blocks/hooks.go
+  status: partial
+  task: P5.41
+  api: exported
+
+- prefix: wp-includes/blocks.php#apply_block_hooks_to_content
+  go: internal/blocks/hooks.go
+  status: partial
+  task: P5.41
   api: exported
 
 - prefix: wp-includes/blocks/details.php
