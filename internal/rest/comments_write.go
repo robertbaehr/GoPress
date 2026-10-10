@@ -212,6 +212,140 @@ func (s *Server) createComment(w http.ResponseWriter, r *http.Request, c *wp.Con
 	writeJSON(w, http.StatusCreated, cm)
 }
 
+// updateComment handles PUT/PATCH /wp/v2/comments/{id} for moderators (P4.64).
+func (s *Server) updateComment(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
+	if c == nil || c.CurrentUser == nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]any{
+			"code":    "rest_cannot_edit",
+			"message": "Sorry, you are not allowed to edit this comment.",
+			"data":    map[string]any{"status": 401},
+		})
+		return
+	}
+	if !c.UserCan(c.CurrentUser, "moderate_comments") {
+		writeJSON(w, http.StatusForbidden, map[string]any{
+			"code":    "rest_cannot_edit",
+			"message": "Sorry, you are not allowed to edit this comment.",
+			"data":    map[string]any{"status": 403},
+		})
+		return
+	}
+	existing, err := getCommentByIDAny(c, id)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_comment_query",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	if existing == nil {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"code":    "rest_comment_invalid_id",
+			"message": "Invalid comment ID.",
+			"data":    map[string]any{"status": 404},
+		})
+		return
+	}
+
+	body, err := decodeCommentWriteBody(r)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_invalid_json",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 400},
+		})
+		return
+	}
+
+	upd := wp.CommentUpdate{}
+	if body.Content != nil {
+		content := strings.TrimSpace(wp.KsesData(commentContentFromBody(body.Content)))
+		if content == "" {
+			writeJSON(w, http.StatusBadRequest, map[string]any{
+				"code":    "rest_comment_content_invalid",
+				"message": "Invalid comment content.",
+				"data":    map[string]any{"status": 400},
+			})
+			return
+		}
+		upd.Content = &content
+	}
+	if body.AuthorName != "" {
+		v := strings.TrimSpace(body.AuthorName)
+		upd.Author = &v
+	}
+	if body.AuthorEmail != "" {
+		v := strings.TrimSpace(body.AuthorEmail)
+		upd.AuthorEmail = &v
+	}
+	if body.AuthorURL != "" {
+		v := strings.TrimSpace(body.AuthorURL)
+		upd.AuthorURL = &v
+	}
+	if body.Parent > 0 {
+		p := body.Parent
+		upd.Parent = &p
+	}
+	if body.Post > 0 {
+		post, err := loadCommentablePost(c, body.Post)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{
+				"code":    "rest_comment_query",
+				"message": err.Error(),
+				"data":    map[string]any{"status": 500},
+			})
+			return
+		}
+		if post == nil {
+			writeJSON(w, http.StatusForbidden, map[string]any{
+				"code":    "rest_comment_invalid_post_id",
+				"message": "Invalid post ID.",
+				"data":    map[string]any{"status": 403},
+			})
+			return
+		}
+		pid := body.Post
+		upd.PostID = &pid
+	}
+	if body.Status != "" {
+		approved := commentStatusToApproved(body.Status)
+		upd.Approved = &approved
+	}
+
+	if err := wp.UpdateComment(c, id, upd); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_comment_failed_edit",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+
+	cm, err := getCommentByIDAny(c, id)
+	if err != nil || cm == nil {
+		writeJSON(w, http.StatusOK, map[string]any{"id": id})
+		return
+	}
+	w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
+	writeJSON(w, http.StatusOK, cm)
+}
+
+func commentStatusToApproved(status string) string {
+	switch strings.ToLower(strings.TrimSpace(status)) {
+	case "approved", "approve", "1":
+		return "1"
+	case "hold", "0":
+		return "0"
+	case "spam":
+		return "spam"
+	case "trash":
+		return "trash"
+	default:
+		return "0"
+	}
+}
+
 func decodeCommentWriteBody(r *http.Request) (commentWriteBody, error) {
 	defer r.Body.Close()
 	raw, err := io.ReadAll(io.LimitReader(r.Body, 1<<20))

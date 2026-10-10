@@ -31,14 +31,21 @@ type Comment struct {
 }
 
 func (s *Server) serveCommentItem(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
-	if r.Method != http.MethodGet {
+	switch r.Method {
+	case http.MethodGet:
+		s.getCommentItem(w, r, c, id)
+	case http.MethodPut, http.MethodPost, http.MethodPatch:
+		s.updateComment(w, r, c, id)
+	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
 			"data":    map[string]any{"status": 405},
 		})
-		return
 	}
+}
+
+func (s *Server) getCommentItem(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
 	comment, err := getCommentByID(c, id)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
@@ -55,6 +62,9 @@ func (s *Server) serveCommentItem(w http.ResponseWriter, r *http.Request, c *wp.
 			"data":    map[string]any{"status": 404},
 		})
 		return
+	}
+	if c != nil && c.CurrentUser != nil && c.UserCan(c.CurrentUser, "moderate_comments") {
+		w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
 	}
 	writeJSON(w, http.StatusOK, comment)
 }
