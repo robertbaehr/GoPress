@@ -10,14 +10,18 @@ import (
 
 // BlockPattern is a registered block pattern (subset of WP_Block_Patterns_Registry).
 type BlockPattern struct {
-	Name        string   `json:"name"`
-	Title       string   `json:"title"`
-	Description string   `json:"description,omitempty"`
-	Content     string   `json:"content"`
-	Categories  []string `json:"categories,omitempty"`
-	BlockTypes  []string `json:"blockTypes,omitempty"`
-	Inserter    bool     `json:"inserter"`
-	Source      string   `json:"source,omitempty"` // theme | wp_block
+	Name          string   `json:"name"`
+	Title         string   `json:"title"`
+	Description   string   `json:"description,omitempty"`
+	Content       string   `json:"content"`
+	Categories    []string `json:"categories,omitempty"`
+	Keywords      []string `json:"keywords,omitempty"`
+	BlockTypes    []string `json:"blockTypes,omitempty"`
+	PostTypes     []string `json:"postTypes,omitempty"`
+	TemplateTypes []string `json:"templateTypes,omitempty"`
+	Inserter      bool     `json:"inserter"`
+	Source        string   `json:"source,omitempty"` // theme | wp_block
+	ViewportWidth int      `json:"viewportWidth,omitempty"`
 }
 
 // PatternRegistry stores registered block patterns.
@@ -104,14 +108,18 @@ func LoadPatterns(c *Context) error {
 	}
 	for _, f := range files {
 		c.Patterns.RegisterBlockPattern(f.Slug, BlockPattern{
-			Name:        f.Slug,
-			Title:       f.Title,
-			Description: f.Description,
-			Content:     f.Content,
-			Categories:  f.Categories,
-			BlockTypes:  f.BlockTypes,
-			Inserter:    f.Inserter,
-			Source:      "theme",
+			Name:          f.Slug,
+			Title:         f.Title,
+			Description:   f.Description,
+			Content:       f.Content,
+			Categories:    f.Categories,
+			Keywords:      f.Keywords,
+			BlockTypes:    f.BlockTypes,
+			PostTypes:     f.PostTypes,
+			TemplateTypes: f.TemplateTypes,
+			Inserter:      f.Inserter,
+			Source:        "theme",
+			ViewportWidth: f.ViewportWidth,
 		})
 	}
 	if err := loadDBBlockPatterns(c); err != nil {

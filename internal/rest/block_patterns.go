@@ -7,7 +7,7 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// RESTBlockPattern is a wp/v2/block-patterns/patterns item (P5.38).
+// RESTBlockPattern is a wp/v2/block-patterns/patterns item (P5.38 / P4.106).
 // Field names follow the WP REST schema (snake_case).
 type RESTBlockPattern struct {
 	Name          string   `json:"name"`
@@ -16,7 +16,10 @@ type RESTBlockPattern struct {
 	Description   string   `json:"description,omitempty"`
 	Inserter      bool     `json:"inserter"`
 	Categories    []string `json:"categories,omitempty"`
+	Keywords      []string `json:"keywords,omitempty"`
 	BlockTypes    []string `json:"block_types,omitempty"`
+	PostTypes     []string `json:"post_types,omitempty"`
+	TemplateTypes []string `json:"template_types,omitempty"`
 	Source        string   `json:"source,omitempty"`
 	ViewportWidth int      `json:"viewport_width,omitempty"`
 }
@@ -29,7 +32,8 @@ var patternCategoryMigration = map[string]string{
 }
 
 func (s *Server) serveBlockPatternCategories(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	if r.Method != http.MethodGet {
+	// P4.106: accept HEAD like other collection routes.
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
@@ -56,12 +60,17 @@ func (s *Server) serveBlockPatternCategories(w http.ResponseWriter, r *http.Requ
 	cats := c.PatternCategories.All()
 	out := make([]wp.PatternCategory, 0, len(cats))
 	out = append(out, cats...)
-	w.Header().Set("Allow", "GET")
+	w.Header().Set("Allow", "GET, HEAD")
+	if r.Method == http.MethodHead {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 	writeJSON(w, http.StatusOK, out)
 }
 
 func (s *Server) serveBlockPatterns(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	if r.Method != http.MethodGet {
+	// P4.106: accept HEAD like WP_REST_Block_Patterns_Controller.
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
@@ -88,7 +97,11 @@ func (s *Server) serveBlockPatterns(w http.ResponseWriter, r *http.Request, c *w
 		out = append(out, restPatternFromWP(p))
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].Name < out[j].Name })
-	w.Header().Set("Allow", "GET")
+	w.Header().Set("Allow", "GET, HEAD")
+	if r.Method == http.MethodHead {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 	writeJSON(w, http.StatusOK, out)
 }
 
@@ -99,14 +112,18 @@ func restPatternFromWP(p wp.BlockPattern) RESTBlockPattern {
 		src = "theme"
 	}
 	return RESTBlockPattern{
-		Name:        p.Name,
-		Title:       p.Title,
-		Content:     p.Content,
-		Description: p.Description,
-		Inserter:    p.Inserter,
-		Categories:  cats,
-		BlockTypes:  p.BlockTypes,
-		Source:      src,
+		Name:          p.Name,
+		Title:         p.Title,
+		Content:       p.Content,
+		Description:   p.Description,
+		Inserter:      p.Inserter,
+		Categories:    cats,
+		Keywords:      p.Keywords,
+		BlockTypes:    p.BlockTypes,
+		PostTypes:     p.PostTypes,
+		TemplateTypes: p.TemplateTypes,
+		Source:        src,
+		ViewportWidth: p.ViewportWidth,
 	}
 }
 
