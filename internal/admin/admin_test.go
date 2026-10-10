@@ -2,6 +2,7 @@ package admin_test
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -483,11 +484,68 @@ func TestUserNewFormStub(t *testing.T) {
 		`name="user_login"`,
 		`name="email"`,
 		`name="role"`,
+		`name="pass1"`,
 		"Add New User",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("missing %q in %q", want, body)
 		}
+	}
+}
+
+func TestUserNewCreatePOST(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+
+	login := "newuser_p764"
+	form := url.Values{}
+	form.Set("action", "createuser")
+	form.Set("user_login", login)
+	form.Set("email", login+"@example.com")
+	form.Set("first_name", "New")
+	form.Set("last_name", "User")
+	form.Set("pass1", "SecretPass1!")
+	form.Set("role", "author")
+	req := httptest.NewRequest(http.MethodPost, "/wp-admin/user-new.php", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	loc := rec.Header().Get("Location")
+	if !strings.Contains(loc, "/wp-admin/users.php?update=add&id=") {
+		t.Fatalf("Location=%q", loc)
+	}
+	u, err := c.GetUserBy("login", login)
+	if err != nil || u == nil {
+		t.Fatalf("created user missing: %v", err)
+	}
+	t.Cleanup(func() { _ = c.DeleteUser(u.ID, nil) })
+	if u.Email != login+"@example.com" {
+		t.Fatalf("email=%q", u.Email)
+	}
+	fn := metaString(c, u.ID, "first_name")
+	ln := metaString(c, u.ID, "last_name")
+	if fn != "New" || ln != "User" {
+		t.Fatalf("names first=%q last=%q", fn, ln)
+	}
+}
+
+func metaString(c *wp.Context, userID int64, key string) string {
+	if c == nil || c.Meta == nil {
+		return ""
+	}
+	v := c.Meta.GetMetadata(wp.MetaUser, userID, key, true)
+	switch t := v.(type) {
+	case string:
+		return t
+	case []byte:
+		return string(t)
+	default:
+		return strings.TrimSpace(strings.TrimPrefix(strings.TrimSuffix(fmt.Sprint(v), "<nil>"), "<nil>"))
 	}
 }
 

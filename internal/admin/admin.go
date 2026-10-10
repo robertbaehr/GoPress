@@ -3568,8 +3568,60 @@ func (h *Handler) serveUserEdit(w http.ResponseWriter, r *http.Request, c *wp.Co
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveUserNew renders the Add New User form stub (P7.21). POST create is not implemented.
+// serveUserNew renders Add New User (P7.21) and handles POST createuser (P7.64).
 func (h *Handler) serveUserNew(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "create_users") {
+		http.Error(w, "Sorry, you are not allowed to create users.\n", http.StatusForbidden)
+		return
+	}
+	errMsg := ""
+	loginVal, emailVal, firstVal, lastVal, urlVal, roleVal := "", "", "", "", "", "subscriber"
+	if r.Method == http.MethodPost {
+		_ = r.ParseForm()
+		if strings.TrimSpace(r.Form.Get("action")) == "createuser" {
+			loginVal = strings.TrimSpace(r.Form.Get("user_login"))
+			emailVal = strings.TrimSpace(r.Form.Get("email"))
+			firstVal = strings.TrimSpace(r.Form.Get("first_name"))
+			lastVal = strings.TrimSpace(r.Form.Get("last_name"))
+			urlVal = strings.TrimSpace(r.Form.Get("url"))
+			roleVal = strings.TrimSpace(r.Form.Get("role"))
+			if roleVal == "" {
+				roleVal = "subscriber"
+			}
+			pass := strings.TrimSpace(r.Form.Get("pass1"))
+			if pass == "" {
+				pass = strings.TrimSpace(r.Form.Get("password"))
+			}
+			if loginVal == "" || emailVal == "" {
+				errMsg = "Please enter a username and a valid email address."
+			} else {
+				display := strings.TrimSpace(firstVal + " " + lastVal)
+				id, err := c.InsertUser(wp.UserInsert{
+					Login:       loginVal,
+					Pass:        pass,
+					Email:       emailVal,
+					URL:         urlVal,
+					DisplayName: display,
+					Role:        roleVal,
+				})
+				if err != nil {
+					errMsg = err.Error()
+				} else {
+					if c.Meta != nil {
+						if firstVal != "" {
+							_, _, _ = c.Meta.AddMetadata(wp.MetaUser, id, "first_name", firstVal, true)
+						}
+						if lastVal != "" {
+							_, _, _ = c.Meta.AddMetadata(wp.MetaUser, id, "last_name", lastVal, true)
+						}
+					}
+					http.Redirect(w, r, "/wp-admin/users.php?update=add&id="+strconv.FormatInt(id, 10), http.StatusFound)
+					return
+				}
+			}
+		}
+	}
+
 	blogname := optionString(c, "blogname", "GoPress")
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
@@ -3580,31 +3632,60 @@ func (h *Handler) serveUserNew(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<h1>Add New User</h1>\n")
 	b.WriteString("<p>Create a brand new user and add them to this site.</p>\n")
-	b.WriteString("<form method=\"post\" name=\"createuser\" id=\"createuser\" class=\"validate\" novalidate=\"novalidate\">\n")
+	if errMsg != "" {
+		b.WriteString("<div id=\"message\" class=\"error notice is-dismissible\"><p>")
+		b.WriteString(html.EscapeString(errMsg))
+		b.WriteString("</p></div>\n")
+	}
+	b.WriteString("<form method=\"post\" name=\"createuser\" id=\"createuser\" class=\"validate\" novalidate=\"novalidate\" action=\"/wp-admin/user-new.php\">\n")
 	b.WriteString("<input name=\"action\" type=\"hidden\" value=\"createuser\" />\n")
 	b.WriteString("<table class=\"form-table\" role=\"presentation\">\n")
 	b.WriteString("<tr class=\"form-field form-required\"><th scope=\"row\"><label for=\"user_login\">Username <span class=\"description\">(required)</span></label></th>")
-	b.WriteString("<td><input name=\"user_login\" type=\"text\" id=\"user_login\" class=\"ltr\" value=\"\" aria-required=\"true\" maxlength=\"60\" /></td></tr>\n")
+	b.WriteString("<td><input name=\"user_login\" type=\"text\" id=\"user_login\" class=\"ltr\" value=\"")
+	b.WriteString(html.EscapeString(loginVal))
+	b.WriteString("\" aria-required=\"true\" maxlength=\"60\" /></td></tr>\n")
 	b.WriteString("<tr class=\"form-field form-required\"><th scope=\"row\"><label for=\"email\">Email <span class=\"description\">(required)</span></label></th>")
-	b.WriteString("<td><input name=\"email\" type=\"email\" id=\"email\" value=\"\" /></td></tr>\n")
+	b.WriteString("<td><input name=\"email\" type=\"email\" id=\"email\" value=\"")
+	b.WriteString(html.EscapeString(emailVal))
+	b.WriteString("\" /></td></tr>\n")
 	b.WriteString("<tr class=\"form-field\"><th scope=\"row\"><label for=\"first_name\">First Name</label></th>")
-	b.WriteString("<td><input name=\"first_name\" type=\"text\" id=\"first_name\" value=\"\" /></td></tr>\n")
+	b.WriteString("<td><input name=\"first_name\" type=\"text\" id=\"first_name\" value=\"")
+	b.WriteString(html.EscapeString(firstVal))
+	b.WriteString("\" /></td></tr>\n")
 	b.WriteString("<tr class=\"form-field\"><th scope=\"row\"><label for=\"last_name\">Last Name</label></th>")
-	b.WriteString("<td><input name=\"last_name\" type=\"text\" id=\"last_name\" value=\"\" /></td></tr>\n")
+	b.WriteString("<td><input name=\"last_name\" type=\"text\" id=\"last_name\" value=\"")
+	b.WriteString(html.EscapeString(lastVal))
+	b.WriteString("\" /></td></tr>\n")
 	b.WriteString("<tr class=\"form-field\"><th scope=\"row\"><label for=\"url\">Website</label></th>")
-	b.WriteString("<td><input name=\"url\" type=\"url\" id=\"url\" class=\"code\" value=\"\" /></td></tr>\n")
+	b.WriteString("<td><input name=\"url\" type=\"url\" id=\"url\" class=\"code\" value=\"")
+	b.WriteString(html.EscapeString(urlVal))
+	b.WriteString("\" /></td></tr>\n")
+	b.WriteString("<tr class=\"form-field form-required user-pass1-wrap\"><th scope=\"row\"><label for=\"pass1\">Password</label></th>")
+	b.WriteString("<td><input name=\"pass1\" type=\"password\" id=\"pass1\" class=\"regular-text\" autocomplete=\"new-password\" spellcheck=\"false\" value=\"\" /></td></tr>\n")
 	b.WriteString("<tr class=\"form-field\"><th scope=\"row\"><label for=\"role\">Role</label></th>")
 	b.WriteString("<td><select name=\"role\" id=\"role\">")
-	b.WriteString("<option selected=\"selected\" value=\"subscriber\">Subscriber</option>")
-	b.WriteString("<option value=\"contributor\">Contributor</option>")
-	b.WriteString("<option value=\"author\">Author</option>")
-	b.WriteString("<option value=\"editor\">Editor</option>")
-	b.WriteString("<option value=\"administrator\">Administrator</option>")
+	for _, opt := range []struct{ v, l string }{
+		{"subscriber", "Subscriber"},
+		{"contributor", "Contributor"},
+		{"author", "Author"},
+		{"editor", "Editor"},
+		{"administrator", "Administrator"},
+	} {
+		b.WriteString("<option value=\"")
+		b.WriteString(opt.v)
+		b.WriteString("\"")
+		if roleVal == opt.v {
+			b.WriteString(" selected=\"selected\"")
+		}
+		b.WriteString(">")
+		b.WriteString(opt.l)
+		b.WriteString("</option>")
+	}
 	b.WriteString("</select></td></tr>\n")
 	b.WriteString("</table>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"createuser\" id=\"createusersub\" class=\"button button-primary\" value=\"Add New User\" /></p>\n")
 	b.WriteString("</form>\n")
-	b.WriteString("<p class=\"description\">User creation via this form is not yet implemented in GoPress.</p>\n")
+	b.WriteString("<p class=\"description\">GoPress user-new create (P7.64).</p>\n")
 	b.WriteString("</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
