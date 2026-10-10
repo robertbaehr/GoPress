@@ -507,3 +507,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.82b: replacements for admin cookie-meta mismatches.
+- id: rest-posts-orderby-id
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?per_page=1&orderby=id&order=asc
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-taxonomies
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/taxonomies
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-comments-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/comments/1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
