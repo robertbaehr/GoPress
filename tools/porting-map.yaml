@@ -1072,6 +1072,21 @@
   api: n/a
   notes: "P2.67 — ServeCron sets Scope.IsCron (DOING_CRON)"
 
+# P2.69: wp_get_environment_type (local|development|staging|production).
+- prefix: wp-includes/load.php#wp_get_environment_type
+  go: internal/wp/environment_type.go
+  status: partial
+  task: P2.69
+  api: exported
+  notes: "P2.69 — GetEnvironmentType from Config/WP_ENVIRONMENT_TYPE; invalid→production"
+
+- prefix: wp-includes/load.php#wp_get_environment_type#config
+  go: internal/config/config.go
+  status: partial
+  task: P2.69
+  api: exported
+  notes: "P2.69 — EnvironmentType via define/GOPRESS_/WP_ENVIRONMENT_TYPE env"
+
 # P2.68: is_login (wp-login.php request).
 - prefix: wp-includes/load.php#is_login
   go: internal/wp/is_login.go

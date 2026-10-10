@@ -256,6 +256,10 @@ func applyEnv(cfg *Config) {
 		"WORDPRESS_DB_PASSWORD":    &cfg.DBPassword,
 		"WORDPRESS_DB_HOST":        &cfg.DBHost,
 	}
+	// P2.69: WP_ENVIRONMENT_TYPE first; GOPRESS_ENVIRONMENT_TYPE in envStr wins after.
+	if v, ok := os.LookupEnv("WP_ENVIRONMENT_TYPE"); ok && v != "" {
+		cfg.EnvironmentType = v
+	}
 	for k, ptr := range envStr {
 		if v, ok := os.LookupEnv(k); ok && v != "" {
 			*ptr = v
