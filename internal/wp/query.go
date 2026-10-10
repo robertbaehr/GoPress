@@ -56,7 +56,7 @@ type QueryArgs struct {
 	// Values are MySQL datetimes "2006-01-02 15:04:05".
 	DateAfter  string
 	DateBefore string
-	// ModifiedAfter / ModifiedBefore filter post_modified (REST ?modified_after=/?modified_before=, P4.91).
+	// ModifiedAfter / ModifiedBefore filter post_modified (REST ?modified_after=/?modified_before=, P4.95).
 	ModifiedAfter  string
 	ModifiedBefore string
 	// ParentIn is post_parent__in (REST ?parent= for hierarchical types, P4.93).

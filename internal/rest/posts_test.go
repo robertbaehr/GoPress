@@ -760,6 +760,96 @@ func TestPostsAfterBeforeQueryParams(t *testing.T) {
 	}
 }
 
+func TestPostsModifiedAfterBeforeQueryParams(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	// Fixture publish posts share post_modified ≈ 2024-06-15; bump one earlier
+	// so modified_before can retain a non-empty set.
+	uq, uargs, err := c.DB.Prepare(
+		"UPDATE "+c.DB.Posts()+" SET post_modified = %s, post_modified_gmt = %s WHERE ID = %d",
+		"2024-01-15 12:00:00", "2024-01-15 12:00:00", int64(13),
+	)
+	if err != nil {
+		t.Fatalf("prepare bump modified: %v", err)
+	}
+	if _, err := c.DB.Exec(uq, uargs...); err != nil {
+		t.Fatalf("bump modified: %v", err)
+	}
+	t.Cleanup(func() {
+		uq, uargs, _ := c.DB.Prepare(
+			"UPDATE "+c.DB.Posts()+" SET post_modified = %s, post_modified_gmt = %s WHERE ID = %d",
+			"2024-06-15 12:00:00", "2024-06-15 12:00:00", int64(13),
+		)
+		_, _ = c.DB.Exec(uq, uargs...)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?modified_after=2024-06-01T00:00:00&per_page=100", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("modified_after status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var afterHits []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &afterHits); err != nil {
+		t.Fatal(err)
+	}
+	if len(afterHits) == 0 {
+		t.Fatal("expected posts modified after 2024-06-01")
+	}
+	for _, p := range afterHits {
+		if p.ID == 13 {
+			t.Fatalf("post 13 modified Jan should be excluded by modified_after")
+		}
+		if p.Modified != "" && p.Modified < "2024-06-01T00:00:00" {
+			t.Fatalf("post %d modified %q before bound", p.ID, p.Modified)
+		}
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?modified_before=2024-02-01T00:00:00&per_page=100", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("modified_before status=%d", rec.Code)
+	}
+	var beforeHits []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &beforeHits); err != nil {
+		t.Fatal(err)
+	}
+	if len(beforeHits) == 0 {
+		t.Fatal("expected posts modified before 2024-02-01")
+	}
+	found13 := false
+	for _, p := range beforeHits {
+		if p.ID == 13 {
+			found13 = true
+		}
+		if p.Modified != "" && p.Modified > "2024-02-01T00:00:00" {
+			t.Fatalf("post %d modified %q after before bound", p.ID, p.Modified)
+		}
+	}
+	if !found13 {
+		t.Fatal("expected fixture post 13 in modified_before set")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?modified_after=2099-01-01T00:00:00&per_page=10", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	var miss []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &miss); err != nil {
+		t.Fatal(err)
+	}
+	if len(miss) != 0 {
+		t.Fatalf("expected empty for future modified_after, got %d", len(miss))
+	}
+	if rec.Header().Get("X-WP-Total") != "0" {
+		t.Fatalf("expected X-WP-Total=0, got %q", rec.Header().Get("X-WP-Total"))
+	}
+}
+
 func TestPagesParentQueryParam(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
