@@ -318,10 +318,10 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		redirectTo = defaultLoginAdminRedirect(c, home)
 	}
 	loginURL := home + "/wp-login.php"
-	reauth := r.URL.Query().Get("reauth") == "1"
+	reauth := isReauth(r)
 	interim := isInterimLogin(r)
 
-	// Logged-in users skip the form unless reauth=1 forces re-authentication (P6.18).
+	// Logged-in users skip the form unless reauth forces re-authentication (P6.18 / P6.37).
 	if c != nil && c.CurrentUser != nil && !reauth && !interim && errMsg == "" {
 		redirectTo = adjustDefaultAdminLoginRedirect(c, redirectTo, home, c.CurrentUser)
 		http.Redirect(w, r, sanitizeRedirect(redirectTo, home), http.StatusFound)
@@ -463,7 +463,8 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 
 	writeLoginHTML(w, r, b.String(), reauth, c)
 	if reauth && c != nil {
-		c.CurrentUser = nil
+		// P6.37: clear via SetCurrentUser (wp_set_current_user(0)).
+		wp.SetCurrentUser(c, 0)
 		c.SessionToken = ""
 	}
 }
@@ -1032,6 +1033,10 @@ func (h *Handler) servePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		if interim {
 			q.Set("interim-login", "1")
 		}
+		// P6.37: keep reauth on failed POST so cookies stay cleared on redisplay.
+		if isReauth(r) {
+			q.Set("reauth", "1")
+		}
 		r.URL.RawQuery = q.Encode()
 		home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 		lostURL := home + "/wp-login.php?action=lostpassword"
@@ -1234,6 +1239,33 @@ func isInterimLogin(r *http.Request) bool {
 		return v == "1" || strings.EqualFold(v, "true")
 	}
 	// Form may not be parsed yet for GET.
+	return false
+}
+
+// isReauth mirrors WP ! empty( $_REQUEST['reauth'] ) (P6.18 / P6.37).
+// Any non-empty query or form value forces re-authentication.
+func isReauth(r *http.Request) bool {
+	if r == nil {
+		return false
+	}
+	if r.URL != nil && r.URL.Query().Get("reauth") != "" {
+		return true
+	}
+	if r.Method == http.MethodPost {
+		if r.PostForm != nil && r.PostForm.Get("reauth") != "" {
+			return true
+		}
+		if r.Form != nil && r.FormValue("reauth") != "" {
+			return true
+		}
+		// Parse once when form not yet loaded.
+		if r.PostForm == nil && r.Form == nil {
+			_ = r.ParseForm()
+			if r.FormValue("reauth") != "" {
+				return true
+			}
+		}
+	}
 	return false
 }
 
