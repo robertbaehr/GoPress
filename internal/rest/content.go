@@ -4,9 +4,8 @@ import (
 	"regexp"
 	"strings"
 	"unicode"
-	"unicode/utf8"
 
-	"github.com/robertbaehr/GoPress/internal/blocks"
+	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
 var (
@@ -14,58 +13,19 @@ var (
 	reMultiSpace = regexp.MustCompile(`[\s\x{00a0}]+`)
 )
 
-// renderPostContent applies do_blocks + a minimal the_content texturize subset.
+// renderPostContent applies the shared the_content pipeline (P5.11).
 func renderPostContent(raw string) string {
-	if raw == "" {
-		return ""
-	}
-	out := blocks.Render(raw)
-	return restTexturize(out)
+	return wp.ApplyContentFilters(nil, raw)
 }
 
-// restTexturize is a small wptexturize subset for REST content/excerpts.
+// renderPostContentCtx applies the_content with shortcodes/hooks from c.
+func renderPostContentCtx(c *wp.Context, raw string) string {
+	return wp.TheContent(c, raw)
+}
+
+// restTexturize delegates to the shared Texturize helper.
 func restTexturize(s string) string {
-	if s == "" {
-		return ""
-	}
-	var b strings.Builder
-	b.Grow(len(s) + 16)
-	inTag := false
-	for i := 0; i < len(s); {
-		r, size := utf8.DecodeRuneInString(s[i:])
-		if r == '<' {
-			inTag = true
-			b.WriteRune(r)
-			i += size
-			continue
-		}
-		if r == '>' && inTag {
-			inTag = false
-			b.WriteRune(r)
-			i += size
-			continue
-		}
-		if inTag {
-			b.WriteRune(r)
-			i += size
-			continue
-		}
-		// "..." → &#8230;
-		if r == '.' && i+2 < len(s) && s[i:i+3] == "..." {
-			b.WriteString("&#8230;")
-			i += 3
-			continue
-		}
-		// Apostrophe → &#8217;
-		if r == '\'' {
-			b.WriteString("&#8217;")
-			i += size
-			continue
-		}
-		b.WriteRune(r)
-		i += size
-	}
-	return b.String()
+	return wp.Texturize(s)
 }
 
 // buildExcerpt mirrors wp_trim_excerpt for empty post_excerpt fields.

@@ -195,7 +195,7 @@ func countPostRevisions(c *wp.Context, parentID int64) int {
 }
 
 func revisionFromWP(c *wp.Context, row wp.Post, home string, parentID int64) Revision {
-	rendered := renderPostContent(row.Content)
+	rendered := renderPostContentCtx(c, row.Content)
 	protected := row.Password != ""
 	titleRendered := row.Title
 	if titleRendered != "" {
