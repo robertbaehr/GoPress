@@ -307,8 +307,21 @@ func TestUsersListsAdmin(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status=%d", rec.Code)
 	}
-	if !strings.Contains(rec.Body.String(), "admin") {
-		t.Fatalf("expected admin user, got %q", rec.Body.String())
+	body := rec.Body.String()
+	if !strings.Contains(body, "admin") {
+		t.Fatalf("expected admin user, got %q", body)
+	}
+	for _, want := range []string{
+		"column-username",
+		"column-name",
+		"column-email",
+		"column-role",
+		"column-posts",
+		"Administrator",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in users table: %q", want, body)
+		}
 	}
 }
 

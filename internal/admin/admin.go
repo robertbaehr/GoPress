@@ -1656,34 +1656,49 @@ func (h *Handler) serveLinkManagerGone(w http.ResponseWriter, r *http.Request, c
 }
 
 func (h *Handler) serveUsers(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	blogname := optionString(c, "blogname", "GoPress")
 	users, err := listUsers(c, 20)
 	if err != nil {
 		http.Error(w, "users: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
 	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
-	b.WriteString("<title>Users &lsaquo; ")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
-	b.WriteString(adminNoticesHTML(c))
-	b.WriteString("<h1>Users <a href=\"/wp-admin/user-new.php\" class=\"page-title-action\">Add New User</a></h1>\n")
-	b.WriteString("<table class=\"wp-list-table widefat fixed striped users\">\n")
-	b.WriteString("<thead><tr><th scope=\"col\" class=\"column-username\">Username</th><th scope=\"col\" class=\"column-email\">Email</th></tr></thead>\n")
+	b.WriteString("<h1 class=\"wp-heading-inline\">Users</h1>\n")
+	b.WriteString("<a href=\"/wp-admin/user-new.php\" class=\"page-title-action\">Add New User</a>\n")
+	b.WriteString("<hr class=\"wp-header-end\">\n")
+	b.WriteString("<table class=\"wp-list-table widefat fixed striped table-view-list users\">\n")
+	b.WriteString("<thead><tr>")
+	b.WriteString("<th scope=\"col\" class=\"manage-column column-username column-primary\">Username</th>")
+	b.WriteString("<th scope=\"col\" class=\"manage-column column-name\">Name</th>")
+	b.WriteString("<th scope=\"col\" class=\"manage-column column-email\">Email</th>")
+	b.WriteString("<th scope=\"col\" class=\"manage-column column-role\">Role</th>")
+	b.WriteString("<th scope=\"col\" class=\"manage-column column-posts\">Posts</th>")
+	b.WriteString("</tr></thead>\n")
 	b.WriteString("<tbody id=\"the-list\">\n")
 	for _, u := range users {
 		b.WriteString("<tr id=\"user-")
 		b.WriteString(strconv.FormatInt(u.ID, 10))
-		b.WriteString("\"><td class=\"username column-username\"><strong>")
+		b.WriteString("\">")
+		b.WriteString("<td class=\"username column-username has-row-actions column-primary\" data-colname=\"Username\"><strong>")
 		b.WriteString(html.EscapeString(u.Login))
-		b.WriteString("</strong></td><td class=\"email column-email\">")
+		b.WriteString("</strong></td>")
+		b.WriteString("<td class=\"name column-name\" data-colname=\"Name\">")
+		b.WriteString(html.EscapeString(u.Name))
+		b.WriteString("</td>")
+		b.WriteString("<td class=\"email column-email\" data-colname=\"Email\"><a href=\"mailto:")
 		b.WriteString(html.EscapeString(u.Email))
-		b.WriteString("</td></tr>\n")
+		b.WriteString("\">")
+		b.WriteString(html.EscapeString(u.Email))
+		b.WriteString("</a></td>")
+		b.WriteString("<td class=\"role column-role\" data-colname=\"Role\">")
+		b.WriteString(html.EscapeString(u.Role))
+		b.WriteString("</td>")
+		b.WriteString("<td class=\"posts column-posts\" data-colname=\"Posts\">")
+		b.WriteString(strconv.FormatInt(u.Posts, 10))
+		b.WriteString("</td>")
+		b.WriteString("</tr>\n")
 	}
-	b.WriteString("</tbody>\n</table>\n</body>\n</html>\n")
-	writeHTML(w, http.StatusOK, b.String())
+	b.WriteString("</tbody>\n</table>\n")
+	writeAdminPage(w, c, newAdminChrome(c, "Users", "users-php"), b.String())
 }
 
 // servePostEdit renders the classic post.php?action=edit stub shell (P7.24).
@@ -1923,7 +1938,10 @@ type commentRow struct {
 type userRow struct {
 	ID    int64
 	Login string
+	Name  string
 	Email string
+	Role  string
+	Posts int64
 }
 
 func recentMedia(c *wp.Context, limit int) ([]mediaRow, error) {
@@ -1994,8 +2012,9 @@ func listUsers(c *wp.Context, limit int) ([]userRow, error) {
 		limit = 20
 	}
 	q, args, err := c.DB.Prepare(
-		"SELECT ID, user_login, user_email FROM "+c.DB.Users()+
-			" ORDER BY user_login ASC LIMIT %d",
+		"SELECT u.ID, u.user_login, u.display_name, u.user_email, "+
+			"(SELECT COUNT(*) FROM "+c.DB.Posts()+" p WHERE p.post_author = u.ID AND p.post_type = 'post' AND p.post_status <> 'trash') AS post_count "+
+			"FROM "+c.DB.Users()+" u ORDER BY u.user_login ASC LIMIT %d",
 		limit,
 	)
 	if err != nil {
@@ -2007,11 +2026,28 @@ func listUsers(c *wp.Context, limit int) ([]userRow, error) {
 	}
 	out := make([]userRow, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, userRow{
-			ID:    asInt64(row["ID"]),
+		id := asInt64(row["ID"])
+		u := userRow{
+			ID:    id,
 			Login: asString(row["user_login"]),
+			Name:  asString(row["display_name"]),
 			Email: asString(row["user_email"]),
-		})
+			Posts: asInt64(row["post_count"]),
+			Role:  "—",
+		}
+		if c.Roles != nil {
+			user, err := c.GetUserBy("id", id)
+			if err == nil && user != nil {
+				_ = c.Roles.InitUser(user, c.Meta)
+				if len(user.Roles) > 0 {
+					u.Role = strings.ReplaceAll(user.Roles[0], "_", " ")
+					if len(u.Role) > 0 {
+						u.Role = strings.ToUpper(u.Role[:1]) + u.Role[1:]
+					}
+				}
+			}
+		}
+		out = append(out, u)
 	}
 	return out, nil
 }
