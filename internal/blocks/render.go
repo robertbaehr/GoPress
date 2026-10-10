@@ -144,6 +144,18 @@ func (e *Env) RenderBlock(block Block) string {
 		return e.renderPostNavigationLink(block)
 	case "core/comments-title":
 		out = e.renderCommentsTitle(block)
+	case "core/search":
+		out = e.renderSearch(block)
+	case "core/calendar":
+		out = e.renderCalendar(block)
+	case "core/archives":
+		out = e.renderArchives(block)
+	case "core/latest-posts":
+		out = e.renderLatestPosts(block)
+	case "core/latest-comments":
+		out = e.renderLatestComments(block)
+	case "core/tag-cloud":
+		out = e.renderTagCloud(block)
 	default:
 		// Unknown blocks: prefer saved markup with nested reconstruction.
 		if len(block.InnerBlocks) > 0 || len(block.InnerContent) > 0 {

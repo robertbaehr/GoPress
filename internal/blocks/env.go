@@ -64,6 +64,15 @@ type Env struct {
 	// ArchiveTitle is the front date/term archive heading for core/query-title type=archive (P3.22).
 	ArchiveTitle string
 
+	// ListArchives returns monthly archive links for core/archives (P5.42).
+	ListArchives func() []ArchiveItem
+
+	// ListTagCloud returns tags for core/tag-cloud (P5.42).
+	ListTagCloud func() []TagCloudItem
+
+	// ListLatestComments returns recent approved comments for core/latest-comments (P5.42).
+	ListLatestComments func(limit int) []LatestCommentItem
+
 	// seenPart tracks template-part slugs currently being rendered (cycle guard).
 	seenPart map[string]bool
 

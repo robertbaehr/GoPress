@@ -841,6 +841,43 @@
   task: P5.15
   api: internal
 
+# P5.42: calendar / archives / latest-posts / latest-comments / tag-cloud / search.
+- prefix: wp-includes/blocks/calendar.php
+  go: internal/blocks/widget_blocks.go
+  status: partial
+  task: P5.42
+  api: internal
+
+- prefix: wp-includes/blocks/archives.php
+  go: internal/blocks/widget_blocks.go
+  status: partial
+  task: P5.42
+  api: internal
+
+- prefix: wp-includes/blocks/latest-posts.php
+  go: internal/blocks/widget_blocks.go
+  status: partial
+  task: P5.42
+  api: internal
+
+- prefix: wp-includes/blocks/latest-comments.php
+  go: internal/blocks/widget_blocks.go
+  status: partial
+  task: P5.42
+  api: internal
+
+- prefix: wp-includes/blocks/tag-cloud.php
+  go: internal/blocks/widget_blocks.go
+  status: partial
+  task: P5.42
+  api: internal
+
+- prefix: wp-includes/blocks/search.php
+  go: internal/blocks/widget_blocks.go
+  status: partial
+  task: P5.42
+  api: internal
+
 - prefix: wp-includes/blocks/
   go: internal/blocks
   status: partial
