@@ -700,20 +700,20 @@ wp-login.php#language-switcher-post
 
 # P4.44: POST /wp/v2/categories and /wp/v2/tags for editors (manage_categories).
 # P4.65: DELETE /wp/v2/categories/{id} and /wp/v2/tags/{id} (force=true).
-# P4.120: GET collection filters search/slug/parent/hide_empty/post.
+# P4.120 / P4.121: GET collection filters search/slug/parent/hide_empty/post/include/exclude/orderby.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-terms-controller.php
   go: internal/rest/taxonomies_write.go
   status: partial
-  task: P4.120
+  task: P4.121
   api: exported
-  notes: "P4.120 — categories/tags ?search=&slug=&parent=&hide_empty=&post=; P4.44/P4.65 write"
+  notes: "P4.121 — include/exclude/orderby/order; P4.120 search/slug/parent/hide_empty/post; P4.44/P4.65 write"
 
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-terms-controller.php#collection_params
   go: internal/rest/taxonomies.go
   status: partial
-  task: P4.120
+  task: P4.121
   api: exported
-  notes: "P4.120 — termFilterSQL for search/slug/parent/hide_empty/post"
+  notes: "P4.121 — termFilterSQL include/exclude + termOrderSQL; P4.120 base filters"
 
 # P4.45: POST /wp/v2/comments when logged in.
 # P4.64 / P4.117: PUT/PATCH /wp/v2/comments/{id} for moderators.

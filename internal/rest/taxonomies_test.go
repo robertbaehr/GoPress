@@ -315,3 +315,51 @@ func TestCategoriesCollectionFilters(t *testing.T) {
 		t.Fatalf("invalid post status=%d body=%s", rec.Code, rec.Body.String())
 	}
 }
+
+func TestTagsCollectionIncludeExcludeOrder(t *testing.T) {
+	// P4.121: include/exclude/orderby/order on tags (and categories share the path).
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/tags?per_page=2&orderby=id&order=desc", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var terms []rest.Term
+	if err := json.Unmarshal(rec.Body.Bytes(), &terms); err != nil {
+		t.Fatal(err)
+	}
+	if len(terms) < 2 {
+		t.Fatalf("expected tags: %+v", terms)
+	}
+	if terms[0].ID < terms[1].ID {
+		t.Fatalf("orderby=id desc: %+v", terms)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/tags?include=6,5&orderby=include", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if err := json.Unmarshal(rec.Body.Bytes(), &terms); err != nil {
+		t.Fatal(err)
+	}
+	if len(terms) != 2 || terms[0].ID != 6 || terms[1].ID != 5 {
+		t.Fatalf("include+orderby=include: %+v", terms)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/tags?exclude=5&per_page=3&orderby=id&order=asc", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if err := json.Unmarshal(rec.Body.Bytes(), &terms); err != nil {
+		t.Fatal(err)
+	}
+	for _, term := range terms {
+		if term.ID == 5 {
+			t.Fatalf("exclude leaked id=5: %+v", terms)
+		}
+	}
+}
