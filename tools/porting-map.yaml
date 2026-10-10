@@ -850,6 +850,14 @@
   api: exported
   notes: "P2.54 — UniqueFilename; sub-size suffix; case-insensitive ext collision"
 
+# P2.56: wp_getimagesize (DecodeConfig + WebP header fallback).
+- prefix: wp-includes/media.php#wp_getimagesize
+  go: internal/wp/getimagesize.go
+  status: partial
+  task: P2.56
+  api: exported
+  notes: "P2.56 — GetImagesize; jpeg/png/gif via DecodeConfig; WebP via VP8/VP8L/VP8X headers"
+
 # P2.55: wp_ext2type / wp_get_ext_types (+ ext2type filter).
 - prefix: wp-includes/functions.php#wp_ext2type
   go: internal/wp/ext2type.go
