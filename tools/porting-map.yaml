@@ -752,6 +752,25 @@
   task: ""
   api: n/a
 
+# P4.54: sidebars/widgets REST stay disabled (empty collections, 403 items/writes).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-sidebars-controller.php
+  go: internal/rest/widgets.go
+  status: out-of-scope
+  task: P4.54
+  api: exported
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-widgets-controller.php
+  go: internal/rest/widgets.go
+  status: out-of-scope
+  task: P4.54
+  api: exported
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-widget-types-controller.php
+  go: internal/rest/widgets.go
+  status: out-of-scope
+  task: P4.54
+  api: exported
+
 - prefix: wp-includes/IXR/
   go: Tier 2
   status: out-of-scope
