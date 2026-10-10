@@ -4194,7 +4194,7 @@ func setFrontAPILink(w http.ResponseWriter, c *wp.Context) {
 }
 
 // setFrontSingularLinks mirrors WP Link headers for singular views (P5.17).
-// X-Pingback is intentionally omitted: XML-RPC/pingbacks are out of scope (P3.41).
+// X-Pingback is intentionally omitted: XML-RPC/pingbacks are out of scope (P3.41 / P3.98).
 func setFrontSingularLinks(w http.ResponseWriter, c *wp.Context, post *singularPost) {
 	siteURL := strings.TrimRight(optionString(c, "siteurl", ""), "/")
 	home := strings.TrimRight(optionString(c, "home", siteURL), "/")
@@ -4204,8 +4204,10 @@ func setFrontSingularLinks(w http.ResponseWriter, c *wp.Context, post *singularP
 	if home == "" || post == nil {
 		return
 	}
-	// Never advertise xmlrpc.php via X-Pingback (gone with Tier-2 XML-RPC).
+	// Never advertise xmlrpc.php via X-Pingback (gone with Tier-2 XML-RPC / pingbacks).
 	w.Header().Del("X-Pingback")
+	// P3.98: also drop any Link rel=pingback that middleware might have set.
+	stripPingbackLinkHeaders(w)
 	w.Header().Add("Link", fmt.Sprintf(`<%s/wp-json/>; rel="https://api.w.org/"`, home))
 	restType := "posts"
 	if post.Type == "page" {
@@ -4218,6 +4220,30 @@ func setFrontSingularLinks(w http.ResponseWriter, c *wp.Context, post *singularP
 		if short := wp.GetShortlink(c, post.ID, "post", 0); short != "" {
 			w.Header().Add("Link", fmt.Sprintf(`<%s>; rel=shortlink`, short))
 		}
+	}
+}
+
+// stripPingbackLinkHeaders removes Link headers that advertise rel=pingback (P3.98).
+func stripPingbackLinkHeaders(w http.ResponseWriter) {
+	if w == nil {
+		return
+	}
+	vals := w.Header().Values("Link")
+	if len(vals) == 0 {
+		return
+	}
+	kept := make([]string, 0, len(vals))
+	for _, v := range vals {
+		lower := strings.ToLower(v)
+		if strings.Contains(lower, `rel="pingback"`) || strings.Contains(lower, "rel=pingback") ||
+			strings.Contains(lower, "rel='pingback'") {
+			continue
+		}
+		kept = append(kept, v)
+	}
+	w.Header().Del("Link")
+	for _, v := range kept {
+		w.Header().Add("Link", v)
 	}
 }
 

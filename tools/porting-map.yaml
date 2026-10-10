@@ -218,16 +218,24 @@
 - prefix: xmlrpc.php
   go: internal/server/xmlrpc.go
   status: out-of-scope
-  task: P3.94
+  task: P3.98
   api: n/a
-  notes: "P3.94 — 403; POST XML-RPC fault; Allow/X-Robots-Tag; HEAD; ?rsd stays 403"
+  notes: "P3.98 — pingback.ping fault; strip X-Pingback; P3.94 POST fault / GET notice"
 
-# P3.41: never send X-Pingback (XML-RPC/pingbacks gone).
+- prefix: xmlrpc.php#pingback.ping
+  go: internal/server/xmlrpc.go
+  status: out-of-scope
+  task: P3.98
+  api: n/a
+  notes: "P3.98 — pingback.ping rejected with Pingbacks are disabled fault"
+
+# P3.41 / P3.98: never send X-Pingback (XML-RPC/pingbacks gone).
 - prefix: wp-includes/class-wp.php#X-Pingback
   go: internal/server/front.go
   status: done
-  task: P3.41
+  task: P3.98
   api: n/a
+  notes: "P3.98 — Del X-Pingback + strip Link rel=pingback on singular; P3.41 base"
 
 # P3.46: never emit trackback_rdf() / xmlns:trackback on singular HTML.
 - prefix: wp-includes/comment-template.php#trackback_rdf
