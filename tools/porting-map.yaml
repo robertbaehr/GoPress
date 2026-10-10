@@ -259,6 +259,12 @@
   task: P4.36
   api: exported
 
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-pattern-directory-controller.php
+  go: internal/rest/pattern_directory.go
+  status: partial
+  task: P4.37
+  api: exported
+
 - prefix: wp-includes/block-bindings.php
   go: internal/blocks/bindings.go
   status: partial
