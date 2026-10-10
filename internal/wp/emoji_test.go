@@ -1,30 +1,51 @@
 package wp_test
 
 import (
+	"encoding/json"
+	"strings"
 	"testing"
 
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-func TestEmojiPrintScriptsSkip(t *testing.T) {
+func TestEmojiPrintScriptsSkipLoader(t *testing.T) {
 	if wp.ShouldPrintEmoji() {
-		t.Fatal("emoji print should be disabled")
+		t.Fatal("emoji loader print should stay disabled")
 	}
 	if s := wp.PrintEmojiDetectionScript(); s != "" {
-		t.Fatalf("detection script should be empty, got %q", s)
+		t.Fatalf("detection/loader script should be empty, got %q", s)
 	}
 	if s := wp.PrintEmojiStyles(); s != "" {
 		t.Fatalf("styles should be empty, got %q", s)
 	}
-	if s := wp.EmojiHeadHTML(); s != "" {
-		t.Fatalf("head html should be empty, got %q", s)
+}
+
+func TestEmojiSettingsJSON(t *testing.T) {
+	html := wp.PrintEmojiSettingsJSON()
+	if !strings.Contains(html, `id="wp-emoji-settings"`) {
+		t.Fatalf("missing settings id: %q", html)
 	}
-	settings := wp.EmojiSettings()
-	if settings["baseUrl"] != "" || settings["ext"] != "" {
-		t.Fatalf("expected empty CDN settings, got %#v", settings)
+	if !strings.Contains(html, `type="application/json"`) {
+		t.Fatalf("missing type: %q", html)
 	}
-	src, _ := settings["source"].(map[string]any)
-	if src == nil || src["wpemoji"] != "" {
-		t.Fatalf("expected empty source, got %#v", settings)
+	start := strings.Index(html, ">")
+	end := strings.LastIndex(html, "</script>")
+	if start < 0 || end < 0 || end <= start {
+		t.Fatalf("malformed script tag: %q", html)
+	}
+	payload := html[start+1 : end]
+	var settings map[string]any
+	if err := json.Unmarshal([]byte(payload), &settings); err != nil {
+		t.Fatalf("json: %v payload=%q", err, payload)
+	}
+	if settings["baseUrl"] == "" || settings["ext"] != ".png" {
+		t.Fatalf("unexpected settings: %#v", settings)
+	}
+	if settings["svgUrl"] == "" || settings["svgExt"] != ".svg" {
+		t.Fatalf("unexpected svg settings: %#v", settings)
+	}
+	head := wp.EmojiHeadHTML()
+	if !strings.Contains(head, `id="wp-emoji-settings"`) {
+		t.Fatalf("EmojiHeadHTML should include settings JSON: %q", head)
 	}
 }
