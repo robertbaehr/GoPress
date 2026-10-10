@@ -106,3 +106,73 @@ func TestGetHookedBlocksGrouping(t *testing.T) {
 		t.Fatalf("after: %#v", got)
 	}
 }
+
+func TestApplyBlockHooksNestedAnchors(t *testing.T) {
+	blocks.ResetHookedBlocks()
+	defer blocks.ResetHookedBlocks()
+
+	blocks.RegisterHookedBlock("core/spacer", "core/group", "before")
+	in := `<!-- wp:core/columns --><!-- wp:core/group --><div class="g">x</div><!-- /wp:core/group --><!-- /wp:core/columns -->`
+	out := blocks.ApplyBlockHooksToContent(in)
+	if !strings.Contains(out, "<!-- wp:core/spacer") {
+		t.Fatalf("expected nested hooked spacer, got %q", out)
+	}
+	sp := strings.Index(out, "<!-- wp:core/spacer")
+	grp := strings.Index(out, "<!-- wp:core/group")
+	if sp < 0 || grp < 0 || sp > grp {
+		t.Fatalf("spacer should precede nested group: spacer=%d group=%d in %q", sp, grp, out)
+	}
+}
+
+func TestSetIgnoredHookedBlocksMetadata(t *testing.T) {
+	blocks.ResetHookedBlocks()
+	defer blocks.ResetHookedBlocks()
+
+	blocks.RegisterHookedBlock("core/paragraph", "core/group", "before")
+	hooked := blocks.GetHookedBlocks()
+	g := "core/group"
+	anchor := blocks.Block{BlockName: &g, Attrs: map[string]any{}}
+	_ = blocks.SetIgnoredHookedBlocksMetadata(&anchor, "before", hooked)
+	meta, _ := anchor.Attrs["metadata"].(map[string]any)
+	raw, _ := meta["ignoredHookedBlocks"].([]any)
+	if len(raw) != 1 || raw[0] != "core/paragraph" {
+		t.Fatalf("ignored metadata=%#v attrs=%#v", raw, anchor.Attrs)
+	}
+	if got := blocks.InsertHookedBlocks(anchor, "before", hooked); got != "" {
+		t.Fatalf("after set_ignored, insert should be empty, got %q", got)
+	}
+}
+
+func TestInsertHookedBlocksAndSetIgnored(t *testing.T) {
+	blocks.ResetHookedBlocks()
+	defer blocks.ResetHookedBlocks()
+
+	blocks.RegisterHookedBlock("core/loginout", "core/navigation", "first_child")
+	hooked := blocks.GetHookedBlocks()
+	n := "core/navigation"
+	anchor := blocks.Block{BlockName: &n, Attrs: map[string]any{}}
+	markup := blocks.InsertHookedBlocksAndSetIgnored(&anchor, "first_child", hooked)
+	if !strings.Contains(markup, "<!-- wp:core/loginout") {
+		t.Fatalf("expected loginout markup, got %q", markup)
+	}
+	meta, _ := anchor.Attrs["metadata"].(map[string]any)
+	raw, _ := meta["ignoredHookedBlocks"].([]any)
+	if len(raw) != 1 || raw[0] != "core/loginout" {
+		t.Fatalf("ignored=%#v", raw)
+	}
+}
+
+func TestApplyBlockHooksWithIgnoredCallback(t *testing.T) {
+	blocks.ResetHookedBlocks()
+	defer blocks.ResetHookedBlocks()
+
+	blocks.RegisterHookedBlock("core/paragraph", "core/post-content", "before")
+	in := `<!-- wp:core/post-content --><div>x</div><!-- /wp:core/post-content -->`
+	out := blocks.ApplyBlockHooksToContentWith(in, blocks.InsertHookedBlocksAndSetIgnored)
+	if !strings.HasPrefix(out, "<!-- wp:core/paragraph") {
+		t.Fatalf("expected hooked paragraph, got %q", out)
+	}
+	if !strings.Contains(out, `"ignoredHookedBlocks"`) && !strings.Contains(out, "ignoredHookedBlocks") {
+		t.Fatalf("expected ignoredHookedBlocks in serialized attrs, got %q", out)
+	}
+}
