@@ -202,6 +202,67 @@ func TestPostsSearchQueryParam(t *testing.T) {
 	}
 }
 
+func TestPostsTagsQueryParam(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	// Fixture Tag 01 (term_id 5) is on Fixture Post 01.
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?tags=5&per_page=10", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("tags=5 status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var hits []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &hits); err != nil {
+		t.Fatal(err)
+	}
+	if len(hits) == 0 {
+		t.Fatal("expected posts for tags=5")
+	}
+	found := false
+	for _, p := range hits {
+		has := false
+		for _, id := range p.Tags {
+			if id == 5 {
+				has = true
+				break
+			}
+		}
+		if !has {
+			t.Fatalf("post %d missing tag 5: %+v", p.ID, p.Tags)
+		}
+		if p.Slug == "fixture-post-01" || strings.Contains(p.Title.Rendered, "Fixture Post 01") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected Fixture Post 01 among tags=5 hits")
+	}
+	if rec.Header().Get("X-WP-Total") == "" || rec.Header().Get("X-WP-Total") == "0" {
+		t.Fatalf("expected X-WP-Total > 0, got %q", rec.Header().Get("X-WP-Total"))
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?tags=99999&per_page=10", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("tags miss status=%d", rec.Code)
+	}
+	var miss []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &miss); err != nil {
+		t.Fatal(err)
+	}
+	if len(miss) != 0 {
+		t.Fatalf("expected empty for unknown tag, got %+v", miss)
+	}
+	if rec.Header().Get("X-WP-Total") != "0" {
+		t.Fatalf("expected X-WP-Total=0, got %q", rec.Header().Get("X-WP-Total"))
+	}
+}
+
 func TestPostsCategoriesQueryParam(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
