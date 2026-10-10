@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/robertbaehr/GoPress/internal/rest"
@@ -37,6 +38,15 @@ func TestCommentsCollection(t *testing.T) {
 	}
 	if cm.Content.Rendered == "" || cm.Date == "" {
 		t.Fatalf("missing fields: %+v", cm)
+	}
+	if cm.Links == nil || cm.Links["self"] == nil || cm.Links["up"] == nil {
+		t.Fatalf("expected _links: %+v", cm.Links)
+	}
+	if cm.AuthorAvatarURLs["24"] == "" || cm.AuthorAvatarURLs["96"] == "" {
+		t.Fatalf("expected author_avatar_urls: %+v", cm.AuthorAvatarURLs)
+	}
+	if _, ok := cm.Meta["_wp_note_status"]; !ok {
+		t.Fatalf("expected meta._wp_note_status: %+v", cm.Meta)
 	}
 }
 
@@ -93,6 +103,15 @@ func TestCommentSingle(t *testing.T) {
 	}
 	if cm.AuthorName == "" || cm.Content.Rendered == "" {
 		t.Fatalf("missing fields: %+v", cm)
+	}
+	if !strings.Contains(cm.Content.Rendered, "<p>") {
+		t.Fatalf("expected rendered HTML content: %q", cm.Content.Rendered)
+	}
+	if !strings.Contains(cm.Link, "#comment-1") || strings.Contains(cm.Link, "?p=") {
+		t.Fatalf("expected pretty comment permalink, got %q", cm.Link)
+	}
+	if cm.Links["up"] == nil {
+		t.Fatal("expected up link")
 	}
 }
 
