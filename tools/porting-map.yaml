@@ -3130,8 +3130,9 @@ wp-login.php#language-switcher-post
 - prefix: wp-includes/embed.php
   go: internal/wp/oembed_discovery.go
   status: partial
-  task: P3.20
+  task: P3.92
   api: exported
+  notes: "P3.92 — get_oembed_endpoint_url + oembed_endpoint_url/oembed_discovery_links filters; P3.20 discovery links"
 
 - prefix: wp-includes/theme-compat/embed.php
   go: internal/server/front.go
