@@ -67,9 +67,11 @@ func (e *Env) RenderBlock(block Block) string {
 		"core/code", "core/html",
 		"core/group", "core/columns", "core/column", "core/buttons", "core/button",
 		"core/pullquote", "core/preformatted", "core/verse", "core/table",
-		"core/file", "core/audio", "core/video", "core/cover", "core/media-text",
+		"core/audio", "core/video", "core/cover", "core/media-text",
 		"core/details":
 		out = e.renderSaved(block)
+	case "core/file":
+		out = e.renderFile(block)
 	case "core/freeform":
 		// Classic editor block: prefer attribute content, else inner HTML.
 		if content, ok := block.Attrs["content"].(string); ok && content != "" {

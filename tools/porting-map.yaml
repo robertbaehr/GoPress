@@ -1250,6 +1250,14 @@
   api: internal
   notes: "P5.51 polish — applySupports, anchor, password-gated; no core/table-of-contents in this WP tree"
 
+# P5.52: core/file — synthesize from attrs + displayPreview object directives.
+- prefix: wp-includes/blocks/file.php
+  go: internal/blocks/file.go
+  status: partial
+  task: P5.52
+  api: internal
+  notes: "P5.52 — renderFile synthesize + displayPreview interactive/object attrs"
+
 # P5.42: calendar / archives / latest-posts / latest-comments / tag-cloud / search.
 - prefix: wp-includes/blocks/calendar.php
   go: internal/blocks/widget_blocks.go
