@@ -93,7 +93,7 @@ func isSingularVars(vars map[string]string) bool {
 	if vars == nil {
 		return false
 	}
-	for _, k := range []string{"p", "page_id", "name", "pagename"} {
+	for _, k := range []string{"p", "page_id", "name", "pagename", "attachment_id", "attachment"} {
 		if v := vars[k]; v != "" {
 			return true
 		}
@@ -151,10 +151,22 @@ func (f *Front) renderSingular(w http.ResponseWriter, c *wp.Context, vars map[st
 
 	blogname := optionString(c, "blogname", "GoPress")
 	content := post.Content
-	if blocks.HasBlocks(content) {
+	if post.Type == "attachment" {
+		if content == "" {
+			if url := wp.GetAttachmentURL(c, post.ID); url != "" {
+				content = `<p class="attachment"><a href="` + html.EscapeString(url) + `">` +
+					html.EscapeString(post.Title) + `</a></p>`
+			}
+		}
+	} else if blocks.HasBlocks(content) {
 		content = blocks.Render(content)
 	}
 	safeContent := wp.KsesPost(content)
+
+	bodyClass := "singular"
+	if post.Type == "attachment" {
+		bodyClass = "singular attachment"
+	}
 
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
@@ -162,7 +174,9 @@ func (f *Front) renderSingular(w http.ResponseWriter, c *wp.Context, vars map[st
 	b.WriteString(html.EscapeString(post.Title))
 	b.WriteString(" &#8212; ")
 	b.WriteString(html.EscapeString(blogname))
-	b.WriteString("</title>\n</head>\n<body class=\"singular\">\n")
+	b.WriteString("</title>\n</head>\n<body class=\"")
+	b.WriteString(bodyClass)
+	b.WriteString("\">\n")
 	b.WriteString("<article id=\"post-")
 	b.WriteString(strconv.FormatInt(post.ID, 10))
 	b.WriteString("\" class=\"post type-")
@@ -376,6 +390,16 @@ type singularPost struct {
 func loadSingularPost(c *wp.Context, vars map[string]string) (*singularPost, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
+	}
+	if idStr := vars["attachment_id"]; idStr != "" {
+		id, err := strconv.ParseInt(idStr, 10, 64)
+		if err != nil || id <= 0 {
+			return nil, nil
+		}
+		return singularFromQuery(c, wp.QueryArgs{P: id, PostType: "attachment", PostStatus: "inherit"})
+	}
+	if slug := vars["attachment"]; slug != "" {
+		return singularFromQuery(c, wp.QueryArgs{Name: slug, PostType: "attachment", PostStatus: "inherit"})
 	}
 	if idStr := vars["p"]; idStr != "" {
 		id, err := strconv.ParseInt(idStr, 10, 64)

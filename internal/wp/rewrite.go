@@ -35,7 +35,7 @@ type ParseResult struct {
 var flagQueryVars = []string{
 	"p", "page_id", "name", "pagename", "category_name", "tag",
 	"author_name", "feed", "year", "monthnum", "day", "attachment",
-	"rest_route", "error", "s",
+	"attachment_id", "rest_route", "error", "s",
 }
 
 // LoadRewriteRules returns rewrite rules from the rewrite_rules option, or
@@ -93,6 +93,9 @@ func GenerateRewriteRules(structure string) RewriteRules {
 		RewriteRule{Match: `category/(.+?)/?$`, Query: `index.php?category_name=$matches[1]`},
 		RewriteRule{Match: `tag/([^/]+)/?$`, Query: `index.php?tag=$matches[1]`},
 		RewriteRule{Match: `author/([^/]+)/?$`, Query: `index.php?author_name=$matches[1]`},
+		// Attachment pretty permalinks (subset of WP attachment rewrite rules).
+		RewriteRule{Match: `(.+)/attachment/([^/]+)/?$`, Query: `index.php?attachment=$matches[2]`},
+		RewriteRule{Match: `attachment/([^/]+)/?$`, Query: `index.php?attachment=$matches[1]`},
 	)
 	switch {
 	case strings.Contains(structure, "%post_id%"):
@@ -231,8 +234,8 @@ func (c *Context) ParseRequest(rules RewriteRules) *ParseResult {
 		c.Scope.mu.Lock()
 		c.Scope.IsHome = res.IsHome
 		c.Scope.IsFrontPage = res.IsHome
-		c.Scope.IsSingular = hasAny(res.QueryVars, "p", "page_id", "name", "pagename", "attachment")
-		c.Scope.IsSingle = hasAny(res.QueryVars, "p", "name")
+		c.Scope.IsSingular = hasAny(res.QueryVars, "p", "page_id", "name", "pagename", "attachment", "attachment_id")
+		c.Scope.IsSingle = hasAny(res.QueryVars, "p", "name", "attachment", "attachment_id")
 		c.Scope.IsPage = hasAny(res.QueryVars, "page_id", "pagename")
 		c.Scope.IsArchive = hasAny(res.QueryVars, "year", "monthnum", "day", "category_name", "tag", "author_name")
 		c.Scope.IsFeed = hasAny(res.QueryVars, "feed")
@@ -243,6 +246,10 @@ func (c *Context) ParseRequest(rules RewriteRules) *ParseResult {
 				c.Scope.QueriedObjectID = id
 			}
 		} else if p := res.QueryVars["page_id"]; p != "" {
+			if id, err := strconv.ParseInt(p, 10, 64); err == nil {
+				c.Scope.QueriedObjectID = id
+			}
+		} else if p := res.QueryVars["attachment_id"]; p != "" {
 			if id, err := strconv.ParseInt(p, 10, 64); err == nil {
 				c.Scope.QueriedObjectID = id
 			}
