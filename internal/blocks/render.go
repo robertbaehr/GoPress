@@ -78,9 +78,10 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderHeading(block)
 	case "core/table":
 		out = e.renderTable(block)
-	case "core/html",
-		"core/details":
+	case "core/html":
 		out = e.renderSaved(block)
+	case "core/details":
+		out = e.renderDetails(block)
 	case "core/code":
 		out = e.renderCode(block)
 	case "core/preformatted":
