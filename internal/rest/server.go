@@ -763,8 +763,17 @@ func builtInIndexRoutes() map[string]RouteIndex {
 		},
 		"/wp/v2/posts/(?P<parent>[\\d]+)/revisions/(?P<id>[\\d]+)": {
 			Namespace: "wp/v2",
-			Methods:   []string{"GET"},
-			Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}},
+			Methods:   []string{"GET", "DELETE"},
+			Endpoints: []RouteEndpoint{
+				{Methods: []string{"GET"}},
+				{Methods: []string{"DELETE"}, Args: map[string]any{
+					"force": map[string]any{
+						"type":        "boolean",
+						"default":     false,
+						"description": "Required to be true, as revisions do not support trashing.",
+					},
+				}},
+			},
 		},
 		"/wp/v2/posts/(?P<id>[\\d]+)/autosaves": {
 			Namespace: "wp/v2",

@@ -875,6 +875,14 @@
   task: P4.66
   api: n/a
 
+# P4.68: REST DELETE /wp/v2/posts/{parent}/revisions/{id} (force=true).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-revisions-controller.php#delete
+  go: internal/rest/revisions.go
+  status: partial
+  task: P4.68
+  api: n/a
+  notes: "P4.68 — force=true hard-delete; authorize via parent delete_post"
+
 # P7.32: attachment edit screen stub (post.php for media).
 - prefix: wp-admin/post.php#attachment
   go: internal/admin/admin.go
