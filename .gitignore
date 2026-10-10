@@ -25,3 +25,8 @@ coverage.out
 .idea/
 .vscode/
 *.swp
+
+# Local oracle checkout symlink (Cloud / local abs path)
+/php-reference
+
+/php-reference

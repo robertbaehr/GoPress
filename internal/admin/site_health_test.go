@@ -34,8 +34,14 @@ func TestSiteHealthStubScreen(t *testing.T) {
 	if !strings.Contains(body, "Site Health") || !strings.Contains(body, "site-health") {
 		t.Fatalf("unexpected body %q", body)
 	}
-	if !strings.Contains(body, "site-health-info.php") {
-		t.Fatalf("expected Info tab link: %q", body)
+	if !strings.Contains(body, "health-check-tab") || !strings.Contains(body, "tab-count-2") {
+		t.Fatalf("expected polished tab chrome: %q", body)
+	}
+	if !strings.Contains(body, "site-health.php?tab=debug") {
+		t.Fatalf("expected Info tab link via ?tab=debug: %q", body)
+	}
+	if !strings.Contains(body, "Site Health - Status") {
+		t.Fatalf("expected Status title: %q", body)
 	}
 }
 
@@ -66,6 +72,9 @@ func TestSiteHealthInfoScreen(t *testing.T) {
 	}
 	if !strings.Contains(body, "health-check-debug") || !strings.Contains(body, "Active Theme") {
 		t.Fatalf("missing debug table: %q", body)
+	}
+	if !strings.Contains(body, "Site Health - Info") || !strings.Contains(body, "health-check-tab active") {
+		t.Fatalf("expected Info tab polish: %q", body)
 	}
 }
 
