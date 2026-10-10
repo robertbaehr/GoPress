@@ -36,6 +36,8 @@ func (s *Server) serveCommentItem(w http.ResponseWriter, r *http.Request, c *wp.
 		s.getCommentItem(w, r, c, id)
 	case http.MethodPut, http.MethodPost, http.MethodPatch:
 		s.updateComment(w, r, c, id)
+	case http.MethodDelete:
+		s.deleteComment(w, r, c, id)
 	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",

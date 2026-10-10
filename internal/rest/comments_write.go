@@ -331,6 +331,85 @@ func (s *Server) updateComment(w http.ResponseWriter, r *http.Request, c *wp.Con
 	writeJSON(w, http.StatusOK, cm)
 }
 
+// deleteComment handles DELETE /wp/v2/comments/{id} (P4.80).
+// force=true hard-deletes; otherwise trash (comment_approved=trash).
+func (s *Server) deleteComment(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
+	if c == nil || c.CurrentUser == nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]any{
+			"code":    "rest_cannot_delete",
+			"message": "Sorry, you are not allowed to delete this comment.",
+			"data":    map[string]any{"status": 401},
+		})
+		return
+	}
+	if !c.UserCan(c.CurrentUser, "moderate_comments") {
+		writeJSON(w, http.StatusForbidden, map[string]any{
+			"code":    "rest_cannot_delete",
+			"message": "Sorry, you are not allowed to delete this comment.",
+			"data":    map[string]any{"status": 403},
+		})
+		return
+	}
+	existing, err := getCommentByIDAny(c, id)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_comment_query",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	if existing == nil {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"code":    "rest_comment_invalid_id",
+			"message": "Invalid comment ID.",
+			"data":    map[string]any{"status": 404},
+		})
+		return
+	}
+
+	force := r.URL.Query().Get("force") == "true"
+	if force {
+		if err := wp.DeleteComment(c, id); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{
+				"code":    "rest_cannot_delete",
+				"message": "The comment cannot be deleted.",
+				"data":    map[string]any{"status": 500},
+			})
+			return
+		}
+		writeJSON(w, http.StatusOK, map[string]any{
+			"deleted":  true,
+			"previous": existing,
+		})
+		return
+	}
+
+	if existing.Status == "trash" {
+		writeJSON(w, http.StatusGone, map[string]any{
+			"code":    "rest_already_trashed",
+			"message": "The comment has already been trashed.",
+			"data":    map[string]any{"status": 410},
+		})
+		return
+	}
+	if err := wp.TrashComment(c, id); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_cannot_delete",
+			"message": "The comment cannot be deleted.",
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	cm, err := getCommentByIDAny(c, id)
+	if err != nil || cm == nil {
+		writeJSON(w, http.StatusOK, map[string]any{"id": id, "status": "trash"})
+		return
+	}
+	w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
+	writeJSON(w, http.StatusOK, cm)
+}
+
 func commentStatusToApproved(status string) string {
 	switch strings.ToLower(strings.TrimSpace(status)) {
 	case "approved", "approve", "1":

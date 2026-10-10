@@ -210,6 +210,53 @@ func GetCommentByID(c *Context, id int64) (*Comment, error) {
 	return &cm, nil
 }
 
+// TrashComment moves a comment to trash (wp_trash_comment subset, P4.80).
+func TrashComment(c *Context, id int64) error {
+	if c == nil || c.DB == nil || id <= 0 {
+		return fmt.Errorf("wp: TrashComment: invalid input")
+	}
+	existing, err := GetCommentByID(c, id)
+	if err != nil {
+		return err
+	}
+	if existing == nil {
+		return fmt.Errorf("wp: TrashComment: not found")
+	}
+	if existing.Approved == "trash" {
+		return fmt.Errorf("wp: TrashComment: already trashed")
+	}
+	approved := "trash"
+	if err := UpdateComment(c, id, CommentUpdate{Approved: &approved}); err != nil {
+		return err
+	}
+	return nil
+}
+
+// DeleteComment permanently deletes a comment (wp_delete_comment force, P4.80).
+func DeleteComment(c *Context, id int64) error {
+	if c == nil || c.DB == nil || id <= 0 {
+		return fmt.Errorf("wp: DeleteComment: invalid input")
+	}
+	existing, err := GetCommentByID(c, id)
+	if err != nil {
+		return err
+	}
+	if existing == nil {
+		return fmt.Errorf("wp: DeleteComment: not found")
+	}
+	q, args, err := c.DB.Prepare("DELETE FROM "+c.DB.Comments()+" WHERE comment_ID = %d", id)
+	if err != nil {
+		return err
+	}
+	if _, err := c.DB.Exec(q, args...); err != nil {
+		return err
+	}
+	if existing.Approved == "1" {
+		_ = bumpCommentCount(c, existing.PostID, -1)
+	}
+	return nil
+}
+
 // InsertComment inserts a comment row and bumps comment_count when approved.
 func InsertComment(c *Context, in CommentInsert) (int64, error) {
 	if c == nil || c.DB == nil {
