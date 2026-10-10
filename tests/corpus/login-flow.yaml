@@ -61,3 +61,13 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.78: interim-login modal form headers.
+- id: login-interim
+  role: anon
+  method: GET
+  path: /wp-login.php?interim-login=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

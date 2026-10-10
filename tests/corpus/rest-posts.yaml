@@ -162,3 +162,76 @@
   body: null
   compare: json
   nonce: null
+
+# P10.78: search type filters + more anon REST headers.
+- id: rest-search-term
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?type=term&search=a&per_page=5
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-search-post-format
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?type=post-format&per_page=20
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-route-search
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/search&search=hello
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-status-draft
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/statuses/draft
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-plugins-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/plugins
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-themes-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/themes
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-templates-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/templates
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-menu-locations-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/menu-locations
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
