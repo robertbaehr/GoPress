@@ -297,6 +297,7 @@ func (s *Server) updatePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		status = body.Status
 	}
 	now := time.Now().UTC().Format("2006-01-02 15:04:05")
+	changed := title != existing.Title || content != existing.Content || excerpt != existing.Excerpt
 	if err := updatePostRow(c, id, title, content, excerpt, slug, status, now); err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_update",
@@ -304,6 +305,10 @@ func (s *Server) updatePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 			"data":    map[string]any{"status": 500},
 		})
 		return
+	}
+	// Create a revision of the updated post when revisioned fields change (P4.48).
+	if changed && status != "auto-draft" {
+		_, _ = savePostRevision(c, existing.Author, id, title, content, excerpt, now)
 	}
 	post, err := getPostByIDAny(c, "post", id, true)
 	if err != nil || post == nil {
@@ -420,6 +425,25 @@ type postRowInsert struct {
 	Status  string
 	Slug    string
 	Type    string
+	Parent  int64
+}
+
+// savePostRevision inserts a post_type=revision row for parentID (wp_save_post_revision subset, P4.48).
+func savePostRevision(c *wp.Context, author, parentID int64, title, content, excerpt, when string) (int64, error) {
+	if parentID <= 0 {
+		return 0, fmt.Errorf("invalid parent")
+	}
+	return insertPostRow(c, postRowInsert{
+		Author:  author,
+		Date:    when,
+		Content: content,
+		Title:   title,
+		Excerpt: excerpt,
+		Status:  "inherit",
+		Slug:    fmt.Sprintf("%d-revision-v1", parentID),
+		Type:    "revision",
+		Parent:  parentID,
+	})
 }
 
 func insertPostRow(c *wp.Context, in postRowInsert) (int64, error) {
@@ -436,7 +460,7 @@ func insertPostRow(c *wp.Context, in postRowInsert) (int64, error) {
 			"(%d, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %d, %s, %d, %s, %s, %d)",
 		in.Author, in.Date, in.Date, in.Content, in.Title, in.Excerpt, in.Status,
 		"open", "open", "", in.Slug, "", "", in.Date, in.Date,
-		"", 0, guid, 0, in.Type, "", 0,
+		"", in.Parent, guid, 0, in.Type, "", 0,
 	)
 	if err != nil {
 		return 0, err

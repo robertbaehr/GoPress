@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"testing"
 
 	"github.com/robertbaehr/GoPress/internal/rest"
@@ -86,6 +87,29 @@ func TestCreateUpdateDeletePost(t *testing.T) {
 	}
 	if updated.Content.Rendered != "Updated body" {
 		t.Fatalf("content=%q", updated.Content.Rendered)
+	}
+	// P4.48: updating revisioned fields creates a revision child.
+	rq, rargs, err := c.DB.Prepare(
+		"SELECT ID, post_name, post_parent, post_type, post_title FROM "+c.DB.Posts()+
+			" WHERE post_parent = %d AND post_type = %s AND post_name = %s ORDER BY ID DESC LIMIT 1",
+		id, "revision", fmt.Sprintf("%d-revision-v1", id),
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	revRow, err := c.DB.GetRow(rq, rargs...)
+	if err != nil || revRow == nil {
+		t.Fatalf("expected revision after update: %v", err)
+	}
+	revID, _ := strconv.ParseInt(fmt.Sprint(revRow["ID"]), 10, 64)
+	t.Cleanup(func() {
+		dq, dargs, err := c.DB.Prepare("DELETE FROM "+c.DB.Posts()+" WHERE ID = %d", revID)
+		if err == nil {
+			_, _ = c.DB.Exec(dq, dargs...)
+		}
+	})
+	if fmt.Sprint(revRow["post_title"]) != "GoPress Write Post Updated" {
+		t.Fatalf("revision title=%v", revRow["post_title"])
 	}
 
 	req = httptest.NewRequest(http.MethodDelete, fmt.Sprintf("/wp-json/wp/v2/posts/%d", id), nil)
