@@ -342,6 +342,13 @@
   task: P7.35
   api: n/a
 
+# P2.30: wp_parse_args.
+- prefix: wp-includes/functions.php#wp_parse_args
+  go: internal/wp/parse_args.go
+  status: partial
+  task: P2.30
+  api: exported
+
 # P4.49: REST /wp/v2/search type=post|term|post-format filters.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-search-controller.php#type
   go: internal/rest/search.go
