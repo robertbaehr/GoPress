@@ -82,7 +82,8 @@ func (e *Env) renderQueryTitle(block Block) string {
 		if term == "" {
 			text = "Search results"
 		} else {
-			text = "Search results for: " + term
+			// Match core/query-title + TT5: curly quotes around the term (P3.36).
+			text = "Search results for: \u201C" + term + "\u201D"
 		}
 	case "archive":
 		title := strings.TrimSpace(e.ArchiveTitle)

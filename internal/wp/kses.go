@@ -75,9 +75,34 @@ func parseAllowedContext(in map[string]json.RawMessage) AllowedHTML {
 }
 
 // AllowedHTMLPost returns the post-context allow list (wp_kses_allowed_html('post')).
+// P3.36: also allow form/input used by core/search (and similar) in block templates.
+// Core theme HTML is trusted on the front; wp_kses_post still runs on GoPress
+// template output, so these tags must survive sanitization.
 func AllowedHTMLPost() AllowedHTML {
 	loadKsesAllowed()
-	return ksesPostHTML
+	out := make(AllowedHTML, len(ksesPostHTML)+2)
+	for k, v := range ksesPostHTML {
+		out[k] = v
+	}
+	if _, ok := out["form"]; !ok {
+		out["form"] = AttrRule{
+			"action": true, "method": true, "name": true, "target": true,
+			"enctype": true, "accept": true, "accept-charset": true,
+			"class": true, "id": true, "role": true, "style": true,
+			"aria-label": true, "aria-labelledby": true, "data-*": true,
+		}
+	}
+	if _, ok := out["input"]; !ok {
+		out["input"] = AttrRule{
+			"type": true, "name": true, "value": true, "placeholder": true,
+			"required": true, "disabled": true, "readonly": true, "checked": true,
+			"size": true, "maxlength": true, "min": true, "max": true, "step": true,
+			"autocomplete": true, "class": true, "id": true, "style": true,
+			"aria-label": true, "aria-describedby": true, "aria-hidden": true,
+			"tabindex": true, "data-*": true, "role": true,
+		}
+	}
+	return out
 }
 
 // AllowedHTMLData returns the data-context allow list (wp_kses_allowed_html('data')).

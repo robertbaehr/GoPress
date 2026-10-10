@@ -494,11 +494,31 @@ func TestFrontSearchResults(t *testing.T) {
 	if !strings.Contains(body, "Search results") && !strings.Contains(body, "Search Results") {
 		t.Fatalf("expected search heading, got %q", body[:min(600, len(body))])
 	}
+	// P3.36: theme search.html + curly quotes + search form from pattern.
+	if !strings.Contains(body, "\u201CHello\u201D") && !strings.Contains(body, "&#8220;Hello&#8221;") {
+		t.Fatalf("expected curly-quoted search term in heading: %q", body[:min(800, len(body))])
+	}
+	if !strings.Contains(body, `role="search"`) || !strings.Contains(body, "wp-block-search") {
+		t.Fatalf("expected core/search form from search.html: %q", body[:min(1200, len(body))])
+	}
 	if !strings.Contains(body, "Hello world") && !strings.Contains(body, "Hello World") {
 		t.Fatalf("expected matching post title, got %q", body)
 	}
 	if strings.Contains(body, "GoPress: front route not implemented") {
 		t.Fatal("search should not 501")
+	}
+}
+
+func TestEnsureSearchTemplateParts(t *testing.T) {
+	got := server.EnsureSearchTemplateParts(`<!-- wp:query-title {"type":"search"} /-->`)
+	if !strings.Contains(got, `"slug":"header"`) || !strings.Contains(got, `"slug":"footer"`) {
+		t.Fatalf("expected header/footer injection: %q", got)
+	}
+	full := `<!-- wp:template-part {"slug":"header"} /-->` + "\n" +
+		`<!-- wp:query-title {"type":"search"} /-->` + "\n" +
+		`<!-- wp:template-part {"slug":"footer"} /-->`
+	if server.EnsureSearchTemplateParts(full) != strings.TrimSpace(full) {
+		t.Fatal("should leave complete template alone")
 	}
 }
 

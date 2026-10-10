@@ -732,6 +732,19 @@
   task: P3.21
   api: n/a
 
+# P3.36: prefer templates/search.html, ensure header/footer, curly-quoted query-title.
+- prefix: wp-content/themes/twentytwentyfive/templates/search.html
+  go: internal/server/front.go
+  status: partial
+  task: P3.36
+  api: n/a
+
+- prefix: wp-includes/template-loader.php#search
+  go: internal/server/front.go
+  status: partial
+  task: P3.36
+  api: n/a
+
 # P10.21: corpus case front-search-hello (/?s=hello) — headers compare.
 - prefix: tests/corpus/front-pages.yaml#front-search-hello
   go: tests/corpus/front-pages.yaml

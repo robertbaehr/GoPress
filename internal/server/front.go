@@ -481,7 +481,7 @@ func (f *Front) renderHome(w http.ResponseWriter, c *wp.Context) {
 	f.renderHomeShim(w, c)
 }
 
-// renderSearch serves /?s= front search results (P3.21).
+// renderSearch serves /?s= front search results (P3.21 / P3.36).
 func (f *Front) renderSearch(w http.ResponseWriter, c *wp.Context, term string) {
 	if c != nil && c.Scope != nil {
 		c.Scope.IsSearch = true
@@ -491,12 +491,65 @@ func (f *Front) renderSearch(w http.ResponseWriter, c *wp.Context, term string) 
 			c.Scope.SearchQuery = term
 		}
 	}
+	// Prefer theme templates/search.html (then index) and ensure header/footer parts.
 	slugs := wp.SearchTemplateSlugs()
 	if tpl, ok := wp.ResolveBlockTemplate(c, slugs...); ok && strings.TrimSpace(tpl) != "" {
-		f.renderSearchBlockTemplate(w, c, tpl, term)
+		f.renderSearchBlockTemplate(w, c, EnsureSearchTemplateParts(tpl), term)
+		return
+	}
+	if wrapped, ok := wrapSearchShimWithParts(c, term); ok {
+		f.renderSearchBlockTemplate(w, c, wrapped, term)
 		return
 	}
 	f.renderSearchShim(w, c, term)
+}
+
+// EnsureSearchTemplateParts prepends/appends header/footer template parts when
+// the resolved search template omits them (P3.36).
+func EnsureSearchTemplateParts(template string) string {
+	tpl := strings.TrimSpace(template)
+	if tpl == "" {
+		return `<!-- wp:template-part {"slug":"header"} /-->` + "\n\n" +
+			`<!-- wp:query-title {"type":"search"} /-->` + "\n\n" +
+			`<!-- wp:template-part {"slug":"footer"} /-->`
+	}
+	hasHeader := strings.Contains(tpl, `"slug":"header"`) || strings.Contains(tpl, `"slug": "header"`)
+	hasFooter := strings.Contains(tpl, `"slug":"footer"`) || strings.Contains(tpl, `"slug": "footer"`)
+	if hasHeader && hasFooter {
+		return tpl
+	}
+	var b strings.Builder
+	if !hasHeader {
+		b.WriteString(`<!-- wp:template-part {"slug":"header"} /-->`)
+		b.WriteString("\n\n")
+	}
+	b.WriteString(tpl)
+	if !hasFooter {
+		b.WriteString("\n\n")
+		b.WriteString(`<!-- wp:template-part {"slug":"footer"} /-->`)
+	}
+	return b.String()
+}
+
+// wrapSearchShimWithParts builds a minimal search block document using theme parts.
+func wrapSearchShimWithParts(c *wp.Context, term string) (string, bool) {
+	if c == nil {
+		return "", false
+	}
+	_, hasHeader := wp.ResolveTemplatePart(c, "header")
+	_, hasFooter := wp.ResolveTemplatePart(c, "footer")
+	if !hasHeader && !hasFooter {
+		return "", false
+	}
+	_ = term
+	return EnsureSearchTemplateParts(
+		`<!-- wp:group {"tagName":"main","layout":{"type":"constrained"}} -->` +
+			`<main class="wp-block-group"><!-- wp:query-title {"type":"search"} /-->` +
+			`<!-- wp:search {"label":"Search","showLabel":false,"placeholder":"Type here...","buttonText":"Search"} /-->` +
+			`<!-- wp:query {"query":{"perPage":10,"inherit":true}} -->` +
+			`<div class="wp-block-query"><!-- wp:post-template --><!-- wp:post-title {"isLink":true} /--><!-- /wp:post-template --></div>` +
+			`<!-- /wp:query --></main><!-- /wp:group -->`,
+	), true
 }
 
 func (f *Front) renderSearchBlockTemplate(w http.ResponseWriter, c *wp.Context, template, term string) {
