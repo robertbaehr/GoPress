@@ -78,3 +78,55 @@ func TestGetRawRefererEmpty(t *testing.T) {
 		t.Fatal("expected empty when no referer")
 	}
 }
+
+func TestGetRefererValidatesLocal(t *testing.T) {
+	c := bootWP(t)
+	home := strings.TrimRight(wp.HomeURL(c, "", ""), "/")
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/options.php", nil)
+	req.Header.Set("Referer", home+"/wp-admin/edit.php")
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	got := wp.GetReferer(c)
+	if got != home+"/wp-admin/edit.php" {
+		t.Fatalf("GetReferer=%q want %q", got, home+"/wp-admin/edit.php")
+	}
+	// Relative same-origin path is accepted.
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/options.php?_wp_http_referer=/wp-admin/plugins.php", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	if got := wp.GetReferer(c); got != "/wp-admin/plugins.php" {
+		t.Fatalf("relative GetReferer=%q", got)
+	}
+}
+
+func TestGetRefererRejectsSelf(t *testing.T) {
+	c := bootWP(t)
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/options.php", nil)
+	req.Header.Set("Referer", "/wp-admin/options.php")
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	if got := wp.GetReferer(c); got != "" {
+		t.Fatalf("self referer should be empty, got %q", got)
+	}
+}
+
+func TestGetRefererRejectsExternal(t *testing.T) {
+	c := bootWP(t)
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/", nil)
+	req.Header.Set("Referer", "https://evil.example/phish")
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	if got := wp.GetReferer(c); got != "" {
+		t.Fatalf("external referer should be empty, got %q", got)
+	}
+}
+
+func TestValidateRedirectRelative(t *testing.T) {
+	c := bootWP(t)
+	if got := wp.ValidateRedirect(c, "/wp-admin/edit.php", ""); got != "/wp-admin/edit.php" {
+		t.Fatalf("relative=%q", got)
+	}
+	if got := wp.ValidateRedirect(c, "https://evil.example/", "/fallback"); got != "/fallback" {
+		t.Fatalf("evil=%q", got)
+	}
+}
