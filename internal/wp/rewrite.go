@@ -341,6 +341,8 @@ func (c *Context) ParseRequest(rules RewriteRules) *ParseResult {
 			c.Scope.Paged = paged
 		}
 		c.Scope.mu.Unlock()
+		// P3.80: show_on_front / page_on_front / page_for_posts conditionals.
+		ApplyFrontPageDisplay(c, res)
 	}
 	return res
 }
