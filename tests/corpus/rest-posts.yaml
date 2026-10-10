@@ -105,3 +105,22 @@
   body: null
   compare: json
   nonce: wp_rest
+
+# Anon forbidden/not-logged-in shapes already match PHP (P10.15).
+- id: rest-settings-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/settings
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-users-me-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/users/me
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
