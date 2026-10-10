@@ -91,11 +91,7 @@ func synthesizeDetailsBlock(e *Env, block Block) string {
 // detailsSetImgFetchPriorityLow mirrors block_core_details_set_img_fetchpriority_low.
 func detailsSetImgFetchPriorityLow(htmlFragment string) string {
 	return reImgTagOpen.ReplaceAllStringFunc(htmlFragment, func(tag string) string {
-		lower := strings.ToLower(tag)
-		if strings.Contains(lower, "fetchpriority=") {
-			re := regexp.MustCompile(`(?i)\s*fetchpriority\s*=\s*(["']).*?\1`)
-			tag = re.ReplaceAllString(tag, "")
-		}
+		tag = stripHTMLAttribute(tag, "fetchpriority")
 		// Insert before trailing > or />.
 		if strings.HasSuffix(tag, "/>") {
 			return strings.TrimSuffix(tag, "/>") + ` fetchpriority="low"/>`
@@ -105,6 +101,46 @@ func detailsSetImgFetchPriorityLow(htmlFragment string) string {
 		}
 		return tag
 	})
+}
+
+// stripHTMLAttribute removes attr='…'/attr="…" from an HTML tag string.
+func stripHTMLAttribute(tag, attr string) string {
+	if tag == "" || attr == "" {
+		return tag
+	}
+	lower := strings.ToLower(tag)
+	needle := strings.ToLower(attr) + "="
+	for {
+		idx := strings.Index(lower, needle)
+		if idx < 0 {
+			return tag
+		}
+		// Include preceding whitespace when present.
+		start := idx
+		for start > 0 && (tag[start-1] == ' ' || tag[start-1] == '\t') {
+			start--
+		}
+		valStart := idx + len(needle)
+		if valStart >= len(tag) {
+			return tag
+		}
+		q := tag[valStart]
+		end := valStart + 1
+		if q == '"' || q == '\'' {
+			for end < len(tag) && tag[end] != q {
+				end++
+			}
+			if end < len(tag) {
+				end++ // closing quote
+			}
+		} else {
+			for end < len(tag) && tag[end] != ' ' && tag[end] != '>' && tag[end] != '/' {
+				end++
+			}
+		}
+		tag = tag[:start] + tag[end:]
+		lower = strings.ToLower(tag)
+	}
 }
 
 // ensureRootAttribute sets or replaces attr="value" on the first opening tag.
@@ -129,8 +165,9 @@ func ensureRootAttribute(htmlFragment, attr, value string) string {
 	if selfClose {
 		open = strings.TrimSpace(strings.TrimSuffix(open, "/"))
 	}
-	re := regexp.MustCompile(`(?i)\s` + regexp.QuoteMeta(attr) + `\s*=\s*(["']).*?\1`)
-	open = re.ReplaceAllString(open, "")
+	open = stripHTMLAttribute("<"+open+">", attr)
+	open = strings.TrimPrefix(open, "<")
+	open = strings.TrimSuffix(open, ">")
 	open = strings.TrimRight(open, " \t")
 	open += fmt.Sprintf(` %s="%s"`, attr, html.EscapeString(value))
 	if selfClose {
