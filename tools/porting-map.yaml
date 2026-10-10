@@ -4810,10 +4810,11 @@ wp-login.php#language-switcher-post
   api: n/a
 
 - prefix: wp-admin/update-core.php
-  go: internal/admin
-  status: out-of-scope
-  task: P7.20
+  go: internal/admin/update_core.go
+  status: partial
+  task: P7.99
   api: n/a
+  notes: "P7.99 — Updates stub (200 + update_core/manage_options gate); core upgrades remain out of scope (was P7.20 403)"
 
 # P7.46: update.php plugin/theme upgrade workflows unavailable (403).
 - prefix: wp-admin/update.php
