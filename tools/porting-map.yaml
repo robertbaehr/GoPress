@@ -4437,3 +4437,18 @@
   status: partial
   task: P7.78
   api: n/a
+
+# P2.73: wp_get_session_token from logged_in cookie.
+- prefix: wp-includes/user.php#wp_get_session_token
+  go: internal/wp/session_token.go
+  status: partial
+  task: P2.73
+  api: exported
+  notes: "P2.73 — GetSessionToken prefers Context.SessionToken else parses logged_in cookie"
+
+- prefix: wp-includes/pluggable.php#wp_parse_auth_cookie
+  go: internal/wp/session_token.go
+  status: partial
+  task: P2.73
+  api: exported
+  notes: "P2.73 — empty-cookie path via request logged_in cookie"
