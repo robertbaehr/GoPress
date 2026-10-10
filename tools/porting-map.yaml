@@ -4980,3 +4980,11 @@
   task: P10.74
   api: n/a
   notes: "P10.74 — +rest-statuses, atom/comments feeds, wp-cron, date archive, edit-comments/users, register"
+
+# P10.75: STATUS/PORTING refresh after P5.82–P10.74.
+- prefix: docs/STATUS.md
+  go: docs/STATUS.md
+  status: partial
+  task: P10.75
+  api: n/a
+  notes: "P10.75 — STATUS refresh after tag-cloud, comments status/bulk, specialchars_decode, get_the_guid, lostpassword redirect, corpus 45/45"
