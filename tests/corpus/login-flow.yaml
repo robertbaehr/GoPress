@@ -423,3 +423,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.118: login headers after stacked settings/auth work.
+- id: login-p10118-lostpassword-root
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword&redirect_to=%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10118-loggedout
+  role: anon
+  method: GET
+  path: /wp-login.php?loggedout=true
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10118-checkemail-confirm
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=confirm
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

@@ -77,3 +77,40 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.118: heartbeat screen_id headers after media/options stack.
+- id: ajax-p10118-heartbeat-upload
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=upload
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10118-heartbeat-media-new
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=media-new
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10118-heartbeat-options-general
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=options-general
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10118-heartbeat-media-upload
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=media-upload
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

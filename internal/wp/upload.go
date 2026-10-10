@@ -175,10 +175,6 @@ func SaveUploadedMedia(c *Context, filename string, r io.Reader, size int64) (*U
 	return up, nil
 }
 
-func insertAttachmentRow(c *Context, author int64, now, title, slug, mimeType, guid string) (int64, error) {
-	return insertAttachmentRowParent(c, author, now, title, slug, "", mimeType, guid, 0)
-}
-
 func sanitizeUploadName(name string) string {
 	return SanitizeFileName(strings.TrimSpace(name))
 }
