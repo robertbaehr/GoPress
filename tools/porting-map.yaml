@@ -279,6 +279,13 @@
   task: P5.29
   api: internal
 
+# P5.30: typography block support (letter-spacing, font-family class, etc.).
+- prefix: wp-includes/block-supports/typography.php
+  go: internal/blocks/supports.go
+  status: partial
+  task: P5.30
+  api: internal
+
 - prefix: wp-includes/template.php
   go: internal/wp/template_hierarchy.go
   status: partial

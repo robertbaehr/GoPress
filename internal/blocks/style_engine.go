@@ -31,21 +31,7 @@ func CompileStyle(style map[string]any) string {
 		}
 	}
 	if typo, ok := style["typography"].(map[string]any); ok {
-		if fs, ok := typo["fontSize"].(string); ok && fs != "" {
-			parts = append(parts, "font-size:"+cssValue(fs))
-		}
-		if lh, ok := typo["lineHeight"].(string); ok && lh != "" {
-			parts = append(parts, "line-height:"+cssValue(lh))
-		}
-		if ff, ok := typo["fontFamily"].(string); ok && ff != "" {
-			parts = append(parts, "font-family:"+cssValue(ff))
-		}
-		if fw, ok := typo["fontWeight"].(string); ok && fw != "" {
-			parts = append(parts, "font-weight:"+cssValue(fw))
-		}
-		if ts, ok := typo["textTransform"].(string); ok && ts != "" {
-			parts = append(parts, "text-transform:"+cssValue(ts))
-		}
+		parts = append(parts, typographyStyles(typo)...)
 	}
 	if border, ok := style["border"].(map[string]any); ok {
 		parts = append(parts, borderStyles(border)...)
@@ -57,6 +43,46 @@ func CompileStyle(style map[string]any) string {
 	// Position block support (P5.28): style.position → position/z-index/sides.
 	parts = append(parts, positionStyles(style["position"])...)
 	return strings.Join(parts, ";")
+}
+
+// typographyStyles mirrors WP typography block support CSS (P5.30).
+func typographyStyles(typo map[string]any) []string {
+	if typo == nil {
+		return nil
+	}
+	var parts []string
+	add := func(cssProp, key string) {
+		raw, ok := typo[key]
+		if !ok || raw == nil {
+			return
+		}
+		var s string
+		switch t := raw.(type) {
+		case string:
+			s = strings.TrimSpace(t)
+		case float64:
+			s = fmt.Sprintf("%g", t)
+		default:
+			s = strings.TrimSpace(fmt.Sprint(raw))
+		}
+		if s == "" {
+			return
+		}
+		parts = append(parts, cssProp+":"+cssValue(s))
+	}
+	add("font-size", "fontSize")
+	add("font-family", "fontFamily")
+	add("font-style", "fontStyle")
+	add("font-weight", "fontWeight")
+	add("letter-spacing", "letterSpacing")
+	add("line-height", "lineHeight")
+	add("text-decoration", "textDecoration")
+	add("text-transform", "textTransform")
+	add("writing-mode", "writingMode")
+	add("text-indent", "textIndent")
+	add("column-count", "textColumns")
+	add("text-shadow", "textShadow")
+	return parts
 }
 
 // positionStyles mirrors wp_get_position_support_styles for sticky/fixed (P5.28).
