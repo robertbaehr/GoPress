@@ -52,6 +52,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/users.php":
 		h.requireLogin(w, r, c, h.serveUsers)
 		return true
+	case "/wp-admin/user-new.php":
+		h.requireLogin(w, r, c, h.serveUserNew)
+		return true
 	case "/wp-admin/site-editor.php":
 		h.requireLogin(w, r, c, h.serveSiteEditor)
 		return true
@@ -870,7 +873,7 @@ func (h *Handler) serveUsers(w http.ResponseWriter, r *http.Request, c *wp.Conte
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
 	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
 	b.WriteString(adminNoticesHTML(c))
-	b.WriteString("<h1>Users</h1>\n")
+	b.WriteString("<h1>Users <a href=\"/wp-admin/user-new.php\" class=\"page-title-action\">Add New User</a></h1>\n")
 	b.WriteString("<table class=\"wp-list-table widefat fixed striped users\">\n")
 	b.WriteString("<thead><tr><th scope=\"col\" class=\"column-username\">Username</th><th scope=\"col\" class=\"column-email\">Email</th></tr></thead>\n")
 	b.WriteString("<tbody id=\"the-list\">\n")
@@ -884,6 +887,47 @@ func (h *Handler) serveUsers(w http.ResponseWriter, r *http.Request, c *wp.Conte
 		b.WriteString("</td></tr>\n")
 	}
 	b.WriteString("</tbody>\n</table>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
+// serveUserNew renders the Add New User form stub (P7.21). POST create is not implemented.
+func (h *Handler) serveUserNew(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Add New User &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<h1>Add New User</h1>\n")
+	b.WriteString("<p>Create a brand new user and add them to this site.</p>\n")
+	b.WriteString("<form method=\"post\" name=\"createuser\" id=\"createuser\" class=\"validate\" novalidate=\"novalidate\">\n")
+	b.WriteString("<input name=\"action\" type=\"hidden\" value=\"createuser\" />\n")
+	b.WriteString("<table class=\"form-table\" role=\"presentation\">\n")
+	b.WriteString("<tr class=\"form-field form-required\"><th scope=\"row\"><label for=\"user_login\">Username <span class=\"description\">(required)</span></label></th>")
+	b.WriteString("<td><input name=\"user_login\" type=\"text\" id=\"user_login\" class=\"ltr\" value=\"\" aria-required=\"true\" maxlength=\"60\" /></td></tr>\n")
+	b.WriteString("<tr class=\"form-field form-required\"><th scope=\"row\"><label for=\"email\">Email <span class=\"description\">(required)</span></label></th>")
+	b.WriteString("<td><input name=\"email\" type=\"email\" id=\"email\" value=\"\" /></td></tr>\n")
+	b.WriteString("<tr class=\"form-field\"><th scope=\"row\"><label for=\"first_name\">First Name</label></th>")
+	b.WriteString("<td><input name=\"first_name\" type=\"text\" id=\"first_name\" value=\"\" /></td></tr>\n")
+	b.WriteString("<tr class=\"form-field\"><th scope=\"row\"><label for=\"last_name\">Last Name</label></th>")
+	b.WriteString("<td><input name=\"last_name\" type=\"text\" id=\"last_name\" value=\"\" /></td></tr>\n")
+	b.WriteString("<tr class=\"form-field\"><th scope=\"row\"><label for=\"url\">Website</label></th>")
+	b.WriteString("<td><input name=\"url\" type=\"url\" id=\"url\" class=\"code\" value=\"\" /></td></tr>\n")
+	b.WriteString("<tr class=\"form-field\"><th scope=\"row\"><label for=\"role\">Role</label></th>")
+	b.WriteString("<td><select name=\"role\" id=\"role\">")
+	b.WriteString("<option selected=\"selected\" value=\"subscriber\">Subscriber</option>")
+	b.WriteString("<option value=\"contributor\">Contributor</option>")
+	b.WriteString("<option value=\"author\">Author</option>")
+	b.WriteString("<option value=\"editor\">Editor</option>")
+	b.WriteString("<option value=\"administrator\">Administrator</option>")
+	b.WriteString("</select></td></tr>\n")
+	b.WriteString("</table>\n")
+	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"createuser\" id=\"createusersub\" class=\"button button-primary\" value=\"Add New User\" /></p>\n")
+	b.WriteString("</form>\n")
+	b.WriteString("<p class=\"description\">User creation via this form is not yet implemented in GoPress.</p>\n")
+	b.WriteString("</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
 

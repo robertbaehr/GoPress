@@ -370,6 +370,12 @@
   task: P7.20
   api: n/a
 
+- prefix: wp-admin/user-new.php
+  go: internal/admin
+  status: partial
+  task: P7.21
+  api: n/a
+
 - prefix: wp-admin/includes/plugin.php
   go: internal/plugins/headers.go
   status: partial

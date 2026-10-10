@@ -75,6 +75,7 @@ func TestAdminRedirectsAnonymous(t *testing.T) {
 		"/wp-admin/edit-comments.php",
 		"/wp-admin/themes.php",
 		"/wp-admin/users.php",
+		"/wp-admin/user-new.php",
 		"/wp-admin/site-editor.php",
 		"/wp-admin/nav-menus.php",
 		"/wp-admin/customize.php",
@@ -111,6 +112,7 @@ func TestAdminScreensLoggedIn(t *testing.T) {
 		{"/wp-admin/edit-comments.php", "Comments"},
 		{"/wp-admin/themes.php", "Themes"},
 		{"/wp-admin/users.php", "Users"},
+		{"/wp-admin/user-new.php", `id="createuser"`},
 		{"/wp-admin/site-editor.php", "Site Editor"},
 		{"/wp-admin/nav-menus.php", "menu-management"},
 		{"/wp-admin/", "At a Glance"},
@@ -283,6 +285,31 @@ func TestUsersListsAdmin(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), "admin") {
 		t.Fatalf("expected admin user, got %q", rec.Body.String())
+	}
+}
+
+func TestUserNewFormStub(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/user-new.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`id="createuser"`,
+		`name="user_login"`,
+		`name="email"`,
+		`name="role"`,
+		"Add New User",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in %q", want, body)
+		}
 	}
 }
 
