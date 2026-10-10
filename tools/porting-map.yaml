@@ -2032,6 +2032,28 @@
   api: internal
   notes: "P3.60 — GenerateRewriteRules author/*/feed rules before bare author"
 
+# P3.61: RSS item <comments> via comments_link_feed; Atom HTML replies always #comments.
+- prefix: wp-includes/feed.php#comments_link_feed
+  go: internal/server/front.go
+  status: partial
+  task: P3.61
+  api: n/a
+  notes: "P3.61 — feedCommentsLink + comments_link_feed filter; RSS <comments>"
+
+- prefix: wp-includes/feed-rss2.php#comments
+  go: internal/server/front.go
+  status: partial
+  task: P3.61
+  api: n/a
+  notes: "P3.61 — item <comments> from get_comments_link"
+
+- prefix: wp-includes/feed-atom.php#replies
+  go: internal/server/front.go
+  status: partial
+  task: P3.61
+  api: n/a
+  notes: "P3.61 — Atom link rel=replies HTML href always permalink#comments"
+
 # P3.59: feed item categories include post tags (get_the_category_rss).
 - prefix: wp-includes/feed.php#get_the_category_rss
   go: internal/server/front.go

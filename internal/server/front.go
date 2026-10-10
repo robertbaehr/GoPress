@@ -1809,12 +1809,9 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 		b.WriteString(xmlEscape(link))
 		b.WriteString("</link>\n")
 		if p.CommentCount > 0 || p.CommentStatus == "open" {
-			anchor := "#respond"
-			if p.CommentCount > 0 {
-				anchor = "#comments"
-			}
+			// P3.61: <comments> via comments_link_feed / get_comments_link.
 			b.WriteString("\t\t\t\t\t<comments>")
-			b.WriteString(xmlEscape(strings.TrimRight(link, "/") + "/" + anchor))
+			b.WriteString(xmlEscape(feedCommentsLink(c, link, p.CommentCount)))
 			b.WriteString("</comments>\n")
 			b.WriteString("\t\t\n")
 		}
@@ -1981,12 +1978,9 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 		b.WriteString("]]></content>\n")
 		b.WriteString("\t\t\n")
 		if p.CommentCount > 0 || p.CommentStatus == "open" {
-			commentsAnchor := "#respond"
-			if p.CommentCount > 0 {
-				commentsAnchor = "#comments"
-			}
+			// P3.61: Atom always uses permalink#comments (feed-atom.php), not #respond.
 			b.WriteString("\t\t\t\t\t<link rel=\"replies\" type=\"text/html\" href=\"")
-			b.WriteString(xmlEscape(strings.TrimRight(link, "/") + "/" + commentsAnchor))
+			b.WriteString(xmlEscape(feedAtomCommentsHTMLLink(link)))
 			b.WriteString("\" thr:count=\"")
 			b.WriteString(strconv.FormatInt(p.CommentCount, 10))
 			b.WriteString("\" />\n")
@@ -2422,6 +2416,29 @@ func feedCategoryNames(c *wp.Context, postID int64) []string {
 		out = append(out, name)
 	}
 	return out
+}
+
+// feedCommentsLink builds the RSS <comments> URL (comments_link_feed / get_comments_link, P3.61).
+// Appends #comments when the post has comments, else #respond; runs comments_link_feed filter.
+func feedCommentsLink(c *wp.Context, permalink string, commentCount int64) string {
+	hash := "#respond"
+	if commentCount > 0 {
+		hash = "#comments"
+	}
+	link := permalink + hash
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("comments_link_feed", link); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				return s
+			}
+		}
+	}
+	return link
+}
+
+// feedAtomCommentsHTMLLink is the Atom HTML replies href (always #comments, P3.61 / feed-atom.php).
+func feedAtomCommentsHTMLLink(permalink string) string {
+	return permalink + "#comments"
 }
 
 func feedCommentCount(c *wp.Context, postID int64) int64 {
