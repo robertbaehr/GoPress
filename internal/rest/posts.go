@@ -152,10 +152,6 @@ func parsePage(r *http.Request) int {
 	return page
 }
 
-func listPosts(c *wp.Context, postType string, limit int) ([]Post, error) {
-	return listPostsPaged(c, postType, limit, 1, false)
-}
-
 func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool) ([]Post, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
