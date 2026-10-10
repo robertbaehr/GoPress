@@ -4726,6 +4726,14 @@
   task: P7.53
   api: n/a
 
+# P7.90: deepen export.php (export cap, export_args, filters UI, export-php class).
+- prefix: wp-admin/export.php#p7.90
+  go: internal/admin/export_wxr.go
+  status: partial
+  task: P7.90
+  api: n/a
+  notes: "P7.90 — export cap gate, export_args filter, post/page/media filter UI, export-php body class, all includes attachment"
+
 # P7.45: Site Health Status/Info tab chrome polish (WP health-check-tab markup).
 - prefix: wp-admin/site-health-info.php
   go: internal/admin/admin.go
