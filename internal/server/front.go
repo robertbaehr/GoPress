@@ -684,5 +684,11 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			}
 			return p.Content, true
 		},
+		LoadFootnotes: func(postID int64) string {
+			if c == nil || c.Meta == nil || postID <= 0 {
+				return ""
+			}
+			return asMetaString(c.Meta.GetMetadata(wp.MetaPost, postID, "footnotes", true))
+		},
 	}
 }

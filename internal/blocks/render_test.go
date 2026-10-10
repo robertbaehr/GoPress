@@ -124,6 +124,45 @@ func TestRenderMoreCoreBlocks(t *testing.T) {
 	}
 }
 
+func TestRenderDetailsFreeformMissingFootnotes(t *testing.T) {
+	details := blocks.Render(readSerialized(t, "core__details"))
+	if !strings.Contains(details, `class="wp-block-details"`) || !strings.Contains(details, "Details Summary") {
+		t.Fatalf("details: %q", details)
+	}
+	if strings.Contains(details, "<!-- wp:") {
+		t.Fatalf("details leftover comments: %q", details)
+	}
+
+	freeform := blocks.Render(readSerialized(t, "core__freeform"))
+	if !strings.Contains(freeform, "Testing freeform block") || !strings.Contains(freeform, "wp-some-class") {
+		t.Fatalf("freeform: %q", freeform)
+	}
+
+	missingIn := `<!-- wp:missing {"originalName":"unregistered/example","originalContent":"<p>Recovered</p>"} /-->`
+	missing := blocks.Render(missingIn)
+	if missing != "<p>Recovered</p>" {
+		t.Fatalf("missing: %q", missing)
+	}
+
+	emptyNotes := blocks.Render(`<!-- wp:footnotes /-->`)
+	if emptyNotes != "" {
+		t.Fatalf("footnotes without post: %q", emptyNotes)
+	}
+	env := &blocks.Env{
+		LoadFootnotes: func(postID int64) string {
+			if postID != 7 {
+				t.Fatalf("postID=%d", postID)
+			}
+			return `[{"id":"fn-a","content":"Hello note"}]`
+		},
+	}
+	env.SetCurrentPost(&blocks.QueryPost{ID: 7})
+	notes := blocks.RenderWith(env, `<!-- wp:footnotes /-->`)
+	if !strings.Contains(notes, `class="wp-block-footnotes"`) || !strings.Contains(notes, `id="fn-a"`) || !strings.Contains(notes, "Hello note") {
+		t.Fatalf("footnotes: %q", notes)
+	}
+}
+
 func TestRenderVoidSpacer(t *testing.T) {
 	out := blocks.Render(`<!-- wp:spacer {"height":"48px"} /-->`)
 	if !strings.Contains(out, `style="height:48px"`) || !strings.Contains(out, `class="wp-block-spacer"`) {
