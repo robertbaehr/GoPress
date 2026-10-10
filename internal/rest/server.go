@@ -290,6 +290,10 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 		s.serveTemplatePartItem(w, r, c, id)
 	case path == "/wp-block-editor/v1/url-details":
 		s.serveURLDetails(w, r, c)
+	case path == "/wp-block-editor/v1/export":
+		s.serveEditSiteExport(w, r, c)
+	case path == "/wp-block-editor/v1/navigation-fallback":
+		s.serveNavigationFallback(w, r, c)
 	default:
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"code":    "rest_no_route",
