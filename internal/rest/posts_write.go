@@ -111,7 +111,16 @@ func (s *Server) serveTypedItem(w http.ResponseWriter, r *http.Request, c *wp.Co
 
 func (s *Server) getTypedItem(w http.ResponseWriter, r *http.Request, c *wp.Context, postType string, id int64) {
 	edit := r.URL.Query().Get("context") == "edit" && canEditPosts(c)
-	post, err := getPostByID(c, postType, id, edit)
+	var (
+		post *Post
+		err  error
+	)
+	// Editors may read drafts/private via any-status lookup (P10.11 e2e create→get).
+	if edit {
+		post, err = getPostByIDAny(c, postType, id, true)
+	} else {
+		post, err = getPostByID(c, postType, id, false)
+	}
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",
