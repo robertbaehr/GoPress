@@ -14,25 +14,25 @@ import (
 
 // ThemeREST is a wp/v2 themes object (P4.59).
 type ThemeREST struct {
-	Stylesheet     string         `json:"stylesheet"`
-	Template       string         `json:"template"`
-	Version        string         `json:"version"`
-	RequiresPHP    string         `json:"requires_php"`
-	RequiresWP     string         `json:"requires_wp"`
-	TextDomain     string         `json:"textdomain"`
-	Screenshot     string         `json:"screenshot"`
-	Author         ThemeRichField `json:"author"`
-	AuthorURI      ThemeRichField `json:"author_uri"`
-	Description    ThemeRichField `json:"description"`
-	Name           ThemeRichField `json:"name"`
-	Tags           ThemeRichField `json:"tags"`
-	ThemeURI       ThemeRichField `json:"theme_uri"`
-	Status         string         `json:"status"`
-	IsBlockTheme   bool           `json:"is_block_theme"`
-	StylesheetURI  string         `json:"stylesheet_uri"`
-	TemplateURI    string         `json:"template_uri"`
-	ThemeSupports  map[string]any `json:"theme_supports,omitempty"`
-	Links          map[string]any `json:"_links"`
+	Stylesheet    string         `json:"stylesheet"`
+	Template      string         `json:"template"`
+	Version       string         `json:"version"`
+	RequiresPHP   string         `json:"requires_php"`
+	RequiresWP    string         `json:"requires_wp"`
+	TextDomain    string         `json:"textdomain"`
+	Screenshot    string         `json:"screenshot"`
+	Author        ThemeRichField `json:"author"`
+	AuthorURI     ThemeRichField `json:"author_uri"`
+	Description   ThemeRichField `json:"description"`
+	Name          ThemeRichField `json:"name"`
+	Tags          ThemeRichField `json:"tags"`
+	ThemeURI      ThemeRichField `json:"theme_uri"`
+	Status        string         `json:"status"`
+	IsBlockTheme  bool           `json:"is_block_theme"`
+	StylesheetURI string         `json:"stylesheet_uri"`
+	TemplateURI   string         `json:"template_uri"`
+	ThemeSupports map[string]any `json:"theme_supports,omitempty"`
+	Links         map[string]any `json:"_links"`
 }
 
 // ThemeRichField is a raw/rendered theme header pair.
