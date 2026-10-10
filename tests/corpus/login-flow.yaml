@@ -165,3 +165,22 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.90: login cookie-test / confirm-admin-email / interim headers.
+- id: login-checkemail-confirm
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=confirm
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-interim-login
+  role: anon
+  method: GET
+  path: /wp-login.php?interim-login=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

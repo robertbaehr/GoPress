@@ -412,3 +412,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.90: category/author/tag archive headers after P3.84 deepen.
+- id: front-category-uncategorized
+  role: anon
+  method: GET
+  path: /category/uncategorized/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-author-admin
+  role: anon
+  method: GET
+  path: /author/admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-tag-fixture-tag-01
+  role: anon
+  method: GET
+  path: /tag/fixture-tag-01/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

@@ -5673,3 +5673,11 @@
   task: P10.89
   api: n/a
   notes: "P10.89 — STATUS/PORTING refresh after P5.89–P10.88 (192/192 corpus)"
+
+# P10.90: expand diff corpus after P5.90–P6.38.
+- prefix: tests/corpus#p10.90
+  go: tests/corpus
+  status: partial
+  task: P10.90
+  api: n/a
+  notes: "P10.90 — comments block-types; cat/author/tag archives; import/export/tools; login interim; toward 200+"
