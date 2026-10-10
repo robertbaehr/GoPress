@@ -127,6 +127,9 @@ func TestAdminScreensLoggedIn(t *testing.T) {
 		{"/wp-admin/post.php?post=1&action=edit", `id="title"`},
 		{"/wp-admin/revision.php?revision=1", "Compare Revisions"},
 		{"/wp-admin/", "At a Glance"},
+		{"/wp-admin/", "dashboard_secondary"},
+		{"/wp-admin/", "Quick Draft"},
+		{"/wp-admin/", "dashboard_activity"},
 	}
 	chromed := map[string]bool{
 		"/wp-admin/":                    true,

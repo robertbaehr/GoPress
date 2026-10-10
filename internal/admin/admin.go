@@ -175,10 +175,13 @@ func (h *Handler) serveDashboard(w http.ResponseWriter, r *http.Request, c *wp.C
 		`<script>var wpApiSettings = {"root":"/wp-json/","nonce":"%s"};</script>
 <script>var heartbeatSettings = {"nonce":"%s"};</script>
 `, html.EscapeString(restNonce), html.EscapeString(hbNonce))
+	// Secondary dashboard widgets (P7.40): Activity, Quick Draft, Events and News
+	// (primary + secondary / "Other WordPress News" stub — no remote RSS fetch).
 	inner := fmt.Sprintf(`%s<h1>Dashboard</h1>
 <p>%s</p>
 <div id="dashboard-widgets-wrap">
 <div id="dashboard-widgets" class="metabox-holder">
+<div id="postbox-container-1" class="postbox-container">
 <div id="dashboard_right_now" class="postbox">
 <h2 class="hndle"><span>At a Glance</span></h2>
 <div class="inside">
@@ -187,6 +190,53 @@ func (h *Handler) serveDashboard(w http.ResponseWriter, r *http.Request, c *wp.C
 <li class="page-count"><a href="/wp-admin/edit.php?post_type=page">%d Pages</a></li>
 <li class="comment-count"><a href="/wp-admin/edit-comments.php">%d Comments</a></li>
 </ul>
+</div>
+</div>
+<div id="dashboard_activity" class="postbox">
+<h2 class="hndle"><span>Activity</span></h2>
+<div class="inside">
+<div id="activity-widget">
+<div id="published-posts" class="activity-block"><h3>Recently Published</h3>
+<p>Recent posts appear here when available.</p>
+</div>
+<div id="latest-comments" class="activity-block"><h3>Recent Comments</h3>
+<p>No comments yet. <a href="/wp-admin/edit-comments.php">View all</a></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div id="postbox-container-2" class="postbox-container">
+<div id="dashboard_quick_press" class="postbox">
+<h2 class="hndle"><span>Quick Draft</span></h2>
+<div class="inside">
+<form name="post" action="/wp-admin/post.php" method="post" id="quick-press">
+<div class="input-text-wrap"><label for="title">Title</label>
+<input type="text" name="post_title" id="title" autocomplete="off" /></div>
+<div class="textarea-wrap"><label for="content">Content</label>
+<textarea name="content" id="content" rows="3" cols="15" autocomplete="off"></textarea></div>
+<p class="submit"><input type="submit" name="save" id="save-post" class="button button-primary" value="Save Draft" />
+<br class="clear" /></p>
+</form>
+</div>
+</div>
+<div id="dashboard_primary" class="postbox">
+<h2 class="hndle"><span>WordPress Events and News</span></h2>
+<div class="inside">
+<div class="rss-widget">
+<ul>
+<li><a href="https://wordpress.org/news/">WordPress Blog</a>
+<span class="rss-date">News feed stub (remote RSS not fetched)</span></li>
+</ul>
+</div>
+<div class="rss-widget" id="dashboard_secondary">
+<h3>Other WordPress News</h3>
+<ul>
+<li><a class="rsswidget" href="https://planet.wordpress.org/">WordPress Planet</a>
+<span class="rss-date">Secondary news stub (dashboard_secondary)</span></li>
+</ul>
+</div>
+</div>
 </div>
 </div>
 </div>
