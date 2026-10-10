@@ -4836,3 +4836,18 @@
   task: P7.82
   api: n/a
   notes: "P7.82 — Sticky subsubsub view + show_sticky=1 filters post__in sticky IDs"
+
+# P2.77: wp_safe_redirect wrapping ValidateRedirect + wp_redirect headers.
+- prefix: wp-includes/pluggable.php#wp_safe_redirect
+  go: internal/wp/referer.go
+  status: partial
+  task: P2.77
+  api: exported
+  notes: "P2.77 — SafeRedirect / SafeRedirectLocation; wp_safe_redirect_fallback filter"
+
+- prefix: wp-includes/pluggable.php#wp_redirect
+  go: internal/wp/referer.go
+  status: partial
+  task: P2.77
+  api: exported
+  notes: "P2.77 — Redirect sets Location + X-Redirect-By; wp_redirect/x_redirect_by filters"
