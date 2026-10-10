@@ -262,6 +262,41 @@ func (h *Handler) serveOptionsGeneral(w http.ResponseWriter, r *http.Request, c 
 	writeHTML(w, http.StatusOK, b.String())
 }
 
+// serveOptionsWriting is the Settings → Writing screen stub (P7.13).
+func (h *Handler) serveOptionsWriting(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	defaultCat := optionString(c, "default_category", "1")
+	defaultFormat := optionString(c, "default_post_format", "0")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Writing Settings &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap\">\n")
+	b.WriteString("<h1>Writing Settings</h1>\n")
+	b.WriteString("<p class=\"description\">GoPress writing settings stub — save lands with options.php.</p>\n")
+	b.WriteString("<form method=\"post\" action=\"options.php\">\n")
+	b.WriteString("<table class=\"form-table\" role=\"presentation\">\n")
+	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"default_category\">Default Post Category</label></th>\n")
+	b.WriteString("<td><input name=\"default_category\" type=\"text\" id=\"default_category\" value=\"")
+	b.WriteString(html.EscapeString(defaultCat))
+	b.WriteString("\" class=\"small-text\"></td>\n</tr>\n")
+	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"default_post_format\">Default Post Format</label></th>\n")
+	b.WriteString("<td><select name=\"default_post_format\" id=\"default_post_format\">\n")
+	b.WriteString("<option value=\"0\"")
+	if defaultFormat == "" || defaultFormat == "0" {
+		b.WriteString(" selected=\"selected\"")
+	}
+	b.WriteString(">Standard</option>\n")
+	b.WriteString("</select></td>\n</tr>\n")
+	b.WriteString("</table>\n")
+	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Save Changes\"></p>\n")
+	b.WriteString("</form>\n</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
 func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
 	var b strings.Builder

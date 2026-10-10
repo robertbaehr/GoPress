@@ -102,6 +102,7 @@ func TestAdminScreensLoggedIn(t *testing.T) {
 	}{
 		{"/wp-admin/edit.php", "wp-list-table"},
 		{"/wp-admin/options-general.php", `name="blogname"`},
+		{"/wp-admin/options-writing.php", `name="default_category"`},
 		{"/wp-admin/plugins.php", "Plugins"},
 		{"/wp-admin/profile.php", `id="your-profile"`},
 		{"/wp-admin/upload.php", "Media Library"},
