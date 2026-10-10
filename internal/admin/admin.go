@@ -2222,7 +2222,7 @@ func (h *Handler) serveAsyncUpload(w http.ResponseWriter, r *http.Request, c *wp
 }
 
 func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	// P7.43: bulk actions (approve / unapprove / spam / trash / delete).
+	// P7.43 / P7.83: bulk actions (approve / unapprove / spam / unspam / trash / untrash / delete).
 	if r.Method == http.MethodPost {
 		if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "moderate_comments") {
 			http.Error(w, "Sorry, you are not allowed to edit comments.\n", http.StatusForbidden)
@@ -2242,6 +2242,7 @@ func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *w
 				ids = strings.Split(raw, ",")
 			}
 		}
+		viewStatus := parseEditCommentStatus(r)
 		counts := map[string]int{}
 		for _, raw := range ids {
 			cid, _ := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
@@ -2261,9 +2262,17 @@ func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *w
 				if updateCommentApproved(c, cid, "spam") == nil {
 					counts["spammed"]++
 				}
+			case "unspam", "notspam":
+				if updateCommentApproved(c, cid, "1") == nil {
+					counts["unspammed"]++
+				}
 			case "trash":
 				if updateCommentApproved(c, cid, "trash") == nil {
 					counts["trashed"]++
+				}
+			case "untrash":
+				if updateCommentApproved(c, cid, "1") == nil {
+					counts["untrashed"]++
 				}
 			case "delete":
 				if deleteAdminComment(c, cid) == nil {
@@ -2273,6 +2282,10 @@ func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *w
 		}
 		loc := "/wp-admin/edit-comments.php"
 		sep := "?"
+		if viewStatus != "" && viewStatus != "all" {
+			loc += sep + "comment_status=" + url.QueryEscape(viewStatus)
+			sep = "&"
+		}
 		for k, n := range counts {
 			if n <= 0 {
 				continue
@@ -2288,11 +2301,13 @@ func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *w
 	}
 
 	blogname := optionString(c, "blogname", "GoPress")
-	items, err := recentComments(c, 50)
+	commentStatus := parseEditCommentStatus(r)
+	items, err := recentComments(c, 50, commentStatus)
 	if err != nil {
 		http.Error(w, "comments: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
+	statusCounts := countCommentsByStatus(c)
 	var b strings.Builder
 	b.WriteString("<h1>Comments</h1>\n")
 	if n := r.URL.Query().Get("approved"); n != "" {
@@ -2305,10 +2320,20 @@ func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *w
 		b.WriteString(html.EscapeString(n))
 		b.WriteString(` comment(s) marked as spam.</p></div>` + "\n")
 	}
+	if n := r.URL.Query().Get("unspammed"); n != "" {
+		b.WriteString(`<div id="message" class="updated notice is-dismissible"><p>`)
+		b.WriteString(html.EscapeString(n))
+		b.WriteString(` comment(s) restored from the spam.</p></div>` + "\n")
+	}
 	if n := r.URL.Query().Get("trashed"); n != "" {
 		b.WriteString(`<div id="message" class="updated notice is-dismissible"><p>`)
 		b.WriteString(html.EscapeString(n))
 		b.WriteString(` comment(s) moved to the Trash.</p></div>` + "\n")
+	}
+	if n := r.URL.Query().Get("untrashed"); n != "" {
+		b.WriteString(`<div id="message" class="updated notice is-dismissible"><p>`)
+		b.WriteString(html.EscapeString(n))
+		b.WriteString(` comment(s) restored from the Trash.</p></div>` + "\n")
 	}
 	if n := r.URL.Query().Get("deleted"); n != "" {
 		b.WriteString(`<div id="message" class="updated notice is-dismissible"><p>`)
@@ -2320,16 +2345,22 @@ func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *w
 		b.WriteString(html.EscapeString(n))
 		b.WriteString(` comment(s) unapproved.</p></div>` + "\n")
 	}
-	b.WriteString(`<form method="post" action="/wp-admin/edit-comments.php" id="comments-form">` + "\n")
+	writeEditCommentStatusViews(&b, commentStatus, statusCounts)
+	b.WriteString(`<form method="post" action="/wp-admin/edit-comments.php`)
+	if commentStatus != "" && commentStatus != "all" {
+		b.WriteString(`?comment_status=`)
+		b.WriteString(url.QueryEscape(commentStatus))
+	}
+	b.WriteString(`" id="comments-form">` + "\n")
+	if commentStatus != "" && commentStatus != "all" {
+		b.WriteString(`<input type="hidden" name="comment_status" value="`)
+		b.WriteString(html.EscapeString(commentStatus))
+		b.WriteString(`" />` + "\n")
+	}
 	b.WriteString(`<div class="tablenav top"><div class="alignleft actions bulkactions">`)
 	b.WriteString(`<label for="bulk-action-selector-top" class="screen-reader-text">Select bulk action</label>`)
 	b.WriteString(`<select name="action" id="bulk-action-selector-top">`)
-	b.WriteString(`<option value="-1">Bulk actions</option>`)
-	b.WriteString(`<option value="unapprove">Unapprove</option>`)
-	b.WriteString(`<option value="approve">Approve</option>`)
-	b.WriteString(`<option value="spam">Mark as spam</option>`)
-	b.WriteString(`<option value="trash">Move to Trash</option>`)
-	b.WriteString(`<option value="delete">Delete permanently</option>`)
+	writeEditCommentBulkOptions(&b, commentStatus)
 	b.WriteString(`</select> `)
 	b.WriteString(`<input type="submit" id="doaction" class="button action" value="Apply" />`)
 	b.WriteString(`</div></div>` + "\n")
@@ -2364,17 +2395,120 @@ func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *w
 	b.WriteString(`<div class="tablenav bottom"><div class="alignleft actions bulkactions">`)
 	b.WriteString(`<label for="bulk-action-selector-bottom" class="screen-reader-text">Select bulk action</label>`)
 	b.WriteString(`<select name="action2" id="bulk-action-selector-bottom">`)
-	b.WriteString(`<option value="-1">Bulk actions</option>`)
-	b.WriteString(`<option value="unapprove">Unapprove</option>`)
-	b.WriteString(`<option value="approve">Approve</option>`)
-	b.WriteString(`<option value="spam">Mark as spam</option>`)
-	b.WriteString(`<option value="trash">Move to Trash</option>`)
-	b.WriteString(`<option value="delete">Delete permanently</option>`)
+	writeEditCommentBulkOptions(&b, commentStatus)
 	b.WriteString(`</select> `)
 	b.WriteString(`<input type="submit" id="doaction2" class="button action" value="Apply" />`)
 	b.WriteString(`</div></div></form>` + "\n")
 	_ = blogname
 	writeAdminPage(w, c, newAdminChrome(c, "Comments", "edit-comments-php"), b.String())
+}
+
+// parseEditCommentStatus reads ?comment_status= for edit-comments.php views (P7.83).
+func parseEditCommentStatus(r *http.Request) string {
+	if r == nil {
+		return "all"
+	}
+	s := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("comment_status")))
+	if s == "" {
+		s = strings.ToLower(strings.TrimSpace(r.FormValue("comment_status")))
+	}
+	switch s {
+	case "moderated", "approved", "spam", "trash", "all":
+		return s
+	case "hold", "pending":
+		return "moderated"
+	default:
+		return "all"
+	}
+}
+
+type editCommentCounts struct {
+	All       int
+	Moderated int
+	Approved  int
+	Spam      int
+	Trash     int
+}
+
+func countCommentsByStatus(c *wp.Context) editCommentCounts {
+	var out editCommentCounts
+	out.Approved = countComments(c, "1")
+	out.Moderated = countComments(c, "0")
+	out.Spam = countComments(c, "spam")
+	out.Trash = countComments(c, "trash")
+	out.All = out.Approved + out.Moderated
+	return out
+}
+
+func writeEditCommentStatusViews(b *strings.Builder, current string, counts editCommentCounts) {
+	if b == nil {
+		return
+	}
+	if current == "" {
+		current = "all"
+	}
+	link := func(status, label string, n int) string {
+		href := "/wp-admin/edit-comments.php"
+		if status != "" && status != "all" {
+			href += "?comment_status=" + url.QueryEscape(status)
+		}
+		cls := ""
+		if status == current || (status == "all" && current == "all") {
+			cls = ` class="current"`
+		}
+		return fmt.Sprintf(`<a href="%s"%s>%s <span class="count">(%d)</span></a>`,
+			html.EscapeString(href), cls, label, n)
+	}
+	b.WriteString(`<ul class="subsubsub">` + "\n")
+	b.WriteString(`<li class="all">`)
+	b.WriteString(link("all", "All", counts.All))
+	b.WriteString(` |</li>` + "\n")
+	b.WriteString(`<li class="moderated">`)
+	b.WriteString(link("moderated", "Pending", counts.Moderated))
+	b.WriteString(` |</li>` + "\n")
+	b.WriteString(`<li class="approved">`)
+	b.WriteString(link("approved", "Approved", counts.Approved))
+	b.WriteString(` |</li>` + "\n")
+	b.WriteString(`<li class="spam">`)
+	b.WriteString(link("spam", "Spam", counts.Spam))
+	b.WriteString(` |</li>` + "\n")
+	b.WriteString(`<li class="trash">`)
+	b.WriteString(link("trash", "Trash", counts.Trash))
+	b.WriteString(`</li>` + "\n")
+	b.WriteString(`</ul>` + "\n")
+}
+
+// writeEditCommentBulkOptions emits context-sensitive bulk <option>s (P7.83).
+func writeEditCommentBulkOptions(b *strings.Builder, commentStatus string) {
+	if b == nil {
+		return
+	}
+	if commentStatus == "" {
+		commentStatus = "all"
+	}
+	b.WriteString(`<option value="-1">Bulk actions</option>`)
+	switch commentStatus {
+	case "spam":
+		b.WriteString(`<option value="unspam">Not spam</option>`)
+		b.WriteString(`<option value="delete">Delete permanently</option>`)
+	case "trash":
+		b.WriteString(`<option value="untrash">Restore</option>`)
+		b.WriteString(`<option value="delete">Delete permanently</option>`)
+	case "moderated":
+		b.WriteString(`<option value="approve">Approve</option>`)
+		b.WriteString(`<option value="spam">Mark as spam</option>`)
+		b.WriteString(`<option value="trash">Move to Trash</option>`)
+	case "approved":
+		b.WriteString(`<option value="unapprove">Unapprove</option>`)
+		b.WriteString(`<option value="spam">Mark as spam</option>`)
+		b.WriteString(`<option value="trash">Move to Trash</option>`)
+	default: // all
+		b.WriteString(`<option value="unapprove">Unapprove</option>`)
+		b.WriteString(`<option value="approve">Approve</option>`)
+		b.WriteString(`<option value="spam">Mark as spam</option>`)
+		b.WriteString(`<option value="trash">Move to Trash</option>`)
+		b.WriteString(`<option value="delete">Delete permanently</option>`)
+	}
 }
 
 // serveCommentModerate is the comment.php moderation / edit stub (P7.30).
@@ -5323,18 +5457,37 @@ func recentMedia(c *wp.Context, limit int) ([]mediaRow, error) {
 	return out, nil
 }
 
-func recentComments(c *wp.Context, limit int) ([]commentRow, error) {
+func recentComments(c *wp.Context, limit int, commentStatus string) ([]commentRow, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
 	if limit <= 0 {
 		limit = 20
 	}
-	q, args, err := c.DB.Prepare(
-		"SELECT comment_ID, comment_author, comment_content FROM "+c.DB.Comments()+
-			" ORDER BY comment_date DESC LIMIT %d",
-		limit,
+	if commentStatus == "" {
+		commentStatus = "all"
+	}
+	var (
+		q    string
+		args []any
+		err  error
 	)
+	base := "SELECT comment_ID, comment_author, comment_content FROM " + c.DB.Comments()
+	switch commentStatus {
+	case "moderated":
+		q, args, err = c.DB.Prepare(base+" WHERE comment_approved = %s ORDER BY comment_date DESC LIMIT %d", "0", limit)
+	case "approved":
+		q, args, err = c.DB.Prepare(base+" WHERE comment_approved = %s ORDER BY comment_date DESC LIMIT %d", "1", limit)
+	case "spam":
+		q, args, err = c.DB.Prepare(base+" WHERE comment_approved = %s ORDER BY comment_date DESC LIMIT %d", "spam", limit)
+	case "trash":
+		q, args, err = c.DB.Prepare(base+" WHERE comment_approved = %s ORDER BY comment_date DESC LIMIT %d", "trash", limit)
+	default: // all — exclude spam/trash like WP
+		q, args, err = c.DB.Prepare(
+			base+" WHERE comment_approved IN (%s, %s) ORDER BY comment_date DESC LIMIT %d",
+			"0", "1", limit,
+		)
+	}
 	if err != nil {
 		return nil, err
 	}
