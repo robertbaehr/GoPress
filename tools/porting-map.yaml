@@ -696,3 +696,4 @@
   api: exported
 
 # P10.16: e2e update blogname via REST settings — tests/e2e/rest-settings.spec.js
+# P10.19: e2e front search /?s= — tests/e2e/search.spec.js
