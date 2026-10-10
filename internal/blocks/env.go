@@ -18,6 +18,9 @@ type Env struct {
 	// LoadPattern returns serialized markup for a core/pattern slug.
 	LoadPattern func(slug string) (string, bool)
 
+	// LoadBlock returns serialized markup for a wp_block (synced pattern) post ID (P5.25).
+	LoadBlock func(ref int64) (string, bool)
+
 	// LoadFootnotes returns the footnotes post meta JSON for a post ID (P5.15).
 	LoadFootnotes func(postID int64) string
 
@@ -44,8 +47,9 @@ type Env struct {
 	// GetPostMeta resolves core/post-meta block bindings (P5.20).
 	GetPostMeta func(postID int64, key string) string
 
-	// PatternOverrides is context for core/pattern-overrides bindings (P5.20).
+	// PatternOverrides is context for core/pattern-overrides bindings (P5.20/P5.25).
 	// Keys are metadata.name values; values map attribute → override string.
+	// Populated from core/block content|overrides attrs (providesContext pattern/overrides).
 	PatternOverrides map[string]map[string]string
 
 	// seenPart tracks template-part slugs currently being rendered (cycle guard).
@@ -53,6 +57,9 @@ type Env struct {
 
 	// seenNav tracks navigation post refs currently being rendered (cycle guard).
 	seenNav map[int64]bool
+
+	// seenBlock tracks wp_block refs currently being rendered (cycle guard, P5.25).
+	seenBlock map[int64]bool
 
 	// currentPost is the post in scope for post-title/content/date (P5.13).
 	currentPost *QueryPost
