@@ -55,3 +55,34 @@ func TestFootnotesPasswordFieldFallback(t *testing.T) {
 		t.Fatalf("password field should hide footnotes: %q", out)
 	}
 }
+
+func TestFootnotesKsesAndSkipEmptyID(t *testing.T) {
+	env := &blocks.Env{
+		LoadFootnotes: func(postID int64) string {
+			return `[{"id":"","content":"skip me"},{"id":"fn-b","content":"<p onclick=\"x\">Safe</p><script>alert(1)</script>"}]`
+		},
+		SanitizeHTML: func(html string) string {
+			// Stand-in for wp.KsesPost (blocks must not import wp).
+			html = strings.ReplaceAll(html, `<script>alert(1)</script>`, "")
+			html = strings.ReplaceAll(html, ` onclick="x"`, "")
+			return html
+		},
+	}
+	env.SetCurrentPost(&blocks.QueryPost{ID: 7})
+	out := blocks.RenderWith(env, `<!-- wp:footnotes {"textColor":"contrast","backgroundColor":"base"} /-->`)
+	if strings.Contains(out, "skip me") || strings.Contains(out, `id=""`) {
+		t.Fatalf("empty id footnote should be skipped: %q", out)
+	}
+	if !strings.Contains(out, `id="fn-b"`) || !strings.Contains(out, "<p>Safe</p>") {
+		t.Fatalf("expected kses-sanitized content: %q", out)
+	}
+	if strings.Contains(out, "<script>") || strings.Contains(out, "onclick") {
+		t.Fatalf("expected script/onclick stripped: %q", out)
+	}
+	if !strings.Contains(out, "has-contrast-color") || !strings.Contains(out, "has-base-background-color") {
+		t.Fatalf("expected color support classes: %q", out)
+	}
+	if !strings.Contains(out, `aria-label="Jump to footnote reference 1"`) {
+		t.Fatalf("expected 1-based index after skip: %q", out)
+	}
+}

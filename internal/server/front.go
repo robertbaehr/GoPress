@@ -4569,6 +4569,8 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			}
 			return asMetaString(c.Meta.GetMetadata(wp.MetaPost, postID, "footnotes", true))
 		},
+		// P5.98: footnotes content sanitized like wp_kses_post.
+		SanitizeHTML: wp.KsesPost,
 		GetPostMeta: func(postID int64, key string) string {
 			if c == nil || c.Meta == nil || postID <= 0 || key == "" {
 				return ""
