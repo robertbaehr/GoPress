@@ -201,7 +201,7 @@ func (f *Front) renderCommentsFeedRSS2(w http.ResponseWriter, r *http.Request, c
 	b.WriteString(xmlEscape(desc))
 	b.WriteString("</description>\n")
 	b.WriteString("\t<lastBuildDate>")
-	b.WriteString(xmlEscape(commentsFeedBuildDate(comments)))
+	b.WriteString(xmlEscape(commentsFeedBuildDate(c, comments)))
 	b.WriteString("</lastBuildDate>\n")
 	// P3.57: optional channel <ttl> when rss_ttl option is a positive integer.
 	if ttl := wp.FeedTTLMinutes(c); ttl != "" {
@@ -248,7 +248,7 @@ func (f *Front) renderCommentsFeedRSS2(w http.ResponseWriter, r *http.Request, c
 		b.WriteString(author)
 		b.WriteString("]]></dc:creator>\n")
 		b.WriteString("\t\t<pubDate>")
-		b.WriteString(xmlEscape(feedRFC822(cm.DateGMT, cm.Date)))
+		b.WriteString(xmlEscape(feedRFC822(c, cm.DateGMT, cm.Date)))
 		b.WriteString("</pubDate>\n")
 		b.WriteString("\t\t<guid isPermaLink=\"false\">")
 		b.WriteString(xmlEscape(guid))
@@ -270,13 +270,13 @@ func (f *Front) renderCommentsFeedRSS2(w http.ResponseWriter, r *http.Request, c
 	_, _ = w.Write([]byte(b.String()))
 }
 
-func commentsFeedBuildDate(comments []wp.Comment) string {
+func commentsFeedBuildDate(c *wp.Context, comments []wp.Comment) string {
 	if len(comments) == 0 {
 		// Stable empty-feed fallback (no wall clock; P3.55).
 		return ""
 	}
 	// Newest comment first (ListRecentComments order).
-	return feedRFC822(comments[0].DateGMT, comments[0].Date)
+	return feedRFC822(c, comments[0].DateGMT, comments[0].Date)
 }
 
 // renderCommentsFeedAtom emits feed-atom-comments.php shape (P3.34).
@@ -310,9 +310,9 @@ func (f *Front) renderCommentsFeedAtom(w http.ResponseWriter, r *http.Request, c
 	b.WriteString("</subtitle>\n\n")
 	b.WriteString("\t<updated>")
 	if len(comments) > 0 {
-		b.WriteString(xmlEscape(feedAtomDate(comments[0].DateGMT, comments[0].Date)))
+		b.WriteString(xmlEscape(feedAtomDate(c, comments[0].DateGMT, comments[0].Date)))
 	} else {
-		b.WriteString(xmlEscape(feedAtomDate("", "")))
+		b.WriteString(xmlEscape(feedAtomDate(c, "", "")))
 	}
 	b.WriteString("</updated>\n\n")
 	b.WriteString("\t<link rel=\"alternate\" type=\"text/html\" href=\"")
@@ -373,10 +373,10 @@ func (f *Front) renderCommentsFeedAtom(w http.ResponseWriter, r *http.Request, c
 		b.WriteString(xmlEscape(guid))
 		b.WriteString("</id>\n")
 		b.WriteString("\t\t<updated>")
-		b.WriteString(xmlEscape(feedAtomDate(cm.DateGMT, cm.Date)))
+		b.WriteString(xmlEscape(feedAtomDate(c, cm.DateGMT, cm.Date)))
 		b.WriteString("</updated>\n")
 		b.WriteString("\t\t<published>")
-		b.WriteString(xmlEscape(feedAtomDate(cm.DateGMT, cm.Date)))
+		b.WriteString(xmlEscape(feedAtomDate(c, cm.DateGMT, cm.Date)))
 		b.WriteString("</published>\n\n")
 		b.WriteString("\t\t\t\t\t<content type=\"html\" xml:base=\"")
 		b.WriteString(xmlEscape(link))
@@ -1762,7 +1762,7 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString(xmlEscape(desc))
 	b.WriteString("</description>\n")
 	b.WriteString("\t<lastBuildDate>")
-	b.WriteString(xmlEscape(feedBuildDate(posts)))
+	b.WriteString(xmlEscape(feedBuildDate(c, posts)))
 	b.WriteString("</lastBuildDate>\n")
 	b.WriteString("\t<language>")
 	b.WriteString(xmlEscape(wp.BlogInfoLanguage(c)))
@@ -1817,7 +1817,7 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 		b.WriteString(feedItemCreator(c, p.AuthorName))
 		b.WriteString("]]></dc:creator>\n")
 		b.WriteString("\t\t<pubDate>")
-		b.WriteString(xmlEscape(feedRFC822(p.DateGMT, p.Date)))
+		b.WriteString(xmlEscape(feedRFC822(c, p.DateGMT, p.Date)))
 		b.WriteString("</pubDate>\n")
 		for _, cat := range p.Categories {
 			b.WriteString("\t\t\t\t<category><![CDATA[")
@@ -1892,9 +1892,9 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString("</subtitle>\n\n")
 	b.WriteString("\t<updated>")
 	if len(posts) > 0 {
-		b.WriteString(xmlEscape(feedAtomDate(posts[0].ModifiedGMT, posts[0].Modified)))
+		b.WriteString(xmlEscape(feedAtomDate(c, posts[0].ModifiedGMT, posts[0].Modified)))
 	} else {
-		b.WriteString(xmlEscape(feedAtomDate("", "")))
+		b.WriteString(xmlEscape(feedAtomDate(c, "", "")))
 	}
 	b.WriteString("</updated>\n\n")
 	b.WriteString("\t<link rel=\"alternate\" type=\"text/html\" href=\"")
@@ -1943,10 +1943,10 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 		b.WriteString(xmlEscape(guid))
 		b.WriteString("</id>\n")
 		b.WriteString("\t\t<updated>")
-		b.WriteString(xmlEscape(feedAtomDate(p.ModifiedGMT, p.Modified)))
+		b.WriteString(xmlEscape(feedAtomDate(c, p.ModifiedGMT, p.Modified)))
 		b.WriteString("</updated>\n")
 		b.WriteString("\t\t<published>")
-		b.WriteString(xmlEscape(feedAtomDate(p.DateGMT, p.Date)))
+		b.WriteString(xmlEscape(feedAtomDate(c, p.DateGMT, p.Date)))
 		b.WriteString("</published>\n")
 		for _, cat := range p.Categories {
 			b.WriteString("\t\t<category scheme=\"")
@@ -2032,7 +2032,7 @@ func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	b.WriteString(xmlEscape(desc))
 	b.WriteString("</description>\n")
 	b.WriteString("\t<dc:date>")
-	b.WriteString(xmlEscape(feedAtomDate(feedBuildDateGMT(posts), "")))
+	b.WriteString(xmlEscape(feedAtomDate(c, feedBuildDateGMT(posts), "")))
 	b.WriteString("\t</dc:date>\n")
 	b.WriteString("\t<sy:updatePeriod>\n")
 	b.WriteString("\thourly\n")
@@ -2073,7 +2073,7 @@ func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		b.WriteString(feedItemCreator(c, p.AuthorName))
 		b.WriteString("]]></dc:creator>\n")
 		b.WriteString("\t<dc:date>")
-		b.WriteString(xmlEscape(feedAtomDate(p.DateGMT, p.Date)))
+		b.WriteString(xmlEscape(feedAtomDate(c, p.DateGMT, p.Date)))
 		b.WriteString("</dc:date>\n")
 		for _, cat := range p.Categories {
 			b.WriteString("\t\t\t\t<dc:subject><![CDATA[")
@@ -2350,26 +2350,83 @@ func atomEnclosureTag(c *wp.Context, enc feedEnclosure) string {
 	return tag
 }
 
-func feedBuildDate(posts []feedPost) string {
+func feedBuildDate(c *wp.Context, posts []feedPost) string {
 	// P3.55: lastBuildDate from newest post modified/publish time — never wall clock.
 	gmt := newestPostDateGMT(posts)
 	if gmt == "" {
 		return ""
 	}
-	return feedRFC822(gmt, "")
+	return feedRFC822(c, gmt, "")
 }
 
-func feedRFC822(gmt, local string) string {
-	for _, src := range []string{gmt, local} {
-		if src == "" {
-			continue
-		}
-		if t, err := time.Parse("2006-01-02 15:04:05", src); err == nil {
-			return t.UTC().Format("Mon, 02 Jan 2006 15:04:05 +0000")
-		}
+// feedRFC822 formats a MySQL DATETIME as RSS pubDate (P3.55 / P3.67).
+// Prefer post_date_gmt as UTC (+0000). When GMT is empty/zero, convert local
+// via the site timezone (timezone_string / gmt_offset) before emitting.
+func feedRFC822(c *wp.Context, gmt, local string) string {
+	if t, ok := feedParseUTC(c, gmt, local); ok {
+		return t.UTC().Format("Mon, 02 Jan 2006 15:04:05 +0000")
 	}
 	// Stable fallback when timestamps are unparseable (P3.55).
 	return ""
+}
+
+func feedParseUTC(c *wp.Context, gmt, local string) (time.Time, bool) {
+	if t, ok := parseFeedMySQLUTC(gmt); ok {
+		return t, true
+	}
+	local = strings.TrimSpace(local)
+	if local == "" || local == "0000-00-00 00:00:00" {
+		return time.Time{}, false
+	}
+	if tz := feedTimezoneName(c); tz != "" {
+		if converted, err := wp.GetGMTFromDate(local, tz, "Y-m-d H:i:s"); err == nil {
+			if t, ok := parseFeedMySQLUTC(converted); ok {
+				return t, true
+			}
+		}
+	}
+	if offset := feedGMTOffsetHours(c); offset != 0 {
+		zone := time.FixedZone("gmt_offset", int(offset*3600))
+		if t, err := time.ParseInLocation("2006-01-02 15:04:05", local, zone); err == nil {
+			return t.UTC(), true
+		}
+	}
+	// Last resort when site TZ is UTC / unset: treat local as UTC.
+	return parseFeedMySQLUTC(local)
+}
+
+func parseFeedMySQLUTC(src string) (time.Time, bool) {
+	src = strings.TrimSpace(src)
+	if src == "" || src == "0000-00-00 00:00:00" {
+		return time.Time{}, false
+	}
+	t, err := time.ParseInLocation("2006-01-02 15:04:05", src, time.UTC)
+	if err != nil {
+		return time.Time{}, false
+	}
+	return t, true
+}
+
+func feedTimezoneName(c *wp.Context) string {
+	if c == nil || c.Options == nil {
+		return ""
+	}
+	return strings.TrimSpace(optionString(c, "timezone_string", ""))
+}
+
+func feedGMTOffsetHours(c *wp.Context) float64 {
+	if c == nil || c.Options == nil {
+		return 0
+	}
+	raw := strings.TrimSpace(optionString(c, "gmt_offset", "0"))
+	if raw == "" {
+		return 0
+	}
+	n, err := strconv.ParseFloat(raw, 64)
+	if err != nil {
+		return 0
+	}
+	return n
 }
 
 func feedAuthor(c *wp.Context, authorID int64) (name, url string) {
@@ -2407,14 +2464,10 @@ func feedItemCreator(c *wp.Context, name string) string {
 	return name
 }
 
-func feedAtomDate(gmt, local string) string {
-	for _, src := range []string{gmt, local} {
-		if src == "" {
-			continue
-		}
-		if t, err := time.Parse("2006-01-02 15:04:05", src); err == nil {
-			return t.UTC().Format("2006-01-02T15:04:05Z")
-		}
+// feedAtomDate formats a MySQL DATETIME as Atom date (P3.55 / P3.67).
+func feedAtomDate(c *wp.Context, gmt, local string) string {
+	if t, ok := feedParseUTC(c, gmt, local); ok {
+		return t.UTC().Format("2006-01-02T15:04:05Z")
 	}
 	// Stable fallback (P3.55).
 	return ""
