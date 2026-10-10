@@ -18,6 +18,8 @@ type postWriteBody struct {
 	Status  string          `json:"status"`
 	Slug    string          `json:"slug"`
 	Author  *int64          `json:"author"`
+	// Sticky is optional; nil means leave sticky_posts unchanged (P4.97).
+	Sticky *bool `json:"sticky"`
 }
 
 func (s *Server) servePostCollection(w http.ResponseWriter, r *http.Request, c *wp.Context, postType string) {
@@ -234,6 +236,16 @@ func (s *Server) createPost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		author = *body.Author
 	}
 	now := time.Now().UTC().Format("2006-01-02 15:04:05")
+	if body.Sticky != nil {
+		if code, msg := stickyWriteForbidden(c); code != 0 {
+			writeJSON(w, code, map[string]any{
+				"code":    "rest_cannot_assign_sticky",
+				"message": msg,
+				"data":    map[string]any{"status": code},
+			})
+			return
+		}
+	}
 	id, err := insertPostRow(c, postRowInsert{
 		Author:  author,
 		Date:    now,
@@ -251,6 +263,16 @@ func (s *Server) createPost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 			"data":    map[string]any{"status": 500},
 		})
 		return
+	}
+	if body.Sticky != nil {
+		if err := applyStickyWrite(c, id, *body.Sticky); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{
+				"code":    "rest_post_sticky",
+				"message": err.Error(),
+				"data":    map[string]any{"status": 500},
+			})
+			return
+		}
 	}
 	post, err := getPostByIDAny(c, "post", id, true)
 	if err != nil || post == nil {
@@ -332,6 +354,16 @@ func (s *Server) updatePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		}
 		status = body.Status
 	}
+	if body.Sticky != nil {
+		if code, msg := stickyWriteForbidden(c); code != 0 {
+			writeJSON(w, code, map[string]any{
+				"code":    "rest_cannot_assign_sticky",
+				"message": msg,
+				"data":    map[string]any{"status": code},
+			})
+			return
+		}
+	}
 	now := time.Now().UTC().Format("2006-01-02 15:04:05")
 	changed := title != existing.Title || content != existing.Content || excerpt != existing.Excerpt
 	if err := updatePostRow(c, id, title, content, excerpt, slug, status, now); err != nil {
@@ -345,6 +377,16 @@ func (s *Server) updatePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	// Create a revision of the updated post when revisioned fields change (P4.48).
 	if changed && status != "auto-draft" {
 		_, _ = savePostRevision(c, existing.Author, id, title, content, excerpt, now)
+	}
+	if body.Sticky != nil {
+		if err := applyStickyWrite(c, id, *body.Sticky); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{
+				"code":    "rest_post_sticky",
+				"message": err.Error(),
+				"data":    map[string]any{"status": 500},
+			})
+			return
+		}
 	}
 	post, err := getPostByIDAny(c, "post", id, true)
 	if err != nil || post == nil {
@@ -410,6 +452,24 @@ func (s *Server) deletePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		"deleted":  true,
 		"previous": post,
 	})
+}
+
+// stickyWriteForbidden mirrors REST sticky capability checks (P4.97).
+func stickyWriteForbidden(c *wp.Context) (int, string) {
+	if c == nil || c.CurrentUser == nil {
+		return http.StatusUnauthorized, "Sorry, you are not allowed to make posts sticky."
+	}
+	if !c.UserCan(c.CurrentUser, "edit_others_posts") || !c.UserCan(c.CurrentUser, "publish_posts") {
+		return http.StatusForbidden, "Sorry, you are not allowed to make posts sticky."
+	}
+	return 0, ""
+}
+
+func applyStickyWrite(c *wp.Context, id int64, sticky bool) error {
+	if sticky {
+		return wp.StickPost(c, id)
+	}
+	return wp.UnstickPost(c, id)
 }
 
 func decodePostWriteBody(r *http.Request) (postWriteBody, error) {

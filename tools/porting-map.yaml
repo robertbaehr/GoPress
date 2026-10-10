@@ -4813,3 +4813,18 @@
   task: P5.81
   api: n/a
   notes: "P5.81 — REST block-types library entry for core/categories"
+
+# P4.97: REST posts sticky write (POST/PUT sticky bool).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#sticky-write
+  go: internal/rest/posts_write.go
+  status: partial
+  task: P4.97
+  api: n/a
+  notes: "P4.97 — create/update honor sticky bool; rest_cannot_assign_sticky caps"
+
+- prefix: wp-includes/post.php#stick_post
+  go: internal/wp/post_class.go
+  status: partial
+  task: P4.97
+  api: exported
+  notes: "P4.97 — StickPost / UnstickPost update sticky_posts option"
