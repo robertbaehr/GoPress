@@ -25,6 +25,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/edit.php":
 		h.requireLogin(w, r, c, h.serveEditPosts)
 		return true
+	case "/wp-admin/post.php":
+		h.requireLogin(w, r, c, h.servePostEdit)
+		return true
 	case "/wp-admin/options-general.php":
 		h.requireLogin(w, r, c, h.serveOptionsGeneral)
 		return true
@@ -199,8 +202,14 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		b.WriteString(html.EscapeString(postType))
 		b.WriteString(" hentry\">")
 		b.WriteString("<td class=\"title column-title has-row-actions column-primary page-title\" data-colname=\"Title\"><strong>")
+		b.WriteString("<a class=\"row-title\" href=\"/wp-admin/post.php?post=")
+		b.WriteString(strconv.FormatInt(p.ID, 10))
+		b.WriteString("&amp;action=edit\">")
 		b.WriteString(html.EscapeString(p.Title))
-		b.WriteString("</strong></td>")
+		b.WriteString("</a></strong>")
+		b.WriteString("<div class=\"row-actions\"><span class=\"edit\"><a href=\"/wp-admin/post.php?post=")
+		b.WriteString(strconv.FormatInt(p.ID, 10))
+		b.WriteString("&amp;action=edit\">Edit</a></span></div></td>")
 		b.WriteString("<td class=\"author column-author\" data-colname=\"Author\">")
 		b.WriteString(html.EscapeString(p.Author))
 		b.WriteString("</td>")
@@ -1110,6 +1119,95 @@ func (h *Handler) serveUsers(w http.ResponseWriter, r *http.Request, c *wp.Conte
 		b.WriteString("</td></tr>\n")
 	}
 	b.WriteString("</tbody>\n</table>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
+// servePostEdit renders the classic post.php?action=edit stub shell (P7.24).
+func (h *Handler) servePostEdit(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	action := r.URL.Query().Get("action")
+	if action == "" {
+		action = "edit"
+	}
+	if action != "edit" {
+		http.Error(w, "GoPress: post.php action not implemented\n", http.StatusNotImplemented)
+		return
+	}
+	id, _ := strconv.ParseInt(r.URL.Query().Get("post"), 10, 64)
+	if id <= 0 {
+		http.Error(w, "Invalid post ID.\n", http.StatusBadRequest)
+		return
+	}
+	post, err := wp.GetPostByID(c, id)
+	if err != nil {
+		http.Error(w, "post: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	if post == nil {
+		http.Error(w, "You attempted to edit an item that does not exist. Perhaps it was deleted?\n", http.StatusNotFound)
+		return
+	}
+	blogname := optionString(c, "blogname", "GoPress")
+	heading := "Edit Post"
+	if post.Type == "page" {
+		heading = "Edit Page"
+	}
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>")
+	b.WriteString(html.EscapeString(heading))
+	b.WriteString(" &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n")
+	b.WriteString("<script>var wpApiSettings = {\"root\":\"/wp-json/\",\"nonce\":\"")
+	b.WriteString(html.EscapeString(c.CreateNonce("wp_rest")))
+	b.WriteString("\"};</script>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui post-php\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap\">\n")
+	b.WriteString("<h1 class=\"wp-heading-inline\">")
+	b.WriteString(html.EscapeString(heading))
+	b.WriteString("</h1>\n")
+	b.WriteString("<form name=\"post\" action=\"/wp-admin/post.php\" method=\"post\" id=\"post\">\n")
+	b.WriteString("<input type=\"hidden\" id=\"post_ID\" name=\"post_ID\" value=\"")
+	b.WriteString(strconv.FormatInt(post.ID, 10))
+	b.WriteString("\" />\n")
+	b.WriteString("<input type=\"hidden\" id=\"post_type\" name=\"post_type\" value=\"")
+	b.WriteString(html.EscapeString(post.Type))
+	b.WriteString("\" />\n")
+	b.WriteString("<input type=\"hidden\" id=\"original_post_status\" name=\"original_post_status\" value=\"")
+	b.WriteString(html.EscapeString(post.Status))
+	b.WriteString("\" />\n")
+	b.WriteString("<div id=\"poststuff\">\n")
+	b.WriteString("<div id=\"post-body\" class=\"metabox-holder columns-2\">\n")
+	b.WriteString("<div id=\"post-body-content\">\n")
+	b.WriteString("<div id=\"titlediv\"><div id=\"titlewrap\">\n")
+	b.WriteString("<label class=\"screen-reader-text\" id=\"title-prompt-text\" for=\"title\">Add title</label>\n")
+	b.WriteString("<input type=\"text\" name=\"post_title\" size=\"30\" value=\"")
+	b.WriteString(html.EscapeString(post.Title))
+	b.WriteString("\" id=\"title\" spellcheck=\"true\" autocomplete=\"off\" />\n")
+	b.WriteString("</div></div>\n")
+	b.WriteString("<div id=\"postdivrich\" class=\"postarea wp-editor-expand\">\n")
+	b.WriteString("<div id=\"wp-content-editor-container\" class=\"wp-editor-container\">\n")
+	b.WriteString("<textarea class=\"wp-editor-area\" style=\"height:300px\" autocomplete=\"off\" cols=\"40\" name=\"content\" id=\"content\">")
+	b.WriteString(html.EscapeString(post.Content))
+	b.WriteString("</textarea>\n")
+	b.WriteString("</div>\n")
+	b.WriteString("<p class=\"description\">GoPress post editor stub (P7.24) — save/publish lands later.</p>\n")
+	b.WriteString("</div>\n</div>\n")
+	b.WriteString("<div id=\"postbox-container-1\" class=\"postbox-container\">\n")
+	b.WriteString("<div id=\"submitdiv\" class=\"postbox\">\n")
+	b.WriteString("<div class=\"postbox-header\"><h2 class=\"hndle\">Publish</h2></div>\n")
+	b.WriteString("<div class=\"inside\">\n")
+	b.WriteString("<div class=\"submitbox\" id=\"submitpost\">\n")
+	b.WriteString("<div id=\"minor-publishing\"><div id=\"misc-publishing-actions\">\n")
+	b.WriteString("<div class=\"misc-pub-section misc-pub-post-status\">Status: <span id=\"post-status-display\"><strong>")
+	b.WriteString(html.EscapeString(displayPostStatus(post.Status)))
+	b.WriteString("</strong></span></div>\n")
+	b.WriteString("</div></div>\n")
+	b.WriteString("<div id=\"major-publishing-actions\">\n")
+	b.WriteString("<div id=\"publishing-action\"><input type=\"submit\" name=\"publish\" id=\"publish\" class=\"button button-primary button-large\" value=\"Update\" /></div>\n")
+	b.WriteString("<div class=\"clear\"></div>\n</div>\n</div>\n</div>\n</div>\n</div>\n")
+	b.WriteString("</div>\n</div>\n</div>\n</form>\n</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
 

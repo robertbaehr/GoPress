@@ -81,6 +81,7 @@ func TestAdminRedirectsAnonymous(t *testing.T) {
 		"/wp-admin/site-editor.php",
 		"/wp-admin/nav-menus.php",
 		"/wp-admin/customize.php",
+		"/wp-admin/post.php?post=1&action=edit",
 	} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		rec := httptest.NewRecorder()
@@ -119,6 +120,7 @@ func TestAdminScreensLoggedIn(t *testing.T) {
 		{"/wp-admin/user-new.php", `id="createuser"`},
 		{"/wp-admin/site-editor.php", "Site Editor"},
 		{"/wp-admin/nav-menus.php", "menu-management"},
+		{"/wp-admin/post.php?post=1&action=edit", `id="title"`},
 		{"/wp-admin/", "At a Glance"},
 	}
 	chromed := map[string]bool{
