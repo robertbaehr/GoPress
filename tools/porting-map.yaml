@@ -834,10 +834,35 @@
   api: n/a
 
 # P8.11: WP_Privacy_Policy_Content::get_default_content for the policy guide.
-- prefix: wp-admin/includes/class-wp-privacy-policy-content.php
+- prefix: wp-admin/includes/class-wp-privacy-policy-content.php#get_default_content
   go: internal/wp/privacy_policy_content.go
   status: partial
   task: P8.11
+  api: exported
+
+# P8.12: privacy_policy_guide + wp_add_privacy_policy_content registry.
+- prefix: wp-admin/includes/class-wp-privacy-policy-content.php#privacy_policy_guide
+  go: internal/wp/privacy_policy_guide.go
+  status: partial
+  task: P8.12
+  api: exported
+
+- prefix: wp-admin/includes/class-wp-privacy-policy-content.php#add
+  go: internal/wp/privacy_policy_guide.go
+  status: partial
+  task: P8.12
+  api: exported
+
+- prefix: wp-admin/includes/plugin.php#wp_add_privacy_policy_content
+  go: internal/wp/privacy_policy_guide.go
+  status: partial
+  task: P8.12
+  api: exported
+
+- prefix: wp-admin/includes/class-wp-privacy-policy-content.php
+  go: internal/wp/privacy_policy_content.go
+  status: partial
+  task: P8.12
   api: exported
 
 # P7.41: save wp_page_for_privacy_policy on options-privacy.php.
