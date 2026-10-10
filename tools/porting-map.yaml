@@ -541,6 +541,12 @@
   task: P9.2
   api: exported
 
+- prefix: wp-includes/load.php
+  go: internal/plugins/dropins.go
+  status: partial
+  task: P9.3
+  api: exported
+
 - prefix: wp-admin/includes/privacy-tools.php
   go: internal/wp/privacy_export.go
   status: partial
