@@ -1520,6 +1520,21 @@
   api: internal
   notes: "P5.56 — synthesize flex buttons wrapper from inner button blocks"
 
+# P5.57: polish core/columns + core/column (synthesize, stack, width, v-align).
+- prefix: wp-includes/blocks/columns
+  go: internal/blocks/columns.go
+  status: partial
+  task: P5.57
+  api: internal
+  notes: "P5.57 — synthesize columns wrapper; is-not-stacked-on-mobile; are-vertically-aligned-*"
+
+- prefix: wp-includes/blocks/column
+  go: internal/blocks/columns.go
+  status: partial
+  task: P5.57
+  api: internal
+  notes: "P5.57 — synthesize column; width flex-basis; is-vertically-aligned-*"
+
 # P5.42: calendar / archives / latest-posts / latest-comments / tag-cloud / search.
 - prefix: wp-includes/blocks/calendar.php
   go: internal/blocks/widget_blocks.go
