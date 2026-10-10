@@ -1002,6 +1002,13 @@
   task: P10.39
   api: n/a
 
+# P10.40: e2e wp-login.php?reauth=1 forces login form.
+- prefix: tests/e2e/reauth.spec.js
+  go: tests/e2e/reauth.spec.js
+  status: done
+  task: P10.40
+  api: n/a
+
 
 # P10.22: E2E author archive /author/admin/.
 - prefix: tests/e2e/author.spec.js
