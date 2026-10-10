@@ -85,7 +85,13 @@ func (s *Server) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Cont
 }
 
 func (s *Server) servePluginItem(w http.ResponseWriter, r *http.Request, c *wp.Context, plugin string) {
-	if r.Method != http.MethodGet {
+	switch r.Method {
+	case http.MethodGet:
+		// continue
+	case http.MethodPost, http.MethodPut, http.MethodPatch:
+		s.updatePlugin(w, r, c, plugin)
+		return
+	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
@@ -105,21 +111,7 @@ func (s *Server) servePluginItem(w http.ResponseWriter, r *http.Request, c *wp.C
 		})
 		return
 	}
-	plugin, _ = url.PathUnescape(strings.TrimSpace(plugin))
-	plugin = strings.Trim(plugin, "/")
-	if plugin == "" || strings.Contains(plugin, "..") {
-		writeJSON(w, http.StatusNotFound, map[string]any{
-			"code":    "rest_plugin_not_found",
-			"message": "Plugin not found.",
-			"data":    map[string]any{"status": 404},
-		})
-		return
-	}
-	file := plugin
-	if !strings.HasSuffix(strings.ToLower(file), ".php") {
-		file += ".php"
-	}
-	installed, err := plugins.ListInstalledPlugins(c)
+	p, _, err := findInstalledPlugin(c, plugin)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_plugin_error",
@@ -128,17 +120,16 @@ func (s *Server) servePluginItem(w http.ResponseWriter, r *http.Request, c *wp.C
 		})
 		return
 	}
-	for _, p := range installed {
-		if p.File == file || strings.TrimSuffix(p.File, ".php") == plugin {
-			writeJSON(w, http.StatusOK, preparePlugin(c, p))
-			return
-		}
+	if p == nil {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"code":    "rest_plugin_not_found",
+			"message": "Plugin not found.",
+			"data":    map[string]any{"status": 404},
+		})
+		return
 	}
-	writeJSON(w, http.StatusNotFound, map[string]any{
-		"code":    "rest_plugin_not_found",
-		"message": "Plugin not found.",
-		"data":    map[string]any{"status": 404},
-	})
+	w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
+	writeJSON(w, http.StatusOK, preparePlugin(c, *p))
 }
 
 func preparePlugin(c *wp.Context, p plugins.PluginData) PluginREST {
