@@ -916,9 +916,21 @@ func (h *Handler) serveOptionsMedia(w http.ResponseWriter, r *http.Request, c *w
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveOptionsPermalink is the Settings → Permalinks screen stub (P7.36).
-// Shows common permalink structure radios plus optional category/tag bases.
+// serveOptionsPermalink is the Settings → Permalinks screen (P7.36 / P7.52).
+// Shows common permalink structure radios plus optional category/tag bases;
+// POST persists permalink_structure / category_base / tag_base.
 func (h *Handler) serveOptionsPermalink(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if r.Method == http.MethodPost {
+		if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "manage_options") {
+			http.Error(w, "Sorry, you are not allowed to manage options for this site.\n", http.StatusForbidden)
+			return
+		}
+		_ = r.ParseForm()
+		savePermalinkOptions(c, r)
+		http.Redirect(w, r, "/wp-admin/options-permalink.php?settings-updated=true", http.StatusFound)
+		return
+	}
+
 	blogname := optionString(c, "blogname", "GoPress")
 	structure := optionString(c, "permalink_structure", "")
 	categoryBase := optionString(c, "category_base", "")
@@ -953,7 +965,10 @@ func (h *Handler) serveOptionsPermalink(w http.ResponseWriter, r *http.Request, 
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1>Permalink Settings</h1>\n")
-	b.WriteString("<p class=\"description\">GoPress permalink settings stub — structure display only; save lands with options-permalink.php.</p>\n")
+	if r.URL.Query().Get("settings-updated") == "true" {
+		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p><strong>Permalink structure updated.</strong></p></div>\n")
+	}
+	b.WriteString("<p class=\"description\">GoPress permalink settings — POST saves permalink_structure via options-permalink.php.</p>\n")
 	b.WriteString("<form name=\"form\" action=\"options-permalink.php\" method=\"post\">\n")
 	b.WriteString("<h2 id=\"wp-settings-section-common-settings\" class=\"title\">Common Settings</h2>\n")
 	b.WriteString("<table class=\"form-table permalink-structure\" role=\"presentation\">\n")
@@ -1013,6 +1028,36 @@ func (h *Handler) serveOptionsPermalink(w http.ResponseWriter, r *http.Request, 
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Save Changes\"></p>\n")
 	b.WriteString("</form>\n</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
+}
+
+// savePermalinkOptions persists Settings → Permalinks fields (P7.52).
+// Mirrors options-permalink.php: selection radio wins over custom text unless custom.
+func savePermalinkOptions(c *wp.Context, r *http.Request) {
+	if c == nil || c.Options == nil || r == nil {
+		return
+	}
+	selection := strings.TrimSpace(r.Form.Get("selection"))
+	structure := strings.TrimSpace(r.Form.Get("permalink_structure"))
+	if selection != "" && selection != "custom" {
+		structure = selection
+	}
+	if structure != "" {
+		// Collapse duplicate slashes and ensure a leading slash (WP subset).
+		structure = strings.ReplaceAll(structure, "#", "")
+		for strings.Contains(structure, "//") {
+			structure = strings.ReplaceAll(structure, "//", "/")
+		}
+		if !strings.HasPrefix(structure, "/") {
+			structure = "/" + structure
+		}
+	}
+	_, _ = c.Options.UpdateOption("permalink_structure", structure, "yes")
+	if _, ok := r.Form["category_base"]; ok {
+		_, _ = c.Options.UpdateOption("category_base", strings.TrimSpace(r.Form.Get("category_base")), "yes")
+	}
+	if _, ok := r.Form["tag_base"]; ok {
+		_, _ = c.Options.UpdateOption("tag_base", strings.TrimSpace(r.Form.Get("tag_base")), "yes")
+	}
 }
 
 func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Context) {
