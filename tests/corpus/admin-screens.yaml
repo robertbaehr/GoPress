@@ -93,3 +93,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.122: comments list chrome after P7.107.
+- id: admin-edit-comments-search
+  role: admin
+  method: GET
+  path: /wp-admin/edit-comments.php?s=hello
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-edit-comments-approved
+  role: admin
+  method: GET
+  path: /wp-admin/edit-comments.php?comment_status=approved
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-edit-comments-spam
+  role: admin
+  method: GET
+  path: /wp-admin/edit-comments.php?comment_status=spam
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

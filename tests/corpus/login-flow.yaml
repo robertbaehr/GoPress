@@ -479,3 +479,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.122: login chrome after P2.102/P6 stack.
+- id: login-p10122-checkemail-redirect
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=confirm&redirect_to=%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10122-checkemail-action-admin
+  role: anon
+  method: GET
+  path: /wp-login.php?action=checkemail&checkemail=confirm&redirect_to=%2Fwp-admin%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10122-interim-redirect
+  role: anon
+  method: GET
+  path: /wp-login.php?interim-login=1&redirect_to=%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
