@@ -13,19 +13,19 @@ import (
 
 // PersonalDataExport is a stub personal-data export report (P8.4).
 type PersonalDataExport struct {
-	Email     string                       `json:"email"`
-	SiteName  string                       `json:"site_name"`
-	SiteURL   string                       `json:"site_url"`
-	Generated string                       `json:"generated"`
-	Groups    []PersonalDataExportGroup    `json:"groups"`
+	Email     string                    `json:"email"`
+	SiteName  string                    `json:"site_name"`
+	SiteURL   string                    `json:"site_url"`
+	Generated string                    `json:"generated"`
+	Groups    []PersonalDataExportGroup `json:"groups"`
 }
 
 // PersonalDataExportGroup is one section of the export.
 type PersonalDataExportGroup struct {
-	GroupID          string                         `json:"group_id"`
-	GroupLabel       string                         `json:"group_label"`
-	GroupDescription string                         `json:"group_description"`
-	Items            []map[string]string            `json:"items"`
+	GroupID          string              `json:"group_id"`
+	GroupLabel       string              `json:"group_label"`
+	GroupDescription string              `json:"group_description"`
+	Items            []map[string]string `json:"items"`
 }
 
 // PersonalDataExportResult describes files written for an export request.
