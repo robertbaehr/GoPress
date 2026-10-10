@@ -6071,6 +6071,21 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P10.100 — template revisions; term-description rest_route; menus; feed=rdf; network.php; confirm_admin_email"
 
+# P10.101: STATUS/PORTING refresh after P5.95–P10.100.
+- prefix: docs/STATUS.md#p10.101
+  go: docs/STATUS.md
+  status: partial
+  task: P10.101
+  api: n/a
+  notes: "P10.101 — STATUS/PORTING refresh after P5.95–P10.100 (325/325 corpus)"
+
+- prefix: PORTING.md#p10.101
+  go: PORTING.md
+  status: partial
+  task: P10.101
+  api: n/a
+  notes: "P10.101 — regenerate porting-status after stacked P5.95–P10.100"
+
 # P10.96: expand diff corpus after P5.93–P6.39.
 - prefix: tests/corpus/#p10.96
   go: tests/corpus/
