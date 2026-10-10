@@ -235,3 +235,94 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.80: block-directory term gate + more collection filters (headers/json).
+- id: rest-block-directory-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-directory/search?term=paragraph
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-route-block-directory
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-directory/search&term=paragraph
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-block-patterns-categories-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-patterns/categories
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-font-collections-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/font-collections
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-menus-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/menus
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-posts-slug-hello
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?slug=hello-world
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-posts-sticky-true
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?sticky=true
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-posts-include-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?include=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-pages-slug-sample
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?slug=sample-page
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-comments-by-post
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/comments?post=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

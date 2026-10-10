@@ -264,3 +264,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.80: query-string singulars + trailing-slash redirect headers.
+- id: front-p-1
+  role: anon
+  method: GET
+  path: /?p=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-page-id-2
+  role: anon
+  method: GET
+  path: /?page_id=2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-sample-page-slash-redirect
+  role: anon
+  method: GET
+  path: /sample-page
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
