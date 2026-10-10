@@ -92,10 +92,12 @@ func TestSettingsUpdateAdmin(t *testing.T) {
 		t.Fatalf("SetAuthCookie: %v", err)
 	}
 
-	orig := c.Options.GetOption("blogname", "")
-	t.Cleanup(func() {
-		_, _ = c.Options.UpdateOption("blogname", orig, "")
-	})
+	origName := c.Options.GetOption("blogname", "")
+	origPPP := c.Options.GetOption("posts_per_page", 10)
+	defer func() {
+		_, _ = c.Options.UpdateOption("blogname", origName, "")
+		_, _ = c.Options.UpdateOption("posts_per_page", origPPP, "")
+	}()
 
 	body := `{"title":"GoPress Settings Write","posts_per_page":7}`
 	req := httptest.NewRequest(http.MethodPost, "/wp-json/wp/v2/settings", strings.NewReader(body))
