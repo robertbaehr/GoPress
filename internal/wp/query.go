@@ -52,6 +52,13 @@ type QueryArgs struct {
 	OrderBy string
 	// Order is ASC or DESC (default DESC) (P4.83).
 	Order string
+	// DateAfter / DateBefore filter post_date (REST ?after=/?before=, inclusive, P4.91).
+	// Values are MySQL datetimes "2006-01-02 15:04:05".
+	DateAfter  string
+	DateBefore string
+	// ModifiedAfter / ModifiedBefore filter post_modified (REST ?modified_after=/?modified_before=, P4.91).
+	ModifiedAfter  string
+	ModifiedBefore string
 }
 
 // Post is a row from wp_posts used by front and REST helpers.
@@ -119,6 +126,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		where = append(where, "DAY(post_date) = %d")
 		vals = append(vals, args.Day)
 	}
+	where, vals = appendDateQueryFilters(where, vals, args)
 	if args.Author > 0 {
 		where = append(where, "post_author = %d")
 		vals = append(vals, args.Author)
@@ -143,6 +151,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "post_content", "p.post_content")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_name", "p.post_name")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_date", "p.post_date")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_modified", "p.post_modified")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
 		q := "SELECT COUNT(DISTINCT p.ID) AS total FROM " + from + " WHERE " + whereSQL
@@ -174,6 +183,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "post_content", "p.post_content")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_name", "p.post_name")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_date", "p.post_date")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_modified", "p.post_modified")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
 		q := "SELECT COUNT(DISTINCT p.ID) AS total FROM " + from + " WHERE " + whereSQL
@@ -205,6 +215,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "post_content", "p.post_content")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_name", "p.post_name")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_date", "p.post_date")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_modified", "p.post_modified")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
 		q := "SELECT COUNT(DISTINCT p.ID) AS total FROM " + from + " WHERE " + whereSQL
@@ -234,6 +245,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "post_content", "p.post_content")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_name", "p.post_name")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_date", "p.post_date")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_modified", "p.post_modified")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
 		q := "SELECT COUNT(DISTINCT p.ID) AS total FROM " + from + " WHERE " + whereSQL
@@ -333,6 +345,7 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 		where = append(where, "DAY(post_date) = %d")
 		vals = append(vals, args.Day)
 	}
+	where, vals = appendDateQueryFilters(where, vals, args)
 	if args.Author > 0 {
 		where = append(where, "post_author = %d")
 		vals = append(vals, args.Author)
@@ -387,6 +400,7 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "post_content", "p.post_content")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_name", "p.post_name")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_date", "p.post_date")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_modified", "p.post_modified")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID =", "p.ID =")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
@@ -537,6 +551,28 @@ func orderByPostDate(aliased bool) string {
 		return "p.post_date"
 	}
 	return "post_date"
+}
+
+// appendDateQueryFilters applies REST after/before / modified_* filters (P4.91).
+// Comparisons are inclusive to match WP date_query inclusive=true.
+func appendDateQueryFilters(where []string, vals []any, args QueryArgs) ([]string, []any) {
+	if s := strings.TrimSpace(args.DateAfter); s != "" {
+		where = append(where, "post_date >= %s")
+		vals = append(vals, s)
+	}
+	if s := strings.TrimSpace(args.DateBefore); s != "" {
+		where = append(where, "post_date <= %s")
+		vals = append(vals, s)
+	}
+	if s := strings.TrimSpace(args.ModifiedAfter); s != "" {
+		where = append(where, "post_modified >= %s")
+		vals = append(vals, s)
+	}
+	if s := strings.TrimSpace(args.ModifiedBefore); s != "" {
+		where = append(where, "post_modified <= %s")
+		vals = append(vals, s)
+	}
+	return where, vals
 }
 
 // orderByClause maps QueryArgs.OrderBy/Order onto SQL (P4.83).
