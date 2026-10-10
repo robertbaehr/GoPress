@@ -54,3 +54,22 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.110: headers-only expand after P5.100–P6.42 stack.
+- id: admin-plugin-editor
+  role: admin
+  method: GET
+  path: /wp-admin/plugin-editor.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-theme-editor
+  role: admin
+  method: GET
+  path: /wp-admin/theme-editor.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
