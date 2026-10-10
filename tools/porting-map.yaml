@@ -1590,6 +1590,13 @@
   task: P4.59
   api: exported
 
+# P4.60: GET /wp/v2/plugins (+ single plugin) for installed Go/PHP plugins.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-plugins-controller.php
+  go: internal/rest/plugins.go
+  status: partial
+  task: P4.60
+  api: exported
+
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-menu-locations-controller.php
   go: internal/rest/menus.go
   status: partial
