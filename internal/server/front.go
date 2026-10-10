@@ -804,12 +804,15 @@ func (f *Front) renderDateArchiveBlockTemplate(w http.ResponseWriter, c *wp.Cont
 	_, _ = w.Write([]byte(b.String()))
 }
 
-// renderAuthorArchive serves /author/{nicename}/ front archives (P3.23).
+// renderAuthorArchive serves /author/{nicename}/ front archives (P3.23 / P3.83).
 func (f *Front) renderAuthorArchive(w http.ResponseWriter, c *wp.Context, nicename string) {
 	nicename = strings.TrimSpace(nicename)
 	if nicename == "" {
 		f.render404(w, c)
 		return
+	}
+	if c != nil && c.Scope == nil {
+		c.Scope = &wp.RequestScope{}
 	}
 	user, err := c.GetUserBy("slug", nicename)
 	if err != nil || user == nil {
@@ -855,10 +858,51 @@ func (f *Front) renderAuthorArchive(w http.ResponseWriter, c *wp.Context, nicena
 	title := "Author: " + display
 	slugs := wp.AuthorTemplateSlugs(user.Nicename, user.ID)
 	if tpl, ok := wp.ResolveBlockTemplate(c, slugs...); ok && strings.TrimSpace(tpl) != "" {
+		tpl = applyAuthorTemplateContentFilter(c, tpl)
 		f.renderAuthorArchiveBlockTemplate(w, c, tpl, title, user)
 		return
 	}
-	f.renderAuthorArchiveShim(w, c, title, user.ID)
+	f.renderAuthorArchiveShim(w, c, title, user)
+}
+
+// applyAuthorTemplateContentFilter lets hooks adjust resolved author block markup (P3.83).
+func applyAuthorTemplateContentFilter(c *wp.Context, tpl string) string {
+	if c == nil || c.Hooks == nil {
+		return tpl
+	}
+	if v := c.Hooks.ApplyFilters("author_template_content", tpl); v != nil {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return tpl
+}
+
+// frontAuthorDocumentTitle builds the author archive <title> and honors document_title_parts (P3.83).
+func frontAuthorDocumentTitle(c *wp.Context, blogname, archiveTitle string) string {
+	parts := map[string]string{
+		"title":   archiveTitle,
+		"page":    "",
+		"tagline": "",
+		"site":    blogname,
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("document_title_parts", parts); v != nil {
+			if m, ok := v.(map[string]string); ok {
+				parts = m
+			}
+		}
+	}
+	title := strings.TrimSpace(parts["title"])
+	if title == "" {
+		title = "Author"
+	}
+	site := strings.TrimSpace(parts["site"])
+	out := html.EscapeString(title)
+	if site != "" {
+		out += " &#8211; " + html.EscapeString(site)
+	}
+	return out
 }
 
 func (f *Front) renderAuthorArchiveBlockTemplate(w http.ResponseWriter, c *wp.Context, template, archiveTitle string, user *wp.User) {
@@ -890,14 +934,13 @@ func (f *Front) renderAuthorArchiveBlockTemplate(w http.ResponseWriter, c *wp.Co
 	}
 	bodyClasses = wp.BodyClassWithAdminBar(c, bodyClasses)
 
-	pageTitle := html.EscapeString(archiveTitle) + " &#8211; " + html.EscapeString(blogname)
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
 	b.WriteString(frontRobotsMetaTag(c))
 	b.WriteString("<title>")
-	b.WriteString(pageTitle)
+	b.WriteString(frontAuthorDocumentTitle(c, blogname, archiveTitle))
 	b.WriteString("</title>\n")
 	extraTitle, extraHref, restPath := "", "", ""
 	if user != nil {
@@ -1265,8 +1308,12 @@ func termBindingContext(taxonomy string, term *termInfo) *blocks.TermBindingCont
 	}
 }
 
-func (f *Front) renderAuthorArchiveShim(w http.ResponseWriter, c *wp.Context, title string, authorID int64) {
+func (f *Front) renderAuthorArchiveShim(w http.ResponseWriter, c *wp.Context, title string, user *wp.User) {
 	blogname := optionString(c, "blogname", "GoPress")
+	authorID := int64(0)
+	if user != nil {
+		authorID = user.ID
+	}
 	posts, err := wp.GetPosts(c, wp.QueryArgs{
 		PostType: "post", PostStatus: "publish", PostsPerPage: 10,
 		Author: authorID,
@@ -1275,27 +1322,57 @@ func (f *Front) renderAuthorArchiveShim(w http.ResponseWriter, c *wp.Context, ti
 		http.Error(w, "archive: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
+	bodyClass := "archive author"
+	if user != nil {
+		nicename := user.Nicename
+		if nicename == "" {
+			nicename = user.Login
+		}
+		if nicename != "" {
+			bodyClass += " author-" + nicename
+		}
+		if user.ID > 0 {
+			bodyClass += " author-" + strconv.FormatInt(user.ID, 10)
+		}
+	}
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>")
-	b.WriteString(html.EscapeString(title))
-	b.WriteString(" &#8211; ")
-	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(frontAuthorDocumentTitle(c, blogname, title))
 	b.WriteString("</title>\n</head>\n<body class=\"")
-	b.WriteString(html.EscapeString(wp.BodyClassWithAdminBar(c, "archive author")))
+	b.WriteString(html.EscapeString(wp.BodyClassWithAdminBar(c, bodyClass)))
 	b.WriteString("\">\n")
 	b.WriteString(wp.AdminBarHTML(c))
+	b.WriteString("<main id=\"wp--skip-link--target\">\n")
 	b.WriteString("<h1 class=\"page-title\">")
 	b.WriteString(html.EscapeString(title))
 	b.WriteString("</h1>\n<ul class=\"posts\">\n")
+	if len(posts) == 0 {
+		b.WriteString("<li class=\"no-results\">No posts by this author.</li>\n")
+	}
 	for _, p := range posts {
 		b.WriteString("<li><a href=\"?p=")
 		b.WriteString(strconv.FormatInt(p.ID, 10))
 		b.WriteString("\">")
 		b.WriteString(html.EscapeString(p.Title))
-		b.WriteString("</a></li>\n")
+		b.WriteString("</a>")
+		// P3.83: classic shim shows excerpt/content tease when available.
+		ex := strings.TrimSpace(p.Excerpt)
+		if ex == "" {
+			ex = strings.TrimSpace(stripTagsSimple(p.Content))
+			words := strings.Fields(ex)
+			if len(words) > 40 {
+				ex = strings.Join(words[:40], " ") + "…"
+			}
+		}
+		if ex != "" {
+			b.WriteString("<p class=\"entry-summary\">")
+			b.WriteString(html.EscapeString(ex))
+			b.WriteString("</p>")
+		}
+		b.WriteString("</li>\n")
 	}
-	b.WriteString("</ul>\n</body>\n</html>\n")
+	b.WriteString("</ul>\n</main>\n</body>\n</html>\n")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(b.String()))

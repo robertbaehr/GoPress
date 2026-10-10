@@ -895,6 +895,30 @@ func TestFrontAuthorArchive(t *testing.T) {
 	}
 }
 
+func TestFrontAuthorArchiveDocumentTitleParts(t *testing.T) {
+	c := testBoot(t)
+	c.Hooks.AddFilter("document_title_parts", func(value any, _ ...any) any {
+		parts, _ := value.(map[string]string)
+		if parts == nil {
+			parts = map[string]string{}
+		}
+		parts["title"] = "Custom Author Title"
+		parts["site"] = "Custom Site"
+		return parts
+	}, 10, 1)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/author/admin/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "Custom Author Title") || !strings.Contains(body, "Custom Site") {
+		t.Fatalf("expected document_title_parts: %q", body[:min(600, len(body))])
+	}
+}
+
 func TestFrontTagArchive(t *testing.T) {
 	c := testBoot(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
