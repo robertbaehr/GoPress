@@ -39,7 +39,7 @@ func (f *Front) ServeFront(w http.ResponseWriter, r *http.Request, c *wp.Context
 	}
 
 	if isFeedVars(parsed.QueryVars) {
-		f.renderFeedRSS2(w, c)
+		f.renderFeed(w, r, c, parsed.QueryVars["feed"])
 		return
 	}
 
@@ -88,10 +88,19 @@ func isFeedVars(vars map[string]string) bool {
 	}
 	// WP default feed is rss2; "feed" is the permalink alias for the default.
 	switch strings.ToLower(feed) {
-	case "feed", "rss", "rss2":
+	case "feed", "rss", "rss2", "atom":
 		return true
 	default:
 		return false
+	}
+}
+
+func (f *Front) renderFeed(w http.ResponseWriter, r *http.Request, c *wp.Context, feed string) {
+	switch strings.ToLower(feed) {
+	case "atom":
+		f.renderFeedAtom(w, r, c)
+	default:
+		f.renderFeedRSS2(w, c)
 	}
 }
 
@@ -590,6 +599,131 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, c *wp.Context) {
 	_, _ = w.Write([]byte(b.String()))
 }
 
+// renderFeedAtom emits a WordPress-shaped Atom feed (feed-atom.php, P3.17).
+func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	desc := optionString(c, "blogdescription", "")
+	posts, err := latestFeedPosts(c, 10)
+	if err != nil {
+		http.Error(w, "feed: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+
+	self := feedSelfLink(r, c)
+	atomID := home + "/feed/atom/"
+
+	var b strings.Builder
+	b.WriteString(`<?xml version="1.0" encoding="UTF-8"?><feed` + "\n")
+	b.WriteString("\txmlns=\"http://www.w3.org/2005/Atom\"\n")
+	b.WriteString("\txml:lang=\"en-US\"\n")
+	b.WriteString("\txmlns:thr=\"http://purl.org/syndication/thread/1.0\"\n")
+	b.WriteString("\t>\n")
+	b.WriteString("\t<title type=\"text\">")
+	b.WriteString(xmlEscape(blogname))
+	b.WriteString("</title>\n")
+	b.WriteString("\t<subtitle type=\"text\">")
+	b.WriteString(xmlEscape(desc))
+	b.WriteString("</subtitle>\n\n")
+	b.WriteString("\t<updated>")
+	if len(posts) > 0 {
+		b.WriteString(xmlEscape(feedAtomDate(posts[0].ModifiedGMT, posts[0].Modified)))
+	} else {
+		b.WriteString(xmlEscape(feedAtomDate("", "")))
+	}
+	b.WriteString("</updated>\n\n")
+	b.WriteString("\t<link rel=\"alternate\" type=\"text/html\" href=\"")
+	b.WriteString(xmlEscape(home))
+	b.WriteString("\" />\n")
+	b.WriteString("\t<id>")
+	b.WriteString(xmlEscape(atomID))
+	b.WriteString("</id>\n")
+	b.WriteString("\t<link rel=\"self\" type=\"application/atom+xml\" href=\"")
+	b.WriteString(xmlEscape(self))
+	b.WriteString("\" />\n\n")
+	b.WriteString("\t<generator uri=\"https://wordpress.org/\" version=\"7.2-alpha-64260\">WordPress</generator>\n")
+
+	for _, p := range posts {
+		link := postPermalink(home, p.Post)
+		guid := home + "/?p=" + strconv.FormatInt(p.ID, 10)
+		if p.GUID != "" {
+			guid = p.GUID
+		}
+		b.WriteString("\t<entry>\n")
+		b.WriteString("\t\t<author>\n")
+		b.WriteString("\t\t\t<name>")
+		b.WriteString(xmlEscape(p.AuthorName))
+		b.WriteString("</name>\n")
+		if p.AuthorURL != "" {
+			b.WriteString("\t\t\t\t\t\t\t<uri>")
+			b.WriteString(xmlEscape(p.AuthorURL))
+			b.WriteString("</uri>\n")
+			b.WriteString("\t\t\t\t\t\t")
+		}
+		b.WriteString("</author>\n\n")
+		b.WriteString("\t\t<title type=\"html\"><![CDATA[")
+		b.WriteString(p.Title)
+		b.WriteString("]]></title>\n")
+		b.WriteString("\t\t<link rel=\"alternate\" type=\"text/html\" href=\"")
+		b.WriteString(xmlEscape(link))
+		b.WriteString("\" />\n\n")
+		b.WriteString("\t\t<id>")
+		b.WriteString(xmlEscape(guid))
+		b.WriteString("</id>\n")
+		b.WriteString("\t\t<updated>")
+		b.WriteString(xmlEscape(feedAtomDate(p.ModifiedGMT, p.Modified)))
+		b.WriteString("</updated>\n")
+		b.WriteString("\t\t<published>")
+		b.WriteString(xmlEscape(feedAtomDate(p.DateGMT, p.Date)))
+		b.WriteString("</published>\n")
+		for _, cat := range p.Categories {
+			b.WriteString("\t\t<category scheme=\"")
+			b.WriteString(xmlEscape(home))
+			b.WriteString("\" term=\"")
+			b.WriteString(xmlEscape(cat))
+			b.WriteString("\" />\n")
+		}
+		b.WriteString("\t\t<summary type=\"html\"><![CDATA[")
+		b.WriteString(p.ExcerptRSS)
+		b.WriteString("]]></summary>\n\n")
+		b.WriteString("\t\t\t\t\t<content type=\"html\" xml:base=\"")
+		b.WriteString(xmlEscape(link))
+		b.WriteString("\"><![CDATA[\n")
+		b.WriteString(p.ContentRSS)
+		if p.ContentRSS != "" && !strings.HasSuffix(p.ContentRSS, "\n") {
+			b.WriteString("\n")
+		}
+		b.WriteString("]]></content>\n")
+		b.WriteString("\t\t\n")
+		if p.CommentCount > 0 || p.CommentStatus == "open" {
+			commentsAnchor := "#respond"
+			if p.CommentCount > 0 {
+				commentsAnchor = "#comments"
+			}
+			b.WriteString("\t\t\t\t\t<link rel=\"replies\" type=\"text/html\" href=\"")
+			b.WriteString(xmlEscape(strings.TrimRight(link, "/") + "/" + commentsAnchor))
+			b.WriteString("\" thr:count=\"")
+			b.WriteString(strconv.FormatInt(p.CommentCount, 10))
+			b.WriteString("\" />\n")
+			b.WriteString("\t\t\t<link rel=\"replies\" type=\"application/atom+xml\" href=\"")
+			b.WriteString(xmlEscape(strings.TrimRight(link, "/") + "/feed/atom/"))
+			b.WriteString("\" thr:count=\"")
+			b.WriteString(strconv.FormatInt(p.CommentCount, 10))
+			b.WriteString("\" />\n")
+			b.WriteString("\t\t\t<thr:total>")
+			b.WriteString(strconv.FormatInt(p.CommentCount, 10))
+			b.WriteString("</thr:total>\n")
+		}
+		b.WriteString("\t\t\t</entry>\n")
+	}
+	b.WriteString("</feed>\n")
+
+	setFrontAPILink(w, c)
+	w.Header().Set("Content-Type", "application/atom+xml; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(b.String()))
+}
+
 func xmlEscape(s string) string {
 	var b strings.Builder
 	_ = xml.EscapeText(&b, []byte(s))
@@ -599,6 +733,7 @@ func xmlEscape(s string) string {
 type feedPost struct {
 	wp.Post
 	AuthorName   string
+	AuthorURL    string
 	Categories   []string
 	CommentCount int64
 	ExcerptRSS   string
@@ -616,7 +751,7 @@ func latestFeedPosts(c *wp.Context, limit int) ([]feedPost, error) {
 	out := make([]feedPost, 0, len(posts))
 	for _, p := range posts {
 		fp := feedPost{Post: p}
-		fp.AuthorName = feedAuthorName(c, p.Author)
+		fp.AuthorName, fp.AuthorURL = feedAuthor(c, p.Author)
 		fp.Categories = feedCategoryNames(c, p.ID)
 		fp.CommentCount = feedCommentCount(c, p.ID)
 		fp.ExcerptRSS = feedExcerptRSS(p)
@@ -648,18 +783,51 @@ func feedRFC822(gmt, local string) string {
 	return time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05 +0000")
 }
 
-func feedAuthorName(c *wp.Context, authorID int64) string {
+func feedAuthor(c *wp.Context, authorID int64) (name, url string) {
 	if c == nil || authorID <= 0 {
-		return ""
+		return "", ""
 	}
 	u, err := c.GetUserBy("id", authorID)
 	if err != nil || u == nil {
-		return ""
+		return "", ""
 	}
 	if u.DisplayName != "" {
-		return u.DisplayName
+		name = u.DisplayName
+	} else {
+		name = u.Login
 	}
-	return u.Login
+	return name, u.URL
+}
+
+func feedAtomDate(gmt, local string) string {
+	for _, src := range []string{gmt, local} {
+		if src == "" {
+			continue
+		}
+		if t, err := time.Parse("2006-01-02 15:04:05", src); err == nil {
+			return t.UTC().Format("2006-01-02T15:04:05Z")
+		}
+	}
+	return time.Now().UTC().Format("2006-01-02T15:04:05Z")
+}
+
+func feedSelfLink(r *http.Request, c *wp.Context) string {
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	if r == nil {
+		return home + "/feed/atom/"
+	}
+	// Prefer absolute URL matching the request (WP self_link).
+	if r.URL != nil {
+		path := r.URL.RequestURI()
+		if path == "" {
+			path = "/"
+		}
+		if strings.HasPrefix(path, "http://") || strings.HasPrefix(path, "https://") {
+			return path
+		}
+		return home + path
+	}
+	return home + "/feed/atom/"
 }
 
 func feedCategoryNames(c *wp.Context, postID int64) []string {
