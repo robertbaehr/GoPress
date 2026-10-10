@@ -2100,6 +2100,21 @@
   api: internal
   notes: "P3.60 — GenerateRewriteRules author/*/feed rules before bare author"
 
+# P3.62: RSS item <guid isPermaLink="false"> even when GUID is a pretty permalink.
+- prefix: wp-includes/feed-rss2.php#guid
+  go: internal/server/front.go
+  status: partial
+  task: P3.62
+  api: n/a
+  notes: "P3.62 — rssGUIDTag / feedItemGUID; isPermaLink always false (WP)"
+
+- prefix: wp-includes/feed.php#get_the_guid
+  go: internal/server/front.go
+  status: partial
+  task: P3.62
+  api: n/a
+  notes: "P3.62 — feedItemGUID prefers stored GUID, else /?p={id}"
+
 # P3.61: RSS item <comments> via comments_link_feed; Atom HTML replies always #comments.
 - prefix: wp-includes/feed.php#comments_link_feed
   go: internal/server/front.go
