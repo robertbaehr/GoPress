@@ -1558,6 +1558,14 @@
   api: internal
   notes: "P5.56 — synthesize flex buttons wrapper from inner button blocks"
 
+# P5.58: polish core/group (synthesize, tagName, layout classes).
+- prefix: wp-includes/blocks/group
+  go: internal/blocks/group.go
+  status: partial
+  task: P5.58
+  api: internal
+  notes: "P5.58 — synthesize group wrapper; tagName; default/flex/constrained layout classes"
+
 # P5.57: polish core/columns + core/column (synthesize, stack, width, v-align).
 - prefix: wp-includes/blocks/columns
   go: internal/blocks/columns.go
