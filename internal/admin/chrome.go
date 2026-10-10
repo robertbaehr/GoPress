@@ -33,7 +33,44 @@ func newAdminChrome(c *wp.Context, title, screen string) adminChrome {
 		Blogname:  blogname,
 		Screen:    screen,
 		UserLogin: login,
+		HeadExtra: adminHeadStyles(c, screen),
 	}
+}
+
+// adminHeadStyles emits WP-like load-styles.php + color scheme links (P7.16).
+func adminHeadStyles(c *wp.Context, screen string) string {
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	if home == "" {
+		home = "http://127.0.0.1:8081"
+	}
+	ver := "7.2-alpha-64260"
+	chunk := "dashicons,admin-bar,common,forms,admin-menu,dashboard,list-tables,edit,revisions,media,misc,admin-color-modern,buttons,l10n"
+	switch screen {
+	case "index-php":
+		chunk = "dashicons,admin-bar,site-health,common,forms,admin-menu,dashboard,list-tables,edit,revisions,media,misc,admin-color-modern,buttons,l10n"
+	case "edit-php":
+		chunk = "dashicons,admin-bar,common,forms,admin-menu,dashboard,list-tables,edit,revisions,media,misc,admin-color-modern,buttons,l10n"
+	case "plugins-php":
+		chunk = "dashicons,admin-bar,common,forms,admin-menu,dashboard,list-tables,edit,revisions,media,misc,admin-color-modern,buttons,l10n,admin-plugins"
+	case "profile-php":
+		chunk = "dashicons,admin-bar,common,forms,admin-menu,dashboard,list-tables,edit,revisions,media,misc,admin-color-modern,buttons,l10n"
+	}
+	styles := home + "/wp-admin/load-styles.php?c=0&dir=ltr&load%5Bchunk_0%5D=" + chunk + "&ver=" + ver
+	colors := home + "/wp-admin/css/colors/modern/colors.min.css?ver=" + ver
+	var b strings.Builder
+	b.WriteString("<link rel='stylesheet' href='")
+	b.WriteString(html.EscapeString(styles))
+	b.WriteString("' media='all' />\n")
+	if screen == "index-php" {
+		b.WriteString("<link rel='stylesheet' id='thickbox-css' href='")
+		b.WriteString(html.EscapeString(home + "/wp-includes/js/thickbox/thickbox.css?ver=" + ver))
+		b.WriteString("' media='all' />\n")
+	}
+	b.WriteString("<link rel='stylesheet' id='colors-css' href='")
+	b.WriteString(html.EscapeString(colors))
+	b.WriteString("' media='all' />\n")
+	b.WriteString("<meta name='viewport' content='width=device-width,initial-scale=1.0' />\n")
+	return b.String()
 }
 
 func (ch adminChrome) openHTML() string {
@@ -168,17 +205,14 @@ func writeAdminSettingsCookies(w http.ResponseWriter, c *wp.Context) {
 		uid = c.CurrentUser.ID
 	}
 	// WP deletes stale wp-settings-{uid} then refreshes wp-settings-time-{uid}.
-	http.SetCookie(w, &http.Cookie{
-		Name:    fmt.Sprintf("wp-settings-%d", uid),
-		Value:   "deleted",
-		Path:    "/",
-		MaxAge:  -1,
-		Expires: time.Unix(1, 0).UTC(),
-	})
-	http.SetCookie(w, &http.Cookie{
-		Name:   fmt.Sprintf("wp-settings-time-%d", uid),
-		Value:  strconv.FormatInt(time.Now().Unix(), 10),
-		Path:   "/",
-		MaxAge: 31536000,
-	})
+	// Emit Set-Cookie manually so attribute order matches PHP (expires before Max-Age).
+	expired := time.Unix(1, 0).UTC().Format(time.RFC1123)
+	w.Header().Add("Set-Cookie", fmt.Sprintf(
+		"wp-settings-%d=deleted; expires=%s; Max-Age=0; path=/", uid, expired))
+	w.Header().Add("Set-Cookie", fmt.Sprintf(
+		"wp-settings-time-%d=%s; expires=%s; Max-Age=31536000; path=/",
+		uid,
+		strconv.FormatInt(time.Now().Unix(), 10),
+		time.Now().UTC().Add(365*24*time.Hour).Format(time.RFC1123),
+	))
 }

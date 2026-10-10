@@ -117,7 +117,7 @@ func (h *Handler) serveDashboard(w http.ResponseWriter, r *http.Request, c *wp.C
 	pages := countPostsByTypeStatus(c, "page", "publish")
 	comments := countComments(c, "1")
 	ch := newAdminChrome(c, "Dashboard", "index-php")
-	ch.HeadExtra = fmt.Sprintf(
+	ch.HeadExtra += fmt.Sprintf(
 		`<script>var wpApiSettings = {"root":"/wp-json/","nonce":"%s"};</script>
 <script>var heartbeatSettings = {"nonce":"%s"};</script>
 `, html.EscapeString(restNonce), html.EscapeString(hbNonce))
