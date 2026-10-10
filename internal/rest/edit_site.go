@@ -2,13 +2,16 @@ package rest
 
 import (
 	"net/http"
+	"strconv"
+	"strings"
 
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// NavigationFallback is the wp-block-editor/v1/navigation-fallback body (P4.25).
+// NavigationFallback is the wp-block-editor/v1/navigation-fallback body (P4.25/P4.53).
 type NavigationFallback struct {
-	ID int64 `json:"id"`
+	ID    int64          `json:"id"`
+	Links map[string]any `json:"_links,omitempty"`
 }
 
 func (s *Server) serveEditSiteExport(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -61,11 +64,7 @@ func (s *Server) serveNavigationFallback(w http.ResponseWriter, r *http.Request,
 		})
 		return
 	}
-	posts, err := wp.GetPosts(c, wp.QueryArgs{
-		PostType:     "wp_navigation",
-		PostStatus:   "publish",
-		PostsPerPage: 1,
-	})
+	post, err := wp.GetOrCreateNavigationFallback(c)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_navigation_fallback_error",
@@ -74,7 +73,7 @@ func (s *Server) serveNavigationFallback(w http.ResponseWriter, r *http.Request,
 		})
 		return
 	}
-	if len(posts) == 0 {
+	if post == nil {
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"code":    "no_fallback_menu",
 			"message": "No fallback menu found.",
@@ -82,6 +81,15 @@ func (s *Server) serveNavigationFallback(w http.ResponseWriter, r *http.Request,
 		})
 		return
 	}
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	w.Header().Set("Allow", "GET")
-	writeJSON(w, http.StatusOK, NavigationFallback{ID: posts[0].ID})
+	writeJSON(w, http.StatusOK, NavigationFallback{
+		ID: post.ID,
+		Links: map[string]any{
+			"self": []map[string]any{{
+				"href":       home + "/wp-json/wp/v2/navigation/" + strconv.FormatInt(post.ID, 10),
+				"embeddable": true,
+			}},
+		},
+	})
 }

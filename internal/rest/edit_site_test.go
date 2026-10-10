@@ -73,13 +73,17 @@ func TestNavigationFallbackStub(t *testing.T) {
 	if rec.Code != http.StatusOK && rec.Code != http.StatusNotFound {
 		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
 	}
-	if rec.Code == http.StatusOK {
-		var fb rest.NavigationFallback
-		if err := json.Unmarshal(rec.Body.Bytes(), &fb); err != nil {
-			t.Fatalf("json: %v", err)
-		}
-		if fb.ID <= 0 {
-			t.Fatalf("expected navigation id, got %+v", fb)
-		}
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var fb rest.NavigationFallback
+	if err := json.Unmarshal(rec.Body.Bytes(), &fb); err != nil {
+		t.Fatalf("json: %v", err)
+	}
+	if fb.ID <= 0 {
+		t.Fatalf("expected navigation id, got %+v", fb)
+	}
+	if fb.Links == nil || fb.Links["self"] == nil {
+		t.Fatalf("expected _links.self, got %+v", fb)
 	}
 }

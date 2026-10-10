@@ -363,6 +363,19 @@
   task: P4.52
   api: exported
 
+# P4.53: navigation-fallback creates default menu + _links.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-navigation-fallback-controller.php
+  go: internal/rest/edit_site.go
+  status: partial
+  task: P4.53
+  api: exported
+
+- prefix: wp-includes/class-wp-navigation-fallback.php
+  go: internal/wp/navigation.go
+  status: partial
+  task: P4.53
+  api: exported
+
 # P7.36: options-permalink.php structure stub.
 - prefix: wp-admin/options-permalink.php
   go: internal/admin/admin.go
