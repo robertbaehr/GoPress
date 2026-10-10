@@ -117,7 +117,7 @@ func TestAdminScreensLoggedIn(t *testing.T) {
 		{"/wp-admin/profile.php", `id="your-profile"`},
 		{"/wp-admin/upload.php", "Media Library"},
 		{"/wp-admin/edit-comments.php", "Comments"},
-		{"/wp-admin/themes.php", "Themes"},
+		{"/wp-admin/themes.php", "Theme Details"},
 		{"/wp-admin/users.php", "Users"},
 		{"/wp-admin/user-new.php", `id="createuser"`},
 		{"/wp-admin/site-editor.php", "Site Editor"},
@@ -217,6 +217,34 @@ func TestThemeInstallOutOfScope(t *testing.T) {
 	}
 	if !strings.Contains(body, "themes.php") {
 		t.Fatalf("expected themes screen link, got %q", body)
+	}
+}
+
+func TestThemesScreenDetails(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/themes.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		"Themes",
+		"theme-browser",
+		"Theme Details",
+		"theme-overlay",
+		"theme-name",
+		"theme-description",
+		"Version:",
+		"data-slug=",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in themes.php", want)
+		}
 	}
 }
 
