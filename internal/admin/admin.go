@@ -3310,7 +3310,7 @@ func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, c *wp.Context, n
 }
 
 // serveErasePersonalData is a privacy tools stub (P8.2) with erasure (P8.5),
-// confirm (P8.8), and confirm UI polish (P8.13).
+// confirm (P8.8), confirm UI polish (P8.13), and user_request create (P8.21).
 func (h *Handler) serveErasePersonalData(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	note := "This tool helps site owners comply with local laws and regulations by deleting or anonymizing known data for a given user."
 	pendingEmail := ""
@@ -3323,6 +3323,12 @@ func (h *Handler) serveErasePersonalData(w http.ResponseWriter, r *http.Request,
 		if email == "" {
 			email = strings.TrimSpace(r.Form.Get("email"))
 		}
+		// Username → email (wp_create_user_request path).
+		if email != "" && !strings.Contains(email, "@") {
+			if u, err := c.GetUserBy("login", email); err == nil && u != nil {
+				email = u.Email
+			}
+		}
 		action := strings.TrimSpace(r.Form.Get("action"))
 		switch action {
 		case "confirm_erasure":
@@ -3330,6 +3336,9 @@ func (h *Handler) serveErasePersonalData(w http.ResponseWriter, r *http.Request,
 				note = "Erasure failed: " + err.Error()
 			} else {
 				note = res.Message
+				if id := wp.FindOpenUserRequestID(c, email, "remove_personal_data"); id > 0 {
+					_ = wp.CompleteUserRequest(c, id)
+				}
 				// P8.16: fulfillment email after confirmed erasure.
 				if err := wp.SendPersonalDataErasureEmail(c, email); err != nil {
 					note += " Erasure email failed: " + err.Error() + "."
@@ -3341,17 +3350,37 @@ func (h *Handler) serveErasePersonalData(w http.ResponseWriter, r *http.Request,
 			// WP: send_confirmation_email checked → pending; unchecked → confirmed/erase.
 			sendConfirm := r.Form.Get("send_confirmation_email") != ""
 			if sendConfirm {
-				pendingEmail = email
-				note = "Confirmation required: confirm erasure for " + email + "."
-			} else if res, err := wp.ErasePersonalData(c, email); err != nil {
-				note = "Erasure failed: " + err.Error()
-			} else {
-				note = res.Message
-				// P8.16: fulfillment email when erasing without confirmation checkbox.
-				if err := wp.SendPersonalDataErasureEmail(c, email); err != nil {
-					note += " Erasure email failed: " + err.Error() + "."
+				if _, err := wp.CreateUserRequest(c, email, "remove_personal_data", "pending"); err != nil {
+					if wp.FindOpenUserRequestID(c, email, "remove_personal_data") > 0 {
+						pendingEmail = email
+						note = "Confirmation required: confirm erasure for " + email + "."
+					} else {
+						note = "Unable to add erase request: " + err.Error()
+					}
 				} else {
-					note += " Erasure email sent to " + email + "."
+					pendingEmail = email
+					note = "Confirmation request initiated successfully. Confirmation required: confirm erasure for " + email + "."
+				}
+			} else {
+				if _, err := wp.CreateUserRequest(c, email, "remove_personal_data", "confirmed"); err != nil {
+					if wp.FindOpenUserRequestID(c, email, "remove_personal_data") == 0 {
+						note = "Unable to add erase request: " + err.Error()
+						break
+					}
+				}
+				if res, err := wp.ErasePersonalData(c, email); err != nil {
+					note = "Erasure failed: " + err.Error()
+				} else {
+					note = res.Message
+					if id := wp.FindOpenUserRequestID(c, email, "remove_personal_data"); id > 0 {
+						_ = wp.CompleteUserRequest(c, id)
+					}
+					// P8.16: fulfillment email when erasing without confirmation checkbox.
+					if err := wp.SendPersonalDataErasureEmail(c, email); err != nil {
+						note += " Erasure email failed: " + err.Error() + "."
+					} else {
+						note += " Erasure email sent to " + email + "."
+					}
 				}
 			}
 		}
@@ -3400,7 +3429,7 @@ func (h *Handler) servePrivacyErasePage(w http.ResponseWriter, c *wp.Context, no
 	b.WriteString("</td></tr>\n</table>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Send Request\"></p>\n")
 	b.WriteString("</div>\n</form>\n")
-	b.WriteString(renderErasePrivacyRequestsTable(pendingEmail))
+	b.WriteString(renderErasePrivacyRequestsTable(c, pendingEmail))
 	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }

@@ -157,13 +157,36 @@ func renderExportPrivacyRequestsTable(c *wp.Context, pendingEmail string) string
 	return table.RenderHTML()
 }
 
-// renderErasePrivacyRequestsTable builds the erase-personal-data list table (P8.10).
-func renderErasePrivacyRequestsTable(pendingEmail string) string {
+// renderErasePrivacyRequestsTable lists stored user_request rows (P8.10 / P8.21).
+func renderErasePrivacyRequestsTable(c *wp.Context, pendingEmail string) string {
 	table := PrivacyRequestsTable{
 		RequestType: "remove_personal_data",
 		AdminURL:    "/wp-admin/erase-personal-data.php",
 	}
-	if pendingEmail != "" {
+	seen := map[string]bool{}
+	if c != nil {
+		if rows, err := wp.ListUserRequests(c, "remove_personal_data", 50); err == nil {
+			for _, r := range rows {
+				next := "—"
+				switch r.Status {
+				case "request-pending", "pending":
+					next = "Waiting for confirmation"
+				case "request-confirmed", "confirmed":
+					next = "Erase personal data"
+				case "request-completed", "completed", "complete":
+					next = "Complete"
+				}
+				table.Rows = append(table.Rows, PrivacyRequest{
+					Email:     r.Email,
+					Status:    r.Status,
+					Requested: r.Requested,
+					NextSteps: next,
+				})
+				seen[strings.ToLower(r.Email)] = true
+			}
+		}
+	}
+	if pendingEmail != "" && !seen[strings.ToLower(pendingEmail)] {
 		table.Rows = append(table.Rows, PrivacyRequest{
 			Email:     pendingEmail,
 			Status:    "request-pending",
