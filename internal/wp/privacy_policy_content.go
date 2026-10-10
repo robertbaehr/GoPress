@@ -1,7 +1,18 @@
-// WP_Privacy_Policy_Content::get_default_content subset (P8.11).
+// WP_Privacy_Policy_Content::get_default_content subset (P8.11 / P8.17).
 package wp
 
-import "strings"
+import (
+	"fmt"
+	"html"
+	"regexp"
+	"strings"
+)
+
+var (
+	rePrivacyPolicyH2   = regexp.MustCompile(`(?is)<h2([^>]*)>(.*?)</h2>`)
+	rePrivacyPolicyTags = regexp.MustCompile(`(?is)<[^>]+>`)
+	rePrivacyPolicyID   = regexp.MustCompile(`(?i)\bid\s*=\s*"([^"]+)"`)
+)
 
 // GetDefaultPrivacyPolicyContent returns the suggested privacy policy HTML
 // (WP_Privacy_Policy_Content::get_default_content).
@@ -155,11 +166,70 @@ func GetDefaultPrivacyPolicyContent(c *Context, description, blocks bool) string
 			if strings.HasPrefix(s, "<p>") {
 				stringsOut[i] = "<!-- wp:paragraph -->\n" + s + "\n<!-- /wp:paragraph -->\n"
 			}
-			if strings.HasPrefix(s, "<h2 ") {
+			if strings.HasPrefix(s, "<h2 ") || strings.HasPrefix(s, "<h2>") {
 				stringsOut[i] = "<!-- wp:heading -->\n" + s + "\n<!-- /wp:heading -->\n"
 			}
 		}
 	}
 
-	return strings.Join(stringsOut, "")
+	out := strings.Join(stringsOut, "")
+	if description {
+		// P8.17: table of contents for policy guide tutorial headings.
+		out = injectPrivacyPolicyGuideTOC(out)
+	}
+	return out
+}
+
+// injectPrivacyPolicyGuideTOC adds id anchors on h2 headings and a TOC list (P8.17).
+func injectPrivacyPolicyGuideTOC(content string) string {
+	type heading struct {
+		id    string
+		title string
+	}
+	var headings []heading
+	n := 0
+	withIDs := rePrivacyPolicyH2.ReplaceAllStringFunc(content, func(m string) string {
+		sub := rePrivacyPolicyH2.FindStringSubmatch(m)
+		if len(sub) < 3 {
+			return m
+		}
+		attrs := sub[1]
+		title := strings.TrimSpace(stripTagsPrivacy(sub[2]))
+		if title == "" {
+			return m
+		}
+		n++
+		id := fmt.Sprintf("privacy-policy-guide-%d", n)
+		if !strings.Contains(strings.ToLower(attrs), "id=") {
+			attrs = attrs + ` id="` + id + `"`
+		} else if m := rePrivacyPolicyID.FindStringSubmatch(attrs); len(m) == 2 {
+			id = m[1]
+		}
+		headings = append(headings, heading{id: id, title: title})
+		return "<h2" + attrs + ">" + sub[2] + "</h2>"
+	})
+	if len(headings) == 0 {
+		return content
+	}
+	var toc strings.Builder
+	toc.WriteString(`<div id="table_of_contents" class="privacy-policy-guide-toc">`)
+	toc.WriteString(`<h2>Table of Contents</h2><ol>`)
+	for _, h := range headings {
+		toc.WriteString(`<li><a href="#`)
+		toc.WriteString(html.EscapeString(h.id))
+		toc.WriteString(`">`)
+		toc.WriteString(html.EscapeString(h.title))
+		toc.WriteString(`</a></li>`)
+	}
+	toc.WriteString(`</ol></div>`)
+	const marker = `<div class="wp-suggested-text">`
+	if idx := strings.Index(withIDs, marker); idx >= 0 {
+		insertAt := idx + len(marker)
+		return withIDs[:insertAt] + toc.String() + withIDs[insertAt:]
+	}
+	return toc.String() + withIDs
+}
+
+func stripTagsPrivacy(s string) string {
+	return rePrivacyPolicyTags.ReplaceAllString(s, "")
 }

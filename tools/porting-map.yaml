@@ -1444,6 +1444,21 @@
   task: P8.12
   api: exported
 
+# P8.17: Privacy Policy Guide table of contents (heading anchors + TOC list).
+- prefix: wp-admin/privacy-policy-guide.php#toc
+  go: internal/wp/privacy_policy_content.go
+  status: partial
+  task: P8.17
+  api: n/a
+  notes: "P8.17 — #table_of_contents + privacy-policy-guide-N anchors on guide h2s"
+
+- prefix: wp-admin/includes/class-wp-privacy-policy-content.php#toc
+  go: internal/wp/privacy_policy_content.go
+  status: partial
+  task: P8.17
+  api: exported
+  notes: "P8.17 — injectPrivacyPolicyGuideTOC when description=true"
+
 # P8.14: suggested privacy policy text changed notice + cache.
 - prefix: wp-admin/includes/class-wp-privacy-policy-content.php#text_change_check
   go: internal/wp/privacy_policy_updated.go

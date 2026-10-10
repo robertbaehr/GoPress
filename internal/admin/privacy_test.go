@@ -154,6 +154,10 @@ func TestPrivacyPolicyGuideSections(t *testing.T) {
 		"Copy suggested policy text to clipboard",
 		"wp-privacy-policy-guide",
 		"privacy-settings-accordion-block-1",
+		// P8.17
+		`id="table_of_contents"`,
+		"Table of Contents",
+		`id="privacy-policy-guide-1"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("missing %q", want)
