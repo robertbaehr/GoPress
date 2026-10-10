@@ -30,6 +30,8 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 		switch action {
 		case "lostpassword", "retrievepassword":
 			h.serveLostPassword(w, r, c, "")
+		case "logout":
+			h.serveLogout(w, r, c)
 		default:
 			h.serveForm(w, r, c, "")
 		}
@@ -38,6 +40,8 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 		case "lostpassword", "retrievepassword":
 			// Stub: redisplay form (mail reset lands later).
 			h.serveLostPassword(w, r, c, "")
+		case "logout":
+			h.serveLogout(w, r, c)
 		default:
 			h.servePost(w, r, c)
 		}
@@ -45,6 +49,32 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 		w.Header().Set("Allow", "GET, HEAD, POST")
 		http.Error(w, "Method Not Allowed\n", http.StatusMethodNotAllowed)
 	}
+}
+
+// serveLogout clears auth cookies and redirects (wp-login.php?action=logout, P6.6).
+func (h *Handler) serveLogout(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	c.AuthenticateRequest()
+	if c.CurrentUser != nil && c.SessionToken != "" {
+		_ = c.DestroySessionToken(c.CurrentUser.ID, c.SessionToken)
+	}
+	c.ClearAuthCookies(w, "/")
+	c.CurrentUser = nil
+	c.SessionToken = ""
+
+	redirectTo := r.URL.Query().Get("redirect_to")
+	if redirectTo == "" {
+		_ = r.ParseForm()
+		redirectTo = r.FormValue("redirect_to")
+	}
+	redirectTo = sanitizeRedirect(redirectTo)
+	if redirectTo == "/wp-admin/" || strings.HasPrefix(redirectTo, "/wp-admin") {
+		home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+		redirectTo = home + "/wp-login.php?loggedout=true"
+		if home == "" {
+			redirectTo = "/wp-login.php?loggedout=true"
+		}
+	}
+	http.Redirect(w, r, redirectTo, http.StatusFound)
 }
 
 func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Context, errMsg string) {
