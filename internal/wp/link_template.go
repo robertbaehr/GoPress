@@ -153,9 +153,10 @@ func GetSiteURL(c *Context, path, scheme string) string {
 }
 
 // AdminURL returns site_url for wp-admin (admin_url, P3.37).
+// Bare admin_url() includes a trailing slash (…/wp-admin/).
 func AdminURL(c *Context, path string) string {
 	path = strings.TrimLeft(strings.TrimSpace(path), "/")
-	adminPath := "wp-admin"
+	adminPath := "wp-admin/"
 	if path != "" {
 		adminPath = "wp-admin/" + path
 	}
