@@ -4492,6 +4492,21 @@
   api: n/a
   notes: "P6.33 — empty title interim success matches sprintf shape"
 
+# P10.70: e2e edit.php Screen Options per page + STATUS/PORTING refresh after P5.78–P6.33.
+- prefix: tests/e2e/edit-per-page.spec.js
+  go: tests/e2e/edit-per-page.spec.js
+  status: partial
+  task: P10.70
+  api: n/a
+  notes: "P10.70 — Playwright coverage for edit_post_per_page Screen Options"
+
+- prefix: docs/STATUS.md
+  go: docs/STATUS.md
+  status: partial
+  task: P10.70
+  api: n/a
+  notes: "P10.70 — STATUS refresh after widget-group, menu_order, referer, commentRss, interim title"
+
 # P4.93: REST pages ?parent= / ?parent_exclude= (post_parent__in / __not_in).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#parent
   go: internal/rest/posts.go
