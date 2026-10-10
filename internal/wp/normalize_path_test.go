@@ -43,4 +43,25 @@ func TestIsStream(t *testing.T) {
 	if wp.IsStream("notascheme://x") {
 		t.Fatal("unknown wrapper should be false")
 	}
+	// P2.80: PHP in_array(..., true) is case-sensitive for wrappers.
+	if wp.IsStream("HTTPS://example.com/x") {
+		t.Fatal("uppercase HTTPS should not match known wrappers")
+	}
+	if wp.IsStream("File://tmp") {
+		t.Fatal("mixed-case File should not match")
+	}
+}
+
+func TestNormalizePathDriveAndUNC(t *testing.T) {
+	wp.ResetNormalizePathCacheForTest()
+	if got := wp.NormalizePath(`d:\a\\b`); got != `D:/a/b` {
+		t.Fatalf("drive=%q", got)
+	}
+	if got := wp.NormalizePath(`///unc/share`); got != `//unc/share` {
+		t.Fatalf("unc collapse=%q", got)
+	}
+	// Uppercase scheme is not a stream wrapper, so "://" collapses like any path.
+	if got := wp.NormalizePath(`HTTPS://ex.com//a`); got != `HTTPS:/ex.com/a` {
+		t.Fatalf("non-stream scheme=%q", got)
+	}
 }

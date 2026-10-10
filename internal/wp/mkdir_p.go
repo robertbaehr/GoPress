@@ -16,28 +16,17 @@ func MkdirP(target string) bool {
 		return false
 	}
 
-	wrapper := ""
-	if i := strings.Index(target, "://"); i >= 0 {
-		wrapper = target[:i]
-		target = target[i+3:]
-	}
+	// P2.80: normalize separators before mkdir (wp_normalize_path).
+	target = NormalizePath(target)
 
-	// Collapse duplicate slashes (PHP str_replace('//','/')).
-	for strings.Contains(target, "//") {
-		target = strings.ReplaceAll(target, "//", "/")
-	}
-	if wrapper != "" {
-		target = wrapper + "://" + target
+	// Stream wrappers beyond local paths are unsupported.
+	if IsStream(target) {
+		return false
 	}
 
 	target = strings.TrimRight(target, "/")
 	if target == "" {
 		target = "/"
-	}
-
-	// Stream wrappers beyond local paths are unsupported.
-	if strings.Contains(target, "://") {
-		return false
 	}
 
 	// Do not allow path traversals (checked before Clean, like WP str_contains).
