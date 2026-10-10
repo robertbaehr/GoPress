@@ -36,10 +36,27 @@ func TestIndexAnonShape(t *testing.T) {
 	if !containsAll(idx.Namespaces, []string{"wp/v2"}) {
 		t.Fatalf("namespaces=%v", idx.Namespaces)
 	}
-	wantRoutes := []string{"/", "/wp/v2", "/wp/v2/posts", "/wp/v2/types", "/wp/v2/pages"}
+	wantRoutes := []string{
+		"/", "/wp/v2",
+		"/wp/v2/posts", "/wp/v2/posts/(?P<id>[\\d]+)",
+		"/wp/v2/pages", "/wp/v2/pages/(?P<id>[\\d]+)",
+		"/wp/v2/types",
+		"/wp/v2/taxonomies",
+		"/wp/v2/categories", "/wp/v2/categories/(?P<id>[\\d]+)",
+		"/wp/v2/tags", "/wp/v2/tags/(?P<id>[\\d]+)",
+		"/wp/v2/comments", "/wp/v2/comments/(?P<id>[\\d]+)",
+		"/wp/v2/media", "/wp/v2/media/(?P<id>[\\d]+)",
+		"/wp/v2/search",
+		"/wp/v2/settings",
+		"/wp/v2/users/me",
+	}
 	for _, r := range wantRoutes {
-		if _, ok := idx.Routes[r]; !ok {
+		ri, ok := idx.Routes[r]
+		if !ok {
 			t.Fatalf("missing route %q; have %v", r, routeKeys(idx.Routes))
+		}
+		if len(ri.Methods) == 0 {
+			t.Fatalf("route %q has no methods", r)
 		}
 	}
 
