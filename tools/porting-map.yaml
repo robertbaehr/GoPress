@@ -3700,9 +3700,9 @@ wp-login.php#language-switcher-post
 - prefix: wp-includes/blocks/footnotes.php
   go: internal/blocks/footnotes.go
   status: partial
-  task: P5.51
+  task: P5.98
   api: internal
-  notes: "P5.51 polish — applySupports, anchor, password-gated; no core/table-of-contents in this WP tree"
+  notes: "P5.98 — KsesPost content, skip empty ids, color supports; P5.51 applySupports/anchor/password-gated"
 
 # P5.52: core/file — synthesize from attrs + displayPreview object directives.
 - prefix: wp-includes/blocks/file.php

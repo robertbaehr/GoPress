@@ -30,6 +30,9 @@ type Env struct {
 	// LoadFootnotes returns the footnotes post meta JSON for a post ID (P5.15).
 	LoadFootnotes func(postID int64) string
 
+	// SanitizeHTML sanitizes footnote (and similar) HTML like wp_kses_post (P5.98).
+	SanitizeHTML func(html string) string
+
 	// PasswordRequired reports whether post content (incl. footnotes) is locked (P5.51).
 	PasswordRequired func(postID int64) bool
 
