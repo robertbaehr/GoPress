@@ -67,3 +67,26 @@ func TestGetCanonicalURLPagePagination(t *testing.T) {
 		t.Fatalf("cpage=%q", cpage)
 	}
 }
+
+func TestGetCanonicalURLFilterAndPagedLink(t *testing.T) {
+	// P3.101: get_canonical_url filter + RelCanonicalLinkPaged.
+	if os.Getenv("GOPRESS_SKIP_DB") != "" {
+		t.Skip("GOPRESS_SKIP_DB set")
+	}
+	c, err := wp.Boot(context.Background(), testBootConfig())
+	if err != nil {
+		t.Skipf("Boot unavailable: %v", err)
+	}
+	defer c.DB.Close()
+
+	c.Hooks.AddFilter("get_canonical_url", func(value any, args ...any) any {
+		return "http://example.test/canonical-filtered/"
+	}, 10, 2)
+	if got := wp.GetCanonicalURL(c, 1, 0, 0); got != "http://example.test/canonical-filtered/" {
+		t.Fatalf("filtered=%q", got)
+	}
+	link := wp.RelCanonicalLinkPaged(c, 1, 2, 3)
+	if !strings.Contains(link, `rel="canonical"`) || !strings.Contains(link, "canonical-filtered") {
+		t.Fatalf("link=%q", link)
+	}
+}
