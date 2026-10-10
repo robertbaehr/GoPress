@@ -548,6 +548,13 @@
   task: P3.27
   api: n/a
 
+# P3.34: /comments/feed/atom/ Atom comments feed.
+- prefix: wp-includes/feed-atom-comments.php
+  go: internal/server/front.go
+  status: partial
+  task: P3.34
+  api: n/a
+
 # P6.12: typed login error messages (invalid_username / incorrect_password / empty).
 - prefix: wp-login.php#errors
   go: internal/login/login.go
