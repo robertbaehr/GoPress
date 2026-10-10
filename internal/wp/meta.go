@@ -26,6 +26,8 @@ const (
 type Meta struct {
 	DB    *db.DB
 	Cache *ObjectCache
+	// Lazy optionally batch-primes meta caches on first GetMetadata (P2.17).
+	Lazy *MetadataLazyloader
 }
 
 // NewMeta builds a Meta API. cache may be nil (lookups hit the DB only).
@@ -33,7 +35,9 @@ func NewMeta(database *db.DB, cache *ObjectCache) *Meta {
 	if cache == nil {
 		cache = NewObjectCache()
 	}
-	return &Meta{DB: database, Cache: cache}
+	m := &Meta{DB: database, Cache: cache}
+	m.Lazy = NewMetadataLazyloader(m)
+	return m
 }
 
 // GetMetadata returns metadata for objectID.
@@ -47,6 +51,10 @@ func (m *Meta) GetMetadata(metaType MetaType, objectID int64, key string, single
 			return ""
 		}
 		return []string{}
+	}
+	// P2.17: flush queued IDs via update_meta_cache before reading.
+	if m.Lazy != nil && m.Lazy.PendingCount(metaType) > 0 {
+		m.Lazy.Flush(metaType, objectID)
 	}
 
 	cache := m.metaCache(metaType, objectID)
