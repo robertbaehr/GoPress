@@ -125,39 +125,20 @@ func parsePerPage(r *http.Request, def int) int {
 	return perPage
 }
 
-func parsePage(r *http.Request) int {
-	page := 1
-	if v := r.URL.Query().Get("page"); v != "" {
-		n, err := strconv.Atoi(v)
-		if err == nil && n > 0 {
-			page = n
-		}
-	}
-	return page
-}
-
 func listPosts(c *wp.Context, postType string, limit int) ([]Post, error) {
-	return listPostsPaged(c, postType, limit, 1, false)
-}
-
-func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool) ([]Post, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
 	if limit <= 0 {
 		limit = 10
 	}
-	if page <= 0 {
-		page = 1
-	}
 	if postType == "" {
 		postType = "post"
 	}
-	offset := (page - 1) * limit
 	q, args, err := c.DB.Prepare(
 		"SELECT ID, post_date, post_name, post_status, post_type, post_title, post_content, post_excerpt FROM "+
-			c.DB.Posts()+" WHERE post_type = %s AND post_status = %s ORDER BY post_date DESC LIMIT %d OFFSET %d",
-		postType, "publish", limit, offset,
+			c.DB.Posts()+" WHERE post_type = %s AND post_status = %s ORDER BY post_date DESC LIMIT %d",
+		postType, "publish", limit,
 	)
 	if err != nil {
 		return nil, err
@@ -169,33 +150,9 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool) 
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	out := make([]Post, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, postFromRow(row, home, edit))
+		out = append(out, postFromRow(row, home, false))
 	}
 	return out, nil
-}
-
-func countPosts(c *wp.Context, postType string) (int, error) {
-	if c == nil || c.DB == nil {
-		return 0, fmt.Errorf("nil DB")
-	}
-	if postType == "" {
-		postType = "post"
-	}
-	q, args, err := c.DB.Prepare(
-		"SELECT COUNT(*) AS total FROM "+c.DB.Posts()+" WHERE post_type = %s AND post_status = %s",
-		postType, "publish",
-	)
-	if err != nil {
-		return 0, err
-	}
-	row, err := c.DB.GetRow(q, args...)
-	if err != nil {
-		return 0, err
-	}
-	if row == nil {
-		return 0, nil
-	}
-	return int(asInt64(row["total"])), nil
 }
 
 func getPostByID(c *wp.Context, postType string, id int64, edit bool) (*Post, error) {
