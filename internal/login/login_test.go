@@ -112,6 +112,56 @@ func TestInterimLoginSuccess(t *testing.T) {
 	}
 }
 
+func TestInterimLoginSuccessRedirectTo(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	form := url.Values{}
+	form.Set("log", "admin")
+	form.Set("pwd", "password")
+	form.Set("interim-login", "1")
+	form.Set("redirect_to", "/wp-admin/")
+	form.Set("testcookie", "1")
+	req := httptest.NewRequest(http.MethodPost, "/wp-login.php?interim-login=1&redirect_to=%2Fwp-admin%2F", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "interim-login-success") {
+		t.Fatalf("expected success class: %q", body)
+	}
+	if !strings.Contains(body, `href="/wp-admin/"`) || !strings.Contains(body, "Continue") {
+		t.Fatalf("expected Continue link: %q", body)
+	}
+	if !strings.Contains(body, "window.top===window.self") {
+		t.Fatalf("expected top-level redirect script: %q", body)
+	}
+	if loc := rec.Header().Get("Location"); loc != "" {
+		t.Fatalf("must not HTTP-redirect (iframe auth-check): Location=%q", loc)
+	}
+}
+
+func TestInterimLoginFormKeepsRedirectTo(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?interim-login=1&redirect_to=%2Fwp-admin%2Fprofile.php", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	body := rec.Body.String()
+	if !strings.Contains(body, "interim-login=1") {
+		t.Fatalf("expected interim action: %q", body)
+	}
+	if !strings.Contains(body, "redirect_to") || !strings.Contains(body, "profile.php") {
+		t.Fatalf("expected redirect_to preserved on form: %q", body)
+	}
+}
+
 func TestRegisterDisabledRedirect(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
