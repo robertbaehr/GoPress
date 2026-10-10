@@ -478,6 +478,13 @@
   task: P2.30
   api: exported
 
+# P2.35: wp_parse_str (PHP parse_str + wp_parse_str filter).
+- prefix: wp-includes/formatting.php#wp_parse_str
+  go: internal/wp/parse_str.go
+  status: partial
+  task: P2.35
+  api: exported
+
 - prefix: wp-includes/functions.php#wp_validate_boolean
   go: internal/wp/validate_boolean.go
   status: partial
