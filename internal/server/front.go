@@ -1813,7 +1813,8 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 			b.WriteString("\t\t\n")
 		}
 		b.WriteString("\t\t<dc:creator><![CDATA[")
-		b.WriteString(p.AuthorName)
+		// P3.66: the_author() filter on item creator.
+		b.WriteString(feedItemCreator(c, p.AuthorName))
 		b.WriteString("]]></dc:creator>\n")
 		b.WriteString("\t\t<pubDate>")
 		b.WriteString(xmlEscape(feedRFC822(p.DateGMT, p.Date)))
@@ -1922,7 +1923,8 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 		b.WriteString("\t<entry>\n")
 		b.WriteString("\t\t<author>\n")
 		b.WriteString("\t\t\t<name>")
-		b.WriteString(xmlEscape(p.AuthorName))
+		// P3.66: the_author() filter on Atom entry author.
+		b.WriteString(xmlEscape(feedItemCreator(c, p.AuthorName)))
 		b.WriteString("</name>\n")
 		if p.AuthorURL != "" {
 			b.WriteString("\t\t\t\t\t\t\t<uri>")
@@ -2067,7 +2069,8 @@ func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		b.WriteString("</link>\n")
 		b.WriteString("\n")
 		b.WriteString("\t<dc:creator><![CDATA[")
-		b.WriteString(p.AuthorName)
+		// P3.66: the_author() filter on RDF item creator.
+		b.WriteString(feedItemCreator(c, p.AuthorName))
 		b.WriteString("]]></dc:creator>\n")
 		b.WriteString("\t<dc:date>")
 		b.WriteString(xmlEscape(feedAtomDate(p.DateGMT, p.Date)))
@@ -2377,7 +2380,7 @@ func feedAuthor(c *wp.Context, authorID int64) (name, url string) {
 	if err != nil || u == nil {
 		return "", ""
 	}
-	// the_author() → display_name; fall back to login then nicename (P3.60).
+	// get_the_author() → display_name; fall back to login then nicename (P3.60).
 	switch {
 	case strings.TrimSpace(u.DisplayName) != "":
 		name = u.DisplayName
@@ -2389,6 +2392,19 @@ func feedAuthor(c *wp.Context, authorID int64) (name, url string) {
 		name = "Anonymous"
 	}
 	return name, u.URL
+}
+
+// feedItemCreator applies the_author for RSS/Atom/RDF item creators (P3.66).
+func feedItemCreator(c *wp.Context, name string) string {
+	if c == nil || c.Hooks == nil {
+		return name
+	}
+	if v := c.Hooks.ApplyFilters("the_author", name); v != nil {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return name
 }
 
 func feedAtomDate(gmt, local string) string {

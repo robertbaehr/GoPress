@@ -2510,6 +2510,28 @@
   api: n/a
   notes: "P3.65 — RSS+Atom coverage for two enclosure meta rows"
 
+# P3.66: feed item dc:creator / Atom author via the_author filter.
+- prefix: wp-includes/feed-rss2.php#dc-creator
+  go: internal/server/front.go
+  status: partial
+  task: P3.66
+  api: n/a
+  notes: "P3.66 — item <dc:creator> runs the_author filter"
+
+- prefix: wp-includes/author-template.php#the_author
+  go: internal/server/front.go
+  status: partial
+  task: P3.66
+  api: n/a
+  notes: "P3.66 — feedItemCreator applies the_author for RSS/Atom/RDF items"
+
+- prefix: tests/server/feed_dc_creator_test.go
+  go: internal/server/feed_dc_creator_test.go
+  status: partial
+  task: P3.66
+  api: n/a
+  notes: "P3.66 — unit coverage for the_author on feed creators"
+
 # P3.38: strengthen redirect_canonical trailing-slash (absolute Location, /page/N).
 - prefix: wp-includes/canonical.php
   go: internal/server/front.go
