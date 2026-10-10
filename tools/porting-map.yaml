@@ -1808,6 +1808,21 @@
   api: exported
   notes: "P8.17 — injectPrivacyPolicyGuideTOC when description=true"
 
+# P8.19: Privacy Policy Guide section search filter.
+- prefix: wp-admin/privacy-policy-guide.php#search
+  go: internal/admin/admin.go
+  status: partial
+  task: P8.19
+  api: n/a
+  notes: "P8.19 — search input filters accordion sections + TOC links"
+
+- prefix: wp-admin/js/privacy-tools.js#guide-search
+  go: internal/admin/admin.go
+  status: partial
+  task: P8.19
+  api: n/a
+  notes: "P8.19 — privacy-policy-guide-search-js vanilla filter"
+
 # P8.18: Privacy Policy Guide accordion toggle (privacy-tools.js behavior).
 - prefix: wp-admin/js/privacy-tools.js#accordion
   go: internal/admin/admin.go

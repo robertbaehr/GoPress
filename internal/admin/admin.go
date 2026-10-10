@@ -3528,6 +3528,12 @@ func (h *Handler) servePrivacyPolicyGuide(w http.ResponseWriter, r *http.Request
 	b.WriteString("</div>\n</div>\n")
 	b.WriteString("<hr class=\"hr-separator\">\n")
 	b.WriteString("<h3 class=\"section-title\">Policies</h3>\n")
+	// P8.19: filter suggested policy sections by title/body text.
+	b.WriteString(`<p class="privacy-policy-guide-search">` + "\n")
+	b.WriteString(`<label class="screen-reader-text" for="privacy-policy-guide-search-input">Search policy guide</label>` + "\n")
+	b.WriteString(`<input type="search" id="privacy-policy-guide-search-input" class="regular-text" placeholder="Search policy guide…" autocomplete="off" />` + "\n")
+	b.WriteString(`<span id="privacy-policy-guide-search-status" class="description" aria-live="polite"></span>` + "\n")
+	b.WriteString("</p>\n")
 	b.WriteString("<div class=\"privacy-settings-accordion wp-privacy-policy-guide\">\n")
 	// P8.12: WP_Privacy_Policy_Content::privacy_policy_guide (registered sections).
 	b.WriteString(wp.PrivacyPolicyGuideHTML(c))
@@ -3536,6 +3542,8 @@ func (h *Handler) servePrivacyPolicyGuide(w http.ResponseWriter, r *http.Request
 	b.WriteString("</div>\n")
 	// P8.18: privacy-tools.js accordion toggle (vanilla; no jQuery dependency).
 	b.WriteString(privacySettingsAccordionScript())
+	// P8.19: client-side section filter for the policy guide accordion.
+	b.WriteString(privacyPolicyGuideSearchScript())
 	b.WriteString("</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
@@ -3566,6 +3574,48 @@ func privacySettingsAccordionScript() string {
       onTriggerClick(e);
     }
   });
+})();
+</script>
+`
+}
+
+// privacyPolicyGuideSearchScript filters .wp-privacy-policy-guide accordion
+// sections (and TOC links) by query string (P8.19).
+func privacyPolicyGuideSearchScript() string {
+	return `<script id="privacy-policy-guide-search-js">
+(function () {
+  var input = document.getElementById("privacy-policy-guide-search-input");
+  var status = document.getElementById("privacy-policy-guide-search-status");
+  var root = document.querySelector(".wp-privacy-policy-guide");
+  if (!input || !root) return;
+  function applyFilter() {
+    var q = (input.value || "").trim().toLowerCase();
+    var headings = root.querySelectorAll(".privacy-settings-accordion-heading");
+    var shown = 0;
+    headings.forEach(function (h) {
+      var btn = h.querySelector(".privacy-settings-accordion-trigger");
+      var panelId = btn ? btn.getAttribute("aria-controls") : "";
+      var panel = panelId ? document.getElementById(panelId) : null;
+      var hay = ((btn && btn.textContent) || "") + " " + ((panel && panel.textContent) || "");
+      hay = hay.toLowerCase();
+      var match = !q || hay.indexOf(q) !== -1;
+      h.style.display = match ? "" : "none";
+      if (panel) panel.style.display = match ? "" : "none";
+      if (match) shown++;
+    });
+    var toc = document.getElementById("table_of_contents");
+    if (toc) {
+      toc.querySelectorAll("a[href^='#']").forEach(function (a) {
+        var text = (a.textContent || "").toLowerCase();
+        a.parentElement.style.display = (!q || text.indexOf(q) !== -1) ? "" : "none";
+      });
+    }
+    if (status) {
+      status.textContent = q ? (shown + " section(s) match") : "";
+    }
+  }
+  input.addEventListener("input", applyFilter);
+  input.addEventListener("search", applyFilter);
 })();
 </script>
 `
