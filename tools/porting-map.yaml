@@ -831,6 +831,21 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P4.111 — unit coverage for template revisions auth/theme-file/list/item"
 
+# P4.112: deepen templates/template-parts response fields + area/wp_id filters.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-templates-controller.php#prepare_item
+  go: internal/rest/templates.go
+  status: partial
+  task: P4.112
+  api: exported
+  notes: "P4.112 — description/origin/author/modified/date; collection area+wp_id filters; HEAD"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-templates-controller.php#collection_params
+  go: internal/rest/templates_test.go
+  status: partial
+  task: P4.112
+  api: n/a
+  notes: "P4.112 — area filter + theme-file null origin/dates coverage"
+
 # P4.52: REST POST/PUT/PATCH for /wp/v2/templates and template-parts.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-templates-controller.php#delete_item
   go: internal/rest/templates_write.go

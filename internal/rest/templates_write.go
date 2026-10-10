@@ -123,13 +123,18 @@ func (s *Server) createBlockTemplate(w http.ResponseWriter, r *http.Request, c *
 			Theme:        stylesheet,
 			Slug:         slug,
 			Source:       "custom",
+			Origin:       nil,
 			Type:         postType,
+			Description:  "",
 			Title:        map[string]string{"raw": title, "rendered": title},
 			Content:      map[string]any{"raw": content, "block_version": 1},
 			Status:       status,
 			WPID:         id,
 			HasThemeFile: false,
 			IsCustom:     postType == "wp_template",
+			Author:       author,
+			Modified:     nil,
+			Date:         nil,
 			Area:         area,
 		}
 	}
@@ -341,26 +346,9 @@ func findTrashedBlockTemplate(c *wp.Context, postType, id string) *BlockTemplate
 		if tplID != id && row.Name != id {
 			continue
 		}
-		title := row.Title
-		if title == "" {
-			title = humanizeSlug(row.Name)
-		}
-		bt := BlockTemplate{
-			ID:           tplID,
-			Theme:        stylesheet,
-			Slug:         row.Name,
-			Source:       "custom",
-			Type:         postType,
-			Title:        map[string]string{"raw": title, "rendered": title},
-			Content:      map[string]any{"raw": row.Content, "block_version": 1},
-			Status:       "trash",
-			WPID:         row.ID,
-			HasThemeFile: false,
-			IsCustom:     postType == "wp_template",
-		}
-		if postType == "wp_template_part" {
-			bt.Area = inferTemplatePartArea(row.Name)
-		}
+		bt := blockTemplateFromPost(stylesheet, postType, row, false)
+		bt.Status = "trash"
+		bt.IsCustom = postType == "wp_template"
 		return &bt
 	}
 	return nil
