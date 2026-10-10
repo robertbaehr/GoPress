@@ -212,6 +212,12 @@ func (f *Front) renderCommentsFeedRSS2(w http.ResponseWriter, r *http.Request, c
 	b.WriteString("\t<lastBuildDate>")
 	b.WriteString(xmlEscape(commentsFeedBuildDate(comments)))
 	b.WriteString("</lastBuildDate>\n")
+	// P3.57: optional channel <ttl> when rss_ttl option is a positive integer.
+	if ttl := wp.FeedTTLMinutes(c); ttl != "" {
+		b.WriteString("\t<ttl>")
+		b.WriteString(xmlEscape(ttl))
+		b.WriteString("</ttl>\n")
+	}
 	b.WriteString("\t<sy:updatePeriod>\n")
 	b.WriteString("\thourly\t</sy:updatePeriod>\n")
 	b.WriteString("\t<sy:updateFrequency>\n")
@@ -1783,6 +1789,12 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 		b.WriteString("\t<copyright>")
 		b.WriteString(xmlEscape(copy))
 		b.WriteString("</copyright>\n")
+	}
+	// P3.57: optional channel <ttl> when rss_ttl option is a positive integer.
+	if ttl := wp.FeedTTLMinutes(c); ttl != "" {
+		b.WriteString("\t<ttl>")
+		b.WriteString(xmlEscape(ttl))
+		b.WriteString("</ttl>\n")
 	}
 	b.WriteString("\t<sy:updatePeriod>\n")
 	b.WriteString("\thourly\t</sy:updatePeriod>\n")

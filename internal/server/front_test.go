@@ -392,6 +392,37 @@ func TestFrontFeedLastBuildDateStable(t *testing.T) {
 	}
 }
 
+func TestFrontFeedTTLOptional(t *testing.T) {
+	// P3.57: <ttl> only when rss_ttl is a positive integer.
+	c := testBoot(t)
+	_, _ = c.Options.DeleteOption("rss_ttl")
+	t.Cleanup(func() { _, _ = c.Options.DeleteOption("rss_ttl") })
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+
+	req := httptest.NewRequest(http.MethodGet, "/feed/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	if strings.Contains(rec.Body.String(), "<ttl>") {
+		t.Fatalf("unexpected ttl without option: %q", rec.Body.String()[:min(500, rec.Body.Len())])
+	}
+
+	if _, err := c.Options.UpdateOption("rss_ttl", "90", "yes"); err != nil {
+		t.Fatal(err)
+	}
+	req = httptest.NewRequest(http.MethodGet, "/feed/", nil)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "<ttl>90</ttl>") {
+		t.Fatalf("missing ttl: %q", rec.Body.String()[:min(600, rec.Body.Len())])
+	}
+}
+
 func TestFrontFeedRSS2SiteIconImage(t *testing.T) {
 	// P3.52: channel <image> when site_icon attachment is set (rss2_site_icon).
 	c := testBoot(t)
