@@ -678,27 +678,6 @@ func builtInIndexRoutes() map[string]RouteIndex {
 	}
 }
 
-func optionFloat(c *wp.Context, name string, fallback float64) float64 {
-	if c == nil || c.Options == nil {
-		return fallback
-	}
-	v := c.Options.GetOption(name, fallback)
-	switch t := v.(type) {
-	case float64:
-		return t
-	case int:
-		return float64(t)
-	case int64:
-		return float64(t)
-	case string:
-		f, err := strconv.ParseFloat(t, 64)
-		if err == nil {
-			return f
-		}
-	}
-	return fallback
-}
-
 func optionInt64(c *wp.Context, name string, fallback int64) int64 {
 	if c == nil || c.Options == nil {
 		return fallback
