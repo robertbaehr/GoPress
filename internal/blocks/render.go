@@ -213,6 +213,9 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderLatestComments(block)
 	case "core/tag-cloud":
 		out = e.renderTagCloud(block)
+	case "core/categories":
+		// P5.81: taxonomy term list (dropdown deferred).
+		out = e.renderCategories(block)
 	case "core/read-more":
 		out = e.renderReadMore(block)
 	case "core/more":
