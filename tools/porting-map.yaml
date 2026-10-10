@@ -335,6 +335,13 @@
   task: P7.34
   api: n/a
 
+# P2.29: sanitize_file_name.
+- prefix: wp-includes/formatting.php#sanitize_file_name
+  go: internal/wp/formatting.go
+  status: partial
+  task: P2.29
+  api: exported
+
 # P4.48: create post revision on REST post update.
 - prefix: wp-includes/revision.php#wp_save_post_revision
   go: internal/rest/posts_write.go

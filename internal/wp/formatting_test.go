@@ -21,6 +21,7 @@ type formattingVector struct {
 	SanitizeTextField string `json:"sanitize_text_field"`
 	SanitizeKey       string `json:"sanitize_key"`
 	SanitizeTitle     string `json:"sanitize_title"`
+	SanitizeFileName  string `json:"sanitize_file_name"`
 	WPStripAllTags    string `json:"wp_strip_all_tags"`
 }
 
@@ -60,6 +61,7 @@ var goldenFormatters = map[string]func(string) string{
 	"sanitize_text_field": wp.SanitizeTextField,
 	"sanitize_key":        wp.SanitizeKey,
 	"sanitize_title":      wp.SanitizeTitle,
+	"sanitize_file_name":  wp.SanitizeFileName,
 	"wp_strip_all_tags":   func(s string) string { return wp.WPStripAllTags(s, false) },
 }
 
@@ -84,6 +86,7 @@ func TestFormattingGoldenVectors(t *testing.T) {
 			"sanitize_text_field": v.SanitizeTextField,
 			"sanitize_key":        v.SanitizeKey,
 			"sanitize_title":      v.SanitizeTitle,
+			"sanitize_file_name":  v.SanitizeFileName,
 			"wp_strip_all_tags":   v.WPStripAllTags,
 		}
 		for key, fn := range goldenFormatters {
@@ -253,5 +256,21 @@ func TestEscURLRawSkipsDisplayEncoding(t *testing.T) {
 	}
 	if got := wp.EscURLRaw("/relative/path"); got != "/relative/path" {
 		t.Fatalf("relative: %q", got)
+	}
+}
+
+func TestSanitizeFileNameExtras(t *testing.T) {
+	cases := []struct{ in, want string }{
+		{"photo.jpg", "photo.jpg"},
+		{"my file.png", "my-file.png"},
+		{"evil.php.jpg", "evil.php_.jpg"}, // php is not an allowed intermediate ext
+		{"jpg", "unnamed-file.jpg"},
+		{"notanext", "notanext"},
+	}
+	for _, tc := range cases {
+		got := wp.SanitizeFileName(tc.in)
+		if got != tc.want {
+			t.Errorf("SanitizeFileName(%q)=%q want %q", tc.in, got, tc.want)
+		}
 	}
 }
