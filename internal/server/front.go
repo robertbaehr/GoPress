@@ -4022,6 +4022,46 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			}
 			return out
 		},
+		// P5.81: core/categories term list.
+		ListCategories: func(taxonomy string) []blocks.CategoryItem {
+			if c == nil || c.DB == nil {
+				return nil
+			}
+			taxonomy = strings.TrimSpace(taxonomy)
+			if taxonomy == "" {
+				taxonomy = "category"
+			}
+			home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+			q, args, err := c.DB.Prepare(
+				"SELECT t.term_id, t.name, t.slug, tt.count, tt.parent FROM "+c.DB.Terms()+" t "+
+					"INNER JOIN "+c.DB.TermTaxonomy()+" tt ON t.term_id = tt.term_id "+
+					"WHERE tt.taxonomy = %s ORDER BY t.name ASC LIMIT %d",
+				taxonomy, 200,
+			)
+			if err != nil {
+				return nil
+			}
+			rows, err := c.DB.GetResults(q, args...)
+			if err != nil {
+				return nil
+			}
+			prefix := "/category/"
+			if taxonomy == "post_tag" {
+				prefix = "/tag/"
+			}
+			out := make([]blocks.CategoryItem, 0, len(rows))
+			for _, row := range rows {
+				slug := rowStringDB(row["slug"])
+				out = append(out, blocks.CategoryItem{
+					ID:     rowInt64DB(row["term_id"]),
+					Name:   rowStringDB(row["name"]),
+					URL:    home + prefix + slug + "/",
+					Count:  int(rowInt64DB(row["count"])),
+					Parent: rowInt64DB(row["parent"]),
+				})
+			}
+			return out
+		},
 		ListLatestComments: func(limit int) []blocks.LatestCommentItem {
 			rows, err := wp.ListRecentComments(c, limit)
 			if err != nil {

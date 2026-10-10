@@ -93,6 +93,9 @@ type Env struct {
 	// ListTagCloud returns tags for core/tag-cloud (P5.42).
 	ListTagCloud func() []TagCloudItem
 
+	// ListCategories returns terms for core/categories (P5.81).
+	ListCategories func(taxonomy string) []CategoryItem
+
 	// ListLatestComments returns recent approved comments for core/latest-comments (P5.42).
 	ListLatestComments func(limit int) []LatestCommentItem
 

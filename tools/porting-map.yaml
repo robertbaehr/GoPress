@@ -4798,3 +4798,18 @@
   task: P10.72
   api: n/a
   notes: "P10.72 — Playwright hide Author column via Screen Options Columns"
+
+# P5.81: core/categories — taxonomy term list (dropdown deferred).
+- prefix: wp-includes/blocks/categories.php
+  go: internal/blocks/categories.go
+  status: partial
+  task: P5.81
+  api: internal
+  notes: "P5.81 — renderCategories list/hierarchy; showPostCounts/showEmpty/showOnlyTopLevel"
+
+- prefix: wp-includes/blocks/categories/block.json
+  go: internal/rest/block_types.go
+  status: partial
+  task: P5.81
+  api: n/a
+  notes: "P5.81 — REST block-types library entry for core/categories"

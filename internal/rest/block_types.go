@@ -76,6 +76,7 @@ func knownBlockTypes() []BlockType {
 		{"core/latest-posts", "Latest Posts", "widgets", "Display a list of your most recent posts.", true},
 		{"core/latest-comments", "Latest Comments", "widgets", "Display a list of your most recent comments.", true},
 		{"core/tag-cloud", "Tag Cloud", "widgets", "A cloud of popular keywords, each sized by how often it appears.", true},
+		{"core/categories", "Terms List", "widgets", "Display a list of all terms of a given taxonomy.", true},
 		{"core/read-more", "Read More", "theme", "Displays the link of a post, page, or any other content-type.", true},
 		{"core/more", "More", "design", "Content before this block is shown in the excerpt on your archives.", false},
 		{"core/nextpage", "Page Break", "design", "Separate your content into a multi-page experience.", false},

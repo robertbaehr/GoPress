@@ -1,0 +1,116 @@
+package blocks
+
+import (
+	"html"
+	"strconv"
+	"strings"
+)
+
+// CategoryItem is a taxonomy term for core/categories (P5.81).
+type CategoryItem struct {
+	Name   string
+	URL    string
+	Count  int
+	Parent int64
+	ID     int64
+}
+
+// renderCategories renders core/categories as a list (P5.81).
+// Dropdown mode is deferred; list markup matches render_block_core_categories.
+func (e *Env) renderCategories(block Block) string {
+	e = e.ensure()
+	taxonomy := strings.TrimSpace(attrString(block.Attrs, "taxonomy"))
+	if taxonomy == "" {
+		taxonomy = "category"
+	}
+	showCounts := false
+	if v, ok := block.Attrs["showPostCounts"].(bool); ok {
+		showCounts = v
+	}
+	showEmpty := false
+	if v, ok := block.Attrs["showEmpty"].(bool); ok {
+		showEmpty = v
+	}
+	topLevelOnly := false
+	if v, ok := block.Attrs["showOnlyTopLevel"].(bool); ok {
+		topLevelOnly = v
+	}
+	showHierarchy := false
+	if v, ok := block.Attrs["showHierarchy"].(bool); ok {
+		showHierarchy = v
+	}
+
+	var items []CategoryItem
+	if e.ListCategories != nil {
+		items = e.ListCategories(taxonomy)
+	}
+	filtered := make([]CategoryItem, 0, len(items))
+	for _, it := range items {
+		if !showEmpty && it.Count <= 0 {
+			continue
+		}
+		if topLevelOnly && it.Parent != 0 {
+			continue
+		}
+		filtered = append(filtered, it)
+	}
+	if len(filtered) == 0 {
+		return ""
+	}
+
+	var b strings.Builder
+	b.WriteString(`<ul class="wp-block-categories-list wp-block-categories wp-block-categories-taxonomy-`)
+	b.WriteString(html.EscapeString(taxonomy))
+	b.WriteString(`">`)
+	if showHierarchy && !topLevelOnly {
+		writeCategoryTree(&b, filtered, 0, showCounts)
+	} else {
+		for _, it := range filtered {
+			writeCategoryLI(&b, it, showCounts)
+		}
+	}
+	b.WriteString(`</ul>`)
+	return b.String()
+}
+
+func writeCategoryTree(b *strings.Builder, items []CategoryItem, parent int64, showCounts bool) {
+	for _, it := range items {
+		if it.Parent != parent {
+			continue
+		}
+		writeCategoryOpenLI(b, it, showCounts)
+		hasKids := false
+		for _, c := range items {
+			if c.Parent == it.ID {
+				hasKids = true
+				break
+			}
+		}
+		if hasKids {
+			b.WriteString(`<ul class="children">`)
+			writeCategoryTree(b, items, it.ID, showCounts)
+			b.WriteString(`</ul>`)
+		}
+		b.WriteString(`</li>`)
+	}
+}
+
+func writeCategoryLI(b *strings.Builder, it CategoryItem, showCounts bool) {
+	writeCategoryOpenLI(b, it, showCounts)
+	b.WriteString(`</li>`)
+}
+
+func writeCategoryOpenLI(b *strings.Builder, it CategoryItem, showCounts bool) {
+	b.WriteString(`<li class="cat-item cat-item-`)
+	b.WriteString(strconv.FormatInt(it.ID, 10))
+	b.WriteString(`"><a href="`)
+	b.WriteString(html.EscapeString(it.URL))
+	b.WriteString(`">`)
+	b.WriteString(html.EscapeString(it.Name))
+	b.WriteString(`</a>`)
+	if showCounts {
+		b.WriteString(` (`)
+		b.WriteString(strconv.Itoa(it.Count))
+		b.WriteString(`)`)
+	}
+}
