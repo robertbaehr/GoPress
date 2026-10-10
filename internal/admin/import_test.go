@@ -34,4 +34,7 @@ func TestImportStubScreen(t *testing.T) {
 	if !strings.Contains(body, "Import") || !strings.Contains(body, "importers") {
 		t.Fatalf("unexpected body %q", body)
 	}
+	if !strings.Contains(body, "WordPress") {
+		t.Fatalf("expected WordPress importer row: %q", body)
+	}
 }

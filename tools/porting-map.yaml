@@ -2111,6 +2111,14 @@
   task: P7.26
   api: n/a
 
+# P7.54: import.php WordPress WXR upload stub (reject or parse minimal).
+- prefix: wp-admin/import.php
+  go: internal/admin/import_wxr.go
+  status: partial
+  task: P7.54
+  api: n/a
+  notes: "P7.54 — WXR upload validates/parses; full import later"
+
 # P7.53: minimal WXR export download from export.php?download=true.
 - prefix: wp-admin/export.php
   go: internal/admin/export_wxr.go
