@@ -65,3 +65,51 @@ func TestListFilterEmptyArgs(t *testing.T) {
 		t.Fatalf("invalid input: %#v", got)
 	}
 }
+
+func TestFilterObjectListEmptyArgsIgnoresOperator(t *testing.T) {
+	in := []map[string]any{{"name": "a"}, {"name": "b"}}
+	// P2.89: empty args returns all rows even with an invalid operator.
+	got := wp.FilterObjectList(in, map[string]any{}, "XOR", "name")
+	if !reflect.DeepEqual(got, []any{"a", "b"}) {
+		t.Fatalf("empty args+invalid op: %#v", got)
+	}
+	got = wp.FilterObjectList(in, nil, "nope", "")
+	out, _ := got.([]any)
+	if len(out) != 2 {
+		t.Fatalf("nil args+invalid op: %#v", got)
+	}
+}
+
+func TestFilterObjectListNilStructFieldIsMissing(t *testing.T) {
+	type row struct {
+		Name   string
+		Status *string
+	}
+	draft := "draft"
+	in := []row{{Name: "a", Status: &draft}, {Name: "b", Status: nil}}
+	// isset-style: nil Status does not match AND status=draft.
+	got := wp.FilterObjectList(in, map[string]any{"Status": "draft"}, "AND", "Name")
+	if !reflect.DeepEqual(got, []any{"a"}) {
+		t.Fatalf("got %#v", got)
+	}
+	// NOT status=draft keeps the nil-Status row (missing ≠ match).
+	got = wp.FilterObjectList(in, map[string]any{"Status": "draft"}, "NOT", "Name")
+	if !reflect.DeepEqual(got, []any{"b"}) {
+		t.Fatalf("NOT got %#v", got)
+	}
+}
+
+func TestFilterObjectListLooseScalarMatch(t *testing.T) {
+	in := []map[string]any{
+		{"id": 1, "public": "1"},
+		{"id": "2", "public": 0},
+	}
+	got := wp.FilterObjectList(in, map[string]any{"public": true}, "AND", "id")
+	if !reflect.DeepEqual(got, []any{1}) {
+		t.Fatalf("loose match: %#v", got)
+	}
+	got = wp.FilterObjectList(in, map[string]any{"id": 2}, "AND", "id")
+	if !reflect.DeepEqual(got, []any{"2"}) {
+		t.Fatalf("string/int id: %#v", got)
+	}
+}

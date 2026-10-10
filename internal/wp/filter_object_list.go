@@ -7,15 +7,14 @@ import (
 )
 
 // FilterObjectList filters a list of maps/structs by key=>value args
-// (wp_filter_object_list / WP_List_Util::filter, P2.43).
+// (wp_filter_object_list / WP_List_Util::filter, P2.43 / P2.89).
 //
 // operator is AND (default), OR, or NOT (case-insensitive). When field is
 // non-empty, matching items are plucked with ListPluck(field, "").
+// Empty args returns the input list unchanged (including invalid operators),
+// matching WP_List_Util::filter.
 func FilterObjectList(input any, args map[string]any, operator string, field string) any {
 	if input == nil {
-		if field != "" {
-			return []any{}
-		}
 		return []any{}
 	}
 	rv := reflect.ValueOf(input)
@@ -29,6 +28,18 @@ func FilterObjectList(input any, args map[string]any, operator string, field str
 		return []any{}
 	}
 
+	// P2.89: empty args short-circuit before operator validation (WP_List_Util).
+	if len(args) == 0 {
+		filtered := make([]any, 0, rv.Len())
+		for i := 0; i < rv.Len(); i++ {
+			filtered = append(filtered, rv.Index(i).Interface())
+		}
+		if field != "" {
+			return ListPluck(filtered, field, "")
+		}
+		return filtered
+	}
+
 	op := strings.ToUpper(strings.TrimSpace(operator))
 	if op == "" {
 		op = "AND"
@@ -38,36 +49,30 @@ func FilterObjectList(input any, args map[string]any, operator string, field str
 	}
 
 	filtered := make([]any, 0, rv.Len())
-	if len(args) == 0 {
-		for i := 0; i < rv.Len(); i++ {
-			filtered = append(filtered, rv.Index(i).Interface())
+	argCount := len(args)
+	for i := 0; i < rv.Len(); i++ {
+		elem := rv.Index(i)
+		matched := 0
+		for key, want := range args {
+			got, ok := filterFieldOK(elem, key)
+			if !ok {
+				continue
+			}
+			if valuesEqualLoose(got, want) {
+				matched++
+			}
 		}
-	} else {
-		argCount := len(args)
-		for i := 0; i < rv.Len(); i++ {
-			elem := rv.Index(i)
-			matched := 0
-			for key, want := range args {
-				got, ok := pluckFieldOK(elem, key)
-				if !ok {
-					continue
-				}
-				if valuesEqualLoose(got, want) {
-					matched++
-				}
-			}
-			keep := false
-			switch op {
-			case "AND":
-				keep = matched == argCount
-			case "OR":
-				keep = matched > 0
-			case "NOT":
-				keep = matched == 0
-			}
-			if keep {
-				filtered = append(filtered, elem.Interface())
-			}
+		keep := false
+		switch op {
+		case "AND":
+			keep = matched == argCount
+		case "OR":
+			keep = matched > 0
+		case "NOT":
+			keep = matched == 0
+		}
+		if keep {
+			filtered = append(filtered, elem.Interface())
 		}
 	}
 
@@ -75,6 +80,32 @@ func FilterObjectList(input any, args map[string]any, operator string, field str
 		return ListPluck(filtered, field, "")
 	}
 	return filtered
+}
+
+// filterFieldOK is WP_List_Util::filter field presence: maps use key existence;
+// structs use isset-style (nil pointers count as missing) (P2.89).
+func filterFieldOK(elem reflect.Value, field string) (any, bool) {
+	for elem.Kind() == reflect.Interface || elem.Kind() == reflect.Pointer {
+		if elem.IsNil() {
+			return nil, false
+		}
+		elem = elem.Elem()
+	}
+	switch elem.Kind() {
+	case reflect.Map:
+		return pluckFieldOK(elem, field)
+	case reflect.Struct:
+		f, ok := structFieldByPluckName(elem, field)
+		if !ok {
+			return nil, false
+		}
+		if (f.Kind() == reflect.Pointer || f.Kind() == reflect.Interface || f.Kind() == reflect.Slice || f.Kind() == reflect.Map) && f.IsNil() {
+			return nil, false
+		}
+		return f.Interface(), true
+	default:
+		return nil, false
+	}
 }
 
 // ListFilter is wp_list_filter — FilterObjectList without field pluck (P2.43).
@@ -96,6 +127,20 @@ func valuesEqualLoose(a, b any) bool {
 }
 
 func normalizeCompare(v any) string {
+	// P2.89: unwrap pointers/interfaces so *string("draft") == "draft".
+	for {
+		rv := reflect.ValueOf(v)
+		if !rv.IsValid() {
+			return ""
+		}
+		if rv.Kind() != reflect.Pointer && rv.Kind() != reflect.Interface {
+			break
+		}
+		if rv.IsNil() {
+			return ""
+		}
+		v = rv.Elem().Interface()
+	}
 	switch t := v.(type) {
 	case bool:
 		if t {
