@@ -49,7 +49,13 @@ func writeFontsForbidden(w http.ResponseWriter, c *wp.Context, message string) {
 }
 
 func (s *Server) serveFontFamilies(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	if r.Method != http.MethodGet {
+	switch r.Method {
+	case http.MethodGet:
+		// continue
+	case http.MethodPost:
+		s.createFontFamily(w, r, c)
+		return
+	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
@@ -95,12 +101,18 @@ func (s *Server) serveFontFamilies(w http.ResponseWriter, r *http.Request, c *wp
 		totalPages = (total + perPage - 1) / perPage
 	}
 	setCollectionHeaders(w, r, c, total, totalPages, page)
-	w.Header().Set("Allow", "GET")
+	w.Header().Set("Allow", "GET, POST")
 	writeJSON(w, http.StatusOK, out)
 }
 
 func (s *Server) serveFontFamilyItem(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
-	if r.Method != http.MethodGet {
+	switch r.Method {
+	case http.MethodGet:
+		// continue
+	case http.MethodDelete:
+		s.deleteFontFamily(w, r, c, id)
+		return
+	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
@@ -129,7 +141,7 @@ func (s *Server) serveFontFamilyItem(w http.ResponseWriter, r *http.Request, c *
 		})
 		return
 	}
-	w.Header().Set("Allow", "GET")
+	w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
 	writeJSON(w, http.StatusOK, fontFamilyFromWP(c, *row))
 }
 

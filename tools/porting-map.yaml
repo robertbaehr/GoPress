@@ -1925,6 +1925,14 @@
   task: P4.36
   api: exported
 
+# P4.75: REST POST/DELETE for font-families (force delete; no trash).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-font-families-controller.php#write
+  go: internal/rest/fonts_write.go
+  status: partial
+  task: P4.75
+  api: exported
+  notes: "P4.75 — POST create + DELETE force=true; duplicate slug 400; cascade font faces"
+
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-font-faces-controller.php
   go: internal/rest/fonts.go
   status: partial
