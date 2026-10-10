@@ -472,7 +472,7 @@ func (h *Handler) serveOptionsGeneral(w http.ResponseWriter, r *http.Request, c 
 	writeAdminPage(w, c, newAdminChrome(c, "General Settings", "options-general-php"), b.String())
 }
 
-// serveOptionsPHP handles /wp-admin/options.php saves (P7.48 writing subset).
+// serveOptionsPHP handles /wp-admin/options.php saves (P7.48 writing / P7.49 reading).
 func (h *Handler) serveOptionsPHP(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/wp-admin/options-general.php", http.StatusFound)
@@ -502,6 +502,27 @@ func (h *Handler) serveOptionsPHP(w http.ResponseWriter, r *http.Request, c *wp.
 			}
 		}
 		http.Redirect(w, r, "/wp-admin/options-writing.php?settings-updated=true", http.StatusFound)
+		return
+	case "reading":
+		if c.Options != nil {
+			show := strings.TrimSpace(r.Form.Get("show_on_front"))
+			if show != "page" {
+				show = "posts"
+			}
+			_, _ = c.Options.UpdateOption("show_on_front", show, "yes")
+			ppp := strings.TrimSpace(r.Form.Get("posts_per_page"))
+			if ppp == "" {
+				ppp = "10"
+			}
+			_, _ = c.Options.UpdateOption("posts_per_page", ppp, "yes")
+			// Unchecked checkbox omits the field → blog_public=1 (allow indexing).
+			blogPublic := "1"
+			if _, ok := r.Form["blog_public"]; ok {
+				blogPublic = "0"
+			}
+			_, _ = c.Options.UpdateOption("blog_public", blogPublic, "yes")
+		}
+		http.Redirect(w, r, "/wp-admin/options-reading.php?settings-updated=true", http.StatusFound)
 		return
 	default:
 		http.Error(w, "Unrecognized settings group.\n", http.StatusBadRequest)
@@ -547,7 +568,7 @@ func (h *Handler) serveOptionsWriting(w http.ResponseWriter, r *http.Request, c 
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveOptionsReading is the Settings → Reading screen stub (P7.14).
+// serveOptionsReading is the Settings → Reading screen stub (P7.14 / P7.49).
 func (h *Handler) serveOptionsReading(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
 	showOnFront := optionString(c, "show_on_front", "posts")
@@ -562,8 +583,12 @@ func (h *Handler) serveOptionsReading(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1>Reading Settings</h1>\n")
-	b.WriteString("<p class=\"description\">GoPress reading settings stub — save lands with options.php.</p>\n")
+	if r.URL.Query().Get("settings-updated") == "true" {
+		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p><strong>Settings saved.</strong></p></div>\n")
+	}
+	b.WriteString("<p class=\"description\">GoPress reading settings — POST saves via options.php.</p>\n")
 	b.WriteString("<form method=\"post\" action=\"options.php\">\n")
+	b.WriteString("<input type=\"hidden\" name=\"option_page\" value=\"reading\" />\n")
 	b.WriteString("<table class=\"form-table\" role=\"presentation\">\n")
 	b.WriteString("<tr>\n<th scope=\"row\">Your homepage displays</th>\n<td><fieldset>\n")
 	b.WriteString("<label><input name=\"show_on_front\" type=\"radio\" value=\"posts\"")
