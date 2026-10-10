@@ -5581,4 +5581,12 @@
   status: partial
   task: P10.88
   api: n/a
-  notes: "P10.88 — block-types post-excerpt/content/title/query/…; REST order/search; author/cat/tag 404; login reauth/empty_password"
+  notes: "P10.88 — block-types post-excerpt/content/title/query/…; REST order/search; author/cat/tag 404; login reauth/empty_password; 192/192"
+
+# P10.89: STATUS/PORTING refresh after P5.89–P10.88.
+- prefix: docs/STATUS.md#p10.89
+  go: docs/STATUS.md
+  status: partial
+  task: P10.89
+  api: n/a
+  notes: "P10.89 — STATUS/PORTING refresh after P5.89–P10.88 (192/192 corpus)"
