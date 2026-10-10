@@ -1,6 +1,8 @@
 package rest
 
 import (
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -9,20 +11,23 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// Comment is a minimal wp/v2 comment object.
+// Comment is a wp/v2 comment object (view context).
 type Comment struct {
-	ID         int64          `json:"id"`
-	Post       int64          `json:"post"`
-	Parent     int64          `json:"parent"`
-	Author     int64          `json:"author"`
-	AuthorName string         `json:"author_name"`
-	AuthorURL  string         `json:"author_url"`
-	Date       string         `json:"date"`
-	DateGMT    string         `json:"date_gmt"`
-	Content    RenderedString `json:"content"`
-	Link       string         `json:"link"`
-	Status     string         `json:"status"`
-	Type       string         `json:"type"`
+	ID               int64             `json:"id"`
+	Post             int64             `json:"post"`
+	Parent           int64             `json:"parent"`
+	Author           int64             `json:"author"`
+	AuthorName       string            `json:"author_name"`
+	AuthorURL        string            `json:"author_url"`
+	Date             string            `json:"date"`
+	DateGMT          string            `json:"date_gmt"`
+	Content          RenderedString    `json:"content"`
+	Link             string            `json:"link"`
+	Status           string            `json:"status"`
+	Type             string            `json:"type"`
+	AuthorAvatarURLs map[string]string `json:"author_avatar_urls"`
+	Meta             map[string]any    `json:"meta"`
+	Links            map[string]any    `json:"_links"`
 }
 
 func (s *Server) serveComments(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -145,7 +150,7 @@ func listCommentsPaged(c *wp.Context, postID int64, limit, page int) ([]Comment,
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	out := make([]Comment, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, commentFromRow(row, home))
+		out = append(out, commentFromRow(c, row, home))
 	}
 	return out, nil
 }
@@ -204,31 +209,152 @@ func getCommentByID(c *wp.Context, id int64) (*Comment, error) {
 		return nil, nil
 	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
-	cm := commentFromRow(row, home)
+	cm := commentFromRow(c, row, home)
 	return &cm, nil
 }
 
-func commentFromRow(row map[string]any, home string) Comment {
+func commentFromRow(c *wp.Context, row map[string]any, home string) Comment {
 	id := asInt64(row["comment_ID"])
 	postID := asInt64(row["comment_post_ID"])
+	parent := asInt64(row["comment_parent"])
+	author := asInt64(row["user_id"])
+	email := asString(row["comment_author_email"])
 	ctype := asString(row["comment_type"])
 	if ctype == "" {
 		ctype = "comment"
 	}
 	return Comment{
-		ID:         id,
-		Post:       postID,
-		Parent:     asInt64(row["comment_parent"]),
-		Author:     asInt64(row["user_id"]),
-		AuthorName: asString(row["comment_author"]),
-		AuthorURL:  asString(row["comment_author_url"]),
-		Date:       mysqlDateToREST(asString(row["comment_date"])),
-		DateGMT:    mysqlDateToREST(asString(row["comment_date_gmt"])),
-		Content:    RenderedString{Rendered: asString(row["comment_content"])},
-		Link:       commentPermalink(home, postID, id),
-		Status:     commentStatus(asString(row["comment_approved"])),
-		Type:       ctype,
+		ID:               id,
+		Post:             postID,
+		Parent:           parent,
+		Author:           author,
+		AuthorName:       asString(row["comment_author"]),
+		AuthorURL:        asString(row["comment_author_url"]),
+		Date:             mysqlDateToREST(asString(row["comment_date"])),
+		DateGMT:          mysqlDateToREST(asString(row["comment_date_gmt"])),
+		Content:          RenderedString{Rendered: commentContentHTML(asString(row["comment_content"]))},
+		Link:             commentPermalink(c, home, postID, id),
+		Status:           commentStatus(asString(row["comment_approved"])),
+		Type:             ctype,
+		AuthorAvatarURLs: gravatarAvatarURLs(email),
+		Meta:             map[string]any{"_wp_note_status": nil},
+		Links:            buildCommentLinks(c, home, id, postID, parent, author),
 	}
+}
+
+func commentContentHTML(raw string) string {
+	raw = strings.ReplaceAll(raw, "\r\n", "\n")
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	if strings.Contains(raw, "<p>") || strings.Contains(raw, "<p ") {
+		if !strings.HasSuffix(raw, "\n") {
+			raw += "\n"
+		}
+		return raw
+	}
+	// Minimal wpautop for single-block comments: wrap in <p>, newlines → <br />.
+	parts := strings.Split(raw, "\n")
+	var b strings.Builder
+	b.WriteString("<p>")
+	for i, part := range parts {
+		if i > 0 {
+			b.WriteString("<br />\n")
+		}
+		b.WriteString(part)
+	}
+	b.WriteString("</p>\n")
+	return b.String()
+}
+
+func gravatarAvatarURLs(email string) map[string]string {
+	email = strings.ToLower(strings.TrimSpace(email))
+	sum := sha256.Sum256([]byte(email))
+	hash := hex.EncodeToString(sum[:])
+	out := map[string]string{}
+	for _, size := range []int{24, 48, 96} {
+		out[strconv.Itoa(size)] = fmt.Sprintf(
+			"https://secure.gravatar.com/avatar/%s?s=%d&d=mm&r=g", hash, size,
+		)
+	}
+	return out
+}
+
+func buildCommentLinks(c *wp.Context, home string, id, postID, parent, author int64) map[string]any {
+	restRoot := strings.TrimRight(home, "/") + "/wp-json/wp/v2"
+	postType := "post"
+	if c != nil && c.DB != nil && postID > 0 {
+		if pt := postTypeByID(c, postID); pt != "" {
+			postType = pt
+		}
+	}
+	base := "posts"
+	if postType == "page" {
+		base = "pages"
+	}
+	links := map[string]any{
+		"self": []map[string]any{{
+			"href":        fmt.Sprintf("%s/comments/%d", restRoot, id),
+			"targetHints": map[string]any{"allow": []string{"GET"}},
+		}},
+		"collection": []map[string]any{{"href": restRoot + "/comments"}},
+		"up": []map[string]any{{
+			"embeddable": true,
+			"post_type":  postType,
+			"href":       fmt.Sprintf("%s/%s/%d", restRoot, base, postID),
+		}},
+	}
+	if author > 0 {
+		links["author"] = []map[string]any{{
+			"embeddable": true,
+			"href":       fmt.Sprintf("%s/users/%d", restRoot, author),
+		}}
+	}
+	if parent > 0 {
+		links["in-reply-to"] = []map[string]any{{
+			"embeddable": true,
+			"href":       fmt.Sprintf("%s/comments/%d", restRoot, parent),
+		}}
+	}
+	if commentHasChildren(c, id) {
+		links["children"] = []map[string]any{{
+			"embeddable": true,
+			"href":       fmt.Sprintf("%s/comments?parent=%d", restRoot, id),
+		}}
+	}
+	return links
+}
+
+func postTypeByID(c *wp.Context, id int64) string {
+	if c == nil || c.DB == nil || id <= 0 {
+		return ""
+	}
+	q, args, err := c.DB.Prepare("SELECT post_type FROM "+c.DB.Posts()+" WHERE ID = %d LIMIT 1", id)
+	if err != nil {
+		return ""
+	}
+	row, err := c.DB.GetRow(q, args...)
+	if err != nil || row == nil {
+		return ""
+	}
+	return asString(row["post_type"])
+}
+
+func commentHasChildren(c *wp.Context, parentID int64) bool {
+	if c == nil || c.DB == nil || parentID <= 0 {
+		return false
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT comment_ID FROM "+c.DB.Comments()+
+			" WHERE comment_parent = %d AND comment_approved = %s AND comment_type IN (%s, %s) LIMIT 1",
+		parentID, "1", "comment", "",
+	)
+	if err != nil {
+		return false
+	}
+	row, err := c.DB.GetRow(q, args...)
+	return err == nil && row != nil
 }
 
 func commentStatus(approved string) string {
@@ -246,6 +372,25 @@ func commentStatus(approved string) string {
 	}
 }
 
-func commentPermalink(home string, postID, commentID int64) string {
+func commentPermalink(c *wp.Context, home string, postID, commentID int64) string {
+	if c != nil && c.DB != nil && postID > 0 {
+		q, args, err := c.DB.Prepare(
+			"SELECT ID, post_date, post_name, post_type, post_parent FROM "+c.DB.Posts()+" WHERE ID = %d LIMIT 1",
+			postID,
+		)
+		if err == nil {
+			row, err := c.DB.GetRow(q, args...)
+			if err == nil && row != nil {
+				p := wp.Post{
+					ID:     asInt64(row["ID"]),
+					Date:   asString(row["post_date"]),
+					Name:   asString(row["post_name"]),
+					Type:   asString(row["post_type"]),
+					Parent: asInt64(row["post_parent"]),
+				}
+				return itemPermalink(c, home, p) + fmt.Sprintf("#comment-%d", commentID)
+			}
+		}
+	}
 	return fmt.Sprintf("%s/?p=%d#comment-%d", home, postID, commentID)
 }
