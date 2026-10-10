@@ -134,3 +134,31 @@
   body: null
   compare: json
   nonce: null
+
+# P10.76: status item + rest_route door JSON parity.
+- id: rest-status-publish
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/statuses/publish
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-route-statuses
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/statuses
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-route-types
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/types
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
