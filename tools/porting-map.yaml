@@ -4904,3 +4904,18 @@
   task: P5.82
   api: n/a
   notes: "P5.82 — ListTagCloud(taxonomy, number) query LIMIT"
+
+# P4.98: REST comments ?status= filter + moderator item fetch.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-comments-controller.php#status
+  go: internal/rest/comments.go
+  status: partial
+  task: P4.98
+  api: n/a
+  notes: "P4.98 — ?status=approve|hold|spam|trash|all; non-approve needs edit_posts"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-comments-controller.php#get_item#moderate
+  go: internal/rest/comments.go
+  status: partial
+  task: P4.98
+  api: n/a
+  notes: "P4.98 — moderators GET unapproved/spam/trash via getCommentByIDAny"
