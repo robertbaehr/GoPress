@@ -14,10 +14,12 @@ var (
 	reFigureOpen      = regexp.MustCompile(`(?is)^(\s*<figure\b)([^>]*)(>)`)
 )
 
-// renderImage renders core/image (P5.48).
+// renderImage renders core/image (P5.48 / P5.65).
 // Mirrors render_block_core_image subset: require <img>, honor data-id for
 // gallery nesting, drop empty figcaptions when caption attr is empty, and
 // synthesize markup from attrs when no saved HTML is present.
+// P5.65: ensure wp-block-image + align classes; width/height/aspectRatio/scale/
+// title/isDecorative/linkClass on synthesize and light saved-markup polish.
 func (e *Env) renderImage(block Block) string {
 	e = e.ensure()
 	block = galleryImageDataIDBackcompat(block, false)
@@ -37,6 +39,11 @@ func (e *Env) renderImage(block Block) string {
 	caption := strings.TrimSpace(attrString(block.Attrs, "caption"))
 	if caption == "" {
 		out = reEmptyFigcaption.ReplaceAllString(out, "")
+	}
+
+	out = addRootClass(out, "wp-block-image")
+	if align := strings.TrimSpace(attrString(block.Attrs, "align")); align != "" {
+		out = addRootClass(out, "align"+sanitizeClassToken(align))
 	}
 	return out
 }
@@ -142,20 +149,62 @@ func synthesizeImageFigure(e *Env, block Block) string {
 	if url == "" {
 		return ""
 	}
+	decorative := attrBool(block.Attrs, "isDecorative")
 	alt := attrString(block.Attrs, "alt")
+	if decorative {
+		alt = ""
+	}
 	sizeSlug := strings.TrimSpace(attrString(block.Attrs, "sizeSlug"))
 	if sizeSlug == "" {
 		sizeSlug = "large"
 	}
 	class := "wp-block-image size-" + sizeSlug
+	if align := strings.TrimSpace(attrString(block.Attrs, "align")); align != "" {
+		class += " align" + sanitizeClassToken(align)
+	}
 	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
 		class += " " + cn
 	}
-	imgClass := ""
-	if id > 0 {
-		imgClass = fmt.Sprintf(` class="wp-image-%d"`, id)
+
+	width := strings.TrimSpace(attrString(block.Attrs, "width"))
+	height := strings.TrimSpace(attrString(block.Attrs, "height"))
+	aspect := strings.TrimSpace(attrString(block.Attrs, "aspectRatio"))
+	scale := strings.TrimSpace(attrString(block.Attrs, "scale"))
+	if width != "" || height != "" {
+		class += " is-resized"
 	}
-	img := fmt.Sprintf(`<img src="%s" alt="%s"%s/>`, html.EscapeString(url), html.EscapeString(alt), imgClass)
+
+	var imgClassParts []string
+	if id > 0 {
+		imgClassParts = append(imgClassParts, fmt.Sprintf("wp-image-%d", id))
+	}
+	imgAttrs := ` src="` + html.EscapeString(url) + `" alt="` + html.EscapeString(alt) + `"`
+	if len(imgClassParts) > 0 {
+		imgAttrs += ` class="` + html.EscapeString(strings.Join(imgClassParts, " ")) + `"`
+	}
+	if title := strings.TrimSpace(attrString(block.Attrs, "title")); title != "" && !decorative {
+		imgAttrs += ` title="` + html.EscapeString(title) + `"`
+	}
+	if decorative {
+		imgAttrs += ` role="presentation"`
+	}
+	var styleParts []string
+	if width != "" {
+		styleParts = append(styleParts, "width:"+sanitizeCSSLength(width))
+	}
+	if height != "" {
+		styleParts = append(styleParts, "height:"+sanitizeCSSLength(height))
+	}
+	if aspect != "" {
+		styleParts = append(styleParts, "aspect-ratio:"+sanitizeCSSToken(aspect))
+	}
+	if scale != "" {
+		styleParts = append(styleParts, "object-fit:"+sanitizeCSSToken(scale))
+	}
+	if len(styleParts) > 0 {
+		imgAttrs += ` style="` + html.EscapeString(strings.Join(styleParts, ";")) + `"`
+	}
+	img := `<img` + imgAttrs + `/>`
 
 	href := strings.TrimSpace(attrString(block.Attrs, "href"))
 	linkDest := strings.TrimSpace(attrString(block.Attrs, "linkDestination"))
@@ -167,15 +216,17 @@ func synthesizeImageFigure(e *Env, block Block) string {
 	}
 	inner := img
 	if href != "" {
-		target := ""
+		aAttrs := ` href="` + html.EscapeString(href) + `"`
 		if t := strings.TrimSpace(attrString(block.Attrs, "linkTarget")); t != "" {
-			target = ` target="` + html.EscapeString(t) + `"`
+			aAttrs += ` target="` + html.EscapeString(t) + `"`
 		}
-		rel := ""
 		if r := strings.TrimSpace(attrString(block.Attrs, "rel")); r != "" {
-			rel = ` rel="` + html.EscapeString(r) + `"`
+			aAttrs += ` rel="` + html.EscapeString(r) + `"`
 		}
-		inner = `<a href="` + html.EscapeString(href) + `"` + target + rel + `>` + img + `</a>`
+		if lc := strings.TrimSpace(attrString(block.Attrs, "linkClass")); lc != "" {
+			aAttrs += ` class="` + html.EscapeString(lc) + `"`
+		}
+		inner = `<a` + aAttrs + `>` + img + `</a>`
 	}
 	caption := strings.TrimSpace(attrString(block.Attrs, "caption"))
 	capHTML := ""
@@ -183,6 +234,30 @@ func synthesizeImageFigure(e *Env, block Block) string {
 		capHTML = `<figcaption class="wp-element-caption">` + html.EscapeString(caption) + `</figcaption>`
 	}
 	return `<figure class="` + html.EscapeString(class) + `">` + inner + capHTML + `</figure>`
+}
+
+// sanitizeCSSLength allows numeric lengths with optional common CSS units.
+func sanitizeCSSLength(v string) string {
+	v = strings.TrimSpace(v)
+	if v == "" {
+		return ""
+	}
+	// Bare numbers get px (block editor convention).
+	if _, err := strconv.ParseFloat(v, 64); err == nil {
+		return v + "px"
+	}
+	return sanitizeCSSToken(v)
+}
+
+func sanitizeCSSToken(v string) string {
+	var b strings.Builder
+	for _, r := range v {
+		if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || (r >= '0' && r <= '9') ||
+			r == '-' || r == '_' || r == '.' || r == '%' || r == '/' {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 func synthesizeGalleryFromIDs(e *Env, block Block) string {

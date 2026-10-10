@@ -2244,6 +2244,14 @@
   task: P5.48
   api: internal
 
+# P5.65: further polish core/image (align, dimensions, title, decorative, linkClass).
+- prefix: wp-includes/blocks/image.php#render
+  go: internal/blocks/gallery_image.go
+  status: partial
+  task: P5.65
+  api: internal
+  notes: "P5.65 — ensure wp-block-image/align*; width/height/aspectRatio/scale/title/isDecorative/linkClass"
+
 # P5.49: core/embed provider/type/align classes + URL inference.
 - prefix: wp-includes/blocks/embed
   go: internal/blocks/embed.go
