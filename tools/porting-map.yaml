@@ -4916,6 +4916,21 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P2.99 — Context.NonceTick / CreateNonce / VerifyNonce honor nonce_life filter"
 
+# P2.101: wp_password_needs_rehash for $wp$ / phpass / bare bcrypt.
+- prefix: wp-includes/pluggable.php#wp_password_needs_rehash
+  go: internal/wp/auth.go
+  status: partial
+  task: P2.101
+  api: exported
+  notes: "P2.101 — PasswordNeedsRehash; phpass/bare bcrypt true; $wp$ cost vs DefaultCost"
+
+- prefix: wp-includes/pluggable.php#wp_hash_password
+  go: internal/wp/auth.go
+  status: partial
+  task: P2.101
+  api: exported
+  notes: "P2.101 — HashPassword $wp$+bcrypt; PasswordNeedsRehash companion; P2.1/P2.21 base"
+
 # P2.100: wp_salt unknown schemes + salt filter.
 - prefix: wp-includes/pluggable.php#wp_salt
   go: internal/wp/auth.go
