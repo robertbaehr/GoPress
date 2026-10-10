@@ -403,6 +403,12 @@ func buildPostLinks(c *wp.Context, home string, row wp.Post, edit bool) map[stri
 			"href":       fmt.Sprintf("%s/pages/%d", restRoot, row.Parent),
 		}}
 	}
+	if thumb := featuredMediaID(c, row.ID); thumb > 0 {
+		links["wp:featuredmedia"] = []map[string]any{{
+			"embeddable": true,
+			"href":       fmt.Sprintf("%s/media/%d", restRoot, thumb),
+		}}
+	}
 	if edit {
 		selfHref := fmt.Sprintf("%s/%s/%d", restRoot, base, row.ID)
 		for _, action := range []string{
@@ -474,11 +480,7 @@ func stickyPostIDs(c *wp.Context) map[int64]bool {
 }
 
 func featuredMediaID(c *wp.Context, postID int64) int64 {
-	if c == nil || c.Meta == nil || postID <= 0 {
-		return 0
-	}
-	v := c.Meta.GetMetadata(wp.MetaPost, postID, "_thumbnail_id", true)
-	return asInt64(v)
+	return wp.GetPostThumbnailID(c, postID)
 }
 
 func pageTemplate(c *wp.Context, postID int64) string {

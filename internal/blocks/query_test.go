@@ -67,6 +67,38 @@ func TestRenderPatternExpandsQuery(t *testing.T) {
 	}
 }
 
+func TestRenderPostFeaturedImage(t *testing.T) {
+	env := &blocks.Env{
+		ListPosts: func(q blocks.QueryLoopArgs) []blocks.QueryPost {
+			return []blocks.QueryPost{{
+				ID: 1, Title: "With Thumb", Link: "/?p=1",
+				FeaturedImageURL: "http://example.test/uploads/photo.jpg",
+				FeaturedImageAlt: "A photo",
+			}}
+		},
+	}
+	in := `<!-- wp:query {"query":{"perPage":1}} -->
+<div class="wp-block-query">
+<!-- wp:post-template -->
+<!-- wp:post-featured-image {"isLink":true} /-->
+<!-- /wp:post-template -->
+</div>
+<!-- /wp:query -->`
+	out := blocks.RenderWith(env, in)
+	if !strings.Contains(out, `class="wp-block-post-featured-image"`) {
+		t.Fatalf("missing figure: %q", out)
+	}
+	if !strings.Contains(out, `src="http://example.test/uploads/photo.jpg"`) {
+		t.Fatalf("missing img src: %q", out)
+	}
+	if !strings.Contains(out, `alt="A photo"`) {
+		t.Fatalf("missing alt: %q", out)
+	}
+	if !strings.Contains(out, `<a href="/?p=1"`) {
+		t.Fatalf("missing link wrap: %q", out)
+	}
+}
+
 func TestRenderQueryNoResults(t *testing.T) {
 	env := &blocks.Env{
 		ListPosts: func(q blocks.QueryLoopArgs) []blocks.QueryPost { return nil },

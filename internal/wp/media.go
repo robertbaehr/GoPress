@@ -184,6 +184,47 @@ func GetAttachmentURL(c *Context, attachmentID int64) string {
 	return url
 }
 
+// GetPostThumbnailID returns the featured image attachment ID (_thumbnail_id).
+func GetPostThumbnailID(c *Context, postID int64) int64 {
+	if c == nil || c.Meta == nil || postID <= 0 {
+		return 0
+	}
+	v := c.Meta.GetMetadata(MetaPost, postID, "_thumbnail_id", true)
+	switch t := v.(type) {
+	case int64:
+		return t
+	case int:
+		return int64(t)
+	case string:
+		n, err := strconv.ParseInt(strings.TrimSpace(t), 10, 64)
+		if err != nil {
+			return 0
+		}
+		return n
+	case []byte:
+		n, err := strconv.ParseInt(strings.TrimSpace(string(t)), 10, 64)
+		if err != nil {
+			return 0
+		}
+		return n
+	default:
+		n, err := strconv.ParseInt(strings.TrimSpace(fmt.Sprint(t)), 10, 64)
+		if err != nil {
+			return 0
+		}
+		return n
+	}
+}
+
+// GetPostThumbnailURL returns the featured image source URL, or empty.
+func GetPostThumbnailURL(c *Context, postID int64) string {
+	id := GetPostThumbnailID(c, postID)
+	if id <= 0 {
+		return ""
+	}
+	return GetAttachmentURL(c, id)
+}
+
 // AttachmentPermalink returns the front URL for an attachment page.
 func AttachmentPermalink(c *Context, attachmentID int64, slug string) string {
 	home := strings.TrimRight(optionStringValue(c, "home", optionStringValue(c, "siteurl", "")), "/")

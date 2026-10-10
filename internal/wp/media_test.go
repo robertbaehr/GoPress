@@ -2,6 +2,7 @@ package wp_test
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"testing"
 
@@ -72,6 +73,32 @@ func TestGetAttachedFile(t *testing.T) {
 	file := wp.GetAttachedFile(c, 5)
 	if !strings.HasSuffix(file, "2024/06/sample-photo-a.jpg") {
 		t.Fatalf("file=%q", file)
+	}
+}
+
+func TestPostThumbnailHelpers(t *testing.T) {
+	c := mediaBoot(t)
+	postID := int64(13)
+	prev := fmt.Sprint(c.Meta.GetMetadata(wp.MetaPost, postID, "_thumbnail_id", true))
+	if prev == "<nil>" {
+		prev = ""
+	}
+	t.Cleanup(func() {
+		_, _ = c.Meta.DeleteMetadata(wp.MetaPost, postID, "_thumbnail_id", "")
+		if prev != "" {
+			_, _, _ = c.Meta.AddMetadata(wp.MetaPost, postID, "_thumbnail_id", prev, true)
+		}
+	})
+	_, _ = c.Meta.DeleteMetadata(wp.MetaPost, postID, "_thumbnail_id", "")
+	if _, _, err := c.Meta.AddMetadata(wp.MetaPost, postID, "_thumbnail_id", "5", true); err != nil {
+		t.Fatalf("set thumbnail: %v", err)
+	}
+	if got := wp.GetPostThumbnailID(c, postID); got != 5 {
+		t.Fatalf("thumbnail id=%d want 5", got)
+	}
+	url := wp.GetPostThumbnailURL(c, postID)
+	if !strings.Contains(url, "sample-photo-a") {
+		t.Fatalf("thumbnail url=%q", url)
 	}
 }
 
