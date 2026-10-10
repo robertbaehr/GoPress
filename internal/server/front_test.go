@@ -142,8 +142,16 @@ func TestFrontSingular404(t *testing.T) {
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
 	}
-	if !strings.Contains(rec.Body.String(), "Page not found") {
-		t.Fatalf("expected 404 page, got %q", rec.Body.String())
+	body := rec.Body.String()
+	if !strings.Contains(body, "Page not found") {
+		t.Fatalf("expected 404 page, got %q", body)
+	}
+	// P3.16: active block theme should render templates/404.html.
+	if !strings.Contains(body, "error404") {
+		t.Fatalf("expected error404 body class: %q", body)
+	}
+	if !strings.Contains(body, "wp-site-blocks") {
+		t.Fatalf("expected block theme 404 wrapper: %q", body)
 	}
 }
 

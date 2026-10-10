@@ -54,6 +54,23 @@ func TestHiddenBlogHeadingKeepsEscHTMLEString(t *testing.T) {
 	t.Fatal("missing twentytwentyfive/hidden-blog-heading")
 }
 
+func TestHidden404KeepsEscHTMLXString(t *testing.T) {
+	patterns, err := theme.LoadThemePatterns("/workspace/", "twentytwentyfive")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range patterns {
+		if p.Slug != "twentytwentyfive/hidden-404" {
+			continue
+		}
+		if !strings.Contains(p.Content, "Page not found") {
+			t.Fatalf("expected Page not found from esc_html_x, got %q", p.Content)
+		}
+		return
+	}
+	t.Fatal("missing twentytwentyfive/hidden-404")
+}
+
 func TestParsePatternMissingSlugSkipped(t *testing.T) {
 	dir := t.TempDir()
 	themeDir := filepath.Join(dir, "wp-content", "themes", "demo", "patterns")

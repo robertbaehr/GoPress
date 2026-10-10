@@ -28,10 +28,13 @@ var (
 	headerBlockTypes  = regexp.MustCompile(`(?mi)^\s*\*\s*Block Types:\s*(.+?)\s*$`)
 	headerInserter    = regexp.MustCompile(`(?mi)^\s*\*\s*Inserter:\s*(.+?)\s*$`)
 	phpTagStrip       = regexp.MustCompile(`(?s)<\?(?:php|=)?.*?\?>`)
-	// Common i18n echo forms in theme patterns (P5.16): keep the source string.
+	// Common i18n echo forms in theme patterns (P5.16 / P3.16): keep the source string.
 	phpEscHTMLEre    = regexp.MustCompile(`<\?php\s+(?:echo\s+)?esc_html_e\s*\(\s*'([^']*)'\s*,\s*'[^']*'\s*\)\s*;\s*\?>`)
 	phpEscHTMLEchoRe = regexp.MustCompile(`<\?php\s+echo\s+esc_html__\s*\(\s*'([^']*)'\s*,\s*'[^']*'\s*\)\s*;\s*\?>`)
 	phpEscAttrEre    = regexp.MustCompile(`<\?php\s+(?:echo\s+)?esc_attr_e\s*\(\s*'([^']*)'\s*,\s*'[^']*'\s*\)\s*;\s*\?>`)
+	// Context-aware getters used by TT5 404 / search patterns (esc_html_x / esc_attr_x).
+	phpEscHTMLXRe = regexp.MustCompile(`<\?php\s+echo\s+esc_html_x\s*\(\s*'([^']*)'\s*,\s*'[^']*'\s*,\s*'[^']*'\s*\)\s*;\s*\?>`)
+	phpEscAttrXRe = regexp.MustCompile(`<\?php\s+echo\s+esc_attr_x\s*\(\s*'([^']*)'\s*,\s*'[^']*'\s*,\s*'[^']*'\s*\)\s*;\s*\?>`)
 	// TT5 footer printf designed-with block (multiline).
 	phpDesignedWithRe = regexp.MustCompile(`(?s)<\?php\s+printf\s*\(\s*.*?esc_html__\s*\(\s*'Designed with %s'\s*,\s*'[^']*'\s*\)\s*,\s*.*?WordPress</a>'\s*\)\s*;\s*\?>`)
 )
@@ -106,11 +109,14 @@ func extractPatternContent(raw string) string {
 	if idx >= 0 {
 		body = raw[idx+2:]
 	}
-	// Expand common esc_html_e / esc_html__ calls to their English source strings
-	// so TT5 headings like "Blog" survive without a PHP runtime (P5.16).
+	// Expand common esc_html_e / esc_html__ / esc_html_x calls to their English
+	// source strings so TT5 headings like "Blog" / "Page not found" survive
+	// without a PHP runtime (P5.16 / P3.16).
 	body = phpEscHTMLEre.ReplaceAllString(body, "$1")
 	body = phpEscHTMLEchoRe.ReplaceAllString(body, "$1")
 	body = phpEscAttrEre.ReplaceAllString(body, "$1")
+	body = phpEscHTMLXRe.ReplaceAllString(body, "$1")
+	body = phpEscAttrXRe.ReplaceAllString(body, "$1")
 	body = phpDesignedWithRe.ReplaceAllString(body, `Designed with <a href="https://wordpress.org" rel="nofollow">WordPress</a>`)
 	// Strip remaining inline PHP (theme patterns often echo URLs/strings).
 	body = phpTagStrip.ReplaceAllString(body, "")
