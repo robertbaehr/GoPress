@@ -79,7 +79,7 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/table":
 		out = e.renderTable(block)
 	case "core/html":
-		out = e.renderSaved(block)
+		out = e.renderHTML(block)
 	case "core/details":
 		out = e.renderDetails(block)
 	case "core/code":
@@ -101,11 +101,8 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/file":
 		out = e.renderFile(block)
 	case "core/freeform":
-		// Classic editor block: prefer attribute content, else inner HTML.
-		if content, ok := block.Attrs["content"].(string); ok && content != "" {
-			return content
-		}
-		return block.InnerHTML
+		// Classic editor block (P5.68).
+		return e.renderFreeform(block)
 	case "core/missing":
 		return e.renderMissing(block)
 	case "core/footnotes":
