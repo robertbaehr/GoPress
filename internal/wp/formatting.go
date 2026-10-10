@@ -24,10 +24,9 @@ const (
 )
 
 var (
-	reScriptBlock   = regexp.MustCompile(`(?is)<script[^>]*>.*?</script>`)
-	reStyleBlock    = regexp.MustCompile(`(?is)<style[^>]*>.*?</style>`)
-	reTags          = regexp.MustCompile(`(?s)<[^>]*>`)
-	reWhitespace    = regexp.MustCompile(`[\r\n\t ]+`)
+	reScriptOrStyleBlock = regexp.MustCompile(`(?is)<(script|style)[^>]*>.*?</\1>`)
+	reTags               = regexp.MustCompile(`(?s)<[^>]*>`)
+	reWhitespace         = regexp.MustCompile(`[\r\n\t ]+`)
 	reSpaces        = regexp.MustCompile(` +`)
 	rePercentOctet  = regexp.MustCompile(`(?i)%[a-f0-9]{2}`)
 	reSanitizeKey   = regexp.MustCompile(`[^a-z0-9_\-]`)
@@ -257,19 +256,6 @@ func isAllowedFileExt(part string) bool {
 	}
 	// get_allowed_mime_types unsets swf/exe and often htm|html/js — treat as disallowed.
 	return false
-}
-
-// WPStripAllTags strips HTML tags (wp_strip_all_tags). removeBreaks collapses whitespace.
-func WPStripAllTags(text string, removeBreaks bool) string {
-	text = strings.ReplaceAll(text, "\x00", "")
-	text = reScriptBlock.ReplaceAllString(text, "")
-	text = reStyleBlock.ReplaceAllString(text, "")
-	text = reTags.ReplaceAllString(text, "")
-	// PHP strip_tags also removes NUL; already done.
-	if removeBreaks {
-		text = reWhitespace.ReplaceAllString(text, " ")
-	}
-	return strings.TrimSpace(text)
 }
 
 func sanitizeTextFields(str string, keepNewlines bool) string {
