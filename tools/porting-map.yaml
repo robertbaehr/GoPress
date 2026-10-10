@@ -1989,6 +1989,14 @@
   api: n/a
   notes: "P10.62 — Playwright coverage for edit.php search box + author/category filters"
 
+# P10.63: STATUS/PORTING refresh after P5.71–P8.18.
+- prefix: docs/STATUS.md#P10.63
+  go: docs/STATUS.md
+  status: partial
+  task: P10.63
+  api: n/a
+  notes: "P10.63 — summarize query-title polish, posts tags, edit tag filter, doing_cron, multi enclosure, policy accordion"
+
 - prefix: docs/STATUS.md#P10.62
   go: docs/STATUS.md
   status: partial
