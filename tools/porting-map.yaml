@@ -6491,4 +6491,19 @@ wp-login.php#language-switcher-post
   status: partial
   task: P10.114
   api: n/a
-  notes: "P10.114 — users/settings/login/heartbeat/types; drop flaky options-* cookies; grow after P5.102–P9.22"
+  notes: "P10.114 — users/settings/login/heartbeat/types; drop flaky options-* cookies; grow after P5.102–P9.22; 479/479"
+
+# P10.115: STATUS/PORTING refresh after P5.102–P10.114.
+- prefix: docs/STATUS.md#p10-115
+  go: docs/STATUS.md
+  status: partial
+  task: P10.115
+  api: n/a
+  notes: "P10.115 — STATUS/PORTING refresh after P5.102–P10.114 (479/479 corpus)"
+
+- prefix: PORTING.md#p10-115
+  go: PORTING.md
+  status: partial
+  task: P10.115
+  api: n/a
+  notes: "P10.115 — regenerate porting-status after stacked P5.102–P10.114"
