@@ -837,6 +837,14 @@
   task: P6.18
   api: n/a
 
+# P6.37: deepen reauth — REQUEST any non-empty, SetCurrentUser(0), preserve on failed POST.
+- prefix: wp-login.php#reauth-deepen
+  go: internal/login/login.go
+  status: partial
+  task: P6.37
+  api: n/a
+  notes: "P6.37 — isReauth from query/form; SetCurrentUser(0); failed POST keeps reauth=1"
+
 # P6.32: interim-login aria-describedby focus association for login-message.
 - prefix: wp-login.php#interim-aria-describedby
   go: internal/login/login.go
