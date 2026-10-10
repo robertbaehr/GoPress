@@ -392,13 +392,7 @@ func hexByte(c byte) string {
 }
 
 func checkUTF8(text string) string {
-	if text == "" {
-		return ""
-	}
-	if !utf8.ValidString(text) {
-		return ""
-	}
-	return text
+	return CheckInvalidUTF8(text, false)
 }
 
 // wpSpecialchars mirrors _wp_specialchars with double_encode=false.
