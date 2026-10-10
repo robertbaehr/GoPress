@@ -175,6 +175,10 @@ func (r *Roles) MapMetaCap(cap string, userID int64, _ ...int64) []string {
 		// P7.97: erase-personal-data.php requires erase_others_personal_data;
 		// GoPress maps it to manage_options (admin privacy tools).
 		return []string{"manage_options"}
+	case "export_others_personal_data":
+		// P7.98: export-personal-data.php requires export_others_personal_data;
+		// single-site WP maps it to manage_options.
+		return []string{"manage_options"}
 	default:
 		return []string{cap}
 	}

@@ -3610,8 +3610,13 @@ func captureToolBoxHTML(c *wp.Context) string {
 // serveImport lives in import_wxr.go (P7.11 screen + P7.54 WXR upload stub).
 
 // serveExportPersonalData is a privacy tools stub (P8.2) with file generation (P8.4),
-// download wiring (P8.6), and UI polish (P7.39).
+// download wiring (P8.6), UI polish (P7.39), and cap/status-view deepen (P7.98).
 func (h *Handler) serveExportPersonalData(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	// P7.98: export-personal-data.php requires export_others_personal_data.
+	if !canExportPersonalDataAdmin(c) {
+		http.Error(w, "Sorry, you are not allowed to export personal data on this site.\n", http.StatusForbidden)
+		return
+	}
 	if r.Method == http.MethodGet && r.URL.Query().Get("action") == "download" {
 		h.servePersonalDataExportDownload(w, r, c)
 		return
@@ -3628,12 +3633,21 @@ func (h *Handler) serveExportPersonalData(w http.ResponseWriter, r *http.Request
 		if email == "" {
 			email = strings.TrimSpace(r.Form.Get("email"))
 		}
+		// Username → email (wp_create_user_request path).
+		if email != "" && !strings.Contains(email, "@") {
+			if u, err := c.GetUserBy("login", email); err == nil && u != nil {
+				email = u.Email
+			}
+		}
 		action := strings.TrimSpace(r.Form.Get("action"))
 		switch action {
 		case "confirm_export":
 			if res, err := wp.GeneratePersonalDataExportFile(c, email); err != nil {
 				note = "Export generation failed: " + err.Error()
 			} else {
+				if id := wp.FindOpenUserRequestID(c, email, "export_personal_data"); id > 0 {
+					_ = wp.CompleteUserRequest(c, id)
+				}
 				jsonName := filepath.Base(res.JSONPath)
 				htmlName := filepath.Base(res.HTMLPath)
 				jsonDL := wp.PersonalDataExportDownloadURL(jsonName)
@@ -3654,11 +3668,25 @@ func (h *Handler) serveExportPersonalData(w http.ResponseWriter, r *http.Request
 			// WP: send_confirmation_email checked → pending; unchecked → generate now.
 			sendConfirm := r.Form.Get("send_confirmation_email") != ""
 			if sendConfirm {
-				pendingEmail = email
-				note = "Confirmation required: confirm export for " + email + "."
+				if _, err := wp.CreateUserRequest(c, email, "export_personal_data", "pending"); err != nil {
+					if wp.FindOpenUserRequestID(c, email, "export_personal_data") > 0 {
+						pendingEmail = email
+						note = "Confirmation required: confirm export for " + email + "."
+					} else {
+						note = "Unable to add export request: " + err.Error()
+					}
+				} else {
+					pendingEmail = email
+					note = "Confirmation request initiated successfully. Confirmation required: confirm export for " + email + "."
+				}
 			} else if res, err := wp.GeneratePersonalDataExportFile(c, email); err != nil {
 				note = "Export generation failed: " + err.Error()
 			} else {
+				if _, err := wp.CreateUserRequest(c, email, "export_personal_data", "confirmed"); err == nil {
+					if id := wp.FindOpenUserRequestID(c, email, "export_personal_data"); id > 0 {
+						_ = wp.CompleteUserRequest(c, id)
+					}
+				}
 				jsonName := filepath.Base(res.JSONPath)
 				htmlName := filepath.Base(res.HTMLPath)
 				jsonDL := wp.PersonalDataExportDownloadURL(jsonName)
@@ -3677,7 +3705,11 @@ func (h *Handler) serveExportPersonalData(w http.ResponseWriter, r *http.Request
 			}
 		}
 	}
-	h.servePrivacyExportPage(w, c, note, downloadLinks, pendingEmail)
+	filterStatus := ""
+	if r != nil {
+		filterStatus = strings.TrimSpace(r.URL.Query().Get("filter-status"))
+	}
+	h.servePrivacyExportPage(w, r, c, note, downloadLinks, pendingEmail, filterStatus)
 }
 
 func (h *Handler) servePersonalDataExportDownload(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -3695,7 +3727,8 @@ func (h *Handler) servePersonalDataExportDownload(w http.ResponseWriter, r *http
 	http.ServeFile(w, r, full)
 }
 
-func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, c *wp.Context, note, downloadLinks, pendingEmail string) {
+func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, r *http.Request, c *wp.Context, note, downloadLinks, pendingEmail, filterStatus string) {
+	_ = r
 	blogname := optionString(c, "blogname", "GoPress")
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
@@ -3737,9 +3770,17 @@ func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, c *wp.Context, n
 	b.WriteString("</td></tr>\n</table>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Send Request\"></p>\n")
 	b.WriteString("</div>\n</form>\n")
-	b.WriteString(renderExportPrivacyRequestsTable(c, pendingEmail))
+	b.WriteString(renderExportPrivacyRequestsTable(c, pendingEmail, filterStatus))
 	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
+}
+
+// canExportPersonalDataAdmin mirrors export-personal-data.php capability checks (P7.98).
+func canExportPersonalDataAdmin(c *wp.Context) bool {
+	if c == nil || c.CurrentUser == nil {
+		return false
+	}
+	return c.UserCan(c.CurrentUser, "export_others_personal_data")
 }
 
 // serveErasePersonalData is a privacy tools stub (P8.2) with erasure (P8.5),
