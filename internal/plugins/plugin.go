@@ -47,6 +47,8 @@ func LoadActive(c *wp.Context) error {
 	}
 	// P9.8: Akismet is not bundled; register admin notice / refuse activation.
 	CheckAkismetGone(c)
+	// P9.11: Network Activate is N/A on single-site GoPress.
+	CheckNetworkActivateGone(c)
 	if c == nil || c.Options == nil {
 		return nil
 	}
