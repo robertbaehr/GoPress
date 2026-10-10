@@ -2210,13 +2210,23 @@ func commentApprovedLabel(approved string) string {
 }
 
 func (h *Handler) serveThemes(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	blogname := optionString(c, "blogname", "GoPress")
-	stylesheet := optionString(c, "stylesheet", "twentytwentytwo")
-	template := optionString(c, "template", stylesheet)
 	absPath := ""
 	if c != nil && c.Config != nil {
 		absPath = c.Config.ABSPATH
 	}
+	// P7.62: action=activate&stylesheet=… with switch-theme_{stylesheet} nonce.
+	if notice, err := handleThemeAction(r, c, absPath); err != nil {
+		http.Error(w, "themes: "+err.Error()+"\n", http.StatusForbidden)
+		return
+	} else if notice != "" {
+		http.Redirect(w, r, "/wp-admin/themes.php?"+notice, http.StatusFound)
+		return
+	}
+
+	blogname := optionString(c, "blogname", "GoPress")
+	stylesheet := optionString(c, "stylesheet", "twentytwentytwo")
+	template := optionString(c, "template", stylesheet)
+	activated := r.URL.Query().Get("activated") == "true"
 	themes, err := theme.ListInstalledThemes(absPath)
 	if err != nil {
 		http.Error(w, "themes: "+err.Error()+"\n", http.StatusInternalServerError)
@@ -2254,7 +2264,11 @@ func (h *Handler) serveThemes(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1>Themes</h1>\n")
+	if activated {
+		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p>New theme activated.</p></div>\n")
+	}
 	b.WriteString("<div class=\"theme-browser\">\n")
+	canSwitch := c != nil && c.CurrentUserCan("switch_themes")
 	for _, th := range themes {
 		active := th.Slug == stylesheet
 		b.WriteString("<div class=\"theme")
@@ -2301,15 +2315,65 @@ func (h *Handler) serveThemes(w http.ResponseWriter, r *http.Request, c *wp.Cont
 			b.WriteString(html.EscapeString(tpl))
 			b.WriteString("</p>\n")
 		}
+		b.WriteString("<div class=\"theme-actions\">\n")
+		if active {
+			b.WriteString("<span class=\"button button-primary disabled\">Activated</span>\n")
+		} else if canSwitch {
+			nonce := c.CreateNonce("switch-theme_" + th.Slug)
+			b.WriteString("<a class=\"button button-primary activate\" href=\"/wp-admin/themes.php?action=activate&amp;stylesheet=")
+			b.WriteString(html.EscapeString(url.QueryEscape(th.Slug)))
+			b.WriteString("&amp;_wpnonce=")
+			b.WriteString(html.EscapeString(nonce))
+			b.WriteString("\">Activate</a>\n")
+		}
 		b.WriteString("<button type=\"button\" class=\"button button-secondary theme-detail\" aria-label=\"View Theme Details for ")
 		b.WriteString(html.EscapeString(name))
 		b.WriteString("\">Theme Details</button>\n")
+		b.WriteString("</div>\n")
 		b.WriteString("</div>\n</div>\n")
 	}
 	b.WriteString("</div>\n")
 	b.WriteString("<div class=\"theme-overlay theme-overlay-initial\" tabindex=\"0\" role=\"dialog\" aria-label=\"Theme Details\"></div>\n")
 	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
+}
+
+// handleThemeAction activates a theme via GET action=activate (P7.62).
+func handleThemeAction(r *http.Request, c *wp.Context, absPath string) (string, error) {
+	if r == nil || c == nil {
+		return "", nil
+	}
+	action := strings.TrimSpace(r.URL.Query().Get("action"))
+	if action == "" {
+		_ = r.ParseForm()
+		action = strings.TrimSpace(r.FormValue("action"))
+	}
+	if action != "activate" {
+		return "", nil
+	}
+	if !c.CurrentUserCan("switch_themes") {
+		return "", fmt.Errorf("sorry, you are not allowed to switch themes")
+	}
+	stylesheet := strings.TrimSpace(r.URL.Query().Get("stylesheet"))
+	if stylesheet == "" {
+		_ = r.ParseForm()
+		stylesheet = strings.TrimSpace(r.FormValue("stylesheet"))
+	}
+	if stylesheet == "" {
+		return "", fmt.Errorf("missing stylesheet")
+	}
+	nonce := r.URL.Query().Get("_wpnonce")
+	if nonce == "" {
+		_ = r.ParseForm()
+		nonce = r.FormValue("_wpnonce")
+	}
+	if c.VerifyNonce(nonce, "switch-theme_"+stylesheet) == 0 {
+		return "", fmt.Errorf("invalid nonce")
+	}
+	if err := wp.SwitchTheme(c, absPath, stylesheet); err != nil {
+		return "", err
+	}
+	return "activated=true", nil
 }
 
 func (h *Handler) serveSiteEditor(w http.ResponseWriter, r *http.Request, c *wp.Context) {

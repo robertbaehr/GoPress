@@ -247,10 +247,48 @@ func TestThemesScreenDetails(t *testing.T) {
 		"theme-description",
 		"Version:",
 		"data-slug=",
+		"action=activate",
+		"theme-actions",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("missing %q in themes.php", want)
 		}
+	}
+}
+
+func TestThemesActivate(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+
+	prevSS, _ := c.Options.GetOption("stylesheet", "").(string)
+	t.Cleanup(func() {
+		_ = wp.SwitchTheme(c, "/workspace/", prevSS)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/themes.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	href := extractHref(body, "action=activate")
+	if href == "" {
+		t.Fatal("no activate link")
+	}
+	act := httptest.NewRequest(http.MethodGet, href, nil)
+	act.AddCookie(ck)
+	rec2 := httptest.NewRecorder()
+	srv.ServeHTTP(rec2, act)
+	if rec2.Code != http.StatusFound {
+		t.Fatalf("activate status=%d body=%q", rec2.Code, rec2.Body.String())
+	}
+	loc := rec2.Header().Get("Location")
+	if !strings.Contains(loc, "activated=true") {
+		t.Fatalf("location=%q", loc)
+	}
+	got, _ := c.Options.GetOption("stylesheet", "").(string)
+	if got == "" || got == prevSS {
+		t.Fatalf("stylesheet unchanged: %q (was %q)", got, prevSS)
 	}
 }
 
