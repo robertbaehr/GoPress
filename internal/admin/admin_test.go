@@ -1052,6 +1052,55 @@ func TestEditPostsTagFilter(t *testing.T) {
 	}
 }
 
+func TestEditPagesHierarchicalIndent(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?post_type=page", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	// Fixture Parent(436) → Child(437) → Grandchild(438).
+	for _, want := range []string{
+		`id="post-436"`,
+		`id="post-437"`,
+		`id="post-438"`,
+		`level-0`,
+		`level-1`,
+		`level-2`,
+		`Fixture Parent`,
+		`Fixture Child`,
+		`Fixture Grandchild`,
+		`<span aria-hidden="true">&#8212;</span>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected hierarchical pages markup %q", want)
+		}
+	}
+	// Child row should carry level-1 and a single pad before its title link.
+	childIdx := strings.Index(body, `id="post-437"`)
+	if childIdx < 0 {
+		t.Fatal("missing Fixture Child row")
+	}
+	chunk := body[childIdx:]
+	if end := strings.Index(chunk, `id="post-`); end > 0 {
+		// keep this row only (next post id after current opening)
+		if next := strings.Index(chunk[10:], `id="post-`); next >= 0 {
+			chunk = chunk[:10+next]
+		}
+	}
+	if !strings.Contains(chunk, `level-1`) {
+		t.Fatalf("child row missing level-1: %q", chunk[:min(400, len(chunk))])
+	}
+	if !strings.Contains(chunk, `<span aria-hidden="true">&#8212;</span> <a class="row-title"`) {
+		t.Fatalf("child row missing indent pad: %q", chunk[:min(400, len(chunk))])
+	}
+}
+
 func TestEditPostsBulkEditStub(t *testing.T) {
 	c := bootOrSkip(t)
 	ck := loginCookie(t, c)

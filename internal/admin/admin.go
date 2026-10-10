@@ -446,6 +446,11 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		b.WriteString(" type-")
 		b.WriteString(html.EscapeString(postType))
 		b.WriteString(" hentry")
+		// P7.78: hierarchical level class on pages list rows.
+		if postType == "page" {
+			b.WriteString(" level-")
+			b.WriteString(strconv.Itoa(p.Level))
+		}
 		// P7.67: sticky class on list row when post is sticky.
 		isSticky := postType == "post" && wp.IsSticky(c, p.ID)
 		if isSticky {
@@ -458,6 +463,10 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		b.WriteString(strconv.FormatInt(p.ID, 10))
 		b.WriteString(`" /></th>`)
 		b.WriteString("<td class=\"title column-title has-row-actions column-primary page-title\" data-colname=\"Title\"><strong>")
+		// P7.78: em-dash pad before child page titles.
+		if postType == "page" {
+			b.WriteString(pageHierarchyPad(p.Level))
+		}
 		b.WriteString("<a class=\"row-title\" href=\"/wp-admin/post.php?post=")
 		b.WriteString(strconv.FormatInt(p.ID, 10))
 		b.WriteString("&amp;action=edit\">")
@@ -4174,6 +4183,9 @@ type postRow struct {
 	Date   string
 	Status string
 	Author string
+	// Parent / Level support hierarchical page indent (P7.78).
+	Parent int64
+	Level  int
 }
 
 func countPostsByTypeStatus(c *wp.Context, postType, status string) int {
@@ -4223,7 +4235,7 @@ func recentPostsByType(c *wp.Context, postType string, limit int, search string,
 		postType = "post"
 	}
 	term := strings.TrimSpace(search)
-	sql := "SELECT DISTINCT p.ID, p.post_title, p.post_date, p.post_status, p.post_author, u.display_name, u.user_login FROM " +
+	sql := "SELECT DISTINCT p.ID, p.post_title, p.post_date, p.post_status, p.post_author, p.post_parent, p.menu_order, u.display_name, u.user_login FROM " +
 		c.DB.Posts() + " p LEFT JOIN " + c.DB.Users() + " u ON p.post_author = u.ID "
 	if catID > 0 {
 		sql += "INNER JOIN " + c.DB.TermRelationships() + " tr ON tr.object_id = p.ID " +
@@ -4273,7 +4285,12 @@ func recentPostsByType(c *wp.Context, postType string, limit int, search string,
 		sql += "AND (p.post_title LIKE %s OR p.post_excerpt LIKE %s OR p.post_content LIKE %s) "
 		prepArgs = append(prepArgs, like, like, like)
 	}
-	sql += "ORDER BY p.post_date DESC LIMIT %d"
+	// Pages: hierarchical list uses menu_order + title (WP_Posts_List_Table).
+	if postType == "page" {
+		sql += "ORDER BY p.menu_order ASC, p.post_title ASC LIMIT %d"
+	} else {
+		sql += "ORDER BY p.post_date DESC LIMIT %d"
+	}
 	prepArgs = append(prepArgs, limit)
 	q, args, err := c.DB.Prepare(sql, prepArgs...)
 	if err != nil {
@@ -4302,9 +4319,56 @@ func recentPostsByType(c *wp.Context, postType string, limit int, search string,
 			Date:   asString(row["post_date"]),
 			Status: asString(row["post_status"]),
 			Author: author,
+			Parent: asInt64(row["post_parent"]),
 		})
 	}
+	// P7.78: nest pages under parents with depth levels for indent display.
+	if postType == "page" {
+		out = orderPagesHierarchical(out)
+	}
 	return out, nil
+}
+
+// orderPagesHierarchical walks top-level pages then children (P7.78).
+// Orphans (parent missing from the result set) are treated as top-level.
+func orderPagesHierarchical(pages []postRow) []postRow {
+	if len(pages) == 0 {
+		return pages
+	}
+	byParent := map[int64][]postRow{}
+	ids := map[int64]bool{}
+	for _, p := range pages {
+		ids[p.ID] = true
+	}
+	var roots []postRow
+	for _, p := range pages {
+		if p.Parent > 0 && ids[p.Parent] {
+			byParent[p.Parent] = append(byParent[p.Parent], p)
+		} else {
+			roots = append(roots, p)
+		}
+	}
+	var out []postRow
+	var walk func(nodes []postRow, level int)
+	walk = func(nodes []postRow, level int) {
+		for _, n := range nodes {
+			n.Level = level
+			out = append(out, n)
+			if kids := byParent[n.ID]; len(kids) > 0 {
+				walk(kids, level+1)
+			}
+		}
+	}
+	walk(roots, 0)
+	return out
+}
+
+// pageHierarchyPad returns WP list-table em-dash indent for level (P7.78).
+func pageHierarchyPad(level int) string {
+	if level <= 0 {
+		return ""
+	}
+	return strings.Repeat(`<span aria-hidden="true">&#8212;</span> `, level)
 }
 
 type editAuthorOpt struct {

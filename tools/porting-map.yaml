@@ -4423,3 +4423,17 @@
   task: P4.93
   api: internal
   notes: "P4.93 — QueryArgs.ParentIn / ParentNotIn"
+
+# P7.78: edit.php pages list hierarchical indent (level-N + em-dash pad).
+- prefix: wp-admin/includes/class-wp-posts-list-table.php#hierarchical
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.78
+  api: n/a
+  notes: "P7.78 — orderPagesHierarchical + pageHierarchyPad + level-N row class"
+
+- prefix: wp-admin/edit.php#pages-hierarchy
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.78
+  api: n/a
