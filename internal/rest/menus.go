@@ -340,7 +340,7 @@ func (s *Server) serveMenuLocationItem(w http.ResponseWriter, r *http.Request, c
 			writeMenusForbidden(w, c)
 			return
 		}
-		w.Header().Set("Allow", "GET, POST, PUT, PATCH")
+		w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
 		writeJSON(w, http.StatusOK, MenuLocation{
 			Name:        location,
 			Description: desc,
@@ -348,6 +348,8 @@ func (s *Server) serveMenuLocationItem(w http.ResponseWriter, r *http.Request, c
 		})
 	case http.MethodPost, http.MethodPut, http.MethodPatch:
 		s.updateMenuLocation(w, r, c, location, desc)
+	case http.MethodDelete:
+		s.deleteMenuLocation(w, r, c, location, desc)
 	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
@@ -355,6 +357,40 @@ func (s *Server) serveMenuLocationItem(w http.ResponseWriter, r *http.Request, c
 			"data":    map[string]any{"status": 405},
 		})
 	}
+}
+
+// deleteMenuLocation unsets the assigned menu for a theme location (P4.74).
+func (s *Server) deleteMenuLocation(w http.ResponseWriter, r *http.Request, c *wp.Context, location, desc string) {
+	if c == nil || c.CurrentUser == nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]any{
+			"code":    "rest_cannot_edit",
+			"message": "Sorry, you are not allowed to edit menu locations.",
+			"data":    map[string]any{"status": 401},
+		})
+		return
+	}
+	if !c.UserCan(c.CurrentUser, "edit_theme_options") {
+		writeJSON(w, http.StatusForbidden, map[string]any{
+			"code":    "rest_cannot_edit",
+			"message": "Sorry, you are not allowed to edit menu locations.",
+			"data":    map[string]any{"status": 403},
+		})
+		return
+	}
+	if err := wp.SetNavMenuLocation(c, location, 0); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_menu_location_invalid",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 400},
+		})
+		return
+	}
+	w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
+	writeJSON(w, http.StatusOK, MenuLocation{
+		Name:        location,
+		Description: desc,
+		Menu:        0,
+	})
 }
 
 func (s *Server) updateMenuLocation(w http.ResponseWriter, r *http.Request, c *wp.Context, location, desc string) {
@@ -391,7 +427,7 @@ func (s *Server) updateMenuLocation(w http.ResponseWriter, r *http.Request, c *w
 		})
 		return
 	}
-	w.Header().Set("Allow", "GET, POST, PUT, PATCH")
+	w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
 	writeJSON(w, http.StatusOK, MenuLocation{
 		Name:        location,
 		Description: desc,
