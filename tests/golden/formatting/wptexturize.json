@@ -1,0 +1,79 @@
+{
+    "vectors": [
+        {
+            "i": 0,
+            "input": "it's a test",
+            "wptexturize": "it&#8217;s a test"
+        },
+        {
+            "i": 1,
+            "input": "hello...world",
+            "wptexturize": "hello&#8230;world"
+        },
+        {
+            "i": 2,
+            "input": "--double-dash--",
+            "wptexturize": "&#8211;double-dash&#8211;"
+        },
+        {
+            "i": 3,
+            "input": "\"quoted\"",
+            "wptexturize": "&#8220;quoted&#8221;"
+        },
+        {
+            "i": 4,
+            "input": "O'Reilly & Sons",
+            "wptexturize": "O&#8217;Reilly &#038; Sons"
+        },
+        {
+            "i": 5,
+            "input": "word \"quote\" word",
+            "wptexturize": "word &#8220;quote&#8221; word"
+        },
+        {
+            "i": 6,
+            "input": "a -- b",
+            "wptexturize": "a &#8212; b"
+        },
+        {
+            "i": 7,
+            "input": "a---b",
+            "wptexturize": "a&#8212;b"
+        },
+        {
+            "i": 8,
+            "input": "Foo & Bar",
+            "wptexturize": "Foo &#038; Bar"
+        },
+        {
+            "i": 9,
+            "input": "Let's dance!",
+            "wptexturize": "Let&#8217;s dance!"
+        },
+        {
+            "i": 10,
+            "input": "&amp; already",
+            "wptexturize": "&amp; already"
+        },
+        {
+            "i": 11,
+            "input": "&#38; numeric",
+            "wptexturize": "&#38; numeric"
+        },
+        {
+            "i": 12,
+            "input": "emoji 😀",
+            "wptexturize": "emoji 😀"
+        },
+        {
+            "i": 13,
+            "input": "café résumé",
+            "wptexturize": "café résumé"
+        },
+        {
+            "i": 14,
+            "input": "hello&#8230;world",
+            "wptexturize": "hello&#8230;world"
+        }
+    ]
+}

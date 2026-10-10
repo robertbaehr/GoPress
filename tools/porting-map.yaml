@@ -172,6 +172,13 @@
 
 # P2.24: expanded sanitize_title golden — tests/golden/formatting/sanitize_title.json
 
+# P2.25: expanded wptexturize golden — tests/golden/formatting/wptexturize.json
+- prefix: wp-includes/formatting.php#wptexturize
+  go: internal/wp/content.go
+  status: partial
+  task: P2.25
+  api: exported
+
 # P2.21: wp_check_password covers $wp$ / phpass; application passwords reuse it.
 - prefix: wp-includes/class-wp-application-passwords.php
   go: internal/wp/application_passwords.go

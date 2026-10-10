@@ -184,4 +184,32 @@ foreach ( $title_cases as $i => $s ) {
 }
 gopress_golden_write( 'formatting/sanitize_title.json', $title_out );
 
+// P2.25: dedicated wptexturize golden covering quotes/dashes/ampersands.
+$texturize_cases = array(
+	"it's a test",
+	'hello...world',
+	'--double-dash--',
+	'"quoted"',
+	"O'Reilly & Sons",
+	'word "quote" word',
+	'a -- b',
+	'a---b',
+	'Foo & Bar',
+	"Let's dance!",
+	'&amp; already',
+	'&#38; numeric',
+	'emoji 😀',
+	'café résumé',
+	'hello&#8230;world',
+);
+$texturize_out = array( 'vectors' => array() );
+foreach ( $texturize_cases as $i => $s ) {
+	$texturize_out['vectors'][] = array(
+		'i'           => $i,
+		'input'       => $s,
+		'wptexturize' => function_exists( 'wptexturize' ) ? wptexturize( $s ) : '',
+	);
+}
+gopress_golden_write( 'formatting/wptexturize.json', $texturize_out );
+
 WP_CLI::success( 'formatting dump complete' );
