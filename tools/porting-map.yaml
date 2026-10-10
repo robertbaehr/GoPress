@@ -4957,3 +4957,18 @@
   task: P3.76
   api: n/a
   notes: "P3.76 — RSS/Atom item guid/id via filtered get_the_guid"
+
+# P6.35: lostpassword redirect_to preserve + lostpassword_redirect filter.
+- prefix: wp-login.php#lostpassword#redirect_to
+  go: internal/login/login.go
+  status: partial
+  task: P6.35
+  api: n/a
+  notes: "P6.35 — form preserves redirect_to; POST uses lostpassword_redirect + sanitizeRedirect"
+
+- prefix: wp-login.php#lostpassword_redirect
+  go: internal/login/login.go
+  status: partial
+  task: P6.35
+  api: n/a
+  notes: "P6.35 — applyLostPasswordRedirect filter"
