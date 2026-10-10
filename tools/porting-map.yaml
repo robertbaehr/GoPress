@@ -1794,6 +1794,13 @@
   task: P7.49
   api: n/a
 
+# P9.11: Network Activate N/A on single-site GoPress.
+- prefix: wp-admin/includes/plugin.php#activate_plugin#network
+  go: internal/plugins/network.go
+  status: out-of-scope
+  task: P9.11
+  api: n/a
+
 # P9.10: get_mu_plugins() header parse for top-level mu-plugins.
 - prefix: wp-admin/includes/plugin.php#get_mu_plugins
   go: internal/plugins/headers.go

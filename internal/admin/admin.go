@@ -1046,6 +1046,8 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 	}
 	// P9.8: Akismet is not part of the GoPress distribution.
 	b.WriteString(`<div class="notice notice-info" id="gopress-akismet-gone"><p>Akismet is <strong>not bundled</strong> with GoPress and is out of scope.</p></div>` + "\n")
+	// P9.11: Network Activate is N/A on single-site GoPress.
+	b.WriteString(plugins.NetworkActivateGoneNotice + "\n")
 	b.WriteString("<table class=\"wp-list-table widefat plugins\">\n")
 	b.WriteString("<thead><tr><th scope=\"col\">Plugin</th><th scope=\"col\">Description</th></tr></thead>\n")
 	b.WriteString("<tbody id=\"the-list\">\n")
@@ -1109,6 +1111,9 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 		}
 		b.WriteString(strings.Join(metaParts, " | "))
 		b.WriteString("</div>")
+		if p.Network {
+			b.WriteString(plugins.NetworkOnlyRowNote)
+		}
 		if p.RequiresWP != "" || p.RequiresPHP != "" {
 			b.WriteString("<div class=\"plugin-requirements\">")
 			var reqs []string
@@ -1145,6 +1150,13 @@ func handlePluginAction(r *http.Request, c *wp.Context) (string, error) {
 	nonce := r.FormValue("_wpnonce")
 	if nonce == "" {
 		nonce = r.URL.Query().Get("_wpnonce")
+	}
+	networkWide := strings.TrimSpace(r.FormValue("networkwide"))
+	if networkWide == "" {
+		networkWide = strings.TrimSpace(r.URL.Query().Get("networkwide"))
+	}
+	if err := plugins.RejectNetworkActivate(action, networkWide); err != nil {
+		return "", err
 	}
 	switch action {
 	case "activate":
