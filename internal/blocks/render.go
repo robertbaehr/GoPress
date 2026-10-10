@@ -71,10 +71,15 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/group":
 		out = e.renderGroup(block)
 	case "core/heading", "core/list", "core/list-item",
-		"core/code", "core/html",
-		"core/preformatted", "core/verse", "core/table",
+		"core/html", "core/table",
 		"core/details":
 		out = e.renderSaved(block)
+	case "core/code":
+		out = e.renderCode(block)
+	case "core/preformatted":
+		out = e.renderPreformatted(block)
+	case "core/verse":
+		out = e.renderVerse(block)
 	case "core/pullquote":
 		out = e.renderPullquote(block)
 	case "core/buttons":

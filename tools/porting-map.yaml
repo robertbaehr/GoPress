@@ -1788,6 +1788,28 @@
   api: internal
   notes: "P5.61 — prefer saved markup; synthesize figure>blockquote value/citation; align; className"
 
+# P5.62: polish core/code + core/preformatted + core/verse (synthesize content, align/textAlign).
+- prefix: wp-includes/blocks/code
+  go: internal/blocks/code_preformatted.go
+  status: partial
+  task: P5.62
+  api: internal
+  notes: "P5.62 — prefer saved markup; synthesize pre>code from content; align; className"
+
+- prefix: wp-includes/blocks/preformatted
+  go: internal/blocks/code_preformatted.go
+  status: partial
+  task: P5.62
+  api: internal
+  notes: "P5.62 — prefer saved markup; synthesize pre from content; className"
+
+- prefix: wp-includes/blocks/verse
+  go: internal/blocks/code_preformatted.go
+  status: partial
+  task: P5.62
+  api: internal
+  notes: "P5.62 — prefer saved markup; synthesize pre from content; textAlign; className"
+
 # P5.57: polish core/columns + core/column (synthesize, stack, width, v-align).
 - prefix: wp-includes/blocks/columns
   go: internal/blocks/columns.go
