@@ -390,6 +390,13 @@
   task: P2.31
   api: exported
 
+# P2.33: wp_slash / wp_unslash.
+- prefix: wp-includes/formatting.php#wp_slash
+  go: internal/wp/slash.go
+  status: partial
+  task: P2.33
+  api: exported
+
 # P3.29: ?rest_route= query var dispatches REST API.
 - prefix: wp-includes/rest-api.php#rest_route
   go: internal/server/server.go
