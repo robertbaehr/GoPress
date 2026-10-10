@@ -1072,6 +1072,28 @@
   api: n/a
   notes: "P2.67 — ServeCron sets Scope.IsCron (DOING_CRON)"
 
+# P2.70: wp_get_development_mode / wp_is_development_mode.
+- prefix: wp-includes/load.php#wp_get_development_mode
+  go: internal/wp/development_mode.go
+  status: partial
+  task: P2.70
+  api: exported
+  notes: "P2.70 — GetDevelopmentMode core|plugin|theme|all|''; invalid→''"
+
+- prefix: wp-includes/load.php#wp_is_development_mode
+  go: internal/wp/development_mode.go
+  status: partial
+  task: P2.70
+  api: exported
+  notes: "P2.70 — IsDevelopmentMode; all covers every mode"
+
+- prefix: wp-includes/load.php#wp_get_development_mode#config
+  go: internal/config/config.go
+  status: partial
+  task: P2.70
+  api: exported
+  notes: "P2.70 — DevelopmentMode via define/GOPRESS_/WP_DEVELOPMENT_MODE env"
+
 # P2.69: wp_get_environment_type (local|development|staging|production).
 - prefix: wp-includes/load.php#wp_get_environment_type
   go: internal/wp/environment_type.go

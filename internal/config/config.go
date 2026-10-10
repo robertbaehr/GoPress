@@ -38,6 +38,7 @@ type Config struct {
 	NonceSalt      string
 
 	EnvironmentType string
+	DevelopmentMode string // WP_DEVELOPMENT_MODE (P2.70): core|plugin|theme|all|""
 	Debug           bool
 	DisableWPCron   bool
 	BlockExternal   bool
@@ -217,6 +218,8 @@ func setKnown(cfg *Config, name, val string) error {
 		cfg.NonceSalt = val
 	case "WP_ENVIRONMENT_TYPE":
 		cfg.EnvironmentType = val
+	case "WP_DEVELOPMENT_MODE":
+		cfg.DevelopmentMode = val
 	case "WP_DEBUG":
 		cfg.Debug = phpBool(val)
 	case "DISABLE_WP_CRON":
@@ -251,6 +254,7 @@ func applyEnv(cfg *Config) {
 		"GOPRESS_LOGGED_IN_SALT":   &cfg.LoggedInSalt,
 		"GOPRESS_NONCE_SALT":       &cfg.NonceSalt,
 		"GOPRESS_ENVIRONMENT_TYPE": &cfg.EnvironmentType,
+		"GOPRESS_DEVELOPMENT_MODE": &cfg.DevelopmentMode,
 		"WORDPRESS_DB_NAME":        &cfg.DBName,
 		"WORDPRESS_DB_USER":        &cfg.DBUser,
 		"WORDPRESS_DB_PASSWORD":    &cfg.DBPassword,
@@ -259,6 +263,10 @@ func applyEnv(cfg *Config) {
 	// P2.69: WP_ENVIRONMENT_TYPE first; GOPRESS_ENVIRONMENT_TYPE in envStr wins after.
 	if v, ok := os.LookupEnv("WP_ENVIRONMENT_TYPE"); ok && v != "" {
 		cfg.EnvironmentType = v
+	}
+	// P2.70: WP_DEVELOPMENT_MODE first; GOPRESS_DEVELOPMENT_MODE in envStr wins after.
+	if v, ok := os.LookupEnv("WP_DEVELOPMENT_MODE"); ok {
+		cfg.DevelopmentMode = v
 	}
 	for k, ptr := range envStr {
 		if v, ok := os.LookupEnv(k); ok && v != "" {
