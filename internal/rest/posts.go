@@ -196,7 +196,7 @@ func parsePage(r *http.Request) int {
 	return page
 }
 
-func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, author int64, categoryIn, tagIn []int64, statuses []string, slugs []string) ([]Post, error) {
+func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, author int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude []int64) ([]Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -220,6 +220,8 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 		CategoryIn:   categoryIn,
 		TagIn:        tagIn,
 		NameIn:       slugs,
+		PostIn:       include,
+		PostNotIn:    exclude,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	rows, err := wp.GetPosts(c, args)
@@ -296,6 +298,16 @@ func parsePostsCategories(r *http.Request) []int64 {
 // Accepts comma-separated IDs and/or repeated query values.
 func parsePostsTags(r *http.Request) []int64 {
 	return parsePostsTermIDs(r, "tags")
+}
+
+// parsePostsInclude reads REST ?include= (maps to post__in, P4.90).
+func parsePostsInclude(r *http.Request) []int64 {
+	return parsePostsTermIDs(r, "include")
+}
+
+// parsePostsExclude reads REST ?exclude= (maps to post__not_in, P4.90).
+func parsePostsExclude(r *http.Request) []int64 {
+	return parsePostsTermIDs(r, "exclude")
 }
 
 // parsePostsSlug reads REST ?slug= (maps to post_name__in, P4.89).
@@ -410,7 +422,7 @@ func parsePostsTermIDs(r *http.Request, key string) []int64 {
 	return out
 }
 
-func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, author int64, categoryIn, tagIn []int64, statuses []string, slugs []string) (int, error) {
+func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, author int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude []int64) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
@@ -426,12 +438,16 @@ func countPosts(c *wp.Context, postType string, stickyFilter *bool, search strin
 		CategoryIn:   categoryIn,
 		TagIn:        tagIn,
 		NameIn:       slugs,
+		PostIn:       include,
+		PostNotIn:    exclude,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	return wp.CountPosts(c, args)
 }
 
 // applyStickyQueryFilter maps REST ?sticky=true|false onto post__in / post__not_in (P4.82).
+// When include/exclude are also set, sticky=true intersects post__in and sticky=false
+// merges into post__not_in (WP REST posts controller).
 func applyStickyQueryFilter(c *wp.Context, postType string, stickyFilter *bool, args *wp.QueryArgs) {
 	if stickyFilter == nil || args == nil || postType != "post" {
 		return
@@ -439,15 +455,40 @@ func applyStickyQueryFilter(c *wp.Context, postType string, stickyFilter *bool, 
 	ids := stickyIDList(c)
 	if *stickyFilter {
 		// Empty sticky set → no results (WP uses post__in = [0]).
-		args.PostIn = ids
+		if len(args.PostIn) > 0 {
+			args.PostIn = intersectIDs(ids, args.PostIn)
+		} else {
+			args.PostIn = ids
+		}
 		if args.PostIn == nil {
 			args.PostIn = []int64{}
 		}
 		return
 	}
 	if len(ids) > 0 {
-		args.PostNotIn = ids
+		args.PostNotIn = append(args.PostNotIn, ids...)
 	}
+}
+
+func intersectIDs(a, b []int64) []int64 {
+	if len(a) == 0 || len(b) == 0 {
+		return []int64{}
+	}
+	set := map[int64]bool{}
+	for _, id := range a {
+		if id > 0 {
+			set[id] = true
+		}
+	}
+	out := make([]int64, 0, len(b))
+	seen := map[int64]bool{}
+	for _, id := range b {
+		if id > 0 && set[id] && !seen[id] {
+			seen[id] = true
+			out = append(out, id)
+		}
+	}
+	return out
 }
 
 func stickyIDList(c *wp.Context) []int64 {

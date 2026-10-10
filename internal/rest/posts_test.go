@@ -456,6 +456,87 @@ func TestPostsSlugQueryParam(t *testing.T) {
 	}
 }
 
+func TestPostsIncludeExcludeQueryParams(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	// Hello world is ID 1; Fixture Post 01 is ID 13.
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?include=1&per_page=10", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("include=1 status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var hits []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &hits); err != nil {
+		t.Fatal(err)
+	}
+	if len(hits) != 1 || hits[0].ID != 1 {
+		t.Fatalf("include=1 got %+v", hits)
+	}
+	if rec.Header().Get("X-WP-Total") != "1" {
+		t.Fatalf("expected X-WP-Total=1, got %q", rec.Header().Get("X-WP-Total"))
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?include=1,13&per_page=10", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("include multi status=%d", rec.Code)
+	}
+	var multi []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &multi); err != nil {
+		t.Fatal(err)
+	}
+	if len(multi) != 2 {
+		t.Fatalf("expected 2 for include=1,13 got %d", len(multi))
+	}
+	seen := map[int64]bool{}
+	for _, p := range multi {
+		seen[p.ID] = true
+	}
+	if !seen[1] || !seen[13] {
+		t.Fatalf("expected IDs 1 and 13, got %+v", seen)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?exclude=1&per_page=20", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("exclude=1 status=%d", rec.Code)
+	}
+	var excl []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &excl); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range excl {
+		if p.ID == 1 {
+			t.Fatalf("exclude=1 still returned post 1")
+		}
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?include=99999&per_page=10", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("include miss status=%d", rec.Code)
+	}
+	var miss []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &miss); err != nil {
+		t.Fatal(err)
+	}
+	if len(miss) != 0 {
+		t.Fatalf("expected empty for unknown include, got %+v", miss)
+	}
+	if rec.Header().Get("X-WP-Total") != "0" {
+		t.Fatalf("expected X-WP-Total=0, got %q", rec.Header().Get("X-WP-Total"))
+	}
+}
+
 func TestPostsAuthorQueryParam(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
