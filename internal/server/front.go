@@ -1845,6 +1845,10 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 		for _, enc := range p.Enclosures {
 			b.WriteString(rssEnclosureTag(enc))
 		}
+		// P3.64: optional RSS 2.0 <source> when post meta provides attribution.
+		if tag := rssItemSourceTag(c, p.ID); tag != "" {
+			b.WriteString(tag)
+		}
 		b.WriteString("\t\t\n\t\t\n")
 		b.WriteString("\t\t\t</item>\n")
 	}
@@ -2283,6 +2287,32 @@ func rssEnclosureTag(enc feedEnclosure) string {
 		length = "0"
 	}
 	return `<enclosure url="` + xmlEscape(enc.URL) + `" length="` + xmlEscape(length) + `" type="` + xmlEscape(enc.Type) + `" />` + "\n"
+}
+
+// feedItemSourceURLTitle reads optional RSS <source> attribution from post meta (P3.64).
+// Keys: _rss_source_url (required) and _rss_source_title (optional; falls back to URL).
+func feedItemSourceURLTitle(c *wp.Context, postID int64) (url, title string) {
+	if c == nil || c.Meta == nil || postID <= 0 {
+		return "", ""
+	}
+	url = strings.TrimSpace(asMetaString(c.Meta.GetMetadata(wp.MetaPost, postID, "_rss_source_url", true)))
+	if url == "" {
+		return "", ""
+	}
+	title = strings.TrimSpace(asMetaString(c.Meta.GetMetadata(wp.MetaPost, postID, "_rss_source_title", true)))
+	if title == "" {
+		title = url
+	}
+	return url, title
+}
+
+// rssItemSourceTag builds RSS 2.0 <source url="...">title</source> when meta is set (P3.64).
+func rssItemSourceTag(c *wp.Context, postID int64) string {
+	url, title := feedItemSourceURLTitle(c, postID)
+	if url == "" {
+		return ""
+	}
+	return `<source url="` + xmlEscape(url) + `">` + xmlEscape(title) + `</source>` + "\n"
 }
 
 func atomEnclosureTag(enc feedEnclosure) string {
