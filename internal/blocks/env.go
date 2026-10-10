@@ -90,8 +90,9 @@ type Env struct {
 	// ListArchives returns monthly archive links for core/archives (P5.42).
 	ListArchives func() []ArchiveItem
 
-	// ListTagCloud returns tags for core/tag-cloud (P5.42).
-	ListTagCloud func() []TagCloudItem
+	// ListTagCloud returns terms for core/tag-cloud (P5.42 / P5.82).
+	// taxonomy defaults to post_tag; number caps the result (WP numberOfTags, default 45).
+	ListTagCloud func(taxonomy string, number int) []TagCloudItem
 
 	// ListCategories returns terms for core/categories (P5.81).
 	ListCategories func(taxonomy string) []CategoryItem

@@ -371,12 +371,24 @@ func (e *Env) renderTagCloud(block Block) string {
 	if v, ok := block.Attrs["showTagCounts"].(bool); ok {
 		showCounts = v
 	}
+	// P5.82: taxonomy + numberOfTags (wp_tag_cloud args from block attrs).
+	taxonomy := strings.TrimSpace(attrString(block.Attrs, "taxonomy"))
+	if taxonomy == "" {
+		taxonomy = "post_tag"
+	}
+	number := 45
+	if v, ok := attrInt(block.Attrs, "numberOfTags"); ok && v > 0 {
+		number = v
+	}
 	var items []TagCloudItem
 	if e.ListTagCloud != nil {
-		items = e.ListTagCloud()
+		items = e.ListTagCloud(taxonomy, number)
 	}
 	if len(items) == 0 {
 		return ""
+	}
+	if len(items) > number {
+		items = items[:number]
 	}
 	var b strings.Builder
 	b.WriteString(`<p class="wp-block-tag-cloud">`)
