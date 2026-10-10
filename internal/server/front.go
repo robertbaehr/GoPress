@@ -266,6 +266,8 @@ func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context
 		FeaturedImageURL: post.FeaturedImageURL,
 		FeaturedImageAlt: post.FeaturedImageAlt,
 	})
+	// Render template without the live comment form so KsesPost does not strip inputs.
+	env.RenderCommentForm = nil
 	body := blocks.RenderWith(env, template)
 	safe := wp.KsesPost(body)
 
@@ -309,10 +311,8 @@ func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context
 	b.WriteString("<a class=\"skip-link screen-reader-text\" href=\"#wp--skip-link--target\">Skip to content</a>")
 	b.WriteString("<div class=\"wp-site-blocks\">")
 	b.WriteString(safe)
-	// Until comment blocks fully render (P5.18), keep classic comment form under posts/pages.
-	if (post.Type == "post" || post.Type == "page") &&
-		!strings.Contains(safe, "id=\"commentform\"") &&
-		!strings.Contains(safe, "wp-block-post-comments-form") {
+	// Comment form is appended after Kses so input/textarea attrs survive (P5.18).
+	if post.Type == "post" || post.Type == "page" {
 		f.writeCommentsSection(&b, c, post)
 	}
 	b.WriteString("</div>\n")
@@ -422,26 +422,54 @@ func (f *Front) writeCommentsSection(b *strings.Builder, c *wp.Context, post *si
 		}
 		b.WriteString("</ol>\n")
 	}
-	// Comment form posts to wp-comments-post.php.
-	b.WriteString("<div id=\"respond\" class=\"comment-respond\">\n")
-	b.WriteString("<h3 id=\"reply-title\" class=\"comment-reply-title\">Leave a Reply</h3>\n")
-	b.WriteString("<form action=\"/wp-comments-post.php\" method=\"post\" id=\"commentform\" class=\"comment-form\">\n")
-	b.WriteString("<input type=\"hidden\" name=\"comment_post_ID\" value=\"")
-	b.WriteString(strconv.FormatInt(post.ID, 10))
-	b.WriteString("\" id=\"comment_post_ID\">\n")
-	b.WriteString("<input type=\"hidden\" name=\"comment_parent\" id=\"comment_parent\" value=\"0\">\n")
-	if c == nil || c.CurrentUser == nil {
-		b.WriteString("<p class=\"comment-form-author\"><label for=\"author\">Name</label> ")
-		b.WriteString("<input id=\"author\" name=\"author\" type=\"text\" required></p>\n")
-		b.WriteString("<p class=\"comment-form-email\"><label for=\"email\">Email</label> ")
-		b.WriteString("<input id=\"email\" name=\"email\" type=\"email\" required></p>\n")
-		b.WriteString("<p class=\"comment-form-url\"><label for=\"url\">Website</label> ")
-		b.WriteString("<input id=\"url\" name=\"url\" type=\"url\"></p>\n")
+	b.WriteString(commentFormHTML(c, post))
+	b.WriteString("</section>\n")
+}
+
+// commentFormHTML mirrors WP comment_form() markup used under posts (P5.18).
+func commentFormHTML(c *wp.Context, post *singularPost) string {
+	if post == nil {
+		return ""
 	}
-	b.WriteString("<p class=\"comment-form-comment\"><label for=\"comment\">Comment</label> ")
-	b.WriteString("<textarea id=\"comment\" name=\"comment\" cols=\"45\" rows=\"8\" required></textarea></p>\n")
-	b.WriteString("<p class=\"form-submit\"><input name=\"submit\" type=\"submit\" id=\"submit\" class=\"submit\" value=\"Post Comment\"></p>\n")
-	b.WriteString("</form>\n</div>\n</section>\n")
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	action := "/wp-comments-post.php"
+	if home != "" {
+		action = home + "/wp-comments-post.php"
+	}
+	cancelHref := "#respond"
+	if home != "" {
+		cancelHref = singularPermalink(home, post) + "#respond"
+	}
+	var b strings.Builder
+	b.WriteString(`<div id="respond" class="comment-respond wp-block-post-comments-form">` + "\n")
+	b.WriteString(`<h3 id="reply-title" class="comment-reply-title">Leave a Reply `)
+	b.WriteString(`<small><a rel="nofollow" id="cancel-comment-reply-link" href="`)
+	b.WriteString(html.EscapeString(cancelHref))
+	b.WriteString(`" style="display:none;">Cancel reply</a></small></h3>`)
+	b.WriteString(`<form action="`)
+	b.WriteString(html.EscapeString(action))
+	b.WriteString(`" method="post" id="commentform" class="comment-form">`)
+	b.WriteString(`<p class="comment-notes"><span id="email-notes">Your email address will not be published.</span> `)
+	b.WriteString(`<span class="required-field-message">Required fields are marked <span class="required">*</span></span></p>`)
+	b.WriteString(`<p class="comment-form-comment"><label for="comment">Comment <span class="required">*</span></label> `)
+	b.WriteString(`<textarea id="comment" name="comment" cols="45" rows="8" maxlength="65525" required></textarea></p>`)
+	if c == nil || c.CurrentUser == nil {
+		b.WriteString(`<p class="comment-form-author"><label for="author">Name <span class="required">*</span></label> `)
+		b.WriteString(`<input id="author" name="author" type="text" value="" size="30" maxlength="245" autocomplete="name" required /></p>` + "\n")
+		b.WriteString(`<p class="comment-form-email"><label for="email">Email <span class="required">*</span></label> `)
+		b.WriteString(`<input id="email" name="email" type="email" value="" size="30" maxlength="100" aria-describedby="email-notes" autocomplete="email" required /></p>` + "\n")
+		b.WriteString(`<p class="comment-form-url"><label for="url">Website</label> `)
+		b.WriteString(`<input id="url" name="url" type="url" value="" size="30" maxlength="200" autocomplete="url" /></p>` + "\n")
+		b.WriteString(`<p class="comment-form-cookies-consent"><input id="wp-comment-cookies-consent" name="wp-comment-cookies-consent" type="checkbox" value="yes" /> `)
+		b.WriteString(`<label for="wp-comment-cookies-consent">Save my name, email, and website in this browser for the next time I comment.</label></p>` + "\n")
+	}
+	b.WriteString(`<p class="form-submit wp-block-button"><input name="submit" type="submit" id="submit" class="wp-block-button__link wp-element-button" value="Post Comment" /> `)
+	b.WriteString(`<input type="hidden" name="comment_post_ID" value="`)
+	b.WriteString(strconv.FormatInt(post.ID, 10))
+	b.WriteString(`" id="comment_post_ID" />` + "\n")
+	b.WriteString(`<input type="hidden" name="comment_parent" id="comment_parent" value="0" />` + "\n")
+	b.WriteString(`</p></form></div>` + "\n")
+	return b.String()
 }
 
 func (f *Front) renderFeedRSS2(w http.ResponseWriter, c *wp.Context) {
@@ -1110,6 +1138,12 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 				return ""
 			}
 			return asMetaString(c.Meta.GetMetadata(wp.MetaPost, postID, "footnotes", true))
+		},
+		RenderCommentForm: func(postID int64) string {
+			if postID <= 0 {
+				return ""
+			}
+			return commentFormHTML(c, &singularPost{ID: postID, Type: "post"})
 		},
 	}
 }

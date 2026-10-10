@@ -27,8 +27,11 @@ func TestFrontSingularRendersComments(t *testing.T) {
 	if !strings.Contains(body, "A WordPress Commenter") {
 		t.Fatalf("expected fixture comment author, got %q", body)
 	}
-	if !strings.Contains(body, `action="/wp-comments-post.php"`) {
+	if !strings.Contains(body, `action="`) || !strings.Contains(body, `/wp-comments-post.php"`) {
 		t.Fatalf("expected comment form, got %q", body)
+	}
+	if !strings.Contains(body, `id="commentform"`) || !strings.Contains(body, `wp-comment-cookies-consent`) {
+		t.Fatalf("expected WP comment_form fields, got %q", body)
 	}
 	if !strings.Contains(body, `name="comment_post_ID"`) {
 		t.Fatalf("expected comment_post_ID field, got %q", body)

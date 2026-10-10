@@ -214,6 +214,28 @@ func queryArgsFromAttrs(attrs map[string]any) QueryLoopArgs {
 	return args
 }
 
+func (e *Env) renderPostCommentsForm(block Block) string {
+	e = e.ensure()
+	_ = block
+	if e.RenderCommentForm == nil || e.currentPost == nil {
+		return ""
+	}
+	html := e.RenderCommentForm(e.currentPost.ID)
+	if strings.TrimSpace(html) == "" {
+		return ""
+	}
+	return html
+}
+
+func (e *Env) renderComments(block Block) string {
+	e = e.ensure()
+	inner := e.renderSaved(block)
+	if strings.Contains(inner, "wp-block-comments") {
+		return inner
+	}
+	return `<div class="wp-block-comments">` + inner + `</div>`
+}
+
 func isLinkAttr(attrs map[string]any) bool {
 	if attrs == nil {
 		return false
