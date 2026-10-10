@@ -2229,3 +2229,202 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.104: font-collections item/route, orderby variants, templates, block-types routes.
+- id: rest-json-font-collections-google-fonts
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/font-collections/google-fonts
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-font-families-per-page-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/font-families?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-font-collections
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/font-collections
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-font-collections-google-fonts
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/font-collections/google-fonts
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-block-types-loginout
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/loginout
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-block-types-categories
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/categories
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-block-types-search
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/search
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-posts-orderby-title-asc-pp1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?orderby=title&order=asc&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-posts-orderby-id-pp1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?orderby=id&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-posts-orderby-slug-pp1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?orderby=slug&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-posts-sticky-true-pp1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?sticky=true&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-pages-orderby-title-pp1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?orderby=title&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-categories-orderby-name
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/categories?per_page=1&orderby=name
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-tags-orderby-name
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/tags?per_page=1&orderby=name
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-users-orderby-name
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/users?per_page=1&orderby=name
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-templates-single
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/templates/twentytwentyfive//single
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-templates-page
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/templates/twentytwentyfive//page
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-templates-404
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/templates/twentytwentyfive//404
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-templates-home
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/templates/twentytwentyfive//home
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-template-parts-footer
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/template-parts/twentytwentyfive//footer
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-settings
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/settings
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-global-styles-theme
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/global-styles/themes/twentytwentyfive
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

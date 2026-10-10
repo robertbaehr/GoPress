@@ -307,3 +307,22 @@
   compare: headers
   nonce: null
 
+
+# P10.104: postpass + interim checkemail confirm.
+- id: login-action-postpass
+  role: anon
+  method: GET
+  path: /wp-login.php?action=postpass
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-checkemail-confirm-interim
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=confirm&interim-login=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

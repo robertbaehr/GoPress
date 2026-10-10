@@ -6237,3 +6237,10 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P10.97 — STATUS/PORTING refresh after P5.93–P10.96 (288/288 corpus)"
 
+# P10.104: expand diff corpus after P5.97–P9.21.
+- prefix: tests/corpus#p10.104
+  go: tests/corpus
+  status: done
+  task: P10.104
+  api: n/a
+  notes: "P10.104 — +font-collections item/routes, orderby variants, templates, login postpass/interim; 376/376"
