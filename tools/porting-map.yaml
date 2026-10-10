@@ -4662,3 +4662,18 @@
   task: P2.75
   api: internal
   notes: "P2.75 — ValidateRedirect relative + home host + allowed_redirect_hosts"
+
+# P3.73: the_content_feed filter on feed item content:encoded / Atom content.
+- prefix: wp-includes/feed.php#get_the_content_feed
+  go: internal/server/front.go
+  status: partial
+  task: P3.73
+  api: n/a
+  notes: "P3.73 — ]]> escape + the_content_feed filter for rss2/atom/rdf"
+
+- prefix: wp-includes/feed-rss2.php#content:encoded#the_content_feed
+  go: internal/server/front.go
+  status: partial
+  task: P3.73
+  api: n/a
+  notes: "P3.73 — content:encoded body runs applyTheContentFeed"
