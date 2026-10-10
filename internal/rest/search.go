@@ -9,13 +9,14 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// SearchResult is a minimal wp/v2 search result object.
+// SearchResult is a wp/v2 search result object (view context).
 type SearchResult struct {
-	ID      int64  `json:"id"`
-	Title   string `json:"title"`
-	URL     string `json:"url"`
-	Type    string `json:"type"`
-	Subtype string `json:"subtype"`
+	ID      int64          `json:"id"`
+	Title   string         `json:"title"`
+	URL     string         `json:"url"`
+	Type    string         `json:"type"`
+	Subtype string         `json:"subtype"`
+	Links   map[string]any `json:"_links"`
 }
 
 func (s *Server) serveSearch(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -127,5 +128,23 @@ func searchFromRow(c *wp.Context, row map[string]any, home string) SearchResult 
 		URL:     itemPermalink(c, home, p),
 		Type:    "post",
 		Subtype: postType,
+		Links:   buildSearchLinks(home, id, postType),
+	}
+}
+
+func buildSearchLinks(home string, id int64, postType string) map[string]any {
+	restRoot := strings.TrimRight(home, "/") + "/wp-json/wp/v2"
+	base := "posts"
+	if postType == "page" {
+		base = "pages"
+	}
+	return map[string]any{
+		"self": []map[string]any{{
+			"embeddable":  true,
+			"href":        fmt.Sprintf("%s/%s/%d", restRoot, base, id),
+			"targetHints": map[string]any{"allow": []string{"GET"}},
+		}},
+		"about":      []map[string]any{{"href": restRoot + "/types/" + postType}},
+		"collection": []map[string]any{{"href": restRoot + "/search"}},
 	}
 }

@@ -39,6 +39,9 @@ func TestSearchHello(t *testing.T) {
 			if r.Type != "post" || r.Subtype == "" || r.URL == "" || r.Title == "" {
 				t.Fatalf("unexpected result: %+v", r)
 			}
+			if r.Links == nil || r.Links["self"] == nil || r.Links["collection"] == nil || r.Links["about"] == nil {
+				t.Fatalf("expected _links: %+v", r.Links)
+			}
 		}
 	}
 	if !found {
