@@ -294,6 +294,9 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 		s.serveEditSiteExport(w, r, c)
 	case path == "/wp-block-editor/v1/navigation-fallback":
 		s.serveNavigationFallback(w, r, c)
+	case path == "/wp-site-health/v1" || path == "/wp-site-health/v1/" ||
+		strings.HasPrefix(path, "/wp-site-health/v1/"):
+		s.serveSiteHealth(w, r, c, path)
 	default:
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"code":    "rest_no_route",
