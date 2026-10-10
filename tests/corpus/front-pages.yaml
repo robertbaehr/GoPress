@@ -571,3 +571,13 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.114: rest_route types header case.
+- id: front-p10114-rest-route-types
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/types
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

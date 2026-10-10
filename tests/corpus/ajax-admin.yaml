@@ -57,3 +57,13 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.114: heartbeat with screen_id=front (headers).
+- id: ajax-p10114-heartbeat-front
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=front
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

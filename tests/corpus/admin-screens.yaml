@@ -73,3 +73,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.114: writing/media/discussion options chrome (headers-only).
+- id: admin-p10114-options-writing
+  role: admin
+  method: GET
+  path: /wp-admin/options-writing.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10114-options-media
+  role: admin
+  method: GET
+  path: /wp-admin/options-media.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10114-options-discussion
+  role: admin
+  method: GET
+  path: /wp-admin/options-discussion.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
