@@ -37,6 +37,12 @@ type Env struct {
 	HomeURL     func() string
 	IsFrontPage func() bool
 
+	// IsLoggedIn / CurrentURL / LoginURL / LogoutURL power core/loginout (P5.74).
+	IsLoggedIn func() bool
+	CurrentURL func() string
+	LoginURL   func(redirect string) string
+	LogoutURL  func(redirect string) string
+
 	// GetAttachmentURL resolves attachment IDs for core/image and core/gallery (P5.48).
 	GetAttachmentURL func(id int64) string
 	// AdjacentPost returns prev/next post for post-navigation-link (type previous|next).

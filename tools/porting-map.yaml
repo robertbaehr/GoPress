@@ -2743,6 +2743,21 @@
   api: n/a
   notes: "P5.72 — unit coverage for post-navigation-link polish attrs"
 
+# P5.74: render core/loginout (login/logout link or form).
+- prefix: wp-includes/blocks/loginout.php
+  go: internal/blocks/loginout.go
+  status: partial
+  task: P5.74
+  api: internal
+  notes: "P5.74 — logged-in/out classes; redirectToCurrent; displayLoginAsForm"
+
+- prefix: wp-includes/blocks/loginout
+  go: internal/blocks/loginout_test.go
+  status: partial
+  task: P5.74
+  api: n/a
+  notes: "P5.74 — unit coverage for loginout; REST block-types metadata"
+
 # P5.73: render core/home-link (nav item → home_url).
 - prefix: wp-includes/blocks/home-link.php
   go: internal/blocks/navigation.go
