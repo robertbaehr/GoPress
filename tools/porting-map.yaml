@@ -79,6 +79,13 @@
   task: P6.15
   api: n/a
 
+# P6.16: logout honors redirect_to; default loggedout=true when omitted.
+- prefix: wp-login.php#logout-redirect
+  go: internal/login/login.go
+  status: partial
+  task: P6.16
+  api: n/a
+
 - prefix: wp-includes/post-template.php#get_the_password_form
   go: internal/wp/post_password.go
   status: partial
