@@ -28,13 +28,16 @@ test('edit.php Screen Options per page limits the posts list', async ({ page, ba
   await expect(page.locator('#edit_post_per_page')).toBeAttached();
   await expect(page.locator('#screen-options-apply')).toBeAttached();
 
-  await page.fill('#edit_post_per_page', '3');
+  // Screen Options panel is CSS-hidden until toggled; force fill/submit.
+  await page.locator('#edit_post_per_page').fill('3', { force: true });
   await Promise.all([
-    page.waitForURL(/\/wp-admin\/edit\.php/),
-    page.click('#screen-options-apply'),
+    page.waitForNavigation({ waitUntil: 'load' }),
+    page.locator('#adv-settings').evaluate((form) => {
+      /** @type {HTMLFormElement} */ (form).requestSubmit();
+    }),
   ]);
 
-  await expect(page.locator('#edit_post_per_page')).toHaveValue('3');
+  await expect(page.locator('#edit_post_per_page')).toHaveAttribute('value', '3');
   const rows = page.locator('#the-list > tr');
   await expect(rows.first()).toBeVisible();
   const count = await rows.count();
