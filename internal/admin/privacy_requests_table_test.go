@@ -68,11 +68,18 @@ func TestExportPersonalDataUsesPrivacyRequestsTable(t *testing.T) {
 	body := rec.Body.String()
 	for _, want := range []string{
 		"requests-table",
+		"privacy-requests",
+		"column-email",
+		"column-status",
 		"column-created_timestamp",
 		"column-next_steps",
-		"No requests found",
+		`name="request_id[]"`,
 	} {
 		if !strings.Contains(body, want) {
+			// Empty table uses colspan no-items; populated table has checkboxes.
+			if want == `name="request_id[]"` && strings.Contains(body, "No requests found") {
+				continue
+			}
 			t.Fatalf("missing %q in %q", want, trunc(body, 600))
 		}
 	}
