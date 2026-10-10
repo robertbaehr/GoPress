@@ -21,7 +21,13 @@ type NavigationMenu struct {
 }
 
 func (s *Server) serveNavigation(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	if r.Method != http.MethodGet {
+	switch r.Method {
+	case http.MethodGet:
+		// continue
+	case http.MethodPost:
+		s.createNavigation(w, r, c)
+		return
+	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
@@ -68,6 +74,7 @@ func (s *Server) serveNavigation(w http.ResponseWriter, r *http.Request, c *wp.C
 		totalPages = (total + perPage - 1) / perPage
 	}
 	setCollectionHeaders(w, r, c, total, totalPages, page)
+	w.Header().Set("Allow", "GET, POST")
 	writeJSON(w, http.StatusOK, out)
 }
 

@@ -1,6 +1,7 @@
 package rest_test
 
 import (
+	"bytes"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
@@ -154,5 +155,63 @@ func TestClassicMenusReadAPI(t *testing.T) {
 	(&rest.Server{}).Handle(rec, req, c)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("locations status=%d body=%s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestCreateNavigationMenu(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	ck := &http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue}
+
+	body := `{"title":"E2E Nav Menu","content":"<!-- wp:navigation-link {\"label\":\"Home\",\"url\":\"/\"} /-->","status":"publish","slug":"e2e-nav-menu"}`
+	req := httptest.NewRequest(http.MethodPost, "/wp-json/wp/v2/navigation", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var created rest.NavigationMenu
+	if err := json.Unmarshal(rec.Body.Bytes(), &created); err != nil {
+		t.Fatal(err)
+	}
+	if created.ID <= 0 || created.Type != "wp_navigation" || created.Slug != "e2e-nav-menu" {
+		t.Fatalf("created: %+v", created)
+	}
+	if created.Title.Rendered != "E2E Nav Menu" {
+		t.Fatalf("title=%q", created.Title.Rendered)
+	}
+	if created.Content.Raw == nil || !strings.Contains(*created.Content.Raw, "navigation-link") {
+		t.Fatalf("content=%#v", created.Content)
+	}
+	id := created.ID
+	t.Cleanup(func() {
+		q, args, err := c.DB.Prepare("DELETE FROM "+c.DB.Posts()+" WHERE ID = %d", id)
+		if err == nil {
+			_, _ = c.DB.Exec(q, args...)
+		}
+	})
+}
+
+func TestCreateNavigationRequiresAuth(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+	req := httptest.NewRequest(http.MethodPost, "/wp-json/wp/v2/navigation", bytes.NewBufferString(`{"title":"x"}`))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
 	}
 }

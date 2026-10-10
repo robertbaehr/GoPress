@@ -289,6 +289,9 @@
   task: P4.37
   api: exported
 
+# P4.38: POST /wp/v2/navigation handled in internal/rest/navigation_write.go
+# (wp_navigation CPT uses WP_REST_Posts_Controller upstream).
+
 - prefix: wp-includes/block-bindings.php
   go: internal/blocks/bindings.go
   status: partial
