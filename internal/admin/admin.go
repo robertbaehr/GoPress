@@ -343,14 +343,7 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	b.WriteString(`<div class="tablenav top"><div class="alignleft actions bulkactions">` + "\n")
 	b.WriteString(`<label for="bulk-action-selector-top" class="screen-reader-text">Select bulk action</label>` + "\n")
 	b.WriteString(`<select name="action" id="bulk-action-selector-top">` + "\n")
-	b.WriteString(`<option value="-1">Bulk actions</option>` + "\n")
-	if postStatus == "trash" {
-		// P7.74: Trash view — Restore instead of Move to Trash.
-		b.WriteString(`<option value="untrash">Restore</option>` + "\n")
-	} else {
-		b.WriteString(`<option value="edit" class="hide-if-no-js">Edit</option>` + "\n")
-		b.WriteString(`<option value="trash">Move to Trash</option>` + "\n")
-	}
+	writeEditPostsBulkOptions(&b, postStatus)
 	b.WriteString(`</select>` + "\n")
 	b.WriteString(`<input type="submit" id="doaction" class="button action" value="Apply" />` + "\n")
 	b.WriteString(`</div>` + "\n")
@@ -472,7 +465,11 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		if p.Status == "trash" {
 			b.WriteString("<span class=\"untrash\"><a href=\"/wp-admin/post.php?post=")
 			b.WriteString(strconv.FormatInt(p.ID, 10))
-			b.WriteString("&amp;action=untrash\">Restore</a></span>")
+			b.WriteString("&amp;action=untrash\">Restore</a> | </span>")
+			// P7.76: Delete Permanently row action in Trash view.
+			b.WriteString("<span class=\"delete\"><a class=\"submitdelete\" href=\"/wp-admin/post.php?post=")
+			b.WriteString(strconv.FormatInt(p.ID, 10))
+			b.WriteString("&amp;action=delete\">Delete Permanently</a></span>")
 		} else {
 			b.WriteString("<span class=\"edit\"><a href=\"/wp-admin/post.php?post=")
 			b.WriteString(strconv.FormatInt(p.ID, 10))
@@ -525,11 +522,34 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		b.WriteString("</td></tr>\n")
 	}
 	b.WriteString("</tbody>\n</table>\n")
+	// P7.76: bottom bulk actions (action2) mirroring the top selector.
+	b.WriteString(`<div class="tablenav bottom"><div class="alignleft actions bulkactions">` + "\n")
+	b.WriteString(`<label for="bulk-action-selector-bottom" class="screen-reader-text">Select bulk action</label>` + "\n")
+	b.WriteString(`<select name="action2" id="bulk-action-selector-bottom">` + "\n")
+	writeEditPostsBulkOptions(&b, postStatus)
+	b.WriteString(`</select>` + "\n")
+	b.WriteString(`<input type="submit" id="doaction2" class="button action" value="Apply" />` + "\n")
+	b.WriteString(`</div></div>` + "\n")
 	b.WriteString("</form>\n")
 	// P7.66 / P7.68: inline Quick Edit + Bulk Edit form stubs (hidden; JS wires).
 	b.WriteString(postQuickEditStubHTML(postType))
 	_ = blogname
 	writeAdminPage(w, c, newAdminChrome(c, heading, "edit-php"), b.String())
+}
+
+// writeEditPostsBulkOptions emits <option>s for edit.php bulk actions (P7.74 / P7.76).
+func writeEditPostsBulkOptions(b *strings.Builder, postStatus string) {
+	if b == nil {
+		return
+	}
+	b.WriteString(`<option value="-1">Bulk actions</option>` + "\n")
+	if postStatus == "trash" {
+		b.WriteString(`<option value="untrash">Restore</option>` + "\n")
+		b.WriteString(`<option value="delete">Delete Permanently</option>` + "\n")
+		return
+	}
+	b.WriteString(`<option value="edit" class="hide-if-no-js">Edit</option>` + "\n")
+	b.WriteString(`<option value="trash">Move to Trash</option>` + "\n")
 }
 
 // postQuickEditStubHTML emits the hidden inline-edit + bulk-edit row templates for edit.php (P7.66 / P7.68).
@@ -3692,8 +3712,8 @@ func (h *Handler) servePostEdit(w http.ResponseWriter, r *http.Request, c *wp.Co
 		h.serveQuickDraftSave(w, r, c)
 		return
 	}
-	// P7.74: single-row Trash / Restore from edit.php row actions.
-	if action == "trash" || action == "untrash" {
+	// P7.74 / P7.76: single-row Trash / Restore / Delete Permanently.
+	if action == "trash" || action == "untrash" || action == "delete" {
 		h.handlePostTrashAction(w, r, c, action)
 		return
 	}
@@ -4417,7 +4437,7 @@ func editPostMonths(c *wp.Context, postType, postStatus string) ([]editMonthOpt,
 	return out, nil
 }
 
-// handleEditPostsBulkTrash processes bulk trash/untrash on edit.php (P7.74).
+// handleEditPostsBulkTrash processes bulk trash/untrash/delete on edit.php (P7.74 / P7.76).
 // Returns true when the request was handled (redirect issued).
 func handleEditPostsBulkTrash(w http.ResponseWriter, r *http.Request, c *wp.Context, postType string) bool {
 	if r == nil || c == nil {
@@ -4428,7 +4448,7 @@ func handleEditPostsBulkTrash(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	if action == "" || action == "-1" {
 		action = strings.TrimSpace(r.FormValue("action2"))
 	}
-	if action != "trash" && action != "untrash" {
+	if action != "trash" && action != "untrash" && action != "delete" {
 		return false
 	}
 	ids := collectEditPostIDs(r)
@@ -4445,10 +4465,13 @@ func handleEditPostsBulkTrash(w http.ResponseWriter, r *http.Request, c *wp.Cont
 			continue
 		}
 		var err error
-		if action == "trash" {
+		switch action {
+		case "trash":
 			err = wp.TrashPost(c, id)
-		} else {
+		case "untrash":
 			err = wp.UntrashPost(c, id)
+		case "delete":
+			err = wp.DeletePost(c, id)
 		}
 		if err == nil {
 			n++
@@ -4462,10 +4485,14 @@ func handleEditPostsBulkTrash(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	if ps := parseEditPostStatus(r); ps != "" {
 		q.Set("post_status", ps)
 	}
-	if action == "trash" {
+	switch action {
+	case "trash":
 		q.Set("trashed", strconv.Itoa(n))
-	} else {
+	case "untrash":
 		q.Set("untrashed", strconv.Itoa(n))
+	case "delete":
+		q.Set("deleted", strconv.Itoa(n))
+		q.Set("post_status", "trash")
 	}
 	if enc := q.Encode(); enc != "" {
 		loc += "?" + enc
@@ -4510,9 +4537,14 @@ func writeEditTrashNotices(b *strings.Builder, r *http.Request) {
 		b.WriteString(html.EscapeString(n))
 		b.WriteString(` post(s) restored from the Trash.</p></div>` + "\n")
 	}
+	if n := strings.TrimSpace(r.URL.Query().Get("deleted")); n != "" && n != "0" {
+		b.WriteString(`<div id="message" class="updated notice notice-success is-dismissible"><p>`)
+		b.WriteString(html.EscapeString(n))
+		b.WriteString(` post(s) permanently deleted.</p></div>` + "\n")
+	}
 }
 
-// handlePostTrashAction handles post.php?action=trash|untrash (P7.74).
+// handlePostTrashAction handles post.php?action=trash|untrash|delete (P7.74 / P7.76).
 func (h *Handler) handlePostTrashAction(w http.ResponseWriter, r *http.Request, c *wp.Context, action string) {
 	id, _ := strconv.ParseInt(r.URL.Query().Get("post"), 10, 64)
 	if id <= 0 {
@@ -4537,24 +4569,34 @@ func (h *Handler) handlePostTrashAction(w http.ResponseWriter, r *http.Request, 
 		postType = "post"
 	}
 	var nKey string
-	if action == "trash" {
+	switch action {
+	case "trash":
 		if err := wp.TrashPost(c, id); err != nil {
 			http.Error(w, "Error in moving the item to Trash.\n", http.StatusInternalServerError)
 			return
 		}
 		nKey = "trashed"
-	} else {
+	case "untrash":
 		if err := wp.UntrashPost(c, id); err != nil {
 			http.Error(w, "Error in restoring the item from Trash.\n", http.StatusInternalServerError)
 			return
 		}
 		nKey = "untrashed"
+	case "delete":
+		if err := wp.DeletePost(c, id); err != nil {
+			http.Error(w, "Error in deleting the item.\n", http.StatusInternalServerError)
+			return
+		}
+		nKey = "deleted"
+	default:
+		http.Error(w, "Invalid action.\n", http.StatusBadRequest)
+		return
 	}
 	loc := "/wp-admin/edit.php?" + nKey + "=1"
 	if postType != "post" {
 		loc = "/wp-admin/edit.php?post_type=" + url.QueryEscape(postType) + "&" + nKey + "=1"
 	}
-	if action == "untrash" {
+	if action == "untrash" || action == "delete" {
 		loc += "&post_status=trash"
 	}
 	http.Redirect(w, r, loc, http.StatusFound)

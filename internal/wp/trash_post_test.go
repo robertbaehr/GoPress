@@ -71,4 +71,18 @@ func TestTrashAndUntrashPost(t *testing.T) {
 	if p.Status != "publish" {
 		t.Fatalf("expected restore to publish, got %q", p.Status)
 	}
+
+	if err := wp.TrashPost(c, id); err != nil {
+		t.Fatalf("re-trash: %v", err)
+	}
+	if err := wp.DeletePost(c, id); err != nil {
+		t.Fatalf("DeletePost: %v", err)
+	}
+	p, err = wp.GetPostByID(c, id)
+	if err != nil {
+		t.Fatalf("after delete lookup: %v", err)
+	}
+	if p != nil {
+		t.Fatalf("expected nil after DeletePost, got %#v", p)
+	}
 }
