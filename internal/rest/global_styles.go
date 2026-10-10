@@ -268,8 +268,9 @@ func parseGlobalStylesContent(content string) (settings, styles map[string]any) 
 	return settings, styles
 }
 
-// parseGlobalStylesPath matches themes/{stylesheet}[/variations] or numeric id
-// under /wp/v2/global-styles/ (P4.71).
+// parseGlobalStylesPath matches themes/{stylesheet}[/variations], numeric id,
+// or {parent}/revisions[/id] under /wp/v2/global-styles/ (P4.71 / P4.108).
+// For revisions, revID is returned in stylesheet as a decimal string (or "" for collection).
 func parseGlobalStylesPath(path string) (kind string, stylesheet string, id int64, ok bool) {
 	rest := strings.TrimPrefix(path, "/wp/v2/global-styles/")
 	rest = strings.Trim(rest, "/")
@@ -295,6 +296,23 @@ func parseGlobalStylesPath(path string) (kind string, stylesheet string, id int6
 			return "", "", 0, false
 		}
 		return "theme", ss, 0, true
+	}
+	// P4.108: {parent}/revisions[/id]
+	if i := strings.Index(rest, "/revisions"); i > 0 {
+		parentStr := rest[:i]
+		parentID, err := strconv.ParseInt(parentStr, 10, 64)
+		if err != nil || parentID <= 0 {
+			return "", "", 0, false
+		}
+		tail := strings.Trim(rest[i+len("/revisions"):], "/")
+		if tail == "" {
+			return "revisions", "", parentID, true
+		}
+		revID, err := strconv.ParseInt(tail, 10, 64)
+		if err != nil || revID <= 0 || strings.Contains(tail, "/") {
+			return "", "", 0, false
+		}
+		return "revision-item", strconv.FormatInt(revID, 10), parentID, true
 	}
 	id, err := strconv.ParseInt(rest, 10, 64)
 	if err != nil || id <= 0 {

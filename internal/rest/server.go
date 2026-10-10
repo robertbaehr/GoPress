@@ -410,6 +410,13 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 		case "theme-variations":
 			s.serveGlobalStylesThemeVariations(w, r, c, stylesheet)
 			return
+		case "revisions":
+			s.serveGlobalStylesRevisions(w, r, c, id)
+			return
+		case "revision-item":
+			revID, _ := strconv.ParseInt(stylesheet, 10, 64)
+			s.serveGlobalStylesRevisionItem(w, r, c, id, revID)
+			return
 		}
 		s.serveGlobalStylesItem(w, r, c, id)
 	case path == "/wp/v2/font-families" || strings.HasPrefix(path, "/wp/v2/font-families/"):
