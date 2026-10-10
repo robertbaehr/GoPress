@@ -730,13 +730,22 @@ func (h *Handler) serveLostPassword(w http.ResponseWriter, r *http.Request, c *w
 func writeLoginHead(b *strings.Builder, home, blogname, title, action string, extraClasses ...string) {
 	ver := "7.2-alpha-64260"
 	styles := home + "/wp-admin/load-styles.php?c=0&dir=ltr&load%5Bchunk_0%5D=dashicons,buttons,forms,l10n,wp-base-styles,wp-tooltip,login&ver=" + ver
+	interim := false
+	for _, cls := range extraClasses {
+		if strings.TrimSpace(cls) == "interim-login" {
+			interim = true
+			break
+		}
+	}
 	b.WriteString("<!DOCTYPE html>\n")
 	b.WriteString("\t<html lang=\"en-US\">\n")
 	b.WriteString("\t<head>\n")
 	b.WriteString("\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n")
 	b.WriteString("\t<title>")
-	b.WriteString(html.EscapeString(title))
-	b.WriteString(" &lsaquo; ")
+	if title != "" {
+		b.WriteString(html.EscapeString(title))
+		b.WriteString(" &lsaquo; ")
+	}
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n")
 	b.WriteString("\t<meta name='robots' content='max-image-preview:large, noindex, noarchive' />\n")
@@ -745,6 +754,10 @@ func writeLoginHead(b *strings.Builder, home, blogname, title, action string, ex
 	b.WriteString("' media='all' />\n")
 	b.WriteString("\t<meta name='referrer' content='strict-origin-when-cross-origin' />\n")
 	b.WriteString("\t\t<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n")
+	if interim {
+		// WP interim modal: transparent page chrome so the parent admin shows through.
+		b.WriteString("\t\t<style>html{background-color: transparent;}</style>\n")
+	}
 	b.WriteString("\t\t</head>\n")
 	b.WriteString("\t<body class=\"login no-js login-action-")
 	b.WriteString(html.EscapeString(action))
@@ -1030,9 +1043,11 @@ func loginErrorHTML(_, msg, _, _ string) string {
 	return "<p><strong>Error:</strong> " + msg + "</p>"
 }
 
-// serveInterimLoginSuccess shows the interim modal success stub (P6.10).
-// When redirect_to is present, offer a Continue link and a top-level-only
-// client redirect so iframe auth-check still sees interim-login-success (P6.17).
+// serveInterimLoginSuccess shows the interim modal success stub (P6.10 / P6.25).
+// Auth cookies are already written by the caller. Body classes interim-login +
+// interim-login-success let wp-auth-check.js hide the iframe. When redirect_to
+// is present, offer Continue + top-level-only client redirect (P6.17) so the
+// iframe still exposes the success class to the parent.
 func (h *Handler) serveInterimLoginSuccess(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "/")), "/")
 	blogname := optionString(c, "blogname", "GoPress")
@@ -1046,11 +1061,21 @@ func (h *Handler) serveInterimLoginSuccess(w http.ResponseWriter, r *http.Reques
 	if redirectTo != "" {
 		redirectTo = sanitizeRedirect(redirectTo, home)
 	}
+	message := `<p class="message" id="login-message">You have logged in successfully.</p>`
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("login_message", message); v != nil {
+			if s, ok := v.(string); ok && s != "" {
+				message = s
+			}
+		}
+	}
 	var b strings.Builder
-	writeLoginHead(&b, home, blogname, "Log In", "login", "interim-login", "interim-login-success")
+	// WP login_header( '', $message ) — empty title on interim success (P6.25).
+	writeLoginHead(&b, home, blogname, "", "login", "interim-login", "interim-login-success")
 	b.WriteString("\t\t\t<div id=\"login\">\n")
 	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
-	b.WriteString("<p class=\"message\">You have logged in successfully.</p>\n")
+	b.WriteString(message)
+	b.WriteByte('\n')
 	if redirectTo != "" {
 		b.WriteString("<p class=\"submit\"><a class=\"button button-primary\" href=\"")
 		b.WriteString(html.EscapeString(redirectTo))
