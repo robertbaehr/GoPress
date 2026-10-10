@@ -26,9 +26,9 @@ test('edit.php exposes Quick Edit stub and sticky toggle', async ({ page, baseUR
   await expect(page.locator('h1')).toContainText('Posts');
   await expect(page.locator('#the-list')).toBeVisible();
 
-  // Row Quick Edit control (P7.66).
+  // Row Quick Edit control (P7.66). CSS hides .row-actions until hover.
   const quickEdit = page.locator('button.editinline').first();
-  await expect(quickEdit).toBeVisible();
+  await expect(quickEdit).toBeAttached();
   await expect(quickEdit).toContainText(/Quick/);
 
   // Hidden inline-edit template + sticky checkbox (P7.67).
