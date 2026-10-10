@@ -62,6 +62,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/edit-comments.php":
 		h.requireLogin(w, r, c, h.serveEditComments)
 		return true
+	case "/wp-admin/comment.php":
+		h.requireLogin(w, r, c, h.serveCommentModerate)
+		return true
 	case "/wp-admin/themes.php":
 		h.requireLogin(w, r, c, h.serveThemes)
 		return true
@@ -951,10 +954,237 @@ func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *w
 		b.WriteString(html.EscapeString(item.Author))
 		b.WriteString("</td><td class=\"comment column-comment\"><p>")
 		b.WriteString(html.EscapeString(item.Content))
-		b.WriteString("</p></td></tr>\n")
+		b.WriteString(`</p><div class="row-actions"><span class="edit"><a href="/wp-admin/comment.php?action=editcomment&amp;c=`)
+		b.WriteString(strconv.FormatInt(item.ID, 10))
+		b.WriteString(`">Edit</a></span></div></td></tr>` + "\n")
 	}
 	b.WriteString("</tbody>\n</table>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
+}
+
+// serveCommentModerate is the comment.php moderation / edit stub (P7.30).
+func (h *Handler) serveCommentModerate(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	action := strings.TrimSpace(r.URL.Query().Get("action"))
+	if action == "" {
+		action = strings.TrimSpace(r.FormValue("action"))
+	}
+	switch action {
+	case "cdc":
+		action = "delete"
+	case "mac":
+		action = "approve"
+	}
+	if dt := r.URL.Query().Get("dt"); dt != "" {
+		switch dt {
+		case "spam":
+			action = "spam"
+		case "trash":
+			action = "trash"
+		}
+	}
+	cid, _ := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("c")), 10, 64)
+	if cid <= 0 {
+		http.Redirect(w, r, "/wp-admin/edit-comments.php?error=1", http.StatusFound)
+		return
+	}
+	if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "moderate_comments") {
+		http.Error(w, "Sorry, you are not allowed to edit this comment.\n", http.StatusForbidden)
+		return
+	}
+	cm, err := loadAdminComment(c, cid)
+	if err != nil {
+		http.Error(w, "comment: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	if cm == nil {
+		http.Redirect(w, r, "/wp-admin/edit-comments.php?error=1", http.StatusFound)
+		return
+	}
+
+	// Apply moderation actions (approve/spam/trash/delete).
+	if r.Method == http.MethodPost || action == "approvecomment" || action == "deletecomment" ||
+		action == "spamcomment" || action == "trashcomment" {
+		switch action {
+		case "approve", "approvecomment":
+			_ = updateCommentApproved(c, cid, "1")
+			http.Redirect(w, r, "/wp-admin/edit-comments.php?approved=1", http.StatusFound)
+			return
+		case "spam", "spamcomment":
+			_ = updateCommentApproved(c, cid, "spam")
+			http.Redirect(w, r, "/wp-admin/edit-comments.php?spammed=1", http.StatusFound)
+			return
+		case "trash", "trashcomment":
+			_ = updateCommentApproved(c, cid, "trash")
+			http.Redirect(w, r, "/wp-admin/edit-comments.php?trashed=1", http.StatusFound)
+			return
+		case "delete", "deletecomment":
+			_ = deleteAdminComment(c, cid)
+			http.Redirect(w, r, "/wp-admin/edit-comments.php?deleted=1", http.StatusFound)
+			return
+		}
+	}
+
+	heading := "Edit Comment"
+	caution := ""
+	button := ""
+	formAction := ""
+	switch action {
+	case "approve":
+		heading = "Moderate Comment"
+		caution = "You are about to approve the following comment:"
+		button = "Approve comment"
+		formAction = "approvecomment"
+	case "spam":
+		heading = "Moderate Comment"
+		caution = "You are about to mark the following comment as spam:"
+		button = "Mark as spam"
+		formAction = "spamcomment"
+	case "trash":
+		heading = "Moderate Comment"
+		caution = "You are about to move the following comment to the Trash:"
+		button = "Move to Trash"
+		formAction = "trashcomment"
+	case "delete":
+		heading = "Moderate Comment"
+		caution = "You are about to delete the following comment:"
+		button = "Permanently delete comment"
+		formAction = "deletecomment"
+	default:
+		action = "editcomment"
+	}
+
+	var b strings.Builder
+	b.WriteString("<h1>")
+	b.WriteString(html.EscapeString(heading))
+	b.WriteString("</h1>\n")
+	b.WriteString("<p class=\"description\">GoPress comment.php moderation stub (P7.30).</p>\n")
+	if caution != "" {
+		b.WriteString("<div id=\"message\" class=\"notice notice-warning\"><p><strong>Caution:</strong> ")
+		b.WriteString(html.EscapeString(caution))
+		b.WriteString("</p></div>\n")
+	}
+	b.WriteString("<table class=\"form-table comment-ays\">\n")
+	b.WriteString("<tr><th scope=\"row\">Author</th><td>")
+	b.WriteString(html.EscapeString(cm.Author))
+	b.WriteString("</td></tr>\n")
+	if cm.Email != "" {
+		b.WriteString("<tr><th scope=\"row\">Email</th><td>")
+		b.WriteString(html.EscapeString(cm.Email))
+		b.WriteString("</td></tr>\n")
+	}
+	b.WriteString("<tr><th scope=\"row\">Comment</th><td><p>")
+	b.WriteString(html.EscapeString(cm.Content))
+	b.WriteString("</p></td></tr>\n")
+	b.WriteString("<tr><th scope=\"row\">Status</th><td>")
+	b.WriteString(html.EscapeString(commentApprovedLabel(cm.Approved)))
+	b.WriteString("</td></tr>\n")
+	b.WriteString("</table>\n")
+	if formAction != "" {
+		b.WriteString("<form method=\"post\" action=\"/wp-admin/comment.php?c=")
+		b.WriteString(strconv.FormatInt(cid, 10))
+		b.WriteString("&amp;action=")
+		b.WriteString(html.EscapeString(formAction))
+		b.WriteString("\">\n")
+		b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" class=\"button button-primary\" value=\"")
+		b.WriteString(html.EscapeString(button))
+		b.WriteString("\" /> ")
+		b.WriteString("<a class=\"button\" href=\"/wp-admin/edit-comments.php\">Cancel</a></p>\n")
+		b.WriteString("</form>\n")
+	} else {
+		b.WriteString("<p class=\"submit\">")
+		b.WriteString(`<a class="button" href="/wp-admin/comment.php?action=approve&amp;c=`)
+		b.WriteString(strconv.FormatInt(cid, 10))
+		b.WriteString(`">Approve</a> `)
+		b.WriteString(`<a class="button" href="/wp-admin/comment.php?action=spam&amp;c=`)
+		b.WriteString(strconv.FormatInt(cid, 10))
+		b.WriteString(`">Spam</a> `)
+		b.WriteString(`<a class="button" href="/wp-admin/comment.php?action=trash&amp;c=`)
+		b.WriteString(strconv.FormatInt(cid, 10))
+		b.WriteString(`">Trash</a> `)
+		b.WriteString(`<a class="button" href="/wp-admin/edit-comments.php">Back to Comments</a>`)
+		b.WriteString("</p>\n")
+	}
+	writeAdminPage(w, c, newAdminChrome(c, heading, "comment-php"), b.String())
+}
+
+type adminComment struct {
+	ID       int64
+	Author   string
+	Email    string
+	Content  string
+	Approved string
+	PostID   int64
+}
+
+func loadAdminComment(c *wp.Context, id int64) (*adminComment, error) {
+	if c == nil || c.DB == nil || id <= 0 {
+		return nil, nil
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT comment_ID, comment_author, comment_author_email, comment_content, comment_approved, comment_post_ID "+
+			"FROM "+c.DB.Comments()+" WHERE comment_ID = %d LIMIT 1",
+		id,
+	)
+	if err != nil {
+		return nil, err
+	}
+	row, err := c.DB.GetRow(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	if row == nil {
+		return nil, nil
+	}
+	return &adminComment{
+		ID:       asInt64(row["comment_ID"]),
+		Author:   asString(row["comment_author"]),
+		Email:    asString(row["comment_author_email"]),
+		Content:  asString(row["comment_content"]),
+		Approved: asString(row["comment_approved"]),
+		PostID:   asInt64(row["comment_post_ID"]),
+	}, nil
+}
+
+func updateCommentApproved(c *wp.Context, id int64, approved string) error {
+	if c == nil || c.DB == nil || id <= 0 {
+		return fmt.Errorf("invalid comment")
+	}
+	q, args, err := c.DB.Prepare(
+		"UPDATE "+c.DB.Comments()+" SET comment_approved = %s WHERE comment_ID = %d",
+		approved, id,
+	)
+	if err != nil {
+		return err
+	}
+	_, err = c.DB.Exec(q, args...)
+	return err
+}
+
+func deleteAdminComment(c *wp.Context, id int64) error {
+	if c == nil || c.DB == nil || id <= 0 {
+		return fmt.Errorf("invalid comment")
+	}
+	q, args, err := c.DB.Prepare("DELETE FROM "+c.DB.Comments()+" WHERE comment_ID = %d", id)
+	if err != nil {
+		return err
+	}
+	_, err = c.DB.Exec(q, args...)
+	return err
+}
+
+func commentApprovedLabel(approved string) string {
+	switch approved {
+	case "1":
+		return "Approved"
+	case "0", "hold":
+		return "Pending"
+	case "spam":
+		return "Spam"
+	case "trash":
+		return "Trash"
+	default:
+		return approved
+	}
 }
 
 func (h *Handler) serveThemes(w http.ResponseWriter, r *http.Request, c *wp.Context) {
