@@ -47,3 +47,13 @@
   body: action=gopress_no_such_action
   compare: headers
   nonce: null
+
+# P10.84: anon heartbeat headers.
+- id: ajax-heartbeat-anon
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

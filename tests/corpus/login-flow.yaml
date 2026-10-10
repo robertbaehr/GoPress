@@ -99,3 +99,22 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.84: registration disabled + invalidusername lostpassword headers.
+- id: login-registration-disabled
+  role: anon
+  method: GET
+  path: /wp-login.php?registration=disabled
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-lostpassword-invalidusername
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword&error=invalidusername
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
