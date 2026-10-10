@@ -780,12 +780,108 @@ func (e *Env) renderPostFeaturedImage(block Block) string {
 	}
 	url := e.currentPost.FeaturedImageURL
 	alt := e.currentPost.FeaturedImageAlt
-	img := `<img src="` + html.EscapeString(url) + `" alt="` + html.EscapeString(alt) + `" class="attachment-post-thumbnail size-post-thumbnail"/>`
-	inner := img
-	if isLinkAttr(block.Attrs) && e.currentPost.Link != "" {
-		inner = `<a href="` + html.EscapeString(e.currentPost.Link) + `">` + img + `</a>`
+	isLink := isLinkAttr(block.Attrs)
+	// P5.86: when linked, prefer the post title as alt (WP post-featured-image).
+	if isLink {
+		if title := strings.TrimSpace(e.currentPost.Title); title != "" {
+			alt = title
+		} else if e.currentPost.ID > 0 {
+			alt = fmt.Sprintf("Untitled post %d", e.currentPost.ID)
+		}
 	}
-	return `<figure class="wp-block-post-featured-image">` + inner + `</figure>`
+
+	sizeSlug := strings.TrimSpace(attrString(block.Attrs, "sizeSlug"))
+	if sizeSlug == "" {
+		sizeSlug = "post-thumbnail"
+	}
+	imgClass := "attachment-" + sizeSlug + " size-" + sizeSlug
+
+	var styleParts []string
+	aspect := strings.TrimSpace(attrString(block.Attrs, "aspectRatio"))
+	width := strings.TrimSpace(attrString(block.Attrs, "width"))
+	height := strings.TrimSpace(attrString(block.Attrs, "height"))
+	scale := strings.TrimSpace(attrString(block.Attrs, "scale"))
+	if scale == "" {
+		scale = "cover"
+	}
+	if aspect != "" && aspect != "auto" {
+		styleParts = append(styleParts, "aspect-ratio:"+sanitizeCSSToken(aspect))
+		styleParts = append(styleParts, "width:100%")
+	}
+	if height != "" {
+		styleParts = append(styleParts, "height:"+sanitizeCSSLength(height))
+	} else if width != "" {
+		styleParts = append(styleParts, "height:auto")
+	}
+	if width != "" {
+		styleParts = append(styleParts, "width:"+sanitizeCSSLength(width))
+	}
+	if scale != "" {
+		styleParts = append(styleParts, "object-fit:"+sanitizeCSSToken(scale))
+	}
+
+	imgAttrs := ` src="` + html.EscapeString(url) + `" alt="` + html.EscapeString(alt) + `" class="` + html.EscapeString(imgClass) + `"`
+	if len(styleParts) > 0 {
+		imgAttrs += ` style="` + html.EscapeString(strings.Join(styleParts, ";")) + `;"`
+	}
+	img := `<img` + imgAttrs + `/>`
+	overlay := featuredImageOverlayMarkup(block.Attrs)
+
+	inner := img + overlay
+	if isLink && e.currentPost.Link != "" {
+		aAttrs := ` href="` + html.EscapeString(e.currentPost.Link) + `"`
+		target := strings.TrimSpace(attrString(block.Attrs, "linkTarget"))
+		if target == "" {
+			target = "_self"
+		}
+		aAttrs += ` target="` + html.EscapeString(target) + `"`
+		if rel := strings.TrimSpace(attrString(block.Attrs, "rel")); rel != "" {
+			aAttrs += ` rel="` + html.EscapeString(rel) + `"`
+		}
+		inner = `<a` + aAttrs + `>` + img + overlay + `</a>`
+	}
+
+	figClass := "wp-block-post-featured-image"
+	if align := strings.TrimSpace(attrString(block.Attrs, "align")); align != "" {
+		figClass += " align" + sanitizeClassToken(align)
+	}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		figClass += " " + cn
+	}
+	return `<figure class="` + html.EscapeString(figClass) + `">` + inner + `</figure>`
+}
+
+// featuredImageOverlayMarkup mirrors get_block_core_post_featured_image_overlay_element_markup (P5.86).
+func featuredImageOverlayMarkup(attrs map[string]any) string {
+	dim := int(attrInt64(attrs, "dimRatio"))
+	if dim <= 0 {
+		return ""
+	}
+	classes := []string{
+		"wp-block-post-featured-image__overlay",
+		"has-background-dim",
+		fmt.Sprintf("has-background-dim-%d", dim),
+	}
+	var styles []string
+	if overlay := strings.TrimSpace(attrString(attrs, "overlayColor")); overlay != "" {
+		classes = append(classes, "has-"+sanitizeClassToken(overlay)+"-background-color")
+	}
+	if grad := strings.TrimSpace(attrString(attrs, "gradient")); grad != "" {
+		classes = append(classes, "has-background-gradient", "has-"+sanitizeClassToken(grad)+"-gradient-background")
+	}
+	if customGrad := strings.TrimSpace(attrString(attrs, "customGradient")); customGrad != "" {
+		classes = append(classes, "has-background-gradient")
+		styles = append(styles, "background-image:"+customGrad)
+	}
+	if custom := strings.TrimSpace(attrString(attrs, "customOverlayColor")); custom != "" {
+		styles = append(styles, "background-color:"+custom)
+	}
+	out := `<span class="` + html.EscapeString(strings.Join(classes, " ")) + `"`
+	if len(styles) > 0 {
+		out += ` style="` + html.EscapeString(strings.Join(styles, ";")) + `;"`
+	}
+	out += ` aria-hidden="true"></span>`
+	return out
 }
 
 func queryArgsFromAttrs(attrs map[string]any) QueryLoopArgs {
