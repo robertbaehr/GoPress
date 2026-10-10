@@ -7,12 +7,12 @@ import (
 
 // pageListNavCtx carries Navigation block context for page-list children (P5.94).
 type pageListNavCtx struct {
-	showSubmenuIcon    bool
-	submenuVisibility  string // hover | click | always
-	textColor          string
-	backgroundColor    string
-	customTextColor    string
-	customBackground   string
+	showSubmenuIcon   bool
+	submenuVisibility string // hover | click | always
+	textColor         string
+	backgroundColor   string
+	customTextColor   string
+	customBackground  string
 }
 
 // renderPageList renders core/page-list (P5.3 / P5.75 / P5.94).
