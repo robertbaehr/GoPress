@@ -1048,6 +1048,9 @@ func TestFrontDateArchiveYearMonth(t *testing.T) {
 	if !strings.Contains(body, "archive") || !strings.Contains(body, "date") {
 		t.Fatalf("expected archive date body class: %q", body[:min(400, len(body))])
 	}
+	if !strings.Contains(body, "date-year") || !strings.Contains(body, "date-2024") {
+		t.Fatalf("expected date-year body class: %q", body[:min(500, len(body))])
+	}
 	if !strings.Contains(body, "Year:") {
 		t.Fatalf("expected Year heading: %q", body[:min(800, len(body))])
 	}
@@ -1065,12 +1068,39 @@ func TestFrontDateArchiveYearMonth(t *testing.T) {
 	if !strings.Contains(body, "Month:") || !strings.Contains(body, "June") {
 		t.Fatalf("expected Month: June heading: %q", body[:min(800, len(body))])
 	}
+	if !strings.Contains(body, "date-month") || !strings.Contains(body, "date-202406") {
+		t.Fatalf("expected date-month body class: %q", body[:min(500, len(body))])
+	}
 
 	req = httptest.NewRequest(http.MethodGet, "/2019/", nil)
 	rec = httptest.NewRecorder()
 	srv.ServeHTTP(rec, req)
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("empty year want 404, got %d body=%q", rec.Code, rec.Body.String()[:min(200, rec.Body.Len())])
+	}
+}
+
+func TestFrontDateArchiveDocumentTitleFilter(t *testing.T) {
+	c := testBoot(t)
+	c.Hooks.AddFilter("document_title_parts", func(value any, _ ...any) any {
+		parts, _ := value.(map[string]string)
+		if parts == nil {
+			parts = map[string]string{}
+		}
+		parts["title"] = "Dates Only"
+		parts["site"] = "GoPress Test"
+		return parts
+	}, 10, 1)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/2024/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "Dates Only") || !strings.Contains(body, "GoPress Test") {
+		t.Fatalf("document_title_parts not applied: %q", body[:min(600, len(body))])
 	}
 }
 

@@ -695,7 +695,7 @@ func frontSearchDocumentTitle(c *wp.Context, blogname, term string) string {
 	return out
 }
 
-// renderDateArchive serves year/month(/day) front archives (P3.22).
+// renderDateArchive serves year/month(/day) front archives (P3.22 / P3.86).
 func (f *Front) renderDateArchive(w http.ResponseWriter, c *wp.Context, vars map[string]string) {
 	year := atoiFront(vars["year"])
 	month := atoiFront(vars["monthnum"])
@@ -703,6 +703,9 @@ func (f *Front) renderDateArchive(w http.ResponseWriter, c *wp.Context, vars map
 	if year <= 0 {
 		f.render404(w, c)
 		return
+	}
+	if c != nil && c.Scope == nil {
+		c.Scope = &wp.RequestScope{}
 	}
 	if c != nil && c.Scope != nil {
 		c.Scope.IsArchive = true
@@ -732,10 +735,51 @@ func (f *Front) renderDateArchive(w http.ResponseWriter, c *wp.Context, vars map
 	title := dateArchiveTitle(year, month, day)
 	slugs := wp.DateTemplateSlugs()
 	if tpl, ok := wp.ResolveBlockTemplate(c, slugs...); ok && strings.TrimSpace(tpl) != "" {
-		f.renderDateArchiveBlockTemplate(w, c, tpl, title)
+		tpl = applyDateTemplateContentFilter(c, tpl)
+		f.renderDateArchiveBlockTemplate(w, c, tpl, title, year, month, day)
 		return
 	}
 	f.renderDateArchiveShim(w, c, title, year, month, day)
+}
+
+// applyDateTemplateContentFilter lets hooks adjust resolved date block markup (P3.86).
+func applyDateTemplateContentFilter(c *wp.Context, tpl string) string {
+	if c == nil || c.Hooks == nil {
+		return tpl
+	}
+	if v := c.Hooks.ApplyFilters("date_template_content", tpl); v != nil {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return tpl
+}
+
+// frontDateDocumentTitle builds the date archive <title> and honors document_title_parts (P3.86).
+func frontDateDocumentTitle(c *wp.Context, blogname, archiveTitle string) string {
+	parts := map[string]string{
+		"title":   archiveTitle,
+		"page":    "",
+		"tagline": "",
+		"site":    blogname,
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("document_title_parts", parts); v != nil {
+			if m, ok := v.(map[string]string); ok {
+				parts = m
+			}
+		}
+	}
+	title := strings.TrimSpace(parts["title"])
+	if title == "" {
+		title = "Archives"
+	}
+	site := strings.TrimSpace(parts["site"])
+	out := html.EscapeString(title)
+	if site != "" {
+		out += " &#8211; " + html.EscapeString(site)
+	}
+	return out
 }
 
 func dateArchiveTitle(year, month, day int) string {
@@ -760,7 +804,7 @@ func atoiFront(s string) int {
 	return n
 }
 
-func (f *Front) renderDateArchiveBlockTemplate(w http.ResponseWriter, c *wp.Context, template, archiveTitle string) {
+func (f *Front) renderDateArchiveBlockTemplate(w http.ResponseWriter, c *wp.Context, template, archiveTitle string, year, month, day int) {
 	blogname := optionString(c, "blogname", "GoPress")
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	stylesheet := activeStylesheet(c)
@@ -770,20 +814,19 @@ func (f *Front) renderDateArchiveBlockTemplate(w http.ResponseWriter, c *wp.Cont
 	safe := wp.ProcessInteractivityHTML(wp.KsesPost(body))
 	safe = ensureMainSkipTarget(safe)
 
-	bodyClasses := "archive date wp-embed-responsive"
+	bodyClasses := dateArchiveBodyClass(year, month, day) + " wp-embed-responsive"
 	if stylesheet != "" {
 		bodyClasses += " wp-theme-" + stylesheet
 	}
 	bodyClasses = wp.BodyClassWithAdminBar(c, bodyClasses)
 
-	pageTitle := html.EscapeString(archiveTitle) + " &#8211; " + html.EscapeString(blogname)
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
 	b.WriteString(frontRobotsMetaTag(c))
 	b.WriteString("<title>")
-	b.WriteString(pageTitle)
+	b.WriteString(frontDateDocumentTitle(c, blogname, archiveTitle))
 	b.WriteString("</title>\n")
 	writeFrontHeadLinks(&b, home, blogname, "", "", "", "", "", "")
 	writeArchiveRelLinks(&b, c, home)
@@ -802,6 +845,27 @@ func (f *Front) renderDateArchiveBlockTemplate(w http.ResponseWriter, c *wp.Cont
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(b.String()))
+}
+
+func dateArchiveBodyClass(year, month, day int) string {
+	classes := "archive date"
+	if day > 0 && month > 0 {
+		classes += " date-day"
+	} else if month > 0 {
+		classes += " date-month"
+	} else {
+		classes += " date-year"
+	}
+	if year > 0 {
+		classes += " date-" + strconv.Itoa(year)
+	}
+	if month > 0 {
+		classes += fmt.Sprintf(" date-%04d%02d", year, month)
+	}
+	if day > 0 {
+		classes += fmt.Sprintf(" date-%04d%02d%02d", year, month, day)
+	}
+	return classes
 }
 
 // renderAuthorArchive serves /author/{nicename}/ front archives (P3.23 / P3.83).
@@ -1534,27 +1598,45 @@ func (f *Front) renderDateArchiveShim(w http.ResponseWriter, c *wp.Context, titl
 		http.Error(w, "archive: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
+	bodyClass := dateArchiveBodyClass(year, month, day)
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>")
-	b.WriteString(html.EscapeString(title))
-	b.WriteString(" &#8211; ")
-	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(frontDateDocumentTitle(c, blogname, title))
 	b.WriteString("</title>\n</head>\n<body class=\"")
-	b.WriteString(html.EscapeString(wp.BodyClassWithAdminBar(c, "archive date")))
+	b.WriteString(html.EscapeString(wp.BodyClassWithAdminBar(c, bodyClass)))
 	b.WriteString("\">\n")
 	b.WriteString(wp.AdminBarHTML(c))
+	b.WriteString("<main id=\"wp--skip-link--target\">\n")
 	b.WriteString("<h1 class=\"page-title\">")
 	b.WriteString(html.EscapeString(title))
 	b.WriteString("</h1>\n<ul class=\"posts\">\n")
+	if len(posts) == 0 {
+		b.WriteString("<li class=\"no-results\">No posts found for this date.</li>\n")
+	}
 	for _, p := range posts {
 		b.WriteString("<li><a href=\"?p=")
 		b.WriteString(strconv.FormatInt(p.ID, 10))
 		b.WriteString("\">")
 		b.WriteString(html.EscapeString(p.Title))
-		b.WriteString("</a></li>\n")
+		b.WriteString("</a>")
+		// P3.86: classic shim shows excerpt/content tease when available.
+		ex := strings.TrimSpace(p.Excerpt)
+		if ex == "" {
+			ex = strings.TrimSpace(stripTagsSimple(p.Content))
+			words := strings.Fields(ex)
+			if len(words) > 40 {
+				ex = strings.Join(words[:40], " ") + "…"
+			}
+		}
+		if ex != "" {
+			b.WriteString("<p class=\"entry-summary\">")
+			b.WriteString(html.EscapeString(ex))
+			b.WriteString("</p>")
+		}
+		b.WriteString("</li>\n")
 	}
-	b.WriteString("</ul>\n</body>\n</html>\n")
+	b.WriteString("</ul>\n</main>\n</body>\n</html>\n")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(b.String()))

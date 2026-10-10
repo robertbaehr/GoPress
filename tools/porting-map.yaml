@@ -2809,6 +2809,14 @@
   task: P3.22
   api: n/a
 
+# P3.86: deepen date archive (document_title_parts, date_template_content, shim).
+- prefix: wp-includes/general-template.php#date-archive-p386
+  go: internal/server/front.go
+  status: partial
+  task: P3.86
+  api: n/a
+  notes: "P3.86 — Scope ensure; document_title_parts; date_template_content; shim excerpts + date-year/month/day classes"
+
 # P3.23: /author/{nicename}/ author archives.
 - prefix: wp-includes/author-template.php
   go: internal/server/front.go
