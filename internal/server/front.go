@@ -114,7 +114,8 @@ func (f *Front) renderHome(w http.ResponseWriter, c *wp.Context) {
 	}
 	b.WriteString("</ul>\n</body>\n</html>\n")
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	setFrontAPILink(w, c)
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(b.String()))
 }
@@ -156,7 +157,8 @@ func (f *Front) renderSingular(w http.ResponseWriter, c *wp.Context, vars map[st
 	b.WriteString(safeContent)
 	b.WriteString("\n</div>\n</article>\n</body>\n</html>\n")
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	setFrontAPILink(w, c)
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(b.String()))
 }
@@ -214,6 +216,7 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, c *wp.Context) {
 	}
 	b.WriteString("</channel>\n</rss>\n")
 
+	setFrontAPILink(w, c)
 	w.Header().Set("Content-Type", "application/rss+xml; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(b.String()))
@@ -258,9 +261,23 @@ func (f *Front) render404(w http.ResponseWriter, c *wp.Context) {
 	b.WriteString("<p>The requested content could not be found.</p>\n")
 	b.WriteString("</body>\n</html>\n")
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	setFrontAPILink(w, c)
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusNotFound)
 	_, _ = w.Write([]byte(b.String()))
+}
+
+// setFrontAPILink mirrors rest_output_link_header (rel=https://api.w.org/).
+func setFrontAPILink(w http.ResponseWriter, c *wp.Context) {
+	siteURL := strings.TrimRight(optionString(c, "siteurl", ""), "/")
+	home := strings.TrimRight(optionString(c, "home", siteURL), "/")
+	if home == "" {
+		home = siteURL
+	}
+	if home == "" {
+		return
+	}
+	w.Header().Set("Link", fmt.Sprintf(`<%s/wp-json/>; rel="https://api.w.org/"`, home))
 }
 
 type postListItem struct {

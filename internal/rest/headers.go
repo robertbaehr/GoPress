@@ -6,7 +6,31 @@ import (
 	"net/url"
 	"strconv"
 	"strings"
+
+	"github.com/robertbaehr/GoPress/internal/wp"
 )
+
+// setAPILinkHeader sets the WordPress discovery Link header (rel=https://api.w.org/).
+// Collection pagination may overwrite Link later via setCollectionHeaders.
+func setAPILinkHeader(w http.ResponseWriter, c *wp.Context) {
+	root := restRootURL(c)
+	if root == "" {
+		return
+	}
+	w.Header().Set("Link", fmt.Sprintf(`<%s>; rel="https://api.w.org/"`, root))
+}
+
+func restRootURL(c *wp.Context) string {
+	siteURL := strings.TrimRight(optionString(c, "siteurl", ""), "/")
+	home := strings.TrimRight(optionString(c, "home", siteURL), "/")
+	if home == "" {
+		home = siteURL
+	}
+	if home == "" {
+		return ""
+	}
+	return home + "/wp-json/"
+}
 
 // setCollectionHeaders adds X-WP-Total, X-WP-TotalPages, and Link pagination headers.
 func setCollectionHeaders(w http.ResponseWriter, r *http.Request, total, totalPages, page int) {
