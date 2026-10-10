@@ -220,6 +220,8 @@ type RequestScope struct {
 	IsREST     bool
 	// IsAjax marks admin-ajax.php requests (DOING_AJAX / wp_doing_ajax, P2.66).
 	IsAjax bool
+	// IsCron marks wp-cron.php requests (DOING_CRON / wp_doing_cron, P2.67).
+	IsCron bool
 	// RESTDispatching counts nested rest.Server dispatches (is_dispatching).
 	RESTDispatching int
 	IsFeed          bool
@@ -304,6 +306,16 @@ func (s *RequestScope) SetAjax(v bool) {
 	}
 	s.mu.Lock()
 	s.IsAjax = v
+	s.mu.Unlock()
+}
+
+// SetCron marks the request as a WordPress cron request (P2.67).
+func (s *RequestScope) SetCron(v bool) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.IsCron = v
 	s.mu.Unlock()
 }
 

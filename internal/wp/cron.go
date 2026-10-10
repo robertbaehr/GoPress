@@ -162,6 +162,10 @@ func ServeCron(w http.ResponseWriter, r *http.Request, c *Context) {
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.Header().Set("Expires", "Wed, 11 Jan 1984 05:00:00 GMT")
 	w.Header().Set("Cache-Control", "no-cache, must-revalidate, max-age=0")
+	// P2.67: DOING_CRON / wp_doing_cron for the duration of wp-cron.php.
+	if c != nil && c.Scope != nil {
+		c.Scope.SetCron(true)
+	}
 	if c != nil {
 		_ = RunCron(c)
 	}
