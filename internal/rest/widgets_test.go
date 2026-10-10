@@ -89,7 +89,6 @@ func TestWidgetsRESTAuthItemsDisabled(t *testing.T) {
 
 	for _, path := range []string{
 		"/wp-json/wp/v2/widgets/search-2",
-		"/wp-json/wp/v2/widget-types/search",
 	} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		req.AddCookie(cookie)
@@ -106,6 +105,51 @@ func TestWidgetsRESTAuthItemsDisabled(t *testing.T) {
 		if errBody["code"] != "rest_widgets_disabled" {
 			t.Fatalf("%s code=%v", path, errBody["code"])
 		}
+	}
+}
+
+func TestWidgetTypesRESTAuthItemInvalid(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+	cookie := authAdminCookie(t, c)
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/widget-types/search", nil)
+	req.AddCookie(cookie)
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var errBody map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &errBody); err != nil {
+		t.Fatal(err)
+	}
+	if errBody["code"] != "rest_widget_type_invalid" {
+		t.Fatalf("code=%v", errBody["code"])
+	}
+}
+
+func TestWidgetTypesRESTAuthWriteDisabled(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+	cookie := authAdminCookie(t, c)
+
+	req := httptest.NewRequest(http.MethodPost, "/wp-json/wp/v2/widget-types/search", strings.NewReader(`{}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(cookie)
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var errBody map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &errBody); err != nil {
+		t.Fatal(err)
+	}
+	if errBody["code"] != "rest_widgets_disabled" {
+		t.Fatalf("code=%v", errBody["code"])
 	}
 }
 
