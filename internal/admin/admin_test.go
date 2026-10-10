@@ -1542,6 +1542,74 @@ func TestPluginsListsHelloDollyHeaders(t *testing.T) {
 	if !strings.Contains(body, "action=activate") {
 		t.Fatalf("expected activate link, got %q", body)
 	}
+	// P7.86: status views + search box.
+	for _, want := range []string{
+		`class="subsubsub"`,
+		`plugin_status=active`,
+		`plugin_status=inactive`,
+		`class="search-box"`,
+		`id="plugin-search-input"`,
+		`Search installed plugins`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected plugins list chrome %q in body", want)
+		}
+	}
+}
+
+func TestPluginsStatusFilterAndSearch(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() {
+		_, _ = c.Options.UpdateOption("active_plugins", `a:0:{}`, "yes")
+	})
+	_, _ = c.Options.UpdateOption("active_plugins", `a:0:{}`, "yes")
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+
+	// Inactive view still lists Hello Dolly when inactive.
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/plugins.php?plugin_status=inactive", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "Hello Dolly") {
+		t.Fatalf("expected Hello Dolly in inactive view: %q", body)
+	}
+	if !strings.Contains(body, `plugin_status=inactive`) || !strings.Contains(body, `class="current"`) {
+		t.Fatalf("expected current inactive view link: %q", body)
+	}
+
+	// Active view empty while nothing activated.
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/plugins.php?plugin_status=active", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	body = rec.Body.String()
+	if strings.Contains(body, "Hello Dolly") {
+		t.Fatalf("did not expect Hello Dolly in empty active view: %q", body)
+	}
+	if !strings.Contains(body, "No plugins found") {
+		t.Fatalf("expected empty active message: %q", body)
+	}
+
+	// Search match / miss.
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/plugins.php?s=dolly", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if !strings.Contains(rec.Body.String(), "Hello Dolly") {
+		t.Fatalf("expected search hit for dolly")
+	}
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/plugins.php?s=zzzz-no-match", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if strings.Contains(rec.Body.String(), "Hello Dolly") {
+		t.Fatalf("expected search miss")
+	}
 }
 
 func TestPluginsActivateDeactivateHelloDolly(t *testing.T) {
