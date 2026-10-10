@@ -108,6 +108,9 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/legacy-widget":
 		// P5.77: widgets gone — empty/placeholder (no WP_Widget_Factory).
 		return e.renderLegacyWidget(block)
+	case "core/widget-group":
+		// P5.78: widgets gone — empty/placeholder (no sidebars).
+		return e.renderWidgetGroup(block)
 	case "core/footnotes":
 		// Return via out so applySupports can attach color/typography/etc. (P5.51).
 		out = e.renderFootnotes(block)
