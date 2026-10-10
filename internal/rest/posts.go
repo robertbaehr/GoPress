@@ -210,7 +210,7 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 	args := wp.QueryArgs{
 		PostType:     postType,
 		PostStatus:   "publish",
-		PostStatuses:  statuses,
+		PostStatuses: statuses,
 		PostsPerPage: limit,
 		Offset:       offset,
 		OrderBy:      orderby,
@@ -384,13 +384,13 @@ func countPosts(c *wp.Context, postType string, stickyFilter *bool, search strin
 		postType = "post"
 	}
 	args := wp.QueryArgs{
-		PostType:    postType,
-		PostStatus:  "publish",
+		PostType:     postType,
+		PostStatus:   "publish",
 		PostStatuses: statuses,
-		Search:      search,
-		Author:      author,
-		CategoryIn:  categoryIn,
-		TagIn:       tagIn,
+		Search:       search,
+		Author:       author,
+		CategoryIn:   categoryIn,
+		TagIn:        tagIn,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	return wp.CountPosts(c, args)
