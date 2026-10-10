@@ -73,3 +73,54 @@ func TestRenderListNestedFixtureKeepsClass(t *testing.T) {
 		t.Fatalf("missing ul: %q", out)
 	}
 }
+
+func TestRenderListPolishAnchorClassNameColors(t *testing.T) {
+	// P5.104: polish saved markup + applySupports colors.
+	src := `<!-- wp:list {"anchor":"toc","className":"is-style-plain","align":"wide","textColor":"contrast","backgroundColor":"base"} -->
+<ul><li>One</li></ul>
+<!-- /wp:list -->`
+	out := blocks.Render(src)
+	for _, want := range []string{
+		`wp-block-list`,
+		`is-style-plain`,
+		`alignwide`,
+		`id="toc"`,
+		`has-contrast-color`,
+		`has-base-background-color`,
+		`<li>One</li>`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
+
+func TestRenderListSynthesizeAnchor(t *testing.T) {
+	out := blocks.Render(`<!-- wp:list {"ordered":true,"start":2,"anchor":"steps","values":"<li>First</li>"} /-->`)
+	if !strings.Contains(out, `id="steps"`) || !strings.Contains(out, `start="2"`) || !strings.Contains(out, `<li>First</li>`) {
+		t.Fatalf("expected ordered list with anchor: %q", out)
+	}
+}
+
+func TestRenderListItemPolishAnchorColors(t *testing.T) {
+	src := `<!-- wp:list-item {"anchor":"item-1","textColor":"contrast"} -->
+<li>Saved item</li>
+<!-- /wp:list-item -->`
+	out := blocks.Render(src)
+	for _, want := range []string{
+		`id="item-1"`,
+		`has-contrast-color`,
+		`Saved item`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
+
+func TestRenderListItemSynthesizeAnchor(t *testing.T) {
+	out := blocks.Render(`<!-- wp:list-item {"content":"Hello","anchor":"li-a"} /-->`)
+	if out != `<li id="li-a">Hello</li>` {
+		t.Fatalf("got %q", out)
+	}
+}
