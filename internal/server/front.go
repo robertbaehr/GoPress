@@ -925,6 +925,56 @@ func (f *Front) renderTermArchive(w http.ResponseWriter, c *wp.Context, taxonomy
 }
 
 func (f *Front) render404(w http.ResponseWriter, c *wp.Context) {
+	// P3.16: prefer block theme templates/404.html when present.
+	if tpl, ok := wp.ResolveBlockTemplate(c, "404"); ok && strings.TrimSpace(tpl) != "" {
+		f.render404BlockTemplate(w, c, tpl)
+		return
+	}
+	f.render404Shim(w, c)
+}
+
+func (f *Front) render404BlockTemplate(w http.ResponseWriter, c *wp.Context, template string) {
+	blogname := optionString(c, "blogname", "GoPress")
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	stylesheet := activeStylesheet(c)
+	env := blockRenderEnv(c)
+	body := blocks.RenderWith(env, template)
+	safe := wp.ProcessInteractivityHTML(wp.KsesPost(body))
+	safe = ensureMainSkipTarget(safe)
+
+	bodyClasses := "error404 wp-embed-responsive"
+	if stylesheet != "" {
+		bodyClasses += " wp-theme-" + stylesheet
+	}
+	bodyClasses = wp.BodyClassWithAdminBar(c, bodyClasses)
+
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
+	b.WriteString("<meta charset=\"UTF-8\" />\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
+	b.WriteString("<meta name='robots' content='max-image-preview:large' />\n")
+	b.WriteString("<title>Page not found &#8211; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString("</title>\n")
+	writeFrontHeadLinks(&b, home, blogname, "", "", "")
+	b.WriteString(wp.EmojiHeadHTML())
+	b.WriteString("</head>\n<body class=\"")
+	b.WriteString(html.EscapeString(bodyClasses))
+	b.WriteString("\">\n")
+	b.WriteString(wp.AdminBarHTML(c))
+	b.WriteString("<a class=\"skip-link screen-reader-text\" id=\"wp-skip-link\" href=\"#wp--skip-link--target\">Skip to content</a>")
+	b.WriteString("<div class=\"wp-site-blocks\">")
+	b.WriteString(safe)
+	b.WriteString("</div>\n")
+	b.WriteString("</body>\n</html>\n")
+
+	setFrontAPILink(w, c)
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusNotFound)
+	_, _ = w.Write([]byte(b.String()))
+}
+
+func (f *Front) render404Shim(w http.ResponseWriter, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")

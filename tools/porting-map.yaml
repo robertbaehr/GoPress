@@ -205,6 +205,12 @@
   task: P5.22
   api: internal
 
+- prefix: wp-includes/template.php
+  go: internal/server/front.go
+  status: partial
+  task: P3.16
+  api: n/a
+
 - prefix: wp-includes/class-wp-duotone.php
   go: internal/blocks/supports.go
   status: partial
