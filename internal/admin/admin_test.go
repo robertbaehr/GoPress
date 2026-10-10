@@ -850,9 +850,10 @@ func TestEditPostsTrashRestore(t *testing.T) {
 		t.Fatalf("bulk trash failed: %#v", p)
 	}
 
-	// Bulk restore.
+	// Bulk restore via bottom action2 (P7.76).
 	form = url.Values{}
-	form.Set("action", "untrash")
+	form.Set("action", "-1")
+	form.Set("action2", "untrash")
 	form.Set("post_status", "trash")
 	form.Add("post[]", strconv.FormatInt(id, 10))
 	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?"+form.Encode(), nil)
@@ -865,6 +866,37 @@ func TestEditPostsTrashRestore(t *testing.T) {
 	p, _ = wp.GetPostByID(c, id)
 	if p == nil || p.Status != "publish" {
 		t.Fatalf("bulk untrash failed: %#v", p)
+	}
+
+	// Trash again, then bulk Delete Permanently (P7.76).
+	_ = wp.TrashPost(c, id)
+	form = url.Values{}
+	form.Set("action", "delete")
+	form.Set("post_status", "trash")
+	form.Add("post[]", strconv.FormatInt(id, 10))
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?"+form.Encode(), nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("bulk delete status=%d", rec.Code)
+	}
+	if !strings.Contains(rec.Header().Get("Location"), "deleted=") {
+		t.Fatalf("expected deleted= redirect, got %q", rec.Header().Get("Location"))
+	}
+	p, _ = wp.GetPostByID(c, id)
+	if p != nil {
+		t.Fatalf("expected permanent delete, still have %#v", p)
+	}
+
+	// Bottom bulk selector present on list.
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	body = rec.Body.String()
+	if !strings.Contains(body, `id="bulk-action-selector-bottom"`) || !strings.Contains(body, `name="action2"`) {
+		t.Fatalf("expected bottom bulk actions: %q", body[:min(1200, len(body))])
 	}
 }
 

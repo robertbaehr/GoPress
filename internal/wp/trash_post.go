@@ -54,6 +54,35 @@ func TrashPost(c *Context, id int64) error {
 	return nil
 }
 
+// DeletePost permanently removes a post row and its postmeta (wp_delete_post
+// force=true subset, P7.76). Prefer TrashPost for soft-delete.
+func DeletePost(c *Context, id int64) error {
+	if c == nil || c.DB == nil || id <= 0 {
+		return fmt.Errorf("wp: DeletePost: invalid args")
+	}
+	post, err := GetPostByID(c, id)
+	if err != nil {
+		return err
+	}
+	if post == nil {
+		return fmt.Errorf("wp: DeletePost: post not found")
+	}
+	if c.Meta != nil {
+		_, _ = c.Meta.DeleteMetadata(MetaPost, id, trashMetaStatus, "")
+		_, _ = c.Meta.DeleteMetadata(MetaPost, id, trashMetaTime, "")
+	}
+	mq, margs, err := c.DB.Prepare("DELETE FROM "+c.DB.PostMeta()+" WHERE post_id = %d", id)
+	if err == nil {
+		_, _ = c.DB.Exec(mq, margs...)
+	}
+	q, args, err := c.DB.Prepare("DELETE FROM "+c.DB.Posts()+" WHERE ID = %d", id)
+	if err != nil {
+		return err
+	}
+	_, err = c.DB.Exec(q, args...)
+	return err
+}
+
 // UntrashPost restores a trashed post to its previous status (wp_untrash_post
 // subset, P7.74). Defaults to draft when prior status meta is missing.
 func UntrashPost(c *Context, id int64) error {
