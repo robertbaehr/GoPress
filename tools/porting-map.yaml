@@ -486,6 +486,13 @@
   task: P2.35
   api: exported
 
+# P2.36: wp_is_numeric_array.
+- prefix: wp-includes/functions.php#wp_is_numeric_array
+  go: internal/wp/is_numeric_array.go
+  status: partial
+  task: P2.36
+  api: exported
+
 - prefix: wp-includes/functions.php#wp_validate_boolean
   go: internal/wp/validate_boolean.go
   status: partial
