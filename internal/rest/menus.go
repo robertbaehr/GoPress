@@ -161,7 +161,13 @@ func classicMenuFromTerm(c *wp.Context, t Term) ClassicMenu {
 }
 
 func (s *Server) serveMenuItems(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	if r.Method != http.MethodGet {
+	switch r.Method {
+	case http.MethodGet:
+		// continue below
+	case http.MethodPost:
+		s.createMenuItem(w, r, c)
+		return
+	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
@@ -211,7 +217,16 @@ func (s *Server) serveMenuItems(w http.ResponseWriter, r *http.Request, c *wp.Co
 }
 
 func (s *Server) serveMenuItemByID(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
-	if r.Method != http.MethodGet {
+	switch r.Method {
+	case http.MethodGet:
+		// continue below
+	case http.MethodPost, http.MethodPut, http.MethodPatch:
+		s.updateMenuItem(w, r, c, id)
+		return
+	case http.MethodDelete:
+		s.deleteMenuItem(w, r, c, id)
+		return
+	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
