@@ -49,3 +49,7 @@
 - id: login-lostpassword
   reason: Lost-password form stub until full login templates
   remove_by: "2027-06-01"
+
+- id: rest-index-anon
+  reason: Full WP index route arg catalogs (~200KB) intentionally incomplete; namespaces/top-level/site fields + route keys expanded (P4.16)
+  remove_by: "2027-06-01"

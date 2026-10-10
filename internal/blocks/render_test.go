@@ -18,7 +18,7 @@ func TestRenderParagraphHeading(t *testing.T) {
 	if !strings.Contains(out, `<h2 class="wp-block-heading">Hello</h2>`) {
 		t.Fatalf("missing heading: %q", out)
 	}
-	if !strings.Contains(out, `<p>World</p>`) {
+	if !strings.Contains(out, `<p class="wp-block-paragraph">World</p>`) {
 		t.Fatalf("missing paragraph: %q", out)
 	}
 	if strings.Contains(out, "<!-- wp:") {
@@ -46,7 +46,7 @@ func TestRenderQuoteNested(t *testing.T) {
 	if !strings.Contains(out, `<blockquote class="wp-block-quote">`) {
 		t.Fatalf("missing quote: %q", out)
 	}
-	if !strings.Contains(out, `<p>The editor will endeavour`) {
+	if !strings.Contains(out, `<p class="wp-block-paragraph">The editor will endeavour`) {
 		t.Fatalf("missing inner paragraph: %q", out)
 	}
 	if !strings.Contains(out, `<cite>Matt Mullenweg, 2017</cite>`) {
@@ -94,7 +94,7 @@ func TestRenderMoreCoreBlocks(t *testing.T) {
 		fixture string
 		needles []string
 	}{
-		{"core__group", []string{`class="wp-block-group`, `<p>This is a group block.</p>`, `<p>Group block content.</p>`}},
+		{"core__group", []string{`class="wp-block-group`, `<p class="wp-block-paragraph">This is a group block.</p>`, `<p class="wp-block-paragraph">Group block content.</p>`}},
 		{"core__columns", []string{`class="wp-block-columns`, `class="wp-block-column`, `Column One, Paragraph One`}},
 		{"core__column", []string{`class="wp-block-column`}},
 		{"core__buttons", []string{`class="wp-block-buttons`, `wp-block-button__link`, `My button 1`}},

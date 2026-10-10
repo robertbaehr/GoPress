@@ -43,7 +43,9 @@ func (e *Env) RenderBlock(block Block) string {
 	case "":
 		// Freeform / classic HTML.
 		return block.InnerHTML
-	case "core/paragraph", "core/heading", "core/list", "core/list-item",
+	case "core/paragraph":
+		return addRootClass(e.renderSaved(block), "wp-block-paragraph")
+	case "core/heading", "core/list", "core/list-item",
 		"core/image", "core/quote", "core/code", "core/html",
 		"core/group", "core/columns", "core/column", "core/buttons", "core/button",
 		"core/pullquote", "core/preformatted", "core/verse", "core/table",
@@ -226,4 +228,64 @@ func blockName(b Block) string {
 		return ""
 	}
 	return *b.BlockName
+}
+
+// addRootClass injects className onto the first HTML opening tag if absent.
+func addRootClass(htmlFragment, className string) string {
+	if htmlFragment == "" || className == "" {
+		return htmlFragment
+	}
+	i := strings.Index(htmlFragment, "<")
+	if i < 0 {
+		return htmlFragment
+	}
+	rest := htmlFragment[i+1:]
+	if rest == "" || rest[0] == '/' || rest[0] == '!' {
+		return htmlFragment
+	}
+	// Find end of opening tag.
+	end := strings.Index(rest, ">")
+	if end < 0 {
+		return htmlFragment
+	}
+	open := rest[:end]
+	selfClose := strings.HasSuffix(open, "/")
+	if selfClose {
+		open = strings.TrimSpace(strings.TrimSuffix(open, "/"))
+	}
+	lower := strings.ToLower(open)
+	if strings.Contains(lower, `class="`) || strings.Contains(lower, `class='`) {
+		// Merge into existing class attribute.
+		for _, quote := range []string{`"`, `'`} {
+			needle := "class=" + quote
+			idx := strings.Index(lower, needle)
+			if idx < 0 {
+				continue
+			}
+			start := idx + len(needle)
+			closeIdx := strings.Index(open[start:], quote)
+			if closeIdx < 0 {
+				break
+			}
+			existing := open[start : start+closeIdx]
+			if strings.Contains(" "+existing+" ", " "+className+" ") {
+				return htmlFragment
+			}
+			merged := className
+			if existing != "" {
+				merged = existing + " " + className
+			}
+			newOpen := open[:start] + merged + open[start+closeIdx:]
+			if selfClose {
+				newOpen += " /"
+			}
+			return htmlFragment[:i+1] + newOpen + htmlFragment[i+1+end:]
+		}
+		return htmlFragment
+	}
+	newOpen := open + ` class="` + className + `"`
+	if selfClose {
+		newOpen += " /"
+	}
+	return htmlFragment[:i+1] + newOpen + htmlFragment[i+1+end:]
 }
