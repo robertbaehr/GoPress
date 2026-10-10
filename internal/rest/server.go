@@ -247,6 +247,21 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 			return
 		}
 		s.serveSidebarItem(w, r, c, id)
+	case strings.HasPrefix(path, "/wp/v2/global-styles/"):
+		kind, stylesheet, id, ok := parseGlobalStylesPath(path)
+		if !ok {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"code":    "rest_no_route",
+				"message": "No route was found matching the URL and request method.",
+				"data":    map[string]any{"status": 404},
+			})
+			return
+		}
+		if kind == "theme" {
+			s.serveGlobalStylesTheme(w, r, c, stylesheet)
+			return
+		}
+		s.serveGlobalStylesItem(w, r, c, id)
 	default:
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"code":    "rest_no_route",
@@ -679,9 +694,11 @@ func extraIndexRoutes() map[string]RouteIndex {
 		"/wp/v2/templates/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)": itemRoute(ns),
 		"/wp/v2/template-parts": collectionRoute(ns),
 		"/wp/v2/template-parts/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)": itemRoute(ns),
-		"/wp/v2/navigation":                          collectionRoute(ns),
-		"/wp/v2/navigation/(?P<id>[\\d]+)":           itemRoute(ns),
-		"/wp/v2/global-styles/(?P<id>[\\/\\d+]+)":    getOnly(ns),
+		"/wp/v2/navigation":                       collectionRoute(ns),
+		"/wp/v2/navigation/(?P<id>[\\d]+)":        itemRoute(ns),
+		"/wp/v2/global-styles/(?P<id>[\\/\\d+]+)": getOnly(ns),
+		"/wp/v2/global-styles/themes/(?P<stylesheet>[\\/\\s%\\w\\.\\(\\)\\[\\]\\@_\\-]+)/variations":     getOnly(ns),
+		"/wp/v2/global-styles/themes/(?P<stylesheet>[^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)": getOnly(ns),
 		"/wp/v2/block-patterns/patterns":             getOnly(ns),
 		"/wp/v2/block-patterns/categories":           getOnly(ns),
 		"/wp/v2/font-families":                       collectionRoute(ns),
