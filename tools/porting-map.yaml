@@ -44,6 +44,14 @@
   api: n/a
   notes: "P7.56 — dashboard Activity lists recent non-spam comments"
 
+# P7.57: Site Health Status dashboard widget.
+- prefix: wp-admin/includes/dashboard.php#wp_dashboard_site_health
+  go: internal/admin/site_health_widget.go
+  status: partial
+  task: P7.57
+  api: n/a
+  notes: "P7.57 — dashboard_site_health from health-check-site-status-result transient"
+
 # P7.40: secondary dashboard widgets (Activity, Quick Draft, Events/News).
 - prefix: wp-admin/includes/dashboard.php
   go: internal/admin/admin.go

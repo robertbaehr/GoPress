@@ -130,6 +130,7 @@ func TestAdminScreensLoggedIn(t *testing.T) {
 		{"/wp-admin/", "dashboard_secondary"},
 		{"/wp-admin/", "Quick Draft"},
 		{"/wp-admin/", "dashboard_activity"},
+		{"/wp-admin/", "dashboard_site_health"},
 	}
 	chromed := map[string]bool{
 		"/wp-admin/":                    true,
