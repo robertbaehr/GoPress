@@ -568,6 +568,19 @@
   task: P2.39
   api: exported
 
+# P2.41: wp_normalize_path / wp_is_stream.
+- prefix: wp-includes/functions.php#wp_normalize_path
+  go: internal/wp/normalize_path.go
+  status: done
+  task: P2.41
+  api: exported
+
+- prefix: wp-includes/functions.php#wp_is_stream
+  go: internal/wp/normalize_path.go
+  status: partial
+  task: P2.41
+  api: exported
+
 - prefix: wp-includes/class-wp-list-util.php
   go: internal/wp/list_pluck.go
   status: partial
