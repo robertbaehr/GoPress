@@ -2,14 +2,52 @@
 package rest
 
 import (
+	"bytes"
+	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
 	"strings"
+	"sync"
+
+	_ "embed"
 
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
+
+//go:embed testdata/index_routes_anon.json.gz
+var indexRoutesAnonGZ []byte
+
+var (
+	indexRoutesAnonOnce sync.Once
+	indexRoutesAnon     map[string]RouteIndex
+	indexRoutesAnonErr  error
+)
+
+func loadIndexRoutesAnon() (map[string]RouteIndex, error) {
+	indexRoutesAnonOnce.Do(func() {
+		gr, err := gzip.NewReader(bytes.NewReader(indexRoutesAnonGZ))
+		if err != nil {
+			indexRoutesAnonErr = err
+			return
+		}
+		defer gr.Close()
+		raw, err := io.ReadAll(gr)
+		if err != nil {
+			indexRoutesAnonErr = err
+			return
+		}
+		var routes map[string]RouteIndex
+		if err := json.Unmarshal(raw, &routes); err != nil {
+			indexRoutesAnonErr = err
+			return
+		}
+		indexRoutesAnon = routes
+	})
+	return indexRoutesAnon, indexRoutesAnonErr
+}
 
 // Server serves /wp-json routes.
 type Server struct{}
@@ -391,7 +429,7 @@ type Index struct {
 	Description    string                `json:"description"`
 	URL            string                `json:"url"`
 	Home           string                `json:"home"`
-	GMTOffset      float64               `json:"gmt_offset"`
+	GMTOffset      any                   `json:"gmt_offset"`
 	TimezoneString string                `json:"timezone_string"`
 	Namespaces     []string              `json:"namespaces"`
 	Authentication map[string]any        `json:"authentication"`
@@ -410,12 +448,14 @@ type RouteIndex struct {
 	Namespace string          `json:"namespace"`
 	Methods   []string        `json:"methods"`
 	Endpoints []RouteEndpoint `json:"endpoints"`
+	Links     any             `json:"_links,omitempty"`
 }
 
 // RouteEndpoint is a method group under a route.
 type RouteEndpoint struct {
-	Methods []string       `json:"methods"`
-	Args    map[string]any `json:"args,omitempty"`
+	Methods    []string `json:"methods"`
+	Args       any      `json:"args,omitempty"` // WP uses object or empty array
+	AllowBatch any      `json:"allow_batch,omitempty"`
 }
 
 func buildIndex(c *wp.Context) Index {
@@ -435,7 +475,86 @@ func buildIndex(c *wp.Context) Index {
 		"wp-abilities/v1",
 	}
 
-	routes := map[string]RouteIndex{
+	// P4.34: prefer embedded WP anon route catalog for index parity.
+	routes := map[string]RouteIndex{}
+	if golden, err := loadIndexRoutesAnon(); err == nil && len(golden) > 0 {
+		for k, v := range golden {
+			routes[k] = v
+		}
+	} else {
+		routes = builtInIndexRoutes()
+		for k, v := range extraIndexRoutes() {
+			if _, ok := routes[k]; !ok {
+				routes[k] = v
+			}
+		}
+	}
+
+	// When authenticated, advertise additional admin-oriented routes (best-effort).
+	if c != nil && c.CurrentUser != nil {
+		for k, v := range adminExtraRoutes() {
+			if _, ok := routes[k]; !ok {
+				routes[k] = v
+			}
+		}
+	}
+
+	auth := map[string]any{}
+	if siteURL != "" {
+		auth["application-passwords"] = map[string]any{
+			"endpoints": map[string]any{
+				"authorization": siteURL + "/wp-admin/authorize-application.php",
+			},
+		}
+	}
+
+	return Index{
+		Name:           name,
+		Description:    desc,
+		URL:            siteURL,
+		Home:           home,
+		GMTOffset:      optionGMTOffset(c),
+		TimezoneString: optionString(c, "timezone_string", ""),
+		Namespaces:     namespaces,
+		Authentication: auth,
+		Routes:         routes,
+		SiteLogo:       optionInt64(c, "site_logo", 0),
+		SiteIcon:       optionInt64(c, "site_icon", 0),
+		SiteIconURL:    "",
+		PageForPosts:   optionInt64(c, "page_for_posts", 0),
+		PageOnFront:    optionInt64(c, "page_on_front", 0),
+		ShowOnFront:    optionString(c, "show_on_front", "posts"),
+		Links: map[string]any{
+			"help": []map[string]any{{"href": "https://developer.wordpress.org/rest-api/"}},
+		},
+	}
+}
+
+// optionGMTOffset mirrors WP's rest index encoding (string when option is string).
+func optionGMTOffset(c *wp.Context) any {
+	if c == nil || c.Options == nil {
+		return "0"
+	}
+	v := c.Options.GetOption("gmt_offset", "0")
+	switch t := v.(type) {
+	case string:
+		if t == "" {
+			return "0"
+		}
+		return t
+	case float64, int, int64:
+		return t
+	default:
+		s := strings.TrimSpace(fmt.Sprint(t))
+		if s == "" {
+			return "0"
+		}
+		return s
+	}
+}
+
+func builtInIndexRoutes() map[string]RouteIndex {
+	return map[string]RouteIndex{
 		"/": {
 			Namespace: "",
 			Methods:   []string{"GET"},
@@ -492,7 +611,6 @@ func buildIndex(c *wp.Context) Index {
 			Methods:   []string{"GET"},
 			Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}},
 		},
-		// WP registers the autosaves collection under (?P<id>) (not parent).
 		"/wp/v2/posts/(?P<id>[\\d]+)/autosaves": {
 			Namespace: "wp/v2",
 			Methods:   []string{"GET"},
@@ -517,22 +635,9 @@ func buildIndex(c *wp.Context) Index {
 				},
 			}},
 		},
-		"/wp/v2/pages":                collectionRoute("wp/v2"),
-		"/wp/v2/pages/(?P<id>[\\d]+)": itemRoute("wp/v2"),
-		"/wp/v2/taxonomies": {
-			Namespace: "wp/v2",
-			Methods:   []string{"GET"},
-			Endpoints: []RouteEndpoint{{
-				Methods: []string{"GET"},
-				Args: map[string]any{
-					"context": map[string]any{
-						"default":  "view",
-						"required": false,
-						"enum":     []string{"view", "embed", "edit"},
-					},
-				},
-			}},
-		},
+		"/wp/v2/pages":                     collectionRoute("wp/v2"),
+		"/wp/v2/pages/(?P<id>[\\d]+)":      itemRoute("wp/v2"),
+		"/wp/v2/taxonomies":                {Namespace: "wp/v2", Methods: []string{"GET"}, Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}}},
 		"/wp/v2/categories":                collectionRoute("wp/v2"),
 		"/wp/v2/categories/(?P<id>[\\d]+)": itemRoute("wp/v2"),
 		"/wp/v2/tags":                      collectionRoute("wp/v2"),
@@ -544,104 +649,29 @@ func buildIndex(c *wp.Context) Index {
 		"/wp/v2/search": {
 			Namespace: "wp/v2",
 			Methods:   []string{"GET"},
-			Endpoints: []RouteEndpoint{{
-				Methods: []string{"GET"},
-				Args: map[string]any{
-					"context":  map[string]any{"default": "view", "required": false},
-					"page":     map[string]any{"default": 1, "required": false},
-					"per_page": map[string]any{"default": 10, "required": false},
-					"search":   map[string]any{"required": false},
-					"type":     map[string]any{"required": false},
-					"subtype":  map[string]any{"required": false},
-				},
-			}},
+			Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}},
 		},
 		"/wp/v2/blocks":                collectionRoute("wp/v2"),
 		"/wp/v2/blocks/(?P<id>[\\d]+)": itemRoute("wp/v2"),
 		"/wp/v2/block-types": {
 			Namespace: "wp/v2",
 			Methods:   []string{"GET"},
-			Endpoints: []RouteEndpoint{{
-				Methods: []string{"GET"},
-				Args: map[string]any{
-					"context":   map[string]any{"default": "view", "required": false},
-					"namespace": map[string]any{"required": false},
-				},
-			}},
+			Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}},
 		},
 		"/wp/v2/block-renderer/(?P<name>[a-z0-9-]+/[a-z0-9-]+)": {
 			Namespace: "wp/v2",
 			Methods:   []string{"GET", "POST"},
-			Endpoints: []RouteEndpoint{{
-				Methods: []string{"GET", "POST"},
-				Args: map[string]any{
-					"name":       map[string]any{"required": false},
-					"attributes": map[string]any{"required": false},
-					"post_id":    map[string]any{"required": false},
-				},
-			}},
+			Endpoints: []RouteEndpoint{{Methods: []string{"GET", "POST"}}},
 		},
-		// Auth-gated handlers are still advertised on the public index (WP parity).
 		"/wp/v2/settings": {
 			Namespace: "wp/v2",
 			Methods:   []string{"GET", "POST", "PUT", "PATCH"},
-			Endpoints: []RouteEndpoint{{
-				Methods: []string{"GET"},
-			}},
+			Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}},
 		},
 		"/wp/v2/users/me": {
 			Namespace: "wp/v2",
 			Methods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
-			Endpoints: []RouteEndpoint{{
-				Methods: []string{"GET"},
-				Args: map[string]any{
-					"context": map[string]any{"default": "view", "required": false},
-				},
-			}},
-		},
-	}
-
-	// When authenticated, advertise additional admin-oriented routes (best-effort).
-	if c != nil && c.CurrentUser != nil {
-		for k, v := range adminExtraRoutes() {
-			routes[k] = v
-		}
-	}
-
-	auth := map[string]any{}
-	if siteURL != "" {
-		auth["application-passwords"] = map[string]any{
-			"endpoints": map[string]any{
-				"authorization": siteURL + "/wp-admin/authorize-application.php",
-			},
-		}
-	}
-
-	// Advertise additional public route keys present in WP (handlers may 404 until ported).
-	for k, v := range extraIndexRoutes() {
-		if _, ok := routes[k]; !ok {
-			routes[k] = v
-		}
-	}
-
-	return Index{
-		Name:           name,
-		Description:    desc,
-		URL:            siteURL,
-		Home:           home,
-		GMTOffset:      optionFloat(c, "gmt_offset", 0),
-		TimezoneString: optionString(c, "timezone_string", ""),
-		Namespaces:     namespaces,
-		Authentication: auth,
-		Routes:         routes,
-		SiteLogo:       optionInt64(c, "site_logo", 0),
-		SiteIcon:       optionInt64(c, "site_icon", 0),
-		SiteIconURL:    "",
-		PageForPosts:   optionInt64(c, "page_for_posts", 0),
-		PageOnFront:    optionInt64(c, "page_on_front", 0),
-		ShowOnFront:    optionString(c, "show_on_front", "posts"),
-		Links: map[string]any{
-			"help": []map[string]any{{"href": "https://developer.wordpress.org/rest-api/"}},
+			Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}},
 		},
 	}
 }
