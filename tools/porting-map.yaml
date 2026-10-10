@@ -3528,20 +3528,21 @@ wp-login.php#language-switcher-post
   api: internal
   notes: "P5.96 — div wrapper with has-link-color/className/colors when query empty"
 
-# P5.72: polish core/post-navigation-link (label, showTitle, linkLabel, arrow, textAlign).
+# P5.72 / P5.97: polish core/post-navigation-link (label, showTitle, linkLabel, arrow, textAlign,
+# className/colors, taxonomy in_same_term).
 - prefix: wp-includes/blocks/post-navigation-link.php
   go: internal/blocks/query.go
   status: partial
-  task: P5.72
+  task: P5.97
   api: internal
-  notes: "P5.72 — label/showTitle/linkLabel/arrow/textAlign; empty adjacent keeps wrapper"
+  notes: "P5.97 — label/showTitle/linkLabel/arrow/textAlign; className/has-link-color/colors; taxonomy in_same_term"
 
 - prefix: wp-includes/blocks/post-navigation-link
   go: internal/blocks/post_navigation_link_test.go
   status: partial
-  task: P5.72
+  task: P5.97
   api: n/a
-  notes: "P5.72 — unit coverage for post-navigation-link polish attrs"
+  notes: "P5.97 — unit coverage for post-navigation-link wrapper attrs + taxonomy"
 
 # P5.76: render core/term-description on term archives.
 # P5.95: deepen wrapper className / textColor / backgroundColor / custom colors.

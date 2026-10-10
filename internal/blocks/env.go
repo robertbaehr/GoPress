@@ -57,7 +57,8 @@ type Env struct {
 	// GetAttachmentURL resolves attachment IDs for core/image and core/gallery (P5.48).
 	GetAttachmentURL func(id int64) string
 	// AdjacentPost returns prev/next post for post-navigation-link (type previous|next).
-	AdjacentPost func(postID int64, previous bool) *QueryPost
+	// taxonomy is the in_same_term taxonomy slug when set (empty = unrestricted).
+	AdjacentPost func(postID int64, previous bool, taxonomy string) *QueryPost
 
 	// FilterPostHTML runs after rendering post_content blocks (texturize etc.).
 	FilterPostHTML func(html string) string

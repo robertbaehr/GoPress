@@ -9,7 +9,7 @@ import (
 
 func TestPostNavigationLinkDefaults(t *testing.T) {
 	env := &blocks.Env{
-		AdjacentPost: func(postID int64, previous bool) *blocks.QueryPost {
+		AdjacentPost: func(postID int64, previous bool, taxonomy string) *blocks.QueryPost {
 			if previous {
 				return &blocks.QueryPost{ID: 9, Title: "Older", Link: "/older/"}
 			}
@@ -36,7 +36,7 @@ func TestPostNavigationLinkDefaults(t *testing.T) {
 
 func TestPostNavigationLinkShowTitleArrowTextAlign(t *testing.T) {
 	env := &blocks.Env{
-		AdjacentPost: func(postID int64, previous bool) *blocks.QueryPost {
+		AdjacentPost: func(postID int64, previous bool, taxonomy string) *blocks.QueryPost {
 			return &blocks.QueryPost{ID: 11, Title: "Newer Post", Link: "/newer/"}
 		},
 	}
@@ -59,7 +59,7 @@ func TestPostNavigationLinkShowTitleArrowTextAlign(t *testing.T) {
 
 func TestPostNavigationLinkLabelLinkLabel(t *testing.T) {
 	env := &blocks.Env{
-		AdjacentPost: func(postID int64, previous bool) *blocks.QueryPost {
+		AdjacentPost: func(postID int64, previous bool, taxonomy string) *blocks.QueryPost {
 			return &blocks.QueryPost{ID: 9, Title: "Older Post", Link: "/older/"}
 		},
 	}
@@ -79,7 +79,7 @@ func TestPostNavigationLinkLabelLinkLabel(t *testing.T) {
 
 func TestPostNavigationLinkEmptyAdjacent(t *testing.T) {
 	env := &blocks.Env{
-		AdjacentPost: func(postID int64, previous bool) *blocks.QueryPost {
+		AdjacentPost: func(postID int64, previous bool, taxonomy string) *blocks.QueryPost {
 			return nil
 		},
 	}
@@ -87,5 +87,33 @@ func TestPostNavigationLinkEmptyAdjacent(t *testing.T) {
 	out := blocks.RenderWith(env, `<!-- wp:post-navigation-link {"showTitle":true,"arrow":"arrow"} /-->`)
 	if out != `<div class="post-navigation-link-next wp-block-post-navigation-link"></div>` {
 		t.Fatalf("empty adjacent wrapper: %q", out)
+	}
+}
+
+func TestPostNavigationLinkClassNameColorsTaxonomy(t *testing.T) {
+	var gotTax string
+	env := &blocks.Env{
+		AdjacentPost: func(postID int64, previous bool, taxonomy string) *blocks.QueryPost {
+			gotTax = taxonomy
+			return &blocks.QueryPost{ID: 11, Title: "Newer", Link: "/newer/"}
+		},
+	}
+	env.SetCurrentPost(&blocks.QueryPost{ID: 10, Title: "Current", Link: "/current/"})
+	out := blocks.RenderWith(env,
+		`<!-- wp:post-navigation-link {"taxonomy":"category","className":"nav-extra","textColor":"contrast","backgroundColor":"base","style":{"elements":{"link":{"color":{"text":"var:preset|color|vivid-red"}}},"color":{"text":"#111"}}} /-->`)
+	if gotTax != "category" {
+		t.Fatalf("taxonomy=%q want category", gotTax)
+	}
+	for _, want := range []string{
+		"nav-extra",
+		"has-link-color",
+		"has-text-color",
+		"has-contrast-color",
+		"has-background",
+		"has-base-background-color",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
 	}
 }
