@@ -118,6 +118,42 @@ func TestFormattingGoldenVectors(t *testing.T) {
 	}
 }
 
+func TestWPTexturizeExtraGolden(t *testing.T) {
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller failed")
+	}
+	root := filepath.Clean(filepath.Join(filepath.Dir(file), "..", ".."))
+	path := filepath.Join(root, "tests", "golden", "formatting", "wptexturize.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read golden: %v", err)
+	}
+	var corpus struct {
+		Vectors []struct {
+			Input       string `json:"input"`
+			WPTexturize string `json:"wptexturize"`
+		} `json:"vectors"`
+	}
+	if err := json.Unmarshal(data, &corpus); err != nil {
+		t.Fatalf("json: %v", err)
+	}
+	if len(corpus.Vectors) < 10 {
+		t.Fatalf("expected ≥10 wptexturize vectors, got %d", len(corpus.Vectors))
+	}
+	var fails int
+	for i, v := range corpus.Vectors {
+		got := wp.Texturize(v.Input)
+		if got != v.WPTexturize {
+			fails++
+			t.Errorf("i=%d input=%q\n  want %q\n  got  %q", i, v.Input, v.WPTexturize, got)
+		}
+	}
+	if fails > 0 {
+		t.Fatalf("%d/%d wptexturize mismatches", fails, len(corpus.Vectors))
+	}
+}
+
 func TestSanitizeTitleExtraGolden(t *testing.T) {
 	_, file, _, ok := runtime.Caller(0)
 	if !ok {
