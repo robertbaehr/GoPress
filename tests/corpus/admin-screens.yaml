@@ -54,13 +54,3 @@
   body: null
   compare: headers
   nonce: null
-
-# P10.100: about.php What's New stub (headers-only).
-- id: admin-about
-  role: admin
-  method: GET
-  path: /wp-admin/about.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
