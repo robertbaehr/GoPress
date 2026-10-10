@@ -66,6 +66,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/plugin-install.php":
 		h.requireLogin(w, r, c, h.servePluginInstallGone)
 		return true
+	case "/wp-admin/update-core.php":
+		h.requireLogin(w, r, c, h.serveUpdateCoreGone)
+		return true
 	case "/wp-admin/admin-ajax.php":
 		h.serveAdminAjax(w, r, c)
 		return true
@@ -767,6 +770,21 @@ func (h *Handler) servePluginInstallGone(w http.ResponseWriter, r *http.Request,
 	b.WriteString("<body class=\"wp-admin\">\n")
 	b.WriteString("<h1>Plugin install unavailable</h1>\n")
 	b.WriteString("<p>Installing plugins from wordpress.org is out of scope for GoPress. Use the <a href=\"/wp-admin/plugins.php\">Plugins</a> screen to manage local plugins.</p>\n")
+	b.WriteString("</body>\n</html>\n")
+	writeHTML(w, http.StatusForbidden, b.String())
+}
+
+// serveUpdateCoreGone rejects update-core.php as out of scope (P7.20).
+func (h *Handler) serveUpdateCoreGone(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>WordPress Updates &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin\">\n")
+	b.WriteString("<h1>Core updates unavailable</h1>\n")
+	b.WriteString("<p>WordPress core updates are out of scope for GoPress. Deploy a new GoPress build instead of using <code>update-core.php</code>.</p>\n")
 	b.WriteString("</body>\n</html>\n")
 	writeHTML(w, http.StatusForbidden, b.String())
 }

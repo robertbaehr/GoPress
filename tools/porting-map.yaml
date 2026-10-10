@@ -343,6 +343,12 @@
   task: P7.19
   api: n/a
 
+- prefix: wp-admin/update-core.php
+  go: internal/admin
+  status: out-of-scope
+  task: P7.20
+  api: n/a
+
 - prefix: wp-admin/includes/schema.php
   go: internal/db
   status: partial
