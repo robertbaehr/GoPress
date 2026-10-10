@@ -1480,6 +1480,28 @@
   api: exported
   notes: "P4.86 — QueryArgs.CategoryIn joins term relationships by term_id"
 
+# P4.87: REST GET /wp/v2/posts?tags= collection filter (tax_query post_tag term_id IN).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#tags
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.87
+  api: exported
+  notes: "P4.87 — ?tags= → QueryArgs.TagIn (post_tag term_id IN)"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#tags-list
+  go: internal/rest/posts_write.go
+  status: partial
+  task: P4.87
+  api: exported
+  notes: "P4.87 — listPostCollection honors ?tags= for posts"
+
+- prefix: wp-includes/class-wp-query.php#tag__in
+  go: internal/wp/query.go
+  status: partial
+  task: P4.87
+  api: exported
+  notes: "P4.87 — QueryArgs.TagIn joins term relationships by post_tag term_id"
+
 # P4.83: REST GET /wp/v2/posts?orderby=title|date|id|slug (+ order=asc|desc).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#orderby
   go: internal/rest/posts.go

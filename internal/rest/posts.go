@@ -196,7 +196,7 @@ func parsePage(r *http.Request) int {
 	return page
 }
 
-func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, author int64, categoryIn []int64) ([]Post, error) {
+func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, author int64, categoryIn, tagIn []int64) ([]Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -217,6 +217,7 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 		Search:       search,
 		Author:       author,
 		CategoryIn:   categoryIn,
+		TagIn:        tagIn,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	rows, err := wp.GetPosts(c, args)
@@ -286,7 +287,17 @@ func parsePostsAuthor(r *http.Request) int64 {
 // parsePostsCategories reads REST ?categories= (maps to tax_query category term_id IN, P4.86).
 // Accepts comma-separated IDs and/or repeated query values.
 func parsePostsCategories(r *http.Request) []int64 {
-	if r == nil {
+	return parsePostsTermIDs(r, "categories")
+}
+
+// parsePostsTags reads REST ?tags= (maps to tax_query post_tag term_id IN, P4.87).
+// Accepts comma-separated IDs and/or repeated query values.
+func parsePostsTags(r *http.Request) []int64 {
+	return parsePostsTermIDs(r, "tags")
+}
+
+func parsePostsTermIDs(r *http.Request, key string) []int64 {
+	if r == nil || key == "" {
 		return nil
 	}
 	seen := map[int64]bool{}
@@ -310,17 +321,17 @@ func parsePostsCategories(r *http.Request) []int64 {
 		}
 	}
 	q := r.URL.Query()
-	if vals, ok := q["categories"]; ok {
+	if vals, ok := q[key]; ok {
 		for _, v := range vals {
 			add(v)
 		}
 	} else {
-		add(q.Get("categories"))
+		add(q.Get(key))
 	}
 	return out
 }
 
-func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, author int64, categoryIn []int64) (int, error) {
+func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, author int64, categoryIn, tagIn []int64) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
@@ -333,6 +344,7 @@ func countPosts(c *wp.Context, postType string, stickyFilter *bool, search strin
 		Search:     search,
 		Author:     author,
 		CategoryIn: categoryIn,
+		TagIn:      tagIn,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	return wp.CountPosts(c, args)
