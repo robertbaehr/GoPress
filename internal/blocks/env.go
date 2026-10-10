@@ -14,9 +14,6 @@ type Env struct {
 
 	// seenPart tracks template-part slugs currently being rendered (cycle guard).
 	seenPart map[string]bool
-
-	// seenNav tracks navigation refs currently being rendered (cycle guard).
-	seenNav map[int64]bool
 }
 
 // NavLink is a simple navigation item (label + URL).
