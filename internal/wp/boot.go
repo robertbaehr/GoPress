@@ -93,5 +93,8 @@ func Boot(ctx context.Context, cfg *config.Config) (*Context, error) {
 	// WP_DEBUG / WP_DEBUG_DISPLAY / WP_DEBUG_LOG (P2.83).
 	ApplyDebugMode(c)
 
+	// FORCE_SSL_ADMIN → force_ssl_admin() (P6.40).
+	ApplyForceSSLAdminFromConfig(cfg)
+
 	return c, nil
 }

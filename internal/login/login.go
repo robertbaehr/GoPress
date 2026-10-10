@@ -22,6 +22,10 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 		http.Error(w, "GoPress context unavailable\n", http.StatusServiceUnavailable)
 		return
 	}
+	// P6.40: force_ssl_admin() && ! is_ssl() → HTTPS redirect (wp-login.php top).
+	if wp.MaybeRedirectLoginToHTTPS(w, r, c) {
+		return
+	}
 	// P2.68: is_login() true for the duration of wp-login.php.
 	if c.Scope != nil {
 		c.Scope.SetLogin(true)
