@@ -1942,6 +1942,28 @@
   api: n/a
   notes: "P3.50 — RSS2 atom:link href uses feedSelfLink(RequestURI)"
 
+# P3.60: author archive feeds — channel title + author filter + item author fallback.
+- prefix: wp-includes/feed.php#wp_title_rss
+  go: internal/server/front.go
+  status: partial
+  task: P3.60
+  api: internal
+  notes: "P3.60 — author feed channel title DisplayName &#8211; Blogname"
+
+- prefix: wp-includes/author-template.php#the_author
+  go: internal/server/front.go
+  status: partial
+  task: P3.60
+  api: internal
+  notes: "P3.60 — feedAuthor display_name→login→nicename; author feed post filter"
+
+- prefix: wp-includes/rewrite.php#author_feed
+  go: internal/wp/rewrite.go
+  status: partial
+  task: P3.60
+  api: internal
+  notes: "P3.60 — GenerateRewriteRules author/*/feed rules before bare author"
+
 # P3.59: feed item categories include post tags (get_the_category_rss).
 - prefix: wp-includes/feed.php#get_the_category_rss
   go: internal/server/front.go

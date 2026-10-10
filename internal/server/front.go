@@ -1727,7 +1727,8 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 	blogname := optionString(c, "blogname", "GoPress")
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	desc := optionString(c, "blogdescription", "")
-	posts, err := latestFeedPosts(c, 10)
+	authorID := feedAuthorFilterID(c)
+	posts, err := latestFeedPosts(c, 10, authorID)
 	if err != nil {
 		http.Error(w, "feed: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
@@ -1749,7 +1750,7 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString("\t>\n\n")
 	b.WriteString("<channel>\n")
 	b.WriteString("\t<title>")
-	b.WriteString(xmlEscape(blogname))
+	b.WriteString(feedChannelTitle(c, blogname, authorID))
 	b.WriteString("</title>\n")
 	b.WriteString("\t<atom:link href=\"")
 	b.WriteString(xmlEscape(self))
@@ -1876,7 +1877,8 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 	blogname := optionString(c, "blogname", "GoPress")
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	desc := optionString(c, "blogdescription", "")
-	posts, err := latestFeedPosts(c, 10)
+	authorID := feedAuthorFilterID(c)
+	posts, err := latestFeedPosts(c, 10, authorID)
 	if err != nil {
 		http.Error(w, "feed: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
@@ -1894,7 +1896,7 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString("\txmlns:thr=\"http://purl.org/syndication/thread/1.0\"\n")
 	b.WriteString("\t>\n")
 	b.WriteString("\t<title type=\"text\">")
-	b.WriteString(xmlEscape(blogname))
+	b.WriteString(feedChannelTitle(c, blogname, authorID))
 	b.WriteString("</title>\n")
 	b.WriteString("\t<subtitle type=\"text\">")
 	b.WriteString(xmlEscape(desc))
@@ -2016,7 +2018,8 @@ func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	blogname := optionString(c, "blogname", "GoPress")
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	desc := optionString(c, "blogdescription", "")
-	posts, err := latestFeedPosts(c, 10)
+	authorID := feedAuthorFilterID(c)
+	posts, err := latestFeedPosts(c, 10, authorID)
 	if err != nil {
 		http.Error(w, "feed: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
@@ -2036,7 +2039,7 @@ func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	b.WriteString(xmlEscape(home))
 	b.WriteString("\">\n")
 	b.WriteString("\t<title>")
-	b.WriteString(xmlEscape(blogname))
+	b.WriteString(feedChannelTitle(c, blogname, authorID))
 	b.WriteString("</title>\n")
 	b.WriteString("\t<link>")
 	b.WriteString(xmlEscape(home))
@@ -2150,11 +2153,15 @@ type feedPost struct {
 	Enclosures   []feedEnclosure
 }
 
-func latestFeedPosts(c *wp.Context, limit int) ([]feedPost, error) {
+func latestFeedPosts(c *wp.Context, limit int, authorID int64) ([]feedPost, error) {
 	if limit <= 0 {
 		limit = 10
 	}
-	posts, err := wp.GetPosts(c, wp.QueryArgs{PostType: "post", PostStatus: "publish", PostsPerPage: limit})
+	args := wp.QueryArgs{PostType: "post", PostStatus: "publish", PostsPerPage: limit}
+	if authorID > 0 {
+		args.Author = authorID
+	}
+	posts, err := wp.GetPosts(c, args)
 	if err != nil {
 		return nil, err
 	}
@@ -2175,6 +2182,42 @@ func latestFeedPosts(c *wp.Context, limit int) ([]feedPost, error) {
 		out = append(out, fp)
 	}
 	return out, nil
+}
+
+// feedAuthorFilterID returns the author user ID when the request is an author feed (P3.60).
+func feedAuthorFilterID(c *wp.Context) int64 {
+	if c == nil || c.Scope == nil || !c.Scope.IsAuthor {
+		return 0
+	}
+	if c.Scope.AuthorID > 0 {
+		return c.Scope.AuthorID
+	}
+	slug := strings.TrimSpace(c.Scope.AuthorName)
+	if slug == "" {
+		return 0
+	}
+	u, err := c.GetUserBy("slug", slug)
+	if err != nil || u == nil {
+		u, err = c.GetUserBy("login", slug)
+	}
+	if err != nil || u == nil {
+		return 0
+	}
+	c.Scope.AuthorID = u.ID
+	return u.ID
+}
+
+// feedChannelTitle mirrors wp_title_rss / document title for feeds (P3.60).
+// Author feeds: "{Display Name} &#8211; {Blogname}".
+func feedChannelTitle(c *wp.Context, blogname string, authorID int64) string {
+	if authorID <= 0 {
+		return xmlEscape(blogname)
+	}
+	name, _ := feedAuthor(c, authorID)
+	if name == "" {
+		return xmlEscape(blogname)
+	}
+	return xmlEscape(name) + " &#8211; " + xmlEscape(blogname)
 }
 
 // feedEnclosuresForPost reads enclosure postmeta (rss_enclosure / atom_enclosure, P3.45).
@@ -2256,10 +2299,16 @@ func feedAuthor(c *wp.Context, authorID int64) (name, url string) {
 	if err != nil || u == nil {
 		return "", ""
 	}
-	if u.DisplayName != "" {
+	// the_author() → display_name; fall back to login then nicename (P3.60).
+	switch {
+	case strings.TrimSpace(u.DisplayName) != "":
 		name = u.DisplayName
-	} else {
+	case strings.TrimSpace(u.Login) != "":
 		name = u.Login
+	case strings.TrimSpace(u.Nicename) != "":
+		name = u.Nicename
+	default:
+		name = "Anonymous"
 	}
 	return name, u.URL
 }

@@ -139,6 +139,9 @@ func GenerateRewriteRules(structure string) RewriteRules {
 		RewriteRule{Match: `page/?([0-9]{1,})/?$`, Query: `index.php?&paged=$matches[1]`},
 		RewriteRule{Match: `category/(.+?)/?$`, Query: `index.php?category_name=$matches[1]`},
 		RewriteRule{Match: `tag/([^/]+)/?$`, Query: `index.php?tag=$matches[1]`},
+		// Author feeds before bare author archive (P3.60).
+		RewriteRule{Match: `author/([^/]+)/feed/(feed|rdf|rss|rss2|atom)/?$`, Query: `index.php?author_name=$matches[1]&feed=$matches[2]`},
+		RewriteRule{Match: `author/([^/]+)/(feed|rdf|rss|rss2|atom)/?$`, Query: `index.php?author_name=$matches[1]&feed=$matches[2]`},
 		RewriteRule{Match: `author/([^/]+)/?$`, Query: `index.php?author_name=$matches[1]`},
 		// Attachment pretty permalinks (subset of WP attachment rewrite rules).
 		RewriteRule{Match: `(.+)/attachment/([^/]+)/?$`, Query: `index.php?attachment=$matches[2]`},
