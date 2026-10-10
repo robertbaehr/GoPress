@@ -66,6 +66,9 @@ func TestFrontSingularByQueryP(t *testing.T) {
 	if !strings.Contains(body, "entry-content") || !strings.Contains(body, "Welcome to WordPress") {
 		t.Fatalf("expected content, got %q", body)
 	}
+	if strings.Contains(body, "<!-- wp:") {
+		t.Fatalf("block comments should be rendered away, got %q", body)
+	}
 }
 
 func TestFrontSingularByPageID(t *testing.T) {

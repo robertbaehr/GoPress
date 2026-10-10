@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/robertbaehr/GoPress/internal/blocks"
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
@@ -130,7 +131,11 @@ func (f *Front) renderSingular(w http.ResponseWriter, c *wp.Context, vars map[st
 	}
 
 	blogname := optionString(c, "blogname", "GoPress")
-	safeContent := wp.KsesPost(post.Content)
+	content := post.Content
+	if blocks.HasBlocks(content) {
+		content = blocks.Render(content)
+	}
+	safeContent := wp.KsesPost(content)
 
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
