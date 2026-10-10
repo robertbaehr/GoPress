@@ -11,8 +11,8 @@ import (
 
 func TestSendPersonalDataExportEmail(t *testing.T) {
 	c := &wp.Context{
-		Hooks:  wp.NewHooks(),
-		Mailer: wp.NewMailer(),
+		Hooks:   wp.NewHooks(),
+		Mailer:  wp.NewMailer(),
 		Options: wp.NewOptions(nil, wp.NewObjectCache()),
 	}
 	c.Options.Cache.Set("blogname", "Export Site", "options")
