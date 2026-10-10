@@ -63,14 +63,18 @@ func TestIndexAnonShape(t *testing.T) {
 			t.Fatalf("route %q has no methods", r)
 		}
 	}
-	// P4.33: collection list args include WP catalog keys beyond page/per_page.
+	// P4.33/P4.34: collection list args include WP catalog keys beyond page/per_page.
 	posts := idx.Routes["/wp/v2/posts"]
 	if len(posts.Endpoints) == 0 || posts.Endpoints[0].Args == nil {
 		t.Fatal("posts collection missing args")
 	}
+	args, ok := posts.Endpoints[0].Args.(map[string]any)
+	if !ok {
+		t.Fatalf("posts GET args type %T", posts.Endpoints[0].Args)
+	}
 	for _, key := range []string{"after", "author", "orderby", "categories", "modified_after"} {
-		if _, ok := posts.Endpoints[0].Args[key]; !ok {
-			t.Fatalf("posts GET args missing %q; have %v", key, routeKeysArgs(posts.Endpoints[0].Args))
+		if _, ok := args[key]; !ok {
+			t.Fatalf("posts GET args missing %q; have %v", key, routeKeysArgs(args))
 		}
 	}
 	if _, ok := idx.Routes["/wp/v2/block-directory/search"]; !ok {
