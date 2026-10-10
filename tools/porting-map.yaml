@@ -6548,3 +6548,18 @@ wp-login.php#language-switcher-post
   task: P10.116
   api: n/a
   notes: "P10.116 — taxonomies single/invalid, register/checkemail, replytocom, archives; grow after P5.103–P6.43; 501 cases"
+
+# P10.117: STATUS/PORTING refresh after P5.103–P10.116.
+- prefix: docs/STATUS.md#p10-117
+  go: docs/STATUS.md
+  status: partial
+  task: P10.117
+  api: n/a
+  notes: "P10.117 — STATUS/PORTING refresh after P5.103–P10.116 (501/501 corpus)"
+
+- prefix: PORTING.md#p10-117
+  go: PORTING.md
+  status: partial
+  task: P10.117
+  api: n/a
+  notes: "P10.117 — regenerate porting-status after stacked P5.103–P10.116"
