@@ -41,9 +41,38 @@ func (e *Env) renderNavigation(block Block) string {
 		return ""
 	}
 
+	ariaLabel, _ := block.Attrs["ariaLabel"].(string)
+	layoutOrientation := ""
+	if layout, ok := block.Attrs["layout"].(map[string]any); ok {
+		if o, ok := layout["orientation"].(string); ok {
+			layoutOrientation = strings.TrimSpace(o)
+		}
+	}
+	navClass := "wp-block-navigation"
+	ulClass := "wp-block-navigation__container"
+	if layoutOrientation == "vertical" {
+		navClass = "is-vertical " + navClass
+		ulClass += " is-vertical wp-block-navigation"
+	}
 	var b strings.Builder
-	b.WriteString(`<nav class="wp-block-navigation">`)
-	b.WriteString(`<ul class="wp-block-navigation__container">`)
+	b.WriteString(`<nav class="`)
+	b.WriteString(html.EscapeString(navClass))
+	b.WriteString(`"`)
+	if ariaLabel != "" {
+		b.WriteString(` aria-label="`)
+		b.WriteString(html.EscapeString(ariaLabel))
+		b.WriteString(`"`)
+	}
+	b.WriteString(`>`)
+	b.WriteString(`<ul class="`)
+	b.WriteString(html.EscapeString(ulClass))
+	b.WriteString(`"`)
+	if ariaLabel != "" {
+		b.WriteString(` aria-label="`)
+		b.WriteString(html.EscapeString(ariaLabel))
+		b.WriteString(`"`)
+	}
+	b.WriteString(`>`)
 	b.WriteString(inner)
 	b.WriteString(`</ul></nav>`)
 	return b.String()
@@ -106,9 +135,9 @@ func renderNavLinks(links []NavLink) string {
 
 func navItemHTML(label, url string) string {
 	var b strings.Builder
-	b.WriteString(`<li class="wp-block-navigation-item"><a class="wp-block-navigation-item__content"`)
+	b.WriteString(`<li class="wp-block-navigation-item wp-block-navigation-link"><a class="wp-block-navigation-item__content"`)
 	if url != "" {
-		b.WriteString(` href="`)
+		b.WriteString(`  href="`)
 		b.WriteString(html.EscapeString(url))
 		b.WriteString(`"`)
 	}

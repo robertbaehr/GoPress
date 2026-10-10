@@ -86,3 +86,30 @@ func TestNormalizeHTMLAttrOrder(t *testing.T) {
 		t.Fatalf("HTML attr/ws mismatch\nA:\n%s\nB:\n%s", na.Body, nb.Body)
 	}
 }
+
+func TestNormalizeHTMLStripsPresentation(t *testing.T) {
+	a := Response{Status: 200, Body: []byte(`<!DOCTYPE html><html><head>
+<style id="x">.a{color:red}</style>
+<link rel="stylesheet" href="/a.css"/>
+<script>var x=1</script>
+<title>T</title></head>
+<body class="home wp-container-core-group-is-layout-abc"><main style="margin-top:1px" class="b a">Hi</main>
+<img src="data:image/png;base64,aaa"/>
+</body></html>`)}
+	b := Response{Status: 200, Body: []byte(`<!DOCTYPE html><html><head>
+<title>T</title></head>
+<body class="home"><main class="a b">Hi</main>
+<img src="DATA_URI"/>
+</body></html>`)}
+	na, err := Normalize(a, CompareHTML)
+	if err != nil {
+		t.Fatal(err)
+	}
+	nb, err := Normalize(b, CompareHTML)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !Equal(na, nb) {
+		t.Fatalf("presentation scrub mismatch\nA:\n%s\nB:\n%s", na.Body, nb.Body)
+	}
+}
