@@ -22,6 +22,10 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 		http.Error(w, "GoPress context unavailable\n", http.StatusServiceUnavailable)
 		return
 	}
+	// P2.68: is_login() true for the duration of wp-login.php.
+	if c.Scope != nil {
+		c.Scope.SetLogin(true)
+	}
 	// P6.27: nocache_headers() at the top of wp-login.php.
 	wp.NoCacheHeaders(w)
 	action := r.URL.Query().Get("action")

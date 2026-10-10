@@ -14,6 +14,22 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
+// TestLoginSetsIsLogin covers P2.68: wp-login.php marks Scope.IsLogin.
+func TestLoginSetsIsLogin(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if !c.Scope.IsLogin {
+		t.Fatal("expected Scope.IsLogin after login Handle")
+	}
+	if !wp.IsLogin(c) {
+		t.Fatal("expected IsLogin true after login Handle")
+	}
+}
+
 func TestLoginFormGET(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
