@@ -113,3 +113,50 @@ func TestFilterObjectListLooseScalarMatch(t *testing.T) {
 		t.Fatalf("string/int id: %#v", got)
 	}
 }
+
+func TestListFilterORNotAndStringMaps(t *testing.T) {
+	// P2.90: ListFilter covers OR/NOT and map[string]string rows.
+	in := []map[string]string{
+		{"type": "post", "status": "publish"},
+		{"type": "page", "status": "draft"},
+		{"type": "post", "status": "draft"},
+	}
+	or := wp.ListFilter(in, map[string]any{"type": "page", "status": "publish"}, "OR")
+	out, _ := or.([]any)
+	if len(out) != 2 {
+		t.Fatalf("OR got %#v", or)
+	}
+	not := wp.ListFilter(in, map[string]any{"status": "draft"}, "NOT")
+	out, _ = not.([]any)
+	if len(out) != 1 {
+		t.Fatalf("NOT got %#v", not)
+	}
+	// Empty operator on ListFilter defaults to AND (PHP signature default).
+	and := wp.ListFilter(in, map[string]any{"type": "post", "status": "publish"}, "")
+	out, _ = and.([]any)
+	if len(out) != 1 {
+		t.Fatalf("default AND got %#v", and)
+	}
+}
+
+func TestFilterObjectListEmptyOperatorInvalid(t *testing.T) {
+	in := []map[string]any{{"name": "a"}}
+	// P2.90: FilterObjectList with empty operator + non-empty args → empty (WP_List_Util).
+	got := wp.FilterObjectList(in, map[string]any{"name": "a"}, "", "")
+	if !reflect.DeepEqual(got, []any{}) {
+		t.Fatalf("empty op: %#v", got)
+	}
+}
+
+func TestListFilterNilMapValue(t *testing.T) {
+	// array_key_exists: nil map value is present and matches nil want.
+	in := []map[string]any{
+		{"name": "a", "meta": nil},
+		{"name": "b", "meta": "x"},
+	}
+	got := wp.ListFilter(in, map[string]any{"meta": nil}, "AND")
+	out, _ := got.([]any)
+	if len(out) != 1 {
+		t.Fatalf("nil match: %#v", got)
+	}
+}

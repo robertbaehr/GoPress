@@ -40,10 +40,9 @@ func FilterObjectList(input any, args map[string]any, operator string, field str
 		return filtered
 	}
 
+	// P2.90: match WP_List_Util::filter — empty/invalid operator yields no rows
+	// when args are non-empty (default "AND" is only the Go/PHP call-site default).
 	op := strings.ToUpper(strings.TrimSpace(operator))
-	if op == "" {
-		op = "AND"
-	}
 	if op != "AND" && op != "OR" && op != "NOT" {
 		return []any{}
 	}
@@ -108,8 +107,12 @@ func filterFieldOK(elem reflect.Value, field string) (any, bool) {
 	}
 }
 
-// ListFilter is wp_list_filter — FilterObjectList without field pluck (P2.43).
+// ListFilter is wp_list_filter — FilterObjectList without field pluck (P2.43 / P2.90).
+// Pass operator "AND" (default in PHP), "OR", or "NOT".
 func ListFilter(input any, args map[string]any, operator string) any {
+	if strings.TrimSpace(operator) == "" {
+		operator = "AND"
+	}
 	return FilterObjectList(input, args, operator, "")
 }
 

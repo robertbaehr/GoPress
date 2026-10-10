@@ -1099,18 +1099,27 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P2.89 — empty args ignore operator; struct nil pointer fields missing (isset)"
 
-# P2.43: wp_filter_object_list / wp_list_filter.
+# P2.43 / P2.89 / P2.90: wp_filter_object_list / wp_list_filter.
 - prefix: wp-includes/functions.php#wp_filter_object_list
   go: internal/wp/filter_object_list.go
   status: done
-  task: P2.43
+  task: P2.90
   api: exported
+  notes: "P2.90 — empty operator + non-empty args → empty; ListFilter defaults AND"
 
 - prefix: wp-includes/functions.php#wp_list_filter
   go: internal/wp/filter_object_list.go
   status: done
-  task: P2.43
+  task: P2.90
   api: exported
+  notes: "P2.90 — ListFilter OR/NOT; map[string]string rows; nil map values"
+
+- prefix: wp-includes/class-wp-list-util.php#filter
+  go: internal/wp/filter_object_list.go
+  status: done
+  task: P2.90
+  api: exported
+  notes: "P2.90 — WP_List_Util::filter operator validation parity"
 
 # P2.44: wp_list_sort / WP_List_Util::sort.
 - prefix: wp-includes/functions.php#wp_list_sort
