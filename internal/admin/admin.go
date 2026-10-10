@@ -317,8 +317,10 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		heading = "Pages"
 		searchLabel = "Search Pages"
 	}
+	hiddenCols := getEditHiddenColumns(c, postType)
+	hiddenSet := hiddenColumnSet(hiddenCols)
 	var b strings.Builder
-	writeEditScreenOptions(&b, c, postType, perPage)
+	writeEditScreenOptions(&b, c, postType, perPage, hiddenCols)
 	b.WriteString("<h1>")
 	b.WriteString(html.EscapeString(heading))
 	b.WriteString("</h1>\n")
@@ -433,13 +435,21 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	b.WriteString("<thead><tr>")
 	b.WriteString(`<td id="cb" class="manage-column column-cb check-column"><input id="cb-select-all-1" type="checkbox" /></td>`)
 	b.WriteString("<th scope=\"col\" class=\"manage-column column-title column-primary\">Title</th>")
-	b.WriteString("<th scope=\"col\" class=\"manage-column column-author\">Author</th>")
+	b.WriteString("<th scope=\"col\" class=\"manage-column column-author")
+	b.WriteString(columnHiddenClass(hiddenSet, "author"))
+	b.WriteString("\">Author</th>")
 	// P7.79: pages list shows menu_order as Order column.
 	if postType == "page" {
-		b.WriteString("<th scope=\"col\" class=\"manage-column column-menu_order\">Order</th>")
+		b.WriteString("<th scope=\"col\" class=\"manage-column column-menu_order")
+		b.WriteString(columnHiddenClass(hiddenSet, "menu_order"))
+		b.WriteString("\">Order</th>")
 	}
-	b.WriteString("<th scope=\"col\" class=\"manage-column column-date\">Date</th>")
-	b.WriteString("<th scope=\"col\" class=\"manage-column column-status\">Status</th>")
+	b.WriteString("<th scope=\"col\" class=\"manage-column column-date")
+	b.WriteString(columnHiddenClass(hiddenSet, "date"))
+	b.WriteString("\">Date</th>")
+	b.WriteString("<th scope=\"col\" class=\"manage-column column-status")
+	b.WriteString(columnHiddenClass(hiddenSet, "status"))
+	b.WriteString("\">Status</th>")
 	b.WriteString("</tr></thead>\n")
 	b.WriteString("<tbody id=\"the-list\">\n")
 	for _, p := range posts {
@@ -528,21 +538,29 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		}
 		b.WriteString("</div><div class=\"post_format\"></div>")
 		b.WriteString("</div></td>")
-		b.WriteString("<td class=\"author column-author\" data-colname=\"Author\">")
+		b.WriteString(`<td class="author column-author`)
+		b.WriteString(columnHiddenClass(hiddenSet, "author"))
+		b.WriteString(`" data-colname="Author">`)
 		b.WriteString(html.EscapeString(p.Author))
 		b.WriteString("</td>")
 		// P7.79: menu_order cell on pages list.
 		if postType == "page" {
-			b.WriteString("<td class=\"menu_order column-menu_order\" data-colname=\"Order\">")
+			b.WriteString(`<td class="menu_order column-menu_order`)
+			b.WriteString(columnHiddenClass(hiddenSet, "menu_order"))
+			b.WriteString(`" data-colname="Order">`)
 			b.WriteString(strconv.Itoa(p.MenuOrder))
 			b.WriteString("</td>")
 		}
-		b.WriteString("<td class=\"date column-date\" data-colname=\"Date\"><abbr>")
+		b.WriteString(`<td class="date column-date`)
+		b.WriteString(columnHiddenClass(hiddenSet, "date"))
+		b.WriteString(`" data-colname="Date"><abbr>`)
 		b.WriteString(html.EscapeString(displayPostDateLabel(p.Status)))
 		b.WriteString("</abbr><br>")
 		b.WriteString(html.EscapeString(strings.TrimSpace(p.Date)))
 		b.WriteString("</td>")
-		b.WriteString("<td class=\"status column-status\" data-colname=\"Status\">")
+		b.WriteString(`<td class="status column-status`)
+		b.WriteString(columnHiddenClass(hiddenSet, "status"))
+		b.WriteString(`" data-colname="Status">`)
 		b.WriteString(html.EscapeString(displayPostStatus(p.Status)))
 		b.WriteString("</td></tr>\n")
 	}
@@ -4813,7 +4831,7 @@ func countPostsByStatus(c *wp.Context, postType string) editStatusCounts {
 	return out
 }
 
-// handleEditScreenOptions saves edit_{post_type}_per_page via set_screen_options (P7.77).
+// handleEditScreenOptions saves edit_{post_type}_per_page + column prefs (P7.77 / P7.80).
 func handleEditScreenOptions(w http.ResponseWriter, r *http.Request, c *wp.Context, postType string) bool {
 	if r.Method != http.MethodPost || c == nil || c.CurrentUser == nil {
 		return false
@@ -4823,25 +4841,44 @@ func handleEditScreenOptions(w http.ResponseWriter, r *http.Request, c *wp.Conte
 	}
 	option := strings.TrimSpace(r.Form.Get("wp_screen_options[option]"))
 	value := strings.TrimSpace(r.Form.Get("wp_screen_options[value]"))
-	if option == "" || value == "" {
+	// P7.80: present when the Columns fieldset was rendered (not set by per-page-only tests).
+	hasColumns := strings.TrimSpace(r.Form.Get("wp_screen_options[columns]")) != ""
+	if (option == "" || value == "") && !hasColumns {
 		return false
 	}
-	want := "edit_" + postType + "_per_page"
-	if option != want && option != "edit_post_per_page" && option != "edit_page_per_page" {
-		return false
+	if option != "" {
+		want := "edit_" + postType + "_per_page"
+		if option != want && option != "edit_post_per_page" && option != "edit_page_per_page" {
+			return false
+		}
 	}
 	if c.VerifyNonce(r.Form.Get("screenoptionnonce"), "screen-options-nonce") == 0 {
 		http.Error(w, "Invalid screen options nonce\n", http.StatusForbidden)
 		return true
 	}
-	n, err := strconv.Atoi(value)
-	if err != nil || n < 1 || n > 999 {
-		http.Error(w, "Invalid per page value\n", http.StatusBadRequest)
-		return true
+	if option != "" && value != "" {
+		n, err := strconv.Atoi(value)
+		if err != nil || n < 1 || n > 999 {
+			http.Error(w, "Invalid per page value\n", http.StatusBadRequest)
+			return true
+		}
+		if err := wp.UpdateUserOption(c, c.CurrentUser.ID, option, strconv.Itoa(n)); err != nil {
+			http.Error(w, "screen options: "+err.Error()+"\n", http.StatusInternalServerError)
+			return true
+		}
 	}
-	if err := wp.UpdateUserOption(c, c.CurrentUser.ID, option, strconv.Itoa(n)); err != nil {
-		http.Error(w, "screen options: "+err.Error()+"\n", http.StatusInternalServerError)
-		return true
+	// P7.80: Columns checkboxes — unchecked hide-column-tog → hidden list.
+	if hasColumns {
+		var hidden []string
+		for _, col := range editToggleColumns(postType) {
+			if strings.TrimSpace(r.Form.Get(col.ID+"-hide")) == "" {
+				hidden = append(hidden, col.ID)
+			}
+		}
+		if err := saveEditHiddenColumns(c, c.CurrentUser.ID, postType, hidden); err != nil {
+			http.Error(w, "screen columns: "+err.Error()+"\n", http.StatusInternalServerError)
+			return true
+		}
 	}
 	redir := "/wp-admin/edit.php"
 	if postType != "" && postType != "post" {
@@ -4851,8 +4888,8 @@ func handleEditScreenOptions(w http.ResponseWriter, r *http.Request, c *wp.Conte
 	return true
 }
 
-// writeEditScreenOptions emits Screen Options pagination for edit.php (P7.77).
-func writeEditScreenOptions(b *strings.Builder, c *wp.Context, postType string, perPage int) {
+// writeEditScreenOptions emits Screen Options pagination + Columns (P7.77 / P7.80).
+func writeEditScreenOptions(b *strings.Builder, c *wp.Context, postType string, perPage int, hidden []string) {
 	if b == nil {
 		return
 	}
@@ -4864,9 +4901,31 @@ func writeEditScreenOptions(b *strings.Builder, c *wp.Context, postType string, 
 	if c != nil {
 		nonce = c.CreateNonce("screen-options-nonce")
 	}
+	hiddenSet := hiddenColumnSet(hidden)
 	b.WriteString(`<div id="screen-meta" class="metabox-prefs">` + "\n")
 	b.WriteString(`<div id="screen-options-wrap" class="" tabindex="-1" aria-label="Screen Options Tab">` + "\n")
 	b.WriteString(`<form id="adv-settings" method="post">` + "\n")
+	// P7.80: Columns preferences (WP_Screen::render_list_table_columns_preferences).
+	b.WriteString(`<fieldset class="metabox-prefs">` + "\n")
+	b.WriteString(`<legend>Columns</legend>` + "\n")
+	for _, col := range editToggleColumns(postType) {
+		id := col.ID + "-hide"
+		b.WriteString(`<label>`)
+		b.WriteString(`<input class="hide-column-tog" name="`)
+		b.WriteString(html.EscapeString(id))
+		b.WriteString(`" type="checkbox" id="`)
+		b.WriteString(html.EscapeString(id))
+		b.WriteString(`" value="`)
+		b.WriteString(html.EscapeString(col.ID))
+		b.WriteString(`"`)
+		if !hiddenSet[col.ID] {
+			b.WriteString(` checked="checked"`)
+		}
+		b.WriteString(` />`)
+		b.WriteString(html.EscapeString(col.Label))
+		b.WriteString(`</label>` + "\n")
+	}
+	b.WriteString(`</fieldset>` + "\n")
 	b.WriteString(`<fieldset class="screen-options">` + "\n")
 	b.WriteString(`<legend>Pagination</legend>` + "\n")
 	b.WriteString(`<label for="`)
@@ -4880,6 +4939,7 @@ func writeEditScreenOptions(b *strings.Builder, c *wp.Context, postType string, 
 	b.WriteString(`<input type="hidden" name="wp_screen_options[option]" value="`)
 	b.WriteString(html.EscapeString(option))
 	b.WriteString(`" />` + "\n")
+	b.WriteString(`<input type="hidden" name="wp_screen_options[columns]" value="1" />` + "\n")
 	b.WriteString(`</fieldset>` + "\n")
 	b.WriteString(`<p class="submit"><input type="submit" name="screen-options-apply" id="screen-options-apply" class="button button-primary" value="Apply" /></p>` + "\n")
 	b.WriteString(`<input type="hidden" id="screenoptionnonce" name="screenoptionnonce" value="`)

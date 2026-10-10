@@ -3,6 +3,7 @@ package admin
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"time"
 
 	"github.com/robertbaehr/GoPress/internal/wp"
@@ -62,6 +63,9 @@ func (h *Handler) serveAdminAjax(w http.ResponseWriter, r *http.Request, c *wp.C
 		}
 		w.WriteHeader(http.StatusOK)
 		_, _ = w.Write([]byte("1"))
+	case "hidden-columns":
+		// P7.80: wp_ajax_hidden_columns — persist manage{page}columnshidden.
+		h.ajaxHiddenColumns(w, r, c, loggedIn)
 	default:
 		// Unknown / privileged-without-nopriv → "0" (WP admin-ajax.php).
 		w.WriteHeader(http.StatusBadRequest)
@@ -107,4 +111,64 @@ func (h *Handler) ajaxAuthCheck(w http.ResponseWriter, r *http.Request, c *wp.Co
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write(body)
+}
+
+// ajaxHiddenColumns mirrors wp_ajax_hidden_columns (P7.80).
+func (h *Handler) ajaxHiddenColumns(w http.ResponseWriter, r *http.Request, c *wp.Context, loggedIn bool) {
+	if !loggedIn || c.CurrentUser == nil {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte("0"))
+		return
+	}
+	_ = r.ParseForm()
+	if c.VerifyNonce(r.Form.Get("screenoptionnonce"), "screen-options-nonce") == 0 {
+		w.WriteHeader(http.StatusForbidden)
+		_, _ = w.Write([]byte("-1"))
+		return
+	}
+	page := strings.TrimSpace(r.Form.Get("page"))
+	if page == "" || page != sanitizeKey(page) {
+		w.WriteHeader(http.StatusBadRequest)
+		_, _ = w.Write([]byte("0"))
+		return
+	}
+	var hidden []string
+	if raw := strings.TrimSpace(r.Form.Get("hidden")); raw != "" {
+		for _, part := range strings.Split(raw, ",") {
+			part = strings.TrimSpace(part)
+			if part != "" {
+				hidden = append(hidden, part)
+			}
+		}
+	}
+	arr := map[any]any{}
+	for i, col := range hidden {
+		arr[i] = col
+	}
+	serialized, err := wp.SerializePHP(arr)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("0"))
+		return
+	}
+	if err := wp.UpdateUserOption(c, c.CurrentUser.ID, "manage"+page+"columnshidden", serialized); err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("0"))
+		return
+	}
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte("1"))
+}
+
+func sanitizeKey(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r >= 'a' && r <= 'z', r >= '0' && r <= '9', r == '-', r == '_':
+			b.WriteRune(r)
+		case r >= 'A' && r <= 'Z':
+			b.WriteRune(r + ('a' - 'A'))
+		}
+	}
+	return b.String()
 }

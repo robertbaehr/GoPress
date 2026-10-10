@@ -1684,3 +1684,95 @@ func TestNavMenusLocationsSave(t *testing.T) {
 		t.Fatalf("primary location=%v want 37", locs)
 	}
 }
+
+func TestEditPostsColumnToggleScreenOptions(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`class="hide-column-tog"`,
+		`id="author-hide"`,
+		`id="date-hide"`,
+		`id="status-hide"`,
+		`name="wp_screen_options[columns]"`,
+		`<legend>Columns</legend>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected columns UI %q in edit.php", want)
+		}
+	}
+
+	recN := httptest.NewRecorder()
+	reqN := httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	reqN.AddCookie(ck)
+	pc := c.ForRequest(recN, reqN)
+	pc.AuthenticateRequest()
+	if pc.CurrentUser == nil {
+		t.Fatal("expected authenticated user")
+	}
+	uid := pc.CurrentUser.ID
+	opt := "manageedit-postcolumnshidden"
+	prev := wp.GetUserOption(pc, opt, uid)
+	t.Cleanup(func() {
+		if prev == "" {
+			_, _ = pc.Meta.DeleteMetadata(wp.MetaUser, uid, pc.DB.TablePrefix+opt, "")
+		} else {
+			_ = wp.UpdateUserOption(pc, uid, opt, prev)
+		}
+	})
+
+	form := url.Values{}
+	form.Set("wp_screen_options[option]", "edit_post_per_page")
+	form.Set("wp_screen_options[value]", "20")
+	form.Set("wp_screen_options[columns]", "1")
+	form.Set("screenoptionnonce", pc.CreateNonce("screen-options-nonce"))
+	form.Set("screen-options-apply", "Apply")
+	// Leave author unchecked → hidden; keep date + status visible.
+	form.Set("date-hide", "date")
+	form.Set("status-hide", "status")
+	req = httptest.NewRequest(http.MethodPost, "/wp-admin/edit.php", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("columns POST status=%d body=%q", rec.Code, rec.Body.String())
+	}
+
+	recR := httptest.NewRecorder()
+	reqR := httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	reqR.AddCookie(ck)
+	rc := c.ForRequest(recR, reqR)
+	rc.AuthenticateRequest()
+	raw := wp.GetUserOption(rc, opt, uid)
+	if raw == "" || !strings.Contains(raw, "author") {
+		t.Fatalf("expected author in hidden columns usermeta, got %q", raw)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	body = rec.Body.String()
+	if !strings.Contains(body, `column-author hidden`) {
+		t.Fatalf("expected author column hidden class, got snippet missing")
+	}
+	if strings.Contains(body, `id="author-hide"`) && strings.Contains(body, `id="author-hide" checked`) {
+		// unchecked author-hide should not have checked=
+	}
+	if strings.Contains(body, `id="author-hide" checked`) || strings.Contains(body, `id="author-hide" value="author" checked`) {
+		t.Fatal("author-hide should be unchecked when hidden")
+	}
+	if !strings.Contains(body, `id="date-hide"`) || !strings.Contains(body, `checked="checked"`) {
+		t.Fatal("expected some columns still checked")
+	}
+}
