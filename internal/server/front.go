@@ -228,32 +228,16 @@ type feedPost struct {
 }
 
 func latestFeedPosts(c *wp.Context, limit int) ([]feedPost, error) {
-	if c == nil || c.DB == nil {
-		return nil, fmt.Errorf("nil DB")
-	}
 	if limit <= 0 {
 		limit = 10
 	}
-	q, args, err := c.DB.Prepare(
-		"SELECT ID, post_title, post_content, post_date FROM "+c.DB.Posts()+
-			" WHERE post_type = %s AND post_status = %s ORDER BY post_date DESC LIMIT %d",
-		"post", "publish", limit,
-	)
+	posts, err := wp.GetPosts(c, wp.QueryArgs{PostType: "post", PostStatus: "publish", PostsPerPage: limit})
 	if err != nil {
 		return nil, err
 	}
-	rows, err := c.DB.GetResults(q, args...)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]feedPost, 0, len(rows))
-	for _, row := range rows {
-		out = append(out, feedPost{
-			ID:      asInt64(row["ID"]),
-			Title:   asString(row["post_title"]),
-			Content: asString(row["post_content"]),
-			Date:    asString(row["post_date"]),
-		})
+	out := make([]feedPost, 0, len(posts))
+	for _, p := range posts {
+		out = append(out, feedPost{ID: p.ID, Title: p.Title, Content: p.Content, Date: p.Date})
 	}
 	return out, nil
 }
@@ -297,105 +281,53 @@ func loadSingularPost(c *wp.Context, vars map[string]string) (*singularPost, err
 		if err != nil || id <= 0 {
 			return nil, nil
 		}
-		return getPublishedByID(c, id, "post")
+		return singularFromQuery(c, wp.QueryArgs{P: id, PostType: "post"})
 	}
 	if idStr := vars["page_id"]; idStr != "" {
 		id, err := strconv.ParseInt(idStr, 10, 64)
 		if err != nil || id <= 0 {
 			return nil, nil
 		}
-		return getPublishedByID(c, id, "page")
+		return singularFromQuery(c, wp.QueryArgs{P: id, PostType: "page"})
 	}
 	if name := vars["name"]; name != "" {
-		// Pretty permalinks may include a trailing page number segment; use final slug.
-		slug := lastPathSegment(name)
-		return getPublishedBySlug(c, slug, "post")
+		return singularFromQuery(c, wp.QueryArgs{Name: name, PostType: "post"})
 	}
 	if pagename := vars["pagename"]; pagename != "" {
-		slug := lastPathSegment(pagename)
-		return getPublishedBySlug(c, slug, "page")
+		return singularFromQuery(c, wp.QueryArgs{PageName: pagename, PostType: "page"})
 	}
 	return nil, nil
 }
 
-func getPublishedByID(c *wp.Context, id int64, postType string) (*singularPost, error) {
-	q, args, err := c.DB.Prepare(
-		"SELECT ID, post_title, post_content, post_type, post_name, post_status FROM "+c.DB.Posts()+
-			" WHERE ID = %d AND post_type = %s AND post_status = %s LIMIT 1",
-		id, postType, "publish",
-	)
+func singularFromQuery(c *wp.Context, args wp.QueryArgs) (*singularPost, error) {
+	p, err := wp.GetPost(c, args)
 	if err != nil {
 		return nil, err
 	}
-	return scanSingularRow(c, q, args...)
-}
-
-func getPublishedBySlug(c *wp.Context, slug, postType string) (*singularPost, error) {
-	if slug == "" {
-		return nil, nil
-	}
-	q, args, err := c.DB.Prepare(
-		"SELECT ID, post_title, post_content, post_type, post_name, post_status FROM "+c.DB.Posts()+
-			" WHERE post_name = %s AND post_type = %s AND post_status = %s LIMIT 1",
-		slug, postType, "publish",
-	)
-	if err != nil {
-		return nil, err
-	}
-	return scanSingularRow(c, q, args...)
-}
-
-func scanSingularRow(c *wp.Context, q string, args ...any) (*singularPost, error) {
-	row, err := c.DB.GetRow(q, args...)
-	if err != nil {
-		return nil, err
-	}
-	if row == nil {
+	if p == nil {
 		return nil, nil
 	}
 	return &singularPost{
-		ID:      asInt64(row["ID"]),
-		Title:   asString(row["post_title"]),
-		Content: asString(row["post_content"]),
-		Type:    asString(row["post_type"]),
-		Name:    asString(row["post_name"]),
-		Status:  asString(row["post_status"]),
+		ID:      p.ID,
+		Title:   p.Title,
+		Content: p.Content,
+		Type:    p.Type,
+		Name:    p.Name,
+		Status:  p.Status,
 	}, nil
 }
 
-func lastPathSegment(path string) string {
-	path = strings.Trim(path, "/")
-	if path == "" {
-		return ""
-	}
-	parts := strings.Split(path, "/")
-	return parts[len(parts)-1]
-}
-
 func latestPosts(c *wp.Context, limit int) ([]postListItem, error) {
-	if c == nil || c.DB == nil {
-		return nil, fmt.Errorf("nil DB")
-	}
 	if limit <= 0 {
 		limit = 5
 	}
-	q, args, err := c.DB.Prepare(
-		"SELECT ID, post_title FROM "+c.DB.Posts()+
-			" WHERE post_type = %s AND post_status = %s ORDER BY post_date DESC LIMIT %d",
-		"post", "publish", limit,
-	)
+	posts, err := wp.GetPosts(c, wp.QueryArgs{PostType: "post", PostStatus: "publish", PostsPerPage: limit})
 	if err != nil {
 		return nil, err
 	}
-	rows, err := c.DB.GetResults(q, args...)
-	if err != nil {
-		return nil, err
-	}
-	out := make([]postListItem, 0, len(rows))
-	for _, row := range rows {
-		id := asInt64(row["ID"])
-		title, _ := row["post_title"].(string)
-		out = append(out, postListItem{ID: id, Title: title})
+	out := make([]postListItem, 0, len(posts))
+	for _, p := range posts {
+		out = append(out, postListItem{ID: p.ID, Title: p.Title})
 	}
 	return out, nil
 }
@@ -417,38 +349,5 @@ func optionString(c *wp.Context, name, fallback string) string {
 			return fallback
 		}
 		return s
-	}
-}
-
-func asInt64(v any) int64 {
-	switch t := v.(type) {
-	case int64:
-		return t
-	case int:
-		return int64(t)
-	case uint64:
-		return int64(t)
-	case []byte:
-		n, _ := strconv.ParseInt(string(t), 10, 64)
-		return n
-	case string:
-		n, _ := strconv.ParseInt(t, 10, 64)
-		return n
-	default:
-		n, _ := strconv.ParseInt(fmt.Sprint(v), 10, 64)
-		return n
-	}
-}
-
-func asString(v any) string {
-	switch t := v.(type) {
-	case string:
-		return t
-	case []byte:
-		return string(t)
-	case nil:
-		return ""
-	default:
-		return fmt.Sprint(t)
 	}
 }
