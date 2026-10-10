@@ -10,13 +10,13 @@ import (
 // elementsSeq is the per-process counter for wp-elements-* class names (P5.32).
 var elementsSeq uint64
 
-// applySupports injects basic color/spacing/typography/layout/shadow/position/border/elements/background/dimensions/filter
-// classes and styles from block attributes onto the rendered root element (P5.10 / P5.19 / P5.27–P5.35).
+// applySupports injects basic color/spacing/typography/layout/shadow/position/border/elements/background/dimensions/filter/aria-label
+// classes, styles, and attributes from block attributes onto the rendered root element (P5.10 / P5.19 / P5.27–P5.36).
 func applySupports(htmlFragment string, attrs map[string]any, blockName string) string {
 	if htmlFragment == "" {
 		return htmlFragment
 	}
-	classes, styles, elementsCSS := supportsFromAttrs(attrs, blockName)
+	classes, styles, elementsCSS, rootAttrs := supportsFromAttrs(attrs, blockName)
 	out := htmlFragment
 	for _, c := range classes {
 		out = addRootClass(out, c)
@@ -24,13 +24,17 @@ func applySupports(htmlFragment string, attrs map[string]any, blockName string) 
 	if styles != "" {
 		out = addRootStyle(out, styles)
 	}
+	for name, val := range rootAttrs {
+		out = addRootAttr(out, name, val)
+	}
 	if elementsCSS != "" {
 		out = `<style id="core-block-supports-inline-css">` + elementsCSS + `</style>` + out
 	}
 	return out
 }
 
-func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string, styles, elementsCSS string) {
+func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string, styles, elementsCSS string, rootAttrs map[string]string) {
+	rootAttrs = map[string]string{}
 	if attrs != nil {
 		if cn, ok := attrs["className"].(string); ok && cn != "" {
 			classes = append(classes, strings.Fields(cn)...)
@@ -142,6 +146,11 @@ func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string
 			styles = mergeCSSDecls(styles, "box-shadow:"+cssValue(shadow))
 		}
 
+		// Aria-label block support (P5.36 / wp_apply_aria_label_support).
+		if al, ok := attrs["ariaLabel"].(string); ok && strings.TrimSpace(al) != "" {
+			rootAttrs["aria-label"] = strings.TrimSpace(al)
+		}
+
 		// Elements block support: link/button colors (P5.32).
 		if elClasses, elCSS := elementsSupport(attrs); len(elClasses) > 0 || elCSS != "" {
 			for _, c := range elClasses {
@@ -154,7 +163,7 @@ func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string
 	if layoutCSS := layoutInlineStyles(blockName, attrs); layoutCSS != "" {
 		styles = mergeCSSDecls(styles, layoutCSS)
 	}
-	return classes, styles, elementsCSS
+	return classes, styles, elementsCSS, rootAttrs
 }
 
 // applyBackgroundDefaults mirrors wp_render_background_support size/position defaults (P5.33).
@@ -715,6 +724,48 @@ func mergeCSSDecls(existing, add string) string {
 		out += ";"
 	}
 	return out + strings.Join(extra, ";")
+}
+
+// addRootAttr sets or replaces a named attribute on the first HTML opening tag.
+func addRootAttr(htmlFragment, name, value string) string {
+	if htmlFragment == "" || name == "" {
+		return htmlFragment
+	}
+	i := strings.Index(htmlFragment, "<")
+	if i < 0 {
+		return htmlFragment
+	}
+	rest := htmlFragment[i+1:]
+	if rest == "" || rest[0] == '/' || rest[0] == '!' {
+		return htmlFragment
+	}
+	end := strings.Index(rest, ">")
+	if end < 0 {
+		return htmlFragment
+	}
+	open := rest[:end]
+	selfClose := strings.HasSuffix(open, "/")
+	if selfClose {
+		open = strings.TrimSpace(strings.TrimSuffix(open, "/"))
+	}
+	escVal := html.EscapeString(value)
+	lower := strings.ToLower(open)
+	needle := strings.ToLower(name) + `="`
+	if idx := strings.Index(lower, needle); idx >= 0 {
+		valStart := idx + len(needle)
+		valEnd := strings.Index(open[valStart:], `"`)
+		if valEnd >= 0 {
+			valEnd += valStart
+			open = open[:valStart] + escVal + open[valEnd:]
+		}
+	} else {
+		open = open + fmt.Sprintf(` %s="%s"`, name, escVal)
+	}
+	suffix := ">"
+	if selfClose {
+		suffix = " />"
+	}
+	return htmlFragment[:i+1] + open + suffix + rest[end+1:]
 }
 
 // addRootStyle merges a CSS style string onto the first HTML opening tag.

@@ -330,6 +330,13 @@
 
 # P5.35: CSS filter functions live under style_engine + supports (map row above).
 
+# P5.36: aria-label block attribute → aria-label on wrapper.
+- prefix: wp-includes/block-supports/aria-label.php
+  go: internal/blocks/supports.go
+  status: partial
+  task: P5.36
+  api: internal
+
 # P4.51: REST POST/PUT/PATCH /wp/v2/global-styles/{id}.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-global-styles-controller.php
   go: internal/rest/global_styles_write.go

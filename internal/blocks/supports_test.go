@@ -367,6 +367,16 @@ func TestBlockSupportsTopLevelMinHeight(t *testing.T) {
 	}
 }
 
+func TestBlockSupportsAriaLabel(t *testing.T) {
+	in := `<!-- wp:group {"ariaLabel":"Site sections"} -->
+<div class="wp-block-group">X</div>
+<!-- /wp:group -->`
+	out := blocks.Render(in)
+	if !strings.Contains(out, `aria-label="Site sections"`) {
+		t.Fatalf("missing aria-label: %q", out)
+	}
+}
+
 func TestBlockSupportsElementsLinkAndButtonColors(t *testing.T) {
 	in := `<!-- wp:group {"style":{"elements":{"link":{"color":{"text":"var:preset|color|luminous-vivid-amber"},":hover":{"color":{"text":"#ff0000"}}},"button":{"color":{"text":"#ffffff","background":"#111111"}}}}} -->
 <div class="wp-block-group">X</div>
