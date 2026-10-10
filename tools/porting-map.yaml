@@ -931,6 +931,14 @@
   task: P10.37
   api: n/a
 
+# P10.39: e2e POST /wp/v2/users (create_users).
+- prefix: tests/e2e/rest-create-user.spec.js
+  go: tests/e2e/rest-create-user.spec.js
+  status: partial
+  task: P10.39
+  api: n/a
+
+
 # P10.22: E2E author archive /author/admin/.
 - prefix: tests/e2e/author.spec.js
   go: tests/e2e/author.spec.js
