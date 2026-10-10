@@ -1506,6 +1506,21 @@
   task: P3.13
   api: n/a
 
+# P3.54: optional feed channel copyright/rights (rss_copyright option).
+- prefix: wp-includes/feed-rss2.php#copyright
+  go: internal/wp/feed_copyright.go
+  status: partial
+  task: P3.54
+  api: exported
+  notes: "P3.54 — FeedCopyright; RSS2 <copyright> / Atom <rights> when rss_copyright set (auto|custom)"
+
+- prefix: wp-includes/feed-atom.php#rights
+  go: internal/server/front.go
+  status: partial
+  task: P3.54
+  api: n/a
+  notes: "P3.54 — Atom <rights> via FeedCopyright"
+
 # P3.53: feed language from site locale (bloginfo_rss('language')).
 - prefix: wp-includes/general-template.php#get_bloginfo_language
   go: internal/wp/bloginfo_language.go
