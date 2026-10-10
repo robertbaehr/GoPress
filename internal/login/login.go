@@ -436,12 +436,7 @@ func extractLoginErrorCode(errHTML string) string {
 	return ""
 }
 
-// serveCheckEmailRegistered shows the post-registration notice (P6.43 / P6.44).
-func (h *Handler) serveCheckEmailRegistered(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	h.serveCheckEmail(w, r, c)
-}
-
-// serveCheckEmail renders wp-login.php?checkemail=confirm|registered (P6.44).
+// serveCheckEmail renders wp-login.php?checkemail=confirm|registered (P6.43 / P6.44).
 // Matches WP login_header( 'Check your email' ) + notice-info message with login link.
 func (h *Handler) serveCheckEmail(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "/")), "/")
@@ -736,10 +731,6 @@ func (h *Handler) serveLostPasswordPost(w http.ResponseWriter, r *http.Request, 
 		redirectTo = sanitizeRedirect(redirectTo, home)
 	}
 	http.Redirect(w, r, redirectTo, http.StatusFound)
-}
-
-func (h *Handler) serveCheckEmailConfirm(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	h.serveCheckEmail(w, r, c)
 }
 
 func lostPasswordErrorFromQuery(r *http.Request) string {
