@@ -1,10 +1,12 @@
 package rest
 
 import (
+	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/robertbaehr/GoPress/internal/blocks"
@@ -112,47 +114,147 @@ func (s *Server) serveBlockRenderer(w http.ResponseWriter, r *http.Request, c *w
 		})
 		return
 	}
-	if !canEditPosts(c) {
+	attrs, postID, errMsg := parseBlockRendererRequest(r)
+	if errMsg != "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_invalid_param",
+			"message": errMsg,
+			"data":    map[string]any{"status": 400},
+		})
+		return
+	}
+	if postID > 0 {
+		p, err := wp.GetPost(c, wp.QueryArgs{P: postID})
+		if err != nil || p == nil {
+			writeJSON(w, http.StatusUnauthorized, map[string]any{
+				"code":    "block_cannot_read",
+				"message": "Sorry, you are not allowed to read blocks of this post.",
+				"data":    map[string]any{"status": 401},
+			})
+			return
+		}
+		if !canEditPosts(c) {
+			status := http.StatusUnauthorized
+			if c != nil && c.CurrentUser != nil {
+				status = http.StatusForbidden
+			}
+			writeJSON(w, status, map[string]any{
+				"code":    "block_cannot_read",
+				"message": "Sorry, you are not allowed to read blocks of this post.",
+				"data":    map[string]any{"status": status},
+			})
+			return
+		}
+	} else if !canEditPosts(c) {
 		status := http.StatusUnauthorized
 		if c != nil && c.CurrentUser != nil {
 			status = http.StatusForbidden
 		}
 		writeJSON(w, status, map[string]any{
-			"code":    "rest_cannot_view",
-			"message": "Sorry, you are not allowed to read blocks of this type.",
+			"code":    "block_cannot_read",
+			"message": "Sorry, you are not allowed to read blocks as this user.",
 			"data":    map[string]any{"status": status},
 		})
 		return
 	}
 	if !isKnownBlockName(name) {
 		writeJSON(w, http.StatusNotFound, map[string]any{
-			"code":    "rest_block_invalid",
+			"code":    "block_invalid",
 			"message": "Invalid block.",
 			"data":    map[string]any{"status": 404},
 		})
 		return
 	}
-	attrs := map[string]any{}
+	rendered := renderBlockStub(name, attrs)
+	writeJSON(w, http.StatusOK, map[string]any{"rendered": rendered})
+}
+
+// parseBlockRendererRequest reads attributes + post_id from GET query or POST JSON/form (P4.50).
+func parseBlockRendererRequest(r *http.Request) (attrs map[string]any, postID int64, errMsg string) {
+	attrs = map[string]any{}
 	switch r.Method {
 	case http.MethodGet:
 		if raw := r.URL.Query().Get("attributes"); raw != "" {
-			_ = json.Unmarshal([]byte(raw), &attrs)
+			if err := json.Unmarshal([]byte(raw), &attrs); err != nil {
+				return nil, 0, "Invalid parameter(s): attributes"
+			}
+		}
+		if raw := strings.TrimSpace(r.URL.Query().Get("post_id")); raw != "" {
+			n, err := strconv.ParseInt(raw, 10, 64)
+			if err != nil || n < 0 {
+				return nil, 0, "Invalid parameter(s): post_id"
+			}
+			postID = n
 		}
 	case http.MethodPost:
-		var body struct {
-			Attributes map[string]any `json:"attributes"`
-		}
-		if r.Body != nil {
-			data, _ := io.ReadAll(io.LimitReader(r.Body, 1<<20))
-			_ = r.Body.Close()
-			_ = json.Unmarshal(data, &body)
+		ct := strings.ToLower(r.Header.Get("Content-Type"))
+		if strings.Contains(ct, "application/json") || ct == "" {
+			var body struct {
+				Attributes map[string]any `json:"attributes"`
+				PostID     any            `json:"post_id"`
+			}
+			if r.Body != nil {
+				data, _ := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+				_ = r.Body.Close()
+				if len(bytes.TrimSpace(data)) > 0 {
+					if err := json.Unmarshal(data, &body); err != nil {
+						return nil, 0, "Invalid parameter(s): attributes"
+					}
+				}
+			}
 			if body.Attributes != nil {
 				attrs = body.Attributes
 			}
+			postID = anyToInt64Loose(body.PostID)
+		} else {
+			_ = r.ParseForm()
+			if raw := r.Form.Get("attributes"); raw != "" {
+				if err := json.Unmarshal([]byte(raw), &attrs); err != nil {
+					return nil, 0, "Invalid parameter(s): attributes"
+				}
+			}
+			if raw := strings.TrimSpace(r.Form.Get("post_id")); raw != "" {
+				n, err := strconv.ParseInt(raw, 10, 64)
+				if err != nil || n < 0 {
+					return nil, 0, "Invalid parameter(s): post_id"
+				}
+				postID = n
+			}
+		}
+		// Query post_id also accepted on POST (WP REST).
+		if postID == 0 {
+			if raw := strings.TrimSpace(r.URL.Query().Get("post_id")); raw != "" {
+				n, err := strconv.ParseInt(raw, 10, 64)
+				if err != nil || n < 0 {
+					return nil, 0, "Invalid parameter(s): post_id"
+				}
+				postID = n
+			}
 		}
 	}
-	rendered := renderBlockStub(name, attrs)
-	writeJSON(w, http.StatusOK, map[string]any{"rendered": rendered})
+	return attrs, postID, ""
+}
+
+func anyToInt64Loose(v any) int64 {
+	switch t := v.(type) {
+	case nil:
+		return 0
+	case float64:
+		return int64(t)
+	case int:
+		return int64(t)
+	case int64:
+		return t
+	case string:
+		n, _ := strconv.ParseInt(strings.TrimSpace(t), 10, 64)
+		return n
+	case json.Number:
+		n, _ := t.Int64()
+		return n
+	default:
+		n, _ := strconv.ParseInt(strings.TrimSpace(fmt.Sprint(v)), 10, 64)
+		return n
+	}
 }
 
 func isKnownBlockName(name string) bool {
