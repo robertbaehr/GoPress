@@ -413,6 +413,38 @@ func TestFrontAuthorArchive(t *testing.T) {
 	}
 }
 
+func TestFrontTagArchive(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+
+	req := httptest.NewRequest(http.MethodGet, "/tag/fixture-tag-01/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "archive") || !strings.Contains(body, "tag") {
+		t.Fatalf("expected archive tag body class: %q", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, "Tag:") {
+		t.Fatalf("expected Tag heading: %q", body[:min(800, len(body))])
+	}
+	if !strings.Contains(body, "Fixture Post") {
+		t.Fatalf("expected tagged post: %q", body)
+	}
+	if strings.Contains(body, "GoPress: front route not implemented") {
+		t.Fatal("tag archive should not 501")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/tag/nobody-here-tag/", nil)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("missing tag want 404, got %d", rec.Code)
+	}
+}
+
 func TestFrontDateArchiveYearMonth(t *testing.T) {
 	c := testBoot(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}

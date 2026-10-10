@@ -155,3 +155,21 @@ func TestGetPostsAuthorArchive(t *testing.T) {
 		t.Fatalf("expected no posts for missing author, got %d", len(empty))
 	}
 }
+
+func TestGetPostsTagArchive(t *testing.T) {
+	c := testBootQuery(t)
+	posts, err := wp.GetPosts(c, wp.QueryArgs{PostsPerPage: 5, Tag: "fixture-tag-01"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(posts) == 0 {
+		t.Fatal("expected posts for fixture-tag-01")
+	}
+	empty, err := wp.GetPosts(c, wp.QueryArgs{PostsPerPage: 5, Tag: "zzznomatch-tag"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(empty) != 0 {
+		t.Fatalf("expected no posts for missing tag, got %d", len(empty))
+	}
+}

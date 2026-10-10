@@ -184,6 +184,11 @@ type RequestScope struct {
 	AuthorName string
 	IsAuthor   bool
 
+	// Tag archive query vars (P3.24).
+	TagSlug string
+	TagID   int64
+	IsTag   bool
+
 	// Is* flags mirror WP_Query conditionals (filled by query parse).
 	IsHome       bool
 	IsSingular   bool

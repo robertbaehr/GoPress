@@ -51,11 +51,35 @@ func (c *Context) LoadRewriteRules() (RewriteRules, error) {
 			return nil, err
 		}
 		if len(rules) > 0 {
-			return rules, nil
+			// Fixture rewrite_rules may omit taxonomy archives; ensure /tag/ works (P3.24).
+			return ensureTagRewriteRules(rules), nil
 		}
 	}
 	structure := optionValueString(c.Options.GetOption("permalink_structure", ""))
 	return GenerateRewriteRules(structure), nil
+}
+
+// ensureTagRewriteRules inserts the core /tag/{slug}/ rule when missing from DB rules.
+func ensureTagRewriteRules(rules RewriteRules) RewriteRules {
+	for _, r := range rules {
+		if strings.HasPrefix(r.Match, "tag/") && strings.Contains(r.Query, "tag=") {
+			return rules
+		}
+	}
+	tagRule := RewriteRule{Match: `tag/([^/]+)/?$`, Query: `index.php?tag=$matches[1]`}
+	out := make(RewriteRules, 0, len(rules)+1)
+	inserted := false
+	for _, r := range rules {
+		if !inserted && strings.HasPrefix(r.Match, "author/") {
+			out = append(out, tagRule)
+			inserted = true
+		}
+		out = append(out, r)
+	}
+	if !inserted {
+		out = append(out, tagRule)
+	}
+	return out
 }
 
 // ParseRewriteRulesPHP unserializes a PHP associative array of match → query,
@@ -259,6 +283,11 @@ func (c *Context) ParseRequest(rules RewriteRules) *ParseResult {
 			if id, err := strconv.ParseInt(res.QueryVars["author"], 10, 64); err == nil && id > 0 {
 				c.Scope.AuthorID = id
 			}
+		}
+		// Tag archives (P3.24).
+		if !c.Scope.IsSingular && hasAny(res.QueryVars, "tag") {
+			c.Scope.IsTag = true
+			c.Scope.TagSlug = res.QueryVars["tag"]
 		}
 		if p := res.QueryVars["p"]; p != "" {
 			if id, err := strconv.ParseInt(p, 10, 64); err == nil {
