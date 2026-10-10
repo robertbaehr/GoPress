@@ -756,6 +756,14 @@
   api: exported
   notes: "P2.49 — WPHTMLSplit RE2-friendly tag/comment/CDATA splitter"
 
+# P2.50: wp_basename (locale-independent basename).
+- prefix: wp-includes/formatting.php#wp_basename
+  go: internal/wp/basename.go
+  status: partial
+  task: P2.50
+  api: exported
+  notes: "P2.50 — Basename via urlencode/replace/basename/urldecode"
+
 # P2.48: wp_spaces_regexp (+ filter).
 - prefix: wp-includes/formatting.php#wp_spaces_regexp
   go: internal/wp/spaces_regexp.go
