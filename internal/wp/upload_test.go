@@ -2,6 +2,7 @@ package wp_test
 
 import (
 	"bytes"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -9,6 +10,51 @@ import (
 
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
+
+func TestMediaHandleUploadSetsParent(t *testing.T) {
+	// P8.31: media_handle_upload honors post_id → post_parent.
+	c := testBootQuery(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	c.CurrentUser = user
+
+	payload := []byte("gopress-media-handle-upload")
+	up, err := wp.MediaHandleUpload(c, "parented-upload.txt", bytes.NewReader(payload), int64(len(payload)), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = os.Remove(up.AbsPath)
+		if c.DB != nil {
+			q, args, _ := c.DB.Prepare("DELETE FROM "+c.DB.Posts()+" WHERE ID = %d", up.ID)
+			_, _ = c.DB.Exec(q, args...)
+			q2, a2, _ := c.DB.Prepare("DELETE FROM "+c.DB.PostMeta()+" WHERE post_id = %d", up.ID)
+			_, _ = c.DB.Exec(q2, a2...)
+		}
+	})
+	q, args, err := c.DB.Prepare("SELECT post_parent FROM "+c.DB.Posts()+" WHERE ID = %d", up.ID)
+	if err != nil {
+		t.Fatalf("prepare: %v", err)
+	}
+	row, err := c.DB.GetRow(q, args...)
+	if err != nil || row == nil {
+		t.Fatalf("load parent: %v", err)
+	}
+	parent := fmt.Sprint(row["post_parent"])
+	if parent != "1" {
+		t.Fatalf("post_parent=%q want 1", parent)
+	}
+	moved, err := wp.HandleUpload(c, "handle-only.txt", bytes.NewReader([]byte("x")), 1)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = os.Remove(moved.File) })
+	if moved.URL == "" || moved.Type == "" {
+		t.Fatalf("HandleUpload result=%+v", moved)
+	}
+}
 
 func TestSaveUploadedMedia(t *testing.T) {
 	c := testBootQuery(t)

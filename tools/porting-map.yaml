@@ -600,6 +600,28 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P8.27 — local path only; image_sideload_extensions filter; html|src|id"
 
+# P8.31: wp_handle_upload / media_handle_upload + media-upload.php stub.
+- prefix: wp-admin/includes/file.php#wp_handle_upload
+  go: internal/wp/upload.go
+  status: partial
+  task: P8.31
+  api: exported
+  notes: "P8.31 — HandleUpload writes into uploads/2024/06; mime gate via CheckFiletypeAndExt"
+
+- prefix: wp-admin/includes/media.php#media_handle_upload
+  go: internal/wp/upload.go
+  status: partial
+  task: P8.31
+  api: exported
+  notes: "P8.31 — MediaHandleUpload creates attachment; post_id → post_parent; async-upload/media-new wired"
+
+- prefix: wp-admin/media-upload.php
+  go: internal/admin/admin.go
+  status: partial
+  task: P8.31
+  api: n/a
+  notes: "P8.31 — legacy iframe stub; From Computer / Media Library tabs; upload_files gate"
+
 # P8.29: wp_plupload_default_settings + max upload size helpers.
 - prefix: wp-includes/media.php#wp_plupload_default_settings
   go: internal/wp/plupload.go
