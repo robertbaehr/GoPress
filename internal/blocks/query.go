@@ -1076,39 +1076,118 @@ func (e *Env) renderCommentsTitle(block Block) string {
 	return `<` + tag + ` class="wp-block-comments-title" id="comments">` + html.EscapeString(text) + `</` + tag + `>`
 }
 
+// renderPostNavigationLink renders core/post-navigation-link (P5.3 / P5.72).
+// Honors type, label, showTitle, linkLabel, arrow, and textAlign.
 func (e *Env) renderPostNavigationLink(block Block) string {
 	e = e.ensure()
 	if e.currentPost == nil || e.AdjacentPost == nil {
 		return ""
 	}
-	prev := false
-	if t, ok := block.Attrs["type"].(string); ok && strings.EqualFold(t, "previous") {
-		prev = true
+	navType := "next"
+	if t, ok := block.Attrs["type"].(string); ok {
+		t = strings.ToLower(strings.TrimSpace(t))
+		if t == "previous" || t == "next" {
+			navType = t
+		} else {
+			return ""
+		}
 	}
+	prev := navType == "previous"
 	adj := e.AdjacentPost(e.currentPost.ID, prev)
-	class := "post-navigation-link-next wp-block-post-navigation-link"
-	rel := "next"
-	arrowClass := "is-arrow-arrow wp-block-post-navigation-link__arrow-next"
-	arrow := "→"
-	if prev {
-		class = "post-navigation-link-previous wp-block-post-navigation-link"
-		rel = "prev"
-		arrowClass = "is-arrow-arrow wp-block-post-navigation-link__arrow-previous"
-		arrow = "←"
+
+	classes := "post-navigation-link-" + navType
+	if ta := strings.TrimSpace(attrString(block.Attrs, "textAlign")); ta != "" {
+		classes += " has-text-align-" + ta
 	}
+	classes += " wp-block-post-navigation-link"
+
 	if adj == nil {
-		return `<div class="` + class + `"></div>`
+		return `<div class="` + html.EscapeString(classes) + `"></div>`
 	}
-	var b strings.Builder
-	b.WriteString(`<div class="` + class + `">`)
+
+	label := strings.TrimSpace(attrString(block.Attrs, "label"))
+	showTitle := attrBool(block.Attrs, "showTitle")
+	linkLabel := attrBool(block.Attrs, "linkLabel")
+	arrowKind := strings.TrimSpace(attrString(block.Attrs, "arrow"))
+	if arrowKind == "" {
+		arrowKind = "none"
+	}
+
+	// Default link text: "Next" / "Previous"; custom label overrides.
+	linkText := "Next"
 	if prev {
-		b.WriteString(`<span aria-hidden="true" class="` + arrowClass + `">` + arrow + `</span>`)
+		linkText = "Previous"
 	}
-	b.WriteString(`<a href="` + html.EscapeString(adj.Link) + `" rel="` + rel + `">`)
-	b.WriteString(html.EscapeString(adj.Title))
-	b.WriteString(`</a>`)
-	if !prev {
-		b.WriteString(`<span aria-hidden="true" class="` + arrowClass + `">` + arrow + `</span>`)
+	if label != "" {
+		linkText = label
+	}
+
+	// Build inner <a> content (mirrors render_block_core_post_navigation_link).
+	var linkInner string
+	var beforeLink string
+	if showTitle {
+		title := adj.Title
+		if !linkLabel {
+			if label != "" {
+				beforeLink = `<span class="post-navigation-link__label">` + html.EscapeString(label) + `</span> `
+			}
+			linkInner = html.EscapeString(title)
+		} else if label != "" {
+			linkInner = `<span class="post-navigation-link__label">` + html.EscapeString(label) +
+				`</span> <span class="post-navigation-link__title">` + html.EscapeString(title) + `</span>`
+		} else {
+			colon := "Next:"
+			if prev {
+				colon = "Previous:"
+			}
+			linkInner = `<span class="post-navigation-link__label">` + colon +
+				`</span> <span class="post-navigation-link__title">` + html.EscapeString(title) + `</span>`
+		}
+	} else {
+		linkInner = html.EscapeString(linkText)
+	}
+
+	rel := "next"
+	if prev {
+		rel = "prev"
+	}
+	linkHTML := beforeLink + `<a href="` + html.EscapeString(adj.Link) + `" rel="` + rel + `">` + linkInner + `</a>`
+
+	var arrowHTML string
+	if arrowKind != "none" {
+		var glyph string
+		switch arrowKind {
+		case "arrow":
+			if prev {
+				glyph = "←"
+			} else {
+				glyph = "→"
+			}
+		case "chevron":
+			if prev {
+				glyph = "«"
+			} else {
+				glyph = "»"
+			}
+		}
+		if glyph != "" {
+			side := "next"
+			if prev {
+				side = "previous"
+			}
+			arrowHTML = `<span class="wp-block-post-navigation-link__arrow-` + side +
+				` is-arrow-` + html.EscapeString(arrowKind) + `" aria-hidden="true">` + glyph + `</span>`
+		}
+	}
+
+	var b strings.Builder
+	b.WriteString(`<div class="` + html.EscapeString(classes) + `">`)
+	if prev {
+		b.WriteString(arrowHTML)
+		b.WriteString(linkHTML)
+	} else {
+		b.WriteString(linkHTML)
+		b.WriteString(arrowHTML)
 	}
 	b.WriteString(`</div>`)
 	return b.String()
