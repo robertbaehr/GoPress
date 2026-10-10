@@ -153,6 +153,14 @@
   task: P6.16
   api: n/a
 
+# P6.23: set/read wp_lang cookie on login screen (?wp_lang=).
+- prefix: wp-login.php#wp_lang
+  go: internal/login/login.go
+  status: partial
+  task: P6.23
+  api: n/a
+  notes: "P6.23 — HttpOnly wp_lang session cookie from query; switcher reads cookie"
+
 # P6.21: testcookie / wordpress_test_cookie handling on login POST.
 - prefix: wp-login.php#testcookie
   go: internal/login/login.go

@@ -5,6 +5,8 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+
+	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
 func TestWriteLanguageSwitcherEmpty(t *testing.T) {
@@ -38,5 +40,46 @@ func TestWriteLanguageSwitcherWithLocales(t *testing.T) {
 	}
 	if !strings.Contains(out, `value="Change"`) {
 		t.Fatalf("missing Change button: %q", out)
+	}
+}
+
+func TestWriteLanguageSwitcherPrefersCookie(t *testing.T) {
+	var b strings.Builder
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php", nil)
+	req.AddCookie(&http.Cookie{Name: "wp_lang", Value: "de_DE"})
+	writeLanguageSwitcher(&b, req, nil, []string{"de_DE", "fr_FR"})
+	out := b.String()
+	if !strings.Contains(out, `value="de_DE" selected="selected"`) {
+		t.Fatalf("expected de_DE selected from cookie: %q", out)
+	}
+}
+
+func TestWriteLoginHTMLSetsLangCookie(t *testing.T) {
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?wp_lang=fr_FR", nil)
+	rec := httptest.NewRecorder()
+	writeLoginHTML(rec, req, "<html></html>", false, nil)
+	found := false
+	for _, ck := range rec.Result().Cookies() {
+		if ck.Name == "wp_lang" {
+			found = true
+			if ck.Value != "fr_FR" {
+				t.Fatalf("wp_lang=%q", ck.Value)
+			}
+			if !ck.HttpOnly {
+				t.Fatal("expected HttpOnly wp_lang cookie")
+			}
+		}
+	}
+	if !found {
+		t.Fatal("missing wp_lang Set-Cookie")
+	}
+	// Sanitized value
+	req = httptest.NewRequest(http.MethodGet, "/wp-login.php?wp_lang="+wp.SanitizeTextField("en_US"), nil)
+	rec = httptest.NewRecorder()
+	writeLoginHTML(rec, req, "ok", false, nil)
+	for _, ck := range rec.Result().Cookies() {
+		if ck.Name == "wp_lang" && ck.Value == "" {
+			t.Fatal("empty wp_lang cookie")
+		}
 	}
 }

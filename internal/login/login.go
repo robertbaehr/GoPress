@@ -231,7 +231,7 @@ func (h *Handler) serveConfirmAdminEmail(w http.ResponseWriter, r *http.Request,
 	b.WriteString("\t\t</div>\n")
 	b.WriteString("\t</body>\n")
 	b.WriteString("\t</html>\n")
-	writeLoginHTML(w, b.String(), false, c)
+	writeLoginHTML(w, r, b.String(), false, c)
 }
 
 // serveRegister handles wp-login.php?action=register (P6.9).
@@ -417,7 +417,7 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	b.WriteString("\t</html>\n")
 	b.WriteString("\t")
 
-	writeLoginHTML(w, b.String(), reauth, c)
+	writeLoginHTML(w, r, b.String(), reauth, c)
 	if reauth && c != nil {
 		c.CurrentUser = nil
 		c.SessionToken = ""
@@ -470,7 +470,7 @@ func (h *Handler) serveCheckEmailConfirm(w http.ResponseWriter, r *http.Request,
 	b.WriteString("\t\t\t</div>\n")
 	b.WriteString("\t</body>\n")
 	b.WriteString("\t</html>\n")
-	writeLoginHTML(w, b.String(), false, c)
+	writeLoginHTML(w, r, b.String(), false, c)
 }
 
 func lostPasswordErrorFromQuery(r *http.Request) string {
@@ -603,7 +603,7 @@ func (h *Handler) serveResetPassDone(w http.ResponseWriter, r *http.Request, c *
 	b.WriteString("\t\t\t</div>\n")
 	b.WriteString("\t</body>\n")
 	b.WriteString("\t</html>\n")
-	writeLoginHTML(w, b.String(), false, c)
+	writeLoginHTML(w, r, b.String(), false, c)
 }
 
 func (h *Handler) serveResetPassForm(w http.ResponseWriter, r *http.Request, c *wp.Context, rpLogin, rpKey, formErr string) {
@@ -656,7 +656,7 @@ func (h *Handler) serveResetPassForm(w http.ResponseWriter, r *http.Request, c *
 	b.WriteString("\t\t\t</div>\n")
 	b.WriteString("\t</body>\n")
 	b.WriteString("\t</html>\n")
-	writeLoginHTML(w, b.String(), false, c)
+	writeLoginHTML(w, r, b.String(), false, c)
 }
 
 func (h *Handler) serveLostPassword(w http.ResponseWriter, r *http.Request, c *wp.Context, errMsg string) {
@@ -717,7 +717,7 @@ func (h *Handler) serveLostPassword(w http.ResponseWriter, r *http.Request, c *w
 	b.WriteString("\t</html>\n")
 	b.WriteString("\t")
 
-	writeLoginHTML(w, b.String(), false, c)
+	writeLoginHTML(w, r, b.String(), false, c)
 }
 
 func writeLoginHead(b *strings.Builder, home, blogname, title, action string, extraClasses ...string) {
@@ -837,7 +837,7 @@ func writeLoginScripts(b *strings.Builder, home string, c *wp.Context) {
 	b.WriteString("\"></script>\n")
 }
 
-func writeLoginHTML(w http.ResponseWriter, body string, reauth bool, c *wp.Context) {
+func writeLoginHTML(w http.ResponseWriter, r *http.Request, body string, reauth bool, c *wp.Context) {
 	if reauth {
 		clearAuthCookiesForReauth(w, c)
 	}
@@ -847,6 +847,23 @@ func writeLoginHTML(w http.ResponseWriter, body string, reauth bool, c *wp.Conte
 		Path:     "/",
 		HttpOnly: true,
 	})
+	// P6.23: persist login-screen locale from ?wp_lang= (HttpOnly, session cookie).
+	if r != nil {
+		if lang := wp.SanitizeTextField(r.URL.Query().Get("wp_lang")); lang != "" {
+			secure := false
+			if c != nil {
+				loginURL := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/") + "/wp-login.php"
+				secure = strings.HasPrefix(strings.ToLower(loginURL), "https://")
+			}
+			http.SetCookie(w, &http.Cookie{
+				Name:     "wp_lang",
+				Value:    lang,
+				Path:     "/",
+				HttpOnly: true,
+				Secure:   secure,
+			})
+		}
+	}
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(body))
@@ -1040,7 +1057,7 @@ func (h *Handler) serveInterimLoginSuccess(w http.ResponseWriter, r *http.Reques
 	b.WriteString("\t\t\t</div>\n")
 	b.WriteString("\t</body>\n")
 	b.WriteString("\t</html>\n")
-	writeLoginHTML(w, b.String(), false, c)
+	writeLoginHTML(w, r, b.String(), false, c)
 }
 
 func strconvQuoteJS(s string) string {
@@ -1167,8 +1184,11 @@ func writeLanguageSwitcher(b *strings.Builder, r *http.Request, c *wp.Context, l
 			selected = v
 		}
 	}
+	// P6.23: prefer ?wp_lang=, then wp_lang cookie (determine_locale login path).
 	if q := r.URL.Query().Get("wp_lang"); q != "" {
 		selected = q
+	} else if ck, err := r.Cookie("wp_lang"); err == nil && ck != nil && ck.Value != "" {
+		selected = ck.Value
 	}
 	b.WriteString("\t\t\t<div class=\"language-switcher\">\n")
 	b.WriteString("\t\t\t\t<form id=\"language-switcher\" method=\"get\">\n")
