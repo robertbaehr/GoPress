@@ -58,13 +58,29 @@ func TestStaticPathTraversalRejected(t *testing.T) {
 	}
 }
 
-func TestWPLoginStub(t *testing.T) {
-	s := &server.Server{}
+func TestWPLoginForm(t *testing.T) {
+	cfg := &config.Config{
+		DBName: "gopress_go", DBUser: "gopress", DBPassword: "gopress",
+		DBHost: "127.0.0.1:3306", DBCharset: "utf8mb4", TablePrefix: "wp_",
+		ABSPATH: "/workspace/",
+		AuthKey: "k", SecureAuthKey: "k", LoggedInKey: "k", NonceKey: "k",
+		AuthSalt: "s", SecureAuthSalt: "s", LoggedInSalt: "s", NonceSalt: "s",
+	}
+	c, err := wp.Boot(context.Background(), cfg)
+	if err != nil {
+		t.Skipf("Boot unavailable: %v", err)
+	}
+	defer c.DB.Close()
+
+	s := &server.Server{WP: c, AbsPath: cfg.ABSPATH}
 	req := httptest.NewRequest(http.MethodGet, "/wp-login.php", nil)
 	rec := httptest.NewRecorder()
 	s.ServeHTTP(rec, req)
-	if rec.Code != http.StatusNotImplemented {
+	if rec.Code != http.StatusOK {
 		t.Fatalf("status=%d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), `name="loginform"`) {
+		t.Fatalf("expected login form HTML, got %q", rec.Body.String())
 	}
 }
 

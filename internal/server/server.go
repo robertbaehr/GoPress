@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/robertbaehr/GoPress/internal/login"
 	"github.com/robertbaehr/GoPress/internal/rest"
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
@@ -31,6 +32,9 @@ type Server struct {
 
 	// REST serves /wp-json. When nil, a default rest.Server is used.
 	REST *rest.Server
+
+	// Login serves /wp-login.php. When nil, a default login.Handler is used.
+	Login *login.Handler
 }
 
 // ServeHTTP implements http.Handler.
@@ -46,9 +50,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if path == "/wp-login.php" {
-		w.Header().Set("Content-Type", "text/plain; charset=utf-8")
-		w.WriteHeader(http.StatusNotImplemented)
-		fmt.Fprint(w, "GoPress: wp-login.php not implemented\n")
+		c := s.requestContext(w, r)
+		h := s.Login
+		if h == nil {
+			h = &login.Handler{}
+		}
+		h.Handle(w, r, c)
 		return
 	}
 	if path == "/wp-json" || strings.HasPrefix(path, "/wp-json/") {
