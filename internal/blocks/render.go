@@ -203,6 +203,9 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderArchives(block)
 	case "core/latest-posts":
 		out = e.renderLatestPosts(block)
+	case "core/rss":
+		// P5.79: local feed link list; remote fetch blocked.
+		out = e.renderRSS(block)
 	case "core/latest-comments":
 		out = e.renderLatestComments(block)
 	case "core/tag-cloud":
