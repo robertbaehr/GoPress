@@ -249,6 +249,31 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 		s.serveBlockItem(w, r, c, id)
 	case path == "/wp/v2/block-types":
 		s.serveBlockTypes(w, r, c)
+	case strings.HasPrefix(path, "/wp/v2/block-types/"):
+		rest := strings.Trim(strings.TrimPrefix(path, "/wp/v2/block-types/"), "/")
+		if rest == "" {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"code":    "rest_no_route",
+				"message": "No route was found matching the URL and request method.",
+				"data":    map[string]any{"status": 404},
+			})
+			return
+		}
+		parts := strings.Split(rest, "/")
+		if len(parts) == 1 {
+			// Namespace collection: /wp/v2/block-types/{namespace}
+			s.serveBlockTypesNamespace(w, r, c, parts[0])
+			return
+		}
+		if len(parts) == 2 {
+			s.serveBlockTypeItem(w, r, c, parts[0], parts[1])
+			return
+		}
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"code":    "rest_no_route",
+			"message": "No route was found matching the URL and request method.",
+			"data":    map[string]any{"status": 404},
+		})
 	case strings.HasPrefix(path, "/wp/v2/block-renderer/"):
 		name := strings.TrimPrefix(path, "/wp/v2/block-renderer/")
 		name = strings.Trim(name, "/")
