@@ -1,4 +1,4 @@
-// Package login implements wp-login.php (P6.1).
+// Package login implements wp-login.php (P6.1+).
 package login
 
 import (
@@ -20,11 +20,27 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 		http.Error(w, "GoPress context unavailable\n", http.StatusServiceUnavailable)
 		return
 	}
+	action := r.URL.Query().Get("action")
+	if action == "" && r.Method == http.MethodPost {
+		_ = r.ParseForm()
+		action = r.FormValue("action")
+	}
 	switch r.Method {
 	case http.MethodGet, http.MethodHead:
-		h.serveForm(w, r, c, "")
+		switch action {
+		case "lostpassword", "retrievepassword":
+			h.serveLostPassword(w, r, c, "")
+		default:
+			h.serveForm(w, r, c, "")
+		}
 	case http.MethodPost:
-		h.servePost(w, r, c)
+		switch action {
+		case "lostpassword", "retrievepassword":
+			// Stub: redisplay form (mail reset lands later).
+			h.serveLostPassword(w, r, c, "")
+		default:
+			h.servePost(w, r, c)
+		}
 	default:
 		w.Header().Set("Allow", "GET, HEAD, POST")
 		http.Error(w, "Method Not Allowed\n", http.StatusMethodNotAllowed)
@@ -32,47 +48,131 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 }
 
 func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Context, errMsg string) {
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "/")), "/")
+	blogname := optionString(c, "blogname", "GoPress")
 	redirectTo := r.URL.Query().Get("redirect_to")
 	if redirectTo == "" {
-		redirectTo = "/wp-admin/"
+		redirectTo = home + "/wp-admin/"
 	}
-	blogname := optionString(c, "blogname", "GoPress")
+	loginURL := home + "/wp-login.php"
 
 	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<!DOCTYPE html>\n")
+	b.WriteString("<html lang=\"en-US\">\n")
+	b.WriteString("<head>\n")
+	b.WriteString("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n")
 	b.WriteString("<title>Log In &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; GoPress</title>\n")
+	b.WriteString(" &#8212; WordPress</title>\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n")
 	b.WriteString("<link rel=\"stylesheet\" href=\"/wp-admin/css/login.min.css\">\n")
-	b.WriteString("</head>\n<body class=\"login\">\n")
+	b.WriteString("</head>\n")
+	b.WriteString("<body class=\"login no-js login-action-login wp-core-ui\">\n")
+	b.WriteString("<script>document.body.className = document.body.className.replace('no-js','js');</script>\n")
+	b.WriteString("<h1 class=\"screen-reader-text\">Log In</h1>\n")
 	b.WriteString("<div id=\"login\">\n")
-	b.WriteString("<h1><a href=\"")
-	b.WriteString(html.EscapeString(optionString(c, "home", "/")))
-	b.WriteString("\">")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString("</a></h1>\n")
+	b.WriteString("<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
 	if errMsg != "" {
 		b.WriteString("<div id=\"login_error\"><strong>Error:</strong> ")
 		b.WriteString(html.EscapeString(errMsg))
 		b.WriteString("<br></div>\n")
 	}
-	b.WriteString("<form name=\"loginform\" id=\"loginform\" action=\"wp-login.php\" method=\"post\">\n")
+	b.WriteString("<form name=\"loginform\" id=\"loginform\" action=\"")
+	b.WriteString(html.EscapeString(loginURL))
+	b.WriteString("\" method=\"post\">\n")
 	b.WriteString("<p>\n<label for=\"user_login\">Username or Email Address</label>\n")
-	b.WriteString("<input type=\"text\" name=\"log\" id=\"user_login\" class=\"input\" value=\"\" size=\"20\" autocapitalize=\"off\" autocomplete=\"username\" required>\n</p>\n")
-	b.WriteString("<p>\n<label for=\"user_pass\">Password</label>\n")
-	b.WriteString("<input type=\"password\" name=\"pwd\" id=\"user_pass\" class=\"input\" value=\"\" size=\"20\" autocomplete=\"current-password\" required>\n</p>\n")
-	b.WriteString("<p class=\"forgetmenot\"><label for=\"rememberme\"><input name=\"rememberme\" type=\"checkbox\" id=\"rememberme\" value=\"forever\"> Remember Me</label></p>\n")
+	b.WriteString("<input type=\"text\" name=\"log\" id=\"user_login\" class=\"input ltr\" value=\"\" size=\"20\" autocapitalize=\"off\" autocomplete=\"username\" required=\"required\" />\n</p>\n")
+	b.WriteString("<div class=\"user-pass-wrap\">\n")
+	b.WriteString("<label for=\"user_pass\">Password</label>\n")
+	b.WriteString("<div class=\"wp-pwd\">\n")
+	b.WriteString("<input type=\"password\" name=\"pwd\" id=\"user_pass\" class=\"input password-input ltr\" value=\"\" size=\"20\" autocomplete=\"current-password\" spellcheck=\"false\" required=\"required\" />\n")
+	b.WriteString("</div>\n</div>\n")
+	b.WriteString("<p class=\"forgetmenot\">\n")
+	b.WriteString("<input name=\"rememberme\" type=\"checkbox\" id=\"rememberme\" value=\"forever\" />\n")
+	b.WriteString("<label for=\"rememberme\">Remember Me</label>\n</p>\n")
 	b.WriteString("<p class=\"submit\">\n")
-	b.WriteString("<input type=\"submit\" name=\"wp-submit\" id=\"wp-submit\" class=\"button button-primary button-large\" value=\"Log In\">\n")
+	b.WriteString("<input type=\"submit\" name=\"wp-submit\" id=\"wp-submit\" class=\"button button-primary button-large\" value=\"Log In\" />\n")
 	b.WriteString("<input type=\"hidden\" name=\"redirect_to\" value=\"")
 	b.WriteString(html.EscapeString(redirectTo))
-	b.WriteString("\">\n")
-	b.WriteString("<input type=\"hidden\" name=\"testcookie\" value=\"1\">\n")
-	b.WriteString("</p>\n</form>\n</div>\n</body>\n</html>\n")
+	b.WriteString("\" />\n")
+	b.WriteString("<input type=\"hidden\" name=\"testcookie\" value=\"1\" />\n")
+	b.WriteString("</p>\n</form>\n")
+	b.WriteString("<p id=\"nav\">\n")
+	b.WriteString("<a class=\"wp-login-lost-password\" href=\"")
+	b.WriteString(html.EscapeString(loginURL + "?action=lostpassword"))
+	b.WriteString("\">Lost your password?</a>\n</p>\n")
+	b.WriteString("<p id=\"backtoblog\">\n<a href=\"")
+	b.WriteString(html.EscapeString(home + "/"))
+	b.WriteString("\">&larr; Go to ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString("</a></p>\n")
+	b.WriteString("</div>\n</body>\n</html>\n")
 
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	writeLoginHTML(w, b.String())
+}
+
+func (h *Handler) serveLostPassword(w http.ResponseWriter, r *http.Request, c *wp.Context, errMsg string) {
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "/")), "/")
+	blogname := optionString(c, "blogname", "GoPress")
+	loginURL := home + "/wp-login.php"
+	actionURL := loginURL + "?action=lostpassword"
+
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n")
+	b.WriteString("<html lang=\"en-US\">\n")
+	b.WriteString("<head>\n")
+	b.WriteString("<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n")
+	b.WriteString("<title>Lost Password &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\" />\n")
+	b.WriteString("<link rel=\"stylesheet\" href=\"/wp-admin/css/login.min.css\">\n")
+	b.WriteString("</head>\n")
+	b.WriteString("<body class=\"login no-js login-action-lostpassword wp-core-ui\">\n")
+	b.WriteString("<script>document.body.className = document.body.className.replace('no-js','js');</script>\n")
+	b.WriteString("<h1 class=\"screen-reader-text\">Lost Password</h1>\n")
+	b.WriteString("<div id=\"login\">\n")
+	b.WriteString("<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
+	if errMsg != "" {
+		b.WriteString("<div id=\"login_error\"><strong>Error:</strong> ")
+		b.WriteString(html.EscapeString(errMsg))
+		b.WriteString("<br></div>\n")
+	} else {
+		b.WriteString("<div class=\"notice notice-info message\"><p>Please enter your username or email address. You will receive an email message with instructions on how to reset your password.</p></div>\n")
+	}
+	b.WriteString("<form name=\"lostpasswordform\" id=\"lostpasswordform\" action=\"")
+	b.WriteString(html.EscapeString(actionURL))
+	b.WriteString("\" method=\"post\">\n")
+	b.WriteString("<p>\n<label for=\"user_login\">Username or Email Address</label>\n")
+	b.WriteString("<input type=\"text\" name=\"user_login\" id=\"user_login\" class=\"input ltr\" value=\"\" size=\"20\" autocapitalize=\"off\" autocomplete=\"username\" required=\"required\" />\n</p>\n")
+	b.WriteString("<input type=\"hidden\" name=\"redirect_to\" value=\"\" />\n")
+	b.WriteString("<p class=\"submit\">\n")
+	b.WriteString("<input type=\"submit\" name=\"wp-submit\" id=\"wp-submit\" class=\"button button-primary button-large\" value=\"Get New Password\" />\n")
+	b.WriteString("</p>\n</form>\n")
+	b.WriteString("<p id=\"nav\">\n")
+	b.WriteString("<a class=\"wp-login-log-in\" href=\"")
+	b.WriteString(html.EscapeString(loginURL))
+	b.WriteString("\">Log in</a>\n</p>\n")
+	b.WriteString("<p id=\"backtoblog\">\n<a href=\"")
+	b.WriteString(html.EscapeString(home + "/"))
+	b.WriteString("\">&larr; Go to ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString("</a></p>\n")
+	b.WriteString("</div>\n</body>\n</html>\n")
+
+	writeLoginHTML(w, b.String())
+}
+
+func writeLoginHTML(w http.ResponseWriter, body string) {
+	http.SetCookie(w, &http.Cookie{
+		Name:     "wordpress_test_cookie",
+		Value:    "WP Cookie check",
+		Path:     "/",
+		HttpOnly: true,
+	})
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(b.String()))
+	_, _ = w.Write([]byte(body))
 }
 
 func (h *Handler) servePost(w http.ResponseWriter, r *http.Request, c *wp.Context) {
