@@ -11,10 +11,11 @@ var (
 	reTableTag    = regexp.MustCompile(`(?is)<table\b`)
 )
 
-// renderTable renders core/table (P5.66).
-// Prefers saved markup; ensures figure.wp-block-table (+ align/className/style);
+// renderTable renders core/table (P5.66 / P5.105).
+// Prefers saved markup; ensures figure.wp-block-table (+ align/className/style/anchor);
 // ensures has-fixed-layout on <table> when hasFixedLayout is true (block default);
-// synthesizes from head/body/foot/caption attrs when markup is absent.
+// synthesizes from head/body/foot/caption/anchor attrs when markup is absent.
+// Color/typography/border land via applySupports on the caller.
 func (e *Env) renderTable(block Block) string {
 	e = e.ensure()
 	out := e.renderSaved(block)
@@ -36,6 +37,9 @@ func polishTableMarkup(out string, attrs map[string]any) string {
 		for _, part := range strings.Fields(cn) {
 			out = addRootClass(out, part)
 		}
+	}
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
+		out = ensureRootAttribute(out, "id", anchor)
 	}
 	if tableHasFixedLayout(attrs) {
 		out = ensureTableFixedLayout(out)
@@ -68,7 +72,13 @@ func synthesizeTableBlock(attrs map[string]any) string {
 	}
 
 	var b strings.Builder
-	b.WriteString(`<figure class="`)
+	b.WriteString(`<figure`)
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
+		b.WriteString(` id="`)
+		b.WriteString(html.EscapeString(anchor))
+		b.WriteString(`"`)
+	}
+	b.WriteString(` class="`)
 	b.WriteString(figClass)
 	b.WriteString(`"><table`)
 	b.WriteString(tableClass)
@@ -169,6 +179,10 @@ func tableSectionHTML(attrs map[string]any, key, tag string) string {
 			if align := strings.TrimSpace(attrString(cell, "align")); align != "" {
 				b.WriteString(` data-align="`)
 				b.WriteString(html.EscapeString(align))
+				b.WriteString(`"`)
+				// Editor stores text alignment as data-align; front uses has-text-align-* (P5.105).
+				b.WriteString(` class="has-text-align-`)
+				b.WriteString(html.EscapeString(sanitizeClassToken(align)))
 				b.WriteString(`"`)
 			}
 			if colspan := strings.TrimSpace(attrString(cell, "colspan")); colspan != "" {
