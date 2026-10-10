@@ -2072,6 +2072,8 @@ func renderMediaList(blogname string, items []mediaRow, c *wp.Context, r *http.R
 	b.WriteString(mediaViewSwitcher("list"))
 	b.WriteString("<hr class=\"wp-header-end\">\n")
 	b.WriteString(`<form method="post" action="/wp-admin/upload.php?mode=list" id="posts-filter">` + "\n")
+	b.WriteString(mediaBulkNonceField(c))
+	b.WriteString(`<input type="hidden" name="mode" value="list" />` + "\n")
 	b.WriteString(`<div class="tablenav top"><div class="alignleft actions bulkactions">`)
 	b.WriteString(`<label for="bulk-action-selector-top" class="screen-reader-text">Select bulk action</label>`)
 	b.WriteString(`<select name="action" id="bulk-action-selector-top">`)

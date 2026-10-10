@@ -10,7 +10,7 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// serveUpload lists media and handles bulk delete on list view (P7.61).
+// serveUpload lists media and handles bulk delete on list view (P7.61 / P7.85).
 func (h *Handler) serveUpload(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	if r.Method == http.MethodPost {
 		h.handleMediaBulk(w, r, c)
@@ -40,13 +40,21 @@ func (h *Handler) handleMediaBulk(w http.ResponseWriter, r *http.Request, c *wp.
 		return
 	}
 	_ = r.ParseForm()
+	mode := mediaBulkRedirectMode(r)
 	action := strings.TrimSpace(r.FormValue("action"))
 	if action == "" || action == "-1" {
 		action = strings.TrimSpace(r.FormValue("action2"))
 	}
 	if action != "delete" {
-		http.Redirect(w, r, "/wp-admin/upload.php?mode=list", http.StatusFound)
+		http.Redirect(w, r, "/wp-admin/upload.php?mode="+mode, http.StatusFound)
 		return
+	}
+	// P7.85: require bulk-media nonce when present (forms emit it).
+	if nonce := strings.TrimSpace(r.FormValue("_wpnonce")); nonce != "" {
+		if c.VerifyNonce(nonce, "bulk-media") == 0 {
+			http.Error(w, "The link you followed has expired.\n", http.StatusForbidden)
+			return
+		}
 	}
 	ids := collectMediaIDs(r)
 	deleted := 0
@@ -58,11 +66,25 @@ func (h *Handler) handleMediaBulk(w http.ResponseWriter, r *http.Request, c *wp.
 			deleted++
 		}
 	}
-	loc := "/wp-admin/upload.php?mode=list"
+	loc := "/wp-admin/upload.php?mode=" + mode
 	if deleted > 0 {
 		loc += "&deleted=" + strconv.Itoa(deleted)
 	}
 	http.Redirect(w, r, loc, http.StatusFound)
+}
+
+func mediaBulkRedirectMode(r *http.Request) string {
+	if r == nil {
+		return "list"
+	}
+	mode := strings.TrimSpace(r.FormValue("mode"))
+	if mode == "" && r.URL != nil {
+		mode = strings.TrimSpace(r.URL.Query().Get("mode"))
+	}
+	if mode != "grid" {
+		return "list"
+	}
+	return "grid"
 }
 
 func collectMediaIDs(r *http.Request) []int64 {
@@ -140,4 +162,12 @@ func mediaBulkDeletedNotice(r *http.Request) string {
 	}
 	b.WriteString(`</p></div>` + "\n")
 	return b.String()
+}
+
+// mediaBulkNonceField emits the bulk-media nonce for list/grid forms (P7.85).
+func mediaBulkNonceField(c *wp.Context) string {
+	if c == nil {
+		return ""
+	}
+	return `<input type="hidden" name="_wpnonce" value="` + html.EscapeString(c.CreateNonce("bulk-media")) + `" />` + "\n"
 }
