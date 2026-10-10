@@ -103,13 +103,6 @@ func SeedSuggestedPolicyCache(c *Context) {
 	SetSuggestedPolicyTextChanged(c, false)
 }
 
-type suggestedPolicyCacheEntry struct {
-	PluginName string `json:"plugin_name"`
-	PolicyText string `json:"policy_text"`
-	Removed    int64  `json:"removed,omitempty"`
-	Updated    int64  `json:"updated,omitempty"`
-}
-
 func loadSuggestedPolicyCache(c *Context, pageID int64) []PrivacyPolicySection {
 	if c == nil || c.Meta == nil || pageID <= 0 {
 		return nil
@@ -119,36 +112,18 @@ func loadSuggestedPolicyCache(c *Context, pageID int64) []PrivacyPolicySection {
 	if !ok || s == "" {
 		return nil
 	}
-	var entries []suggestedPolicyCacheEntry
+	var entries []PrivacyPolicySection
 	if err := json.Unmarshal([]byte(s), &entries); err != nil {
 		return nil
 	}
-	out := make([]PrivacyPolicySection, 0, len(entries))
-	for _, e := range entries {
-		out = append(out, PrivacyPolicySection{
-			PluginName: e.PluginName,
-			PolicyText: e.PolicyText,
-			Removed:    e.Removed,
-			Updated:    e.Updated,
-		})
-	}
-	return out
+	return entries
 }
 
 func saveSuggestedPolicyCache(c *Context, pageID int64, sections []PrivacyPolicySection) {
 	if c == nil || c.Meta == nil || pageID <= 0 {
 		return
 	}
-	entries := make([]suggestedPolicyCacheEntry, 0, len(sections))
-	for _, s := range sections {
-		entries = append(entries, suggestedPolicyCacheEntry{
-			PluginName: s.PluginName,
-			PolicyText: s.PolicyText,
-			Removed:    s.Removed,
-			Updated:    s.Updated,
-		})
-	}
-	data, err := json.Marshal(entries)
+	data, err := json.Marshal(sections)
 	if err != nil {
 		return
 	}
