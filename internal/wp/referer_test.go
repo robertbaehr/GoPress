@@ -130,3 +130,37 @@ func TestValidateRedirectRelative(t *testing.T) {
 		t.Fatalf("evil=%q", got)
 	}
 }
+
+func TestSanitizeRedirectStripsCRLF(t *testing.T) {
+	got := wp.SanitizeRedirect("/wp-admin/%0d%0aSet-Cookie:x")
+	if strings.Contains(strings.ToLower(got), "%0d") || strings.Contains(strings.ToLower(got), "%0a") {
+		t.Fatalf("CRLF not stripped: %q", got)
+	}
+	if !strings.Contains(got, "/wp-admin/") {
+		t.Fatalf("path lost: %q", got)
+	}
+	if got := wp.SanitizeRedirect("/a b"); got != "/a%20b" {
+		t.Fatalf("space encode=%q", got)
+	}
+}
+
+func TestValidateRedirectResolvesRelative(t *testing.T) {
+	c := bootWP(t)
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/options.php", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	got := wp.ValidateRedirect(c, "edit.php", "/fallback")
+	if got != "/wp-admin/edit.php" {
+		t.Fatalf("resolved relative=%q want /wp-admin/edit.php", got)
+	}
+}
+
+func TestValidateRedirectRejectsBadSchemesAndNewlines(t *testing.T) {
+	c := bootWP(t)
+	if got := wp.ValidateRedirect(c, "javascript:alert(1)", "/fallback"); got != "/fallback" {
+		t.Fatalf("javascript scheme=%q", got)
+	}
+	if got := wp.ValidateRedirect(c, "/wp-admin/\r\nLocation: https://evil.example/", "/fallback"); strings.Contains(got, "\n") || strings.Contains(got, "\r") {
+		t.Fatalf("newline survived: %q", got)
+	}
+}
