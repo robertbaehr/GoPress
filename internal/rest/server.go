@@ -151,6 +151,47 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 			return
 		}
 		s.serveBlockRenderer(w, r, c, name)
+	case path == "/wp/v2/navigation":
+		s.serveNavigation(w, r, c)
+	case strings.HasPrefix(path, "/wp/v2/navigation/"):
+		id, ok := parseTrailingID(path, "/wp/v2/navigation/")
+		if !ok {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"code":    "rest_no_route",
+				"message": "No route was found matching the URL and request method.",
+				"data":    map[string]any{"status": 404},
+			})
+			return
+		}
+		s.serveNavigationItem(w, r, c, id)
+	case path == "/wp/v2/menus":
+		s.serveMenus(w, r, c)
+	case strings.HasPrefix(path, "/wp/v2/menus/"):
+		id, ok := parseTrailingID(path, "/wp/v2/menus/")
+		if !ok {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"code":    "rest_no_route",
+				"message": "No route was found matching the URL and request method.",
+				"data":    map[string]any{"status": 404},
+			})
+			return
+		}
+		s.serveMenuItem(w, r, c, id)
+	case path == "/wp/v2/menu-items":
+		s.serveMenuItems(w, r, c)
+	case strings.HasPrefix(path, "/wp/v2/menu-items/"):
+		id, ok := parseTrailingID(path, "/wp/v2/menu-items/")
+		if !ok {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"code":    "rest_no_route",
+				"message": "No route was found matching the URL and request method.",
+				"data":    map[string]any{"status": 404},
+			})
+			return
+		}
+		s.serveMenuItemByID(w, r, c, id)
+	case path == "/wp/v2/menu-locations":
+		s.serveMenuLocations(w, r, c)
 	default:
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"code":    "rest_no_route",
