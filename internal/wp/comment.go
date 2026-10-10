@@ -98,19 +98,22 @@ type CommentInsert struct {
 	Approved    string // "1" or "0"
 }
 
-// CommentUpdate holds fields for updating an existing comment (P4.64).
+// CommentUpdate holds fields for updating an existing comment (P4.64 / P4.117).
 // Zero-value / nil pointer fields are left unchanged.
 type CommentUpdate struct {
 	Content     *string
 	Author      *string
 	AuthorEmail *string
 	AuthorURL   *string
+	AuthorIP    *string
 	Parent      *int64
 	PostID      *int64
 	Approved    *string // "1", "0", "spam", "trash"
+	Date        *string // MySQL datetime
+	DateGMT     *string // MySQL datetime
 }
 
-// UpdateComment updates a comment row (wp_update_comment subset, P4.64).
+// UpdateComment updates a comment row (wp_update_comment subset, P4.64 / P4.117).
 func UpdateComment(c *Context, id int64, in CommentUpdate) error {
 	if c == nil || c.DB == nil || id <= 0 {
 		return fmt.Errorf("wp: UpdateComment: invalid input")
@@ -129,6 +132,9 @@ func UpdateComment(c *Context, id int64, in CommentUpdate) error {
 	parent := existing.Parent
 	postID := existing.PostID
 	approved := existing.Approved
+	date := existing.Date
+	dateGMT := existing.DateGMT
+	authorIP := ""
 	if in.Content != nil {
 		content = *in.Content
 	}
@@ -140,6 +146,9 @@ func UpdateComment(c *Context, id int64, in CommentUpdate) error {
 	}
 	if in.AuthorURL != nil {
 		url = *in.AuthorURL
+	}
+	if in.AuthorIP != nil {
+		authorIP = strings.TrimSpace(*in.AuthorIP)
 	}
 	if in.Parent != nil {
 		parent = *in.Parent
@@ -153,14 +162,34 @@ func UpdateComment(c *Context, id int64, in CommentUpdate) error {
 	if in.Approved != nil {
 		approved = *in.Approved
 	}
-	q, args, err := c.DB.Prepare(
-		"UPDATE "+c.DB.Comments()+" SET comment_content = %s, comment_author = %s, comment_author_email = %s, "+
-			"comment_author_url = %s, comment_parent = %d, comment_post_ID = %d, comment_approved = %s "+
-			"WHERE comment_ID = %d",
-		content, author, email, url, parent, postID, approved, id,
+	if in.Date != nil {
+		date = strings.TrimSpace(*in.Date)
+	}
+	if in.DateGMT != nil {
+		dateGMT = strings.TrimSpace(*in.DateGMT)
+	}
+	var (
+		q    string
+		args []any
+		err2 error
 	)
-	if err != nil {
-		return err
+	if in.AuthorIP != nil {
+		q, args, err2 = c.DB.Prepare(
+			"UPDATE "+c.DB.Comments()+" SET comment_content = %s, comment_author = %s, comment_author_email = %s, "+
+				"comment_author_url = %s, comment_author_IP = %s, comment_parent = %d, comment_post_ID = %d, comment_approved = %s, "+
+				"comment_date = %s, comment_date_gmt = %s WHERE comment_ID = %d",
+			content, author, email, url, authorIP, parent, postID, approved, date, dateGMT, id,
+		)
+	} else {
+		q, args, err2 = c.DB.Prepare(
+			"UPDATE "+c.DB.Comments()+" SET comment_content = %s, comment_author = %s, comment_author_email = %s, "+
+				"comment_author_url = %s, comment_parent = %d, comment_post_ID = %d, comment_approved = %s, "+
+				"comment_date = %s, comment_date_gmt = %s WHERE comment_ID = %d",
+			content, author, email, url, parent, postID, approved, date, dateGMT, id,
+		)
+	}
+	if err2 != nil {
+		return err2
 	}
 	if _, err := c.DB.Exec(q, args...); err != nil {
 		return err

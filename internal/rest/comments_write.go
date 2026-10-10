@@ -5,19 +5,24 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"time"
 
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
+// commentWriteBody is the POST/PATCH body for comments (P4.45 / P4.117).
+// Pointer fields are omit-safe on update so zero values (parent=0) can be written.
 type commentWriteBody struct {
-	Post        int64  `json:"post"`
-	Parent      int64  `json:"parent"`
-	Content     any    `json:"content"`
-	AuthorName  string `json:"author_name"`
-	AuthorEmail string `json:"author_email"`
-	AuthorURL   string `json:"author_url"`
-	AuthorIP    string `json:"author_ip"`
-	Status      string `json:"status"`
+	Post        *int64  `json:"post"`
+	Parent      *int64  `json:"parent"`
+	Content     any     `json:"content"`
+	AuthorName  *string `json:"author_name"`
+	AuthorEmail *string `json:"author_email"`
+	AuthorURL   *string `json:"author_url"`
+	AuthorIP    *string `json:"author_ip"`
+	Status      string  `json:"status"`
+	Date        *string `json:"date"`
+	DateGMT     *string `json:"date_gmt"`
 }
 
 func (s *Server) serveComments(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -97,7 +102,7 @@ func (s *Server) createComment(w http.ResponseWriter, r *http.Request, c *wp.Con
 		})
 		return
 	}
-	if body.Post <= 0 {
+	if body.Post == nil || *body.Post <= 0 {
 		writeJSON(w, http.StatusForbidden, map[string]any{
 			"code":    "rest_comment_invalid_post_id",
 			"message": "Sorry, you are not allowed to create this comment without a post.",
@@ -105,7 +110,8 @@ func (s *Server) createComment(w http.ResponseWriter, r *http.Request, c *wp.Con
 		})
 		return
 	}
-	post, err := loadCommentablePost(c, body.Post)
+	postID := *body.Post
+	post, err := loadCommentablePost(c, postID)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_comment_query",
@@ -158,9 +164,18 @@ func (s *Server) createComment(w http.ResponseWriter, r *http.Request, c *wp.Con
 		return
 	}
 
-	author := strings.TrimSpace(body.AuthorName)
-	email := strings.TrimSpace(body.AuthorEmail)
-	url := strings.TrimSpace(body.AuthorURL)
+	author := ""
+	if body.AuthorName != nil {
+		author = strings.TrimSpace(*body.AuthorName)
+	}
+	email := ""
+	if body.AuthorEmail != nil {
+		email = strings.TrimSpace(*body.AuthorEmail)
+	}
+	url := ""
+	if body.AuthorURL != nil {
+		url = strings.TrimSpace(*body.AuthorURL)
+	}
 	if author == "" {
 		author = c.CurrentUser.DisplayName
 		if author == "" {
@@ -183,17 +198,23 @@ func (s *Server) createComment(w http.ResponseWriter, r *http.Request, c *wp.Con
 		}
 	}
 
-	parent := body.Parent
-	if parent < 0 {
-		parent = 0
+	parent := int64(0)
+	if body.Parent != nil {
+		parent = *body.Parent
+		if parent < 0 {
+			parent = 0
+		}
 	}
-	authorIP := strings.TrimSpace(body.AuthorIP)
+	authorIP := ""
+	if body.AuthorIP != nil {
+		authorIP = strings.TrimSpace(*body.AuthorIP)
+	}
 	if authorIP == "" {
 		authorIP = requestRemoteIP(r)
 	}
 
 	id, err := wp.InsertComment(c, wp.CommentInsert{
-		PostID:      body.Post,
+		PostID:      postID,
 		Author:      author,
 		AuthorEmail: email,
 		AuthorURL:   url,
@@ -222,7 +243,8 @@ func (s *Server) createComment(w http.ResponseWriter, r *http.Request, c *wp.Con
 	writeJSON(w, http.StatusCreated, cm)
 }
 
-// updateComment handles PUT/PATCH /wp/v2/comments/{id} for moderators (P4.64).
+// updateComment handles PUT/PATCH /wp/v2/comments/{id} for moderators (P4.64 / P4.117).
+// P4.117: omit-safe parent/post (incl. parent=0), author_ip, date/date_gmt.
 func (s *Server) updateComment(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
 	if c == nil || c.CurrentUser == nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]any{
@@ -281,24 +303,39 @@ func (s *Server) updateComment(w http.ResponseWriter, r *http.Request, c *wp.Con
 		}
 		upd.Content = &content
 	}
-	if body.AuthorName != "" {
-		v := strings.TrimSpace(body.AuthorName)
+	if body.AuthorName != nil {
+		v := strings.TrimSpace(*body.AuthorName)
 		upd.Author = &v
 	}
-	if body.AuthorEmail != "" {
-		v := strings.TrimSpace(body.AuthorEmail)
+	if body.AuthorEmail != nil {
+		v := strings.TrimSpace(*body.AuthorEmail)
 		upd.AuthorEmail = &v
 	}
-	if body.AuthorURL != "" {
-		v := strings.TrimSpace(body.AuthorURL)
+	if body.AuthorURL != nil {
+		v := strings.TrimSpace(*body.AuthorURL)
 		upd.AuthorURL = &v
 	}
-	if body.Parent > 0 {
-		p := body.Parent
+	if body.AuthorIP != nil {
+		v := strings.TrimSpace(*body.AuthorIP)
+		upd.AuthorIP = &v
+	}
+	if body.Parent != nil {
+		p := *body.Parent
+		if p < 0 {
+			p = 0
+		}
 		upd.Parent = &p
 	}
-	if body.Post > 0 {
-		post, err := loadCommentablePost(c, body.Post)
+	if body.Post != nil {
+		if *body.Post <= 0 {
+			writeJSON(w, http.StatusForbidden, map[string]any{
+				"code":    "rest_comment_invalid_post_id",
+				"message": "Invalid post ID.",
+				"data":    map[string]any{"status": 403},
+			})
+			return
+		}
+		post, err := loadCommentablePost(c, *body.Post)
 		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]any{
 				"code":    "rest_comment_query",
@@ -315,12 +352,22 @@ func (s *Server) updateComment(w http.ResponseWriter, r *http.Request, c *wp.Con
 			})
 			return
 		}
-		pid := body.Post
+		pid := *body.Post
 		upd.PostID = &pid
 	}
 	if body.Status != "" {
 		approved := commentStatusToApproved(body.Status)
 		upd.Approved = &approved
+	}
+	if body.Date != nil {
+		if mysql := restDateToMySQL(*body.Date); mysql != "" {
+			upd.Date = &mysql
+		}
+	}
+	if body.DateGMT != nil {
+		if mysql := restDateToMySQL(*body.DateGMT); mysql != "" {
+			upd.DateGMT = &mysql
+		}
 	}
 
 	if err := wp.UpdateComment(c, id, upd); err != nil {
@@ -449,6 +496,25 @@ func decodeCommentWriteBody(r *http.Request) (commentWriteBody, error) {
 		return commentWriteBody{}, err
 	}
 	return body, nil
+}
+
+// restDateToMySQL converts REST ISO8601 / MySQL datetime to MySQL form (P4.117).
+func restDateToMySQL(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	for _, layout := range []string{time.RFC3339Nano, time.RFC3339} {
+		if t, err := time.Parse(layout, raw); err == nil {
+			return t.UTC().Format("2006-01-02 15:04:05")
+		}
+	}
+	for _, layout := range []string{"2006-01-02T15:04:05", "2006-01-02 15:04:05", "2006-01-02"} {
+		if t, err := time.ParseInLocation(layout, raw, time.UTC); err == nil {
+			return t.Format("2006-01-02 15:04:05")
+		}
+	}
+	return ""
 }
 
 func commentContentFromBody(v any) string {
