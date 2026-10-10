@@ -3,9 +3,7 @@
 package wp
 
 import (
-	"crypto/rand"
 	"fmt"
-	"math/big"
 	"regexp"
 	"strconv"
 	"strings"
@@ -70,14 +68,10 @@ func generatePassword(length int, special, extraSpecial bool) string {
 	}
 	var b strings.Builder
 	b.Grow(length)
-	max := big.NewInt(int64(len(alphabet)))
+	// P2.103: prefer wp_rand for password alphabet picks (like WP).
+	last := int64(len(alphabet) - 1)
 	for i := 0; i < length; i++ {
-		n, err := rand.Int(rand.Reader, max)
-		if err != nil {
-			b.WriteByte(alphabet[i%len(alphabet)])
-			continue
-		}
-		b.WriteByte(alphabet[n.Int64()])
+		b.WriteByte(alphabet[Rand(0, last)])
 	}
 	return b.String()
 }
