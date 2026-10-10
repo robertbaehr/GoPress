@@ -1,6 +1,7 @@
 package server_test
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -11,7 +12,7 @@ import (
 )
 
 func TestInstallPlaceholderHomeAndInstallPHP(t *testing.T) {
-	c := wp.NewContext(nil)
+	c := wp.NewContext(context.TODO())
 	c.Options = wp.NewOptions(nil, wp.NewObjectCache())
 	srv := &server.Server{WP: c, Front: &server.Front{}}
 
