@@ -1795,15 +1795,16 @@ func (h *Handler) serveOptionsMedia(w http.ResponseWriter, r *http.Request, c *w
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveOptionsPermalink is the Settings → Permalinks screen (P7.36 / P7.52).
+// serveOptionsPermalink is the Settings → Permalinks screen (P7.36 / P7.52 / P7.102).
 // Shows common permalink structure radios plus optional category/tag bases;
 // POST persists permalink_structure / category_base / tag_base.
 func (h *Handler) serveOptionsPermalink(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	// P7.102: manage_options gate (mirrors options-permalink.php wp_die).
+	if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "manage_options") {
+		http.Error(w, "Sorry, you are not allowed to manage options for this site.\n", http.StatusForbidden)
+		return
+	}
 	if r.Method == http.MethodPost {
-		if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "manage_options") {
-			http.Error(w, "Sorry, you are not allowed to manage options for this site.\n", http.StatusForbidden)
-			return
-		}
 		_ = r.ParseForm()
 		savePermalinkOptions(c, r)
 		http.Redirect(w, r, "/wp-admin/options-permalink.php?settings-updated=true", http.StatusFound)
@@ -1835,21 +1836,43 @@ func (h *Handler) serveOptionsPermalink(w http.ResponseWriter, r *http.Request, 
 	}
 	customChecked := structure != "" && !known[structure]
 
+	// P7.102: available_permalink_structure_tags subset (filterable).
+	availableTags := map[string]string{
+		"year":     "%year% (The year of the post, four digits, for example 2004.)",
+		"monthnum": "%monthnum% (Month of the year, for example 05.)",
+		"day":      "%day% (Day of the month, for example 28.)",
+		"hour":     "%hour% (Hour of the day, for example 15.)",
+		"minute":   "%minute% (Minute of the hour, for example 43.)",
+		"second":   "%second% (Second of the minute, for example 33.)",
+		"post_id":  "%post_id% (The unique ID of the post, for example 423.)",
+		"postname": "%postname% (The sanitized post title (slug).)",
+		"category": "%category% (Category slug. Nested sub-categories appear as nested directories in the URL.)",
+		"author":   "%author% (A sanitized version of the author name.)",
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("available_permalink_structure_tags", availableTags); v != nil {
+			if m, ok := v.(map[string]string); ok && m != nil {
+				availableTags = m
+			}
+		}
+	}
+	tagOrder := []string{"year", "monthnum", "day", "hour", "minute", "second", "post_id", "postname", "category", "author"}
+
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>Permalink Settings &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui options-permalink-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1>Permalink Settings</h1>\n")
 	if r.URL.Query().Get("settings-updated") == "true" {
 		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p><strong>Permalink structure updated.</strong></p></div>\n")
 	}
-	b.WriteString("<p class=\"description\">GoPress permalink settings — POST saves permalink_structure via options-permalink.php.</p>\n")
 	b.WriteString("<form name=\"form\" action=\"options-permalink.php\" method=\"post\">\n")
 	b.WriteString("<h2 id=\"wp-settings-section-common-settings\" class=\"title\">Common Settings</h2>\n")
+	b.WriteString("<p>Select the permalink structure for your website. Including the <code>%postname%</code> tag makes links easy to understand, and can help your posts rank higher in search engines.</p>\n")
 	b.WriteString("<table class=\"form-table permalink-structure\" role=\"presentation\">\n")
 	b.WriteString("<tr>\n<th scope=\"row\">Permalink structure</th>\n<td>\n")
 	b.WriteString("<fieldset class=\"structure-selection\">\n")
@@ -1882,18 +1905,35 @@ func (h *Handler) serveOptionsPermalink(w http.ResponseWriter, r *http.Request, 
 	}
 	b.WriteString(" />\n")
 	b.WriteString("<div><label for=\"custom_selection\">Custom Structure</label>\n")
-	b.WriteString("<p><code>")
+	b.WriteString("<p><span class=\"code\"><code id=\"permalink-custom\">")
 	b.WriteString(html.EscapeString(home))
-	customVal := structure
-	if !customChecked {
-		customVal = ""
-	}
+	// P7.102: custom field shows current structure (WP keeps value even for presets).
 	b.WriteString("</code> <input name=\"permalink_structure\" id=\"permalink_structure\" type=\"text\" value=\"")
-	b.WriteString(html.EscapeString(customVal))
-	b.WriteString("\" class=\"regular-text code\" /></p></div>\n</div>\n")
+	b.WriteString(html.EscapeString(structure))
+	b.WriteString("\" class=\"regular-text code\" /></span></p>\n")
+	if len(availableTags) > 0 {
+		b.WriteString("<div class=\"available-structure-tags hide-if-no-js\">\n")
+		b.WriteString("<fieldset>\n<legend>Available tags:</legend>\n<ul role=\"list\">\n")
+		for _, tag := range tagOrder {
+			explanation, ok := availableTags[tag]
+			if !ok {
+				continue
+			}
+			b.WriteString("<li><button type=\"button\" class=\"button button-secondary\" aria-label=\"")
+			b.WriteString(html.EscapeString(explanation))
+			b.WriteString("\">%")
+			b.WriteString(html.EscapeString(tag))
+			b.WriteString("%</button></li>\n")
+		}
+		b.WriteString("</ul>\n</fieldset>\n</div>\n")
+	}
+	b.WriteString("</div>\n</div>\n")
 	b.WriteString("</fieldset>\n</td>\n</tr>\n</table>\n")
 
-	b.WriteString("<h2 class=\"title\">Optional</h2>\n")
+	b.WriteString("<h2 id=\"wp-settings-section-optional\" class=\"title\">Optional</h2>\n")
+	b.WriteString("<p class=\"permalink-structure-optional-description\">If you like, you may enter custom structures for your category and tag URLs here. For example, using <code>topics</code> as your category base would make your category links like <code>")
+	b.WriteString(html.EscapeString(home))
+	b.WriteString("/topics/uncategorized/</code>. If you leave these blank the defaults will be used.</p>\n")
 	b.WriteString("<table class=\"form-table\" role=\"presentation\">\n")
 	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"category_base\">Category base</label></th>\n")
 	b.WriteString("<td><input name=\"category_base\" id=\"category_base\" type=\"text\" value=\"")
@@ -1909,7 +1949,7 @@ func (h *Handler) serveOptionsPermalink(w http.ResponseWriter, r *http.Request, 
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// savePermalinkOptions persists Settings → Permalinks fields (P7.52).
+// savePermalinkOptions persists Settings → Permalinks fields (P7.52 / P7.102).
 // Mirrors options-permalink.php: selection radio wins over custom text unless custom.
 func savePermalinkOptions(c *wp.Context, r *http.Request) {
 	if c == nil || c.Options == nil || r == nil {
@@ -1932,11 +1972,21 @@ func savePermalinkOptions(c *wp.Context, r *http.Request) {
 	}
 	_, _ = c.Options.UpdateOption("permalink_structure", structure, "yes")
 	if _, ok := r.Form["category_base"]; ok {
-		_, _ = c.Options.UpdateOption("category_base", strings.TrimSpace(r.Form.Get("category_base")), "yes")
+		base := sanitizePermalinkBase(r.Form.Get("category_base"))
+		_, _ = c.Options.UpdateOption("category_base", base, "yes")
 	}
 	if _, ok := r.Form["tag_base"]; ok {
-		_, _ = c.Options.UpdateOption("tag_base", strings.TrimSpace(r.Form.Get("tag_base")), "yes")
+		base := sanitizePermalinkBase(r.Form.Get("tag_base"))
+		_, _ = c.Options.UpdateOption("tag_base", base, "yes")
 	}
+}
+
+// sanitizePermalinkBase trims category/tag base paths (P7.102).
+func sanitizePermalinkBase(raw string) string {
+	raw = strings.TrimSpace(raw)
+	raw = strings.ReplaceAll(raw, "#", "")
+	raw = strings.Trim(raw, "/")
+	return raw
 }
 
 func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Context) {
