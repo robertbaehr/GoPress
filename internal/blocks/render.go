@@ -67,9 +67,13 @@ func (e *Env) RenderBlock(block Block) string {
 		"core/code", "core/html",
 		"core/group", "core/columns", "core/column", "core/buttons", "core/button",
 		"core/pullquote", "core/preformatted", "core/verse", "core/table",
-		"core/audio", "core/video", "core/cover", "core/media-text",
+		"core/cover", "core/media-text",
 		"core/details":
 		out = e.renderSaved(block)
+	case "core/audio":
+		out = e.renderAudio(block)
+	case "core/video":
+		out = e.renderVideo(block)
 	case "core/file":
 		out = e.renderFile(block)
 	case "core/freeform":
