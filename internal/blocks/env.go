@@ -42,6 +42,11 @@ type Env struct {
 	SiteLogoURL func() string // custom logo / site_logo attachment URL
 	HomeURL     func() string
 	IsFrontPage func() bool
+	// IsHome / IsPaged / QueriedObjectID / PageForPostsID refine home-link + site-title current state (P5.93).
+	IsHome          func() bool
+	IsPaged         func() bool
+	QueriedObjectID func() int64
+	PageForPostsID  func() int64
 
 	// IsLoggedIn / CurrentURL / LoginURL / LogoutURL power core/loginout (P5.74).
 	IsLoggedIn func() bool

@@ -3387,6 +3387,28 @@
   api: n/a
   notes: "P5.74 — unit coverage for loginout; REST block-types metadata"
 
+# P5.93: polish home-link / site-title / site-tagline wrappers.
+- prefix: wp-includes/blocks/home-link.php#p5.93
+  go: internal/blocks/navigation.go
+  status: partial
+  task: P5.93
+  api: internal
+  notes: "P5.93 — textColor/backgroundColor/className; is_home edge current-menu-item"
+
+- prefix: wp-includes/blocks/site-title.php#p5.93
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.93
+  api: internal
+  notes: "P5.93 — has-link-color/className; aria-current respects !is_paged + home edge"
+
+- prefix: wp-includes/blocks/site-tagline.php#p5.93
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.93
+  api: internal
+  notes: "P5.93 — className on wrapper; level/textAlign unchanged"
+
 # P5.73: render core/home-link (nav item → home_url).
 - prefix: wp-includes/blocks/home-link.php
   go: internal/blocks/navigation.go

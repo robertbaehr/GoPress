@@ -112,12 +112,11 @@ func (e *Env) renderNavigationItems(items []Block) string {
 	return b.String()
 }
 
-// renderHomeLink renders core/home-link (P5.73) — a nav item that always
-// points at home_url(), with current-menu-item when on the front page.
+// renderHomeLink renders core/home-link (P5.73 / P5.93) — a nav item that always
+// points at home_url(), with current-menu-item when on the front/home edge case.
 func (e *Env) renderHomeLink(block Block) string {
 	e = e.ensure()
-	label, _ := block.Attrs["label"].(string)
-	label = strings.TrimSpace(label)
+	label := strings.TrimSpace(attrString(block.Attrs, "label"))
 	if label == "" {
 		label = "Home"
 	}
@@ -130,17 +129,40 @@ func (e *Env) renderHomeLink(block Block) string {
 	} else {
 		home = "/"
 	}
-	isCurrent := e.IsFrontPage != nil && e.IsFrontPage()
+	isCurrent := e.isHomeLinkCurrent()
 
-	liClass := "wp-block-home-link wp-block-navigation-item"
+	classes := []string{"wp-block-home-link", "wp-block-navigation-item"}
 	if isCurrent {
-		liClass += " current-menu-item"
+		classes = append(classes, "current-menu-item")
+	}
+	// P5.93: named/custom colors like block_core_home_link_build_css_colors.
+	styleAttr := ""
+	if tc := strings.TrimSpace(attrString(block.Attrs, "textColor")); tc != "" {
+		classes = append(classes, "has-text-color", "has-"+sanitizeClassToken(tc)+"-color")
+	} else if custom := styleColorText(block.Attrs); custom != "" {
+		classes = append(classes, "has-text-color")
+		styleAttr += "color: " + custom + ";"
+	}
+	if bg := strings.TrimSpace(attrString(block.Attrs, "backgroundColor")); bg != "" {
+		classes = append(classes, "has-background", "has-"+sanitizeClassToken(bg)+"-background-color")
+	} else if custom := styleColorBackground(block.Attrs); custom != "" {
+		classes = append(classes, "has-background")
+		styleAttr += "background-color: " + custom + ";"
+	}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		classes = append(classes, cn)
 	}
 
 	var b strings.Builder
 	b.WriteString(`<li class="`)
-	b.WriteString(html.EscapeString(liClass))
-	b.WriteString(`"><a class="wp-block-home-link__content wp-block-navigation-item__content" href="`)
+	b.WriteString(html.EscapeString(strings.Join(classes, " ")))
+	b.WriteString(`"`)
+	if styleAttr != "" {
+		b.WriteString(` style="`)
+		b.WriteString(html.EscapeString(styleAttr))
+		b.WriteString(`"`)
+	}
+	b.WriteString(`><a class="wp-block-home-link__content wp-block-navigation-item__content" href="`)
 	b.WriteString(html.EscapeString(home))
 	b.WriteString(`" rel="home"`)
 	if opensInNewTab(block.Attrs) {
@@ -151,13 +173,58 @@ func (e *Env) renderHomeLink(block Block) string {
 	}
 	b.WriteString(`>`)
 	b.WriteString(html.EscapeString(label))
-	if desc, _ := block.Attrs["description"].(string); strings.TrimSpace(desc) != "" {
+	if desc := strings.TrimSpace(attrString(block.Attrs, "description")); desc != "" {
 		b.WriteString(`<span class="wp-block-navigation-item__description">`)
 		b.WriteString(html.EscapeString(desc))
 		b.WriteString(`</span>`)
 	}
 	b.WriteString(`</a></li>`)
 	return b.String()
+}
+
+// isHomeLinkCurrent mirrors home-link is_front_page / is_home edge cases (P5.93).
+func (e *Env) isHomeLinkCurrent() bool {
+	if e == nil {
+		return false
+	}
+	if e.IsFrontPage != nil && e.IsFrontPage() {
+		return true
+	}
+	if e.IsHome == nil || !e.IsHome() {
+		return false
+	}
+	var pageForPosts, queried int64
+	if e.PageForPostsID != nil {
+		pageForPosts = e.PageForPostsID()
+	}
+	if e.QueriedObjectID != nil {
+		queried = e.QueriedObjectID()
+	}
+	return pageForPosts != queried
+}
+
+func styleColorText(attrs map[string]any) string {
+	style, _ := attrs["style"].(map[string]any)
+	if style == nil {
+		return ""
+	}
+	color, _ := style["color"].(map[string]any)
+	if color == nil {
+		return ""
+	}
+	return strings.TrimSpace(attrString(color, "text"))
+}
+
+func styleColorBackground(attrs map[string]any) string {
+	style, _ := attrs["style"].(map[string]any)
+	if style == nil {
+		return ""
+	}
+	color, _ := style["color"].(map[string]any)
+	if color == nil {
+		return ""
+	}
+	return strings.TrimSpace(attrString(color, "background"))
 }
 
 func opensInNewTab(attrs map[string]any) bool {
