@@ -1181,6 +1181,14 @@
   task: P3.39
   api: n/a
 
+# P3.47: get_the_generator / wp_generator (meta + feeds; export as GoPress/version).
+- prefix: wp-includes/general-template.php#get_the_generator
+  go: internal/wp/generator.go
+  status: partial
+  task: P3.47
+  api: exported
+  notes: "P3.47 — GetTheGenerator; xhtml/rss/atom WordPress-shaped; comment/export GoPress/Version"
+
 - prefix: wp-includes/general-template.php
   go: internal/server/front.go
   status: partial
