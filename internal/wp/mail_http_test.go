@@ -62,6 +62,52 @@ func TestRemoteGetAllowedStubPath(t *testing.T) {
 	}
 }
 
+func TestPreWPMailShortCircuit(t *testing.T) {
+	c := &wp.Context{
+		Config: &config.Config{BlockExternal: true},
+		Mailer: wp.NewMailer(),
+		Hooks:  wp.NewHooks(),
+	}
+	c.Hooks.AddFilter("pre_wp_mail", func(value any, args ...any) any {
+		return false
+	}, 10, 2)
+	ok, err := wp.Mail(c, []string{"admin@example.com"}, "Hello", "Body", nil)
+	if err != nil {
+		t.Fatalf("err=%v", err)
+	}
+	if ok {
+		t.Fatal("expected pre_wp_mail to short-circuit with false")
+	}
+	if len(c.Mailer.Sent()) != 0 {
+		t.Fatalf("short-circuit should not record mail, got %#v", c.Mailer.Sent())
+	}
+}
+
+func TestWPMailFilterMutatesAttrs(t *testing.T) {
+	c := &wp.Context{
+		Config: &config.Config{BlockExternal: true},
+		Mailer: wp.NewMailer(),
+		Hooks:  wp.NewHooks(),
+	}
+	c.Hooks.AddFilter("wp_mail", func(value any, args ...any) any {
+		atts, ok := value.(wp.MailAttrs)
+		if !ok {
+			t.Fatalf("unexpected value %T", value)
+		}
+		atts.Subject = "Filtered"
+		atts.To = []string{"filtered@example.com"}
+		return atts
+	}, 10, 1)
+	ok, err := wp.Mail(c, []string{"admin@example.com"}, "Hello", "Body", nil)
+	if err != nil || !ok {
+		t.Fatalf("Mail: ok=%v err=%v", ok, err)
+	}
+	sent := c.Mailer.Sent()
+	if len(sent) != 1 || sent[0].Subject != "Filtered" || sent[0].To[0] != "filtered@example.com" {
+		t.Fatalf("unexpected sent: %#v", sent)
+	}
+}
+
 func TestBootWiresMailer(t *testing.T) {
 	cfg := &config.Config{
 		DBName: "gopress_go", DBUser: "gopress", DBPassword: "gopress",
