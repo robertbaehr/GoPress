@@ -144,7 +144,9 @@ func (h *Handler) serveUsersList(w http.ResponseWriter, r *http.Request, c *wp.C
 	b.WriteString("<h1 class=\"wp-heading-inline\">Users</h1>\n")
 	b.WriteString("<a href=\"/wp-admin/user-new.php\" class=\"page-title-action\">Add New User</a>\n")
 	b.WriteString("<hr class=\"wp-header-end\">\n")
-	if update := r.URL.Query().Get("update"); update == "del" {
+	if update := r.URL.Query().Get("update"); update == "add" {
+		b.WriteString(`<div id="message" class="updated notice is-dismissible"><p>New user created.</p></div>` + "\n")
+	} else if update == "del" {
 		n := r.URL.Query().Get("delete_count")
 		b.WriteString(`<div id="message" class="updated notice is-dismissible"><p>`)
 		if n == "1" {
