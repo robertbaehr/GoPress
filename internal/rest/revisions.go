@@ -10,20 +10,22 @@ import (
 )
 
 // Revision is a wp/v2 revision object (GET collection/item).
+// View-context revisions omit content/excerpt.protected (unlike posts).
 type Revision struct {
-	ID          int64             `json:"id"`
-	Author      int64             `json:"author"`
-	Date        string            `json:"date"`
-	DateGMT     string            `json:"date_gmt"`
-	Modified    string            `json:"modified"`
-	ModifiedGMT string            `json:"modified_gmt"`
-	Parent      int64             `json:"parent"`
-	Slug        string            `json:"slug"`
-	GUID        RenderedString    `json:"guid"`
-	Title       RenderedString    `json:"title"`
-	Content     ProtectedRendered `json:"content"`
-	Excerpt     ProtectedRendered `json:"excerpt"`
-	Links       map[string]any    `json:"_links"`
+	Author      int64          `json:"author"`
+	Date        string         `json:"date"`
+	DateGMT     string         `json:"date_gmt"`
+	ID          int64          `json:"id"`
+	Modified    string         `json:"modified"`
+	ModifiedGMT string         `json:"modified_gmt"`
+	Parent      int64          `json:"parent"`
+	Slug        string         `json:"slug"`
+	GUID        RenderedString `json:"guid"`
+	Title       RenderedString `json:"title"`
+	Content     RenderedString `json:"content"`
+	Excerpt     RenderedString `json:"excerpt"`
+	Meta        map[string]any `json:"meta"`
+	Links       map[string]any `json:"_links"`
 }
 
 func (s *Server) servePostRevisions(w http.ResponseWriter, r *http.Request, c *wp.Context, parentID int64) {
@@ -131,7 +133,8 @@ func (s *Server) servePostRevisionItem(w http.ResponseWriter, r *http.Request, c
 		})
 		return
 	}
-	if row == nil || row.Type != "revision" || row.Parent != parentID || strings.Contains(row.Name, "autosave") {
+	// WP revisions endpoint returns both regular revisions and autosaves.
+	if row == nil || row.Type != "revision" || row.Parent != parentID {
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"code":    "rest_post_invalid_id",
 			"message": "Invalid revision ID.",
@@ -148,14 +151,15 @@ func listPostRevisions(c *wp.Context, parentID int64) ([]wp.Post, error) {
 	if c == nil || c.DB == nil || parentID <= 0 {
 		return nil, nil
 	}
+	// Match WP_Query post_type=revision post_parent=N — includes autosaves.
 	q, args, err := c.DB.Prepare(
 		"SELECT ID, post_author, post_date, post_date_gmt, post_modified, post_modified_gmt, "+
 			"post_name, post_status, post_type, post_title, post_content, post_excerpt, "+
 			"guid, comment_status, ping_status, post_password, post_parent, menu_order FROM "+
 			c.DB.Posts()+
-			" WHERE post_type = %s AND post_parent = %d AND post_name NOT LIKE %s"+
+			" WHERE post_type = %s AND post_parent = %d"+
 			" ORDER BY post_date DESC, ID DESC",
-		"revision", parentID, "%autosave%",
+		"revision", parentID,
 	)
 	if err != nil {
 		return nil, err
@@ -196,39 +200,45 @@ func countPostRevisions(c *wp.Context, parentID int64) int {
 
 func revisionFromWP(c *wp.Context, row wp.Post, home string, parentID int64) Revision {
 	rendered := renderPostContentCtx(c, row.Content)
-	protected := row.Password != ""
 	titleRendered := row.Title
 	if titleRendered != "" {
 		titleRendered = restTexturize(titleRendered)
 	}
-	excerpt := buildExcerpt(row.Excerpt, rendered, protected)
 	restRoot := strings.TrimRight(home, "/") + "/wp-json/wp/v2"
 	return Revision{
-		ID:          row.ID,
 		Author:      row.Author,
 		Date:        mysqlDateToREST(row.Date),
 		DateGMT:     mysqlDateToREST(row.DateGMT),
+		ID:          row.ID,
 		Modified:    mysqlDateToREST(row.Modified),
 		ModifiedGMT: mysqlDateToREST(row.ModifiedGMT),
 		Parent:      parentID,
 		Slug:        row.Name,
 		GUID:        RenderedString{Rendered: row.GUID},
 		Title:       RenderedString{Rendered: titleRendered},
-		Content: ProtectedRendered{
-			Rendered:  rendered,
-			Protected: protected,
-		},
-		Excerpt: excerpt,
+		Content:     RenderedString{Rendered: rendered},
+		Excerpt:     RenderedString{Rendered: revisionExcerptRendered(row.Excerpt)},
+		Meta:        map[string]any{"footnotes": ""},
 		Links: map[string]any{
-			"self": []map[string]any{{
-				"href": fmt.Sprintf("%s/posts/%d/revisions/%d", restRoot, parentID, row.ID),
-			}},
-			"collection": []map[string]any{{
-				"href": fmt.Sprintf("%s/posts/%d/revisions", restRoot, parentID),
-			}},
 			"parent": []map[string]any{{
 				"href": fmt.Sprintf("%s/posts/%d", restRoot, parentID),
 			}},
 		},
 	}
+}
+
+// revisionExcerptRendered mirrors WP_REST_Revisions_Controller::prepare_excerpt_response:
+// empty post_excerpt stays empty (no wp_trim_excerpt fallback).
+func revisionExcerptRendered(raw string) string {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return ""
+	}
+	ex := restTexturize(raw)
+	if !strings.HasPrefix(ex, "<") {
+		ex = "<p>" + ex + "</p>\n"
+	} else if !strings.HasSuffix(ex, "\n") {
+		ex += "\n"
+	}
+	return ex
 }
