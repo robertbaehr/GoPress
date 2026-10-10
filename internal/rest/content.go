@@ -13,11 +13,6 @@ var (
 	reMultiSpace = regexp.MustCompile(`[\s\x{00a0}]+`)
 )
 
-// renderPostContent applies the shared the_content pipeline (P5.11).
-func renderPostContent(raw string) string {
-	return wp.ApplyContentFilters(nil, raw)
-}
-
 // renderPostContentCtx applies the_content with shortcodes/hooks from c.
 func renderPostContentCtx(c *wp.Context, raw string) string {
 	return wp.TheContent(c, raw)
