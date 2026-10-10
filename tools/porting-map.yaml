@@ -404,6 +404,19 @@
   task: P3.29
   api: n/a
 
+# P3.31: /favicon.ico → site icon / default logo (do_favicon).
+- prefix: wp-includes/functions.php#do_favicon
+  go: internal/server/favicon.go
+  status: partial
+  task: P3.31
+  api: n/a
+
+- prefix: wp-includes/general-template.php#get_site_icon_url
+  go: internal/wp/site_icon.go
+  status: partial
+  task: P3.31
+  api: exported
+
 # P9.6: plugin uninstall hook stub.
 - prefix: wp-admin/includes/plugin.php#uninstall_plugin
   go: internal/plugins/uninstall.go

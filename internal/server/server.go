@@ -76,6 +76,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if path == "/favicon.ico" {
+		c := s.requestContext(w, r)
+		serveFavicon(w, r, c)
+		return
+	}
 	if path == "/robots.txt" {
 		c := s.requestContext(w, r)
 		serveRobotsTXT(w, c)
