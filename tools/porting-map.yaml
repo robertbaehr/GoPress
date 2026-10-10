@@ -1514,6 +1514,21 @@
   api: n/a
   notes: "P10.54 — summarize code/preformatted/verse, themes REST activate, plugins bulk, mime types, RDF generator, interim success, e2e"
 
+# P10.55: e2e users REST DELETE force+reassign + STATUS/PORTING refresh after P5.63–P8.16.
+- prefix: tests/e2e/users-delete.spec.js
+  go: tests/e2e/users-delete.spec.js
+  status: partial
+  task: P10.55
+  api: n/a
+  notes: "P10.55 — Playwright coverage for DELETE /wp/v2/users/{id}?force=true&reassign= (P4.79)"
+
+- prefix: docs/STATUS.md#P10.55
+  go: docs/STATUS.md
+  status: partial
+  task: P10.55
+  api: n/a
+  notes: "P10.55 — summarize list blocks, users DELETE, user-new create, allowed mime user, feed ttl, erase email, e2e"
+
 # P10.52: e2e menu-locations DELETE unset + STATUS/PORTING refresh after P5.60–P6.24.
 - prefix: tests/e2e/menu-location-delete.spec.js
   go: tests/e2e/menu-location-delete.spec.js
