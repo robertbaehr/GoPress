@@ -5234,6 +5234,21 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P9.19 — ApplyFilters get_mu_plugins on ListMUPlugins"
 
+# P9.23: plugins_loaded / plugin_loaded + all_plugins filter.
+- prefix: wp-settings.php#plugins_loaded
+  go: internal/plugins/plugin.go
+  status: partial
+  task: P9.23
+  api: exported
+  notes: "P9.23 — DoAction plugin_loaded per shim + plugins_loaded after LoadActive"
+
+- prefix: wp-admin/includes/plugin.php#all_plugins
+  go: internal/plugins/headers.go
+  status: partial
+  task: P9.23
+  api: exported
+  notes: "P9.23 — ApplyFilters all_plugins on ListInstalledPlugins"
+
 # P9.10: get_mu_plugins() header parse for top-level mu-plugins.
 - prefix: wp-admin/includes/plugin.php#get_mu_plugins
   go: internal/plugins/headers.go

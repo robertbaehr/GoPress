@@ -145,6 +145,7 @@ func PluginDir(c *wp.Context) string {
 }
 
 // ListInstalledPlugins scans wp-content/plugins for plugin headers (P9.2).
+// Applies the all_plugins filter (P9.23).
 func ListInstalledPlugins(c *wp.Context) ([]PluginData, error) {
 	dir := PluginDir(c)
 	if dir == "" {
@@ -201,6 +202,13 @@ func ListInstalledPlugins(c *wp.Context) ([]PluginData, error) {
 		}
 		data.File = rel
 		out = append(out, data)
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("all_plugins", out); v != nil {
+			if filtered, ok := v.([]PluginData); ok {
+				return append([]PluginData(nil), filtered...), nil
+			}
+		}
 	}
 	return out, nil
 }
