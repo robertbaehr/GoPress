@@ -127,6 +127,20 @@ func valuesEqualLoose(a, b any) bool {
 }
 
 func normalizeCompare(v any) string {
+	// P2.89: unwrap pointers/interfaces so *string("draft") == "draft".
+	for {
+		rv := reflect.ValueOf(v)
+		if !rv.IsValid() {
+			return ""
+		}
+		if rv.Kind() != reflect.Pointer && rv.Kind() != reflect.Interface {
+			break
+		}
+		if rv.IsNil() {
+			return ""
+		}
+		v = rv.Elem().Interface()
+	}
 	switch t := v.(type) {
 	case bool:
 		if t {
