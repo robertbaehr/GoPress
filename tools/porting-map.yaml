@@ -740,6 +740,13 @@
   task: P3.33
   api: n/a
 
+# P10.32: e2e coverage in tests/e2e/rdf.spec.js.
+- prefix: tests/e2e/rdf.spec.js
+  go: tests/e2e/rdf.spec.js
+  status: partial
+  task: P10.32
+  api: n/a
+
 - prefix: wp-includes/embed.php
   go: internal/wp/oembed_discovery.go
   status: partial
