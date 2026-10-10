@@ -1584,3 +1584,148 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.94: more matching block-types / REST header cases.
+- id: rest-block-types-social-links-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/social-links
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-block-types-social-link-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/social-link
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-block-types-navigation-link-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/navigation-link
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-block-types-navigation-submenu-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/navigation-submenu
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-block-types-query-pagination-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/query-pagination
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-block-types-query-pagination-next-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/query-pagination-next
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-block-types-query-pagination-previous-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/query-pagination-previous
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-block-types-query-pagination-numbers-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/query-pagination-numbers
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-block-types-post-author-biography-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/post-author-biography
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-block-types-list-item-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/list-item
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-block-types-table-of-contents-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/table-of-contents
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-block-types-button-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/button
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-block-types-column-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/column
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-block-types-paragraph
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/paragraph
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-block-types-read-more
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/read-more
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-global-styles-revisions-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/global-styles/445/revisions
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
