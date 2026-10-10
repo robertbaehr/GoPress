@@ -1974,7 +1974,9 @@ func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *w
 		b.WriteString(html.EscapeString(item.Content))
 		b.WriteString(`</p><div class="row-actions"><span class="edit"><a href="/wp-admin/comment.php?action=editcomment&amp;c=`)
 		b.WriteString(strconv.FormatInt(item.ID, 10))
-		b.WriteString(`">Edit</a></span></div></td></tr>` + "\n")
+		b.WriteString(`">Edit</a> | </span><span class="reply"><a href="/wp-admin/comment.php?action=replyto&amp;c=`)
+		b.WriteString(strconv.FormatInt(item.ID, 10))
+		b.WriteString(`">Reply</a></span></div></td></tr>` + "\n")
 	}
 	b.WriteString("</tbody>\n</table>\n")
 	b.WriteString(`<div class="tablenav bottom"><div class="alignleft actions bulkactions">`)
@@ -2029,6 +2031,12 @@ func (h *Handler) serveCommentModerate(w http.ResponseWriter, r *http.Request, c
 	}
 	if cm == nil {
 		http.Redirect(w, r, "/wp-admin/edit-comments.php?error=1", http.StatusFound)
+		return
+	}
+
+	// P7.65: reply form on comment.php?action=replyto.
+	if action == "replyto" || action == "replytocomment" {
+		h.serveCommentReply(w, r, c, cm, cid)
 		return
 	}
 
@@ -2132,10 +2140,81 @@ func (h *Handler) serveCommentModerate(w http.ResponseWriter, r *http.Request, c
 		b.WriteString(`<a class="button" href="/wp-admin/comment.php?action=trash&amp;c=`)
 		b.WriteString(strconv.FormatInt(cid, 10))
 		b.WriteString(`">Trash</a> `)
+		b.WriteString(`<a class="button button-primary" href="/wp-admin/comment.php?action=replyto&amp;c=`)
+		b.WriteString(strconv.FormatInt(cid, 10))
+		b.WriteString(`">Reply</a> `)
 		b.WriteString(`<a class="button" href="/wp-admin/edit-comments.php">Back to Comments</a>`)
 		b.WriteString("</p>\n")
 	}
 	writeAdminPage(w, c, newAdminChrome(c, heading, "comment-php"), b.String())
+}
+
+// serveCommentReply renders and handles the reply form on comment.php (P7.65).
+func (h *Handler) serveCommentReply(w http.ResponseWriter, r *http.Request, c *wp.Context, parent *adminComment, parentID int64) {
+	if r.Method == http.MethodPost {
+		_ = r.ParseForm()
+		content := strings.TrimSpace(r.Form.Get("content"))
+		if content == "" {
+			content = strings.TrimSpace(r.Form.Get("replycontent"))
+		}
+		if content == "" {
+			http.Error(w, "Reply content is required.\n", http.StatusBadRequest)
+			return
+		}
+		author := "Admin"
+		email := ""
+		uid := int64(0)
+		if c.CurrentUser != nil {
+			author = c.CurrentUser.DisplayName
+			if author == "" {
+				author = c.CurrentUser.Login
+			}
+			email = c.CurrentUser.Email
+			uid = c.CurrentUser.ID
+		}
+		id, err := wp.InsertComment(c, wp.CommentInsert{
+			PostID:      parent.PostID,
+			Author:      author,
+			AuthorEmail: email,
+			Content:     content,
+			Parent:      parentID,
+			UserID:      uid,
+			Approved:    "1",
+			Agent:       "GoPressAdminReply",
+		})
+		if err != nil || id <= 0 {
+			http.Error(w, "reply: "+fmt.Sprint(err)+"\n", http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, "/wp-admin/edit-comments.php?reply=1&c="+strconv.FormatInt(id, 10), http.StatusFound)
+		return
+	}
+
+	var b strings.Builder
+	b.WriteString("<h1>Reply to Comment</h1>\n")
+	b.WriteString("<p class=\"description\">GoPress comment.php reply form (P7.65).</p>\n")
+	b.WriteString("<div class=\"comment-reply-original\">\n")
+	b.WriteString("<p><strong>In reply to ")
+	b.WriteString(html.EscapeString(parent.Author))
+	b.WriteString(":</strong></p>\n<blockquote><p>")
+	b.WriteString(html.EscapeString(parent.Content))
+	b.WriteString("</p></blockquote>\n</div>\n")
+	b.WriteString("<form method=\"post\" name=\"replyto-comment\" id=\"replyto-comment\" action=\"/wp-admin/comment.php?action=replytocomment&amp;c=")
+	b.WriteString(strconv.FormatInt(parentID, 10))
+	b.WriteString("\">\n")
+	b.WriteString("<input type=\"hidden\" name=\"action\" value=\"replytocomment\" />\n")
+	b.WriteString("<input type=\"hidden\" name=\"comment_ID\" value=\"")
+	b.WriteString(strconv.FormatInt(parentID, 10))
+	b.WriteString("\" />\n")
+	b.WriteString("<input type=\"hidden\" name=\"comment_post_ID\" value=\"")
+	b.WriteString(strconv.FormatInt(parent.PostID, 10))
+	b.WriteString("\" />\n")
+	b.WriteString("<p><label for=\"content\">Comment</label><br />\n")
+	b.WriteString("<textarea name=\"content\" id=\"content\" rows=\"8\" cols=\"60\" required></textarea></p>\n")
+	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"replyto-comment\" id=\"replybtn\" class=\"button button-primary\" value=\"Reply to Comment\" /> ")
+	b.WriteString(`<a class="button" href="/wp-admin/edit-comments.php">Cancel</a></p>` + "\n")
+	b.WriteString("</form>\n")
+	writeAdminPage(w, c, newAdminChrome(c, "Reply to Comment", "comment-php"), b.String())
 }
 
 type adminComment struct {
