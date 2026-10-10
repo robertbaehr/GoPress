@@ -176,6 +176,13 @@
   task: P4.43
   api: exported
 
+# P4.44: POST /wp/v2/categories and /wp/v2/tags for editors (manage_categories).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-terms-controller.php
+  go: internal/rest/taxonomies_write.go
+  status: partial
+  task: P4.44
+  api: exported
+
 - prefix: wp-includes/user.php
   go: internal/wp/user.go
   status: partial
