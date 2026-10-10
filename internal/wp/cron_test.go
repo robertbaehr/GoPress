@@ -161,6 +161,49 @@ func TestWPCronSetsDoingCron(t *testing.T) {
 	}
 }
 
+func TestWPCronPostBodyDiesAndMismatchedLock(t *testing.T) {
+	// P3.95: non-empty POST dies; mismatched doing_wp_cron skips RunCron.
+	c := cronBoot(t)
+	defer c.DB.Close()
+	_ = c.DeleteTransient("doing_cron")
+	_, _ = c.Options.UpdateOption("doing_cron", "", "no")
+
+	hook := fmt.Sprintf("gopress_cron_post_%d", time.Now().UnixNano())
+	fired := 0
+	c.Hooks.AddAction(hook, func(args ...any) { fired++ }, 10, 0)
+	past := time.Now().Unix() - 5
+	if err := wp.ScheduleSingleEvent(c, past, hook, nil); err != nil {
+		t.Fatal(err)
+	}
+
+	req := httptest.NewRequest(http.MethodPost, "/wp-cron.php", strings.NewReader("x=1"))
+	rec := httptest.NewRecorder()
+	wp.ServeCron(rec, req, c.ForRequest(rec, req))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("POST status=%d", rec.Code)
+	}
+	if fired != 0 {
+		t.Fatalf("POST with body should not run hooks, fired=%d", fired)
+	}
+
+	_, _ = c.Options.UpdateOption("doing_cron", "999.00000000000000000000", "no")
+	_ = c.SetTransient("doing_cron", "999.00000000000000000000", wp.CronLockTimeout)
+	req = httptest.NewRequest(http.MethodGet, "/wp-cron.php?doing_wp_cron=1.0", nil)
+	rec = httptest.NewRecorder()
+	wp.ServeCron(rec, req, c.ForRequest(rec, req))
+	if fired != 0 {
+		t.Fatalf("mismatched lock should not run hooks, fired=%d", fired)
+	}
+
+	// Matching lock runs.
+	req = httptest.NewRequest(http.MethodGet, "/wp-cron.php?doing_wp_cron=999.00000000000000000000", nil)
+	rec = httptest.NewRecorder()
+	wp.ServeCron(rec, req, c.ForRequest(rec, req))
+	if fired != 1 {
+		t.Fatalf("matching lock fired=%d want 1", fired)
+	}
+}
+
 func cronBoot(t *testing.T) *wp.Context {
 	t.Helper()
 	cfg := &config.Config{
