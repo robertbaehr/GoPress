@@ -905,6 +905,8 @@ func (f *Front) renderCategoryArchiveBlockTemplate(w http.ResponseWriter, c *wp.
 	stylesheet := activeStylesheet(c)
 	env := blockRenderEnv(c)
 	env.ArchiveTitle = archiveTitle
+	// P5.76: expose term fields for core/term-description (+ term-data bindings).
+	env.TermContext = termBindingContext("category", term)
 	body := blocks.RenderWith(env, template)
 	safe := wp.ProcessInteractivityHTML(wp.KsesPost(body))
 	safe = ensureMainSkipTarget(safe)
@@ -1041,6 +1043,8 @@ func (f *Front) renderTagArchiveBlockTemplate(w http.ResponseWriter, c *wp.Conte
 	stylesheet := activeStylesheet(c)
 	env := blockRenderEnv(c)
 	env.ArchiveTitle = archiveTitle
+	// P5.76: expose term fields for core/term-description (+ term-data bindings).
+	env.TermContext = termBindingContext("post_tag", term)
 	body := blocks.RenderWith(env, template)
 	safe := wp.ProcessInteractivityHTML(wp.KsesPost(body))
 	safe = ensureMainSkipTarget(safe)
@@ -1122,9 +1126,10 @@ func (f *Front) renderTagArchiveShim(w http.ResponseWriter, c *wp.Context, title
 }
 
 type termInfo struct {
-	ID   int64
-	Name string
-	Slug string
+	ID          int64
+	Name        string
+	Slug        string
+	Description string // term_taxonomy.description for core/term-description (P5.76).
 }
 
 func getTermBySlug(c *wp.Context, taxonomy, slug string) (*termInfo, error) {
@@ -1136,7 +1141,7 @@ func getTermBySlug(c *wp.Context, taxonomy, slug string) (*termInfo, error) {
 		return nil, nil
 	}
 	q, args, err := c.DB.Prepare(
-		"SELECT t.term_id, t.name, t.slug FROM "+c.DB.Terms()+" t "+
+		"SELECT t.term_id, t.name, t.slug, tt.description FROM "+c.DB.Terms()+" t "+
 			"INNER JOIN "+c.DB.TermTaxonomy()+" tt ON t.term_id = tt.term_id "+
 			"WHERE tt.taxonomy = %s AND t.slug = %s LIMIT 1",
 		taxonomy, slug,
@@ -1153,10 +1158,25 @@ func getTermBySlug(c *wp.Context, taxonomy, slug string) (*termInfo, error) {
 	}
 	id, _ := strconv.ParseInt(fmt.Sprint(row["term_id"]), 10, 64)
 	return &termInfo{
-		ID:   id,
-		Name: fmt.Sprint(row["name"]),
-		Slug: fmt.Sprint(row["slug"]),
+		ID:          id,
+		Name:        fmt.Sprint(row["name"]),
+		Slug:        fmt.Sprint(row["slug"]),
+		Description: asMetaString(row["description"]),
 	}, nil
+}
+
+// termBindingContext builds blocks.TermBindingContext for archive templates (P5.76).
+func termBindingContext(taxonomy string, term *termInfo) *blocks.TermBindingContext {
+	if term == nil || term.ID <= 0 {
+		return nil
+	}
+	return &blocks.TermBindingContext{
+		ID:          term.ID,
+		Taxonomy:    taxonomy,
+		Name:        term.Name,
+		Slug:        term.Slug,
+		Description: term.Description,
+	}
 }
 
 func (f *Front) renderAuthorArchiveShim(w http.ResponseWriter, c *wp.Context, title string, authorID int64) {

@@ -95,6 +95,7 @@ func knownBlockTypes() []BlockType {
 		{"core/post-terms", "Post Terms", "theme", "Post terms.", true},
 		{"core/query", "Query Loop", "theme", "An advanced block that allows displaying post types based on specified parameters.", true},
 		{"core/query-title", "Query Title", "theme", "Display the query title.", true},
+		{"core/term-description", "Term Description", "theme", "Display the description of categories, tags and custom taxonomies when viewing an archive.", true},
 		{"core/query-pagination", "Pagination", "theme", "Displays a paginated navigation to next/previous set of posts.", true},
 		{"core/query-pagination-next", "Next Page", "theme", "Displays the next posts page link.", true},
 		{"core/query-pagination-previous", "Previous Page", "theme", "Displays the previous posts page link.", true},
