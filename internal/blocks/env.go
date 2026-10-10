@@ -60,6 +60,9 @@ type Env struct {
 	// ListComments returns approved comments for the current post (P5.19).
 	ListComments func(postID int64) []CommentItem
 
+	// CommentOrder is comment_order option (asc|desc) for core/comment-template (P5.90).
+	CommentOrder string
+
 	// AuthorName / AuthorEmail / AuthorBio / AuthorLink power author blocks (P5.19/P5.46).
 	AuthorName  func(postID int64) string
 	AuthorEmail func(postID int64) string
@@ -147,9 +150,10 @@ type NavLink struct {
 	Parent int64
 }
 
-// CommentItem is a comment row for core/comment-template (P5.19).
+// CommentItem is a comment row for core/comment-template (P5.19 / P5.90).
 type CommentItem struct {
 	ID          int64
+	Parent      int64
 	Author      string
 	AuthorEmail string
 	AuthorURL   string
