@@ -360,6 +360,38 @@ func TestFrontFeedPrettyPath(t *testing.T) {
 	}
 }
 
+func TestFrontFeedLastBuildDateStable(t *testing.T) {
+	// P3.55: lastBuildDate from newest post — stable across requests (no wall clock).
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	extract := func() string {
+		req := httptest.NewRequest(http.MethodGet, "/feed/", nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("status=%d", rec.Code)
+		}
+		body := rec.Body.String()
+		const open, close = "<lastBuildDate>", "</lastBuildDate>"
+		i := strings.Index(body, open)
+		j := strings.Index(body, close)
+		if i < 0 || j < i {
+			t.Fatalf("missing lastBuildDate in %q", body[:min(400, len(body))])
+		}
+		return body[i+len(open) : j]
+	}
+	a, b := extract(), extract()
+	if a == "" {
+		t.Fatal("empty lastBuildDate")
+	}
+	if a != b {
+		t.Fatalf("unstable lastBuildDate: %q vs %q", a, b)
+	}
+	if !strings.Contains(a, "2024") {
+		t.Fatalf("expected fixture post year in lastBuildDate, got %q", a)
+	}
+}
+
 func TestFrontFeedRSS2SiteIconImage(t *testing.T) {
 	// P3.52: channel <image> when site_icon attachment is set (rss2_site_icon).
 	c := testBoot(t)

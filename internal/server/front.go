@@ -275,8 +275,10 @@ func (f *Front) renderCommentsFeedRSS2(w http.ResponseWriter, r *http.Request, c
 
 func commentsFeedBuildDate(comments []wp.Comment) string {
 	if len(comments) == 0 {
-		return time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05 +0000")
+		// Stable empty-feed fallback (no wall clock; P3.55).
+		return ""
 	}
+	// Newest comment first (ListRecentComments order).
 	return feedRFC822(comments[0].DateGMT, comments[0].Date)
 }
 
@@ -2109,13 +2111,21 @@ func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Cont
 }
 
 func feedBuildDateGMT(posts []feedPost) string {
-	if len(posts) == 0 {
-		return ""
+	return newestPostDateGMT(posts)
+}
+
+// newestPostDateGMT picks the max post_modified_gmt (else post_date_gmt) among
+// feed posts — get_feed_build_date / get_lastpostmodified subset (P3.55).
+func newestPostDateGMT(posts []feedPost) string {
+	best := ""
+	for _, p := range posts {
+		for _, src := range []string{p.ModifiedGMT, p.DateGMT, p.Modified, p.Date} {
+			if src != "" && src > best {
+				best = src
+			}
+		}
 	}
-	if posts[0].DateGMT != "" {
-		return posts[0].DateGMT
-	}
-	return posts[0].Date
+	return best
 }
 
 func xmlEscape(s string) string {
@@ -2218,10 +2228,12 @@ func atomEnclosureTag(enc feedEnclosure) string {
 }
 
 func feedBuildDate(posts []feedPost) string {
-	if len(posts) == 0 {
-		return time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05 +0000")
+	// P3.55: lastBuildDate from newest post modified/publish time — never wall clock.
+	gmt := newestPostDateGMT(posts)
+	if gmt == "" {
+		return ""
 	}
-	return feedRFC822(posts[0].DateGMT, posts[0].Date)
+	return feedRFC822(gmt, "")
 }
 
 func feedRFC822(gmt, local string) string {
@@ -2233,7 +2245,8 @@ func feedRFC822(gmt, local string) string {
 			return t.UTC().Format("Mon, 02 Jan 2006 15:04:05 +0000")
 		}
 	}
-	return time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05 +0000")
+	// Stable fallback when timestamps are unparseable (P3.55).
+	return ""
 }
 
 func feedAuthor(c *wp.Context, authorID int64) (name, url string) {
@@ -2261,7 +2274,8 @@ func feedAtomDate(gmt, local string) string {
 			return t.UTC().Format("2006-01-02T15:04:05Z")
 		}
 	}
-	return time.Now().UTC().Format("2006-01-02T15:04:05Z")
+	// Stable fallback (P3.55).
+	return ""
 }
 
 func feedSelfLink(r *http.Request, c *wp.Context) string {
