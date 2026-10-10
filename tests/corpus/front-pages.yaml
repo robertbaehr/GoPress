@@ -562,3 +562,13 @@
   compare: headers
   nonce: null
 
+
+# P10.106: author archive.
+- id: front-author-admin
+  role: anon
+  method: GET
+  path: /author/admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
