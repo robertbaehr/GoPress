@@ -95,7 +95,7 @@ func TestListMUPluginsHeaders(t *testing.T) {
 	if _, ok := byFile["subdir/nested.php"]; ok {
 		t.Fatalf("get_mu_plugins must not include subdir plugins: %+v", list)
 	}
-	fix, ok := byFile["mu-fixture.php"]
+	fx, ok := byFile["mu-fixture.php"]
 	if !ok || fx.Name != "MU Fixture" || fx.Version != "2.0" {
 		t.Fatalf("fixture: %+v list=%+v", fx, list)
 	}
