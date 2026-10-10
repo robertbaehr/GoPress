@@ -90,6 +90,95 @@ func TestCreateUpdateUser(t *testing.T) {
 	}
 }
 
+func TestUpdateUserProfileMetaOmitSafe(t *testing.T) {
+	// P4.118: PATCH first_name/last_name/nickname/locale + empty clears.
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	ck := &http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue}
+
+	login := fmt.Sprintf("gopress_meta_%d", user.ID*1000+7)
+	email := login + "@example.com"
+	createBody := fmt.Sprintf(
+		`{"username":%q,"email":%q,"password":"SecretPass1!","roles":["author"]}`,
+		login, email,
+	)
+	req := httptest.NewRequest(http.MethodPost, "/wp-json/wp/v2/users", bytes.NewBufferString(createBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var created rest.User
+	if err := json.Unmarshal(rec.Body.Bytes(), &created); err != nil {
+		t.Fatal(err)
+	}
+	id := created.ID
+	t.Cleanup(func() {
+		q, args, err := c.DB.Prepare("DELETE FROM "+c.DB.Users()+" WHERE ID = %d", id)
+		if err == nil {
+			_, _ = c.DB.Exec(q, args...)
+		}
+		q, args, err = c.DB.Prepare("DELETE FROM "+c.DB.UserMeta()+" WHERE user_id = %d", id)
+		if err == nil {
+			_, _ = c.DB.Exec(q, args...)
+		}
+	})
+
+	patch := `{"first_name":"Ada","last_name":"Lovelace","nickname":"ada","locale":"en_US","url":""}`
+	req = httptest.NewRequest(http.MethodPatch, fmt.Sprintf("/wp-json/wp/v2/users/%d", id), bytes.NewBufferString(patch))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	rc = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("patch status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var updated rest.User
+	if err := json.Unmarshal(rec.Body.Bytes(), &updated); err != nil {
+		t.Fatal(err)
+	}
+	if updated.FirstName != "Ada" || updated.LastName != "Lovelace" || updated.Nickname != "ada" || updated.Locale != "en_US" {
+		t.Fatalf("profile meta: %+v", updated)
+	}
+	if updated.URL != "" {
+		t.Fatalf("expected empty url clear, got %q", updated.URL)
+	}
+
+	clear := `{"first_name":"","nickname":""}`
+	req = httptest.NewRequest(http.MethodPatch, fmt.Sprintf("/wp-json/wp/v2/users/%d", id), bytes.NewBufferString(clear))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	rc = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("clear status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var cleared rest.User
+	if err := json.Unmarshal(rec.Body.Bytes(), &cleared); err != nil {
+		t.Fatal(err)
+	}
+	if cleared.FirstName != "" || cleared.Nickname != "" {
+		t.Fatalf("expected clears, got first=%q nick=%q body=%s", cleared.FirstName, cleared.Nickname, rec.Body.String())
+	}
+	if cleared.LastName != "Lovelace" || cleared.Locale != "en_US" {
+		t.Fatalf("unrelated meta lost: %+v", cleared)
+	}
+}
+
 func TestCreateUserRequiresAuth(t *testing.T) {
 	c := bootOrSkip(t)
 	t.Cleanup(func() { _ = c.DB.Close() })
