@@ -24,12 +24,12 @@ type batchSubRequest struct {
 }
 
 type batchSubResponse struct {
-	Body    any               `json:"body"`
-	Status  int               `json:"status"`
-	Headers map[string]string `json:"headers"`
+	Body    any `json:"body"`
+	Status  int `json:"status"`
+	Headers any `json:"headers"`
 }
 
-// serveBatch handles POST /batch/v1 (WP REST batch controller stub, P4.35).
+// serveBatch handles POST /batch/v1 (WP REST batch controller, P4.35 / P4.70).
 func (s *Server) serveBatch(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	if r.Method != http.MethodPost {
 		writeJSON(w, http.StatusNotFound, map[string]any{
@@ -80,8 +80,29 @@ func (s *Server) serveBatch(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		return
 	}
 
+	validation := strings.TrimSpace(body.Validation)
+	if validation == "" {
+		validation = "normal"
+	}
+	if validation != "normal" && validation != "require-all-validate" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_invalid_param",
+			"message": "Invalid parameter(s): validation",
+			"data": map[string]any{
+				"status": 400,
+				"params": map[string]any{"validation": "validation is not one of require-all-validate and normal."},
+			},
+		})
+		return
+	}
+
 	allowed := map[string]bool{"POST": true, "PUT": true, "PATCH": true, "DELETE": true}
-	responses := make([]batchSubResponse, 0, len(body.Requests))
+	type prepared struct {
+		method string
+		path   string
+		body   map[string]any
+	}
+	prepped := make([]prepared, 0, len(body.Requests))
 	for i, sub := range body.Requests {
 		method := strings.ToUpper(strings.TrimSpace(sub.Method))
 		if method == "" {
@@ -122,9 +143,42 @@ func (s *Server) serveBatch(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		if !strings.HasPrefix(path, "/") {
 			path = "/" + path
 		}
-		responses = append(responses, s.dispatchBatchSub(r, c, method, path, sub.Body))
+		prepped = append(prepped, prepared{method: method, path: path, body: sub.Body})
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"responses": responses})
+
+	dispatched := make([]batchSubResponse, 0, len(prepped))
+	for _, sub := range prepped {
+		dispatched = append(dispatched, s.dispatchBatchSub(r, c, sub.method, sub.path, sub.body))
+	}
+
+	if validation == "require-all-validate" {
+		hasError := false
+		for _, resp := range dispatched {
+			if resp.Status >= 400 {
+				hasError = true
+				break
+			}
+		}
+		if hasError {
+			// Mirror WP: null for ok slots; keep error envelopes for failures.
+			responses := make([]any, 0, len(dispatched))
+			for _, resp := range dispatched {
+				if resp.Status >= 400 {
+					responses = append(responses, resp)
+				} else {
+					responses = append(responses, nil)
+				}
+			}
+			writeJSON(w, http.StatusMultiStatus, map[string]any{
+				"failed":    "validation",
+				"responses": responses,
+			})
+			return
+		}
+	}
+
+	// WP returns 207 Multi-Status for batch/v1 (P4.70).
+	writeJSON(w, http.StatusMultiStatus, map[string]any{"responses": dispatched})
 }
 
 func (s *Server) dispatchBatchSub(parent *http.Request, c *wp.Context, method, path string, body map[string]any) batchSubResponse {
@@ -150,15 +204,36 @@ func (s *Server) dispatchBatchSub(parent *http.Request, c *wp.Context, method, p
 	s.Handle(rec, req, c)
 	var parsed any
 	_ = json.Unmarshal(rec.Body.Bytes(), &parsed)
+	return batchSubResponse{
+		Body:    parsed,
+		Status:  rec.Code,
+		Headers: batchResponseHeaders(rec),
+	}
+}
+
+// batchResponseHeaders copies WP-relevant response headers into an envelope map.
+// Empty headers encode as [] to match PHP's empty associative array JSON.
+func batchResponseHeaders(rec *httptest.ResponseRecorder) any {
 	headers := map[string]string{}
 	if allow := rec.Header().Get("Allow"); allow != "" {
 		headers["Allow"] = allow
 	}
-	return batchSubResponse{
-		Body:    parsed,
-		Status:  rec.Code,
-		Headers: headers,
+	if link := rec.Header().Get("Link"); link != "" {
+		headers["Link"] = link
 	}
+	if loc := rec.Header().Get("Location"); loc != "" {
+		headers["Location"] = loc
+	}
+	if xTotal := rec.Header().Get("X-WP-Total"); xTotal != "" {
+		headers["X-WP-Total"] = xTotal
+	}
+	if xPages := rec.Header().Get("X-WP-TotalPages"); xPages != "" {
+		headers["X-WP-TotalPages"] = xPages
+	}
+	if len(headers) == 0 {
+		return []any{}
+	}
+	return headers
 }
 
 func itoa(i int) string {
