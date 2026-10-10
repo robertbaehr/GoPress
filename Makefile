@@ -43,7 +43,18 @@ diff: build
 	./bin/gopress-tools diff --ref http://127.0.0.1:8081 --go http://127.0.0.1:8081
 
 e2e:
-	@echo "e2e lands with Playwright" >&2; exit 1
+	@if ! command -v node >/dev/null 2>&1; then \
+		echo "e2e: node not available; skipping Playwright smoke" >&2; \
+		exit 0; \
+	fi
+	@if ! command -v npm >/dev/null 2>&1; then \
+		echo "e2e: npm not available; skipping Playwright smoke" >&2; \
+		exit 0; \
+	fi
+	@cd tests/e2e && \
+		if [ ! -d node_modules ]; then npm install; fi && \
+		npx playwright install --with-deps chromium >/dev/null 2>&1 || npx playwright install chromium && \
+		GOPRESS_URL="$${GOPRESS_URL:-http://127.0.0.1:8082}" npm test
 
 porting-status:
 	$(GO) run ./cmd/gopress-tools porting-status
