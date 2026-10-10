@@ -23,17 +23,31 @@ type ProtectedRendered struct {
 	Protected bool   `json:"protected"`
 }
 
-// Post is a minimal wp/v2 post/page object for collection and item responses.
+// Post is a wp/v2 post/page object for collection and item responses.
 type Post struct {
-	ID      int64             `json:"id"`
-	Date    string            `json:"date"`
-	Slug    string            `json:"slug"`
-	Status  string            `json:"status"`
-	Type    string            `json:"type"`
-	Link    string            `json:"link"`
-	Title   RenderedString    `json:"title"`
-	Content ProtectedRendered `json:"content"`
-	Excerpt ProtectedRendered `json:"excerpt"`
+	ID            int64             `json:"id"`
+	Date          string            `json:"date"`
+	DateGMT       string            `json:"date_gmt,omitempty"`
+	GUID          RenderedString    `json:"guid"`
+	Modified      string            `json:"modified"`
+	ModifiedGMT   string            `json:"modified_gmt"`
+	Slug          string            `json:"slug"`
+	Status        string            `json:"status"`
+	Type          string            `json:"type"`
+	Link          string            `json:"link"`
+	Title         RenderedString    `json:"title"`
+	Content       ProtectedRendered `json:"content"`
+	Excerpt       ProtectedRendered `json:"excerpt"`
+	Author        int64             `json:"author"`
+	FeaturedMedia int64             `json:"featured_media"`
+	CommentStatus string            `json:"comment_status"`
+	PingStatus    string            `json:"ping_status"`
+	Sticky        bool              `json:"sticky"`
+	Template      string            `json:"template"`
+	Format        string            `json:"format"`
+	Meta          map[string]any    `json:"meta"`
+	Categories    []int64           `json:"categories"`
+	Tags          []int64           `json:"tags"`
 }
 
 func (s *Server) servePosts(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -176,9 +190,10 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool) 
 		return nil, err
 	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	sticky := stickyPostIDs(c)
 	out := make([]Post, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, postFromWP(row, home, edit))
+		out = append(out, postFromWP(c, row, home, edit, sticky))
 	}
 	return out, nil
 }
@@ -219,27 +234,42 @@ func getPostByID(c *wp.Context, postType string, id int64, edit bool) (*Post, er
 		return nil, nil
 	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
-	p := postFromWP(*row, home, edit)
+	p := postFromWP(c, *row, home, edit, stickyPostIDs(c))
 	return &p, nil
 }
 
-func postFromWP(row wp.Post, home string, edit bool) Post {
+func postFromWP(c *wp.Context, row wp.Post, home string, edit bool, sticky map[int64]bool) Post {
+	protected := row.Password != ""
 	p := Post{
-		ID:     row.ID,
-		Date:   mysqlDateToREST(row.Date),
-		Slug:   row.Name,
-		Status: row.Status,
-		Type:   row.Type,
-		Link:   itemPermalink(home, row.Type, row.Date, row.Name, row.ID),
-		Title:  RenderedString{Rendered: row.Title},
+		ID:          row.ID,
+		Date:        mysqlDateToREST(row.Date),
+		DateGMT:     mysqlDateToREST(row.DateGMT),
+		GUID:        RenderedString{Rendered: row.GUID},
+		Modified:    mysqlDateToREST(row.Modified),
+		ModifiedGMT: mysqlDateToREST(row.ModifiedGMT),
+		Slug:        row.Name,
+		Status:      row.Status,
+		Type:        row.Type,
+		Link:        itemPermalink(home, row.Type, row.Date, row.Name, row.ID),
+		Title:       RenderedString{Rendered: row.Title},
 		Content: ProtectedRendered{
 			Rendered:  row.Content,
-			Protected: false,
+			Protected: protected,
 		},
 		Excerpt: ProtectedRendered{
 			Rendered:  row.Excerpt,
-			Protected: false,
+			Protected: protected,
 		},
+		Author:        row.Author,
+		FeaturedMedia: featuredMediaID(c, row.ID),
+		CommentStatus: row.CommentStatus,
+		PingStatus:    row.PingStatus,
+		Sticky:        sticky[row.ID],
+		Template:      pageTemplate(c, row.ID),
+		Format:        postFormat(c, row.ID, row.Type),
+		Meta:          map[string]any{},
+		Categories:    postTermIDs(c, row.ID, "category"),
+		Tags:          postTermIDs(c, row.ID, "post_tag"),
 	}
 	if edit {
 		p.Title.Raw = row.Title
@@ -247,6 +277,129 @@ func postFromWP(row wp.Post, home string, edit bool) Post {
 		p.Excerpt.Raw = row.Excerpt
 	}
 	return p
+}
+
+func stickyPostIDs(c *wp.Context) map[int64]bool {
+	out := map[int64]bool{}
+	if c == nil || c.Options == nil {
+		return out
+	}
+	raw := optionString(c, "sticky_posts", "")
+	if raw == "" || !strings.HasPrefix(raw, "a:") {
+		return out
+	}
+	// sticky_posts is PHP-serialized a:N:{i:k;i:id;…}; take array values.
+	body := raw
+	if i := strings.Index(body, "{"); i >= 0 {
+		body = body[i+1:]
+	}
+	body = strings.TrimSuffix(strings.TrimSpace(body), "}")
+	parts := strings.Split(body, ";")
+	tokens := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p != "" {
+			tokens = append(tokens, p)
+		}
+	}
+	for i := 1; i < len(tokens); i += 2 {
+		tok := tokens[i]
+		if !strings.HasPrefix(tok, "i:") {
+			continue
+		}
+		n, err := strconv.ParseInt(strings.TrimPrefix(tok, "i:"), 10, 64)
+		if err == nil && n > 0 {
+			out[n] = true
+		}
+	}
+	return out
+}
+
+func featuredMediaID(c *wp.Context, postID int64) int64 {
+	if c == nil || c.Meta == nil || postID <= 0 {
+		return 0
+	}
+	v := c.Meta.GetMetadata(wp.MetaPost, postID, "_thumbnail_id", true)
+	return asInt64(v)
+}
+
+func pageTemplate(c *wp.Context, postID int64) string {
+	if c == nil || c.Meta == nil || postID <= 0 {
+		return ""
+	}
+	v := asString(c.Meta.GetMetadata(wp.MetaPost, postID, "_wp_page_template", true))
+	if v == "" || v == "default" {
+		return ""
+	}
+	return v
+}
+
+func postFormat(c *wp.Context, postID int64, postType string) string {
+	if postType != "post" {
+		return "standard"
+	}
+	slugs := postTermSlugs(c, postID, "post_format")
+	if len(slugs) == 0 {
+		return "standard"
+	}
+	slug := slugs[0]
+	return strings.TrimPrefix(slug, "post-format-")
+}
+
+func postTermIDs(c *wp.Context, postID int64, taxonomy string) []int64 {
+	ids := []int64{}
+	if c == nil || c.DB == nil || postID <= 0 || taxonomy == "" {
+		return ids
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT t.term_id FROM "+c.DB.Terms()+" t "+
+			"INNER JOIN "+c.DB.TermTaxonomy()+" tt ON t.term_id = tt.term_id "+
+			"INNER JOIN "+c.DB.TermRelationships()+" tr ON tr.term_taxonomy_id = tt.term_taxonomy_id "+
+			"WHERE tr.object_id = %d AND tt.taxonomy = %s ORDER BY t.term_id ASC",
+		postID, taxonomy,
+	)
+	if err != nil {
+		return ids
+	}
+	rows, err := c.DB.GetResults(q, args...)
+	if err != nil {
+		return ids
+	}
+	for _, row := range rows {
+		id := asInt64(row["term_id"])
+		if id > 0 {
+			ids = append(ids, id)
+		}
+	}
+	return ids
+}
+
+func postTermSlugs(c *wp.Context, postID int64, taxonomy string) []string {
+	out := []string{}
+	if c == nil || c.DB == nil || postID <= 0 || taxonomy == "" {
+		return out
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT t.slug FROM "+c.DB.Terms()+" t "+
+			"INNER JOIN "+c.DB.TermTaxonomy()+" tt ON t.term_id = tt.term_id "+
+			"INNER JOIN "+c.DB.TermRelationships()+" tr ON tr.term_taxonomy_id = tt.term_taxonomy_id "+
+			"WHERE tr.object_id = %d AND tt.taxonomy = %s ORDER BY t.term_id ASC",
+		postID, taxonomy,
+	)
+	if err != nil {
+		return out
+	}
+	rows, err := c.DB.GetResults(q, args...)
+	if err != nil {
+		return out
+	}
+	for _, row := range rows {
+		s := asString(row["slug"])
+		if s != "" {
+			out = append(out, s)
+		}
+	}
+	return out
 }
 
 func itemPermalink(home, postType, mysqlDate, slug string, id int64) string {

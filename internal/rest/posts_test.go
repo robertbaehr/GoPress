@@ -68,6 +68,30 @@ func TestPostSingle(t *testing.T) {
 	if !containsT(post.Date) {
 		t.Fatalf("date=%q", post.Date)
 	}
+	if post.GUID.Rendered == "" {
+		t.Fatal("expected guid.rendered")
+	}
+	if post.Modified == "" || post.ModifiedGMT == "" {
+		t.Fatalf("expected modified fields: %+v", post)
+	}
+	if post.Author <= 0 {
+		t.Fatalf("author=%d", post.Author)
+	}
+	if post.CommentStatus == "" || post.PingStatus == "" {
+		t.Fatalf("comment/ping status missing: %+v", post)
+	}
+	if post.Format == "" {
+		t.Fatal("expected format")
+	}
+	if post.Meta == nil {
+		t.Fatal("expected meta object")
+	}
+	if post.Categories == nil || post.Tags == nil {
+		t.Fatal("expected categories/tags arrays")
+	}
+	if len(post.Categories) == 0 {
+		t.Fatal("hello-world should have a category")
+	}
 }
 
 func TestPostSingleMissing(t *testing.T) {
