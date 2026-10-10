@@ -811,6 +811,14 @@
   api: exported
   notes: "P2.51 — IsUUID any-version + version=4 regex; other versions false"
 
+# P2.53: wp_get_image_mime via magic bytes (jpeg/png/gif/webp/avif/heic).
+- prefix: wp-includes/functions.php#wp_get_image_mime
+  go: internal/wp/image_mime.go
+  status: partial
+  task: P2.53
+  api: exported
+  notes: "P2.53 — GetImageMime magic-byte sniff (jpeg/png/gif/webp/avif/heic/heif)"
+
 # P2.52: hex color validation (sanitize_hex_color family / wp_is_hex_color).
 - prefix: wp-includes/formatting.php#sanitize_hex_color
   go: internal/wp/hex_color.go
