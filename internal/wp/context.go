@@ -44,8 +44,14 @@ type Context struct {
 	// Locale is the active locale / translations (P1.9).
 	Locale *Locale
 
-	// CurrentUser is the authenticated user for this request (P2.x).
-	CurrentUser any
+	// Auth provides salts, hashes, nonces, and auth cookies (P2.1+).
+	Auth *Auth
+
+	// Users is the user lookup API (P2.2).
+	Users *Users
+
+	// CurrentUser is the authenticated user for this request (P2.2+).
+	CurrentUser *User
 
 	// Req is the inbound HTTP request (nil for CLI).
 	Req *http.Request
