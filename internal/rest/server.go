@@ -351,6 +351,8 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 			return
 		}
 		s.serveTemplatePartItem(w, r, c, id)
+	case path == "/wp/v2/pattern-directory/patterns":
+		s.servePatternDirectoryPatterns(w, r, c)
 	case path == "/wp-block-editor/v1/url-details":
 		s.serveURLDetails(w, r, c)
 	case path == "/wp-block-editor/v1/export":
