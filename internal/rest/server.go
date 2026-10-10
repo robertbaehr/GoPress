@@ -1005,7 +1005,7 @@ func extraIndexRoutes() map[string]RouteIndex {
 		"/wp/v2/media/(?P<id>[\\d]+)/post-process":                                  getOnly(ns),
 		"/wp/v2/menu-locations/(?P<location>[\\w-]+)": {
 			Namespace: ns,
-			Methods:   []string{"GET", "POST", "PUT", "PATCH"},
+			Methods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
 			Endpoints: []RouteEndpoint{
 				{Methods: []string{"GET"}},
 				{Methods: []string{"POST", "PUT", "PATCH"}, Args: map[string]any{
@@ -1015,6 +1015,7 @@ func extraIndexRoutes() map[string]RouteIndex {
 						"required":    false,
 					},
 				}},
+				{Methods: []string{"DELETE"}},
 			},
 		},
 		"/wp/v2/plugins/(?P<plugin>[^.\\/]+(?:\\/[^.\\/]+)?)":              itemRoute(ns),
