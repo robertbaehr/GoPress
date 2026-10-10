@@ -384,7 +384,14 @@ func parseIndexPHPQuery(q string) map[string]string {
 }
 
 func hasContentQueryVar(vars map[string]string) bool {
+	// Presence of `s` (even empty) is a search request, not the home blog (P10.34).
+	if _, ok := vars["s"]; ok {
+		return true
+	}
 	for _, k := range flagQueryVars {
+		if k == "s" {
+			continue
+		}
 		if v, ok := vars[k]; ok && v != "" {
 			return true
 		}
@@ -396,6 +403,12 @@ func hasAny(vars map[string]string, keys ...string) bool {
 	for _, k := range keys {
 		if v, ok := vars[k]; ok && v != "" {
 			return true
+		}
+		// Empty `s=` still counts as a search query var (WP is_search).
+		if k == "s" {
+			if _, ok := vars[k]; ok {
+				return true
+			}
 		}
 	}
 	return false
