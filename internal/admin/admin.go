@@ -1796,25 +1796,44 @@ func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, c *wp.Context, n
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveErasePersonalData is a privacy tools stub (P8.2) with erasure action (P8.5).
+// serveErasePersonalData is a privacy tools stub (P8.2) with erasure (P8.5) and confirm (P8.8).
 func (h *Handler) serveErasePersonalData(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	note := "GoPress privacy erasure stub — full request workflow lands later."
+	pendingEmail := ""
 	if r.Method == http.MethodPost {
 		_ = r.ParseForm()
 		email := strings.TrimSpace(r.Form.Get("username"))
 		if email == "" {
 			email = strings.TrimSpace(r.Form.Get("email"))
 		}
-		if res, err := wp.ErasePersonalData(c, email); err != nil {
-			note = "Erasure failed: " + err.Error()
-		} else {
-			note = res.Message
+		if email == "" {
+			email = strings.TrimSpace(r.Form.Get("username_or_email_for_privacy_request"))
+		}
+		action := strings.TrimSpace(r.Form.Get("action"))
+		switch action {
+		case "confirm_erasure":
+			if res, err := wp.ErasePersonalData(c, email); err != nil {
+				note = "Erasure failed: " + err.Error()
+			} else {
+				note = res.Message
+			}
+		default:
+			// WP: send_confirmation_email checked → pending; unchecked → confirmed/erase.
+			sendConfirm := r.Form.Get("send_confirmation_email") != ""
+			if sendConfirm {
+				pendingEmail = email
+				note = "Confirmation required: confirm erasure for " + email + "."
+			} else if res, err := wp.ErasePersonalData(c, email); err != nil {
+				note = "Erasure failed: " + err.Error()
+			} else {
+				note = res.Message
+			}
 		}
 	}
-	h.servePrivacyErasePage(w, c, note)
+	h.servePrivacyErasePage(w, c, note, pendingEmail)
 }
 
-func (h *Handler) servePrivacyErasePage(w http.ResponseWriter, c *wp.Context, note string) {
+func (h *Handler) servePrivacyErasePage(w http.ResponseWriter, c *wp.Context, note, pendingEmail string) {
 	blogname := optionString(c, "blogname", "GoPress")
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
@@ -1829,14 +1848,37 @@ func (h *Handler) servePrivacyErasePage(w http.ResponseWriter, c *wp.Context, no
 	b.WriteString("<p class=\"description\">")
 	b.WriteString(html.EscapeString(note))
 	b.WriteString("</p>\n")
+	if pendingEmail != "" {
+		b.WriteString("<div class=\"notice notice-warning\" id=\"erase-confirm-pending\"><p>")
+		b.WriteString("A confirmation email would be sent to <strong>")
+		b.WriteString(html.EscapeString(pendingEmail))
+		b.WriteString("</strong>. Confirm below to complete erasure (P8.8 stub).</p>\n")
+		b.WriteString("<form method=\"post\" action=\"/wp-admin/erase-personal-data.php\" class=\"wp-privacy-erase-confirm-form\">\n")
+		b.WriteString("<input type=\"hidden\" name=\"action\" value=\"confirm_erasure\">\n")
+		b.WriteString("<input type=\"hidden\" name=\"email\" value=\"")
+		b.WriteString(html.EscapeString(pendingEmail))
+		b.WriteString("\">\n")
+		b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"confirm_erasure\" id=\"confirm_erasure\" class=\"button button-primary\" value=\"Confirm Erasure\"></p>\n")
+		b.WriteString("</form></div>\n")
+	}
 	b.WriteString("<form method=\"post\" action=\"/wp-admin/erase-personal-data.php\" class=\"wp-privacy-request-form\">\n")
+	b.WriteString("<h2>Add Data Erasure Request</h2>\n")
 	b.WriteString("<p><label for=\"username\">Username or email address</label><br>\n")
 	b.WriteString("<input name=\"username\" type=\"text\" id=\"username\" class=\"regular-text\" required></p>\n")
+	b.WriteString("<p><input type=\"checkbox\" name=\"send_confirmation_email\" id=\"send_confirmation_email\" value=\"1\" checked=\"checked\">\n")
+	b.WriteString("<label for=\"send_confirmation_email\">Send personal data erasure confirmation email.</label></p>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Send Request\"></p>\n")
 	b.WriteString("</form>\n")
 	b.WriteString("<table class=\"wp-list-table widefat fixed striped privacy-requests\">\n")
 	b.WriteString("<thead><tr><th scope=\"col\">Requester</th><th scope=\"col\">Status</th></tr></thead>\n")
-	b.WriteString("<tbody><tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"2\">No requests found.</td></tr></tbody>\n")
+	statusRow := `<tr class="no-items"><td class="colspanchange" colspan="2">No requests found.</td></tr>`
+	if pendingEmail != "" {
+		statusRow = "<tr class=\"request-pending\"><td>" + html.EscapeString(pendingEmail) +
+			"</td><td>Pending confirmation</td></tr>"
+	}
+	b.WriteString("<tbody>")
+	b.WriteString(statusRow)
+	b.WriteString("</tbody>\n")
 	b.WriteString("</table>\n</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
