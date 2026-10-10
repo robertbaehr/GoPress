@@ -1448,6 +1448,9 @@ func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString("</title>\n")
 	perm := singularPermalink(home, post)
+	if canon := wp.GetCanonicalURL(c, post.ID, 0, 0); canon != "" {
+		perm = canon
+	}
 	restPath := "/wp/v2/posts/" + strconv.FormatInt(post.ID, 10)
 	if post.Type == "page" {
 		restPath = "/wp/v2/pages/" + strconv.FormatInt(post.ID, 10)
@@ -2591,6 +2594,7 @@ func writeFrontHeadLinks(b *strings.Builder, home, blogname, permalink, restPath
 	b.WriteString(html.EscapeString(home + "/xmlrpc.php?rsd"))
 	b.WriteString("\" />\n")
 	b.WriteString("<meta name=\"generator\" content=\"WordPress 7.2-alpha-64260\" />\n")
+	// P3.42: rel=canonical (wp_get_canonical_url / rel_canonical) on singular.
 	if permalink != "" {
 		b.WriteString("<link rel=\"canonical\" href=\"")
 		b.WriteString(html.EscapeString(permalink))

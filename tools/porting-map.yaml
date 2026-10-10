@@ -898,6 +898,19 @@
   task: P3.40
   api: exported
 
+# P3.42: rel=canonical / wp_get_canonical_url in singular head.
+- prefix: wp-includes/link-template.php#wp_get_canonical_url
+  go: internal/wp/canonical.go
+  status: partial
+  task: P3.42
+  api: exported
+
+- prefix: wp-includes/link-template.php#rel_canonical
+  go: internal/wp/canonical.go
+  status: partial
+  task: P3.42
+  api: exported
+
 # P3.37 / P10.35: file-level link-template row (fragments above are docs-only).
 - prefix: wp-includes/link-template.php
   go: internal/wp/link_template.go
