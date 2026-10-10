@@ -193,6 +193,9 @@ func writeOEmbedXML(w http.ResponseWriter, resp OEmbedResponse) {
 		HTML:         resp.HTML,
 	}
 	w.Header().Set("Content-Type", "text/xml; charset=UTF-8")
+	if w.Header().Get("Allow") == "" {
+		w.Header().Set("Allow", "GET")
+	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(xml.Header))
 	enc := xml.NewEncoder(w)

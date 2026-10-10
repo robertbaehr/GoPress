@@ -3525,3 +3525,130 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.120: headers-only expand after P5.105–P6.44 stack.
+- id: rest-p10120-tags-orderby-id-desc
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/tags?orderby=id&order=desc&per_page=2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10120-tags-include-orderby
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/tags?include=6,5&orderby=include
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10120-tags-orderby-slug-desc
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/tags?orderby=slug&order=desc&per_page=2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10120-categories-orderby-id-desc
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/categories?orderby=id&order=desc&per_page=2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10120-categories-include-orderby
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/categories?include=1&orderby=include
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10120-tags-5
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/tags/5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10120-oembed-format-xml
+  role: anon
+  method: GET
+  path: /wp-json/oembed/1.0/embed?url=http://127.0.0.1:8081/?p=1&format=xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10120-oembed-maxwidth-400
+  role: anon
+  method: GET
+  path: /wp-json/oembed/1.0/embed?url=http://127.0.0.1:8081/?p=1&maxwidth=400
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10120-oembed-fixture-parent
+  role: anon
+  method: GET
+  path: /wp-json/oembed/1.0/embed?url=http://127.0.0.1:8081/fixture-parent/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10120-pages-menu-order-asc
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?per_page=1&orderby=menu_order&order=asc
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10120-posts-tags-5
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?tags=5&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10120-tags-order-desc-id
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/tags?per_page=1&order=desc&orderby=id
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-p10120-tags-include
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/tags&include=5,6&orderby=include
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10120-categories-slug-orderby-id
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/categories?slug=uncategorized&orderby=id
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

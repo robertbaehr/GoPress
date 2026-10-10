@@ -6694,3 +6694,11 @@ wp-login.php#language-switcher-post
   task: P10.119
   api: n/a
   notes: "P10.119 — regenerate porting-status after stacked P5.104–P10.118"
+
+# P10.120: expand diff corpus after P5.105–P6.44.
+- prefix: tests/corpus/#p10-120
+  go: tests/corpus/
+  status: partial
+  task: P10.120
+  api: n/a
+  notes: "P10.120 — tags include/orderby, oembed xml/maxwidth, checkemail action, pages list, heartbeat; grow after P5.105–P6.44; 550 cases"
