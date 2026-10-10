@@ -4783,3 +4783,18 @@
   task: P6.34
   api: n/a
   notes: "P6.34 — default redirect_to=admin_url; no edit_posts → profile.php"
+
+# P10.72: E2E edit.php Screen Options Columns + STATUS refresh after P5.80–P6.34.
+- prefix: docs/STATUS.md
+  go: docs/STATUS.md
+  status: partial
+  task: P10.72
+  api: n/a
+  notes: "P10.72 — STATUS refresh after shortcode, format=, edit format, validate_redirect, excerpt_rss, login admin"
+
+- prefix: tests/e2e/edit-columns.spec.js
+  go: tests/e2e/edit-columns.spec.js
+  status: partial
+  task: P10.72
+  api: n/a
+  notes: "P10.72 — Playwright hide Author column via Screen Options Columns"
