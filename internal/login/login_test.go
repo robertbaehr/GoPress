@@ -315,23 +315,16 @@ func TestLostPasswordPOSTGeneratesResetKey(t *testing.T) {
 
 func TestResetPassFlow(t *testing.T) {
 	c := bootOrSkip(t)
-	defer c.DB.Close()
+	t.Cleanup(func() { _ = c.DB.Close() })
 
 	user, err := c.GetUserBy("login", "admin")
 	if err != nil || user == nil {
 		t.Fatalf("admin: %v", err)
 	}
-	origPass := user.Pass
+	// Restore before Close (Cleanup is LIFO).
 	t.Cleanup(func() {
-		q, args, err := c.DB.Prepare(
-			"UPDATE "+c.DB.Users()+" SET user_pass = %s, user_activation_key = %s WHERE ID = %d",
-			origPass, "", user.ID,
-		)
-		if err == nil {
-			_, _ = c.DB.Exec(q, args...)
-		}
-		if c.Users != nil && c.Users.Cache != nil {
-			c.Users.Cache.Delete("1", "users")
+		if err := c.SetUserPassword(user.ID, "password"); err != nil {
+			t.Errorf("restore admin password: %v", err)
 		}
 	})
 
