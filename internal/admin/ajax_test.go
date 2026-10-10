@@ -4,12 +4,23 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"regexp"
 	"strings"
 	"testing"
 
 	"github.com/robertbaehr/GoPress/internal/admin"
 	"github.com/robertbaehr/GoPress/internal/server"
 )
+
+var heartbeatNonceRe = regexp.MustCompile(`heartbeatSettings\s*=\s*\{[^}]*"nonce"\s*:\s*"([^"]+)"`)
+
+func extractHeartbeatNonce(html string) string {
+	m := heartbeatNonceRe.FindStringSubmatch(html)
+	if len(m) < 2 {
+		return ""
+	}
+	return m[1]
+}
 
 func TestAdminAjaxHeartbeatAnon(t *testing.T) {
 	c := bootOrSkip(t)
@@ -39,7 +50,15 @@ func TestAdminAjaxHeartbeatAuth(t *testing.T) {
 	c := bootOrSkip(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
 	ck := loginCookie(t, c)
-	req := httptest.NewRequest(http.MethodPost, "/wp-admin/admin-ajax.php", strings.NewReader("action=heartbeat&_nonce=x&screen_id=dashboard"))
+	req0 := httptest.NewRequest(http.MethodGet, "/wp-admin/", nil)
+	req0.AddCookie(ck)
+	rec0 := httptest.NewRecorder()
+	srv.ServeHTTP(rec0, req0)
+	nonce := extractHeartbeatNonce(rec0.Body.String())
+	if nonce == "" {
+		t.Fatal("missing heartbeatSettings nonce in admin HTML")
+	}
+	req := httptest.NewRequest(http.MethodPost, "/wp-admin/admin-ajax.php", strings.NewReader("action=heartbeat&_nonce="+nonce+"&screen_id=dashboard"))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.AddCookie(ck)
 	rec := httptest.NewRecorder()
@@ -53,6 +72,47 @@ func TestAdminAjaxHeartbeatAuth(t *testing.T) {
 	}
 	if resp["wp-auth-check"] != true {
 		t.Fatalf("expected wp-auth-check:true, got %#v", resp)
+	}
+	if resp["nonces_expired"] != nil {
+		t.Fatalf("unexpected nonces_expired: %#v", resp)
+	}
+}
+
+func TestAdminAjaxHeartbeatMissingNonce(t *testing.T) {
+	c := bootOrSkip(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	ck := loginCookie(t, c)
+	req := httptest.NewRequest(http.MethodPost, "/wp-admin/admin-ajax.php", strings.NewReader("action=heartbeat&screen_id=dashboard"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), `"success":false`) {
+		t.Fatalf("expected json error, got %q", rec.Body.String())
+	}
+}
+
+func TestAdminAjaxHeartbeatExpiredNonce(t *testing.T) {
+	c := bootOrSkip(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	ck := loginCookie(t, c)
+	req := httptest.NewRequest(http.MethodPost, "/wp-admin/admin-ajax.php", strings.NewReader("action=heartbeat&_nonce=deadbeef01&screen_id=dashboard"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	var resp map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("json: %v", err)
+	}
+	if resp["nonces_expired"] != true {
+		t.Fatalf("expected nonces_expired, got %#v", resp)
+	}
+	if resp["heartbeat-nonce"] == nil || resp["rest-nonce"] == nil {
+		t.Fatalf("expected refreshed nonces, got %#v", resp)
 	}
 }
 
