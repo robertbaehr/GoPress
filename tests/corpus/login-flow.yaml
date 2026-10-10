@@ -451,3 +451,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.120: checkemail chrome after P6.44.
+- id: login-p10120-checkemail-action-confirm
+  role: anon
+  method: GET
+  path: /wp-login.php?action=checkemail&checkemail=confirm
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10120-checkemail-action-registered
+  role: anon
+  method: GET
+  path: /wp-login.php?action=checkemail&checkemail=registered
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10120-checkemail-registered
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=registered
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

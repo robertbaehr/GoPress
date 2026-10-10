@@ -637,3 +637,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.120: front headers after pages/oembed stack.
+- id: front-p10120-fixture-child
+  role: anon
+  method: GET
+  path: /fixture-parent/fixture-child/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10120-fixture-grandchild
+  role: anon
+  method: GET
+  path: /fixture-parent/fixture-child/fixture-grandchild/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10120-fixture-parent
+  role: anon
+  method: GET
+  path: /fixture-parent/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

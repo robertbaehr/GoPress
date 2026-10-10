@@ -74,3 +74,22 @@
   compare: headers
   nonce: null
 
+
+# P10.120: pages list chrome after P7.106.
+- id: admin-edit-pages
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_type=page
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-edit-pages-trash
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_type=page&post_status=trash
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
