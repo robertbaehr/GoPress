@@ -30,6 +30,21 @@
   api: n/a
   notes: "P7.65 — GET reply form; POST InsertComment with parent; Reply row action"
 
+# P7.66: edit.php inline Quick Edit stub (row action + hidden form template).
+- prefix: wp-admin/includes/class-wp-posts-list-table.php#inline_edit
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.66
+  api: n/a
+  notes: "P7.66 — Quick Edit button, inline_* data, #inline-edit form stub"
+
+- prefix: wp-admin/edit.php#quick_edit
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.66
+  api: n/a
+  notes: "P7.66 — serveEditPosts Quick Edit stub"
+
 # P7.30: comment.php moderation stub.
 - prefix: wp-admin/comment.php
   go: internal/admin/admin.go
