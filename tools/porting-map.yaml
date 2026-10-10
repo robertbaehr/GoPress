@@ -3187,6 +3187,21 @@
   task: P9.11
   api: n/a
 
+# P9.16: Plugin Automatic Updates N/A in GoPress.
+- prefix: wp-admin/includes/class-wp-plugins-list-table.php#auto-updates
+  go: internal/plugins/auto_update.go
+  status: out-of-scope
+  task: P9.16
+  api: n/a
+  notes: "P9.16 — AutoUpdateGoneNotice; RejectAutoUpdate; no enable/disable toggles"
+
+- prefix: wp-admin/plugins.php#auto-updates
+  go: internal/admin/admin.go
+  status: out-of-scope
+  task: P9.16
+  api: n/a
+  notes: "P9.16 — plugins.php surfaces auto-update N/A notice + row note"
+
 # P9.13: WP_Plugin_Dependencies stub (Requires Plugins header, no remote API).
 - prefix: wp-includes/class-wp-plugin-dependencies.php
   go: internal/plugins/dependencies.go

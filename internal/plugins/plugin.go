@@ -49,6 +49,8 @@ func LoadActive(c *wp.Context) error {
 	CheckAkismetGone(c)
 	// P9.11: Network Activate is N/A on single-site GoPress.
 	CheckNetworkActivateGone(c)
+	// P9.16: Plugin Automatic Updates are N/A in GoPress.
+	CheckAutoUpdateGone(c)
 	if c == nil || c.Options == nil {
 		return nil
 	}

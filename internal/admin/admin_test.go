@@ -783,7 +783,13 @@ func TestPluginsListsHelloDollyHeaders(t *testing.T) {
 		t.Fatalf("expected Akismet not-bundled notice, got %q", body)
 	}
 	if !strings.Contains(body, "gopress-plugin-network-gone") || !strings.Contains(body, "Network Activate") {
-		t.Fatalf("expected Network Activate N/A notice, got %q", body)
+		t.Fatalf("expected network-gone notice, got %q", body)
+	}
+	if !strings.Contains(body, "gopress-plugin-auto-update-gone") || !strings.Contains(body, "Automatic Updates") {
+		t.Fatalf("expected auto-update-gone notice, got %q", body)
+	}
+	if !strings.Contains(body, "auto-update-gone-notice") {
+		t.Fatalf("expected auto-update column N/A note, got %q", body)
 	}
 	if !strings.Contains(body, "Matt Mullenweg") {
 		t.Fatalf("expected author from headers, got %q", body)
