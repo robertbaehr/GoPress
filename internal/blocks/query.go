@@ -71,6 +71,19 @@ func (e *Env) renderQueryTitle(block Block) string {
 		} else {
 			text = "Search results for: " + term
 		}
+	case "archive":
+		title := strings.TrimSpace(e.ArchiveTitle)
+		if title == "" {
+			title = "Archives"
+		}
+		// Match TT5 markup: "Year: <span>2024</span>" / "Month: <span>June 2024</span>".
+		if i := strings.Index(title, ": "); i > 0 {
+			label := title[:i+2]
+			rest := title[i+2:]
+			return fmt.Sprintf(`<%s class="wp-block-query-title">%s<span>%s</span></%s>`,
+				tag, html.EscapeString(label), html.EscapeString(rest), tag)
+		}
+		text = title
 	default:
 		return ""
 	}

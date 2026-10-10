@@ -170,6 +170,15 @@ type RequestScope struct {
 	// SearchQuery is the `s` query var when IsSearch (P3.21).
 	SearchQuery string
 
+	// Date archive query vars (P3.22).
+	DateYear  int
+	DateMonth int
+	DateDay   int
+	IsDate    bool
+	IsYear    bool
+	IsMonth   bool
+	IsDay     bool
+
 	// Is* flags mirror WP_Query conditionals (filled by query parse).
 	IsHome       bool
 	IsSingular   bool

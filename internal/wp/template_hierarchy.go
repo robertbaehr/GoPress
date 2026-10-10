@@ -22,6 +22,12 @@ func SearchTemplateSlugs() []string {
 	return []string{"search", "index"}
 }
 
+// DateTemplateSlugs returns the date archive hierarchy for block themes (P3.22).
+// WP: date → archive → index (block themes typically ship archive.html).
+func DateTemplateSlugs() []string {
+	return []string{"date", "archive", "index"}
+}
+
 // SingularTemplateSlugs returns the singular hierarchy for a post or page.
 // Pages: page-{slug}, page-{id}, page, singular, index.
 // Posts/CPTs: single-{type}-{slug}, single-{type}, single, singular, index.

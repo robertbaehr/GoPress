@@ -242,6 +242,16 @@ func (c *Context) ParseRequest(rules RewriteRules) *ParseResult {
 		c.Scope.IsSearch = hasAny(res.QueryVars, "s")
 		c.Scope.SearchQuery = res.QueryVars["s"]
 		c.Scope.IsREST = hasAny(res.QueryVars, "rest_route")
+		// Date archives (P3.22): year/month/day without a singular post name.
+		if !c.Scope.IsSingular && hasAny(res.QueryVars, "year", "monthnum", "day") {
+			c.Scope.IsDate = true
+			c.Scope.DateYear = atoiScope(res.QueryVars["year"])
+			c.Scope.DateMonth = atoiScope(res.QueryVars["monthnum"])
+			c.Scope.DateDay = atoiScope(res.QueryVars["day"])
+			c.Scope.IsYear = c.Scope.DateYear > 0 && c.Scope.DateMonth == 0 && c.Scope.DateDay == 0
+			c.Scope.IsMonth = c.Scope.DateYear > 0 && c.Scope.DateMonth > 0 && c.Scope.DateDay == 0
+			c.Scope.IsDay = c.Scope.DateYear > 0 && c.Scope.DateMonth > 0 && c.Scope.DateDay > 0
+		}
 		if p := res.QueryVars["p"]; p != "" {
 			if id, err := strconv.ParseInt(p, 10, 64); err == nil {
 				c.Scope.QueriedObjectID = id
@@ -317,6 +327,18 @@ func hasAny(vars map[string]string, keys ...string) bool {
 		}
 	}
 	return false
+}
+
+func atoiScope(s string) int {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return 0
+	}
+	n, err := strconv.Atoi(s)
+	if err != nil || n < 0 {
+		return 0
+	}
+	return n
 }
 
 // pageExists reports whether a published page exists at pagename (hierarchical path).

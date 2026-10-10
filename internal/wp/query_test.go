@@ -103,3 +103,28 @@ func TestGetPostsSearch(t *testing.T) {
 		t.Fatalf("expected no hits, got %d", len(miss))
 	}
 }
+
+func TestGetPostsDateArchive(t *testing.T) {
+	c := testBootQuery(t)
+	year, err := wp.GetPosts(c, wp.QueryArgs{PostsPerPage: 5, Year: 2024})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(year) == 0 {
+		t.Fatal("expected 2024 posts")
+	}
+	month, err := wp.GetPosts(c, wp.QueryArgs{PostsPerPage: 5, Year: 2024, MonthNum: 6})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(month) == 0 {
+		t.Fatal("expected June 2024 posts")
+	}
+	empty, err := wp.GetPosts(c, wp.QueryArgs{PostsPerPage: 5, Year: 2019})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(empty) != 0 {
+		t.Fatalf("expected no 2019 posts, got %d", len(empty))
+	}
+}

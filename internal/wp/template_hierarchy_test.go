@@ -23,6 +23,12 @@ func TestSearchTemplateSlugs(t *testing.T) {
 	}
 }
 
+func TestDateTemplateSlugs(t *testing.T) {
+	if got := wp.DateTemplateSlugs(); !reflect.DeepEqual(got, []string{"date", "archive", "index"}) {
+		t.Fatalf("date: %v", got)
+	}
+}
+
 func TestSingularTemplateSlugsPage(t *testing.T) {
 	got := wp.SingularTemplateSlugs("page", "sample-page", 2)
 	want := []string{"page-sample-page", "page-2", "page", "singular", "index"}

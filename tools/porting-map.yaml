@@ -269,6 +269,13 @@
   task: P3.21
   api: n/a
 
+# P3.22: year/month date archives on the front controller.
+- prefix: wp-includes/general-template.php
+  go: internal/server/front.go
+  status: partial
+  task: P3.22
+  api: n/a
+
 - prefix: wp-includes/feed-atom.php
   go: internal/server/front.go
   status: partial

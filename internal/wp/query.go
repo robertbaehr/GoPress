@@ -21,6 +21,10 @@ type QueryArgs struct {
 	PageName     string // page slug (query var "pagename"); implies post_type=page when PostType unset
 	// Search is the `s` query var (title/content LIKE, P3.21).
 	Search string
+	// Year / MonthNum / Day filter post_date for date archives (P3.22).
+	Year     int
+	MonthNum int
+	Day      int
 	// StickyFirst prepends sticky posts (home/blog inherit queries, P5.19).
 	StickyFirst bool
 	// IgnoreSticky excludes sticky posts from results (non-inherit query loops).
@@ -97,6 +101,18 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 		like := "%" + db.EscapeLike(term) + "%"
 		where = append(where, "(post_title LIKE %s OR post_excerpt LIKE %s OR post_content LIKE %s)")
 		vals = append(vals, like, like, like)
+	}
+	if args.Year > 0 {
+		where = append(where, "YEAR(post_date) = %d")
+		vals = append(vals, args.Year)
+	}
+	if args.MonthNum > 0 {
+		where = append(where, "MONTH(post_date) = %d")
+		vals = append(vals, args.MonthNum)
+	}
+	if args.Day > 0 {
+		where = append(where, "DAY(post_date) = %d")
+		vals = append(vals, args.Day)
 	}
 
 	q := "SELECT ID, post_author, post_date, post_date_gmt, post_modified, post_modified_gmt, " +
