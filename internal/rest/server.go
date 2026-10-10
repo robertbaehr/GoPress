@@ -28,6 +28,8 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	switch {
 	case path == "/" || path == "":
 		s.serveIndex(w, c)
+	case path == "/wp/v2/posts":
+		s.servePosts(w, r, c)
 	default:
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"code":    "rest_no_route",
