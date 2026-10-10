@@ -33,3 +33,21 @@
   body: null
   compare: raw
   nonce: null
+
+- id: front-robots
+  role: anon
+  method: GET
+  path: /robots.txt
+  headers: {}
+  body: null
+  compare: raw
+  nonce: null
+
+- id: front-sitemap
+  role: anon
+  method: GET
+  path: /wp-sitemap.xml
+  headers: {}
+  body: null
+  compare: raw
+  nonce: null

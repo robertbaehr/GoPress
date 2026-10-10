@@ -76,6 +76,26 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
+	if path == "/robots.txt" {
+		c := s.requestContext(w, r)
+		serveRobotsTXT(w, c)
+		return
+	}
+	if path == "/wp-sitemap.xml" {
+		c := s.requestContext(w, r)
+		serveSitemapIndex(w, c)
+		return
+	}
+	if path == "/wp-sitemap-posts-post-1.xml" {
+		c := s.requestContext(w, r)
+		serveSitemapPosts(w, c, "post")
+		return
+	}
+	if path == "/wp-sitemap-posts-page-1.xml" {
+		c := s.requestContext(w, r)
+		serveSitemapPosts(w, c, "page")
+		return
+	}
 	if path == "/wp-cron.php" {
 		c := s.requestContext(w, r)
 		wp.ServeCron(w, r, c)
