@@ -506,6 +506,19 @@
   task: P2.36
   api: exported
 
+# P2.37: wp_list_pluck / WP_List_Util::pluck.
+- prefix: wp-includes/functions.php#wp_list_pluck
+  go: internal/wp/list_pluck.go
+  status: partial
+  task: P2.37
+  api: exported
+
+- prefix: wp-includes/class-wp-list-util.php
+  go: internal/wp/list_pluck.go
+  status: partial
+  task: P2.37
+  api: exported
+
 - prefix: wp-includes/functions.php#wp_validate_boolean
   go: internal/wp/validate_boolean.go
   status: partial
