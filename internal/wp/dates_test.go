@@ -177,3 +177,45 @@ func TestDateI18nUTCSubset(t *testing.T) {
 		}
 	}
 }
+
+func TestTimezoneStringOffsetFallback(t *testing.T) {
+	// P2.96: empty timezone_string → ±HH:MM from gmt_offset.
+	c := bootAppPass(t)
+	prevTZ := c.Options.GetOption("timezone_string", "")
+	prevOff := c.Options.GetOption("gmt_offset", "0")
+	t.Cleanup(func() {
+		_, _ = c.Options.UpdateOption("timezone_string", prevTZ, "yes")
+		_, _ = c.Options.UpdateOption("gmt_offset", prevOff, "yes")
+	})
+
+	_, _ = c.Options.UpdateOption("timezone_string", "", "yes")
+	for _, tc := range []struct {
+		offset string
+		want   string
+	}{
+		{"0", "+00:00"},
+		{"5.5", "+05:30"},
+		{"-5.5", "-05:30"},
+		{"-6", "-06:00"},
+		{"8.75", "+08:45"},
+	} {
+		_, _ = c.Options.UpdateOption("gmt_offset", tc.offset, "yes")
+		got := wp.TimezoneString(c)
+		if got != tc.want {
+			t.Fatalf("gmt_offset=%s TimezoneString=%q want %q", tc.offset, got, tc.want)
+		}
+		loc := wp.Timezone(c)
+		if loc == nil {
+			t.Fatalf("Timezone nil for offset %s", tc.offset)
+		}
+	}
+
+	_, _ = c.Options.UpdateOption("timezone_string", "America/New_York", "yes")
+	if got := wp.TimezoneString(c); got != "America/New_York" {
+		t.Fatalf("timezone_string preferred: %q", got)
+	}
+	loc := wp.Timezone(c)
+	if loc.String() != "America/New_York" {
+		t.Fatalf("Timezone=%q", loc)
+	}
+}
