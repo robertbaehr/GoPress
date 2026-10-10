@@ -202,6 +202,72 @@ func TestPostsSearchQueryParam(t *testing.T) {
 	}
 }
 
+func TestPostsStatusQueryParam(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	// Anonymous cannot request draft.
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?status=draft&per_page=10", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("anon draft status=%d body=%s", rec.Code, rec.Body.String())
+	}
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	ck := &http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?status=draft&per_page=10", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("editor draft status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var drafts []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &drafts); err != nil {
+		t.Fatal(err)
+	}
+	if len(drafts) == 0 {
+		t.Fatal("expected draft posts for editor")
+	}
+	for _, p := range drafts {
+		if p.Status != "draft" {
+			t.Fatalf("expected status=draft, got %q on post %d", p.Status, p.ID)
+		}
+	}
+	if rec.Header().Get("X-WP-Total") == "" || rec.Header().Get("X-WP-Total") == "0" {
+		t.Fatalf("expected X-WP-Total > 0, got %q", rec.Header().Get("X-WP-Total"))
+	}
+
+	// Default status=publish still works without auth.
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?status=publish&per_page=5", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("publish status=%d", rec.Code)
+	}
+	var pubs []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &pubs); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range pubs {
+		if p.Status != "publish" {
+			t.Fatalf("expected publish, got %q", p.Status)
+		}
+	}
+}
+
 func TestPostsTagsQueryParam(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()

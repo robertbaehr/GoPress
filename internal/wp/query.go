@@ -13,9 +13,12 @@ import (
 // QueryArgs is a minimal subset of WP_Query / get_posts arguments.
 type QueryArgs struct {
 	PostType     string // default "post"
-	PostStatus   string // default "publish"
-	PostsPerPage int    // default 10; -1 means no LIMIT
-	Offset       int    // SQL OFFSET (ignored when PostsPerPage < 0)
+	PostStatus   string // default "publish"; ignored when PostStatuses is set
+	// PostStatuses is WP_Query post_status as a list (REST ?status=, P4.88).
+	// A single value "any" means all statuses except trash and auto-draft.
+	PostStatuses  []string
+	PostsPerPage int // default 10; -1 means no LIMIT
+	Offset       int // SQL OFFSET (ignored when PostsPerPage < 0)
 	P            int64  // post ID (query var "p")
 	Name         string // post slug (query var "name")
 	PageName     string // page slug (query var "pagename"); implies post_type=page when PostType unset
@@ -85,14 +88,14 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 			postType = "post"
 		}
 	}
-	status := args.PostStatus
-	if status == "" {
-		status = "publish"
-	}
 	var where []string
 	var vals []any
-	where = append(where, "post_type = %s", "post_status = %s")
-	vals = append(vals, postType, status)
+	where = append(where, "post_type = %s")
+	vals = append(vals, postType)
+	if clause, cvals := postStatusSQL(args.PostStatus, args.PostStatuses); clause != "" {
+		where = append(where, clause)
+		vals = append(vals, cvals...)
+	}
 	if term := strings.TrimSpace(args.Search); term != "" {
 		like := "%" + db.EscapeLike(term) + "%"
 		where = append(where, "(post_title LIKE %s OR post_excerpt LIKE %s OR post_content LIKE %s)")
@@ -280,10 +283,6 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 			postType = "post"
 		}
 	}
-	status := args.PostStatus
-	if status == "" {
-		status = "publish"
-	}
 	limit := args.PostsPerPage
 	if limit == 0 {
 		limit = 10
@@ -294,8 +293,10 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 
 	where = append(where, "post_type = %s")
 	vals = append(vals, postType)
-	where = append(where, "post_status = %s")
-	vals = append(vals, status)
+	if clause, cvals := postStatusSQL(args.PostStatus, args.PostStatuses); clause != "" {
+		where = append(where, clause)
+		vals = append(vals, cvals...)
+	}
 
 	if args.P > 0 {
 		where = append(where, "ID = %d")
@@ -566,6 +567,33 @@ func orderByClause(orderby, order string, aliased bool) string {
 		dir = "ASC"
 	}
 	return col + " " + dir
+}
+
+// postStatusSQL builds a post_status WHERE fragment (P4.88).
+// PostStatuses takes precedence; empty both defaults to publish.
+// A lone "any" excludes trash and auto-draft (WP_Query post_status=any).
+func postStatusSQL(status string, statuses []string) (string, []any) {
+	list := statuses
+	if len(list) == 0 {
+		s := strings.TrimSpace(status)
+		if s == "" {
+			s = "publish"
+		}
+		list = []string{s}
+	}
+	if len(list) == 1 && strings.EqualFold(list[0], "any") {
+		return "post_status NOT IN (%s, %s)", []any{"trash", "auto-draft"}
+	}
+	if len(list) == 1 {
+		return "post_status = %s", []any{list[0]}
+	}
+	ph := make([]string, len(list))
+	vals := make([]any, len(list))
+	for i, s := range list {
+		ph[i] = "%s"
+		vals[i] = s
+	}
+	return "post_status IN (" + strings.Join(ph, ", ") + ")", vals
 }
 
 // postInNotInSQL builds post__in / post__not_in fragments (P4.82).
