@@ -10,6 +10,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/robertbaehr/GoPress/internal/config"
 	"github.com/robertbaehr/GoPress/internal/server"
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
@@ -67,16 +68,32 @@ func TestWPLoginStub(t *testing.T) {
 	}
 }
 
-func TestWPJSONStub(t *testing.T) {
-	s := &server.Server{}
-	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts", nil)
+func TestWPJSONIndex(t *testing.T) {
+	cfg := &config.Config{
+		DBName: "gopress_go", DBUser: "gopress", DBPassword: "gopress",
+		DBHost: "127.0.0.1:3306", DBCharset: "utf8mb4", TablePrefix: "wp_",
+		ABSPATH: "/workspace/",
+		AuthKey: "k", SecureAuthKey: "k", LoggedInKey: "k", NonceKey: "k",
+		AuthSalt: "s", SecureAuthSalt: "s", LoggedInSalt: "s", NonceSalt: "s",
+	}
+	c, err := wp.Boot(context.Background(), cfg)
+	if err != nil {
+		t.Skipf("Boot unavailable: %v", err)
+	}
+	defer c.DB.Close()
+
+	s := &server.Server{WP: c, AbsPath: cfg.ABSPATH}
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/", nil)
 	rec := httptest.NewRecorder()
 	s.ServeHTTP(rec, req)
-	if rec.Code != http.StatusNotImplemented {
-		t.Fatalf("status=%d", rec.Code)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
 	}
 	if ct := rec.Header().Get("Content-Type"); !strings.Contains(ct, "json") {
 		t.Fatalf("content-type=%q", ct)
+	}
+	if !strings.Contains(rec.Body.String(), `"namespaces"`) {
+		t.Fatalf("expected namespaces in body: %s", rec.Body.String())
 	}
 }
 

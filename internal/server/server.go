@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/robertbaehr/GoPress/internal/rest"
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
@@ -27,6 +28,9 @@ type Server struct {
 	// Front handles everything that is not static or a stub route.
 	// When nil, those requests return 503.
 	Front FrontHandler
+
+	// REST serves /wp-json. When nil, a default rest.Server is used.
+	REST *rest.Server
 }
 
 // ServeHTTP implements http.Handler.
@@ -48,9 +52,12 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if path == "/wp-json" || strings.HasPrefix(path, "/wp-json/") {
-		w.Header().Set("Content-Type", "application/json; charset=utf-8")
-		w.WriteHeader(http.StatusNotImplemented)
-		fmt.Fprint(w, `{"code":"rest_unavailable","message":"GoPress REST API not implemented"}`+"\n")
+		c := s.requestContext(w, r)
+		rs := s.REST
+		if rs == nil {
+			rs = &rest.Server{}
+		}
+		rs.Handle(w, r, c)
 		return
 	}
 
