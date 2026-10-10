@@ -41,6 +41,14 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	case path == "/wp/v2/posts":
 		s.servePosts(w, r, c)
 	case strings.HasPrefix(path, "/wp/v2/posts/"):
+		if parentID, revID, ok := parsePostRevisionPath(path); ok {
+			if revID > 0 {
+				s.servePostRevisionItem(w, r, c, parentID, revID)
+			} else {
+				s.servePostRevisions(w, r, c, parentID)
+			}
+			return
+		}
 		id, ok := parseTrailingID(path, "/wp/v2/posts/")
 		if !ok {
 			writeJSON(w, http.StatusNotFound, map[string]any{
@@ -253,6 +261,31 @@ func parseTrailingID(path, prefix string) (int64, bool) {
 	return id, true
 }
 
+// parsePostRevisionPath matches /wp/v2/posts/{parent}/revisions[/id].
+func parsePostRevisionPath(path string) (parentID, revID int64, ok bool) {
+	rest := strings.TrimPrefix(path, "/wp/v2/posts/")
+	rest = strings.Trim(rest, "/")
+	parts := strings.Split(rest, "/")
+	if len(parts) < 2 || parts[1] != "revisions" {
+		return 0, 0, false
+	}
+	parentID, err := strconv.ParseInt(parts[0], 10, 64)
+	if err != nil || parentID <= 0 {
+		return 0, 0, false
+	}
+	if len(parts) == 2 {
+		return parentID, 0, true
+	}
+	if len(parts) != 3 {
+		return 0, 0, false
+	}
+	revID, err = strconv.ParseInt(parts[2], 10, 64)
+	if err != nil || revID <= 0 {
+		return 0, 0, false
+	}
+	return parentID, revID, true
+}
+
 func restPath(urlPath string) string {
 	p := urlPath
 	if !strings.HasPrefix(p, "/") {
@@ -382,6 +415,16 @@ func buildIndex(c *wp.Context) Index {
 		},
 		"/wp/v2/posts":                collectionRoute("wp/v2"),
 		"/wp/v2/posts/(?P<id>[\\d]+)": itemRoute("wp/v2"),
+		"/wp/v2/posts/(?P<parent>[\\d]+)/revisions": {
+			Namespace: "wp/v2",
+			Methods:   []string{"GET"},
+			Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}},
+		},
+		"/wp/v2/posts/(?P<parent>[\\d]+)/revisions/(?P<id>[\\d]+)": {
+			Namespace: "wp/v2",
+			Methods:   []string{"GET"},
+			Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}},
+		},
 		"/wp/v2/types": {
 			Namespace: "wp/v2",
 			Methods:   []string{"GET"},
