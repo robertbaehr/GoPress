@@ -179,6 +179,13 @@
   task: P2.25
   api: exported
 
+# P2.26: esc_url_raw / sanitize_url (db context, no display entity encoding).
+- prefix: wp-includes/formatting.php#esc_url_raw
+  go: internal/wp/formatting.go
+  status: partial
+  task: P2.26
+  api: exported
+
 # P2.21: wp_check_password covers $wp$ / phpass; application passwords reuse it.
 - prefix: wp-includes/class-wp-application-passwords.php
   go: internal/wp/application_passwords.go

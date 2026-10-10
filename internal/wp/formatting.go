@@ -70,6 +70,21 @@ func EscJS(text string) string {
 
 // EscURL cleans and escapes a URL for display (esc_url subset).
 func EscURL(url string) string {
+	return escURLContext(url, "display")
+}
+
+// EscURLRaw cleans a URL for database or redirect use (esc_url_raw / sanitize_url).
+// Unlike EscURL, it skips display-only entity encoding (P2.26).
+func EscURLRaw(url string) string {
+	return escURLContext(url, "db")
+}
+
+// SanitizeURL is an alias for EscURLRaw (sanitize_url).
+func SanitizeURL(url string) string {
+	return EscURLRaw(url)
+}
+
+func escURLContext(url, context string) string {
 	if url == "" {
 		return ""
 	}
@@ -91,10 +106,12 @@ func EscURL(url string) string {
 		}
 	}
 
-	// display context: normalize entities, then &amp;→&#038;, '→&#039;
-	url = normalizeEntities(url)
-	url = strings.ReplaceAll(url, "&amp;", "&#038;")
-	url = strings.ReplaceAll(url, "'", "&#039;")
+	// Replace ampersands and single quotes only when displaying.
+	if context == "display" {
+		url = normalizeEntities(url)
+		url = strings.ReplaceAll(url, "&amp;", "&#038;")
+		url = strings.ReplaceAll(url, "'", "&#039;")
+	}
 
 	if url == "" {
 		return ""

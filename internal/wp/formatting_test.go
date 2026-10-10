@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/robertbaehr/GoPress/internal/wp"
@@ -197,5 +198,29 @@ func TestEscHTMLBasic(t *testing.T) {
 func TestSanitizeKeyBasic(t *testing.T) {
 	if got := wp.SanitizeKey("Foo_Bar-baz.123"); got != "foo_bar-baz123" {
 		t.Fatalf("got %q", got)
+	}
+}
+
+func TestEscURLRawSkipsDisplayEncoding(t *testing.T) {
+	in := "https://example.com/path?a=1&b=2"
+	display := wp.EscURL(in)
+	raw := wp.EscURLRaw(in)
+	if display == "" || raw == "" {
+		t.Fatalf("empty: display=%q raw=%q", display, raw)
+	}
+	if strings.Contains(raw, "&#038;") {
+		t.Fatalf("raw should not encode ampersands: %q", raw)
+	}
+	if !strings.Contains(display, "&#038;") {
+		t.Fatalf("display should encode ampersands: %q", display)
+	}
+	if wp.SanitizeURL(in) != raw {
+		t.Fatalf("SanitizeURL alias mismatch: %q vs %q", wp.SanitizeURL(in), raw)
+	}
+	if wp.EscURLRaw("javascript:alert(1)") != "" {
+		t.Fatal("expected empty for bad protocol")
+	}
+	if got := wp.EscURLRaw("/relative/path"); got != "/relative/path" {
+		t.Fatalf("relative: %q", got)
 	}
 }
