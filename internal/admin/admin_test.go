@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -678,6 +679,136 @@ func TestEditPostsStatusViews(t *testing.T) {
 	}
 	if !strings.Contains(body, "Fixture Post") {
 		t.Fatalf("trash view should list trashed fixture posts")
+	}
+}
+
+func TestEditPostsTrashRestore(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+
+	// Disposable publish post for trash/restore round-trip.
+	q, args, err := c.DB.Prepare(
+		"INSERT INTO "+c.DB.Posts()+
+			" (post_author, post_date, post_date_gmt, post_content, post_title, post_excerpt, post_status, "+
+			"comment_status, ping_status, post_password, post_name, to_ping, pinged, post_modified, post_modified_gmt, "+
+			"post_content_filtered, post_parent, guid, menu_order, post_type, post_mime_type, comment_count) VALUES "+
+			"(%d, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %d, %s, %d, %s, %s, %d)",
+		int64(1), "2026-10-10 12:00:00", "2026-10-10 12:00:00", "body", "P7.74 Trash Me",
+		"", "publish", "closed", "closed", "", "p774-trash-me", "", "", "2026-10-10 12:00:00", "2026-10-10 12:00:00",
+		"", 0, "http://127.0.0.1:8082/?p=0", 0, "post", "", 0,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := c.DB.Exec(q, args...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	id, _ := res.LastInsertId()
+	t.Cleanup(func() {
+		dq, dargs, _ := c.DB.Prepare("DELETE FROM "+c.DB.Posts()+" WHERE ID = %d", id)
+		_, _ = c.DB.Exec(dq, dargs...)
+		if c.Meta != nil {
+			_, _ = c.Meta.DeleteMetadata(wp.MetaPost, id, "_wp_trash_meta_status", "")
+			_, _ = c.Meta.DeleteMetadata(wp.MetaPost, id, "_wp_trash_meta_time", "")
+		}
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("list status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `class="trash"`) || !strings.Contains(body, `action=trash`) {
+		t.Fatalf("expected Trash row action: %q", body[:min(1500, len(body))])
+	}
+	if !strings.Contains(body, "P7.74 Trash Me") {
+		t.Fatalf("expected disposable post in list")
+	}
+
+	// Single-row trash via post.php.
+	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/wp-admin/post.php?post=%d&action=trash", id), nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("trash redirect status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	loc := rec.Header().Get("Location")
+	if !strings.Contains(loc, "trashed=1") {
+		t.Fatalf("expected trashed=1 redirect, got %q", loc)
+	}
+	p, err := wp.GetPostByID(c, id)
+	if err != nil || p == nil || p.Status != "trash" {
+		t.Fatalf("expected trash status, got %#v err=%v", p, err)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?post_status=trash", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	body = rec.Body.String()
+	if !strings.Contains(body, "P7.74 Trash Me") {
+		t.Fatalf("trashed post should appear in trash view")
+	}
+	if !strings.Contains(body, `class="untrash"`) || !strings.Contains(body, `action=untrash`) {
+		t.Fatalf("expected Restore row action in trash view: %q", body[:min(1500, len(body))])
+	}
+	if !strings.Contains(body, `value="untrash"`) {
+		t.Fatalf("expected bulk Restore option: %q", body[:min(800, len(body))])
+	}
+
+	// Restore via post.php.
+	req = httptest.NewRequest(http.MethodGet, fmt.Sprintf("/wp-admin/post.php?post=%d&action=untrash", id), nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("untrash redirect status=%d", rec.Code)
+	}
+	if !strings.Contains(rec.Header().Get("Location"), "untrashed=1") {
+		t.Fatalf("expected untrashed=1, got %q", rec.Header().Get("Location"))
+	}
+	p, err = wp.GetPostByID(c, id)
+	if err != nil || p == nil || p.Status != "publish" {
+		t.Fatalf("expected restore to publish, got %#v err=%v", p, err)
+	}
+
+	// Bulk trash.
+	form := url.Values{}
+	form.Set("action", "trash")
+	form.Add("post[]", strconv.FormatInt(id, 10))
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?"+form.Encode(), nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("bulk trash status=%d", rec.Code)
+	}
+	p, _ = wp.GetPostByID(c, id)
+	if p == nil || p.Status != "trash" {
+		t.Fatalf("bulk trash failed: %#v", p)
+	}
+
+	// Bulk restore.
+	form = url.Values{}
+	form.Set("action", "untrash")
+	form.Set("post_status", "trash")
+	form.Add("post[]", strconv.FormatInt(id, 10))
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?"+form.Encode(), nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("bulk untrash status=%d", rec.Code)
+	}
+	p, _ = wp.GetPostByID(c, id)
+	if p == nil || p.Status != "publish" {
+		t.Fatalf("bulk untrash failed: %#v", p)
 	}
 }
 
