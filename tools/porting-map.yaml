@@ -5290,13 +5290,21 @@
   api: n/a
   notes: "P10.78 — +search term/post-format, rest_route search, status draft, plugins/themes/templates/menu-locations anon headers, sitemap tag/format, interim-login; users/me Allow GET when anon; 74/74"
 
+# P10.83: STATUS/PORTING refresh after P5.86–P10.82.
+- prefix: docs/STATUS.md#p10.83
+  go: docs/STATUS.md
+  status: partial
+  task: P10.83
+  api: n/a
+  notes: "P10.83 — STATUS/PORTING refresh after P5.86–P10.82 (113/113 corpus)"
+
 # P10.82: expand corpus toward 100+ (widgets auth, REST collections, admin chrome).
 - prefix: tests/corpus/#p10.82
   go: tests/corpus
   status: partial
   task: P10.82
   api: n/a
-  notes: "P10.82 — widgets/sidebars JSON; font-families/global-styles/templates; taxonomies/users/search headers; admin themes/reading/upload"
+  notes: "P10.82 — widgets/sidebars JSON; font-families/global-styles/templates; taxonomies/users/search headers; login loggedout"
 
 # P10.80: expand corpus with block-directory + REST filters + front query singulars.
 - prefix: tests/corpus#p10.80
