@@ -61,6 +61,11 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 		})
 		return
 	}
+	// P2.65: mark REST_REQUEST / is_dispatching for wp_is_rest_endpoint.
+	if c.Scope != nil {
+		c.Scope.BeginRESTDispatch()
+		defer c.Scope.EndRESTDispatch()
+	}
 	c.AuthenticateRequest()
 	// P8.1: fall back to Application Password Basic auth when no cookie session.
 	if c.CurrentUser == nil {
