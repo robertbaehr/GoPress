@@ -707,9 +707,16 @@ func (e *Env) renderSiteTitle(block Block) string {
 			}
 		}
 	}
-	classes := "wp-block-site-title"
-	if align, ok := block.Attrs["textAlign"].(string); ok && strings.TrimSpace(align) != "" {
-		classes += " has-text-align-" + strings.TrimSpace(align)
+	// P5.93: textAlign / has-link-color / className like get_block_wrapper_attributes.
+	classes := []string{"wp-block-site-title"}
+	if align := strings.TrimSpace(attrString(block.Attrs, "textAlign")); align != "" {
+		classes = append(classes, "has-text-align-"+sanitizeClassToken(align))
+	}
+	if hasLinkColorAttr(block.Attrs) {
+		classes = append(classes, "has-link-color")
+	}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		classes = append(classes, cn)
 	}
 	inner := html.EscapeString(name)
 	// isLink defaults to true (block.json).
@@ -717,17 +724,28 @@ func (e *Env) renderSiteTitle(block Block) string {
 		home := strings.TrimRight(e.HomeURL(), "/")
 		if home != "" {
 			target := "_self"
-			if t, ok := block.Attrs["linkTarget"].(string); ok && strings.TrimSpace(t) != "" {
-				target = strings.TrimSpace(t)
+			if t := strings.TrimSpace(attrString(block.Attrs, "linkTarget")); t != "" {
+				target = t
 			}
 			aria := ""
-			if e.IsFrontPage != nil && e.IsFrontPage() {
+			if e.isSiteTitleCurrent() {
 				aria = ` aria-current="page"`
 			}
 			inner = `<a` + aria + ` href="` + html.EscapeString(home) + `" target="` + html.EscapeString(target) + `" rel="home">` + inner + `</a>`
 		}
 	}
-	return `<` + tag + ` class="` + classes + `">` + inner + `</` + tag + `>`
+	return `<` + tag + ` class="` + html.EscapeString(strings.Join(classes, " ")) + `">` + inner + `</` + tag + `>`
+}
+
+// isSiteTitleCurrent mirrors site-title aria-current: !is_paged && (front || home edge) (P5.93).
+func (e *Env) isSiteTitleCurrent() bool {
+	if e == nil {
+		return false
+	}
+	if e.IsPaged != nil && e.IsPaged() {
+		return false
+	}
+	return e.isHomeLinkCurrent()
 }
 
 func (e *Env) renderSiteTagline(block Block) string {
@@ -745,11 +763,15 @@ func (e *Env) renderSiteTagline(block Block) string {
 	if level >= 1 && level <= 6 {
 		tag = "h" + strconv.FormatInt(level, 10)
 	}
-	classes := "wp-block-site-tagline"
-	if align, ok := block.Attrs["textAlign"].(string); ok && strings.TrimSpace(align) != "" {
-		classes += " has-text-align-" + strings.TrimSpace(align)
+	// P5.93: textAlign / className on wrapper.
+	classes := []string{"wp-block-site-tagline"}
+	if align := strings.TrimSpace(attrString(block.Attrs, "textAlign")); align != "" {
+		classes = append(classes, "has-text-align-"+sanitizeClassToken(align))
 	}
-	return `<` + tag + ` class="` + classes + `">` + html.EscapeString(tagline) + `</` + tag + `>`
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		classes = append(classes, cn)
+	}
+	return `<` + tag + ` class="` + html.EscapeString(strings.Join(classes, " ")) + `">` + html.EscapeString(tagline) + `</` + tag + `>`
 }
 
 // renderSiteLogo renders core/site-logo from the site_logo / custom logo URL (P5.45).

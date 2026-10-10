@@ -1717,7 +1717,18 @@ func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, templa
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	stylesheet := activeStylesheet(c)
 	env := blockRenderEnv(c)
-	env.IsFrontPage = func() bool { return true }
+	env.IsFrontPage = func() bool {
+		if c != nil && c.Scope != nil {
+			return c.Scope.IsFrontPage
+		}
+		return true
+	}
+	env.IsHome = func() bool {
+		return c != nil && c.Scope != nil && c.Scope.IsHome
+	}
+	env.IsPaged = func() bool {
+		return c != nil && c.Scope != nil && c.Scope.Paged > 1
+	}
 	body := blocks.RenderWith(env, template)
 	safe := wp.ProcessInteractivityHTML(wp.KsesPost(body))
 
@@ -4439,7 +4450,24 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 		},
 		IsFrontPage: func() bool {
 			// Front block templates set this via env flag when rendering home.
-			return false
+			return c != nil && c.Scope != nil && c.Scope.IsFrontPage
+		},
+		IsHome: func() bool {
+			return c != nil && c.Scope != nil && c.Scope.IsHome
+		},
+		IsPaged: func() bool {
+			return c != nil && c.Scope != nil && c.Scope.Paged > 1
+		},
+		QueriedObjectID: func() int64 {
+			if c == nil || c.Scope == nil {
+				return 0
+			}
+			return c.Scope.QueriedObjectID
+		},
+		PageForPostsID: func() int64 {
+			raw := optionString(c, "page_for_posts", "0")
+			id, _ := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
+			return id
 		},
 		// P5.74: core/loginout resolvers.
 		IsLoggedIn: func() bool {
