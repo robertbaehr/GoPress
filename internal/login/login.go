@@ -43,7 +43,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 			}
 			errMsg := ""
 			if r.URL.Query().Get("registration") == "disabled" {
-				errMsg = "User registration is currently not allowed."
+				errMsg = loginErrorHTML("registerdisabled", "User registration is currently not allowed.", "", "")
 			}
 			h.serveForm(w, r, c, errMsg)
 		}
@@ -70,7 +70,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 func (h *Handler) serveRegister(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	if usersCanRegister(c) {
 		// Full registration form is out of scope; still refuse until implemented.
-		h.serveForm(w, r, c, "User registration is currently not allowed.")
+		h.serveForm(w, r, c, loginErrorHTML("registerdisabled", "User registration is currently not allowed.", "", ""))
 		return
 	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
@@ -148,9 +148,9 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
 	b.WriteString("\t\n")
 	if errMsg != "" {
-		b.WriteString("\t\t<div id=\"login_error\"><strong>Error:</strong> ")
-		b.WriteString(html.EscapeString(errMsg))
-		b.WriteString("<br /></div>\n")
+		b.WriteString("\t\t<div id=\"login_error\">")
+		b.WriteString(errMsg)
+		b.WriteString("</div>\n")
 	}
 	actionURL := loginURL
 	if interim {
@@ -503,7 +503,7 @@ func clearAuthCookiesForReauth(w http.ResponseWriter, c *wp.Context) {
 
 func (h *Handler) servePost(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	if err := r.ParseForm(); err != nil {
-		h.serveForm(w, r, c, "Invalid form submission.")
+		h.serveForm(w, r, c, loginErrorHTML("invalid_form", "Invalid form submission.", "", ""))
 		return
 	}
 	login := strings.TrimSpace(r.FormValue("log"))
@@ -526,7 +526,12 @@ func (h *Handler) servePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 			q.Set("interim-login", "1")
 		}
 		r.URL.RawQuery = q.Encode()
-		h.serveForm(w, r, c, "The username or password you entered is incorrect.")
+		home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+		lostURL := home + "/wp-login.php?action=lostpassword"
+		if home == "" {
+			lostURL = "/wp-login.php?action=lostpassword"
+		}
+		h.serveForm(w, r, c, formatLoginAuthError(err, login, password, lostURL))
 		return
 	}
 	set.WriteAuthCookies(w, "/")
@@ -535,6 +540,48 @@ func (h *Handler) servePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		return
 	}
 	http.Redirect(w, r, redirectTo, http.StatusFound)
+}
+
+// formatLoginAuthError builds WP-shaped login_error HTML (P6.12).
+func formatLoginAuthError(err error, login, password, lostURL string) string {
+	ae, ok := err.(*wp.AuthError)
+	if !ok || ae == nil {
+		// Empty fields without typed error (e.g. both empty before Login change).
+		if strings.TrimSpace(login) == "" && password == "" {
+			return `<ul class="login-error-list"><li><strong>Error:</strong> The username field is empty.</li>` +
+				`<li><strong>Error:</strong> The password field is empty.</li></ul>`
+		}
+		return loginErrorHTML("invalid_credentials", "The username or password you entered is incorrect.", "", "")
+	}
+	switch ae.Code {
+	case "empty_username":
+		if password == "" {
+			return `<ul class="login-error-list"><li><strong>Error:</strong> The username field is empty.</li>` +
+				`<li><strong>Error:</strong> The password field is empty.</li></ul>`
+		}
+		return loginErrorHTML("empty_username", "The username field is empty.", "", "")
+	case "empty_password":
+		return loginErrorHTML("empty_password", "The password field is empty.", "", "")
+	case "invalid_username":
+		user := html.EscapeString(ae.Login)
+		msg := "The username <strong>" + user + "</strong> is not registered on this site. If you are unsure of your username, try your email address instead."
+		return loginErrorHTML("invalid_username", msg, "", "")
+	case "incorrect_password":
+		user := html.EscapeString(ae.Login)
+		msg := "The password you entered for the username <strong>" + user + "</strong> is incorrect. "
+		if lostURL != "" {
+			msg += `<a href="` + html.EscapeString(lostURL) + `">Lost your password?</a>`
+		}
+		return loginErrorHTML("incorrect_password", msg, "", "")
+	default:
+		return loginErrorHTML(ae.Code, "The username or password you entered is incorrect.", "", "")
+	}
+}
+
+// loginErrorHTML wraps a message in a <p><strong>Error:</strong> …</p> block.
+// msg may contain trusted markup (strong/a) already escaped for user values.
+func loginErrorHTML(_, msg, _, _ string) string {
+	return "<p><strong>Error:</strong> " + msg + "</p>"
 }
 
 // serveInterimLoginSuccess shows the interim modal success stub (P6.10).
