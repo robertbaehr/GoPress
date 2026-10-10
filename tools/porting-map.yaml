@@ -6384,3 +6384,18 @@ wp-login.php#language-switcher-post
   task: P10.110
   api: n/a
   notes: "P10.110 — media orderby; verse/code routes; oEmbed p=13; plugin/theme editor; login rp/invalidkey; 444/444"
+
+# P10.111: STATUS/PORTING refresh after P5.100–P10.110.
+- prefix: docs/STATUS.md#p10.111
+  go: docs/STATUS.md
+  status: partial
+  task: P10.111
+  api: n/a
+  notes: "P10.111 — STATUS/PORTING refresh after P5.100–P10.110 (444/444 corpus)"
+
+- prefix: PORTING.md#p10.111
+  go: PORTING.md
+  status: partial
+  task: P10.111
+  api: n/a
+  notes: "P10.111 — regenerate porting-status after stacked P5.100–P10.110"
