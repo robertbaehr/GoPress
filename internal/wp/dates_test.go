@@ -129,6 +129,36 @@ func TestGetDateFromGMTGoldenVectors(t *testing.T) {
 	}
 }
 
+func TestHumanTimeDiff(t *testing.T) {
+	base := int64(1_700_000_000)
+	cases := []struct {
+		from, to int64
+		want     string
+	}{
+		{base, base + 1, "1 second"},
+		{base, base + 45, "45 seconds"},
+		{base, base + 60, "1 minute"},
+		{base, base + 120, "2 minutes"},
+		{base, base + 3600, "1 hour"},
+		{base, base + 7200, "2 hours"},
+		{base, base + 86400, "1 day"},
+		{base, base + 172800, "2 days"},
+		{base, base + 604800, "1 week"},
+		{base, base + 1209600, "2 weeks"},
+		{base, base + 2592000, "1 month"},
+		{base, base + 5184000, "2 months"},
+		{base, base + 31536000, "1 year"},
+		{base, base + 63072000, "2 years"},
+		{base + 90, base, "2 minutes"}, // abs direction
+	}
+	for _, tc := range cases {
+		got := wp.HumanTimeDiff(tc.from, tc.to)
+		if got != tc.want {
+			t.Fatalf("HumanTimeDiff(%d,%d)=%q want %q", tc.from, tc.to, got, tc.want)
+		}
+	}
+}
+
 func TestDateI18nUTCSubset(t *testing.T) {
 	// date_i18n golden vectors diverge for non-UTC (dump cache quirk);
 	// assert UTC cases match wp_date.
