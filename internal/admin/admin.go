@@ -176,6 +176,10 @@ func (h *Handler) requireLogin(w http.ResponseWriter, r *http.Request, c *wp.Con
 }
 
 func (h *Handler) serveDashboard(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	h.renderDashboard(w, r, c, "")
+}
+
+func (h *Handler) renderDashboard(w http.ResponseWriter, r *http.Request, c *wp.Context, noticeHTML string) {
 	blogname := optionString(c, "blogname", "GoPress")
 	restNonce := c.CreateNonce("wp_rest")
 	hbNonce := c.CreateNonce("heartbeat-nonce")
@@ -189,7 +193,8 @@ func (h *Handler) serveDashboard(w http.ResponseWriter, r *http.Request, c *wp.C
 `, html.EscapeString(restNonce), html.EscapeString(hbNonce))
 	// Secondary dashboard widgets (P7.40): Activity, Quick Draft, Events and News
 	// (primary + secondary / "Other WordPress News" stub — no remote RSS fetch).
-	inner := fmt.Sprintf(`%s<h1>Dashboard</h1>
+	// P7.55: optional noticeHTML for Quick Draft save feedback.
+	inner := fmt.Sprintf(`%s%s<h1>Dashboard</h1>
 <p>%s</p>
 <div id="dashboard-widgets-wrap">
 <div id="dashboard-widgets" class="metabox-holder">
@@ -223,6 +228,7 @@ func (h *Handler) serveDashboard(w http.ResponseWriter, r *http.Request, c *wp.C
 <h2 class="hndle"><span>Quick Draft</span></h2>
 <div class="inside">
 <form name="post" action="/wp-admin/post.php" method="post" id="quick-press">
+<input type="hidden" name="action" id="quickpost-action" value="post-quickdraft-save" />
 <div class="input-text-wrap"><label for="title">Title</label>
 <input type="text" name="post_title" id="title" autocomplete="off" /></div>
 <div class="textarea-wrap"><label for="content">Content</label>
@@ -253,7 +259,7 @@ func (h *Handler) serveDashboard(w http.ResponseWriter, r *http.Request, c *wp.C
 </div>
 </div>
 </div>
-`, adminNoticesHTML(c), html.EscapeString(blogname), posts, pages, comments)
+`, adminNoticesHTML(c), noticeHTML, html.EscapeString(blogname), posts, pages, comments)
 	writeAdminPage(w, c, ch, inner)
 }
 
@@ -2915,10 +2921,19 @@ func (h *Handler) serveUsers(w http.ResponseWriter, r *http.Request, c *wp.Conte
 }
 
 // servePostEdit renders the classic post.php?action=edit stub shell (P7.24 / P7.32).
+// Also handles Quick Draft save (action=post-quickdraft-save, P7.55).
 func (h *Handler) servePostEdit(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	action := r.URL.Query().Get("action")
+	if action == "" && r.Method == http.MethodPost {
+		_ = r.ParseForm()
+		action = r.FormValue("action")
+	}
 	if action == "" {
 		action = "edit"
+	}
+	if action == "post-quickdraft-save" {
+		h.serveQuickDraftSave(w, r, c)
+		return
 	}
 	if action != "edit" && action != "editattachment" {
 		http.Error(w, "GoPress: post.php action not implemented\n", http.StatusNotImplemented)

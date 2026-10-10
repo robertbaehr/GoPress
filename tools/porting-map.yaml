@@ -28,6 +28,14 @@
   task: P7.43
   api: n/a
 
+# P7.55: Quick Draft widget actually inserts a draft post.
+- prefix: wp-admin/includes/dashboard.php#wp_dashboard_quick_press
+  go: internal/admin/quickpress.go
+  status: partial
+  task: P7.55
+  api: n/a
+  notes: "P7.55 — post-quickdraft-save creates draft + paragraph wrap"
+
 # P7.40: secondary dashboard widgets (Activity, Quick Draft, Events/News).
 - prefix: wp-admin/includes/dashboard.php
   go: internal/admin/admin.go
