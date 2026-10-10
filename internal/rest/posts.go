@@ -58,83 +58,12 @@ func (s *Server) servePages(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	s.servePostCollection(w, r, c, "page")
 }
 
-func (s *Server) servePostCollection(w http.ResponseWriter, r *http.Request, c *wp.Context, postType string) {
-	if r.Method != http.MethodGet {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
-			"code":    "rest_no_route",
-			"message": "No route was found matching the URL and request method.",
-			"data":    map[string]any{"status": 405},
-		})
-		return
-	}
-	perPage := parsePerPage(r, 10)
-	page := parsePage(r)
-	edit := r.URL.Query().Get("context") == "edit" && canEditPosts(c)
-	total, err := countPosts(c, postType)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]any{
-			"code":    "rest_post_query",
-			"message": err.Error(),
-			"data":    map[string]any{"status": 500},
-		})
-		return
-	}
-	posts, err := listPostsPaged(c, postType, perPage, page, edit)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]any{
-			"code":    "rest_post_query",
-			"message": err.Error(),
-			"data":    map[string]any{"status": 500},
-		})
-		return
-	}
-	totalPages := 0
-	if perPage > 0 {
-		totalPages = (total + perPage - 1) / perPage
-	}
-	setCollectionHeaders(w, r, c, total, totalPages, page)
-	if canEditPosts(c) {
-		w.Header().Set("Allow", "GET, POST")
-	}
-	writeJSON(w, http.StatusOK, posts)
-}
-
 func (s *Server) servePostItem(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
 	s.serveTypedItem(w, r, c, "post", id)
 }
 
 func (s *Server) servePageItem(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
 	s.serveTypedItem(w, r, c, "page", id)
-}
-
-func (s *Server) serveTypedItem(w http.ResponseWriter, r *http.Request, c *wp.Context, postType string, id int64) {
-	if r.Method != http.MethodGet {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
-			"code":    "rest_no_route",
-			"message": "No route was found matching the URL and request method.",
-			"data":    map[string]any{"status": 405},
-		})
-		return
-	}
-	edit := r.URL.Query().Get("context") == "edit" && canEditPosts(c)
-	post, err := getPostByID(c, postType, id, edit)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]any{
-			"code":    "rest_post_query",
-			"message": err.Error(),
-			"data":    map[string]any{"status": 500},
-		})
-		return
-	}
-	if post == nil {
-		writeJSON(w, http.StatusNotFound, map[string]any{
-			"code":    "rest_post_invalid_id",
-			"message": "Invalid post ID.",
-			"data":    map[string]any{"status": 404},
-		})
-		return
-	}
-	writeJSON(w, http.StatusOK, post)
 }
 
 func canEditPosts(c *wp.Context) bool {
