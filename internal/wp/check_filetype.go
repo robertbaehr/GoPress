@@ -1,6 +1,8 @@
 package wp
 
 import (
+	"os"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
@@ -9,6 +11,13 @@ import (
 type Filetype struct {
 	Ext  string // matched extension, or ""
 	Type string // mime type, or ""
+}
+
+// FiletypeAndExt is the wp_check_filetype_and_ext return shape (P8.24).
+type FiletypeAndExt struct {
+	Ext            string // matched extension, or ""
+	Type           string // mime type, or ""
+	ProperFilename string // corrected filename when extension was wrong; else ""
 }
 
 // defaultMimeTypes mirrors wp_get_mime_types() before the mime_types filter (P2.58).
@@ -193,6 +202,109 @@ func CheckFiletype(c *Context, filename string, mimes map[string]string) Filetyp
 		}
 	}
 	return Filetype{}
+}
+
+// CheckFiletypeAndExt validates filename + optional on-disk image mime
+// (wp_check_filetype_and_ext subset, P8.24). Applies upload_mimes via
+// GetAllowedMimeTypes when mimes is nil, and the wp_check_filetype_and_ext filter.
+func CheckFiletypeAndExt(c *Context, file, filename string, mimes map[string]string) FiletypeAndExt {
+	if mimes == nil {
+		if c != nil {
+			mimes = GetAllowedMimeTypes(c)
+		} else {
+			mimes = GetAllowedMimeTypes(nil)
+		}
+	}
+	ft := CheckFiletype(c, filename, mimes)
+	ext, typ := ft.Ext, ft.Type
+	proper := ""
+	realMime := ""
+
+	if file != "" {
+		if st, err := os.Stat(file); err == nil && !st.IsDir() {
+			if typ != "" && strings.HasPrefix(typ, "image/") {
+				realMime = GetImageMime(file)
+				if realMime != "" && (realMime != typ || isHEICExt(ext)) {
+					if mappedExt := imageMimeToExt(c, realMime); mappedExt != "" {
+						base := strings.TrimSuffix(filename, filepath.Ext(filename))
+						newName := base + "." + mappedExt
+						if newName != filename {
+							proper = newName
+						}
+						ft2 := CheckFiletype(c, newName, mimes)
+						ext, typ = ft2.Ext, ft2.Type
+					} else {
+						realMime = ""
+					}
+				}
+			}
+		}
+	}
+
+	// Final allow-list check (values of get_allowed_mime_types).
+	if typ != "" {
+		allowed := false
+		for _, mime := range mimes {
+			if mime == typ {
+				allowed = true
+				break
+			}
+		}
+		if !allowed {
+			ext, typ = "", ""
+			proper = ""
+		}
+	}
+
+	out := FiletypeAndExt{Ext: ext, Type: typ, ProperFilename: proper}
+	if c != nil && c.Hooks != nil {
+		payload := map[string]any{
+			"ext":             out.Ext,
+			"type":            out.Type,
+			"proper_filename": out.ProperFilename,
+		}
+		if v := c.Hooks.ApplyFilters("wp_check_filetype_and_ext", payload, file, filename, mimes, realMime); v != nil {
+			if m, ok := v.(map[string]any); ok {
+				out.Ext = anyString(m["ext"])
+				out.Type = anyString(m["type"])
+				out.ProperFilename = anyString(m["proper_filename"])
+			}
+		}
+	}
+	return out
+}
+
+func isHEICExt(ext string) bool {
+	switch strings.ToLower(ext) {
+	case "heif", "heics", "heifs":
+		return true
+	default:
+		return false
+	}
+}
+
+func imageMimeToExt(c *Context, mime string) string {
+	mimesToExts := map[string]string{
+		"image/jpeg":          "jpg",
+		"image/png":           "png",
+		"image/gif":           "gif",
+		"image/bmp":           "bmp",
+		"image/tiff":          "tif",
+		"image/webp":          "webp",
+		"image/avif":          "avif",
+		"image/heic":          "heic",
+		"image/heif":          "heic",
+		"image/heic-sequence": "heic",
+		"image/heif-sequence": "heic",
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("getimagesize_mimes_to_exts", mimesToExts); v != nil {
+			if m, ok := v.(map[string]string); ok {
+				mimesToExts = m
+			}
+		}
+	}
+	return mimesToExts[mime]
 }
 
 func copyStringMap(in map[string]string) map[string]string {
