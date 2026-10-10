@@ -120,6 +120,7 @@ func HashPassword(password string) (string, error) {
 //   - $wp$2y$… WordPress 6.8+ (HMAC-SHA384 prehash + bcrypt)
 //   - bare $2y$ / $2a$ / $2b$ bcrypt
 //   - phpass portable $P$ / $H$
+//
 // Application passwords reuse this for non-$generic$ hashes via VerifyApplicationPasswordHash.
 func CheckPassword(password, hash string) bool {
 	password = strings.TrimSpace(password)
