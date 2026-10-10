@@ -2867,6 +2867,12 @@ func (h *Handler) serveErasePersonalData(w http.ResponseWriter, r *http.Request,
 				note = "Erasure failed: " + err.Error()
 			} else {
 				note = res.Message
+				// P8.16: fulfillment email after confirmed erasure.
+				if err := wp.SendPersonalDataErasureEmail(c, email); err != nil {
+					note += " Erasure email failed: " + err.Error() + "."
+				} else {
+					note += " Erasure email sent to " + email + "."
+				}
 			}
 		default:
 			// WP: send_confirmation_email checked → pending; unchecked → confirmed/erase.
@@ -2878,6 +2884,12 @@ func (h *Handler) serveErasePersonalData(w http.ResponseWriter, r *http.Request,
 				note = "Erasure failed: " + err.Error()
 			} else {
 				note = res.Message
+				// P8.16: fulfillment email when erasing without confirmation checkbox.
+				if err := wp.SendPersonalDataErasureEmail(c, email); err != nil {
+					note += " Erasure email failed: " + err.Error() + "."
+				} else {
+					note += " Erasure email sent to " + email + "."
+				}
 			}
 		}
 	}
