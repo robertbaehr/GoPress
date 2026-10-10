@@ -7,6 +7,7 @@ import (
 
 	"github.com/robertbaehr/GoPress/internal/config"
 	"github.com/robertbaehr/GoPress/internal/db"
+	"github.com/robertbaehr/GoPress/internal/theme"
 )
 
 // Boot opens the database and wires Hooks, Cache, Options, and Meta on a Context.
@@ -41,5 +42,15 @@ func Boot(ctx context.Context, cfg *config.Config) (*Context, error) {
 		_ = handle.Close()
 		return nil, fmt.Errorf("wp: Boot: load roles: %w", err)
 	}
+
+	// Active theme.json (P5.4). Missing theme.json is non-fatal (classic themes).
+	stylesheet, _ := c.Options.GetOption("stylesheet", "").(string)
+	if stylesheet == "" {
+		stylesheet = "twentytwentytwo"
+	}
+	if tj, err := theme.LoadActive(cfg.ABSPATH, stylesheet); err == nil {
+		c.Theme = tj
+	}
+
 	return c, nil
 }

@@ -17,6 +17,7 @@ func TestBootLoadsBlogname(t *testing.T) {
 		DBHost:      "127.0.0.1:3306",
 		DBCharset:   "utf8mb4",
 		TablePrefix: "wp_",
+		ABSPATH:     "/workspace/",
 		AuthKey:     "k", SecureAuthKey: "k", LoggedInKey: "k", NonceKey: "k",
 		AuthSalt: "s", SecureAuthSalt: "s", LoggedInSalt: "s", NonceSalt: "s",
 	}
@@ -41,6 +42,9 @@ func TestBootLoadsBlogname(t *testing.T) {
 	s, _ := got.(string)
 	if s == "" {
 		t.Fatalf("blogname empty after Boot; got %#v", got)
+	}
+	if c.Theme == nil || c.Theme.Settings == nil {
+		t.Fatal("Theme / theme.json settings not loaded after Boot")
 	}
 }
 
