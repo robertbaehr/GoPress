@@ -761,6 +761,20 @@
   task: P2.33
   api: exported
 
+# P2.85: deepen wp_slash / wp_unslash / stripslashes_deep container walks.
+- prefix: wp-includes/formatting.php#wp_slash#p2.85
+  go: internal/wp/slash.go
+  status: partial
+  task: P2.85
+  api: exported
+  notes: "P2.85 — map[string]string + map[any]any walks; StripslashesDeep / StripslashesFromStringsOnly"
+
+- prefix: wp-includes/formatting.php#stripslashes_deep
+  go: internal/wp/slash.go
+  status: partial
+  task: P2.85
+  api: exported
+
 # P3.29: ?rest_route= query var dispatches REST API.
 - prefix: wp-includes/rest-api.php#rest_route
   go: internal/server/server.go

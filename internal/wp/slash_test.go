@@ -45,3 +45,44 @@ func TestSlashStringSlice(t *testing.T) {
 		t.Fatalf("roundtrip %#v -> %#v", in, out)
 	}
 }
+
+func TestSlashMapStringString(t *testing.T) {
+	in := map[string]string{"a": `O'Reilly`, "b": `c"d`}
+	slashed := wp.Slash(in).(map[string]string)
+	if slashed["a"] == in["a"] {
+		t.Fatal("expected map values slashed")
+	}
+	out := wp.Unslash(slashed).(map[string]string)
+	if out["a"] != in["a"] || out["b"] != in["b"] {
+		t.Fatalf("roundtrip %#v -> %#v", in, out)
+	}
+}
+
+func TestSlashMapAnyAny(t *testing.T) {
+	in := map[any]any{1: `a'b`, "k": []any{`c"d`, 7}}
+	slashed := wp.Slash(in).(map[any]any)
+	if slashed[1].(string) == `a'b` {
+		t.Fatal("expected nested slash")
+	}
+	out := wp.Unslash(slashed).(map[any]any)
+	if out[1].(string) != `a'b` {
+		t.Fatalf("unslash[1]=%q", out[1])
+	}
+	inner := out["k"].([]any)
+	if inner[0].(string) != `c"d` || inner[1].(int) != 7 {
+		t.Fatalf("nested %#v", inner)
+	}
+}
+
+func TestStripslashesDeepAlias(t *testing.T) {
+	in := `she\'s`
+	if wp.StripslashesDeep(in).(string) != wp.UnslashString(in) {
+		t.Fatal("StripslashesDeep should match Unslash")
+	}
+	if wp.StripslashesFromStringsOnly(42).(int) != 42 {
+		t.Fatal("non-string should pass through")
+	}
+	if wp.StripslashesFromStringsOnly(`a\'b`).(string) != "a'b" {
+		t.Fatal("expected string strip")
+	}
+}
