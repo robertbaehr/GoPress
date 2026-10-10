@@ -5044,3 +5044,19 @@
   task: P10.75
   api: n/a
   notes: "P10.75 — STATUS refresh after tag-cloud, comments status/bulk, specialchars_decode, get_the_guid, lostpassword redirect, corpus 45/45"
+
+# P10.76: expand diff corpus with feeds, sitemaps, rest_route, pagination.
+- prefix: tests/corpus#p10.76
+  go: tests/corpus
+  status: partial
+  task: P10.76
+  api: n/a
+  notes: "P10.76 — +rss/rss2/comments-rss2, sitemap users/tax/pages, blog/page pagination, rest_route statuses/types, status publish; 63/63"
+
+# P10.77: STATUS/PORTING refresh after P5.83–P10.76.
+- prefix: docs/STATUS.md#p10.77
+  go: docs/STATUS.md
+  status: partial
+  task: P10.77
+  api: n/a
+  notes: "P10.77 — STATUS refresh after social-links, users/me, users bulk role, parse_url, comments RSS2, attachment metadata, corpus 63/63"
