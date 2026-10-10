@@ -4934,3 +4934,11 @@
   task: P7.83
   api: n/a
   notes: "P7.83 — writeEditCommentBulkOptions context options"
+
+# P2.78: wp_specialchars_decode (CheckInvalidUTF8 already in P2.42).
+- prefix: wp-includes/formatting.php#wp_specialchars_decode
+  go: internal/wp/specialchars_decode.go
+  status: partial
+  task: P2.78
+  api: exported
+  notes: "P2.78 — SpecialcharsDecode with ENT_NOQUOTES/COMPAT/QUOTES + single/double"
