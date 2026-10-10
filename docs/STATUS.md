@@ -6,17 +6,17 @@ Short overview of what is implemented versus remaining. Detail lives in `PORTING
 
 | Area | Coverage |
 |---|---|
-| Runtime core | Boot, config, DB, hooks, object cache, options/meta, i18n stub, KSES, formatting (`wp_strip_all_tags`, `wp_check_invalid_utf8`, `wp_validate_boolean`, `wp_slash`, `wp_is_numeric_array`, `wp_list_pluck`, `wp_filter_object_list`, `wp_list_sort`, `wp_recursive_ksort`, `wp_array_key_first`/`wp_array_key_last`, `wp_array_slice_assoc`, `wp_unique_id`, `wp_normalize_path`, `WP_Http::is_ip_address`, …), shortcodes, transients, cron stub |
+| Runtime core | Boot, config, DB, hooks, object cache, options/meta, i18n stub, KSES, formatting (`wp_strip_all_tags`, `wp_check_invalid_utf8`, `wp_validate_boolean`, `wp_slash`, `wp_is_numeric_array`, `wp_list_pluck`, `wp_filter_object_list`, `wp_list_sort`, `wp_recursive_ksort`, `wp_array_key_first`/`wp_array_key_last`, `wp_array_slice_assoc`, `wp_unique_id`, `wp_normalize_path`, `WP_Http::is_ip_address`, `wp_spaces_regexp`, …), shortcodes, transients, cron stub |
 | Auth / users | Password hashes (phpass / `$wp$`), roles/caps, auth cookies, usermeta `session_tokens`, nonces, login/logout/lost-password/resetpass/postpass/`reauth=1`/interim session-expired message, external `redirect_to` rejected, `confirm_admin_email` stub, application passwords; REST user create/update; `user-edit.php` stub |
-| Front | Home + singular + attachment HTML (password form), rewrite, feeds (RSS/Atom/RDF + comments RSS/Atom + enclosure meta), robots/sitemap (`blog_public=0` → `Disallow: /` + meta noindex), comments, oEmbed discovery + endpoint, 404/embed/search (`search.html` + form)/date/author/tag/category archives (+ `rel=prev/next` on paginated archives), pagination, admin bar; `home_url`/`site_url`/`admin_url` helpers; `?rest_route=` REST front door; `/favicon.ico`; `/rsd.xml` stub (`xmlrpc.php?rsd` stays 403); `?p=` shortlink head + `Link` header; `rel=canonical`; no `X-Pingback` |
-| Blocks / themes | Parser/render, core block subset (incl. post-title/content/excerpt/date/author/author-name/biography/avatar/terms, calendar/archives/latest-posts/latest-comments/tag-cloud/search, site-logo/title/tagline, read-more/more/nextpage, gallery/image, embed provider/type classes, social-links/social-link, footnotes polish), supports (typography/border/layout/shadow/position/elements/background/dimensions/CSS filter+duotone), style engine, theme.json + style variations, patterns + pattern categories, template hierarchy/parts (404 header/footer), bindings, block styles/variations, expanded Block Hooks (nested + ignored metadata) |
-| REST (`/wp-json`) | Index, posts/pages/media (incl. DELETE force)/comments/taxonomies (incl. DELETE categories/tags)/users (GET + write)/comments write/settings (richer schema)/search (+ subtype post\|page)/statuses/themes/plugins, revisions/autosaves, menus/menu-items write/navigation, templates/global styles (incl. write), block-renderer, block-patterns patterns/categories, url-details (same-site), batch, site-health stubs; widgets/sidebars disabled; remote directory proxies blocked |
-| Admin | Dashboard + list tables, options screens (general/writing+reading+discussion+media save via options.php/permalink save/privacy save), media library grid/list + `media-new.php` + async upload, edit-comments bulk actions, plugins/themes/users + user-edit stubs, nav menus, site editor shell, tools/import/export/privacy (requests table + confirm), site-health status + info stubs, admin-ajax heartbeat |
+| Front | Home + singular + attachment HTML (password form), rewrite, feeds (RSS/Atom/RDF + comments RSS/Atom + enclosure meta), robots/sitemap (`blog_public=0` → `Disallow: /` + meta noindex), comments, oEmbed discovery + endpoint, 404/embed/search (`search.html` + form)/date/author/tag/category archives (+ `rel=prev/next` on paginated archives), pagination, admin bar; `home_url`/`site_url`/`admin_url` helpers; `?rest_route=` REST front door; `/favicon.ico`; `/rsd.xml` stub (`xmlrpc.php?rsd` stays 403); `?p=` shortlink head + `Link` header; `rel=canonical`; no `X-Pingback`; no `trackback_rdf` |
+| Blocks / themes | Parser/render, core block subset (incl. post-title/content/excerpt/date/author/author-name/biography/avatar/terms, calendar/archives/latest-posts/latest-comments/tag-cloud/search, site-logo/title/tagline, read-more/more/nextpage, gallery/image, embed provider/type classes, social-links/social-link, footnotes polish, file synthesize + preview attrs), supports (typography/border/layout/shadow/position/elements/background/dimensions/CSS filter+duotone), style engine, theme.json + style variations, patterns + pattern categories, template hierarchy/parts (404 header/footer), bindings, block styles/variations, expanded Block Hooks (nested + ignored metadata) |
+| REST (`/wp-json`) | Index, posts/pages/media (incl. DELETE force)/comments/taxonomies (incl. DELETE categories/tags)/users (GET + write)/comments write/settings (richer schema)/search (+ subtype post\|page)/statuses/themes/plugins, revisions (GET + DELETE force)/autosaves, menus/menu-items write/navigation, templates/global styles (incl. write), block-renderer, block-patterns patterns/categories, url-details (same-site), batch, site-health stubs; widgets/sidebars disabled; remote directory proxies blocked |
+| Admin | Dashboard + list tables, options screens (general/writing+reading+discussion+media save via options.php/permalink save/privacy save), media library grid/list + `media-new.php` + async upload, edit-comments bulk actions, plugins/themes/users + user-edit stubs, nav menus, site editor shell, tools/import/export (minimal WXR download)/privacy (requests table + erase confirm UI), site-health status + info stubs, admin-ajax heartbeat |
 | Plugins | MU-plugin scan + header parse (`get_mu_plugins`), Hello Dolly shim, activate/deactivate (+ activate_/activated_/deactivate_/deactivated_ hooks, `active_plugins` filter), uninstall hook stub; PHP drop-ins detected as unsupported; Akismet not bundled (P9.8); Network Activate N/A on single site (P9.11) |
 
 ## Explicitly out of scope / gone
 
-- Multisite, XML-RPC, trackbacks, Customizer, Links Manager
+- Multisite, XML-RPC, trackbacks (`wp-trackback.php` + `trackback_rdf`), Customizer, Links Manager
 - Theme/plugin install from wordpress.org, core updates, widgets REST
 - Remote block/pattern directory fetches (`api.wordpress.org`)
 - PHP drop-ins (`advanced-cache.php`, `object-cache.php`, `db.php`, …) — detected, never loaded
@@ -45,8 +45,15 @@ make check
 - `make diff` / `gopress-tools diff` reloads `tests/fixtures/site.sql` into `gopress_ref` and `gopress_go` unless `--skip-db`.
 - After e2e uploads or other writes, restart `gopress serve` (or omit `--skip-db`) so object-cache/options match the reloaded fixture. Stale process memory can make a green corpus look red.
 
-## Recent stack (through P10.43)
+## Recent stack (through P10.44)
 
+- P10.44 E2E for external `redirect_to` rejection (+ STATUS/PORTING refresh)
+- P8.13 Erase personal data confirm UI polish
+- P3.46 Omit `trackback_rdf` on singular HTML
+- P2.48 `wp_spaces_regexp`
+- P7.53 Minimal WXR export download
+- P4.68 REST DELETE `/wp/v2/posts/{parent}/revisions/{id}` (`force=true`)
+- P5.52 core/file synthesize + `displayPreview` attrs
 - P10.43 Status / PORTING refresh
 - P6.20 Reject external `redirect_to` (wp_validate_redirect subset)
 - P3.45 RSS/Atom `enclosure` from postmeta
@@ -61,10 +68,3 @@ make check
 - P7.51 POST save media options via `options.php`
 - P4.66 REST DELETE `/wp/v2/media/{id}` (`force=true`)
 - P5.50 core/social-links + core/social-link
-- P10.41 Status / PORTING refresh
-- P6.19 Interim login session-expired `login-message`
-- P3.43 Archive `rel=prev` / `rel=next` pagination links
-- P2.45 `wp_recursive_ksort`
-- P7.50 POST save discussion options via `options.php`
-- P4.65 REST DELETE `/wp/v2/categories/{id}` and `/wp/v2/tags/{id}` (`force=true`)
-- P5.49 core/embed provider/type/align class improvements
