@@ -36,3 +36,8 @@ Short overview of what is implemented versus remaining. Detail lives in `PORTING
 ./bin/gopress-tools porting-status   # rewrites PORTING.md
 make check
 ```
+
+## Differential harness notes
+
+- `make diff` / `gopress-tools diff` reloads `tests/fixtures/site.sql` into `gopress_ref` and `gopress_go` unless `--skip-db`.
+- After e2e uploads or other writes, restart `gopress serve` (or omit `--skip-db`) so object-cache/options match the reloaded fixture. Stale process memory can make a green corpus look red.
