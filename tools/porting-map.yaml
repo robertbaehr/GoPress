@@ -7,6 +7,21 @@
   api: n/a
   notes: "P7.95 — about__container + What's New tab; version header; return-to-dashboard"
 
+# P7.96: network.php Create a Network stub (multisite Tier 2 out of scope).
+- prefix: wp-admin/network.php
+  go: internal/admin/network.go
+  status: partial
+  task: P7.96
+  api: n/a
+  notes: "P7.96 — Network Setup stub; out-of-scope notice; manage_options/setup_network gate"
+
+- prefix: wp-admin/network.php#tests
+  go: internal/admin/network_test.go
+  status: partial
+  task: P7.96
+  api: n/a
+  notes: "P7.96 — unit coverage for network.php stub + login gate"
+
 # P7.94: credits.php / freedoms.php About screen stubs.
 - prefix: wp-admin/credits.php
   go: internal/admin/credits.go
