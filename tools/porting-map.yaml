@@ -950,6 +950,14 @@
   task: P2.40
   api: exported
 
+# P2.79: wp_parse_url schemeless host:port, empty pass, http bare authority.
+- prefix: wp-includes/http.php#wp_parse_url_p279
+  go: internal/wp/parse_url.go
+  status: partial
+  task: P2.79
+  api: exported
+  notes: "P2.79 — example.com:80/path, empty password key, http(s):// without host → false"
+
 # P2.35: wp_parse_str (PHP parse_str + wp_parse_str filter).
 - prefix: wp-includes/formatting.php#wp_parse_str
   go: internal/wp/parse_str.go

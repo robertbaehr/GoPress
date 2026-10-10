@@ -3,6 +3,7 @@ package wp
 import (
 	"net"
 	"net/url"
+	"regexp"
 	"strconv"
 	"strings"
 )
@@ -19,7 +20,7 @@ const (
 	PHPURLFragment = 7
 )
 
-// ParsedURL is the associative array returned by wp_parse_url (P2.40).
+// ParsedURL is the associative array returned by wp_parse_url (P2.40 / P2.79).
 type ParsedURL struct {
 	Scheme   string
 	Host     string
@@ -30,7 +31,12 @@ type ParsedURL struct {
 	Query    string
 	Fragment string
 	hasPort  bool
+	hasPass  bool // true when userinfo included a password (even empty)
 }
+
+// schemelessHostPort matches PHP parse_url treating host:digits[/path] as authority
+// (e.g. "example.com:80/path" → host+port+path, not scheme "example.com").
+var schemelessHostPort = regexp.MustCompile(`^(?:([^@/?#]*)@)?([^:/?#]+):(\d+)([/?#].*)?$`)
 
 // ToMap returns PHP-shaped keys present in the parse result.
 func (p *ParsedURL) ToMap() map[string]any {
@@ -50,7 +56,7 @@ func (p *ParsedURL) ToMap() map[string]any {
 	if p.User != "" {
 		out["user"] = p.User
 	}
-	if p.Pass != "" {
+	if p.hasPass {
 		out["pass"] = p.Pass
 	}
 	if p.Path != "" {
@@ -94,6 +100,10 @@ func parseURLRaw(raw string) (*ParsedURL, bool) {
 		toUnset["scheme"] = true
 		toUnset["host"] = true
 		u = "placeholder://placeholder" + u
+	} else if isSchemelessHostPort(u) {
+		// P2.79: PHP parse_url("example.com:80/path") → host/port/path.
+		toUnset["scheme"] = true
+		u = "placeholder://" + u
 	}
 	parsed, err := url.Parse(u)
 	if err != nil {
@@ -105,6 +115,13 @@ func parseURLRaw(raw string) (*ParsedURL, bool) {
 	}
 	if !toUnset["host"] {
 		out.Host = parsed.Hostname()
+	}
+	// P2.79: bare "http://" / "http:///path" → false in PHP (http/https require a host).
+	if !toUnset["host"] && out.Host == "" {
+		switch strings.ToLower(out.Scheme) {
+		case "http", "https":
+			return nil, false
+		}
 	}
 	if parsed.Port() != "" {
 		if n, err := strconv.Atoi(parsed.Port()); err == nil {
@@ -124,12 +141,24 @@ func parseURLRaw(raw string) (*ParsedURL, bool) {
 		out.User = parsed.User.Username()
 		if pass, ok := parsed.User.Password(); ok {
 			out.Pass = pass
+			out.hasPass = true
 		}
 	}
 	out.Path = parsed.Path
 	out.Query = parsed.RawQuery
 	out.Fragment = parsed.Fragment
 	return out, true
+}
+
+func isSchemelessHostPort(raw string) bool {
+	if raw == "" || strings.Contains(raw, "://") {
+		return false
+	}
+	if strings.HasPrefix(raw, "//") || strings.HasPrefix(raw, "/") ||
+		strings.HasPrefix(raw, "?") || strings.HasPrefix(raw, "#") {
+		return false
+	}
+	return schemelessHostPort.MatchString(raw)
 }
 
 func getURLComponent(parts *ParsedURL, component int) any {
@@ -158,7 +187,7 @@ func getURLComponent(parts *ParsedURL, component int) any {
 		}
 		return parts.User
 	case PHPURLPass:
-		if parts.Pass == "" {
+		if !parts.hasPass {
 			return nil
 		}
 		return parts.Pass
