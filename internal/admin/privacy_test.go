@@ -147,6 +147,11 @@ func TestPrivacyPolicyGuideSections(t *testing.T) {
 		"Comments",
 		"Cookies",
 		"privacy-settings-tab",
+		"privacy-policy-tutorial",
+		"wp-suggested-text",
+		"WordPress",
+		"Suggested text:",
+		"Copy suggested policy text to clipboard",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("missing %q", want)
