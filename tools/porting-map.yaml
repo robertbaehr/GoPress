@@ -4972,3 +4972,11 @@
   task: P6.35
   api: n/a
   notes: "P6.35 — applyLostPasswordRedirect filter"
+
+# P10.74: expand diff corpus with 8 matching cases (statuses, feeds, cron, admin).
+- prefix: tests/corpus
+  go: tests/corpus
+  status: partial
+  task: P10.74
+  api: n/a
+  notes: "P10.74 — +rest-statuses, atom/comments feeds, wp-cron, date archive, edit-comments/users, register"
