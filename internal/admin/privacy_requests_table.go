@@ -157,13 +157,8 @@ func renderExportPrivacyRequestsTable(c *wp.Context, pendingEmail string) string
 	return table.RenderHTML()
 }
 
-// renderErasePrivacyRequestsTable builds the erase-personal-data list table (P8.10 / P8.21).
-func renderErasePrivacyRequestsTable(pendingEmail string) string {
-	return renderErasePrivacyRequestsTableCtx(nil, pendingEmail)
-}
-
-// renderErasePrivacyRequestsTableCtx lists stored user_request rows (P8.21).
-func renderErasePrivacyRequestsTableCtx(c *wp.Context, pendingEmail string) string {
+// renderErasePrivacyRequestsTable lists stored user_request rows (P8.10 / P8.21).
+func renderErasePrivacyRequestsTable(c *wp.Context, pendingEmail string) string {
 	table := PrivacyRequestsTable{
 		RequestType: "remove_personal_data",
 		AdminURL:    "/wp-admin/erase-personal-data.php",

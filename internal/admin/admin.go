@@ -3429,7 +3429,7 @@ func (h *Handler) servePrivacyErasePage(w http.ResponseWriter, c *wp.Context, no
 	b.WriteString("</td></tr>\n</table>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Send Request\"></p>\n")
 	b.WriteString("</div>\n</form>\n")
-	b.WriteString(renderErasePrivacyRequestsTableCtx(c, pendingEmail))
+	b.WriteString(renderErasePrivacyRequestsTable(c, pendingEmail))
 	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
