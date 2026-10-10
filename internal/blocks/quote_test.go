@@ -42,6 +42,35 @@ func TestRenderQuotePrefersSavedMarkup(t *testing.T) {
 	}
 }
 
+func TestRenderQuotePolishAnchorClassNameColors(t *testing.T) {
+	// P5.103: polish saved markup + applySupports colors.
+	src := `<!-- wp:quote {"anchor":"q-1","className":"is-style-plain","textAlign":"right","textColor":"contrast","backgroundColor":"base"} -->
+<blockquote class="wp-block-quote"><p>Saved quote</p><cite>Cite</cite></blockquote>
+<!-- /wp:quote -->`
+	out := blocks.Render(src)
+	for _, want := range []string{
+		`wp-block-quote`,
+		`is-style-plain`,
+		`has-text-align-right`,
+		`id="q-1"`,
+		`has-contrast-color`,
+		`has-base-background-color`,
+		`is-layout-flow`,
+		`Saved quote`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
+
+func TestRenderQuoteSynthesizeAnchor(t *testing.T) {
+	out := blocks.Render(`<!-- wp:quote {"anchor":"epigraph","value":"<p>Words</p>","citation":"Poet"} /-->`)
+	if !strings.Contains(out, `id="epigraph"`) || !strings.Contains(out, `<p>Words</p>`) || !strings.Contains(out, `<cite>Poet</cite>`) {
+		t.Fatalf("expected anchor synthesize: %q", out)
+	}
+}
+
 func TestRenderPullquoteSynthesize(t *testing.T) {
 	out := blocks.Render(`<!-- wp:pullquote {"align":"left","className":"is-style-solid-color","value":"Pull me","citation":"Author"} /-->`)
 	for _, want := range []string{
