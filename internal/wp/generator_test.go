@@ -30,3 +30,20 @@ func TestMetaGeneratorXHTML(t *testing.T) {
 		t.Fatal("MetaGeneratorXHTML mismatch")
 	}
 }
+
+func TestGetTheGeneratorRDFAndAliases(t *testing.T) {
+	rdf := wp.GetTheGenerator("rdf")
+	want := `<admin:generatorAgent rdf:resource="https://wordpress.org/?v=` + wp.Version + `" />`
+	if rdf != want {
+		t.Fatalf("rdf=%q want %q", rdf, want)
+	}
+	if wp.GetTheGenerator("rdf_header") != rdf {
+		t.Fatal("rdf_header alias mismatch")
+	}
+	if wp.GetTheGenerator("rss2_head") != wp.GetTheGenerator("rss2") {
+		t.Fatal("rss2_head alias mismatch")
+	}
+	if wp.GetTheGenerator("atom_head") != wp.GetTheGenerator("atom") {
+		t.Fatal("atom_head alias mismatch")
+	}
+}

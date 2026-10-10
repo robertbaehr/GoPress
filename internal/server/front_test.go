@@ -512,6 +512,12 @@ func TestFrontFeedRDF(t *testing.T) {
 	if !strings.Contains(body, "<rdf:RDF") || !strings.Contains(body, `xmlns="http://purl.org/rss/1.0/"`) {
 		t.Fatalf("expected RDF feed, got %q", body[:min(400, len(body))])
 	}
+	if !strings.Contains(body, `xmlns:admin="http://webns.net/mvcb/"`) {
+		t.Fatalf("expected admin xmlns for generatorAgent: %q", body[:min(500, len(body))])
+	}
+	if !strings.Contains(body, `<admin:generatorAgent rdf:resource="https://wordpress.org/?v=`) {
+		t.Fatalf("expected RDF generator (P3.56): %q", body[:min(600, len(body))])
+	}
 	if !strings.Contains(body, "<rdf:Seq>") || !strings.Contains(body, "<item rdf:about=") {
 		t.Fatalf("expected rdf:Seq and items, got %q", body[:min(800, len(body))])
 	}

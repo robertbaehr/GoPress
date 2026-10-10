@@ -13,7 +13,19 @@ import (
 func GetTheGenerator(genType string) string {
 	ver := Version
 	esc := html.EscapeString(ver)
-	switch strings.ToLower(strings.TrimSpace(genType)) {
+	t := strings.ToLower(strings.TrimSpace(genType))
+	// WP maps feed head action names when type is empty; accept aliases too (P3.56).
+	switch t {
+	case "rss2_head", "commentsrss2_head":
+		t = "rss2"
+	case "rdf_header":
+		t = "rdf"
+	case "atom_head", "comments_atom_head", "app_head":
+		t = "atom"
+	case "rss_head", "opml_head":
+		t = "comment"
+	}
+	switch t {
 	case "html":
 		return `<meta name="generator" content="WordPress ` + esc + `">`
 	case "xhtml", "":

@@ -1615,6 +1615,14 @@
   api: n/a
   notes: "P3.55 — lastBuildDate/Atom updated from max post_modified_gmt; no wall-clock fallback"
 
+# P3.56: RDF feed generator (admin:generatorAgent) + xmlns:admin.
+- prefix: wp-includes/feed-rdf.php#generator
+  go: internal/server/front.go
+  status: partial
+  task: P3.56
+  api: n/a
+  notes: "P3.56 — xmlns:admin + GetTheGenerator(rdf) in channel; rdf_header alias"
+
 - prefix: wp-includes/feed-atom.php#rights
   go: internal/server/front.go
   status: partial
