@@ -134,6 +134,16 @@ func TestInterimLoginForm(t *testing.T) {
 	if !strings.Contains(body, "links[i].target = '_blank'") {
 		t.Fatalf("expected interim blank-target script: %q", body)
 	}
+	// P6.32: aria-describedby links focused fields to the interim message.
+	if !strings.Contains(body, `id="user_login" aria-describedby="login-message"`) {
+		t.Fatalf("expected user_login aria-describedby=login-message: %q", body)
+	}
+	if !strings.Contains(body, `id="user_pass" aria-describedby="login-message"`) {
+		t.Fatalf("expected user_pass aria-describedby=login-message: %q", body)
+	}
+	if !strings.Contains(body, "wp_attempt_focus()") {
+		t.Fatalf("expected wp_attempt_focus on interim login: %q", body)
+	}
 }
 
 func TestInterimLoginMessagesFilter(t *testing.T) {

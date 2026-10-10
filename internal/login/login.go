@@ -366,17 +366,29 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		}
 		actionURL = loginURL + "?" + q.Encode()
 	}
+	// P6.32: aria-describedby ties focused inputs to login-message / login_error
+	// (wp-login.php interim expired notice uses data 'message').
+	ariaDescribedBy := ""
+	if errMsg != "" {
+		ariaDescribedBy = ` aria-describedby="login_error"`
+	} else if interim {
+		ariaDescribedBy = ` aria-describedby="login-message"`
+	}
 	b.WriteString("\t\t<form name=\"loginform\" id=\"loginform\" action=\"")
 	b.WriteString(html.EscapeString(actionURL))
 	b.WriteString("\" method=\"post\">\n")
 	b.WriteString("\t\t\t<p>\n")
 	b.WriteString("\t\t\t\t<label for=\"user_login\">Username or Email Address</label>\n")
-	b.WriteString("\t\t\t\t<input type=\"text\" name=\"log\" id=\"user_login\" class=\"input ltr\" value=\"\" size=\"20\" autocapitalize=\"off\" autocomplete=\"username\" required=\"required\" />\n")
+	b.WriteString("\t\t\t\t<input type=\"text\" name=\"log\" id=\"user_login\"")
+	b.WriteString(ariaDescribedBy)
+	b.WriteString(" class=\"input ltr\" value=\"\" size=\"20\" autocapitalize=\"off\" autocomplete=\"username\" required=\"required\" />\n")
 	b.WriteString("\t\t\t</p>\n\n")
 	b.WriteString("\t\t\t<div class=\"user-pass-wrap\">\n")
 	b.WriteString("\t\t\t\t<label for=\"user_pass\">Password</label>\n")
 	b.WriteString("\t\t\t\t<div class=\"wp-pwd\">\n")
-	b.WriteString("\t\t\t\t\t<input type=\"password\" name=\"pwd\" id=\"user_pass\" class=\"input password-input ltr\" value=\"\" size=\"20\" autocomplete=\"current-password\" spellcheck=\"false\" required=\"required\" />\n")
+	b.WriteString("\t\t\t\t\t<input type=\"password\" name=\"pwd\" id=\"user_pass\"")
+	b.WriteString(ariaDescribedBy)
+	b.WriteString(" class=\"input password-input ltr\" value=\"\" size=\"20\" autocomplete=\"current-password\" spellcheck=\"false\" required=\"required\" />\n")
 	b.WriteString("\t\t\t\t\t<button type=\"button\" class=\"button button-secondary wp-hide-pw hide-if-no-js\" data-toggle=\"0\" aria-label=\"Show password\">\n")
 	b.WriteString("\t\t\t\t\t\t<span class=\"dashicons dashicons-visibility\" aria-hidden=\"true\"></span>\n")
 	b.WriteString("\t\t\t\t\t</button>\n")
