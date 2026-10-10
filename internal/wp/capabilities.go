@@ -168,6 +168,9 @@ func (r *Roles) MapMetaCap(cap string, userID int64, _ ...int64) []string {
 		// P7.92: WP grants via install_plugins; GoPress denies install_plugins,
 		// so map to manage_options (admin Site Health screens).
 		return []string{"manage_options"}
+	case "manage_privacy_options":
+		// P7.93: single-site WP maps manage_privacy_options → manage_options.
+		return []string{"manage_options"}
 	default:
 		return []string{cap}
 	}

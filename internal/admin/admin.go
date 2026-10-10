@@ -3907,7 +3907,7 @@ func (h *Handler) serveOptionsPrivacy(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString("<div class=\"privacy-settings-title-section\"><h1>Privacy</h1></div>\n")
 	b.WriteString("<nav class=\"privacy-settings-tabs-wrapper\" aria-label=\"Secondary menu\">\n")
 	b.WriteString("<a href=\"/wp-admin/options-privacy.php\" class=\"privacy-settings-tab active\" aria-current=\"true\">Settings</a>\n")
-	b.WriteString("<a href=\"/wp-admin/privacy-policy-guide.php\" class=\"privacy-settings-tab\">Policy Guide</a>\n")
+	b.WriteString("<a href=\"/wp-admin/options-privacy.php?tab=policyguide\" class=\"privacy-settings-tab\">Policy Guide</a>\n")
 	b.WriteString("</nav>\n</div>\n<hr class=\"wp-header-end\">\n")
 	b.WriteString("<div class=\"wrap\" id=\"privacy-settings\">\n")
 	b.WriteString("<p>Privacy settings and policy page.</p>\n")
@@ -4035,27 +4035,34 @@ func (h *Handler) serveRevisionCompare(w http.ResponseWriter, r *http.Request, c
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// servePrivacyPolicyGuide is the Privacy Policy Guide screen stub (P8.7).
+// servePrivacyPolicyGuide is the Privacy Policy Guide screen stub (P8.7 / P7.93).
 func (h *Handler) servePrivacyPolicyGuide(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	// P7.93: capability gate (manage_privacy_options → manage_options).
+	if !canManagePrivacyOptionsAdmin(c) {
+		http.Error(w, "Sorry, you are not allowed to manage privacy options on this site.\n", http.StatusForbidden)
+		return
+	}
 	blogname := optionString(c, "blogname", "GoPress")
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>Privacy Policy Guide &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui privacy-settings\">\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui js privacy-settings privacy-policy-guide-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	// P8.14: warn when suggested privacy policy text has changed.
 	_ = wp.TextChangeCheck(c)
 	b.WriteString(wp.PrivacyPolicyUpdatedNoticeHTML(c))
 	b.WriteString("<div class=\"privacy-settings-header\">\n")
 	b.WriteString("<div class=\"privacy-settings-title-section\"><h1>Privacy</h1></div>\n")
-	b.WriteString("<nav class=\"privacy-settings-tabs-wrapper\" aria-label=\"Secondary menu\">\n")
+	b.WriteString("<nav class=\"privacy-settings-tabs-wrapper hide-if-no-js\" aria-label=\"Secondary menu\">\n")
 	b.WriteString("<a href=\"/wp-admin/options-privacy.php\" class=\"privacy-settings-tab\">Settings</a>\n")
-	b.WriteString("<a href=\"/wp-admin/privacy-policy-guide.php\" class=\"privacy-settings-tab active\" aria-current=\"true\">Policy Guide</a>\n")
+	b.WriteString("<a href=\"/wp-admin/options-privacy.php?tab=policyguide\" class=\"privacy-settings-tab active\" aria-current=\"true\">Policy Guide</a>\n")
 	b.WriteString("</nav>\n</div>\n")
 	b.WriteString("<hr class=\"wp-header-end\">\n")
-	b.WriteString("<div class=\"wrap privacy-settings-body\" id=\"privacy-settings\">\n")
+	// P7.93: WP admin notice when JS is unavailable.
+	b.WriteString("<div class=\"notice notice-error hide-if-js\"><p>The Privacy Settings require JavaScript.</p></div>\n")
+	b.WriteString("<div class=\"privacy-settings-body hide-if-no-js\" id=\"privacy-settings\">\n")
 	b.WriteString("<h2>Privacy Policy Guide</h2>\n")
 	b.WriteString("<h3 class=\"section-title\">Introduction</h3>\n")
 	b.WriteString("<p>This text template will help you to create your website&#8217;s privacy policy.</p>\n")
@@ -4082,7 +4089,7 @@ func (h *Handler) servePrivacyPolicyGuide(w http.ResponseWriter, r *http.Request
 	// P8.12: WP_Privacy_Policy_Content::privacy_policy_guide (registered sections).
 	b.WriteString(wp.PrivacyPolicyGuideHTML(c))
 	b.WriteString("</div>\n")
-	b.WriteString("<p class=\"description\">GoPress privacy policy guide content (P8.12).</p>\n")
+	b.WriteString("<p class=\"description\">GoPress privacy policy guide content (P7.93).</p>\n")
 	b.WriteString("</div>\n")
 	// P8.18: privacy-tools.js accordion toggle (vanilla; no jQuery dependency).
 	b.WriteString(privacySettingsAccordionScript())
@@ -4090,6 +4097,15 @@ func (h *Handler) servePrivacyPolicyGuide(w http.ResponseWriter, r *http.Request
 	b.WriteString(privacyPolicyGuideSearchScript())
 	b.WriteString("</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
+}
+
+// canManagePrivacyOptionsAdmin mirrors privacy-policy-guide.php
+// current_user_can('manage_privacy_options') (P7.93).
+func canManagePrivacyOptionsAdmin(c *wp.Context) bool {
+	if c == nil || c.CurrentUser == nil {
+		return false
+	}
+	return c.UserCan(c.CurrentUser, "manage_privacy_options")
 }
 
 // privacySettingsAccordionScript mirrors wp-admin/js/privacy-tools.js accordion

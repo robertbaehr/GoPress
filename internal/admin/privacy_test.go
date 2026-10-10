@@ -170,10 +170,40 @@ func TestPrivacyPolicyGuideSections(t *testing.T) {
 		`id="privacy-policy-guide-search-input"`,
 		`id="privacy-policy-guide-search-js"`,
 		"privacy-policy-guide-search",
+		// P7.93 deepen
+		"privacy-policy-guide-php",
+		"The Privacy Settings require JavaScript.",
+		"hide-if-no-js",
+		"options-privacy.php?tab=policyguide",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("missing %q", want)
 		}
+	}
+}
+
+func TestPrivacyPolicyGuideRequiresCapability(t *testing.T) {
+	c := bootOrSkip(t)
+	user, err := c.GetUserBy("login", "subscriber")
+	if err != nil || user == nil {
+		t.Fatalf("subscriber: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/privacy-policy-guide.php", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/privacy-policy-guide.php") {
+		t.Fatal("privacy-policy-guide.php not handled")
+	}
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "not allowed to manage privacy options") {
+		t.Fatalf("body=%s", rec.Body.String())
 	}
 }
 

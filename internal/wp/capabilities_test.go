@@ -236,6 +236,10 @@ func TestCurrentUserCan(t *testing.T) {
 	if !c.CurrentUserCan("view_site_health_checks") {
 		t.Fatal("admin should view_site_health_checks via manage_options")
 	}
+	// P7.93: manage_privacy_options maps to manage_options on single site.
+	if !c.CurrentUserCan("manage_privacy_options") {
+		t.Fatal("admin should manage_privacy_options via manage_options")
+	}
 	if !c.CurrentUserCan("edit_posts") {
 		t.Fatal("admin should edit_posts")
 	}
