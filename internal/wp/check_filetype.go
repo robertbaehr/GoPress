@@ -135,23 +135,32 @@ func GetMimeTypes(c *Context) map[string]string {
 	return out
 }
 
-// GetAllowedMimeTypes returns upload-allowed mimes (get_allowed_mime_types).
-// Unsets swf/exe; unsets htm|html/js unless the user can unfiltered_html.
-// Applies "upload_mimes" filter when c != nil.
-func GetAllowedMimeTypes(c *Context) map[string]string {
+// GetAllowedMimeTypes returns upload-allowed mimes (get_allowed_mime_types, P2.59).
+// Unsets swf/exe; unsets htm|html/js unless the (optional) user can unfiltered_html.
+// When userOpt is omitted, uses c.CurrentUser (PHP $user = null → current_user_can).
+// Applies "upload_mimes" filter with the user argument when c != nil.
+func GetAllowedMimeTypes(c *Context, userOpt ...*User) map[string]string {
 	t := GetMimeTypes(c)
 	delete(t, "swf")
 	delete(t, "exe")
+
+	var user *User
+	if len(userOpt) > 0 {
+		user = userOpt[0]
+	} else if c != nil {
+		user = c.CurrentUser
+	}
+
 	unfiltered := false
-	if c != nil && c.CurrentUser != nil {
-		unfiltered = c.UserCan(c.CurrentUser, "unfiltered_html")
+	if c != nil && user != nil {
+		unfiltered = c.UserCan(user, "unfiltered_html")
 	}
 	if !unfiltered {
 		delete(t, "htm|html")
 		delete(t, "js")
 	}
 	if c != nil && c.Hooks != nil {
-		if v := c.Hooks.ApplyFilters("upload_mimes", t, nil); v != nil {
+		if v := c.Hooks.ApplyFilters("upload_mimes", t, user); v != nil {
 			if m, ok := v.(map[string]string); ok {
 				return m
 			}

@@ -1036,6 +1036,14 @@
   api: exported
   notes: "P2.58 — GetMimeTypes default map matches WP wp_get_mime_types; mime_types filter"
 
+# P2.59: get_allowed_mime_types($user) — optional user + upload_mimes user arg.
+- prefix: wp-includes/functions.php#get_allowed_mime_types
+  go: internal/wp/check_filetype.go
+  status: partial
+  task: P2.59
+  api: exported
+  notes: "P2.59 — GetAllowedMimeTypes(c, user?); unfiltered_html for user; upload_mimes($t,$user)"
+
 # P3.27: /comments/feed/ RSS comments feed.
 - prefix: wp-includes/feed-rss2-comments.php
   go: internal/server/front.go

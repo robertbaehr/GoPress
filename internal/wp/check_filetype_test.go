@@ -48,6 +48,41 @@ func TestGetAllowedMimeTypesUnsets(t *testing.T) {
 	if _, ok := m["htm|html"]; ok {
 		t.Fatal("htm|html should be unset without unfiltered_html")
 	}
+	if _, ok := m["js"]; ok {
+		t.Fatal("js should be unset without unfiltered_html")
+	}
+}
+
+func TestGetAllowedMimeTypesForUserUnfilteredHTML(t *testing.T) {
+	c := &wp.Context{Hooks: wp.NewHooks(), Roles: &wp.Roles{}}
+	admin := &wp.User{ID: 1, Login: "admin", AllCaps: map[string]bool{"unfiltered_html": true}}
+	sub := &wp.User{ID: 2, Login: "sub", AllCaps: map[string]bool{"read": true}}
+	c.CurrentUser = sub
+
+	// Explicit privileged user keeps html/js even when current user cannot.
+	m := wp.GetAllowedMimeTypes(c, admin)
+	if m["htm|html"] == "" || m["js"] == "" {
+		t.Fatalf("admin unfiltered_html should keep html/js: %#v", m["htm|html"])
+	}
+	// Current (subscriber) user path strips them.
+	m2 := wp.GetAllowedMimeTypes(c)
+	if _, ok := m2["htm|html"]; ok {
+		t.Fatal("subscriber should not keep htm|html")
+	}
+
+	var sawUser *wp.User
+	c.Hooks.AddFilter("upload_mimes", func(value any, args ...any) any {
+		if len(args) > 0 {
+			if u, ok := args[0].(*wp.User); ok {
+				sawUser = u
+			}
+		}
+		return value
+	}, 10, 2)
+	_ = wp.GetAllowedMimeTypes(c, admin)
+	if sawUser == nil || sawUser.ID != admin.ID {
+		t.Fatalf("upload_mimes user arg: %#v", sawUser)
+	}
 }
 
 func TestGetMimeTypesFullParityKeys(t *testing.T) {
