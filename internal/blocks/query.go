@@ -776,11 +776,101 @@ func (e *Env) renderPostAuthorName(block Block) string {
 		return ""
 	}
 	inner := html.EscapeString(name)
-	if isLinkAttr(block.Attrs) && e.HomeURL != nil {
-		home := strings.TrimRight(e.HomeURL(), "/")
-		inner = `<a class="wp-block-post-author-name__link" href="` + html.EscapeString(home+"/author/admin/") + `" target="_self">` + inner + `</a>`
+	if isLinkAttr(block.Attrs) {
+		if link := e.authorArchiveLink(e.currentPost.ID); link != "" {
+			target := "_self"
+			if t, ok := block.Attrs["linkTarget"].(string); ok && strings.TrimSpace(t) != "" {
+				target = strings.TrimSpace(t)
+			}
+			inner = `<a class="wp-block-post-author-name__link" href="` + html.EscapeString(link) + `" target="` + html.EscapeString(target) + `">` + inner + `</a>`
+		}
 	}
-	return `<div class="wp-block-post-author-name">` + inner + `</div>`
+	classes := "wp-block-post-author-name"
+	if align, ok := block.Attrs["textAlign"].(string); ok && strings.TrimSpace(align) != "" {
+		classes += " has-text-align-" + strings.TrimSpace(align)
+	}
+	return `<div class="` + html.EscapeString(classes) + `">` + inner + `</div>`
+}
+
+// renderPostAuthorBiography renders core/post-author-biography (P5.46).
+func (e *Env) renderPostAuthorBiography(block Block) string {
+	e = e.ensure()
+	if e.currentPost == nil || e.AuthorBio == nil {
+		return ""
+	}
+	bio := strings.TrimSpace(e.AuthorBio(e.currentPost.ID))
+	if bio == "" {
+		return ""
+	}
+	classes := "wp-block-post-author-biography"
+	if align, ok := block.Attrs["textAlign"].(string); ok && strings.TrimSpace(align) != "" {
+		classes += " has-text-align-" + strings.TrimSpace(align)
+	}
+	return `<div class="` + html.EscapeString(classes) + `">` + html.EscapeString(bio) + `</div>`
+}
+
+// renderAvatar renders core/avatar for the current post author (P5.46).
+func (e *Env) renderAvatar(block Block) string {
+	e = e.ensure()
+	size := int64(96)
+	if s := attrInt64(block.Attrs, "size"); s > 0 {
+		size = s
+	}
+	name := ""
+	email := ""
+	link := ""
+	if e.currentPost != nil {
+		if e.AuthorName != nil {
+			name = strings.TrimSpace(e.AuthorName(e.currentPost.ID))
+		}
+		if e.AuthorEmail != nil {
+			email = strings.TrimSpace(e.AuthorEmail(e.currentPost.ID))
+		}
+		link = e.authorArchiveLink(e.currentPost.ID)
+	}
+	if email == "" {
+		return ""
+	}
+	if name == "" {
+		name = "User"
+	}
+	hash := gravatarHash(email)
+	src := fmt.Sprintf("https://secure.gravatar.com/avatar/%s?s=%d&d=mm&r=g", hash, size)
+	srcset := fmt.Sprintf("https://secure.gravatar.com/avatar/%s?s=%d&d=mm&r=g 2x", hash, size*2)
+	alt := html.EscapeString(name + " Avatar")
+	img := fmt.Sprintf(
+		`<img alt="%s" class="avatar avatar-%d photo wp-block-avatar__image" decoding="async" height="%d" src="%s" srcset="%s" width="%d"/>`,
+		alt, size, size, html.EscapeString(src), html.EscapeString(srcset), size,
+	)
+	inner := img
+	if isLinkAttr(block.Attrs) && link != "" {
+		target := "_self"
+		if t, ok := block.Attrs["linkTarget"].(string); ok && strings.TrimSpace(t) != "" {
+			target = strings.TrimSpace(t)
+		}
+		aria := ""
+		if target == "_blank" {
+			aria = ` aria-label="(` + html.EscapeString(name) + ` author archive, opens in a new tab)"`
+		}
+		inner = `<a href="` + html.EscapeString(link) + `" target="` + html.EscapeString(target) + `"` + aria + ` class="wp-block-avatar__link">` + img + `</a>`
+	}
+	return `<div class="wp-block-avatar">` + inner + `</div>`
+}
+
+func (e *Env) authorArchiveLink(postID int64) string {
+	if e.AuthorLink != nil {
+		if link := strings.TrimSpace(e.AuthorLink(postID)); link != "" {
+			return link
+		}
+	}
+	if e.HomeURL == nil {
+		return ""
+	}
+	home := strings.TrimRight(e.HomeURL(), "/")
+	if home == "" {
+		return ""
+	}
+	return home + "/author/admin/"
 }
 
 // renderPostAuthor renders core/post-author (P5.43).
@@ -794,13 +884,14 @@ func (e *Env) renderPostAuthor(block Block) string {
 		return ""
 	}
 	nameHTML := html.EscapeString(name)
-	if isLinkAttr(block.Attrs) && e.HomeURL != nil {
-		home := strings.TrimRight(e.HomeURL(), "/")
-		target := "_self"
-		if t, ok := block.Attrs["linkTarget"].(string); ok && strings.TrimSpace(t) != "" {
-			target = strings.TrimSpace(t)
+	if isLinkAttr(block.Attrs) {
+		if link := e.authorArchiveLink(e.currentPost.ID); link != "" {
+			target := "_self"
+			if t, ok := block.Attrs["linkTarget"].(string); ok && strings.TrimSpace(t) != "" {
+				target = strings.TrimSpace(t)
+			}
+			nameHTML = `<a href="` + html.EscapeString(link) + `" target="` + html.EscapeString(target) + `">` + nameHTML + `</a>`
 		}
-		nameHTML = `<a href="` + html.EscapeString(home+"/author/admin/") + `" target="` + html.EscapeString(target) + `">` + nameHTML + `</a>`
 	}
 	var content strings.Builder
 	content.WriteString(`<div class="wp-block-post-author__content">`)

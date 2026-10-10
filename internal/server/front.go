@@ -3083,22 +3083,40 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			return &blocks.QueryPost{ID: id, Title: title, Link: link, Date: date}
 		},
 		AuthorName: func(postID int64) string {
-			p, err := wp.GetPostByID(c, postID)
-			if err != nil || p == nil || c == nil || c.DB == nil {
+			u := authorUserForPost(c, postID)
+			if u == nil {
 				return ""
 			}
-			q, args, err := c.DB.Prepare(
-				"SELECT display_name FROM "+c.DB.Users()+" WHERE ID = %d LIMIT 1",
-				p.Author,
-			)
-			if err != nil {
+			return u.DisplayName
+		},
+		AuthorEmail: func(postID int64) string {
+			u := authorUserForPost(c, postID)
+			if u == nil {
 				return ""
 			}
-			row, err := c.DB.GetRow(q, args...)
-			if err != nil || row == nil {
+			return u.Email
+		},
+		AuthorBio: func(postID int64) string {
+			u := authorUserForPost(c, postID)
+			if u == nil || c == nil || c.Meta == nil {
 				return ""
 			}
-			return rowStringDB(row["display_name"])
+			return asMetaString(c.Meta.GetMetadata(wp.MetaUser, u.ID, "description", true))
+		},
+		AuthorLink: func(postID int64) string {
+			u := authorUserForPost(c, postID)
+			if u == nil {
+				return ""
+			}
+			home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+			slug := u.Nicename
+			if slug == "" {
+				slug = u.Login
+			}
+			if home == "" || slug == "" {
+				return ""
+			}
+			return home + "/author/" + slug + "/"
 		},
 		PostTerms: func(postID int64, taxonomy string) []blocks.NavLink {
 			home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
@@ -3223,6 +3241,21 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			return out
 		},
 	}
+}
+
+func authorUserForPost(c *wp.Context, postID int64) *wp.User {
+	if c == nil || postID <= 0 {
+		return nil
+	}
+	p, err := wp.GetPostByID(c, postID)
+	if err != nil || p == nil || p.Author <= 0 {
+		return nil
+	}
+	u, err := c.GetUserBy("id", p.Author)
+	if err != nil || u == nil {
+		return nil
+	}
+	return u
 }
 
 func rowStringDB(v any) string {
