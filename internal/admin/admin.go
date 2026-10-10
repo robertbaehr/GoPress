@@ -1593,6 +1593,8 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString(`<div class="notice notice-info" id="gopress-akismet-gone"><p>Akismet is <strong>not bundled</strong> with GoPress and is out of scope.</p></div>` + "\n")
 	// P9.11: Network Activate is N/A on single-site GoPress.
 	b.WriteString(plugins.NetworkActivateGoneNotice + "\n")
+	// P9.16: Plugin Automatic Updates are N/A in GoPress.
+	b.WriteString(plugins.AutoUpdateGoneNotice + "\n")
 	bulkNonce := ""
 	if c != nil {
 		bulkNonce = c.CreateNonce("bulk-plugins")
@@ -1644,6 +1646,8 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 		if p.Network {
 			b.WriteString(plugins.NetworkOnlyRowNote)
 		}
+		// P9.16: no Automatic Updates column / toggles.
+		b.WriteString(plugins.AutoUpdateColumnGoneNote)
 		if p.RequiresWP != "" || p.RequiresPHP != "" {
 			b.WriteString("<div class=\"plugin-requirements\">")
 			var reqs []string
@@ -1688,6 +1692,9 @@ func handlePluginAction(r *http.Request, c *wp.Context) (string, error) {
 		networkWide = strings.TrimSpace(r.URL.Query().Get("networkwide"))
 	}
 	if err := plugins.RejectNetworkActivate(action, networkWide); err != nil {
+		return "", err
+	}
+	if err := plugins.RejectAutoUpdate(action); err != nil {
 		return "", err
 	}
 	switch action {
