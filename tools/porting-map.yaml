@@ -2065,6 +2065,20 @@
   task: P7.26
   api: n/a
 
+# P7.53: minimal WXR export download from export.php?download=true.
+- prefix: wp-admin/export.php
+  go: internal/admin/export_wxr.go
+  status: partial
+  task: P7.53
+  api: n/a
+  notes: "P7.53 — minimal WXR (posts/pages) attachment download"
+
+- prefix: wp-admin/includes/export.php
+  go: internal/admin/export_wxr.go
+  status: partial
+  task: P7.53
+  api: n/a
+
 # P7.45: Site Health Status/Info tab chrome polish (WP health-check-tab markup).
 - prefix: wp-admin/site-health-info.php
   go: internal/admin/admin.go
