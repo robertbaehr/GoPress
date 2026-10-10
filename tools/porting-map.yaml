@@ -791,6 +791,21 @@
   api: n/a
   notes: "P6.22 — POST-only interim-login; links target=_blank in interim form"
 
+# P6.27: nocache_headers on wp-login.php.
+- prefix: wp-includes/functions.php#nocache_headers
+  go: internal/wp/nocache.go
+  status: partial
+  task: P6.27
+  api: exported
+  notes: "P6.27 — NoCacheHeaders Expires + Cache-Control no-store/private"
+
+- prefix: wp-login.php#nocache_headers
+  go: internal/login/login.go
+  status: partial
+  task: P6.27
+  api: n/a
+  notes: "P6.27 — call NoCacheHeaders at start of login Handle"
+
 # P6.26: SECURE_AUTH cookie + Secure flags when login is HTTPS.
 - prefix: wp-includes/pluggable.php#wp_set_auth_cookie_secure
   go: internal/wp/auth_cookie.go
