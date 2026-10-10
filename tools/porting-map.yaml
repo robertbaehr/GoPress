@@ -780,6 +780,14 @@
   api: exported
   notes: "P2.50 — Basename via urlencode/replace/basename/urldecode"
 
+# P2.51: wp_is_uuid (UUID / UUID v4 validation).
+- prefix: wp-includes/functions.php#wp_is_uuid
+  go: internal/wp/uuid.go
+  status: partial
+  task: P2.51
+  api: exported
+  notes: "P2.51 — IsUUID any-version + version=4 regex; other versions false"
+
 # P2.48: wp_spaces_regexp (+ filter).
 - prefix: wp-includes/formatting.php#wp_spaces_regexp
   go: internal/wp/spaces_regexp.go
