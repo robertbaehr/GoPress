@@ -157,6 +157,109 @@ func GetUploadDirAt(c *Context, when time.Time) UploadDir {
 	}
 }
 
+// GetAttachmentMetadata returns wp_get_attachment_metadata (P8.22).
+// ok is false when missing/invalid (PHP false). Applies wp_get_attachment_metadata filter.
+func GetAttachmentMetadata(c *Context, attachmentID int64) (map[string]any, bool) {
+	return getAttachmentMetadata(c, attachmentID, false)
+}
+
+// GetAttachmentMetadataUnfiltered is wp_get_attachment_metadata( $id, true ).
+func GetAttachmentMetadataUnfiltered(c *Context, attachmentID int64) (map[string]any, bool) {
+	return getAttachmentMetadata(c, attachmentID, true)
+}
+
+func getAttachmentMetadata(c *Context, attachmentID int64, unfiltered bool) (map[string]any, bool) {
+	if c == nil || c.Meta == nil || attachmentID <= 0 {
+		return nil, false
+	}
+	raw := c.Meta.GetMetadata(MetaPost, attachmentID, "_wp_attachment_metadata", true)
+	s := strings.TrimSpace(fmt.Sprint(raw))
+	if s == "" || s == "<nil>" {
+		return nil, false
+	}
+	// Already a map (some code paths store decoded meta).
+	if m, ok := raw.(map[string]any); ok && len(m) > 0 {
+		return normalizeAttachmentMetadata(m, unfiltered, c, attachmentID)
+	}
+	parsed, err := UnserializePHP(s)
+	if err != nil || parsed == nil {
+		return nil, false
+	}
+	m, ok := phpValueToStringMap(parsed)
+	if !ok || len(m) == 0 {
+		return nil, false
+	}
+	return normalizeAttachmentMetadata(m, unfiltered, c, attachmentID)
+}
+
+func normalizeAttachmentMetadata(data map[string]any, unfiltered bool, c *Context, attachmentID int64) (map[string]any, bool) {
+	if data == nil {
+		return nil, false
+	}
+	// Ensure sizes is a map when present but not an array (WP 6.0+ guard).
+	if v, has := data["sizes"]; has {
+		switch v.(type) {
+		case map[string]any, map[any]any:
+			// ok
+		default:
+			data["sizes"] = map[string]any{}
+		}
+	}
+	if unfiltered {
+		return data, true
+	}
+	if c != nil && c.Hooks != nil {
+		filtered := c.Hooks.ApplyFilters("wp_get_attachment_metadata", data, attachmentID)
+		switch t := filtered.(type) {
+		case map[string]any:
+			data = t
+		case map[any]any:
+			if m, ok := phpValueToStringMap(t); ok {
+				data = m
+			}
+		case bool:
+			if !t {
+				return nil, false
+			}
+		case nil:
+			return nil, false
+		}
+	}
+	if data == nil {
+		return nil, false
+	}
+	if v, has := data["sizes"]; has {
+		switch v.(type) {
+		case map[string]any, map[any]any:
+		default:
+			data["sizes"] = map[string]any{}
+		}
+	}
+	return data, true
+}
+
+func phpValueToStringMap(v any) (map[string]any, bool) {
+	switch t := v.(type) {
+	case map[string]any:
+		return t, true
+	case map[any]any:
+		out := make(map[string]any, len(t))
+		for k, val := range t {
+			key := fmt.Sprint(k)
+			if nested, ok := val.(map[any]any); ok {
+				if nm, ok := phpValueToStringMap(nested); ok {
+					out[key] = nm
+					continue
+				}
+			}
+			out[key] = val
+		}
+		return out, true
+	default:
+		return nil, false
+	}
+}
+
 // GetAttachedFile returns the filesystem path for an attachment (_wp_attached_file).
 func GetAttachedFile(c *Context, attachmentID int64) string {
 	if c == nil || c.Meta == nil || attachmentID <= 0 {

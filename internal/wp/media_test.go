@@ -108,3 +108,44 @@ func TestResizeImageStub(t *testing.T) {
 		t.Fatal("expected not-implemented error")
 	}
 }
+
+func TestGetAttachmentMetadata(t *testing.T) {
+	c := mediaBoot(t)
+	meta, ok := wp.GetAttachmentMetadata(c, 5)
+	if !ok {
+		t.Fatal("expected metadata for attachment 5")
+	}
+	if fmt.Sprint(meta["file"]) != "2024/06/sample-photo-a.jpg" {
+		t.Fatalf("file=%v", meta["file"])
+	}
+	if meta["width"] == nil || meta["height"] == nil {
+		t.Fatalf("missing dimensions: %#v", meta)
+	}
+	sizes, ok := meta["sizes"].(map[string]any)
+	if !ok || len(sizes) == 0 {
+		// sizes may be map[any]any from unserialize path
+		if _, ok2 := meta["sizes"].(map[any]any); !ok2 {
+			t.Fatalf("sizes=%T %#v", meta["sizes"], meta["sizes"])
+		}
+	}
+
+	c.Hooks.AddFilter("wp_get_attachment_metadata", func(value any, args ...any) any {
+		m, _ := value.(map[string]any)
+		if m == nil {
+			return value
+		}
+		m["gopress_filtered"] = true
+		return m
+	}, 10, 2)
+	meta, ok = wp.GetAttachmentMetadata(c, 5)
+	if !ok || meta["gopress_filtered"] != true {
+		t.Fatalf("filter not applied: ok=%v %#v", ok, meta)
+	}
+	unf, ok := wp.GetAttachmentMetadataUnfiltered(c, 5)
+	if !ok || unf["gopress_filtered"] == true {
+		t.Fatalf("unfiltered should skip filter: %#v", unf)
+	}
+	if _, ok := wp.GetAttachmentMetadata(c, 999999); ok {
+		t.Fatal("missing attachment should be false")
+	}
+}
