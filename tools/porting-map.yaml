@@ -3521,6 +3521,35 @@
   task: P5.43
   api: internal
 
+# P5.88: polish post-date / post-author / post-terms attrs (displayType, format, avatar/bio, prefix/suffix).
+- prefix: wp-includes/blocks/post-date.php#polish
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.88
+  api: internal
+  notes: "P5.88 — displayType=modified, format/human-diff, textAlign/has-link-color/className, isLink target/rel"
+
+- prefix: wp-includes/blocks/post-author.php#polish
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.88
+  api: internal
+  notes: "P5.88 — showAvatar/avatarSize/showBio, itemsJustification, has-link-color"
+
+- prefix: wp-includes/blocks/post-terms.php#polish
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.88
+  api: internal
+  notes: "P5.88 — prefix/suffix, separator span, textAlign/has-link-color"
+
+- prefix: wp-includes/blocks/post-date.php#polish-test
+  go: internal/blocks/post_date_polish_test.go
+  status: partial
+  task: P5.88
+  api: n/a
+  notes: "P5.88 — unit coverage for post-date/author/terms polish"
+
 - prefix: wp-includes/blocks/post-author-name.php
   go: internal/blocks/query.go
   status: partial

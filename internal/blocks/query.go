@@ -569,8 +569,20 @@ func (e *Env) renderPostDate(block Block) string {
 	if e.currentPost == nil {
 		return ""
 	}
+	// P5.88: displayType=modified uses post modified time + modifier class.
 	raw := strings.TrimSpace(e.currentPost.Date)
-	display := formatPostDateDisplay(raw)
+	modified := false
+	if dt := strings.ToLower(strings.TrimSpace(attrString(block.Attrs, "displayType"))); dt == "modified" {
+		raw = strings.TrimSpace(e.currentPost.Modified)
+		if raw == "" {
+			raw = strings.TrimSpace(e.currentPost.Date)
+		}
+		modified = true
+	}
+	if raw == "" {
+		return ""
+	}
+	display := formatPostDateDisplayWithFormat(raw, attrString(block.Attrs, "format"))
 	if display == "" {
 		return ""
 	}
@@ -582,9 +594,31 @@ func (e *Env) renderPostDate(block Block) string {
 	timeHTML += `>` + html.EscapeString(display) + `</time>`
 	inner := timeHTML
 	if isLinkAttr(block.Attrs) && e.currentPost.Link != "" {
-		inner = `<a href="` + html.EscapeString(e.currentPost.Link) + `">` + timeHTML + `</a>`
+		aAttrs := ` href="` + html.EscapeString(e.currentPost.Link) + `"`
+		target := strings.TrimSpace(attrString(block.Attrs, "linkTarget"))
+		if target == "" {
+			target = "_self"
+		}
+		aAttrs += ` target="` + html.EscapeString(target) + `"`
+		if rel := strings.TrimSpace(attrString(block.Attrs, "rel")); rel != "" {
+			aAttrs += ` rel="` + html.EscapeString(rel) + `"`
+		}
+		inner = `<a` + aAttrs + `>` + timeHTML + `</a>`
 	}
-	return `<div class="wp-block-post-date">` + inner + `</div>`
+	classes := []string{"wp-block-post-date"}
+	if modified {
+		classes = append(classes, "wp-block-post-date__modified-date")
+	}
+	if ta := strings.TrimSpace(attrString(block.Attrs, "textAlign")); ta != "" {
+		classes = append(classes, "has-text-align-"+sanitizeClassToken(ta))
+	}
+	if hasLinkColorAttr(block.Attrs) {
+		classes = append(classes, "has-link-color")
+	}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		classes = append(classes, cn)
+	}
+	return `<div class="` + html.EscapeString(strings.Join(classes, " ")) + `">` + inner + `</div>`
 }
 
 func (e *Env) renderSiteTitle(block Block) string {
@@ -790,13 +824,34 @@ func isLinkAttrDefaultTrue(attrs map[string]any) bool {
 }
 
 func formatPostDateDisplay(mysql string) string {
+	return formatPostDateDisplayWithFormat(mysql, "")
+}
+
+// formatPostDateDisplayWithFormat honors block format attr (P5.88), including human-diff.
+func formatPostDateDisplayWithFormat(mysql, format string) string {
 	mysql = strings.TrimSpace(mysql)
-	if len(mysql) < 10 {
-		return mysql
+	format = strings.TrimSpace(format)
+	if mysql == "" {
+		return ""
 	}
 	t, err := parseMySQLDate(mysql)
 	if err != nil {
-		return displayDate(mysql)
+		if format == "" {
+			return displayDate(mysql)
+		}
+		return mysql
+	}
+	if format == "human-diff" {
+		diff := humanTimeDiffLocal(t, time.Now().UTC())
+		if t.After(time.Now().UTC()) {
+			return diff + " from now"
+		}
+		return diff + " ago"
+	}
+	if format != "" {
+		if got := formatPHPDateSubset(t, format); got != "" {
+			return got
+		}
 	}
 	return t.Format("January 2, 2006")
 }
@@ -807,6 +862,132 @@ func formatPostDateTimeAttr(mysql string) string {
 		return ""
 	}
 	return t.Format("2006-01-02T15:04:05+00:00")
+}
+
+// formatPHPDateSubset maps a small PHP date() subset used by post-date formats.
+func formatPHPDateSubset(t time.Time, php string) string {
+	var b strings.Builder
+	for i := 0; i < len(php); i++ {
+		ch := php[i]
+		switch ch {
+		case '\\':
+			if i+1 < len(php) {
+				i++
+				b.WriteByte(php[i])
+			}
+		case 'Y':
+			b.WriteString(t.Format("2006"))
+		case 'y':
+			b.WriteString(t.Format("06"))
+		case 'm':
+			b.WriteString(t.Format("01"))
+		case 'n':
+			b.WriteString(strconv.Itoa(int(t.Month())))
+		case 'd':
+			b.WriteString(t.Format("02"))
+		case 'j':
+			b.WriteString(strconv.Itoa(t.Day()))
+		case 'F':
+			b.WriteString(t.Format("January"))
+		case 'M':
+			b.WriteString(t.Format("Jan"))
+		case 'H':
+			b.WriteString(t.Format("15"))
+		case 'i':
+			b.WriteString(t.Format("04"))
+		case 's':
+			b.WriteString(t.Format("05"))
+		default:
+			b.WriteByte(ch)
+		}
+	}
+	return b.String()
+}
+
+func humanTimeDiffLocal(from, to time.Time) string {
+	sec := int64(to.Sub(from).Seconds())
+	if sec < 0 {
+		sec = -sec
+	}
+	switch {
+	case sec < 60:
+		if sec <= 1 {
+			return "1 second"
+		}
+		return strconv.FormatInt(sec, 10) + " seconds"
+	case sec < 3600:
+		m := (sec + 30) / 60
+		if m <= 1 {
+			return "1 minute"
+		}
+		return strconv.FormatInt(m, 10) + " minutes"
+	case sec < 86400:
+		h := (sec + 1800) / 3600
+		if h <= 1 {
+			return "1 hour"
+		}
+		return strconv.FormatInt(h, 10) + " hours"
+	case sec < 604800:
+		d := (sec + 43200) / 86400
+		if d <= 1 {
+			return "1 day"
+		}
+		return strconv.FormatInt(d, 10) + " days"
+	case sec < 2628000:
+		w := (sec + 302400) / 604800
+		if w <= 1 {
+			return "1 week"
+		}
+		return strconv.FormatInt(w, 10) + " weeks"
+	case sec < 31536000:
+		mo := (sec + 1314000) / 2628000
+		if mo <= 1 {
+			return "1 month"
+		}
+		return strconv.FormatInt(mo, 10) + " months"
+	default:
+		y := (sec + 15768000) / 31536000
+		if y <= 1 {
+			return "1 year"
+		}
+		return strconv.FormatInt(y, 10) + " years"
+	}
+}
+
+func showAvatarAttr(attrs map[string]any) bool {
+	if attrs == nil {
+		return false
+	}
+	v, ok := attrs["showAvatar"]
+	if !ok {
+		return false
+	}
+	switch t := v.(type) {
+	case bool:
+		return t
+	case string:
+		return t == "true" || t == "1"
+	default:
+		return false
+	}
+}
+
+func showBioAttr(attrs map[string]any) bool {
+	if attrs == nil {
+		return false
+	}
+	v, ok := attrs["showBio"]
+	if !ok {
+		return false
+	}
+	switch t := v.(type) {
+	case bool:
+		return t
+	case string:
+		return t == "true" || t == "1"
+	default:
+		return false
+	}
 }
 
 func parseMySQLDate(mysql string) (time.Time, error) {
@@ -1313,7 +1494,7 @@ func (e *Env) authorArchiveLink(postID int64) string {
 	return home + "/author/admin/"
 }
 
-// renderPostAuthor renders core/post-author (P5.43).
+// renderPostAuthor renders core/post-author (P5.43 / P5.88).
 func (e *Env) renderPostAuthor(block Block) string {
 	e = e.ensure()
 	if e.currentPost == nil || e.AuthorName == nil {
@@ -1333,6 +1514,31 @@ func (e *Env) renderPostAuthor(block Block) string {
 			nameHTML = `<a href="` + html.EscapeString(link) + `" target="` + html.EscapeString(target) + `">` + nameHTML + `</a>`
 		}
 	}
+	var outer strings.Builder
+	// P5.88: optional avatar when showAvatar is set.
+	if showAvatarAttr(block.Attrs) {
+		size := int64(48)
+		if s := attrInt64(block.Attrs, "avatarSize"); s > 0 {
+			size = s
+		}
+		email := ""
+		if e.AuthorEmail != nil {
+			email = strings.TrimSpace(e.AuthorEmail(e.currentPost.ID))
+		}
+		if email != "" {
+			hash := gravatarHash(email)
+			src := fmt.Sprintf("https://secure.gravatar.com/avatar/%s?s=%d&d=mm&r=g", hash, size)
+			alt := html.EscapeString(name)
+			outer.WriteString(`<div class="wp-block-post-author__avatar">`)
+			outer.WriteString(fmt.Sprintf(
+				`<img alt="%s" src="%s" srcset="%s" class="avatar avatar-%d photo" height="%d" width="%d" decoding="async"/>`,
+				alt, html.EscapeString(src),
+				html.EscapeString(fmt.Sprintf("https://secure.gravatar.com/avatar/%s?s=%d&d=mm&r=g 2x", hash, size*2)),
+				size, size, size,
+			))
+			outer.WriteString(`</div>`)
+		}
+	}
 	var content strings.Builder
 	content.WriteString(`<div class="wp-block-post-author__content">`)
 	if byline, ok := block.Attrs["byline"].(string); ok && strings.TrimSpace(byline) != "" {
@@ -1342,12 +1548,30 @@ func (e *Env) renderPostAuthor(block Block) string {
 	}
 	content.WriteString(`<p class="wp-block-post-author__name">`)
 	content.WriteString(nameHTML)
-	content.WriteString(`</p></div>`)
-	classes := "wp-block-post-author"
-	if align, ok := block.Attrs["textAlign"].(string); ok && align != "" {
-		classes += " has-text-align-" + align
+	content.WriteString(`</p>`)
+	if showBioAttr(block.Attrs) && e.AuthorBio != nil {
+		if bio := strings.TrimSpace(e.AuthorBio(e.currentPost.ID)); bio != "" {
+			content.WriteString(`<p class="wp-block-post-author__bio">`)
+			content.WriteString(html.EscapeString(bio))
+			content.WriteString(`</p>`)
+		}
 	}
-	return `<div class="` + html.EscapeString(classes) + `">` + content.String() + `</div>`
+	content.WriteString(`</div>`)
+	outer.WriteString(content.String())
+	classes := []string{"wp-block-post-author"}
+	if j := strings.TrimSpace(attrString(block.Attrs, "itemsJustification")); j != "" {
+		classes = append(classes, "items-justified-"+sanitizeClassToken(j))
+	}
+	if ta := strings.TrimSpace(attrString(block.Attrs, "textAlign")); ta != "" {
+		classes = append(classes, "has-text-align-"+sanitizeClassToken(ta))
+	}
+	if hasLinkColorAttr(block.Attrs) {
+		classes = append(classes, "has-link-color")
+	}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		classes = append(classes, cn)
+	}
+	return `<div class="` + html.EscapeString(strings.Join(classes, " ")) + `">` + outer.String() + `</div>`
 }
 
 func (e *Env) renderPostTerms(block Block) string {
@@ -1363,19 +1587,42 @@ func (e *Env) renderPostTerms(block Block) string {
 	if len(terms) == 0 {
 		return ""
 	}
+	classes := []string{"taxonomy-" + tax, "wp-block-post-terms"}
+	if ta := strings.TrimSpace(attrString(block.Attrs, "textAlign")); ta != "" {
+		classes = append(classes, "has-text-align-"+sanitizeClassToken(ta))
+	}
+	if hasLinkColorAttr(block.Attrs) {
+		classes = append(classes, "has-link-color")
+	}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		classes = append(classes, cn)
+	}
 	var b strings.Builder
-	b.WriteString(`<div class="taxonomy-` + html.EscapeString(tax) + ` wp-block-post-terms">`)
+	b.WriteString(`<div class="` + html.EscapeString(strings.Join(classes, " ")) + `">`)
+	// P5.88: optional prefix / suffix wrappers (render_block_core_post_terms).
+	if prefix := attrString(block.Attrs, "prefix"); strings.TrimSpace(prefix) != "" {
+		b.WriteString(`<span class="wp-block-post-terms__prefix">`)
+		b.WriteString(html.EscapeString(prefix))
+		b.WriteString(`</span>`)
+	}
+	sep := " "
+	if s, ok := block.Attrs["separator"].(string); ok {
+		sep = s
+	}
 	for i, t := range terms {
 		if i > 0 {
-			sep, _ := block.Attrs["separator"].(string)
-			if sep == "" {
-				sep = ", "
-			}
+			b.WriteString(`<span class="wp-block-post-terms__separator">`)
 			b.WriteString(html.EscapeString(sep))
+			b.WriteString(`</span>`)
 		}
 		b.WriteString(`<a href="` + html.EscapeString(t.URL) + `" rel="tag">`)
 		b.WriteString(html.EscapeString(t.Label))
 		b.WriteString(`</a>`)
+	}
+	if suffix := attrString(block.Attrs, "suffix"); strings.TrimSpace(suffix) != "" {
+		b.WriteString(`<span class="wp-block-post-terms__suffix">`)
+		b.WriteString(html.EscapeString(suffix))
+		b.WriteString(`</span>`)
 	}
 	b.WriteString(`</div>`)
 	return b.String()
