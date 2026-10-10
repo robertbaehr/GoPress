@@ -1964,12 +1964,13 @@ wp-login.php#language-switcher-post
   task: P10.24
   api: n/a
 
-# P4.47: REST PATCH/PUT /wp/v2/media/{id} title + alt_text.
+# P4.47 / P4.116: REST PATCH/PUT /wp/v2/media/{id} edit fields.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-attachments-controller.php#update
   go: internal/rest/media_write.go
   status: partial
-  task: P4.47
+  task: P4.116
   api: n/a
+  notes: "P4.116 — PATCH/PUT title/alt_text/caption/description/post; omit-safe title; P4.47 base"
 
 # P4.66: REST DELETE /wp/v2/media/{id} (force=true).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-attachments-controller.php#delete

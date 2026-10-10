@@ -11,11 +11,13 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// mediaWriteBody is the PATCH/PUT body for /wp/v2/media/{id} (P4.47).
+// mediaWriteBody is the PATCH/PUT body for /wp/v2/media/{id} (P4.47 / P4.116).
 type mediaWriteBody struct {
-	Title   json.RawMessage `json:"title"`
-	AltText *string         `json:"alt_text"`
-	Caption json.RawMessage `json:"caption"`
+	Title       json.RawMessage `json:"title"`
+	AltText     *string         `json:"alt_text"`
+	Caption     json.RawMessage `json:"caption"`
+	Description json.RawMessage `json:"description"`
+	Post        *int64          `json:"post"`
 }
 
 func (s *Server) serveMediaItem(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
@@ -57,7 +59,8 @@ func (s *Server) getMediaItem(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	writeJSON(w, http.StatusOK, item)
 }
 
-// updateMedia handles PATCH/PUT /wp/v2/media/{id} for title and alt_text (P4.47).
+// updateMedia handles PATCH/PUT /wp/v2/media/{id} (P4.47 / P4.116).
+// Accepts title, alt_text, caption, description, and post (parent) like create.
 func (s *Server) updateMedia(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
 	if c == nil || c.CurrentUser == nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]any{
@@ -101,18 +104,17 @@ func (s *Server) updateMedia(w http.ResponseWriter, r *http.Request, c *wp.Conte
 		})
 		return
 	}
-	title := existing.Title.Rendered
-	if body.Title != nil {
-		title = rawOrRendered(body.Title)
-	}
 	now := time.Now().UTC().Format("2006-01-02 15:04:05")
-	if err := updateMediaTitle(c, id, title, now); err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]any{
-			"code":    "rest_media_update",
-			"message": err.Error(),
-			"data":    map[string]any{"status": 500},
-		})
-		return
+	// P4.116: only rewrite fields present in the body (avoid clobbering title from rendered HTML).
+	if body.Title != nil {
+		if err := updateMediaTitle(c, id, rawOrRendered(body.Title), now); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{
+				"code":    "rest_media_update",
+				"message": err.Error(),
+				"data":    map[string]any{"status": 500},
+			})
+			return
+		}
 	}
 	if body.AltText != nil && c.Meta != nil {
 		if _, _, _, err := c.Meta.UpdateMetadata(wp.MetaPost, id, "_wp_attachment_image_alt", *body.AltText, ""); err != nil {
@@ -125,8 +127,31 @@ func (s *Server) updateMedia(w http.ResponseWriter, r *http.Request, c *wp.Conte
 		}
 	}
 	if body.Caption != nil {
-		caption := rawOrRendered(body.Caption)
-		if err := updateMediaCaption(c, id, caption, now); err != nil {
+		if err := updateMediaCaption(c, id, rawOrRendered(body.Caption), now); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{
+				"code":    "rest_media_update",
+				"message": err.Error(),
+				"data":    map[string]any{"status": 500},
+			})
+			return
+		}
+	}
+	if body.Description != nil {
+		if err := updateMediaDescription(c, id, rawOrRendered(body.Description), now); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{
+				"code":    "rest_media_update",
+				"message": err.Error(),
+				"data":    map[string]any{"status": 500},
+			})
+			return
+		}
+	}
+	if body.Post != nil {
+		parent := *body.Post
+		if parent < 0 {
+			parent = 0
+		}
+		if err := updateMediaParent(c, id, parent, now); err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]any{
 				"code":    "rest_media_update",
 				"message": err.Error(),
