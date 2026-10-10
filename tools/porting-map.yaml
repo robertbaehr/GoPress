@@ -509,6 +509,13 @@
   notes: "P4.71 — theme item _links.self + theme style variations collection"
 
 # P4.52: REST POST/PUT/PATCH for /wp/v2/templates and template-parts.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-templates-controller.php#delete_item
+  go: internal/rest/templates_write.go
+  status: partial
+  task: P4.73
+  api: exported
+  notes: "P4.73 — DELETE templates/{id} trash + force=true; reject theme-sourced"
+
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-templates-controller.php
   go: internal/rest/templates_write.go
   status: partial
