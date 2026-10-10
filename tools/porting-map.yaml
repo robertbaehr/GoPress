@@ -1216,6 +1216,14 @@
   task: P4.66
   api: n/a
 
+# P4.81: REST POST /wp/v2/media create fields (title, alt_text, caption, description, post).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-attachments-controller.php#create_item
+  go: internal/rest/media.go
+  status: partial
+  task: P4.81
+  api: n/a
+  notes: "P4.81 — multipart title/alt_text/caption/description/post on create"
+
 # P4.69: REST POST /wp/v2/posts/{id}/autosaves.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-autosaves-controller.php#create_item
   go: internal/rest/autosaves.go

@@ -273,3 +273,33 @@ func updateMediaCaption(c *wp.Context, id int64, caption, modified string) error
 	_, err = c.DB.Exec(q, args...)
 	return err
 }
+
+func updateMediaDescription(c *wp.Context, id int64, description, modified string) error {
+	if c == nil || c.DB == nil {
+		return fmt.Errorf("nil DB")
+	}
+	q, args, err := c.DB.Prepare(
+		"UPDATE "+c.DB.Posts()+" SET post_content = %s, post_modified = %s, post_modified_gmt = %s WHERE ID = %d AND post_type = %s",
+		description, modified, modified, id, "attachment",
+	)
+	if err != nil {
+		return err
+	}
+	_, err = c.DB.Exec(q, args...)
+	return err
+}
+
+func updateMediaParent(c *wp.Context, id int64, parent int64, modified string) error {
+	if c == nil || c.DB == nil {
+		return fmt.Errorf("nil DB")
+	}
+	q, args, err := c.DB.Prepare(
+		"UPDATE "+c.DB.Posts()+" SET post_parent = %d, post_modified = %s, post_modified_gmt = %s WHERE ID = %d AND post_type = %s",
+		parent, modified, modified, id, "attachment",
+	)
+	if err != nil {
+		return err
+	}
+	_, err = c.DB.Exec(q, args...)
+	return err
+}

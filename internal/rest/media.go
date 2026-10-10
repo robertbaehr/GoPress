@@ -4,7 +4,9 @@ import (
 	"fmt"
 	"net/http"
 	"path"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
@@ -127,6 +129,15 @@ func (s *Server) createMedia(w http.ResponseWriter, r *http.Request, c *wp.Conte
 		})
 		return
 	}
+	// P4.81: optional create fields (title, alt_text, caption, description, post).
+	if err := applyMediaCreateFields(c, up.ID, r); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_upload_unknown_error",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
 	item, err := getMediaByID(c, up.ID)
 	if err != nil || item == nil {
 		writeJSON(w, http.StatusCreated, map[string]any{
@@ -138,6 +149,49 @@ func (s *Server) createMedia(w http.ResponseWriter, r *http.Request, c *wp.Conte
 	}
 	w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
 	writeJSON(w, http.StatusCreated, item)
+}
+
+// applyMediaCreateFields sets optional multipart fields on a newly created attachment (P4.81).
+// Mirrors WP_REST_Attachments_Controller::create_item subset: title, alt_text,
+// caption (post_excerpt), description (post_content), post (post_parent).
+func applyMediaCreateFields(c *wp.Context, id int64, r *http.Request) error {
+	if c == nil || c.DB == nil || r == nil || id <= 0 {
+		return nil
+	}
+	now := time.Now().UTC().Format("2006-01-02 15:04:05")
+	formHas := func(key string) bool {
+		return r.Form != nil && r.Form.Has(key)
+	}
+
+	if formHas("title") {
+		if err := updateMediaTitle(c, id, r.FormValue("title"), now); err != nil {
+			return err
+		}
+	}
+	if formHas("caption") {
+		if err := updateMediaCaption(c, id, r.FormValue("caption"), now); err != nil {
+			return err
+		}
+	}
+	if formHas("description") {
+		if err := updateMediaDescription(c, id, r.FormValue("description"), now); err != nil {
+			return err
+		}
+	}
+	if formHas("post") {
+		parent, err := strconv.ParseInt(strings.TrimSpace(r.FormValue("post")), 10, 64)
+		if err == nil && parent >= 0 {
+			if err := updateMediaParent(c, id, parent, now); err != nil {
+				return err
+			}
+		}
+	}
+	if formHas("alt_text") && c.Meta != nil {
+		if _, _, _, err := c.Meta.UpdateMetadata(wp.MetaPost, id, "_wp_attachment_image_alt", r.FormValue("alt_text"), ""); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func listMediaPaged(c *wp.Context, limit, page int) ([]Media, error) {
