@@ -1653,6 +1653,14 @@
   api: exported
   notes: "P3.54 — FeedCopyright; RSS2 <copyright> / Atom <rights> when rss_copyright set (auto|custom)"
 
+# P3.57: optional RSS2 channel <ttl> from rss_ttl option (minutes).
+- prefix: wp-includes/feed-rss2.php#ttl
+  go: internal/wp/feed_ttl.go
+  status: partial
+  task: P3.57
+  api: exported
+  notes: "P3.57 — FeedTTLMinutes; emit <ttl> when rss_ttl is a positive integer"
+
 # P3.55: stabilize lastBuildDate from newest post (get_feed_build_date subset).
 - prefix: wp-includes/feed.php#get_feed_build_date
   go: internal/server/front.go
