@@ -43,6 +43,16 @@
   compare: raw
   nonce: null
 
+# P10.29: /favicon.ico follows to site icon / default logo PNG.
+- id: front-favicon
+  role: anon
+  method: GET
+  path: /favicon.ico
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
 - id: front-sitemap
   role: anon
   method: GET
