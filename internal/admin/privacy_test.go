@@ -27,6 +27,7 @@ func TestPrivacyStubScreens(t *testing.T) {
 		{"/wp-admin/export-personal-data.php", "Export Personal Data"},
 		{"/wp-admin/erase-personal-data.php", "Erase Personal Data"},
 		{"/wp-admin/options-privacy.php", "Privacy"},
+		{"/wp-admin/privacy-policy-guide.php", "Privacy Policy Guide"},
 	}
 	for _, tc := range cases {
 		req := httptest.NewRequest(http.MethodGet, tc.path, nil)
@@ -43,8 +44,43 @@ func TestPrivacyStubScreens(t *testing.T) {
 		if !strings.Contains(body, tc.title) {
 			t.Fatalf("%s missing title %q in %q", tc.path, tc.title, body)
 		}
-		if !strings.Contains(body, "privacy-settings") && !strings.Contains(body, "No requests found") {
+		if !strings.Contains(body, "privacy-settings") && !strings.Contains(body, "No requests found") && !strings.Contains(body, "Policy Guide") {
 			t.Fatalf("%s unexpected body %q", tc.path, body)
+		}
+	}
+}
+
+func TestPrivacyPolicyGuideSections(t *testing.T) {
+	c := bootOrSkip(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/privacy-policy-guide.php", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/privacy-policy-guide.php") {
+		t.Fatal("privacy-policy-guide.php not handled")
+	}
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		"Privacy Policy Guide",
+		"Introduction",
+		"Who we are",
+		"Comments",
+		"Cookies",
+		"privacy-settings-tab",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q", want)
 		}
 	}
 }
