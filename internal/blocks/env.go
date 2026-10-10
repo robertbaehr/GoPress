@@ -112,6 +112,14 @@ type Env struct {
 	// seenBlock tracks wp_block refs currently being rendered (cycle guard, P5.25).
 	seenBlock map[int64]bool
 
+	// seenPostContent tracks post IDs while rendering core/post-content (P5.87).
+	// Mirrors PHP $seen_ids reentrancy guard in render_block_core_post_content.
+	seenPostContent map[int64]bool
+
+	// DebugDisplay, when true, surfaces post-content reentrancy warnings (P5.87).
+	// Mirrors WP_DEBUG && WP_DEBUG_DISPLAY in PHP.
+	DebugDisplay bool
+
 	// currentPost is the post in scope for post-title/content/date (P5.13).
 	currentPost *QueryPost
 

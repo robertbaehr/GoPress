@@ -458,19 +458,48 @@ func (e *Env) renderPostTitle(block Block) string {
 	if e.currentPost == nil {
 		return ""
 	}
-	title := html.EscapeString(e.currentPost.Title)
-	if title == "" {
-		title = "(no title)"
+	// P5.87: empty title → empty markup (render_block_core_post_title).
+	rawTitle := strings.TrimSpace(e.currentPost.Title)
+	if rawTitle == "" {
+		return ""
 	}
+	title := html.EscapeString(rawTitle)
 	tag := "h2"
-	if lvl := attrInt64(block.Attrs, "level"); lvl >= 1 && lvl <= 6 {
-		tag = "h" + strconv.FormatInt(lvl, 10)
+	if block.Attrs != nil {
+		if _, ok := block.Attrs["level"]; ok {
+			level := attrInt64(block.Attrs, "level")
+			switch {
+			case level == 0:
+				tag = "p"
+			case level >= 1 && level <= 6:
+				tag = "h" + strconv.FormatInt(level, 10)
+			}
+		}
+	}
+	classes := []string{"wp-block-post-title"}
+	if ta := strings.TrimSpace(attrString(block.Attrs, "textAlign")); ta != "" {
+		classes = append(classes, "has-text-align-"+sanitizeClassToken(ta))
+	}
+	if hasLinkColorAttr(block.Attrs) {
+		classes = append(classes, "has-link-color")
+	}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		classes = append(classes, cn)
 	}
 	inner := title
 	if isLinkAttr(block.Attrs) && e.currentPost.Link != "" {
-		inner = `<a href="` + html.EscapeString(e.currentPost.Link) + `" target="_self" >` + title + `</a>`
+		aAttrs := ` href="` + html.EscapeString(e.currentPost.Link) + `"`
+		target := strings.TrimSpace(attrString(block.Attrs, "linkTarget"))
+		if target == "" {
+			target = "_self"
+		}
+		aAttrs += ` target="` + html.EscapeString(target) + `"`
+		if rel := strings.TrimSpace(attrString(block.Attrs, "rel")); rel != "" {
+			aAttrs += ` rel="` + html.EscapeString(rel) + `"`
+		}
+		inner = `<a` + aAttrs + `>` + title + `</a>`
 	}
-	return fmt.Sprintf(`<%s class="wp-block-post-title">%s</%s>`, tag, inner, tag)
+	return fmt.Sprintf(`<%s class="%s">%s</%s>`, tag, html.EscapeString(strings.Join(classes, " ")), inner, tag)
 }
 
 func (e *Env) renderPostContent(block Block) string {
@@ -478,6 +507,20 @@ func (e *Env) renderPostContent(block Block) string {
 	if e.currentPost == nil {
 		return ""
 	}
+	postID := e.currentPost.ID
+	// P5.87: reentrancy guard (nested post-content for the same post).
+	if e.seenPostContent == nil {
+		e.seenPostContent = map[int64]bool{}
+	}
+	if e.seenPostContent[postID] {
+		if e.DebugDisplay {
+			return "[block rendering halted]"
+		}
+		return ""
+	}
+	e.seenPostContent[postID] = true
+	defer delete(e.seenPostContent, postID)
+
 	body := e.Render(e.currentPost.Content)
 	if e.FilterPostHTML != nil {
 		body = e.FilterPostHTML(body)
@@ -485,11 +528,21 @@ func (e *Env) renderPostContent(block Block) string {
 	if strings.TrimSpace(body) == "" {
 		return ""
 	}
-	classes := "entry-content wp-block-post-content"
-	if align, ok := block.Attrs["align"].(string); ok && align != "" {
-		classes += " align" + align
+	tag := "div"
+	if tn := strings.ToLower(strings.TrimSpace(attrString(block.Attrs, "tagName"))); tn != "" {
+		switch tn {
+		case "div", "main", "section", "article":
+			tag = tn
+		}
 	}
-	return `<div class="` + html.EscapeString(classes) + `">` + body + `</div>`
+	classes := []string{"entry-content", "wp-block-post-content"}
+	if align := strings.TrimSpace(attrString(block.Attrs, "align")); align != "" {
+		classes = append(classes, "align"+sanitizeClassToken(align))
+	}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		classes = append(classes, cn)
+	}
+	return `<` + tag + ` class="` + html.EscapeString(strings.Join(classes, " ")) + `">` + body + `</` + tag + `>`
 }
 
 func (e *Env) renderPostExcerpt(block Block) string {
