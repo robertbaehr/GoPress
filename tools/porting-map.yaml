@@ -1121,11 +1121,27 @@ wp-login.php#language-switcher-post
   api: exported
 
 # P2.36: wp_is_numeric_array.
+# P2.91: deepen + rest_is_array / wp_parse_list / rest_sanitize_array.
 - prefix: wp-includes/functions.php#wp_is_numeric_array
   go: internal/wp/is_numeric_array.go
   status: partial
-  task: P2.36
+  task: P2.91
   api: exported
+  notes: "P2.91 — IsNumericArray + ParseList + RestIsArray + RestSanitizeArray"
+
+- prefix: wp-includes/functions.php#wp_parse_list
+  go: internal/wp/is_numeric_array.go
+  status: partial
+  task: P2.91
+  api: exported
+  notes: "P2.91 — wp_parse_list comma/whitespace split"
+
+- prefix: wp-includes/rest-api.php#rest_is_array
+  go: internal/wp/is_numeric_array.go
+  status: partial
+  task: P2.91
+  api: exported
+  notes: "P2.91 — rest_is_array / rest_sanitize_array helpers"
 
 # P2.37 / P2.87: wp_list_pluck / WP_List_Util::pluck.
 - prefix: wp-includes/functions.php#wp_list_pluck
