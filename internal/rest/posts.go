@@ -213,7 +213,7 @@ func parsePostsOffset(r *http.Request) (offset int, ok bool) {
 	return n, true
 }
 
-func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, author int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, offsetOverride int, useOffset bool) ([]Post, error) {
+func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, author int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, offsetOverride int, useOffset bool) ([]Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -245,10 +245,12 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 		PostNotIn:      exclude,
 		ParentIn:       parentIn,
 		ParentNotIn:    parentNotIn,
-		DateAfter:      dateAfter,
-		DateBefore:     dateBefore,
-		ModifiedAfter:  modifiedAfter,
-		ModifiedBefore: modifiedBefore,
+		DateAfter:          dateAfter,
+		DateBefore:         dateBefore,
+		ModifiedAfter:      modifiedAfter,
+		ModifiedBefore:     modifiedBefore,
+		PostFormatIn:       formatIn,
+		PostFormatStandard: formatStandard,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	rows, err := wp.GetPosts(c, args)
@@ -326,6 +328,52 @@ func parsePostsCategories(r *http.Request) []int64 {
 // Accepts comma-separated IDs and/or repeated query values.
 func parsePostsTags(r *http.Request) []int64 {
 	return parsePostsTermIDs(r, "tags")
+}
+
+// knownPostFormats mirrors get_post_format_slugs() (P4.96).
+var knownPostFormats = map[string]bool{
+	"standard": true,
+	"aside":    true,
+	"chat":     true,
+	"gallery":  true,
+	"link":     true,
+	"image":    true,
+	"quote":    true,
+	"status":   true,
+	"video":    true,
+	"audio":    true,
+}
+
+// parsePostsFormat reads REST ?format= (post_format tax_query, P4.96).
+// Returns post-format-* slugs plus whether standard (NOT EXISTS) is requested.
+func parsePostsFormat(r *http.Request) (formatIn []string, includeStandard bool) {
+	if r == nil {
+		return nil, false
+	}
+	q := r.URL.Query()
+	vals, ok := q["format"]
+	if !ok {
+		return nil, false
+	}
+	seen := map[string]bool{}
+	add := func(raw string) {
+		raw = strings.ToLower(strings.TrimSpace(raw))
+		if raw == "" || !knownPostFormats[raw] || seen[raw] {
+			return
+		}
+		seen[raw] = true
+		if raw == "standard" {
+			includeStandard = true
+			return
+		}
+		formatIn = append(formatIn, "post-format-"+raw)
+	}
+	for _, v := range vals {
+		for _, part := range strings.Split(v, ",") {
+			add(part)
+		}
+	}
+	return formatIn, includeStandard
 }
 
 // parsePostsInclude reads REST ?include= (maps to post__in, P4.90).
@@ -545,7 +593,7 @@ func parsePostsTermIDs(r *http.Request, key string) []int64 {
 	return out
 }
 
-func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, author int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string) (int, error) {
+func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, author int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
@@ -553,22 +601,24 @@ func countPosts(c *wp.Context, postType string, stickyFilter *bool, search strin
 		postType = "post"
 	}
 	args := wp.QueryArgs{
-		PostType:       postType,
-		PostStatus:     "publish",
-		PostStatuses:   statuses,
-		Search:         search,
-		Author:         author,
-		CategoryIn:     categoryIn,
-		TagIn:          tagIn,
-		NameIn:         slugs,
-		PostIn:         include,
-		PostNotIn:      exclude,
-		ParentIn:       parentIn,
-		ParentNotIn:    parentNotIn,
-		DateAfter:      dateAfter,
-		DateBefore:     dateBefore,
-		ModifiedAfter:  modifiedAfter,
-		ModifiedBefore: modifiedBefore,
+		PostType:           postType,
+		PostStatus:         "publish",
+		PostStatuses:       statuses,
+		Search:             search,
+		Author:             author,
+		CategoryIn:         categoryIn,
+		TagIn:              tagIn,
+		NameIn:             slugs,
+		PostIn:             include,
+		PostNotIn:          exclude,
+		ParentIn:           parentIn,
+		ParentNotIn:        parentNotIn,
+		DateAfter:          dateAfter,
+		DateBefore:         dateBefore,
+		ModifiedAfter:      modifiedAfter,
+		ModifiedBefore:     modifiedBefore,
+		PostFormatIn:       formatIn,
+		PostFormatStandard: formatStandard,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	return wp.CountPosts(c, args)

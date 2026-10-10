@@ -58,6 +58,12 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 	slugs := parsePostsSlug(r)
 	include := parsePostsInclude(r)
 	exclude := parsePostsExclude(r)
+	// P4.96: format= post_format filter (posts only).
+	var formatIn []string
+	var formatStandard bool
+	if postType == "post" {
+		formatIn, formatStandard = parsePostsFormat(r)
+	}
 	// P4.93: parent / parent_exclude for hierarchical types (pages).
 	var parentIn, parentNotIn []int64
 	if postType == "page" {
@@ -77,7 +83,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		})
 		return
 	}
-	total, err := countPosts(c, postType, stickyFilter, search, author, categories, tags, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore)
+	total, err := countPosts(c, postType, stickyFilter, search, author, categories, tags, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",
@@ -86,7 +92,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		})
 		return
 	}
-	posts, err := listPostsPaged(c, postType, perPage, page, edit, stickyFilter, orderby, order, search, author, categories, tags, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, offset, useOffset)
+	posts, err := listPostsPaged(c, postType, perPage, page, edit, stickyFilter, orderby, order, search, author, categories, tags, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, offset, useOffset)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",

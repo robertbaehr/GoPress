@@ -4715,3 +4715,18 @@
   task: P5.80
   api: n/a
   notes: "P5.80 — REST block-types library entry for core/shortcode"
+
+# P4.96: REST posts ?format= (post_format tax_query).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#format
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.96
+  api: n/a
+  notes: "P4.96 — format= → PostFormatIn / PostFormatStandard (standard = NOT EXISTS)"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#format-query
+  go: internal/wp/query.go
+  status: partial
+  task: P4.96
+  api: n/a
+  notes: "P4.96 — appendPostFormatFilter EXISTS/NOT EXISTS on post_format"
