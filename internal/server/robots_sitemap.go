@@ -93,29 +93,55 @@ func serveSitemapDisabled(w http.ResponseWriter) {
 	_, _ = w.Write([]byte("404 Not Found\n"))
 }
 
-// serveSitemapIndex writes /wp-sitemap.xml (WP sitemap index; P3.14).
+// sitemapIndexProvider lists object_type + subtype + page for index entries (P3.91).
+type sitemapIndexProvider struct {
+	objectType, subtype string
+	page                int
+	loc                 string
+}
+
+// serveSitemapIndex writes /wp-sitemap.xml (WP sitemap index; P3.14 / P3.91).
+// Applies wp_sitemaps_index_entry per provider page (loc + optional lastmod).
 func serveSitemapIndex(w http.ResponseWriter, c *wp.Context) {
 	if !sitemapsEnabled(c) {
 		serveSitemapDisabled(w)
 		return
 	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
-	entries := []string{
-		home + "/wp-sitemap-posts-post-1.xml",
-		home + "/wp-sitemap-posts-page-1.xml",
-		home + "/wp-sitemap-taxonomies-category-1.xml",
-		home + "/wp-sitemap-taxonomies-post_tag-1.xml",
-		home + "/wp-sitemap-taxonomies-post_format-1.xml",
-		home + "/wp-sitemap-users-1.xml",
+	providers := []sitemapIndexProvider{
+		{"post", "post", 1, home + "/wp-sitemap-posts-post-1.xml"},
+		{"post", "page", 1, home + "/wp-sitemap-posts-page-1.xml"},
+		{"term", "category", 1, home + "/wp-sitemap-taxonomies-category-1.xml"},
+		{"term", "post_tag", 1, home + "/wp-sitemap-taxonomies-post_tag-1.xml"},
+		{"term", "post_format", 1, home + "/wp-sitemap-taxonomies-post_format-1.xml"},
+		{"user", "", 1, home + "/wp-sitemap-users-1.xml"},
 	}
 	// Compact XML matches WP WP_Sitemaps_Renderer output (no pretty-print).
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
 	b.WriteString(`<sitemapindex xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`)
-	for _, loc := range entries {
+	for _, p := range providers {
+		entry := map[string]any{"loc": p.loc}
+		if c != nil && c.Hooks != nil {
+			if v := c.Hooks.ApplyFilters("wp_sitemaps_index_entry", entry, p.objectType, p.subtype, p.page); v != nil {
+				if m, ok := v.(map[string]any); ok {
+					entry = m
+				}
+			}
+		}
+		loc, _ := entry["loc"].(string)
+		if strings.TrimSpace(loc) == "" {
+			continue
+		}
 		b.WriteString("<sitemap><loc>")
 		b.WriteString(xmlEscape(loc))
-		b.WriteString("</loc></sitemap>")
+		b.WriteString("</loc>")
+		if lastmod, _ := entry["lastmod"].(string); strings.TrimSpace(lastmod) != "" {
+			b.WriteString("<lastmod>")
+			b.WriteString(xmlEscape(lastmod))
+			b.WriteString("</lastmod>")
+		}
+		b.WriteString("</sitemap>")
 	}
 	b.WriteString("</sitemapindex>\n")
 	w.Header().Set("Content-Type", "application/xml; charset=UTF-8")
@@ -153,12 +179,28 @@ func serveSitemapPosts(w http.ResponseWriter, c *wp.Context, postType string) {
 		if loc == "" {
 			continue
 		}
+		entry := map[string]any{"loc": loc}
+		if p.ModifiedGMT != "" && p.ModifiedGMT != "0000-00-00 00:00:00" {
+			entry["lastmod"] = mysqlToW3C(p.ModifiedGMT)
+		}
+		// P3.91: wp_sitemaps_posts_entry filter (post object not passed; subset).
+		if c != nil && c.Hooks != nil {
+			if v := c.Hooks.ApplyFilters("wp_sitemaps_posts_entry", entry, p.ID, postType); v != nil {
+				if m, ok := v.(map[string]any); ok {
+					entry = m
+				}
+			}
+		}
+		loc, _ = entry["loc"].(string)
+		if strings.TrimSpace(loc) == "" {
+			continue
+		}
 		b.WriteString("\t<url>\n\t\t<loc>")
 		b.WriteString(xmlEscape(loc))
 		b.WriteString("</loc>\n")
-		if p.ModifiedGMT != "" && p.ModifiedGMT != "0000-00-00 00:00:00" {
+		if lastmod, _ := entry["lastmod"].(string); strings.TrimSpace(lastmod) != "" {
 			b.WriteString("\t\t<lastmod>")
-			b.WriteString(xmlEscape(mysqlToW3C(p.ModifiedGMT)))
+			b.WriteString(xmlEscape(lastmod))
 			b.WriteString("</lastmod>\n")
 		}
 		b.WriteString("\t</url>\n")
