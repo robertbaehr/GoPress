@@ -41,7 +41,7 @@
 - prefix: wp-login.php
   go: internal/login
   status: partial
-  task: P6.10
+  task: P6.11
   api: n/a
 
 - prefix: wp-cron.php
