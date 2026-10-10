@@ -1471,6 +1471,7 @@ func (e *Env) renderQueryPaginationNumbers(block Block) string {
 	return b.String()
 }
 
+// renderPostAuthorName renders core/post-author-name (P5.46 / P5.91).
 func (e *Env) renderPostAuthorName(block Block) string {
 	e = e.ensure()
 	if e.currentPost == nil || e.AuthorName == nil {
@@ -1490,11 +1491,18 @@ func (e *Env) renderPostAuthorName(block Block) string {
 			inner = `<a class="wp-block-post-author-name__link" href="` + html.EscapeString(link) + `" target="` + html.EscapeString(target) + `">` + inner + `</a>`
 		}
 	}
-	classes := "wp-block-post-author-name"
-	if align, ok := block.Attrs["textAlign"].(string); ok && strings.TrimSpace(align) != "" {
-		classes += " has-text-align-" + strings.TrimSpace(align)
+	// P5.91: textAlign / has-link-color / className on wrapper.
+	classes := []string{"wp-block-post-author-name"}
+	if ta := strings.TrimSpace(attrString(block.Attrs, "textAlign")); ta != "" {
+		classes = append(classes, "has-text-align-"+sanitizeClassToken(ta))
 	}
-	return `<div class="` + html.EscapeString(classes) + `">` + inner + `</div>`
+	if hasLinkColorAttr(block.Attrs) {
+		classes = append(classes, "has-link-color")
+	}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		classes = append(classes, cn)
+	}
+	return `<div class="` + html.EscapeString(strings.Join(classes, " ")) + `">` + inner + `</div>`
 }
 
 // renderPostAuthorBiography renders core/post-author-biography (P5.46).
@@ -1514,7 +1522,7 @@ func (e *Env) renderPostAuthorBiography(block Block) string {
 	return `<div class="` + html.EscapeString(classes) + `">` + html.EscapeString(bio) + `</div>`
 }
 
-// renderAvatar renders core/avatar for the current post author (P5.46).
+// renderAvatar renders core/avatar for the current post author (P5.46 / P5.91).
 func (e *Env) renderAvatar(block Block) string {
 	e = e.ensure()
 	size := int64(96)
@@ -1559,7 +1567,18 @@ func (e *Env) renderAvatar(block Block) string {
 		}
 		inner = `<a href="` + html.EscapeString(link) + `" target="` + html.EscapeString(target) + `"` + aria + ` class="wp-block-avatar__link">` + img + `</a>`
 	}
-	return `<div class="wp-block-avatar">` + inner + `</div>`
+	// P5.91: textAlign / has-link-color / className on wrapper.
+	classes := []string{"wp-block-avatar"}
+	if ta := strings.TrimSpace(attrString(block.Attrs, "textAlign")); ta != "" {
+		classes = append(classes, "has-text-align-"+sanitizeClassToken(ta))
+	}
+	if hasLinkColorAttr(block.Attrs) {
+		classes = append(classes, "has-link-color")
+	}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		classes = append(classes, cn)
+	}
+	return `<div class="` + html.EscapeString(strings.Join(classes, " ")) + `">` + inner + `</div>`
 }
 
 func (e *Env) authorArchiveLink(postID int64) string {
