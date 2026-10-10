@@ -827,6 +827,13 @@
   task: P4.47
   api: n/a
 
+# P4.66: REST DELETE /wp/v2/media/{id} (force=true).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-attachments-controller.php#delete
+  go: internal/rest/media_write.go
+  status: partial
+  task: P4.66
+  api: n/a
+
 # P7.32: attachment edit screen stub (post.php for media).
 - prefix: wp-admin/post.php#attachment
   go: internal/admin/admin.go

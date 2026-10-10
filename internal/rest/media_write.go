@@ -24,6 +24,8 @@ func (s *Server) serveMediaItem(w http.ResponseWriter, r *http.Request, c *wp.Co
 		s.getMediaItem(w, r, c, id)
 	case http.MethodPost, http.MethodPut, http.MethodPatch:
 		s.updateMedia(w, r, c, id)
+	case http.MethodDelete:
+		s.deleteMedia(w, r, c, id)
 	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
@@ -140,6 +142,87 @@ func (s *Server) updateMedia(w http.ResponseWriter, r *http.Request, c *wp.Conte
 	}
 	w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
 	writeJSON(w, http.StatusOK, item)
+}
+
+// deleteMedia handles DELETE /wp/v2/media/{id} (P4.66).
+// Attachments do not support trashing by default (MEDIA_TRASH off); force=true is required.
+func (s *Server) deleteMedia(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
+	if c == nil || c.CurrentUser == nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]any{
+			"code":    "rest_cannot_delete",
+			"message": "Sorry, you are not allowed to delete this post.",
+			"data":    map[string]any{"status": 401},
+		})
+		return
+	}
+	existing, err := getMediaByID(c, id)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_media_query",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	if existing == nil {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"code":    "rest_post_invalid_id",
+			"message": "Invalid post ID.",
+			"data":    map[string]any{"status": 404},
+		})
+		return
+	}
+	if !c.UserCan(c.CurrentUser, "delete_post", id) {
+		writeJSON(w, http.StatusForbidden, map[string]any{
+			"code":    "rest_cannot_delete",
+			"message": "Sorry, you are not allowed to delete this post.",
+			"data":    map[string]any{"status": 403},
+		})
+		return
+	}
+	force := r.URL.Query().Get("force") == "true"
+	if !force {
+		writeJSON(w, http.StatusNotImplemented, map[string]any{
+			"code":    "rest_trash_not_supported",
+			"message": "The post does not support trashing. Set 'force=true' to delete.",
+			"data":    map[string]any{"status": 501},
+		})
+		return
+	}
+	if err := hardDeleteMedia(c, id); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_cannot_delete",
+			"message": "The post cannot be deleted.",
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"deleted":  true,
+		"previous": existing,
+	})
+}
+
+func hardDeleteMedia(c *wp.Context, id int64) error {
+	if c == nil || c.DB == nil || id <= 0 {
+		return fmt.Errorf("invalid delete")
+	}
+	if c.Meta != nil {
+		for _, key := range []string{
+			"_wp_attached_file", "_wp_attachment_metadata", "_wp_attachment_image_alt",
+		} {
+			_, _ = c.Meta.DeleteMetadata(wp.MetaPost, id, key, "")
+		}
+	}
+	q, args, err := c.DB.Prepare(
+		"DELETE FROM "+c.DB.Posts()+" WHERE ID = %d AND post_type = %s",
+		id, "attachment",
+	)
+	if err != nil {
+		return err
+	}
+	_, err = c.DB.Exec(q, args...)
+	return err
 }
 
 func decodeMediaWriteBody(r *http.Request) (mediaWriteBody, error) {
