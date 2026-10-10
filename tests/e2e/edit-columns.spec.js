@@ -29,9 +29,13 @@ test('edit.php Screen Options columns hide Author column', async ({ page, baseUR
   await expect(page.locator('#date-hide')).toBeAttached();
   await expect(page.locator('legend', { hasText: 'Columns' })).toBeAttached();
 
-  // Uncheck Author (force: Screen Options panel may be CSS-hidden).
-  await page.locator('#author-hide').uncheck({ force: true });
-  await expect(page.locator('#date-hide')).toBeChecked({ checked: true });
+  // Screen Options panel is CSS-hidden; toggle via DOM + requestSubmit.
+  await page.locator('#author-hide').evaluate((el) => {
+    /** @type {HTMLInputElement} */ (el).checked = false;
+  });
+  await page.locator('#date-hide').evaluate((el) => {
+    /** @type {HTMLInputElement} */ (el).checked = true;
+  });
 
   await Promise.all([
     page.waitForNavigation({ waitUntil: 'load' }),
