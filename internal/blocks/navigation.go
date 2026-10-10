@@ -188,17 +188,6 @@ func (e *Env) renderNavigationLink(block Block) string {
 	return navItemHTML(label, url)
 }
 
-func renderNavLinks(links []NavLink) string {
-	var b strings.Builder
-	for _, link := range links {
-		if strings.TrimSpace(link.Label) == "" {
-			continue
-		}
-		b.WriteString(navItemHTML(link.Label, link.URL))
-	}
-	return b.String()
-}
-
 func navItemHTML(label, url string) string {
 	var b strings.Builder
 	b.WriteString(`<li class="wp-block-navigation-item wp-block-navigation-link"><a class="wp-block-navigation-item__content"`)
