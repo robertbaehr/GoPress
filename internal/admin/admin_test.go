@@ -115,6 +115,13 @@ func TestAdminScreensLoggedIn(t *testing.T) {
 		{"/wp-admin/nav-menus.php", "menu-management"},
 		{"/wp-admin/", "At a Glance"},
 	}
+	chromed := map[string]bool{
+		"/wp-admin/":                    true,
+		"/wp-admin/edit.php":            true,
+		"/wp-admin/options-general.php": true,
+		"/wp-admin/plugins.php":         true,
+		"/wp-admin/profile.php":         true,
+	}
 	for _, tc := range cases {
 		req := httptest.NewRequest(http.MethodGet, tc.path, nil)
 		req.AddCookie(ck)
@@ -123,8 +130,17 @@ func TestAdminScreensLoggedIn(t *testing.T) {
 		if rec.Code != http.StatusOK {
 			t.Fatalf("%s status=%d body=%q", tc.path, rec.Code, rec.Body.String())
 		}
-		if !strings.Contains(rec.Body.String(), tc.want) {
-			t.Fatalf("%s missing %q in %q", tc.path, tc.want, rec.Body.String())
+		body := rec.Body.String()
+		if !strings.Contains(body, tc.want) {
+			t.Fatalf("%s missing %q in %q", tc.path, tc.want, body)
+		}
+		if chromed[tc.path] {
+			if !strings.Contains(body, `id="wpadminbar"`) || !strings.Contains(body, `id="adminmenumain"`) || !strings.Contains(body, `id="wpfooter"`) {
+				t.Fatalf("%s missing shared admin chrome: %q", tc.path, body[:min(400, len(body))])
+			}
+			if ct := rec.Header().Get("Content-Type"); ct != "text/html; charset=UTF-8" {
+				t.Fatalf("%s Content-Type=%q", tc.path, ct)
+			}
 		}
 	}
 }

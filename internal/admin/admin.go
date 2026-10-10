@@ -116,15 +116,12 @@ func (h *Handler) serveDashboard(w http.ResponseWriter, r *http.Request, c *wp.C
 	posts := countPostsByTypeStatus(c, "post", "publish")
 	pages := countPostsByTypeStatus(c, "page", "publish")
 	comments := countComments(c, "1")
-	writeHTML(w, http.StatusOK, fmt.Sprintf(`<!DOCTYPE html>
-<html>
-<head>
-<title>Dashboard &lsaquo; %s &#8212; WordPress</title>
-<script>var wpApiSettings = {"root":"/wp-json/","nonce":"%s"};</script>
+	ch := newAdminChrome(c, "Dashboard", "index-php")
+	ch.HeadExtra = fmt.Sprintf(
+		`<script>var wpApiSettings = {"root":"/wp-json/","nonce":"%s"};</script>
 <script>var heartbeatSettings = {"nonce":"%s"};</script>
-</head>
-<body class="wp-admin">
-%s<h1>Dashboard</h1>
+`, html.EscapeString(restNonce), html.EscapeString(hbNonce))
+	inner := fmt.Sprintf(`%s<h1>Dashboard</h1>
 <p>%s</p>
 <div id="dashboard-widgets-wrap">
 <div id="dashboard-widgets" class="metabox-holder">
@@ -140,9 +137,8 @@ func (h *Handler) serveDashboard(w http.ResponseWriter, r *http.Request, c *wp.C
 </div>
 </div>
 </div>
-</body>
-</html>
-`, html.EscapeString(blogname), html.EscapeString(restNonce), html.EscapeString(hbNonce), adminNoticesHTML(c), html.EscapeString(blogname), posts, pages, comments))
+`, adminNoticesHTML(c), html.EscapeString(blogname), posts, pages, comments)
+	writeAdminPage(w, c, ch, inner)
 }
 
 func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -164,13 +160,6 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		heading = "Pages"
 	}
 	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
-	b.WriteString("<title>")
-	b.WriteString(html.EscapeString(heading))
-	b.WriteString(" &lsaquo; ")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
 	b.WriteString("<h1>")
 	b.WriteString(html.EscapeString(heading))
 	b.WriteString("</h1>\n")
@@ -205,8 +194,9 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		b.WriteString(html.EscapeString(displayPostStatus(p.Status)))
 		b.WriteString("</td></tr>\n")
 	}
-	b.WriteString("</tbody>\n</table>\n</body>\n</html>\n")
-	writeHTML(w, http.StatusOK, b.String())
+	b.WriteString("</tbody>\n</table>\n")
+	_ = blogname
+	writeAdminPage(w, c, newAdminChrome(c, heading, "edit-php"), b.String())
 }
 
 func displayPostStatus(status string) string {
@@ -247,11 +237,6 @@ func displayPostDateLabel(status string) string {
 func (h *Handler) serveOptionsGeneral(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
 	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
-	b.WriteString("<title>General Settings &lsaquo; ")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin\">\n")
 	b.WriteString("<h1>General Settings</h1>\n")
 	b.WriteString("<form method=\"post\" action=\"options.php\">\n")
 	b.WriteString("<table class=\"form-table\" role=\"presentation\">\n")
@@ -261,8 +246,8 @@ func (h *Handler) serveOptionsGeneral(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString("\" class=\"regular-text\"></td>\n</tr>\n")
 	b.WriteString("</table>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Save Changes\"></p>\n")
-	b.WriteString("</form>\n</body>\n</html>\n")
-	writeHTML(w, http.StatusOK, b.String())
+	b.WriteString("</form>\n")
+	writeAdminPage(w, c, newAdminChrome(c, "General Settings", "options-general-php"), b.String())
 }
 
 // serveOptionsWriting is the Settings → Writing screen stub (P7.13).
@@ -348,21 +333,15 @@ func (h *Handler) serveOptionsReading(w http.ResponseWriter, r *http.Request, c 
 }
 
 func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	blogname := optionString(c, "blogname", "GoPress")
 	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
-	b.WriteString("<title>Plugins &lsaquo; ")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin\">\n")
 	b.WriteString("<h1>Plugins</h1>\n")
 	b.WriteString("<table class=\"wp-list-table widefat plugins\">\n")
 	b.WriteString("<thead><tr><th scope=\"col\">Plugin</th><th scope=\"col\">Description</th></tr></thead>\n")
 	b.WriteString("<tbody id=\"the-list\">\n")
 	b.WriteString("<tr class=\"inactive\"><td class=\"plugin-title\"><strong>No plugins installed</strong></td>")
 	b.WriteString("<td class=\"column-description desc\"><p>GoPress plugin management stub (P7.1).</p></td></tr>\n")
-	b.WriteString("</tbody>\n</table>\n</body>\n</html>\n")
-	writeHTML(w, http.StatusOK, b.String())
+	b.WriteString("</tbody>\n</table>\n")
+	writeAdminPage(w, c, newAdminChrome(c, "Plugins", "plugins-php"), b.String())
 }
 
 func (h *Handler) serveProfile(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -377,11 +356,6 @@ func (h *Handler) serveProfile(w http.ResponseWriter, r *http.Request, c *wp.Con
 		display = user.DisplayName
 	}
 	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
-	b.WriteString("<title>Profile &lsaquo; ")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin\">\n")
 	b.WriteString("<h1>Profile</h1>\n")
 	b.WriteString("<form id=\"your-profile\">\n")
 	b.WriteString("<h2>Personal Options</h2>\n")
@@ -395,8 +369,9 @@ func (h *Handler) serveProfile(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString("<tr><th><label for=\"display_name\">Display name</label></th><td><input type=\"text\" name=\"display_name\" id=\"display_name\" value=\"")
 	b.WriteString(html.EscapeString(display))
 	b.WriteString("\" class=\"regular-text\"></td></tr>\n")
-	b.WriteString("</table>\n</form>\n</body>\n</html>\n")
-	writeHTML(w, http.StatusOK, b.String())
+	b.WriteString("</table>\n</form>\n")
+	_ = blogname
+	writeAdminPage(w, c, newAdminChrome(c, "Profile", "profile-php"), b.String())
 }
 
 func (h *Handler) serveUpload(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -992,7 +967,7 @@ func listUsers(c *wp.Context, limit int) ([]userRow, error) {
 }
 
 func writeHTML(w http.ResponseWriter, status int, body string) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(status)
 	_, _ = w.Write([]byte(body))
 }
