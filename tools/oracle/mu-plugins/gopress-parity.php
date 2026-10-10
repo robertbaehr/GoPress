@@ -47,3 +47,51 @@ function gopress_oracle_deny_unsupported_caps( $caps, $cap, $user_id, $args ) {
 }
 
 add_filter( 'map_meta_cap', 'gopress_oracle_deny_unsupported_caps', 10, 4 );
+
+/**
+ * Emit WXR-style domain=taxonomy on RSS2 item categories (GoPress P3.71).
+ *
+ * Replaces get_the_category_rss output for rss2 so the oracle matches GoPress
+ * feedCategory.Domain (category / post_tag). Atom and RDF are unchanged.
+ *
+ * @param string $the_list Category markup from get_the_category_rss.
+ * @param string $type     Feed type (rss2, atom, rdf, …).
+ * @return string
+ */
+function gopress_oracle_category_rss_domain( $the_list, $type ) {
+	if ( 'atom' === $type || 'rdf' === $type ) {
+		return $the_list;
+	}
+
+	$categories = get_the_category();
+	$tags       = get_the_tags();
+	$out        = '';
+	$seen       = array();
+	$charset    = get_option( 'blog_charset' );
+
+	if ( ! empty( $categories ) ) {
+		foreach ( (array) $categories as $category ) {
+			$name = sanitize_term_field( 'name', $category->name, $category->term_id, 'category', 'rss' );
+			if ( isset( $seen[ $name ] ) ) {
+				continue;
+			}
+			$seen[ $name ] = true;
+			$out          .= "\t\t<category domain=\"category\"><![CDATA[" . html_entity_decode( $name, ENT_COMPAT, $charset ) . "]]></category>\n";
+		}
+	}
+
+	if ( ! empty( $tags ) ) {
+		foreach ( (array) $tags as $tag ) {
+			$name = sanitize_term_field( 'name', $tag->name, $tag->term_id, 'post_tag', 'rss' );
+			if ( isset( $seen[ $name ] ) ) {
+				continue;
+			}
+			$seen[ $name ] = true;
+			$out          .= "\t\t<category domain=\"post_tag\"><![CDATA[" . html_entity_decode( $name, ENT_COMPAT, $charset ) . "]]></category>\n";
+		}
+	}
+
+	return $out;
+}
+
+add_filter( 'the_category_rss', 'gopress_oracle_category_rss_domain', 10, 2 );

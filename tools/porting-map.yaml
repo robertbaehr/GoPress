@@ -4452,3 +4452,25 @@
   task: P2.73
   api: exported
   notes: "P2.73 — empty-cookie path via request logged_in cookie"
+
+# P3.71: feed item categories emit domain=taxonomy (WXR-style).
+- prefix: wp-includes/feed.php#get_the_category_rss-domain
+  go: internal/server/front.go
+  status: partial
+  task: P3.71
+  api: internal
+  notes: "P3.71 — feedCategory.Domain category|post_tag on RSS2 <category domain>"
+
+- prefix: wp-includes/feed-rss2.php#category-domain
+  go: internal/server/front.go
+  status: partial
+  task: P3.71
+  api: n/a
+  notes: "P3.71 — RSS2 item category domain attribute"
+
+- prefix: tools/oracle/mu-plugins/gopress-parity.php#category-domain
+  go: tools/oracle/mu-plugins/gopress-parity.php
+  status: partial
+  task: P3.71
+  api: n/a
+  notes: "P3.71 — oracle the_category_rss filter matches Go domain attrs"

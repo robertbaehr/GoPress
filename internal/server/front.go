@@ -1856,8 +1856,11 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 		b.WriteString(xmlEscape(feedRFC822(c, p.DateGMT, p.Date)))
 		b.WriteString("</pubDate>\n")
 		for _, cat := range p.Categories {
-			b.WriteString("\t\t\t\t<category><![CDATA[")
-			b.WriteString(cat)
+			// P3.71: domain attribute is the taxonomy (WXR-style).
+			b.WriteString("\t\t\t\t<category domain=\"")
+			b.WriteString(xmlEscape(cat.Domain))
+			b.WriteString("\"><![CDATA[")
+			b.WriteString(cat.Name)
 			b.WriteString("]]></category>\n")
 		}
 		// P3.62: isPermaLink=false even when GUID is a pretty permalink URL.
@@ -2010,7 +2013,7 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 			b.WriteString("\t\t<category scheme=\"")
 			b.WriteString(xmlEscape(home))
 			b.WriteString("\" term=\"")
-			b.WriteString(xmlEscape(cat))
+			b.WriteString(xmlEscape(cat.Name))
 			b.WriteString("\" />\n")
 		}
 		b.WriteString("\t\t<summary type=\"html\"><![CDATA[")
@@ -2143,7 +2146,7 @@ func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		b.WriteString("</dc:date>\n")
 		for _, cat := range p.Categories {
 			b.WriteString("\t\t\t\t<dc:subject><![CDATA[")
-			b.WriteString(cat)
+			b.WriteString(cat.Name)
 			b.WriteString("]]></dc:subject>\n")
 		}
 		b.WriteString("\n")
@@ -2204,11 +2207,17 @@ type feedMediaContent struct {
 	Length string
 }
 
+// feedCategory is one RSS/Atom/RDF item category (get_the_category_rss, P3.59/P3.71).
+type feedCategory struct {
+	Name   string
+	Domain string // taxonomy slug: "category" or "post_tag" (WXR-style domain)
+}
+
 type feedPost struct {
 	wp.Post
 	AuthorName   string
 	AuthorURL    string
-	Categories   []string
+	Categories   []feedCategory
 	CommentCount int64
 	ExcerptRSS   string
 	ContentRSS   string
@@ -2231,7 +2240,7 @@ func latestFeedPosts(c *wp.Context, limit int, authorID int64) ([]feedPost, erro
 	for _, p := range posts {
 		fp := feedPost{Post: p}
 		fp.AuthorName, fp.AuthorURL = feedAuthor(c, p.Author)
-		fp.Categories = feedCategoryNames(c, p.ID)
+		fp.Categories = feedCategories(c, p.ID)
 		fp.CommentCount = feedCommentCount(c, p.ID)
 		fp.ExcerptRSS = feedExcerptRSS(p)
 		// Feed content:encoded follows the_content_feed (no post-save KSES strip),
@@ -2715,19 +2724,22 @@ func rss2SiteIconImage(c *wp.Context, title, home string) string {
 	return b.String()
 }
 
-// feedCategoryNames returns category + tag names for a post (get_the_category_rss, P3.59).
-func feedCategoryNames(c *wp.Context, postID int64) []string {
-	out := []string{}
+// feedCategories returns category + tag terms for a post (get_the_category_rss, P3.59/P3.71).
+// Domain is the taxonomy slug (category / post_tag), matching WXR category domain=.
+func feedCategories(c *wp.Context, postID int64) []feedCategory {
+	out := []feedCategory{}
 	if c == nil || c.DB == nil || postID <= 0 {
 		return out
 	}
 	// WP get_the_category_rss merges get_the_category() and get_the_tags().
+	// Categories first, then tags (stable unique-by-name like PHP array_unique).
 	q, args, err := c.DB.Prepare(
-		"SELECT t.name FROM "+c.DB.Terms()+" t "+
+		"SELECT t.name, tt.taxonomy FROM "+c.DB.Terms()+" t "+
 			"INNER JOIN "+c.DB.TermTaxonomy()+" tt ON t.term_id = tt.term_id "+
 			"INNER JOIN "+c.DB.TermRelationships()+" tr ON tr.term_taxonomy_id = tt.term_taxonomy_id "+
-			"WHERE tr.object_id = %d AND tt.taxonomy IN (%s, %s) ORDER BY t.name ASC",
-		postID, "category", "post_tag",
+			"WHERE tr.object_id = %d AND tt.taxonomy IN (%s, %s) "+
+			"ORDER BY FIELD(tt.taxonomy, %s, %s), t.name ASC",
+		postID, "category", "post_tag", "category", "post_tag",
 	)
 	if err != nil {
 		return out
@@ -2738,21 +2750,41 @@ func feedCategoryNames(c *wp.Context, postID int64) []string {
 	}
 	seen := map[string]bool{}
 	for _, row := range rows {
-		name := ""
-		switch v := row["name"].(type) {
-		case string:
-			name = v
-		case []byte:
-			name = string(v)
-		}
-		name = strings.TrimSpace(name)
+		name := strings.TrimSpace(asFeedString(row["name"]))
+		domain := strings.TrimSpace(asFeedString(row["taxonomy"]))
 		if name == "" || seen[name] {
 			continue
 		}
+		if domain != "category" && domain != "post_tag" {
+			domain = "category"
+		}
 		seen[name] = true
-		out = append(out, name)
+		out = append(out, feedCategory{Name: name, Domain: domain})
 	}
 	return out
+}
+
+// feedCategoryNames returns unique category + tag names (P3.59).
+func feedCategoryNames(c *wp.Context, postID int64) []string {
+	cats := feedCategories(c, postID)
+	out := make([]string, 0, len(cats))
+	for _, cat := range cats {
+		out = append(out, cat.Name)
+	}
+	return out
+}
+
+func asFeedString(v any) string {
+	switch t := v.(type) {
+	case string:
+		return t
+	case []byte:
+		return string(t)
+	case nil:
+		return ""
+	default:
+		return fmt.Sprint(t)
+	}
 }
 
 // feedCommentsLink builds the RSS <comments> URL (comments_link_feed / get_comments_link, P3.61).
