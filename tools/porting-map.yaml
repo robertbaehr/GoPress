@@ -966,6 +966,14 @@
   task: P7.34
   api: n/a
 
+# P7.62: activate theme on themes.php (action=activate + switch_theme).
+- prefix: wp-admin/themes.php#activate
+  go: internal/wp/theme_switch.go
+  status: partial
+  task: P7.62
+  api: n/a
+  notes: "P7.62 — Activate link + nonce; SwitchTheme updates stylesheet/template/current_theme"
+
 # P2.29: sanitize_file_name.
 - prefix: wp-includes/formatting.php#sanitize_file_name
   go: internal/wp/formatting.go
