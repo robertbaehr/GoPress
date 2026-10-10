@@ -148,6 +148,43 @@ func TestInterimLoginPostBodyOnly(t *testing.T) {
 	}
 }
 
+// TestInterimLoginShakeOnBadPassword covers P6.29: interim auth failures shake.
+func TestInterimLoginShakeOnBadPassword(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	form := url.Values{}
+	form.Set("log", "admin")
+	form.Set("pwd", "wrong-password")
+	form.Set("interim-login", "1")
+	form.Set("testcookie", "1")
+	req := httptest.NewRequest(http.MethodPost, "/wp-login.php?interim-login=1", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: "wordpress_test_cookie", Value: "WP Cookie check"})
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "interim-login") {
+		t.Fatalf("expected interim-login body class on error: %q", body[:min(400, len(body))])
+	}
+	if strings.Contains(body, "interim-login-success") {
+		t.Fatalf("bad password must not succeed interim login")
+	}
+	if !strings.Contains(body, `id="login_error"`) {
+		t.Fatalf("expected login_error on interim failure: %q", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, "document.querySelector('form').classList.add('shake')") {
+		t.Fatalf("expected interim login shake script: %q", body[:min(600, len(body))])
+	}
+	if !strings.Contains(body, `name="interim-login"`) {
+		t.Fatalf("expected interim hidden field preserved: %q", body[:min(600, len(body))])
+	}
+}
+
 func TestInterimLoginSuccess(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()

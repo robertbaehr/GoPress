@@ -421,7 +421,8 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	}
 	b.WriteString("\t\t\t</div>\n")
 	b.WriteString("\t\t\n")
-	// P6.28: wp_shake_js on shake_error_codes (adds .shake to the form).
+	// P6.28 / P6.29: wp_shake_js on shake_error_codes (adds .shake to the form),
+	// including interim-login auth failures.
 	if shake && errMsg != "" {
 		writeLoginShakeJS(&b)
 	}
@@ -1013,7 +1014,8 @@ func loginShouldShake(code string) bool {
 	return shakeLoginErrorCodes[code]
 }
 
-// writeLoginShakeJS emits wp_shake_js inline script (P6.28).
+// writeLoginShakeJS emits wp_shake_js inline script (P6.28 / P6.29).
+// Same script for standard and interim-login forms (WP login_footer).
 func writeLoginShakeJS(b *strings.Builder) {
 	if b == nil {
 		return
