@@ -30,12 +30,37 @@ func (s *Server) serveWidgetTypeItem(w http.ResponseWriter, r *http.Request, c *
 }
 
 func (s *Server) serveSidebars(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	// P4.103: sidebars collection — same permission gate as widgets; empty when authorized.
 	s.serveWidgetsGoneCollection(w, r, c)
 }
 
 func (s *Server) serveSidebarItem(w http.ResponseWriter, r *http.Request, c *wp.Context, id string) {
 	_ = id
-	s.serveWidgetsItemOrWrite(w, r, c)
+	// P4.103: no classic sidebars are registered (widgets out of scope).
+	// Authorized GET/HEAD → rest_sidebar_invalid_id (404); writes stay disabled.
+	if !canManageWidgets(c) {
+		s.serveWidgetsCannotManage(w, r, c)
+		return
+	}
+	switch r.Method {
+	case http.MethodGet, http.MethodHead:
+		w.Header().Set("Allow", "GET")
+		w.Header().Set("X-GoPress-Widgets", "disabled")
+		if r.Method == http.MethodHead {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"code":    "rest_sidebar_invalid_id",
+			"message": "No sidebar exists with that id.",
+			"data":    map[string]any{"status": 404},
+		})
+	case http.MethodOptions:
+		w.Header().Set("Allow", "GET")
+		w.WriteHeader(http.StatusOK)
+	default:
+		s.serveWidgetsDisabled(w, r, c)
+	}
 }
 
 func (s *Server) serveWidgetsGoneCollection(w http.ResponseWriter, r *http.Request, c *wp.Context) {
