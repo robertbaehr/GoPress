@@ -3,19 +3,19 @@
 # remove_by is YYYY-MM-DD.
 
 - id: admin-dashboard
-  reason: Admin dashboard stub until full wp-admin chrome (P7)
+  reason: Admin dashboard body still stub despite shared chrome (P7.15)
   remove_by: "2027-06-01"
 
 - id: admin-edit-posts
-  reason: Posts list table stub until list-table port
+  reason: Posts list table body still stub despite shared chrome (P7.15)
   remove_by: "2027-06-01"
 
 - id: admin-options-general
-  reason: Settings form stub until options UI port
+  reason: Settings form body still stub despite shared chrome (P7.15)
   remove_by: "2027-06-01"
 
 - id: admin-plugins
-  reason: Plugins screen stub
+  reason: Plugins screen body still stub despite shared chrome (P7.15)
   remove_by: "2027-06-01"
 
 - id: front-home
@@ -28,10 +28,6 @@
 
 - id: front-hello-world
   reason: Singular theme HTML not yet byte-parity after canonical redirect
-  remove_by: "2027-06-01"
-
-- id: front-feed
-  reason: RSS channel fields/order still diverge from WP feed templates
   remove_by: "2027-06-01"
 
 - id: rest-index-anon
