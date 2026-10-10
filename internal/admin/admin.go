@@ -747,10 +747,6 @@ func countComments(c *wp.Context, approved string) int {
 	return int(asInt64(row["n"]))
 }
 
-func recentPosts(c *wp.Context, limit int) ([]postRow, error) {
-	return recentPostsByType(c, "post", limit)
-}
-
 func recentPostsByType(c *wp.Context, postType string, limit int) ([]postRow, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
