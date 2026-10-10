@@ -1136,6 +1136,25 @@
   task: P5.45
   api: internal
 
+# P5.46: core/avatar, post-author-name, post-author-biography.
+- prefix: wp-includes/blocks/avatar.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.46
+  api: internal
+
+- prefix: wp-includes/blocks/post-author-biography.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.46
+  api: internal
+
+- prefix: wp-includes/blocks/post-author-name.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.46
+  api: internal
+
 - prefix: wp-includes/blocks/
   go: internal/blocks
   status: partial

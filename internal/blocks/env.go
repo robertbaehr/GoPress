@@ -42,9 +42,12 @@ type Env struct {
 	// ListComments returns approved comments for the current post (P5.19).
 	ListComments func(postID int64) []CommentItem
 
-	// AuthorName / PostTerms power singular meta blocks (P5.19).
-	AuthorName func(postID int64) string
-	PostTerms  func(postID int64, taxonomy string) []NavLink
+	// AuthorName / AuthorEmail / AuthorBio / AuthorLink power author blocks (P5.19/P5.46).
+	AuthorName  func(postID int64) string
+	AuthorEmail func(postID int64) string
+	AuthorBio   func(postID int64) string
+	AuthorLink  func(postID int64) string
+	PostTerms   func(postID int64, taxonomy string) []NavLink
 
 	// GetPostMeta resolves core/post-meta block bindings (P5.20).
 	GetPostMeta func(postID int64, key string) string

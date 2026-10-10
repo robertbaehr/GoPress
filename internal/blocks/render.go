@@ -142,6 +142,10 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderPostAuthor(block)
 	case "core/post-author-name":
 		out = e.renderPostAuthorName(block)
+	case "core/post-author-biography":
+		out = e.renderPostAuthorBiography(block)
+	case "core/avatar":
+		out = e.renderAvatar(block)
 	case "core/post-terms":
 		out = e.renderPostTerms(block)
 	case "core/post-navigation-link":
