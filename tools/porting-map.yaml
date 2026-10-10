@@ -564,6 +564,21 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P8.27 — local path only; image_sideload_extensions filter; html|src|id"
 
+# P8.28: image edit path + backup sizes bookkeeping stub.
+- prefix: wp-admin/includes/image.php#_load_image_to_edit_path
+  go: internal/wp/image_edit.go
+  status: partial
+  task: P8.28
+  api: exported
+  notes: "P8.28 — LoadImageToEditPath + intermediate size resolve + filters"
+
+- prefix: wp-admin/includes/image-edit.php#backup_sizes
+  go: internal/wp/image_edit.go
+  status: partial
+  task: P8.28
+  api: exported
+  notes: "P8.28 — RecordImageEditBackupSizes full-orig; GetAttachmentBackupSizes"
+
 # P2.21: wp_check_password covers $wp$ / phpass; application passwords reuse it.
 # P4.110: introspect + AuthenticatedAppPasswordUUID + last_used recording.
 - prefix: wp-includes/class-wp-application-passwords.php
