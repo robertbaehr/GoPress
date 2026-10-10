@@ -40,6 +40,10 @@ func CompileStyle(style map[string]any) string {
 	if bg, ok := style["background"].(map[string]any); ok {
 		parts = append(parts, backgroundStyles(bg)...)
 	}
+	// Dimensions block support (P5.34): style.dimensions → min-height/width/aspect-ratio/…
+	if dims, ok := style["dimensions"].(map[string]any); ok {
+		parts = append(parts, dimensionsStyles(dims)...)
+	}
 	// Shadow block support (P5.27): style.shadow → box-shadow.
 	if shadow, ok := style["shadow"].(string); ok && shadow != "" {
 		parts = append(parts, "box-shadow:"+cssValue(shadow))
@@ -47,6 +51,26 @@ func CompileStyle(style map[string]any) string {
 	// Position block support (P5.28): style.position → position/z-index/sides.
 	parts = append(parts, positionStyles(style["position"])...)
 	return strings.Join(parts, ";")
+}
+
+// dimensionsStyles mirrors WP dimensions block support / style engine (P5.34).
+func dimensionsStyles(dims map[string]any) []string {
+	if dims == nil {
+		return nil
+	}
+	var out []string
+	add := func(cssProp, key string) {
+		if v := borderScalar(dims[key]); v != "" {
+			out = append(out, cssProp+":"+cssValue(v))
+		}
+	}
+	add("aspect-ratio", "aspectRatio")
+	add("height", "height")
+	add("min-height", "minHeight")
+	add("min-width", "minWidth")
+	add("object-fit", "objectFit")
+	add("width", "width")
+	return out
 }
 
 // backgroundStyles mirrors WP background block support / style engine (P5.33).

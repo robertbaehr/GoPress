@@ -291,6 +291,48 @@ func TestBlockSupportsBackgroundGradient(t *testing.T) {
 	}
 }
 
+func TestBlockSupportsDimensionsMinHeight(t *testing.T) {
+	in := `<!-- wp:group {"style":{"dimensions":{"minHeight":"40vh","width":"100%"}}} -->
+<div class="wp-block-group">X</div>
+<!-- /wp:group -->`
+	out := blocks.Render(in)
+	for _, want := range []string{
+		"min-height:40vh",
+		"width:100%",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
+
+func TestBlockSupportsDimensionsAspectRatio(t *testing.T) {
+	in := `<!-- wp:group {"style":{"dimensions":{"aspectRatio":"16/9","minHeight":"40vh"}}} -->
+<div class="wp-block-group">X</div>
+<!-- /wp:group -->`
+	out := blocks.Render(in)
+	for _, want := range []string{
+		"has-aspect-ratio",
+		"aspect-ratio:16/9",
+		"min-height:unset",
+		"height:unset",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
+
+func TestBlockSupportsTopLevelMinHeight(t *testing.T) {
+	in := `<!-- wp:cover {"minHeight":"320px"} -->
+<div class="wp-block-cover">X</div>
+<!-- /wp:cover -->`
+	out := blocks.Render(in)
+	if !strings.Contains(out, "min-height:320px") {
+		t.Fatalf("missing top-level minHeight: %q", out)
+	}
+}
+
 func TestBlockSupportsElementsLinkAndButtonColors(t *testing.T) {
 	in := `<!-- wp:group {"style":{"elements":{"link":{"color":{"text":"var:preset|color|luminous-vivid-amber"},":hover":{"color":{"text":"#ff0000"}}},"button":{"color":{"text":"#ffffff","background":"#111111"}}}}} -->
 <div class="wp-block-group">X</div>
