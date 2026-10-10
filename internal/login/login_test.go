@@ -39,6 +39,12 @@ func TestLoginFormGET(t *testing.T) {
 	if !strings.Contains(body, `login-action-login`) {
 		t.Fatalf("expected login-action-login body class: %q", body)
 	}
+	if !strings.Contains(body, `wp-hide-pw`) || !strings.Contains(body, `admin-color-modern`) {
+		t.Fatalf("expected WP login chrome (hide-pw + admin-color): %q", body)
+	}
+	if !strings.Contains(body, `load-styles.php`) || !strings.Contains(body, `name='robots'`) {
+		t.Fatalf("expected WP login head assets: %q", body)
+	}
 	foundTestCookie := false
 	for _, ck := range rec.Result().Cookies() {
 		if ck.Name == "wordpress_test_cookie" {
