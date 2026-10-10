@@ -2316,26 +2316,7 @@ func (h *Handler) serveTools(w http.ResponseWriter, r *http.Request, c *wp.Conte
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveImport is the Tools → Import screen stub (P7.11).
-func (h *Handler) serveImport(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	blogname := optionString(c, "blogname", "GoPress")
-	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
-	b.WriteString("<title>Import &lsaquo; ")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
-	b.WriteString(adminNoticesHTML(c))
-	b.WriteString("<div class=\"wrap\">\n")
-	b.WriteString("<h1>Import</h1>\n")
-	b.WriteString("<p>Choose an importer to bring content from another platform into this site.</p>\n")
-	b.WriteString("<p class=\"description\">GoPress import stub — importer plugins land later.</p>\n")
-	b.WriteString("<table class=\"widefat importers striped\">\n")
-	b.WriteString("<thead><tr><th scope=\"col\">Importer</th><th scope=\"col\">Description</th></tr></thead>\n")
-	b.WriteString("<tbody><tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"2\">No importers are available.</td></tr></tbody>\n")
-	b.WriteString("</table>\n</div>\n</body>\n</html>\n")
-	writeHTML(w, http.StatusOK, b.String())
-}
+// serveImport lives in import_wxr.go (P7.11 screen + P7.54 WXR upload stub).
 
 // serveExportPersonalData is a privacy tools stub (P8.2) with file generation (P8.4),
 // download wiring (P8.6), and UI polish (P7.39).
