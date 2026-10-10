@@ -1881,41 +1881,6 @@ func (f *Front) tryCanonicalPostRedirect(w http.ResponseWriter, r *http.Request,
 	return true
 }
 
-func (f *Front) renderTermArchive(w http.ResponseWriter, c *wp.Context, taxonomy, slug string) {
-	blogname := optionString(c, "blogname", "GoPress")
-	posts, err := latestPosts(c, 10)
-	if err != nil {
-		http.Error(w, "archive: "+err.Error()+"\n", http.StatusInternalServerError)
-		return
-	}
-	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
-	b.WriteString("<title>")
-	b.WriteString(html.EscapeString(slug))
-	b.WriteString(" &#8212; ")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString("</title>\n</head>\n<body class=\"")
-	b.WriteString(html.EscapeString(wp.BodyClassWithAdminBar(c, "archive")))
-	b.WriteString("\">\n")
-	b.WriteString(wp.AdminBarHTML(c))
-	b.WriteString("<h1>")
-	b.WriteString(html.EscapeString(taxonomy))
-	b.WriteString(": ")
-	b.WriteString(html.EscapeString(slug))
-	b.WriteString("</h1>\n<ul class=\"posts\">\n")
-	for _, p := range posts {
-		b.WriteString("<li><a href=\"?p=")
-		b.WriteString(strconv.FormatInt(p.ID, 10))
-		b.WriteString("\">")
-		b.WriteString(html.EscapeString(p.Title))
-		b.WriteString("</a></li>\n")
-	}
-	b.WriteString("</ul>\n</body>\n</html>\n")
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(b.String()))
-}
-
 func (f *Front) render404(w http.ResponseWriter, c *wp.Context) {
 	// P3.16: prefer block theme templates/404.html when present.
 	if tpl, ok := wp.ResolveBlockTemplate(c, "404"); ok && strings.TrimSpace(tpl) != "" {
