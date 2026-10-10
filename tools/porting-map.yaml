@@ -4610,3 +4610,18 @@
   task: P5.79
   api: internal
   notes: "P5.79 — local /feed/ from ListPosts; remote feeds blocked; homepage loop guard"
+
+# P4.95: REST posts ?modified_after= / ?modified_before= (post_modified filters).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#modified_after
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.95
+  api: n/a
+  notes: "P4.95 — modified_after/before → QueryArgs.ModifiedAfter/Before on post_modified"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#modified_before
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.95
+  api: n/a
+  notes: "P4.95 — modified_before inclusive upper bound"

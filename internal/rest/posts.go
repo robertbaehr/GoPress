@@ -399,12 +399,12 @@ func parsePostsBefore(r *http.Request) string {
 	return parseRESTDateTimeQuery(r, "before")
 }
 
-// parsePostsModifiedAfter reads REST ?modified_after= (P4.91).
+// parsePostsModifiedAfter reads REST ?modified_after= (P4.95).
 func parsePostsModifiedAfter(r *http.Request) string {
 	return parseRESTDateTimeQuery(r, "modified_after")
 }
 
-// parsePostsModifiedBefore reads REST ?modified_before= (P4.91).
+// parsePostsModifiedBefore reads REST ?modified_before= (P4.95).
 func parsePostsModifiedBefore(r *http.Request) string {
 	return parseRESTDateTimeQuery(r, "modified_before")
 }
