@@ -538,6 +538,14 @@ wp-login.php#language-switcher-post
   task: P2.21
   api: exported
 
+# P2.98: deepen wp_mail stub — From/Content-Type/charset filters + attachments record.
+- prefix: wp-includes/pluggable.php#wp_mail
+  go: internal/wp/mail.go
+  status: partial
+  task: P2.98
+  api: exported
+  notes: "P2.98 — wp_mail_from/from_name/content_type/charset filters; header parse; MailFull attachments; P2.15/P3.9 base"
+
 # P2.24: expanded sanitize_title golden — tests/golden/formatting/sanitize_title.json
 
 # P2.25: expanded wptexturize golden — tests/golden/formatting/wptexturize.json
