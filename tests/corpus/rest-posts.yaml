@@ -2790,3 +2790,30 @@
   body: null
   compare: headers
   nonce: null
+
+- id: rest-json-pattern-directory-search-hello
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pattern-directory/patterns?search=hello
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-font-faces-per-page-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/font-faces?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-autosaves-per-page-1-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts/13/autosaves?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
