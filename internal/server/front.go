@@ -2954,6 +2954,96 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			}
 			return out
 		},
+		// P5.42: widget-style dynamic blocks.
+		ListArchives: func() []blocks.ArchiveItem {
+			if c == nil || c.DB == nil {
+				return nil
+			}
+			home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+			q, args, err := c.DB.Prepare(
+				"SELECT YEAR(post_date) AS y, MONTH(post_date) AS m, COUNT(*) AS n FROM "+c.DB.Posts()+
+					" WHERE post_type = %s AND post_status = %s "+
+					"GROUP BY YEAR(post_date), MONTH(post_date) ORDER BY post_date DESC LIMIT %d",
+				"post", "publish", 24,
+			)
+			if err != nil {
+				return nil
+			}
+			rows, err := c.DB.GetResults(q, args...)
+			if err != nil {
+				return nil
+			}
+			out := make([]blocks.ArchiveItem, 0, len(rows))
+			for _, row := range rows {
+				y := int(rowInt64DB(row["y"]))
+				m := int(rowInt64DB(row["m"]))
+				if y <= 0 || m <= 0 || m > 12 {
+					continue
+				}
+				label := time.Date(y, time.Month(m), 1, 0, 0, 0, 0, time.UTC).Format("January 2006")
+				out = append(out, blocks.ArchiveItem{
+					Label: label,
+					URL:   fmt.Sprintf("%s/%04d/%02d/", home, y, m),
+					Count: int(rowInt64DB(row["n"])),
+				})
+			}
+			return out
+		},
+		ListTagCloud: func() []blocks.TagCloudItem {
+			if c == nil || c.DB == nil {
+				return nil
+			}
+			home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+			q, args, err := c.DB.Prepare(
+				"SELECT t.name, t.slug, tt.count FROM "+c.DB.Terms()+" t "+
+					"INNER JOIN "+c.DB.TermTaxonomy()+" tt ON t.term_id = tt.term_id "+
+					"WHERE tt.taxonomy = %s AND tt.count > 0 ORDER BY tt.count DESC, t.name ASC LIMIT %d",
+				"post_tag", 45,
+			)
+			if err != nil {
+				return nil
+			}
+			rows, err := c.DB.GetResults(q, args...)
+			if err != nil {
+				return nil
+			}
+			out := make([]blocks.TagCloudItem, 0, len(rows))
+			for _, row := range rows {
+				slug := rowStringDB(row["slug"])
+				out = append(out, blocks.TagCloudItem{
+					Name:  rowStringDB(row["name"]),
+					URL:   home + "/tag/" + slug + "/",
+					Count: int(rowInt64DB(row["count"])),
+				})
+			}
+			return out
+		},
+		ListLatestComments: func(limit int) []blocks.LatestCommentItem {
+			rows, err := wp.ListRecentComments(c, limit)
+			if err != nil {
+				return nil
+			}
+			home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+			out := make([]blocks.LatestCommentItem, 0, len(rows))
+			for _, cm := range rows {
+				title, link := "", home+"/"
+				if p, err := wp.GetPostByID(c, cm.PostID); err == nil && p != nil {
+					title = p.Title
+					link = postPermalink(home, *p)
+				}
+				out = append(out, blocks.LatestCommentItem{
+					ID:        cm.ID,
+					Author:    cm.Author,
+					AuthorURL: cm.AuthorURL,
+					Content:   strings.TrimSpace(stripTagsSimple(cm.Content)),
+					Date:      cm.Date,
+					PostID:    cm.PostID,
+					PostTitle: title,
+					PostURL:   link + "#comment-" + strconv.FormatInt(cm.ID, 10),
+				})
+			}
+			return out
+		},
 	}
 }
 
