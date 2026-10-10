@@ -1037,9 +1037,9 @@
   api: n/a
 
 - prefix: wp-links-opml.php
-  go: internal/frontend
-  status: todo
-  task: P5.8
+  go: internal/server/opml.go
+  status: out-of-scope
+  task: P3.30
   api: n/a
 
 # P4.41: REST write for menu-locations + theme_mod nav_menu_locations.

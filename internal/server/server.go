@@ -129,6 +129,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		serveTrackbackGone(w, r)
 		return
 	}
+	if path == "/wp-links-opml.php" {
+		serveOPMLGone(w, r)
+		return
+	}
 	if path == "/wp-includes/wlwmanifest.xml" {
 		serveWLWManifestStub(w, r)
 		return
