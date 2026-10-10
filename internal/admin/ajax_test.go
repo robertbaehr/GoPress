@@ -75,6 +75,77 @@ func TestAdminAjaxHeartbeatAuth(t *testing.T) {
 	}
 }
 
+func TestAdminAjaxHeartbeatHooksAndScreenID(t *testing.T) {
+	// P3.96: heartbeat_received / heartbeat_send / heartbeat_tick see screen_id + data.
+	c := bootOrSkip(t)
+	var gotScreen string
+	var gotData map[string]any
+	var tickScreen string
+	c.Hooks.AddFilter("heartbeat_received", func(value any, args ...any) any {
+		resp, _ := value.(map[string]any)
+		if resp == nil {
+			resp = map[string]any{}
+		}
+		if len(args) > 0 {
+			if d, ok := args[0].(map[string]any); ok {
+				gotData = d
+			}
+		}
+		if len(args) > 1 {
+			gotScreen, _ = args[1].(string)
+		}
+		resp["echo"] = "pong"
+		return resp
+	}, 10, 3)
+	c.Hooks.AddFilter("heartbeat_send", func(value any, args ...any) any {
+		resp, _ := value.(map[string]any)
+		if resp == nil {
+			resp = map[string]any{}
+		}
+		resp["sent"] = true
+		return resp
+	}, 10, 2)
+	c.Hooks.AddAction("heartbeat_tick", func(args ...any) {
+		if len(args) > 1 {
+			tickScreen, _ = args[1].(string)
+		}
+	}, 10, 2)
+
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	ck := loginCookie(t, c)
+	body := "action=heartbeat&_nonce=x&screen_id=Dashboard-Main&data[wp_autosave]=1&has_focus=true"
+	req := httptest.NewRequest(http.MethodPost, "/wp-admin/admin-ajax.php", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	var resp map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("json: %v", err)
+	}
+	if gotScreen != "dashboard-main" {
+		t.Fatalf("screen_id=%q want dashboard-main", gotScreen)
+	}
+	if tickScreen != "dashboard-main" {
+		t.Fatalf("tick screen=%q", tickScreen)
+	}
+	if gotData["wp_autosave"] != "1" {
+		t.Fatalf("data=%#v", gotData)
+	}
+	if resp["echo"] != "pong" || resp["sent"] != true {
+		t.Fatalf("filter fields missing: %#v", resp)
+	}
+	if resp["wp-auth-check"] != true {
+		t.Fatalf("wp-auth-check=%#v", resp["wp-auth-check"])
+	}
+	if _, ok := resp["server_time"]; !ok {
+		t.Fatalf("missing server_time: %#v", resp)
+	}
+}
+
 func TestAdminAjaxRestNonceContentType(t *testing.T) {
 	c := bootOrSkip(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
