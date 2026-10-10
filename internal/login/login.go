@@ -1270,9 +1270,9 @@ func applyLoginRedirectFilter(c *wp.Context, redirectTo, requested string, user 
 func adjustDefaultAdminLoginRedirect(c *wp.Context, redirectTo, home string, user *wp.User) string {
 	admin := defaultLoginAdminRedirect(c, home)
 	candidates := map[string]bool{
-		"":         true,
-		"wp-admin/": true,
-		"/wp-admin": true,
+		"":           true,
+		"wp-admin/":  true,
+		"/wp-admin":  true,
 		"/wp-admin/": true,
 	}
 	if home != "" {
