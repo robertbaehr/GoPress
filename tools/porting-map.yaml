@@ -40,10 +40,11 @@
   api: n/a
 
 # P3.32: /rsd.xml stub (xmlrpc.php?rsd stays 403).
+# P10.31: e2e coverage in tests/e2e/rsd.spec.js.
 - prefix: rsd.xml
   go: internal/server/rsd.go
   status: partial
-  task: P3.32
+  task: P10.31
   api: n/a
 
 - prefix: wp-signup.php
