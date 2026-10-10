@@ -3,12 +3,15 @@ package wp
 import (
 	"fmt"
 	"reflect"
+	"strconv"
 )
 
-// ArraySliceAssoc extracts a subset of associative array keys (wp_array_slice_assoc, P2.38).
+// ArraySliceAssoc extracts a subset of associative array keys (wp_array_slice_assoc, P2.38 / P2.88).
 //
-// input may be a map (string or any keys) or a struct; keys are matched as strings.
-// Missing keys are skipped. Returns a new map[string]any (never mutates input).
+// input may be a map (string, int, int64, or any keys), a struct, or a pointer to either.
+// Keys are matched as strings. Struct fields also match json tags and case-insensitive
+// names (via pluckFieldOK / P2.87). Missing keys are skipped. Present keys with nil
+// values are included. Returns a new map[string]any (never mutates input).
 func ArraySliceAssoc(input any, keys []string) map[string]any {
 	out := map[string]any{}
 	if input == nil || len(keys) == 0 {
@@ -47,10 +50,46 @@ func mapLookupString(m reflect.Value, key string) (any, bool) {
 			return nil, false
 		}
 		return got.Interface(), true
+	case reflect.Int, reflect.Int8, reflect.Int16, reflect.Int32, reflect.Int64:
+		// P2.88: numeric map keys match stringified digits ("0", "12").
+		n, err := strconv.ParseInt(key, 10, 64)
+		if err != nil {
+			return nil, false
+		}
+		kv := reflect.ValueOf(n).Convert(kt)
+		got := m.MapIndex(kv)
+		if !got.IsValid() {
+			return nil, false
+		}
+		return got.Interface(), true
+	case reflect.Uint, reflect.Uint8, reflect.Uint16, reflect.Uint32, reflect.Uint64:
+		n, err := strconv.ParseUint(key, 10, 64)
+		if err != nil {
+			return nil, false
+		}
+		kv := reflect.ValueOf(n).Convert(kt)
+		got := m.MapIndex(kv)
+		if !got.IsValid() {
+			return nil, false
+		}
+		return got.Interface(), true
 	default:
-		got := m.MapIndex(reflect.ValueOf(any(key)))
-		if got.IsValid() {
-			return got.Interface(), true
+		// map[any]any and other key types: try string key, then stringify scan.
+		if kt.Kind() == reflect.Interface {
+			got := m.MapIndex(reflect.ValueOf(any(key)))
+			if got.IsValid() {
+				return got.Interface(), true
+			}
+			if n, err := strconv.Atoi(key); err == nil {
+				got = m.MapIndex(reflect.ValueOf(any(n)))
+				if got.IsValid() {
+					return got.Interface(), true
+				}
+				got = m.MapIndex(reflect.ValueOf(any(int64(n))))
+				if got.IsValid() {
+					return got.Interface(), true
+				}
+			}
 		}
 		for _, mk := range m.MapKeys() {
 			if fmt.Sprint(mk.Interface()) == key {
