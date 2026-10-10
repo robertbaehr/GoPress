@@ -1261,12 +1261,27 @@
   notes: "P10.46 — Playwright coverage for import.php WXR upload (P7.54)"
 
 # P10.47: STATUS/PORTING refresh after P5.55–P6.22.
-- prefix: docs/STATUS.md
+- prefix: docs/STATUS.md#P10.47
   go: docs/STATUS.md
   status: partial
   task: P10.47
   api: n/a
   notes: "P10.47 — summarize media-text, global-styles/themes, activity, uuid, emoji JSON, interim-post"
+
+# P10.48: e2e Quick Draft + STATUS/PORTING refresh after P5.56–P8.14.
+- prefix: tests/e2e/quick-draft.spec.js
+  go: tests/e2e/quick-draft.spec.js
+  status: partial
+  task: P10.48
+  api: n/a
+  notes: "P10.48 — Playwright coverage for dashboard Quick Draft (P7.55)"
+
+- prefix: docs/STATUS.md
+  go: docs/STATUS.md
+  status: partial
+  task: P10.48
+  api: n/a
+  notes: "P10.48 — summarize buttons, navigation DELETE, site-health widget, hex color, feed self, privacy updated, quick-draft e2e"
 
 # P10.45: e2e WXR export download + STATUS/PORTING refresh after P5.53–P6.21.
 - prefix: tests/e2e/wxr-export.spec.js
