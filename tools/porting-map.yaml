@@ -6491,4 +6491,4 @@ wp-login.php#language-switcher-post
   status: partial
   task: P10.114
   api: n/a
-  notes: "P10.114 — users/settings/login/options-writing/heartbeat/types; grow after P5.102–P9.22"
+  notes: "P10.114 — users/settings/login/heartbeat/types; drop flaky options-* cookies; grow after P5.102–P9.22"
