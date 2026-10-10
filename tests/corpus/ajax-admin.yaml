@@ -36,3 +36,14 @@
   body: action=heartbeat
   compare: headers
   nonce: null
+
+# Unknown privileged ajax action → "0" / 400 on both PHP and Go (P10.11).
+- id: ajax-unknown-action
+  role: anon
+  method: POST
+  path: /wp-admin/admin-ajax.php
+  headers:
+    Content-Type: application/x-www-form-urlencoded
+  body: action=gopress_no_such_action
+  compare: headers
+  nonce: null
