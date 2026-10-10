@@ -13,5 +13,6 @@ test('home returns 200 and contains blogname', async ({ page, request }) => {
   // Also exercise a real navigation for Playwright browser path.
   await page.goto('/');
   await expect(page.locator('body')).toBeVisible();
-  await expect(page.locator('html')).toContainText(blogname);
+  // Blogname lives in <title> for block-theme home (not always in body text).
+  await expect(page).toHaveTitle(new RegExp(blogname.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')));
 });
