@@ -22,6 +22,17 @@ func TestParseHomeIsHome(t *testing.T) {
 	}
 }
 
+func TestParseHomePagedIsHome(t *testing.T) {
+	rules := wp.GenerateRewriteRules("/%postname%/")
+	res := rules.ParseRequestPath("/page/2/")
+	if !res.IsHome {
+		t.Fatalf("expected IsHome for /page/2/, got %+v", res)
+	}
+	if res.QueryVars["paged"] != "2" {
+		t.Fatalf("paged=%q vars=%v", res.QueryVars["paged"], res.QueryVars)
+	}
+}
+
 func TestParseQueryP(t *testing.T) {
 	res := wp.RewriteRules{}.ParseRequestPath("/?p=1")
 	if res.QueryVars["p"] != "1" || res.IsHome {

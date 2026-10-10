@@ -894,6 +894,11 @@ func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, templa
 	safe := wp.ProcessInteractivityHTML(wp.KsesPost(body))
 
 	bodyClasses := "home blog wp-embed-responsive"
+	paged := 1
+	if c != nil && c.Scope != nil && c.Scope.Paged > 1 {
+		paged = c.Scope.Paged
+		bodyClasses += " paged paged-" + strconv.Itoa(paged)
+	}
 	if stylesheet != "" {
 		bodyClasses += " wp-theme-" + stylesheet
 	}
@@ -907,6 +912,10 @@ func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, templa
 	b.WriteString("<meta name='robots' content='max-image-preview:large' />\n")
 	b.WriteString("<title>")
 	b.WriteString(html.EscapeString(blogname))
+	if paged > 1 {
+		b.WriteString(" &#8211; Page ")
+		b.WriteString(strconv.Itoa(paged))
+	}
 	b.WriteString("</title>\n")
 	writeFrontHeadLinks(&b, home, blogname, "", "", "")
 	b.WriteString(wp.EmojiHeadHTML()) // P3.12: wpemoji print scripts skipped
@@ -2247,11 +2256,19 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			if q.Inherit && c != nil && c.Scope != nil && c.Scope.IsCategory {
 				catSlug = c.Scope.CategorySlug
 			}
+			offset := q.Offset
+			paged := 1
+			if q.Inherit && c != nil && c.Scope != nil && c.Scope.Paged > 1 {
+				paged = c.Scope.Paged
+				offset = (paged-1)*limit + q.Offset
+			}
+			// Sticky posts are prepended on page 1 only (WP main query / P3.26).
+			stickyFirst := postType == "post" && search == "" && year == 0 && authorID == 0 && tagSlug == "" && catSlug == "" && paged <= 1
 			posts, err := wp.GetPosts(c, wp.QueryArgs{
 				PostType:     postType,
 				PostStatus:   "publish",
 				PostsPerPage: limit,
-				Offset:       q.Offset,
+				Offset:       offset,
 				Search:       search,
 				Year:         year,
 				MonthNum:     month,
@@ -2259,8 +2276,7 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 				Author:       authorID,
 				Tag:          tagSlug,
 				Category:     catSlug,
-				// Sticky posts are prepended for front query loops (inherit or not).
-				StickyFirst: postType == "post" && search == "" && year == 0 && authorID == 0 && tagSlug == "" && catSlug == "",
+				StickyFirst:  stickyFirst,
 			})
 			if err != nil {
 				return nil

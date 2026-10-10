@@ -335,6 +335,13 @@
   task: P2.28
   api: exported
 
+# P3.26: /page/N/ home blog pagination.
+- prefix: wp-includes/query.php#paged
+  go: internal/server/front.go
+  status: partial
+  task: P3.26
+  api: n/a
+
 # P4.47: REST PATCH/PUT /wp/v2/media/{id} title + alt_text.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-attachments-controller.php#update
   go: internal/rest/media_write.go

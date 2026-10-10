@@ -208,6 +208,9 @@ type RequestScope struct {
 	IsPage       bool
 	IsSingle     bool
 	IsAttachment bool
+
+	// Paged is the main query page number (1-based; 0 means unset → page 1).
+	Paged int
 }
 
 // NewRequestScope returns an empty scope.

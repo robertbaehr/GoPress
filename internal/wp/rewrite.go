@@ -256,7 +256,10 @@ func (rules RewriteRules) ParseRequestPathWith(pathURL string, pageExists PageEx
 		}
 	}
 
-	res.IsHome = request == "" && !hasContentQueryVar(res.QueryVars)
+	// Home blog index includes /page/N/ pagination (P3.26): only the paged
+	// query var is set, with no singular/archive content vars.
+	pagedOnly := res.QueryVars["paged"] != "" && !hasContentQueryVar(res.QueryVars)
+	res.IsHome = !hasContentQueryVar(res.QueryVars) && (request == "" || pagedOnly)
 	return res
 }
 
@@ -329,6 +332,10 @@ func (c *Context) ParseRequest(rules RewriteRules) *ParseResult {
 			if id, err := strconv.ParseInt(p, 10, 64); err == nil {
 				c.Scope.QueriedObjectID = id
 			}
+		}
+		// Main query pagination (P3.26).
+		if paged := atoiScope(res.QueryVars["paged"]); paged > 0 {
+			c.Scope.Paged = paged
 		}
 		c.Scope.mu.Unlock()
 	}
