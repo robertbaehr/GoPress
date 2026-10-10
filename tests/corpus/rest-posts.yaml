@@ -2591,3 +2591,175 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.108: revisions/autosaves context + details/patterns/themes headers after P5.99–P8.29.
+- id: rest-revisions-head-anon
+  role: anon
+  method: HEAD
+  path: /wp-json/wp/v2/posts/13/revisions
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-revisions-context-edit-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts/13/revisions?context=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-revisions-context-view-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts/13/revisions?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-revisions-per-page-1-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts/13/revisions?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-autosaves-context-edit-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts/13/autosaves?context=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-autosaves-context-view-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts/13/autosaves?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-block-types-details
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/details
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-block-patterns-patterns-pp1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-patterns/patterns?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-themes-status-active
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/themes?status=active
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-themes-status-inactive
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/themes?status=inactive
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-plugins-status-active
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/plugins?status=active
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-plugins-status-inactive
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/plugins?status=inactive
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-templates-area-header-pp1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/templates?per_page=1&area=header
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-template-parts-area-header-pp1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/template-parts?area=header&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-posts-search-hello-pp1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?search=hello&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-posts-include-1-13-pp2
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?include=1,13&per_page=2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-pages-include-2-pp1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?include=2&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-oembed-page-id-2
+  role: anon
+  method: GET
+  path: /wp-json/oembed/1.0/embed?url=http://127.0.0.1:8081/?page_id=2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-oembed-page-id-2
+  role: anon
+  method: GET
+  path: /?rest_route=/oembed/1.0/embed&url=http://127.0.0.1:8081/?page_id=2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

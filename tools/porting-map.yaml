@@ -6333,3 +6333,11 @@ wp-login.php#language-switcher-post
   task: P10.107
   api: n/a
   notes: "P10.107 — regenerate porting-status after stacked P5.98–P10.106"
+
+# P10.108: expand diff corpus after P5.99–P8.29.
+- prefix: tests/corpus#p10.108
+  go: tests/corpus
+  status: done
+  task: P10.108
+  api: n/a
+  notes: "P10.108 — revisions HEAD/context; details route; patterns/themes/plugins; templates area; oembed page; author query; 416/416"
