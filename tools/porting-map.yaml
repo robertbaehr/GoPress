@@ -581,11 +581,17 @@
   task: P3.27
   api: n/a
 
-# P3.34: /comments/feed/atom/ Atom comments feed.
+# P3.34 / P10.33: /comments/feed/atom/ Atom comments feed + e2e.
 - prefix: wp-includes/feed-atom-comments.php
   go: internal/server/front.go
   status: partial
-  task: P3.34
+  task: P10.33
+  api: n/a
+
+- prefix: tests/e2e/atom-comments.spec.js
+  go: tests/e2e/atom-comments.spec.js
+  status: partial
+  task: P10.33
   api: n/a
 
 # P3.35: 404 block template always includes header/footer template parts.
