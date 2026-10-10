@@ -1422,6 +1422,13 @@
   task: P7.20
   api: n/a
 
+# P7.46: update.php plugin/theme upgrade workflows unavailable (403).
+- prefix: wp-admin/update.php
+  go: internal/admin/admin.go
+  status: out-of-scope
+  task: P7.46
+  api: n/a
+
 - prefix: wp-admin/user-new.php
   go: internal/admin
   status: partial

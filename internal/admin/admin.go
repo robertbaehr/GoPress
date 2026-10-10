@@ -102,6 +102,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/update-core.php":
 		h.requireLogin(w, r, c, h.serveUpdateCoreGone)
 		return true
+	case "/wp-admin/update.php":
+		h.requireLogin(w, r, c, h.serveUpdatePHPGone)
+		return true
 	case "/wp-admin/link-manager.php", "/wp-admin/link-add.php", "/wp-admin/link.php":
 		h.requireLogin(w, r, c, h.serveLinkManagerGone)
 		return true
@@ -2651,6 +2654,22 @@ func (h *Handler) serveUpdateCoreGone(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString("<body class=\"wp-admin\">\n")
 	b.WriteString("<h1>Core updates unavailable</h1>\n")
 	b.WriteString("<p>WordPress core updates are out of scope for GoPress. Deploy a new GoPress build instead of using <code>update-core.php</code>.</p>\n")
+	b.WriteString("</body>\n</html>\n")
+	writeHTML(w, http.StatusForbidden, b.String())
+}
+
+// serveUpdatePHPGone rejects update.php as out of scope (P7.46).
+// Plugin/theme upgrade workflows from wordpress.org are unavailable.
+func (h *Handler) serveUpdatePHPGone(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Update &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin\">\n")
+	b.WriteString("<h1>Updates unavailable</h1>\n")
+	b.WriteString("<p>Installing or updating plugins and themes via <code>update.php</code> is out of scope for GoPress. Use the <a href=\"/wp-admin/plugins.php\">Plugins</a> and <a href=\"/wp-admin/themes.php\">Themes</a> screens to manage local packages.</p>\n")
 	b.WriteString("</body>\n</html>\n")
 	writeHTML(w, http.StatusForbidden, b.String())
 }
