@@ -1843,6 +1843,28 @@
   api: internal
   notes: "P5.61 — prefer saved markup; synthesize figure>blockquote value/citation; align; className"
 
+# P5.63: polish core/list + core/list-item (wp-block-list class, synthesize ordered attrs).
+- prefix: wp-includes/blocks/list.php
+  go: internal/blocks/list.go
+  status: partial
+  task: P5.63
+  api: internal
+  notes: "P5.63 — ensure wp-block-list on ul/ol; synthesize ordered/start/reversed/type/values"
+
+- prefix: wp-includes/blocks/list
+  go: internal/blocks/list.go
+  status: partial
+  task: P5.63
+  api: internal
+  notes: "P5.63 — ensure wp-block-list on ul/ol; synthesize ordered/start/reversed/type/values"
+
+- prefix: wp-includes/blocks/list-item
+  go: internal/blocks/list.go
+  status: partial
+  task: P5.63
+  api: internal
+  notes: "P5.63 — prefer saved markup; synthesize li from content"
+
 # P5.62: polish core/code + core/preformatted + core/verse (synthesize content, align/textAlign).
 - prefix: wp-includes/blocks/code
   go: internal/blocks/code_preformatted.go
