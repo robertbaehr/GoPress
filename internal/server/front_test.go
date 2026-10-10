@@ -105,6 +105,27 @@ func TestFrontSingularByQueryP(t *testing.T) {
 	}
 }
 
+func TestFrontSingularOEmbedDiscoveryLinks(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?p=1", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `type="application/json+oembed"`) {
+		t.Fatalf("missing oEmbed JSON discovery link: %q", body)
+	}
+	if !strings.Contains(body, `type="text/xml+oembed"`) {
+		t.Fatalf("missing oEmbed XML discovery link: %q", body)
+	}
+	if !strings.Contains(body, "/wp-json/oembed/1.0/embed?url=") {
+		t.Fatalf("missing oEmbed endpoint href: %q", body)
+	}
+}
+
 func TestFrontSingularByPageID(t *testing.T) {
 	c := testBoot(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}

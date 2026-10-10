@@ -237,10 +237,10 @@
   api: n/a
 
 - prefix: wp-includes/embed.php
-  go: internal/server/front.go
+  go: internal/wp/oembed_discovery.go
   status: partial
-  task: P3.18
-  api: n/a
+  task: P3.20
+  api: exported
 
 - prefix: wp-includes/theme-compat/embed.php
   go: internal/server/front.go

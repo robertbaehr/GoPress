@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"html"
 	"net/http"
-	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -1267,13 +1266,9 @@ func writeFrontHeadLinks(b *strings.Builder, home, blogname, permalink, restPath
 		b.WriteString(" Comments Feed\" href=\"")
 		b.WriteString(html.EscapeString(strings.TrimRight(permalink, "/") + "/feed/"))
 		b.WriteString("\" />\n")
-		b.WriteString("<link rel=\"alternate\" title=\"oEmbed (JSON)\" type=\"application/json+oembed\" href=\"")
-		b.WriteString(html.EscapeString(home + "/wp-json/oembed/1.0/embed?url=" + url.QueryEscape(permalink)))
-		b.WriteString("\" />\n")
-		b.WriteString("<link rel=\"alternate\" title=\"oEmbed (XML)\" type=\"text/xml+oembed\" href=\"")
-		b.WriteString(html.EscapeString(home + "/wp-json/oembed/1.0/embed?url=" + url.QueryEscape(permalink) + "&format=xml"))
-		b.WriteString("\" />\n")
 	}
+	// P3.20: wp_oembed_add_discovery_links — emit on singular permalinks.
+	b.WriteString(wp.OEmbedDiscoveryLinks(home, permalink))
 	b.WriteString("<link rel=\"https://api.w.org/\" href=\"")
 	b.WriteString(html.EscapeString(home + "/wp-json/"))
 	b.WriteString("\" />\n")
