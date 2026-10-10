@@ -288,14 +288,17 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	catID := parseEditCategoryFilter(r)
 	// P7.72: tag dropdown filter (?tag_id=).
 	tagID := parseEditTagFilter(r)
+	// P7.75: months dropdown filter (?m=YYYYMM).
+	monthFilter := parseEditDateFilter(r)
 	// P7.73: status view links (?post_status=publish|draft|trash).
 	postStatus := parseEditPostStatus(r)
-	posts, err := recentPostsByType(c, postType, 20, search, authorID, catID, tagID, postStatus)
+	posts, err := recentPostsByType(c, postType, 20, search, authorID, catID, tagID, postStatus, monthFilter)
 	if err != nil {
 		http.Error(w, "posts: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
 	authors, _ := editPostAuthors(c, postType)
+	months, _ := editPostMonths(c, postType, postStatus)
 	var categories []editCategoryOpt
 	var tags []editTagOpt
 	if postType == "post" {
@@ -351,7 +354,7 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	b.WriteString(`</select>` + "\n")
 	b.WriteString(`<input type="submit" id="doaction" class="button action" value="Apply" />` + "\n")
 	b.WriteString(`</div>` + "\n")
-	// P7.70 / P7.71 / P7.72: author + category + tag filters (restrict_manage_posts-shaped).
+	// P7.70 / P7.71 / P7.72 / P7.75: author + date + category + tag filters.
 	b.WriteString(`<div class="alignleft actions">` + "\n")
 	b.WriteString(`<label for="filter-by-author" class="screen-reader-text">Filter by author</label>` + "\n")
 	b.WriteString(`<select name="author" id="filter-by-author">` + "\n")
@@ -368,6 +371,29 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		b.WriteString(`</option>` + "\n")
 	}
 	b.WriteString(`</select>` + "\n")
+	// P7.75: months_dropdown (name=m, id=filter-by-date).
+	if len(months) > 0 {
+		b.WriteString(`<label for="filter-by-date" class="screen-reader-text">Filter by date</label>` + "\n")
+		b.WriteString(`<select name="m" id="filter-by-date">` + "\n")
+		b.WriteString(`<option value="0"`)
+		if monthFilter == 0 {
+			b.WriteString(` selected="selected"`)
+		}
+		b.WriteString(`>All dates</option>` + "\n")
+		for _, mo := range months {
+			val := mo.Year*100 + mo.Month
+			b.WriteString(`<option value="`)
+			b.WriteString(strconv.Itoa(val))
+			b.WriteString(`"`)
+			if val == monthFilter {
+				b.WriteString(` selected="selected"`)
+			}
+			b.WriteString(`>`)
+			b.WriteString(html.EscapeString(editMonthLabel(mo.Month, mo.Year)))
+			b.WriteString(`</option>` + "\n")
+		}
+		b.WriteString(`</select>` + "\n")
+	}
 	// P7.71: wp_dropdown_categories-shaped filter (name=cat, id=cat).
 	if postType == "post" {
 		b.WriteString(`<label class="screen-reader-text" for="cat">Filter by category</label>` + "\n")
@@ -4110,7 +4136,7 @@ func countComments(c *wp.Context, approved string) int {
 	return int(asInt64(row["n"]))
 }
 
-func recentPostsByType(c *wp.Context, postType string, limit int, search string, authorID, catID, tagID int64, postStatus string) ([]postRow, error) {
+func recentPostsByType(c *wp.Context, postType string, limit int, search string, authorID, catID, tagID int64, postStatus string, monthFilter int) ([]postRow, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
@@ -4156,6 +4182,15 @@ func recentPostsByType(c *wp.Context, postType string, limit int, search string,
 	if authorID > 0 {
 		sql += "AND p.post_author = %d "
 		prepArgs = append(prepArgs, authorID)
+	}
+	// P7.75: ?m=YYYYMM (or YYYY) date archive filter.
+	if year, month := splitEditMonthFilter(monthFilter); year > 0 {
+		sql += "AND YEAR(p.post_date) = %d "
+		prepArgs = append(prepArgs, year)
+		if month > 0 {
+			sql += "AND MONTH(p.post_date) = %d "
+			prepArgs = append(prepArgs, month)
+		}
 	}
 	if term != "" {
 		like := "%" + db.EscapeLike(term) + "%"
@@ -4286,6 +4321,100 @@ func parseEditTagFilter(r *http.Request) int64 {
 		return 0
 	}
 	return n
+}
+
+type editMonthOpt struct {
+	Year  int
+	Month int
+}
+
+// parseEditDateFilter reads ?m=YYYYMM (or YYYY) from edit.php (P7.75).
+func parseEditDateFilter(r *http.Request) int {
+	if r == nil {
+		return 0
+	}
+	raw := strings.TrimSpace(r.URL.Query().Get("m"))
+	if raw == "" || raw == "0" {
+		return 0
+	}
+	n, err := strconv.Atoi(raw)
+	if err != nil || n <= 0 {
+		return 0
+	}
+	return n
+}
+
+func splitEditMonthFilter(m int) (year, month int) {
+	if m <= 0 {
+		return 0, 0
+	}
+	if m < 10000 {
+		// YYYY only
+		return m, 0
+	}
+	year = m / 100
+	month = m % 100
+	if year < 1000 || month < 1 || month > 12 {
+		return 0, 0
+	}
+	return year, month
+}
+
+var editMonthNames = []string{
+	"", "January", "February", "March", "April", "May", "June",
+	"July", "August", "September", "October", "November", "December",
+}
+
+func editMonthLabel(month, year int) string {
+	name := ""
+	if month >= 1 && month <= 12 {
+		name = editMonthNames[month]
+	}
+	if name == "" {
+		return strconv.Itoa(year)
+	}
+	return name + " " + strconv.Itoa(year)
+}
+
+// editPostMonths returns distinct YEAR/MONTH rows for the months dropdown (P7.75).
+func editPostMonths(c *wp.Context, postType, postStatus string) ([]editMonthOpt, error) {
+	if c == nil || c.DB == nil {
+		return nil, fmt.Errorf("nil DB")
+	}
+	if postType == "" {
+		postType = "post"
+	}
+	sql := "SELECT DISTINCT YEAR(post_date) AS y, MONTH(post_date) AS m FROM " + c.DB.Posts() +
+		" WHERE post_type = %s "
+	var prepArgs []any
+	prepArgs = append(prepArgs, postType)
+	switch postStatus {
+	case "trash":
+		sql += "AND post_status = %s "
+		prepArgs = append(prepArgs, "trash")
+	default:
+		sql += "AND post_status != %s AND post_status != %s "
+		prepArgs = append(prepArgs, "auto-draft", "trash")
+	}
+	sql += "ORDER BY post_date DESC"
+	q, args, err := c.DB.Prepare(sql, prepArgs...)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := c.DB.GetResults(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]editMonthOpt, 0, len(rows))
+	for _, row := range rows {
+		y := int(asInt64(row["y"]))
+		m := int(asInt64(row["m"]))
+		if y <= 0 || m <= 0 {
+			continue
+		}
+		out = append(out, editMonthOpt{Year: y, Month: m})
+	}
+	return out, nil
 }
 
 // handleEditPostsBulkTrash processes bulk trash/untrash on edit.php (P7.74).
