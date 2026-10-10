@@ -141,32 +141,101 @@ func (h *Handler) serveDashboard(w http.ResponseWriter, r *http.Request, c *wp.C
 
 func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
-	posts, err := recentPosts(c, 20)
+	postType := r.URL.Query().Get("post_type")
+	if postType == "" {
+		postType = "post"
+	}
+	if postType != "post" && postType != "page" {
+		postType = "post"
+	}
+	posts, err := recentPostsByType(c, postType, 20)
 	if err != nil {
 		http.Error(w, "posts: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
+	heading := "Posts"
+	if postType == "page" {
+		heading = "Pages"
+	}
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
-	b.WriteString("<title>Posts &lsaquo; ")
+	b.WriteString("<title>")
+	b.WriteString(html.EscapeString(heading))
+	b.WriteString(" &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
 	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
-	b.WriteString("<h1>Posts</h1>\n")
+	b.WriteString("<h1>")
+	b.WriteString(html.EscapeString(heading))
+	b.WriteString("</h1>\n")
 	b.WriteString("<table class=\"wp-list-table widefat fixed striped table-view-list posts\">\n")
-	b.WriteString("<thead><tr><th scope=\"col\" class=\"column-title\">Title</th><th scope=\"col\" class=\"column-date\">Date</th></tr></thead>\n")
+	b.WriteString("<thead><tr>")
+	b.WriteString("<th scope=\"col\" class=\"manage-column column-title column-primary\">Title</th>")
+	b.WriteString("<th scope=\"col\" class=\"manage-column column-author\">Author</th>")
+	b.WriteString("<th scope=\"col\" class=\"manage-column column-date\">Date</th>")
+	b.WriteString("<th scope=\"col\" class=\"manage-column column-status\">Status</th>")
+	b.WriteString("</tr></thead>\n")
 	b.WriteString("<tbody id=\"the-list\">\n")
 	for _, p := range posts {
 		b.WriteString("<tr id=\"post-")
 		b.WriteString(strconv.FormatInt(p.ID, 10))
-		b.WriteString("\"><td class=\"title column-title\"><strong>")
+		b.WriteString("\" class=\"iedit author-self status-")
+		b.WriteString(html.EscapeString(p.Status))
+		b.WriteString(" type-")
+		b.WriteString(html.EscapeString(postType))
+		b.WriteString(" hentry\">")
+		b.WriteString("<td class=\"title column-title has-row-actions column-primary page-title\" data-colname=\"Title\"><strong>")
 		b.WriteString(html.EscapeString(p.Title))
-		b.WriteString("</strong></td><td class=\"date column-date\">")
-		b.WriteString(html.EscapeString(p.Date))
+		b.WriteString("</strong></td>")
+		b.WriteString("<td class=\"author column-author\" data-colname=\"Author\">")
+		b.WriteString(html.EscapeString(p.Author))
+		b.WriteString("</td>")
+		b.WriteString("<td class=\"date column-date\" data-colname=\"Date\"><abbr>")
+		b.WriteString(html.EscapeString(displayPostDateLabel(p.Status)))
+		b.WriteString("</abbr><br>")
+		b.WriteString(html.EscapeString(strings.TrimSpace(p.Date)))
+		b.WriteString("</td>")
+		b.WriteString("<td class=\"status column-status\" data-colname=\"Status\">")
+		b.WriteString(html.EscapeString(displayPostStatus(p.Status)))
 		b.WriteString("</td></tr>\n")
 	}
 	b.WriteString("</tbody>\n</table>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
+}
+
+func displayPostStatus(status string) string {
+	switch status {
+	case "publish":
+		return "Published"
+	case "draft":
+		return "Draft"
+	case "pending":
+		return "Pending Review"
+	case "private":
+		return "Private"
+	case "future":
+		return "Scheduled"
+	case "trash":
+		return "Trash"
+	case "":
+		return "—"
+	default:
+		if len(status) == 1 {
+			return strings.ToUpper(status)
+		}
+		return strings.ToUpper(status[:1]) + status[1:]
+	}
+}
+
+func displayPostDateLabel(status string) string {
+	switch status {
+	case "draft", "pending", "auto-draft":
+		return "Last Modified"
+	case "future":
+		return "Scheduled"
+	default:
+		return "Published"
+	}
 }
 
 func (h *Handler) serveOptionsGeneral(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -635,9 +704,11 @@ func (h *Handler) serveUsers(w http.ResponseWriter, r *http.Request, c *wp.Conte
 }
 
 type postRow struct {
-	ID    int64
-	Title string
-	Date  string
+	ID     int64
+	Title  string
+	Date   string
+	Status string
+	Author string
 }
 
 func countPostsByTypeStatus(c *wp.Context, postType, status string) int {
@@ -677,16 +748,25 @@ func countComments(c *wp.Context, approved string) int {
 }
 
 func recentPosts(c *wp.Context, limit int) ([]postRow, error) {
+	return recentPostsByType(c, "post", limit)
+}
+
+func recentPostsByType(c *wp.Context, postType string, limit int) ([]postRow, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
 	if limit <= 0 {
 		limit = 20
 	}
+	if postType == "" {
+		postType = "post"
+	}
 	q, args, err := c.DB.Prepare(
-		"SELECT ID, post_title, post_date FROM "+c.DB.Posts()+
-			" WHERE post_type = %s AND post_status = %s ORDER BY post_date DESC LIMIT %d",
-		"post", "publish", limit,
+		"SELECT p.ID, p.post_title, p.post_date, p.post_status, p.post_author, u.display_name, u.user_login FROM "+
+			c.DB.Posts()+" p LEFT JOIN "+c.DB.Users()+" u ON p.post_author = u.ID "+
+			" WHERE p.post_type = %s AND p.post_status IN (%s, %s, %s, %s, %s) "+
+			"ORDER BY p.post_date DESC LIMIT %d",
+		postType, "publish", "draft", "pending", "private", "future", limit,
 	)
 	if err != nil {
 		return nil, err
@@ -697,10 +777,23 @@ func recentPosts(c *wp.Context, limit int) ([]postRow, error) {
 	}
 	out := make([]postRow, 0, len(rows))
 	for _, row := range rows {
+		author := asString(row["display_name"])
+		if author == "" {
+			author = asString(row["user_login"])
+		}
+		if author == "" {
+			author = "—"
+		}
+		title := asString(row["post_title"])
+		if strings.TrimSpace(title) == "" {
+			title = "(no title)"
+		}
 		out = append(out, postRow{
-			ID:    asInt64(row["ID"]),
-			Title: asString(row["post_title"]),
-			Date:  asString(row["post_date"]),
+			ID:     asInt64(row["ID"]),
+			Title:  title,
+			Date:   asString(row["post_date"]),
+			Status: asString(row["post_status"]),
+			Author: author,
 		})
 	}
 	return out, nil

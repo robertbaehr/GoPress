@@ -160,6 +160,11 @@ func TestEditPostsListsTitles(t *testing.T) {
 	if !strings.Contains(body, "Hello world!") && !strings.Contains(body, "Fixture Post") {
 		t.Fatalf("expected post titles in table, got %q", body)
 	}
+	for _, want := range []string{"column-author", "column-date", "column-status", "Published", "admin"} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected %q in edit.php table, got %q", want, body)
+		}
+	}
 }
 
 func TestUploadListsMedia(t *testing.T) {
