@@ -384,8 +384,16 @@ wp-login.php#language-switcher-post
 - prefix: wp-login.php#resetpass
   go: internal/login/login.go
   status: partial
-  task: P6.13
+  task: P6.41
   api: n/a
+  notes: "P6.41 — strength meter, pw-weak, generate button, password_hint, resetpass_form; P6.13 cookie/key flow"
+
+- prefix: wp-includes/user.php#wp_get_password_hint
+  go: internal/wp/password_reset.go
+  status: partial
+  task: P6.41
+  api: exported
+  notes: "P6.41 — GetPasswordHint + password_hint filter"
 
 - prefix: wp-login.php
   go: internal/login
