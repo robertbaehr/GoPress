@@ -1487,6 +1487,13 @@
   task: P4.58
   api: exported
 
+# P4.59: GET /wp/v2/themes (+ single stylesheet).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-themes-controller.php
+  go: internal/rest/themes.go
+  status: partial
+  task: P4.59
+  api: exported
+
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-menu-locations-controller.php
   go: internal/rest/menus.go
   status: partial

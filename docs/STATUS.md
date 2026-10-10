@@ -10,7 +10,7 @@ Short overview of what is implemented versus remaining. Detail lives in `PORTING
 | Auth / users | Password hashes (phpass / `$wp$`), roles/caps, auth cookies, usermeta `session_tokens`, nonces, login/logout/lost-password/resetpass/postpass, `confirm_admin_email` stub, application passwords |
 | Front | Home + singular + attachment HTML (password form), rewrite, feeds (RSS/Atom/RDF + comments RSS/Atom), robots/sitemap, comments, oEmbed discovery + endpoint, 404/embed/search (`search.html` + form)/date/author/tag/category archives, pagination, admin bar; `?rest_route=` REST front door; `/favicon.ico`; `/rsd.xml` stub (`xmlrpc.php?rsd` stays 403) |
 | Blocks / themes | Parser/render, core block subset (incl. post-title/content/excerpt/date/author/terms, calendar/archives/latest-posts/latest-comments/tag-cloud/search), supports (typography/border/layout/shadow/position/elements/background/dimensions/CSS filter+duotone), style engine, theme.json + style variations, patterns + pattern categories, template hierarchy/parts (404 header/footer), bindings, block styles/variations, expanded Block Hooks (nested + ignored metadata) |
-| REST (`/wp-json`) | Index, posts/pages/media/comments/taxonomies/users/settings/search/statuses, revisions/autosaves, menus/menu-items write/navigation, templates/global styles (incl. write), block-renderer, block-patterns patterns/categories, url-details (same-site), batch, site-health stubs; widgets/sidebars disabled; remote directory proxies blocked |
+| REST (`/wp-json`) | Index, posts/pages/media/comments/taxonomies/users/settings/search/statuses/themes, revisions/autosaves, menus/menu-items write/navigation, templates/global styles (incl. write), block-renderer, block-patterns patterns/categories, url-details (same-site), batch, site-health stubs; widgets/sidebars disabled; remote directory proxies blocked |
 | Admin | Dashboard + list tables, options screens (general/writing/reading/discussion/media/permalink/privacy save), media library grid/list + `media-new.php` + async upload, edit-comments bulk actions, plugins/themes/users stubs, nav menus, site editor shell, tools/import/export/privacy (requests table + confirm), admin-ajax heartbeat |
 | Plugins | MU-plugin scan, header parse, Hello Dolly shim, activate/deactivate, uninstall hook stub; PHP drop-ins detected as unsupported; Akismet not bundled (P9.8) |
 
@@ -43,8 +43,9 @@ make check
 - `make diff` / `gopress-tools diff` reloads `tests/fixtures/site.sql` into `gopress_ref` and `gopress_go` unless `--skip-db`.
 - After e2e uploads or other writes, restart `gopress serve` (or omit `--skip-db`) so object-cache/options match the reloaded fixture. Stale process memory can make a green corpus look red.
 
-## Recent stack (through P5.43)
+## Recent stack (through P4.59)
 
+- P4.59 GET `/wp/v2/themes` (+ stylesheet item)
 - P5.43 post-terms / post-date / post-author / post-title / post-excerpt / post-content renderers
 - P10.34 E2E for theme `search.html` (`/?s=`)
 - P6.16 Logout honors `redirect_to` (default `loggedout=true`)

@@ -102,6 +102,22 @@ func ThemesDir(absPath string) string {
 	return filepath.Join(root, "wp-content", "themes")
 }
 
+// IsBlockTheme reports whether the theme has templates/index.html (or legacy
+// block-templates/index.html), matching WP_Theme::is_block_theme (P4.59).
+func IsBlockTheme(absPath, stylesheet string) bool {
+	stylesheet = strings.TrimSpace(stylesheet)
+	if absPath == "" || stylesheet == "" {
+		return false
+	}
+	dir := filepath.Join(ThemesDir(absPath), stylesheet)
+	for _, rel := range []string{"templates/index.html", "block-templates/index.html"} {
+		if st, err := os.Stat(filepath.Join(dir, rel)); err == nil && !st.IsDir() {
+			return true
+		}
+	}
+	return false
+}
+
 // ListInstalledThemes scans wp-content/themes for style.css headers (P7.34).
 func ListInstalledThemes(absPath string) ([]ThemeData, error) {
 	dir := ThemesDir(absPath)
