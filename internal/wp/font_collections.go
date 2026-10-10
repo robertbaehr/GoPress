@@ -87,8 +87,8 @@ func RegisterDefaultFontCollections(l *FontLibrary) {
 		return
 	}
 	l.RegisterFontCollection("google-fonts", FontCollection{
-		Name:        "Google Fonts",
-		Description: "Install from Google Fonts. Fonts are copied to and served from your site.",
+		Name:         "Google Fonts",
+		Description:  "Install from Google Fonts. Fonts are copied to and served from your site.",
 		FontFamilies: []any{}, // remote JSON not fetched
 		Categories: []FontCollectionCategory{
 			{Name: "Sans Serif", Slug: "sans-serif"},
