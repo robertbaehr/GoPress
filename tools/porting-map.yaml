@@ -397,6 +397,12 @@
   task: P5.20
   api: partial
 
+- prefix: wp-includes/class-wp-block-styles-registry.php
+  go: internal/wp/block_styles.go
+  status: partial
+  task: P5.26
+  api: exported
+
 - prefix: wp-includes/
   go: internal/wp
   status: partial
