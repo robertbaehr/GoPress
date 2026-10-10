@@ -506,6 +506,13 @@
   task: P2.30
   api: exported
 
+# P6.17: interim login success honors redirect_to (Continue + top-level JS).
+- prefix: wp-login.php#interim-redirect
+  go: internal/login/login.go
+  status: partial
+  task: P6.17
+  api: n/a
+
 # P2.40: wp_parse_url (protocol-relative + path-only placeholders).
 - prefix: wp-includes/http.php#wp_parse_url
   go: internal/wp/parse_url.go

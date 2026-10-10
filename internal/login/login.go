@@ -328,7 +328,13 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	}
 	actionURL := loginURL
 	if interim {
-		actionURL = loginURL + "?interim-login=1"
+		// Keep interim + redirect_to on the POST action (P6.17).
+		q := url.Values{}
+		q.Set("interim-login", "1")
+		if redirectTo != "" {
+			q.Set("redirect_to", redirectTo)
+		}
+		actionURL = loginURL + "?" + q.Encode()
 	}
 	b.WriteString("\t\t<form name=\"loginform\" id=\"loginform\" action=\"")
 	b.WriteString(html.EscapeString(actionURL))
@@ -955,18 +961,63 @@ func loginErrorHTML(_, msg, _, _ string) string {
 }
 
 // serveInterimLoginSuccess shows the interim modal success stub (P6.10).
+// When redirect_to is present, offer a Continue link and a top-level-only
+// client redirect so iframe auth-check still sees interim-login-success (P6.17).
 func (h *Handler) serveInterimLoginSuccess(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "/")), "/")
 	blogname := optionString(c, "blogname", "GoPress")
+	redirectTo := ""
+	if r != nil {
+		redirectTo = strings.TrimSpace(r.FormValue("redirect_to"))
+		if redirectTo == "" && r.URL != nil {
+			redirectTo = strings.TrimSpace(r.URL.Query().Get("redirect_to"))
+		}
+	}
+	if redirectTo != "" {
+		redirectTo = sanitizeRedirect(redirectTo)
+	}
 	var b strings.Builder
 	writeLoginHead(&b, home, blogname, "Log In", "login", "interim-login", "interim-login-success")
 	b.WriteString("\t\t\t<div id=\"login\">\n")
 	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
 	b.WriteString("<p class=\"message\">You have logged in successfully.</p>\n")
+	if redirectTo != "" {
+		b.WriteString("<p class=\"submit\"><a class=\"button button-primary\" href=\"")
+		b.WriteString(html.EscapeString(redirectTo))
+		b.WriteString("\">Continue</a></p>\n")
+		b.WriteString("<script>\n")
+		b.WriteString("(function(){try{if(window.top===window.self){window.location.href=")
+		b.WriteString(strconvQuoteJS(redirectTo))
+		b.WriteString(";}}catch(e){}})();\n")
+		b.WriteString("</script>\n")
+	}
 	b.WriteString("\t\t\t</div>\n")
 	b.WriteString("\t</body>\n")
 	b.WriteString("\t</html>\n")
 	writeLoginHTML(w, b.String(), false, c)
+}
+
+func strconvQuoteJS(s string) string {
+	var b strings.Builder
+	b.WriteByte('"')
+	for _, r := range s {
+		switch r {
+		case '\\', '"':
+			b.WriteByte('\\')
+			b.WriteRune(r)
+		case '\n':
+			b.WriteString(`\n`)
+		case '\r':
+			b.WriteString(`\r`)
+		case '<':
+			// Avoid breaking out of script via </script in URL.
+			b.WriteString(`\u003c`)
+		default:
+			b.WriteRune(r)
+		}
+	}
+	b.WriteByte('"')
+	return b.String()
 }
 
 func isInterimLogin(r *http.Request) bool {
