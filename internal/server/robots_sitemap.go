@@ -3,6 +3,7 @@ package server
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -12,22 +13,25 @@ import (
 // serveRobotsTXT writes a WordPress-compatible robots.txt (do_robots subset).
 // When blog_public=0, emit Disallow: / (P3.44 search-engine visibility off).
 // P3.78: fires do_robotstxt and applies robots_txt filter.
+// P3.90: admin Disallow/Allow paths honor siteurl subdirectory prefix.
 func serveRobotsTXT(w http.ResponseWriter, c *wp.Context) {
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	public := optionTruthy(c, "blog_public")
 	if c != nil && c.Hooks != nil {
 		c.Hooks.DoAction("do_robotstxt")
 	}
+	adminPath := robotsAdminPath(c)
 	var b strings.Builder
 	b.WriteString("User-agent: *\n")
 	if !public {
 		b.WriteString("Disallow: /\n")
 	} else {
-		b.WriteString("Disallow: /wp-admin/\n")
-		b.WriteString("Allow: /wp-admin/admin-ajax.php\n")
+		b.WriteString("Disallow: " + adminPath + "/\n")
+		b.WriteString("Allow: " + adminPath + "/admin-ajax.php\n")
 	}
 	output := b.String()
 	if c != nil && c.Hooks != nil {
+		// Pass public as bool (do_robots / robots_txt filter signature, P3.90).
 		if v := c.Hooks.ApplyFilters("robots_txt", output, public); v != nil {
 			if s, ok := v.(string); ok {
 				output = s
@@ -44,6 +48,24 @@ func serveRobotsTXT(w http.ResponseWriter, c *wp.Context) {
 	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(output))
+}
+
+// robotsAdminPath returns the admin URL path for robots.txt Disallow/Allow (P3.90).
+// Mirrors wp_parse_url( admin_url(), PHP_URL_PATH ) → typically "/wp-admin".
+func robotsAdminPath(c *wp.Context) string {
+	site := strings.TrimRight(optionString(c, "siteurl", optionString(c, "home", "")), "/")
+	if site == "" {
+		return "/wp-admin"
+	}
+	u, err := url.Parse(site)
+	if err != nil || u == nil {
+		return "/wp-admin"
+	}
+	base := strings.TrimRight(u.Path, "/")
+	if base == "" || base == "/" {
+		return "/wp-admin"
+	}
+	return base + "/wp-admin"
 }
 
 // sitemapsEnabled reports whether XML sitemaps should be served (wp_sitemaps_enabled).

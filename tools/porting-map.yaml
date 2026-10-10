@@ -2381,13 +2381,20 @@ wp-login.php#language-switcher-post
   task: P3.44
   api: n/a
 
-# P3.78: robots_txt filter + sitemaps disabled when blog_public=0.
+# P3.78 / P3.90: robots_txt filter + sitemaps disabled when blog_public=0.
 - prefix: wp-includes/functions.php#robots_txt
   go: internal/server/robots_sitemap.go
   status: partial
-  task: P3.78
+  task: P3.90
   api: n/a
-  notes: "P3.78 — do_robotstxt action + robots_txt filter; Sitemap via add_robots path"
+  notes: "P3.90 — admin path from siteurl; bool public filter arg; P3.78 do_robotstxt/Sitemap"
+
+- prefix: wp-includes/robots-template.php#wp_robots
+  go: internal/server/front.go
+  status: partial
+  task: P3.90
+  api: exported
+  notes: "P3.90 — wp_robots filter; search/embed noindex; max-image-preview:large"
 
 - prefix: wp-includes/sitemaps/class-wp-sitemaps.php#enabled
   go: internal/server/robots_sitemap.go

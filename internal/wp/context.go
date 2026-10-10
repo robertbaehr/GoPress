@@ -222,6 +222,7 @@ type RequestScope struct {
 	IsSingular bool
 	IsArchive  bool
 	IsSearch   bool
+	IsEmbed    bool // oEmbed iframe /embed/ endpoint (is_embed, P3.90)
 	Is404      bool
 	IsAdmin    bool
 	IsREST     bool
