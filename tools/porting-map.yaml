@@ -753,6 +753,21 @@
   api: n/a
   notes: "P6.22 — POST-only interim-login; links target=_blank in interim form"
 
+# P6.26: SECURE_AUTH cookie + Secure flags when login is HTTPS.
+- prefix: wp-includes/pluggable.php#wp_set_auth_cookie_secure
+  go: internal/wp/auth_cookie.go
+  status: partial
+  task: P6.26
+  api: exported
+  notes: "P6.26 — secure → wordpress_sec_ + Secure; SecureLoggedIn when home is https"
+
+- prefix: wp-login.php#secure_auth_cookie
+  go: internal/login/login.go
+  status: partial
+  task: P6.26
+  api: n/a
+  notes: "P6.26 — TLS/X-Forwarded-Proto → secure SetAuthCookie / WriteAuthCookies"
+
 # P6.25: interim login success polish (transparent chrome, login_message, auth cookies).
 - prefix: wp-login.php#interim-success
   go: internal/login/login.go

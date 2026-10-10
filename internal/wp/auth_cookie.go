@@ -172,24 +172,36 @@ func (c *Context) SetAuthCookie(user *User, remember, secure bool, now int64, to
 	if secure {
 		scheme = "secure_auth"
 	}
+	// P6.26: logged_in cookie is Secure only when auth is secure and home is HTTPS
+	// (wp_set_auth_cookie $secure_logged_in_cookie).
+	secureLoggedIn := false
+	if secure && c.Options != nil {
+		home := optionValueString(c.Options.GetOption("home", ""))
+		if home == "" {
+			home = optionValueString(c.Options.GetOption("siteurl", ""))
+		}
+		secureLoggedIn = strings.HasPrefix(strings.ToLower(home), "https://")
+	}
 	authVal := c.Auth.GenerateAuthCookie(user.Login, user.Pass, expiration, scheme, token)
 	loggedIn := c.Auth.GenerateAuthCookie(user.Login, user.Pass, expiration, "logged_in", token)
 	return &AuthCookieSet{
-		UserID:        user.ID,
-		Expiration:    expiration,
-		Expire:        expire,
-		Token:         token,
-		Scheme:        scheme,
-		AuthName:      c.AuthCookieName(scheme),
-		AuthValue:     authVal,
-		LoggedInName:  c.AuthCookieName("logged_in"),
-		LoggedInValue: loggedIn,
+		UserID:         user.ID,
+		Expiration:     expiration,
+		Expire:         expire,
+		Token:          token,
+		Scheme:         scheme,
+		AuthName:       c.AuthCookieName(scheme),
+		AuthValue:      authVal,
+		LoggedInName:   c.AuthCookieName("logged_in"),
+		LoggedInValue:  loggedIn,
+		SecureLoggedIn: secureLoggedIn,
 	}, nil
 }
 
 // WriteAuthCookies writes SetAuthCookie values onto w (HttpOnly).
 // When Remember Me was checked, Expire is non-zero and MaxAge is set so the
 // browser keeps the longer-lived cookie (P6.24).
+// P6.26: secure_auth cookies set Secure; logged_in Secure follows SecureLoggedIn.
 func (set *AuthCookieSet) WriteAuthCookies(w http.ResponseWriter, path string) {
 	if set == nil || w == nil {
 		return
@@ -197,12 +209,14 @@ func (set *AuthCookieSet) WriteAuthCookies(w http.ResponseWriter, path string) {
 	if path == "" {
 		path = "/"
 	}
-	write := func(name, value string, expire int64) {
+	authSecure := set.Scheme == "secure_auth"
+	write := func(name, value string, expire int64, secure bool) {
 		c := &http.Cookie{
 			Name:     name,
 			Value:    value,
 			Path:     path,
 			HttpOnly: true,
+			Secure:   secure,
 		}
 		if expire > 0 {
 			c.Expires = time.Unix(expire, 0)
@@ -215,8 +229,8 @@ func (set *AuthCookieSet) WriteAuthCookies(w http.ResponseWriter, path string) {
 		}
 		http.SetCookie(w, c)
 	}
-	write(set.AuthName, set.AuthValue, set.Expire)
-	write(set.LoggedInName, set.LoggedInValue, set.Expire)
+	write(set.AuthName, set.AuthValue, set.Expire, authSecure)
+	write(set.LoggedInName, set.LoggedInValue, set.Expire, set.SecureLoggedIn)
 }
 
 // ClearAuthCookies expires auth and logged_in cookies (wp_clear_auth_cookie).
