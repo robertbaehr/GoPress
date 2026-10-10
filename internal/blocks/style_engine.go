@@ -54,7 +54,56 @@ func CompileStyle(style map[string]any) string {
 	if shadow, ok := style["shadow"].(string); ok && shadow != "" {
 		parts = append(parts, "box-shadow:"+cssValue(shadow))
 	}
+	// Position block support (P5.28): style.position → position/z-index/sides.
+	parts = append(parts, positionStyles(style["position"])...)
 	return strings.Join(parts, ";")
+}
+
+// positionStyles mirrors wp_get_position_support_styles for sticky/fixed (P5.28).
+func positionStyles(v any) []string {
+	pos, ok := v.(map[string]any)
+	if !ok || pos == nil {
+		return nil
+	}
+	posType, _ := pos["type"].(string)
+	posType = strings.TrimSpace(posType)
+	if posType != "sticky" && posType != "fixed" {
+		return nil
+	}
+	var out []string
+	for _, side := range []string{"top", "right", "bottom", "left"} {
+		raw, ok := pos[side]
+		if !ok || raw == nil {
+			continue
+		}
+		sideVal := ""
+		switch t := raw.(type) {
+		case string:
+			sideVal = strings.TrimSpace(t)
+		case float64:
+			if t == 0 {
+				sideVal = "0px"
+			} else {
+				sideVal = fmt.Sprintf("%g", t)
+			}
+		default:
+			sideVal = strings.TrimSpace(fmt.Sprint(raw))
+		}
+		if sideVal == "" {
+			continue
+		}
+		if sideVal == "0" {
+			sideVal = "0px"
+		}
+		if side == "top" {
+			sideVal = "calc(" + cssValue(sideVal) + " + var(--wp-admin--admin-bar--position-offset, 0px))"
+			out = append(out, "top:"+sideVal)
+			continue
+		}
+		out = append(out, side+":"+cssValue(sideVal))
+	}
+	out = append(out, "position:"+posType, "z-index:10")
+	return out
 }
 
 // CompileCSS builds a stylesheet rule for selector from a style object.
