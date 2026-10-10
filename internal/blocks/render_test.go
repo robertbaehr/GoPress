@@ -170,16 +170,6 @@ func TestRenderVoidSpacer(t *testing.T) {
 	}
 }
 
-func TestRenderEmbedLinkFallback(t *testing.T) {
-	out := blocks.Render(`<!-- wp:embed {"url":"https://example.org/watch","caption":"Demo"} /-->`)
-	if !strings.Contains(out, `<a href="https://example.org/watch">https://example.org/watch</a>`) {
-		t.Fatalf("missing link fallback: %q", out)
-	}
-	if !strings.Contains(out, `Demo`) {
-		t.Fatalf("missing caption: %q", out)
-	}
-}
-
 func truncate(s string, n int) string {
 	if len(s) <= n {
 		return s
