@@ -5812,6 +5812,14 @@
   api: n/a
   notes: "P10.93 — STATUS/PORTING refresh after P5.91–P10.92 (258/258 corpus)"
 
+# P10.95: STATUS/PORTING refresh after P5.92–P10.94.
+- prefix: docs/STATUS.md#p10.95
+  go: docs/STATUS.md
+  status: partial
+  task: P10.95
+  api: n/a
+  notes: "P10.95 — STATUS/PORTING refresh after P5.92–P10.94 (276/276 corpus)"
+
 # P10.92: expand diff corpus after P5.91–P8.26.
 - prefix: tests/corpus/#p10.92
   go: tests/corpus/
