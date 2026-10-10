@@ -2995,7 +2995,9 @@ func (h *Handler) serveThemes(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		b.WriteString(strconv.Itoa(len(themes)))
 	}
 	b.WriteString("</span></h1>\n")
-	if c != nil && c.CurrentUserCan("install_themes") {
+	// install_themes is denied in GoPress; still surface the Add Theme chrome for
+	// switch_themes users so the theme-install stub remains reachable (P7.87).
+	if c != nil && c.CurrentUserCan("switch_themes") {
 		b.WriteString("<a href=\"/wp-admin/theme-install.php\" class=\"page-title-action\">Add Theme</a>\n")
 	}
 	b.WriteString("<hr class=\"wp-header-end\">\n")
