@@ -755,12 +755,13 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P4.79 — DeleteUser + optional post_author reassignment"
 
-# P4.46 / P4.62: GET collection + POST/PUT users write (create_users / edit_user).
+# P4.46 / P4.62 / P4.118: GET collection + POST/PUT users write (create_users / edit_user).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-users-controller.php
   go: internal/rest/users_write.go
   status: partial
-  task: P4.62
+  task: P4.118
   api: exported
+  notes: "P4.118 — PATCH first_name/last_name/nickname/locale omit-safe; edit-context profile fields; P4.62 base"
 
 # P4.99: /wp/v2/users/me richer fields + self-update.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-users-controller.php#me

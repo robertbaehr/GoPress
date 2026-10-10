@@ -209,8 +209,15 @@ func (s *Server) updateCurrentUser(w http.ResponseWriter, r *http.Request, c *wp
 func buildListedUser(c *wp.Context, u *wp.User, canList bool, context string) User {
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	desc := ""
+	firstName, lastName, nickname, locale := "", "", "", ""
 	if c != nil && c.Meta != nil {
 		desc = asString(c.Meta.GetMetadata(wp.MetaUser, u.ID, "description", true))
+		if context == "edit" {
+			firstName = asString(c.Meta.GetMetadata(wp.MetaUser, u.ID, "first_name", true))
+			lastName = asString(c.Meta.GetMetadata(wp.MetaUser, u.ID, "last_name", true))
+			nickname = asString(c.Meta.GetMetadata(wp.MetaUser, u.ID, "nickname", true))
+			locale = asString(c.Meta.GetMetadata(wp.MetaUser, u.ID, "locale", true))
+		}
 	}
 	slug := u.Nicename
 	if slug == "" {
@@ -241,6 +248,10 @@ func buildListedUser(c *wp.Context, u *wp.User, canList bool, context string) Us
 		if context == "edit" {
 			out.Username = u.Login
 			out.Email = u.Email
+			out.FirstName = firstName
+			out.LastName = lastName
+			out.Nickname = nickname
+			out.Locale = locale
 		}
 	}
 	return out

@@ -331,6 +331,8 @@ func (s *Server) getUser(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	writeJSON(w, http.StatusOK, buildListedUser(c, u, canList, context))
 }
 
+// updateUser handles PUT/PATCH /wp/v2/users/{id} (P4.62 / P4.118).
+// P4.118: omit-safe first_name/last_name/nickname/locale (+ empty clears).
 func (s *Server) updateUser(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
 	if c == nil || c.CurrentUser == nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]any{
@@ -413,6 +415,14 @@ func (s *Server) updateUser(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		})
 		return
 	}
+	// P4.118: omit-safe profile usermeta (first/last/nickname/locale), including empty clears.
+	if c.Meta != nil {
+		for _, key := range []string{"first_name", "last_name", "nickname", "locale"} {
+			if v, ok := fields[key].(string); ok {
+				_, _, _, _ = c.Meta.UpdateMetadata(wp.MetaUser, id, key, v, "")
+			}
+		}
+	}
 	u, err = c.GetUserBy("id", id)
 	if err != nil || u == nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
@@ -421,6 +431,9 @@ func (s *Server) updateUser(w http.ResponseWriter, r *http.Request, c *wp.Contex
 			"data":    map[string]any{"status": 500},
 		})
 		return
+	}
+	if c.Roles != nil {
+		_ = c.Roles.InitUser(u, c.Meta)
 	}
 	writeJSON(w, http.StatusOK, buildListedUser(c, u, true, "edit"))
 }
