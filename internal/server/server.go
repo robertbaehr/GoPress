@@ -54,8 +54,9 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// P6.4: when not installed, serve install placeholder at / and install.php.
-	if path == "/" || path == "/wp-admin/install.php" {
+	// P6.4: when a bootstrapped site is not installed, serve the install stub
+	// at / and /wp-admin/install.php. Nil WP (unit stubs) keeps prior behavior.
+	if s.WP != nil && s.WP.Options != nil && (path == "/" || path == "/wp-admin/install.php") {
 		c := s.requestContext(w, r)
 		if !wp.IsInstalled(c) {
 			serveInstallPlaceholder(w, r)
