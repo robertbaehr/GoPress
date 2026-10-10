@@ -33,6 +33,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/profile.php":
 		h.requireLogin(w, r, c, h.serveProfile)
 		return true
+	case "/wp-admin/admin-ajax.php":
+		h.serveAdminAjax(w, r, c)
+		return true
 	default:
 		return false
 	}

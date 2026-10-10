@@ -56,6 +56,9 @@ type Context struct {
 	// CurrentUser is the authenticated user for this request (P2.2+).
 	CurrentUser *User
 
+	// SessionToken is the session token from the auth cookie (P2.4+/P7.2).
+	SessionToken string
+
 	// Req is the inbound HTTP request (nil for CLI).
 	Req *http.Request
 
