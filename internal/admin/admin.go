@@ -6,6 +6,7 @@ import (
 	"html"
 	"net/http"
 	"net/url"
+	"path/filepath"
 	"strconv"
 	"strings"
 
@@ -1184,9 +1185,15 @@ func (h *Handler) serveExport(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveExportPersonalData is a privacy tools stub (P8.2) with file generation (P8.4).
+// serveExportPersonalData is a privacy tools stub (P8.2) with file generation (P8.4)
+// and download wiring (P8.6).
 func (h *Handler) serveExportPersonalData(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if r.Method == http.MethodGet && r.URL.Query().Get("action") == "download" {
+		h.servePersonalDataExportDownload(w, r, c)
+		return
+	}
 	note := "GoPress privacy export stub — full request workflow lands later."
+	var downloadLinks string
 	if r.Method == http.MethodPost {
 		_ = r.ParseForm()
 		email := strings.TrimSpace(r.Form.Get("username"))
@@ -1196,13 +1203,34 @@ func (h *Handler) serveExportPersonalData(w http.ResponseWriter, r *http.Request
 		if res, err := wp.GeneratePersonalDataExportFile(c, email); err != nil {
 			note = "Export generation failed: " + err.Error()
 		} else {
-			note = "Export file generated: " + res.JSONURL
+			jsonName := filepath.Base(res.JSONPath)
+			htmlName := filepath.Base(res.HTMLPath)
+			jsonDL := wp.PersonalDataExportDownloadURL(jsonName)
+			htmlDL := wp.PersonalDataExportDownloadURL(htmlName)
+			note = "Export file generated for " + email + "."
+			downloadLinks = "<p class=\"export-download-links\">" +
+				"<a class=\"button button-primary\" href=\"" + html.EscapeString(jsonDL) + "\">Download JSON</a> " +
+				"<a class=\"button\" href=\"" + html.EscapeString(htmlDL) + "\">Download HTML</a>" +
+				"</p>\n"
 		}
 	}
-	h.servePrivacyExportPage(w, c, note)
+	h.servePrivacyExportPage(w, c, note, downloadLinks)
 }
 
-func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, c *wp.Context, note string) {
+func (h *Handler) servePersonalDataExportDownload(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	fileName := strings.TrimSpace(r.URL.Query().Get("file"))
+	full := wp.ResolvePersonalDataExportFile(c, fileName)
+	if full == "" {
+		http.Error(w, "Export file not found.\n", http.StatusNotFound)
+		return
+	}
+	w.Header().Set("Content-Type", "application/octet-stream")
+	w.Header().Set("Content-Disposition", "attachment; filename=\""+filepath.Base(full)+"\"")
+	w.Header().Set("X-Content-Type-Options", "nosniff")
+	http.ServeFile(w, r, full)
+}
+
+func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, c *wp.Context, note, downloadLinks string) {
 	blogname := optionString(c, "blogname", "GoPress")
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
@@ -1217,15 +1245,28 @@ func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, c *wp.Context, n
 	b.WriteString("<p class=\"description\">")
 	b.WriteString(html.EscapeString(note))
 	b.WriteString("</p>\n")
+	b.WriteString(downloadLinks)
 	b.WriteString("<form method=\"post\" action=\"/wp-admin/export-personal-data.php\" class=\"wp-privacy-request-form\">\n")
 	b.WriteString("<p><label for=\"username\">Username or email address</label><br>\n")
 	b.WriteString("<input name=\"username\" type=\"text\" id=\"username\" class=\"regular-text\" required></p>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Send Request\"></p>\n")
 	b.WriteString("</form>\n")
 	b.WriteString("<table class=\"wp-list-table widefat fixed striped privacy-requests\">\n")
-	b.WriteString("<thead><tr><th scope=\"col\">Requester</th><th scope=\"col\">Status</th></tr></thead>\n")
-	b.WriteString("<tbody><tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"2\">No requests found.</td></tr></tbody>\n")
-	b.WriteString("</table>\n</div>\n</body>\n</html>\n")
+	b.WriteString("<thead><tr><th scope=\"col\">File</th><th scope=\"col\">Status</th><th scope=\"col\">Download</th></tr></thead>\n")
+	b.WriteString("<tbody>\n")
+	files := wp.ListPersonalDataExportFiles(c, 20)
+	if len(files) == 0 {
+		b.WriteString("<tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"3\">No requests found.</td></tr>\n")
+	}
+	for _, name := range files {
+		dl := wp.PersonalDataExportDownloadURL(name)
+		b.WriteString("<tr><td>")
+		b.WriteString(html.EscapeString(name))
+		b.WriteString("</td><td>Complete</td><td><a class=\"export-personal-data-download\" href=\"")
+		b.WriteString(html.EscapeString(dl))
+		b.WriteString("\">Download</a></td></tr>\n")
+	}
+	b.WriteString("</tbody>\n</table>\n</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
 
