@@ -56,3 +56,51 @@ func TestGetPluginDataFromTemp(t *testing.T) {
 		t.Fatalf("%+v", data)
 	}
 }
+
+func TestListMUPluginsHeaders(t *testing.T) {
+	c := bootOrSkip(t)
+	root := t.TempDir()
+	mu := filepath.Join(root, "wp-content", "mu-plugins")
+	if err := os.MkdirAll(mu, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	named := `<?php
+/**
+ * Plugin Name: MU Fixture
+ * Version: 2.0
+ * Description: Must-use test plugin
+ */
+`
+	if err := os.WriteFile(filepath.Join(mu, "mu-fixture.php"), []byte(named), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(mu, "index.php"), []byte("<?php\n// Silence is golden.\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(filepath.Join(mu, "subdir"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(mu, "subdir", "nested.php"), []byte("<?php\n/** Plugin Name: Nested */\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	c.Config.ABSPATH = root + string(os.PathSeparator)
+	list, err := plugins.ListMUPlugins(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	byFile := map[string]plugins.PluginData{}
+	for _, p := range list {
+		byFile[p.File] = p
+	}
+	if _, ok := byFile["subdir/nested.php"]; ok {
+		t.Fatalf("get_mu_plugins must not include subdir plugins: %+v", list)
+	}
+	fx, ok := byFile["mu-fixture.php"]
+	if !ok || fx.Name != "MU Fixture" || fx.Version != "2.0" {
+		t.Fatalf("fixture: %+v list=%+v", fx, list)
+	}
+	idx, ok := byFile["index.php"]
+	if !ok || idx.Name != "index.php" {
+		t.Fatalf("index.php should default Name to basename: %+v", idx)
+	}
+}
