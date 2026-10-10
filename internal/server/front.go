@@ -1565,6 +1565,19 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			}
 			return p.Content, true
 		},
+		LoadBlock: func(ref int64) (string, bool) {
+			if c == nil || ref <= 0 {
+				return "", false
+			}
+			row, err := wp.GetPost(c, wp.QueryArgs{P: ref, PostType: "wp_block", PostStatus: "publish"})
+			if err != nil || row == nil {
+				return "", false
+			}
+			if strings.TrimSpace(row.Password) != "" {
+				return "", false
+			}
+			return row.Content, true
+		},
 		LoadFootnotes: func(postID int64) string {
 			if c == nil || c.Meta == nil || postID <= 0 {
 				return ""

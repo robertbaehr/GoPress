@@ -57,3 +57,44 @@ func TestPostMetaBindingMissingKeyKeepsFallback(t *testing.T) {
 		t.Fatalf("expected fallback retained: %q", out)
 	}
 }
+
+func TestSyncedPatternAppliesContentOverrides(t *testing.T) {
+	pattern := `<!-- wp:paragraph {"metadata":{"name":"hero","bindings":{"__default":{"source":"core/pattern-overrides"}}}} -->
+<p>Pattern fallback</p>
+<!-- /wp:paragraph -->`
+	in := `<!-- wp:block {"ref":42,"content":{"hero":{"content":"Instance copy"}}} /-->`
+	env := &blocks.Env{
+		LoadBlock: func(ref int64) (string, bool) {
+			if ref == 42 {
+				return pattern, true
+			}
+			return "", false
+		},
+	}
+	out := blocks.RenderWith(env, in)
+	if !strings.Contains(out, "Instance copy") {
+		t.Fatalf("expected content override, got %q", out)
+	}
+	if strings.Contains(out, "Pattern fallback") {
+		t.Fatalf("fallback should be replaced: %q", out)
+	}
+}
+
+func TestSyncedPatternLegacyOverridesAttr(t *testing.T) {
+	pattern := `<!-- wp:heading {"metadata":{"name":"title","bindings":{"__default":{"source":"core/pattern-overrides"}}}} -->
+<h2>Old</h2>
+<!-- /wp:heading -->`
+	in := `<!-- wp:block {"ref":9,"overrides":{"title":{"content":"New title"}}} /-->`
+	env := &blocks.Env{
+		LoadBlock: func(ref int64) (string, bool) {
+			if ref == 9 {
+				return pattern, true
+			}
+			return "", false
+		},
+	}
+	out := blocks.RenderWith(env, in)
+	if !strings.Contains(out, "New title") {
+		t.Fatalf("expected legacy overrides attr, got %q", out)
+	}
+}

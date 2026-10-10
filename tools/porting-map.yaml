@@ -369,7 +369,19 @@
 - prefix: wp-includes/block-bindings/
   go: internal/blocks/bindings.go
   status: partial
-  task: P5.20
+  task: P5.25
+  api: partial
+
+- prefix: wp-includes/block-bindings/pattern-overrides.php
+  go: internal/blocks/bindings.go
+  status: partial
+  task: P5.25
+  api: partial
+
+- prefix: wp-includes/blocks/block.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.25
   api: partial
 
 - prefix: wp-includes/class-wp-block-bindings-

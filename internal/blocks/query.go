@@ -137,6 +137,115 @@ func (e *Env) renderPattern(block Block) string {
 	return e.Render(content)
 }
 
+// renderSyncedPattern renders core/block (synced pattern / reusable block) with
+// pattern override context from the content|overrides attribute (P5.25).
+func (e *Env) renderSyncedPattern(block Block) string {
+	e = e.ensure()
+	ref := attrInt64(block.Attrs, "ref")
+	if ref <= 0 || e.LoadBlock == nil {
+		return ""
+	}
+	if e.seenBlock == nil {
+		e.seenBlock = map[int64]bool{}
+	}
+	if e.seenBlock[ref] {
+		return ""
+	}
+	e.seenBlock[ref] = true
+	defer delete(e.seenBlock, ref)
+
+	content, ok := e.LoadBlock(ref)
+	if !ok || strings.TrimSpace(content) == "" {
+		return ""
+	}
+
+	overrides := patternOverridesFromAttrs(block.Attrs)
+	prev := e.PatternOverrides
+	if len(overrides) > 0 {
+		e.PatternOverrides = mergePatternOverrides(prev, overrides)
+		defer func() { e.PatternOverrides = prev }()
+	}
+	return e.Render(content)
+}
+
+// patternOverridesFromAttrs extracts pattern/overrides context from core/block attrs.
+// Supports content (current) and deprecated overrides (v1), plus nested values (v2).
+func patternOverridesFromAttrs(attrs map[string]any) map[string]map[string]string {
+	if attrs == nil {
+		return nil
+	}
+	raw, ok := attrs["content"]
+	if !ok || raw == nil {
+		raw, ok = attrs["overrides"]
+		if !ok || raw == nil {
+			return nil
+		}
+	}
+	obj, ok := raw.(map[string]any)
+	if !ok {
+		return nil
+	}
+	out := map[string]map[string]string{}
+	for name, entry := range obj {
+		name = strings.TrimSpace(name)
+		if name == "" {
+			continue
+		}
+		entryMap, ok := entry.(map[string]any)
+		if !ok {
+			continue
+		}
+		// v2 deprecation: unwrap nested values object.
+		if values, ok := entryMap["values"].(map[string]any); ok {
+			entryMap = values
+		}
+		attrsOut := map[string]string{}
+		for attr, v := range entryMap {
+			if attr == "values" {
+				continue
+			}
+			s := strings.TrimSpace(fmt.Sprint(v))
+			if s == "" || s == "<nil>" {
+				continue
+			}
+			attrsOut[attr] = s
+		}
+		if len(attrsOut) > 0 {
+			out[name] = attrsOut
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
+}
+
+func mergePatternOverrides(base, overlay map[string]map[string]string) map[string]map[string]string {
+	if len(base) == 0 {
+		return overlay
+	}
+	if len(overlay) == 0 {
+		return base
+	}
+	merged := map[string]map[string]string{}
+	for k, v := range base {
+		cp := map[string]string{}
+		for ak, av := range v {
+			cp[ak] = av
+		}
+		merged[k] = cp
+	}
+	for k, v := range overlay {
+		if merged[k] == nil {
+			merged[k] = map[string]string{}
+		}
+		for ak, av := range v {
+			merged[k][ak] = av
+		}
+	}
+	return merged
+}
+
 func (e *Env) renderPostTitle(block Block) string {
 	e = e.ensure()
 	if e.currentPost == nil {

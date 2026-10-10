@@ -104,6 +104,8 @@ func (e *Env) RenderBlock(block Block) string {
 		return e.renderQueryNoResults(block)
 	case "core/pattern":
 		return e.renderPattern(block)
+	case "core/block":
+		return e.renderSyncedPattern(block)
 	case "core/post-title":
 		out = e.renderPostTitle(block)
 	case "core/post-content":
