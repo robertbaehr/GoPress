@@ -42,7 +42,7 @@ golden:
 	@bash scripts/golden.sh
 
 diff: build
-	./bin/gopress-tools diff --ref http://127.0.0.1:8081 --go http://127.0.0.1:8081
+	./bin/gopress-tools diff --ref http://127.0.0.1:8081 --go http://127.0.0.1:8082
 
 e2e:
 	@if ! command -v node >/dev/null 2>&1; then \
