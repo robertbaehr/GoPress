@@ -212,3 +212,22 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.96: login language / reauth header cases.
+- id: login-lostpassword-wp-lang
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword&wp_lang=en_US
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-reauth-redirect-admin
+  role: anon
+  method: GET
+  path: /wp-login.php?reauth=1&redirect_to=%2Fwp-admin%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
