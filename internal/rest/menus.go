@@ -36,9 +36,10 @@ type ClassicMenuItem struct {
 
 // MenuLocation is a wp/v2 menu-locations entry.
 type MenuLocation struct {
-	Name        string `json:"name"`
-	Description string `json:"description"`
-	Menu        int64  `json:"menu"`
+	Name        string         `json:"name"`
+	Description string         `json:"description"`
+	Menu        int64          `json:"menu"`
+	Links       map[string]any `json:"_links,omitempty"`
 }
 
 func canViewMenus(c *wp.Context) bool {
@@ -51,6 +52,24 @@ func canViewMenus(c *wp.Context) bool {
 	return c.UserCan(c.CurrentUser, "edit_posts")
 }
 
+// canViewMenuLocations mirrors WP_REST_Menu_Locations_Controller::check_has_read_only_access (P4.109).
+func canViewMenuLocations(c *wp.Context) bool {
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("rest_menu_read_access", false); v != nil {
+			switch t := v.(type) {
+			case bool:
+				if t {
+					return true
+				}
+			}
+		}
+	}
+	if c == nil || c.CurrentUser == nil {
+		return false
+	}
+	return c.UserCan(c.CurrentUser, "edit_theme_options")
+}
+
 func writeMenusForbidden(w http.ResponseWriter, c *wp.Context) {
 	status := http.StatusUnauthorized
 	if c != nil && c.CurrentUser != nil {
@@ -61,6 +80,43 @@ func writeMenusForbidden(w http.ResponseWriter, c *wp.Context) {
 		"message": "Sorry, you are not allowed to view menus.",
 		"data":    map[string]any{"status": status},
 	})
+}
+
+func writeMenuLocationsForbidden(w http.ResponseWriter, c *wp.Context) {
+	status := http.StatusUnauthorized
+	if c != nil && c.CurrentUser != nil {
+		status = http.StatusForbidden
+	}
+	writeJSON(w, status, map[string]any{
+		"code":    "rest_cannot_view",
+		"message": "Sorry, you are not allowed to view menu locations.",
+		"data":    map[string]any{"status": status},
+	})
+}
+
+func prepareMenuLocation(c *wp.Context, name, desc string, menuID int64) MenuLocation {
+	base := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	jsonBase := base + "/wp-json/wp/v2/menu-locations"
+	links := map[string]any{
+		"self": []map[string]any{{
+			"href": jsonBase + "/" + name,
+		}},
+		"collection": []map[string]any{{
+			"href": jsonBase,
+		}},
+	}
+	if menuID > 0 {
+		links["https://api.w.org/menu"] = []map[string]any{{
+			"href":       base + "/wp-json/wp/v2/menus/" + strconv.FormatInt(menuID, 10),
+			"embeddable": true,
+		}}
+	}
+	return MenuLocation{
+		Name:        name,
+		Description: desc,
+		Menu:        menuID,
+		Links:       links,
+	}
 }
 
 func (s *Server) serveMenus(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -305,18 +361,14 @@ func (s *Server) serveMenuLocations(w http.ResponseWriter, r *http.Request, c *w
 		})
 		return
 	}
-	if !canViewMenus(c) {
-		writeMenusForbidden(w, c)
+	if !canViewMenuLocations(c) {
+		writeMenuLocationsForbidden(w, c)
 		return
 	}
 	assigned := wp.GetNavMenuLocations(c)
 	out := map[string]MenuLocation{}
 	for name, desc := range wp.RegisteredNavMenus(c) {
-		out[name] = MenuLocation{
-			Name:        name,
-			Description: desc,
-			Menu:        assigned[name],
-		}
+		out[name] = prepareMenuLocation(c, name, desc, assigned[name])
 	}
 	w.Header().Set("Allow", "GET")
 	writeJSON(w, http.StatusOK, out)
@@ -336,16 +388,12 @@ func (s *Server) serveMenuLocationItem(w http.ResponseWriter, r *http.Request, c
 	}
 	switch r.Method {
 	case http.MethodGet:
-		if !canViewMenus(c) {
-			writeMenusForbidden(w, c)
+		if !canViewMenuLocations(c) {
+			writeMenuLocationsForbidden(w, c)
 			return
 		}
 		w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
-		writeJSON(w, http.StatusOK, MenuLocation{
-			Name:        location,
-			Description: desc,
-			Menu:        wp.GetNavMenuLocations(c)[location],
-		})
+		writeJSON(w, http.StatusOK, prepareMenuLocation(c, location, desc, wp.GetNavMenuLocations(c)[location]))
 	case http.MethodPost, http.MethodPut, http.MethodPatch:
 		s.updateMenuLocation(w, r, c, location, desc)
 	case http.MethodDelete:
@@ -386,11 +434,7 @@ func (s *Server) deleteMenuLocation(w http.ResponseWriter, r *http.Request, c *w
 		return
 	}
 	w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
-	writeJSON(w, http.StatusOK, MenuLocation{
-		Name:        location,
-		Description: desc,
-		Menu:        0,
-	})
+	writeJSON(w, http.StatusOK, prepareMenuLocation(c, location, desc, 0))
 }
 
 func (s *Server) updateMenuLocation(w http.ResponseWriter, r *http.Request, c *wp.Context, location, desc string) {
@@ -428,11 +472,7 @@ func (s *Server) updateMenuLocation(w http.ResponseWriter, r *http.Request, c *w
 		return
 	}
 	w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
-	writeJSON(w, http.StatusOK, MenuLocation{
-		Name:        location,
-		Description: desc,
-		Menu:        wp.GetNavMenuLocations(c)[location],
-	})
+	writeJSON(w, http.StatusOK, prepareMenuLocation(c, location, desc, wp.GetNavMenuLocations(c)[location]))
 }
 
 func decodeMenuLocationMenuID(r *http.Request) (int64, error) {
