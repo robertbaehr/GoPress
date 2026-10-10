@@ -1,4 +1,12 @@
 
+# P7.95: about.php What's New screen stub.
+- prefix: wp-admin/about.php
+  go: internal/admin/credits.go
+  status: partial
+  task: P7.95
+  api: n/a
+  notes: "P7.95 — about__container + What's New tab; version header; return-to-dashboard"
+
 # P7.94: credits.php / freedoms.php About screen stubs.
 - prefix: wp-admin/credits.php
   go: internal/admin/credits.go

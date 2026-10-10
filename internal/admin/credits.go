@@ -8,6 +8,42 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
+// serveAbout is the About → What's New screen stub (P7.95).
+func (h *Handler) serveAbout(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	displayVersion := strings.SplitN(wp.Version, "-", 2)[0]
+	displayMajor := "7.1"
+	if parts := strings.SplitN(displayVersion, ".", 3); len(parts) >= 2 {
+		displayMajor = parts[0] + "." + parts[1]
+	}
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>About &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui about-php\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap about__container\">\n")
+	b.WriteString("<div class=\"about__header\">\n")
+	b.WriteString("<div class=\"about__header-title\"><h1>WordPress ")
+	b.WriteString(html.EscapeString(displayVersion))
+	b.WriteString("</h1></div>\n")
+	b.WriteString("</div>\n")
+	b.WriteString(aboutTabsHTML("about"))
+	b.WriteString("<div class=\"about__section\">\n")
+	b.WriteString("<div class=\"column is-left-padding-zero is-right-padding-zero\">\n")
+	b.WriteString("<h2>Welcome to WordPress ")
+	b.WriteString(html.EscapeString(displayMajor))
+	b.WriteString("</h2>\n")
+	b.WriteString("<p class=\"is-subheading\">GoPress about.php stub (P7.95) — release feature copy lands later.</p>\n")
+	b.WriteString("</div>\n</div>\n")
+	b.WriteString("<hr class=\"is-large\" />\n")
+	b.WriteString("<div class=\"return-to-dashboard\">\n")
+	b.WriteString("<a href=\"index.php\">Go to Dashboard &rarr; Home</a>\n")
+	b.WriteString("</div>\n</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
 // serveCredits is the About → Credits screen stub (P7.94).
 func (h *Handler) serveCredits(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
