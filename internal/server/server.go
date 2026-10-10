@@ -8,6 +8,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/robertbaehr/GoPress/internal/admin"
 	"github.com/robertbaehr/GoPress/internal/login"
 	"github.com/robertbaehr/GoPress/internal/rest"
 	"github.com/robertbaehr/GoPress/internal/wp"
@@ -35,6 +36,9 @@ type Server struct {
 
 	// Login serves /wp-login.php. When nil, a default login.Handler is used.
 	Login *login.Handler
+
+	// Admin serves /wp-admin screens. When nil, a default admin.Handler is used.
+	Admin *admin.Handler
 }
 
 // ServeHTTP implements http.Handler.
@@ -58,9 +62,16 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		h.Handle(w, r, c)
 		return
 	}
-	if path == "/wp-admin" || path == "/wp-admin/" || path == "/wp-admin/index.php" {
+	if strings.HasPrefix(path, "/wp-admin") && !isStaticPath(path) {
 		c := s.requestContext(w, r)
-		s.serveAdminStub(w, r, c)
+		ah := s.Admin
+		if ah == nil {
+			ah = &admin.Handler{}
+		}
+		if ah.Handle(w, r, c, path) {
+			return
+		}
+		http.NotFound(w, r)
 		return
 	}
 	if path == "/wp-json" || strings.HasPrefix(path, "/wp-json/") {
@@ -165,35 +176,6 @@ func pathCleanURL(p string) string {
 		return "/"
 	}
 	return "/" + strings.Join(out, "/")
-}
-
-// serveAdminStub is a minimal wp-admin dashboard until P7 ports admin screens.
-// It returns 200 so login redirects and the diff harness nonce scrape succeed.
-func (s *Server) serveAdminStub(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	blogname := "GoPress"
-	if c != nil && c.Options != nil {
-		if v, ok := c.Options.GetOption("blogname", "").(string); ok && v != "" {
-			blogname = v
-		}
-	}
-	// Placeholder nonce for harness scrape; real wp_create_nonce lands with sessions.
-	nonce := "stubnonce1"
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-	fmt.Fprintf(w, `<!DOCTYPE html>
-<html>
-<head>
-<title>Dashboard &lsaquo; %s &#8212; WordPress</title>
-<script>var wpApiSettings = {"root":"/wp-json/","nonce":"%s"};</script>
-<script>var heartbeatSettings = {"nonce":"%s"};</script>
-</head>
-<body class="wp-admin">
-<h1>Dashboard</h1>
-<p>%s</p>
-<p>GoPress admin stub (P6.2) — full screens land in P7.</p>
-</body>
-</html>
-`, blogname, nonce, nonce, blogname)
 }
 
 // isStaticPath reports whether path is a frozen WordPress asset prefix.
