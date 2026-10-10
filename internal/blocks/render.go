@@ -57,6 +57,17 @@ func (e *Env) RenderBlock(block Block) string {
 		return e.renderEmbed(block)
 	case "core/template-part":
 		return e.renderTemplatePart(block)
+	case "core/navigation":
+		return e.renderNavigation(block)
+	case "core/navigation-link":
+		return e.renderNavigationLink(block)
+	case "core/page-list":
+		// Standalone page-list (outside navigation): wrap as a simple list.
+		items := e.renderPageList(block)
+		if items == "" {
+			return ""
+		}
+		return `<ul class="wp-block-page-list">` + items + `</ul>`
 	default:
 		// Unknown blocks: prefer saved markup with nested reconstruction.
 		if len(block.InnerBlocks) > 0 || len(block.InnerContent) > 0 {
