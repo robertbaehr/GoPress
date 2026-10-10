@@ -74,3 +74,31 @@ func TestRenderSocialLinksSynthesizeWrapper(t *testing.T) {
 		t.Fatalf("expected instagram child: %q", out)
 	}
 }
+
+func TestRenderSocialLinksCustomColorAndLayout(t *testing.T) {
+	// P5.83: customIconColor fallback + flex layout + visible labels.
+	src := `<!-- wp:social-links {"customIconColor":"#c00","showLabels":true,"size":"large"} -->
+<!-- wp:social-link {"url":"https://bsky.app/profile/wp","service":"bluesky"} /-->
+<!-- wp:social-link {"url":"https://mastodon.social/@wp","service":"mastodon"} /-->
+<!-- /wp:social-links -->`
+	out := blocks.Render(src)
+	for _, needle := range []string{
+		`has-icon-color`,
+		`has-visible-labels`,
+		`is-layout-flex`,
+		`wp-block-social-links-is-layout-flex`,
+		`has-large-icon-size`,
+		`wp-social-link-bluesky`,
+		`wp-social-link-mastodon`,
+		`color:#c00`,
+		`Bluesky`,
+		`Mastodon`,
+	} {
+		if !strings.Contains(out, needle) {
+			t.Fatalf("missing %q in %q", needle, out)
+		}
+	}
+	if strings.Contains(out, "screen-reader-text") {
+		t.Fatalf("showLabels should omit screen-reader-text: %q", out)
+	}
+}

@@ -3558,6 +3558,21 @@
   task: P5.50
   api: internal
 
+# P5.83: social-links custom colors, flex layout classes, more services.
+- prefix: wp-includes/blocks/social-links#p5.83
+  go: internal/blocks/social_links.go
+  status: partial
+  task: P5.83
+  api: internal
+  notes: "P5.83 — customIconColor/Background, has-visible-labels, is-layout-flex, bluesky/mastodon/…"
+
+- prefix: wp-includes/blocks/social-link.php#p5.83
+  go: internal/blocks/social_links.go
+  status: partial
+  task: P5.83
+  api: internal
+  notes: "P5.83 — expanded service icons/names"
+
 - prefix: wp-includes/blocks/
   go: internal/blocks
   status: partial
