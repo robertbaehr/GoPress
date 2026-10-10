@@ -191,3 +191,28 @@ func TestGetPostsCategoryArchive(t *testing.T) {
 		t.Fatalf("expected no posts for missing category, got %d", len(empty))
 	}
 }
+
+func TestGetPostsOrderBy(t *testing.T) {
+	c := testBootQuery(t)
+	posts, err := wp.GetPosts(c, wp.QueryArgs{PostsPerPage: 5, OrderBy: "id", Order: "ASC"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(posts) < 2 {
+		t.Fatalf("need ≥2 posts, got %d", len(posts))
+	}
+	for i := 1; i < len(posts); i++ {
+		if posts[i-1].ID > posts[i].ID {
+			t.Fatalf("id ASC broken: %d then %d", posts[i-1].ID, posts[i].ID)
+		}
+	}
+	byTitle, err := wp.GetPosts(c, wp.QueryArgs{PostsPerPage: 5, OrderBy: "title", Order: "ASC"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 1; i < len(byTitle); i++ {
+		if strings.ToLower(byTitle[i-1].Title) > strings.ToLower(byTitle[i].Title) {
+			t.Fatalf("title ASC broken: %q then %q", byTitle[i-1].Title, byTitle[i].Title)
+		}
+	}
+}

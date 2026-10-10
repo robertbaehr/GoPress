@@ -1322,6 +1322,21 @@
   api: n/a
   notes: "P4.82 — listPostCollection honors ?sticky="
 
+# P4.83: REST GET /wp/v2/posts?orderby=title|date|id|slug (+ order=asc|desc).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#orderby
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.83
+  api: exported
+  notes: "P4.83 — orderby title|date|id|slug via QueryArgs.OrderBy/Order"
+
+- prefix: wp-includes/class-wp-query.php#orderby
+  go: internal/wp/query.go
+  status: partial
+  task: P4.83
+  api: exported
+  notes: "P4.83 — GetPosts ORDER BY title/date/id/slug + ASC|DESC"
+
 # P4.81: REST POST /wp/v2/media create fields (title, alt_text, caption, description, post).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-attachments-controller.php#create_item
   go: internal/rest/media.go

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/robertbaehr/GoPress/internal/rest"
@@ -92,6 +93,60 @@ func TestPostSingle(t *testing.T) {
 	}
 	if len(post.Categories) == 0 {
 		t.Fatal("hello-world should have a category")
+	}
+}
+
+func TestPostsOrderbyQueryParam(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	for _, tc := range []struct {
+		q    string
+		cmp  func(a, b rest.Post) bool // true if a should come before or equal b
+		name string
+	}{
+		{
+			q:    "orderby=title&order=asc&per_page=5",
+			name: "title asc",
+			cmp: func(a, b rest.Post) bool {
+				return strings.ToLower(a.Title.Rendered) <= strings.ToLower(b.Title.Rendered)
+			},
+		},
+		{
+			q:    "orderby=id&order=asc&per_page=5",
+			name: "id asc",
+			cmp:  func(a, b rest.Post) bool { return a.ID <= b.ID },
+		},
+		{
+			q:    "orderby=slug&order=asc&per_page=5",
+			name: "slug asc",
+			cmp:  func(a, b rest.Post) bool { return a.Slug <= b.Slug },
+		},
+		{
+			q:    "orderby=date&order=desc&per_page=5",
+			name: "date desc",
+			cmp:  func(a, b rest.Post) bool { return a.Date >= b.Date },
+		},
+	} {
+		req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?"+tc.q, nil)
+		rec := httptest.NewRecorder()
+		rc := c.ForRequest(rec, req)
+		(&rest.Server{}).Handle(rec, req, rc)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("%s status=%d body=%s", tc.name, rec.Code, rec.Body.String())
+		}
+		var posts []rest.Post
+		if err := json.Unmarshal(rec.Body.Bytes(), &posts); err != nil {
+			t.Fatalf("%s decode: %v", tc.name, err)
+		}
+		if len(posts) < 2 {
+			t.Fatalf("%s need ≥2 posts, got %d", tc.name, len(posts))
+		}
+		for i := 1; i < len(posts); i++ {
+			if !tc.cmp(posts[i-1], posts[i]) {
+				t.Fatalf("%s order broken at %d: %#v then %#v", tc.name, i, posts[i-1], posts[i])
+			}
+		}
 	}
 }
 
