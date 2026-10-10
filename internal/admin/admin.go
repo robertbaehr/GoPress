@@ -3189,57 +3189,6 @@ func (h *Handler) serveLinkManagerGone(w http.ResponseWriter, r *http.Request, c
 	writeHTML(w, http.StatusForbidden, b.String())
 }
 
-func (h *Handler) serveUsers(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	users, err := listUsers(c, 20)
-	if err != nil {
-		http.Error(w, "users: "+err.Error()+"\n", http.StatusInternalServerError)
-		return
-	}
-	var b strings.Builder
-	b.WriteString("<h1 class=\"wp-heading-inline\">Users</h1>\n")
-	b.WriteString("<a href=\"/wp-admin/user-new.php\" class=\"page-title-action\">Add New User</a>\n")
-	b.WriteString("<hr class=\"wp-header-end\">\n")
-	b.WriteString("<table class=\"wp-list-table widefat fixed striped table-view-list users\">\n")
-	b.WriteString("<thead><tr>")
-	b.WriteString("<th scope=\"col\" class=\"manage-column column-username column-primary\">Username</th>")
-	b.WriteString("<th scope=\"col\" class=\"manage-column column-name\">Name</th>")
-	b.WriteString("<th scope=\"col\" class=\"manage-column column-email\">Email</th>")
-	b.WriteString("<th scope=\"col\" class=\"manage-column column-role\">Role</th>")
-	b.WriteString("<th scope=\"col\" class=\"manage-column column-posts\">Posts</th>")
-	b.WriteString("</tr></thead>\n")
-	b.WriteString("<tbody id=\"the-list\">\n")
-	for _, u := range users {
-		b.WriteString("<tr id=\"user-")
-		b.WriteString(strconv.FormatInt(u.ID, 10))
-		b.WriteString("\">")
-		b.WriteString("<td class=\"username column-username has-row-actions column-primary\" data-colname=\"Username\"><strong><a href=\"/wp-admin/user-edit.php?user_id=")
-		b.WriteString(strconv.FormatInt(u.ID, 10))
-		b.WriteString("\">")
-		b.WriteString(html.EscapeString(u.Login))
-		b.WriteString("</a></strong>")
-		b.WriteString("<div class=\"row-actions\"><span class=\"edit\"><a href=\"/wp-admin/user-edit.php?user_id=")
-		b.WriteString(strconv.FormatInt(u.ID, 10))
-		b.WriteString("\">Edit</a></span></div></td>")
-		b.WriteString("<td class=\"name column-name\" data-colname=\"Name\">")
-		b.WriteString(html.EscapeString(u.Name))
-		b.WriteString("</td>")
-		b.WriteString("<td class=\"email column-email\" data-colname=\"Email\"><a href=\"mailto:")
-		b.WriteString(html.EscapeString(u.Email))
-		b.WriteString("\">")
-		b.WriteString(html.EscapeString(u.Email))
-		b.WriteString("</a></td>")
-		b.WriteString("<td class=\"role column-role\" data-colname=\"Role\">")
-		b.WriteString(html.EscapeString(u.Role))
-		b.WriteString("</td>")
-		b.WriteString("<td class=\"posts column-posts\" data-colname=\"Posts\">")
-		b.WriteString(strconv.FormatInt(u.Posts, 10))
-		b.WriteString("</td>")
-		b.WriteString("</tr>\n")
-	}
-	b.WriteString("</tbody>\n</table>\n")
-	writeAdminPage(w, c, newAdminChrome(c, "Users", "users-php"), b.String())
-}
-
 // servePostEdit renders the classic post.php?action=edit stub shell (P7.24 / P7.32).
 // Also handles Quick Draft save (action=post-quickdraft-save, P7.55).
 func (h *Handler) servePostEdit(w http.ResponseWriter, r *http.Request, c *wp.Context) {

@@ -14,6 +14,14 @@
   task: P7.47
   api: n/a
 
+# P7.60: users.php bulk delete stub (confirm + dodelete).
+- prefix: wp-admin/users.php
+  go: internal/admin/users_bulk.go
+  status: partial
+  task: P7.60
+  api: n/a
+  notes: "P7.60 — bulkactions Delete → confirm → dodelete; skips current user; cache clear"
+
 # P7.30: comment.php moderation stub.
 - prefix: wp-admin/comment.php
   go: internal/admin/admin.go
