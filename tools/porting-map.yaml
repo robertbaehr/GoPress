@@ -1005,6 +1005,14 @@
   api: exported
   notes: "P2.57 — CheckFiletype/GetMimeTypes/GetAllowedMimeTypes; upload_mimes filter"
 
+# P2.58: wp_get_mime_types full map parity (Office OOXML macros, OpenDocument, OneNote, XPS).
+- prefix: wp-includes/functions.php#wp_get_mime_types
+  go: internal/wp/check_filetype.go
+  status: partial
+  task: P2.58
+  api: exported
+  notes: "P2.58 — GetMimeTypes default map matches WP wp_get_mime_types; mime_types filter"
+
 # P3.27: /comments/feed/ RSS comments feed.
 - prefix: wp-includes/feed-rss2-comments.php
   go: internal/server/front.go
