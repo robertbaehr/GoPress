@@ -309,6 +309,28 @@
   api: n/a
   notes: "P6.39 — login_display_language_dropdown; login_language_dropdown_args; preserve reauth"
 
+# P6.40: force_ssl_admin() HTTPS redirect at top of wp-login.php.
+- prefix: wp-login.php#force_ssl_admin
+  go: internal/wp/force_ssl_admin.go
+  status: partial
+  task: P6.40
+  api: exported
+  notes: "P6.40 — ForceSSLAdmin + FORCE_SSL_ADMIN config; MaybeRedirectLoginToHTTPS"
+
+- prefix: wp-includes/functions.php#force_ssl_admin
+  go: internal/wp/force_ssl_admin.go
+  status: partial
+  task: P6.40
+  api: exported
+  notes: "P6.40 — force_ssl_admin get/set static"
+
+- prefix: wp-login.php#force_ssl_admin#test
+  go: internal/login/https_redirect_test.go
+  status: partial
+  task: P6.40
+  api: n/a
+  notes: "P6.40 — login HTTPS redirect unit coverage"
+
 wp-login.php#language-switcher-post
   go: internal/login/login.go
   status: partial
@@ -6040,6 +6062,14 @@ wp-login.php#language-switcher-post
   task: P10.98
   api: n/a
   notes: "P10.98 — app-passwords introspect; text-columns/template-parts; login interim/loggedout; date feeds; 315/315"
+
+# P10.100: expand diff corpus after P5.95–P6.40.
+- prefix: tests/corpus#p10.100
+  go: tests/corpus
+  status: partial
+  task: P10.100
+  api: n/a
+  notes: "P10.100 — template revisions; term-description rest_route; menus; feed=rdf; network.php; confirm_admin_email"
 
 # P10.96: expand diff corpus after P5.93–P6.39.
 - prefix: tests/corpus/#p10.96

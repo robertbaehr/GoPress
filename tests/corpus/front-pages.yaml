@@ -533,3 +533,13 @@
   compare: headers
   nonce: null
 
+# P10.100: RDF feed query string header case.
+- id: front-feed-rdf-query
+  role: anon
+  method: GET
+  path: /?feed=rdf
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
