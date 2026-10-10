@@ -711,7 +711,6 @@ func postNameFilterSQL(name, pageName string, nameIn []string) (string, []any) {
 	return "post_name = %s", []any{lastPathSegment(slug)}
 }
 
-
 // appendPostFormatFilter adds REST ?format= tax_query (P4.96).
 // idCol is "ID" or "p.ID" depending on whether posts are aliased.
 func appendPostFormatFilter(c *Context, where []string, vals []any, args QueryArgs, idCol string) ([]string, []any) {
