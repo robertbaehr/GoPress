@@ -113,6 +113,10 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderPostDate(block)
 	case "core/post-featured-image":
 		return e.renderPostFeaturedImage(block)
+	case "core/post-comments-form":
+		return e.renderPostCommentsForm(block)
+	case "core/comments":
+		return e.renderComments(block)
 	default:
 		// Unknown blocks: prefer saved markup with nested reconstruction.
 		if len(block.InnerBlocks) > 0 || len(block.InnerContent) > 0 {

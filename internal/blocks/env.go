@@ -21,6 +21,9 @@ type Env struct {
 	// LoadFootnotes returns the footnotes post meta JSON for a post ID (P5.15).
 	LoadFootnotes func(postID int64) string
 
+	// RenderCommentForm returns WP comment_form HTML for the current post (P5.18).
+	RenderCommentForm func(postID int64) string
+
 	// seenPart tracks template-part slugs currently being rendered (cycle guard).
 	seenPart map[string]bool
 
