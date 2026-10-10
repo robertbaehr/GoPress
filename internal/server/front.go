@@ -2638,19 +2638,33 @@ func feedCommentCount(c *wp.Context, postID int64) int64 {
 	if err != nil || row == nil {
 		return 0
 	}
+	var n int64
 	switch v := row["comment_count"].(type) {
 	case int64:
-		return v
+		n = v
 	case int:
-		return int64(v)
+		n = int64(v)
 	case []byte:
-		n, _ := strconv.ParseInt(string(v), 10, 64)
-		return n
+		n, _ = strconv.ParseInt(string(v), 10, 64)
 	case string:
-		n, _ := strconv.ParseInt(v, 10, 64)
-		return n
+		n, _ = strconv.ParseInt(v, 10, 64)
 	}
-	return 0
+	// P3.68: get_comments_number filter (used for slash:comments / thr:count).
+	if c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("get_comments_number", n, postID); v != nil {
+			switch t := v.(type) {
+			case int64:
+				return t
+			case int:
+				return int64(t)
+			case string:
+				if parsed, err := strconv.ParseInt(strings.TrimSpace(t), 10, 64); err == nil {
+					return parsed
+				}
+			}
+		}
+	}
+	return n
 }
 
 func feedExcerptRSS(p wp.Post) string {
