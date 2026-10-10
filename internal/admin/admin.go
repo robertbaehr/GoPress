@@ -110,6 +110,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/options-privacy.php":
 		h.requireLogin(w, r, c, h.serveOptionsPrivacy)
 		return true
+	case "/wp-admin/privacy-policy-guide.php":
+		h.requireLogin(w, r, c, h.servePrivacyPolicyGuide)
+		return true
 	case "/wp-admin/export.php":
 		h.requireLogin(w, r, c, h.serveExport)
 		return true
@@ -1641,14 +1644,57 @@ func (h *Handler) servePrivacyErasePage(w http.ResponseWriter, c *wp.Context, no
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveOptionsPrivacy is a privacy settings stub (P8.2).
+// serveOptionsPrivacy is a privacy settings stub (P8.2 / P8.7).
 func (h *Handler) serveOptionsPrivacy(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if r.URL.Query().Get("tab") == "policyguide" {
+		http.Redirect(w, r, "/wp-admin/privacy-policy-guide.php", http.StatusFound)
+		return
+	}
 	h.servePrivacyStub(w, c, "Privacy",
 		"Privacy settings and policy page.",
-		"GoPress privacy settings stub — policy guide lands later.")
+		"GoPress privacy settings stub.",
+		true)
 }
 
-func (h *Handler) servePrivacyStub(w http.ResponseWriter, c *wp.Context, title, lead, note string) {
+// servePrivacyPolicyGuide is the Privacy Policy Guide screen stub (P8.7).
+func (h *Handler) servePrivacyPolicyGuide(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Privacy Policy Guide &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui privacy-settings\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"privacy-settings-header\">\n")
+	b.WriteString("<div class=\"privacy-settings-title-section\"><h1>Privacy</h1></div>\n")
+	b.WriteString("<nav class=\"privacy-settings-tabs-wrapper\" aria-label=\"Secondary menu\">\n")
+	b.WriteString("<a href=\"/wp-admin/options-privacy.php\" class=\"privacy-settings-tab\">Settings</a>\n")
+	b.WriteString("<a href=\"/wp-admin/privacy-policy-guide.php\" class=\"privacy-settings-tab active\" aria-current=\"true\">Policy Guide</a>\n")
+	b.WriteString("</nav>\n</div>\n")
+	b.WriteString("<hr class=\"wp-header-end\">\n")
+	b.WriteString("<div class=\"wrap privacy-settings-body\" id=\"privacy-settings\">\n")
+	b.WriteString("<h2>Privacy Policy Guide</h2>\n")
+	b.WriteString("<h3 class=\"section-title\">Introduction</h3>\n")
+	b.WriteString("<p>This text template will help you to create your website&#8217;s privacy policy.</p>\n")
+	b.WriteString("<p>The template contains a suggestion of sections you most likely will need. Under each section heading, you will find a short summary of what information you should provide.</p>\n")
+	b.WriteString("<p>It is your responsibility to write a comprehensive privacy policy and to keep your policy current and accurate.</p>\n")
+	b.WriteString("<div class=\"privacy-settings-accordion\">\n")
+	b.WriteString("<h4 class=\"privacy-text-heading\">Who we are</h4>\n")
+	b.WriteString("<div class=\"policy-text\"><p>In this section you should note your site URL, as well as the name of the company, organization, or individual behind this site.</p></div>\n")
+	b.WriteString("<h4 class=\"privacy-text-heading\">Comments</h4>\n")
+	b.WriteString("<div class=\"policy-text\"><p>In this section you should note what information is captured through comments.</p></div>\n")
+	b.WriteString("<h4 class=\"privacy-text-heading\">Media</h4>\n")
+	b.WriteString("<div class=\"policy-text\"><p>In this section you should note what information may be disclosed by uploaded images.</p></div>\n")
+	b.WriteString("<h4 class=\"privacy-text-heading\">Cookies</h4>\n")
+	b.WriteString("<div class=\"policy-text\"><p>In this section you should note which cookies your site uses.</p></div>\n")
+	b.WriteString("</div>\n")
+	b.WriteString("<p class=\"description\">GoPress privacy policy guide stub (P8.7).</p>\n")
+	b.WriteString("</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
+func (h *Handler) servePrivacyStub(w http.ResponseWriter, c *wp.Context, title, lead, note string, withTabs bool) {
 	blogname := optionString(c, "blogname", "GoPress")
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
@@ -1659,10 +1705,22 @@ func (h *Handler) servePrivacyStub(w http.ResponseWriter, c *wp.Context, title, 
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
 	b.WriteString("<body class=\"wp-admin wp-core-ui privacy-settings\">\n")
 	b.WriteString(adminNoticesHTML(c))
+	if withTabs {
+		b.WriteString("<div class=\"privacy-settings-header\">\n")
+		b.WriteString("<div class=\"privacy-settings-title-section\"><h1>")
+		b.WriteString(html.EscapeString(title))
+		b.WriteString("</h1></div>\n")
+		b.WriteString("<nav class=\"privacy-settings-tabs-wrapper\" aria-label=\"Secondary menu\">\n")
+		b.WriteString("<a href=\"/wp-admin/options-privacy.php\" class=\"privacy-settings-tab active\" aria-current=\"true\">Settings</a>\n")
+		b.WriteString("<a href=\"/wp-admin/privacy-policy-guide.php\" class=\"privacy-settings-tab\">Policy Guide</a>\n")
+		b.WriteString("</nav>\n</div>\n<hr class=\"wp-header-end\">\n")
+	}
 	b.WriteString("<div class=\"wrap\" id=\"privacy-settings\">\n")
-	b.WriteString("<h1>")
-	b.WriteString(html.EscapeString(title))
-	b.WriteString("</h1>\n")
+	if !withTabs {
+		b.WriteString("<h1>")
+		b.WriteString(html.EscapeString(title))
+		b.WriteString("</h1>\n")
+	}
 	b.WriteString("<p>")
 	b.WriteString(html.EscapeString(lead))
 	b.WriteString("</p>\n")
