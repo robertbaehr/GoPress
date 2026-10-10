@@ -9,6 +9,9 @@ import (
 
 func (e *Env) renderNavigation(block Block) string {
 	e = e.ensure()
+	prevNav := e.renderingNavigation
+	e.renderingNavigation = true
+	defer func() { e.renderingNavigation = prevNav }()
 	inner := ""
 
 	ref := attrInt64(block.Attrs, "ref")
@@ -35,7 +38,7 @@ func (e *Env) renderNavigation(block Block) string {
 	}
 
 	if strings.TrimSpace(inner) == "" && e.ListPages != nil {
-		inner = renderNavLinks(e.ListPages())
+		inner = e.renderPageList(Block{})
 	}
 	if strings.TrimSpace(inner) == "" {
 		return ""
@@ -183,13 +186,6 @@ func (e *Env) renderNavigationLink(block Block) string {
 		return ""
 	}
 	return navItemHTML(label, url)
-}
-
-func (e *Env) renderPageList(_ Block) string {
-	if e.ListPages == nil {
-		return ""
-	}
-	return renderNavLinks(e.ListPages())
 }
 
 func renderNavLinks(links []NavLink) string {

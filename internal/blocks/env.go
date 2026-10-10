@@ -10,7 +10,13 @@ type Env struct {
 	LoadNavigation func(ref int64) (string, bool)
 
 	// ListPages returns fallback navigation links (published pages).
+	// Prefer ID/Parent populated for nested core/page-list (P5.75).
 	ListPages func() []NavLink
+
+	// CurrentPageID is the queried page ID for current-menu-item (P5.75).
+	CurrentPageID int64
+	// FrontPageID is page_on_front for menu-item-home (P5.75).
+	FrontPageID int64
 
 	// ListPosts returns posts for core/query / core/post-template (P5.13).
 	ListPosts func(QueryLoopArgs) []QueryPost
@@ -96,6 +102,9 @@ type Env struct {
 	// seenNav tracks navigation post refs currently being rendered (cycle guard).
 	seenNav map[int64]bool
 
+	// renderingNavigation is true while rendering a core/navigation tree (P5.75).
+	renderingNavigation bool
+
 	// seenBlock tracks wp_block refs currently being rendered (cycle guard, P5.25).
 	seenBlock map[int64]bool
 
@@ -118,9 +127,12 @@ type Env struct {
 }
 
 // NavLink is a simple navigation item (label + URL).
+// ID/Parent enable nested page-list rendering (P5.75).
 type NavLink struct {
-	Label string
-	URL   string
+	Label  string
+	URL    string
+	ID     int64
+	Parent int64
 }
 
 // CommentItem is a comment row for core/comment-template (P5.19).

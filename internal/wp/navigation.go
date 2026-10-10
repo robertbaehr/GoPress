@@ -3,6 +3,7 @@ package wp
 
 import (
 	"fmt"
+	"sort"
 	"strings"
 	"time"
 )
@@ -103,12 +104,14 @@ func createDefaultNavigationFallback(c *Context) (*Post, error) {
 
 // NavPage is a published page used as a navigation fallback link.
 type NavPage struct {
-	ID    int64
-	Title string
-	Name  string
+	ID     int64
+	Title  string
+	Name   string
+	Parent int64 // post_parent for nested page-list (P5.75)
 }
 
-// ListPublishedPages returns published pages ordered by title (navigation fallback).
+// ListPublishedPages returns published pages ordered by menu_order, title
+// (navigation fallback / core/page-list, P5.75).
 func ListPublishedPages(c *Context, limit int) ([]NavPage, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("wp: ListPublishedPages: nil DB")
@@ -120,13 +123,22 @@ func ListPublishedPages(c *Context, limit int) ([]NavPage, error) {
 		PostType:     "page",
 		PostStatus:   "publish",
 		PostsPerPage: limit,
+		OrderBy:      "title",
+		Order:        "ASC",
 	})
 	if err != nil {
 		return nil, err
 	}
+	// WP get_pages: sort_column menu_order,post_title.
+	sort.SliceStable(posts, func(i, j int) bool {
+		if posts[i].MenuOrder != posts[j].MenuOrder {
+			return posts[i].MenuOrder < posts[j].MenuOrder
+		}
+		return strings.ToLower(posts[i].Title) < strings.ToLower(posts[j].Title)
+	})
 	out := make([]NavPage, 0, len(posts))
 	for _, p := range posts {
-		out = append(out, NavPage{ID: p.ID, Title: p.Title, Name: p.Name})
+		out = append(out, NavPage{ID: p.ID, Title: p.Title, Name: p.Name, Parent: p.Parent})
 	}
 	return out, nil
 }
