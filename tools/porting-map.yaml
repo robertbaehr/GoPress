@@ -940,6 +940,19 @@
   task: P5.26
   api: exported
 
+# P5.40: register block style variations from theme.json /styles partials.
+- prefix: wp-includes/block-supports/block-style-variations.php
+  go: internal/wp/block_styles.go
+  status: partial
+  task: P5.40
+  api: exported
+
+- prefix: wp-includes/class-wp-theme-json-resolver.php#get_style_variations
+  go: internal/theme/style_variations.go
+  status: partial
+  task: P5.40
+  api: exported
+
 - prefix: wp-includes/class-wp-block-type.php#variations
   go: internal/wp/block_variations.go
   status: partial

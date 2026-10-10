@@ -62,9 +62,12 @@ func Boot(ctx context.Context, cfg *config.Config) (*Context, error) {
 	c.PatternCategories = NewPatternCategoryRegistry()
 	RegisterDefaultPatternCategories(c.PatternCategories, stylesheet)
 
-	// Block styles registry (P5.26).
+	// Block styles registry (P5.26) + theme.json style variations (P5.40).
 	c.BlockStyles = NewBlockStyleRegistry()
 	RegisterDefaultBlockStyles(c.BlockStyles)
+	if variations, err := theme.LoadStyleVariations(cfg.ABSPATH, stylesheet, "block"); err == nil {
+		RegisterBlockStyleVariationsFromThemeJSON(c.BlockStyles, variations)
+	}
 
 	// Block variations registry (P5.37).
 	c.BlockVariations = NewBlockVariationRegistry()

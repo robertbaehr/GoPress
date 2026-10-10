@@ -3,6 +3,7 @@ package wp_test
 import (
 	"testing"
 
+	"github.com/robertbaehr/GoPress/internal/theme"
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
@@ -40,9 +41,8 @@ func TestContextRegisterBlockStyleAndDefaults(t *testing.T) {
 	if !c.RegisterBlockStyle("core/group", wp.BlockStyle{Name: "shadow", Label: "Shadow"}) {
 		t.Fatal("context register failed")
 	}
-	styles := c.BlockStyles.ForBlock("core/group")
-	if len(styles) != 1 || styles[0].Name != "shadow" {
-		t.Fatalf("ForBlock: %#v", styles)
+	if !c.BlockStyles.IsRegistered("core/group", "shadow") {
+		t.Fatal("expected shadow on core/group")
 	}
 	if !c.UnregisterBlockStyle("core/group", "shadow") {
 		t.Fatal("context unregister failed")
@@ -64,5 +64,63 @@ func TestRegisterBlockStylesMulti(t *testing.T) {
 	}
 	if !r.IsRegistered("core/quote", "plain") || !r.IsRegistered("core/pullquote", "plain") {
 		t.Fatal("expected style on both blocks")
+	}
+}
+
+func TestRegisterBlockStyleVariationsFromThemeJSON(t *testing.T) {
+	r := wp.NewBlockStyleRegistry()
+	_ = r.RegisterBlockStyle("core/group", wp.BlockStyle{Name: "section-1", Label: "Existing"})
+	wp.RegisterBlockStyleVariationsFromThemeJSON(r, []theme.StyleVariation{
+		{
+			Slug:       "section-1",
+			Title:      "Style 1",
+			BlockTypes: []string{"core/group", "core/columns"},
+			Styles:     map[string]any{"color": map[string]any{"background": "red"}},
+		},
+		{
+			Slug:       "text-display",
+			Title:      "Display",
+			BlockTypes: []string{"core/heading", "core/paragraph"},
+			Styles:     map[string]any{"typography": map[string]any{"fontSize": "2rem"}},
+		},
+		{
+			Slug:       "empty",
+			Title:      "Empty",
+			BlockTypes: []string{"core/group"},
+			// no styles → skipped
+		},
+	})
+	// Existing registration preserved.
+	got, ok := r.Get("core/group", "section-1")
+	if !ok || got.Label != "Existing" {
+		t.Fatalf("existing overwritten: %+v", got)
+	}
+	if !r.IsRegistered("core/columns", "section-1") {
+		t.Fatal("expected section-1 on columns")
+	}
+	disp, ok := r.Get("core/heading", "text-display")
+	if !ok || disp.Label != "Display" || disp.StyleData == nil {
+		t.Fatalf("text-display: %+v ok=%v", disp, ok)
+	}
+	if r.IsRegistered("core/group", "empty") {
+		t.Fatal("variation without styles must be skipped")
+	}
+}
+
+func TestBootRegistersThemeStyleVariations(t *testing.T) {
+	c := bootWP(t)
+	if c.BlockStyles == nil {
+		t.Fatal("nil BlockStyles")
+	}
+	// Fixture site uses twentytwentyfive which ships section-* and text-display.
+	if !c.BlockStyles.IsRegistered("core/group", "section-1") {
+		t.Fatal("expected section-1 from theme styles/sections")
+	}
+	if !c.BlockStyles.IsRegistered("core/heading", "text-display") {
+		t.Fatal("expected text-display from theme styles/blocks")
+	}
+	got, _ := c.BlockStyles.Get("core/group", "section-1")
+	if got.StyleData == nil {
+		t.Fatal("expected StyleData from theme.json partial")
 	}
 }

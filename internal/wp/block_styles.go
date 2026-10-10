@@ -4,15 +4,18 @@ package wp
 import (
 	"strings"
 	"sync"
+
+	"github.com/robertbaehr/GoPress/internal/theme"
 )
 
 // BlockStyle is a registered block style (register_block_style properties).
 type BlockStyle struct {
-	Name        string `json:"name"`
-	Label       string `json:"label"`
-	InlineStyle string `json:"inline_style,omitempty"`
-	StyleHandle string `json:"style_handle,omitempty"`
-	IsDefault   bool   `json:"is_default,omitempty"`
+	Name        string         `json:"name"`
+	Label       string         `json:"label"`
+	InlineStyle string         `json:"inline_style,omitempty"`
+	StyleHandle string         `json:"style_handle,omitempty"`
+	IsDefault   bool           `json:"is_default,omitempty"`
+	StyleData   map[string]any `json:"style_data,omitempty"` // theme.json-like styles (P5.40)
 }
 
 // BlockStyleRegistry stores registered block styles keyed by block name then style name.
@@ -166,4 +169,44 @@ func RegisterDefaultBlockStyles(r *BlockStyleRegistry) {
 	_ = r.RegisterBlockStyle("core/image", BlockStyle{Name: "rounded", Label: "Rounded"})
 	_ = r.RegisterBlockStyle("core/button", BlockStyle{Name: "outline", Label: "Outline"})
 	_ = r.RegisterBlockStyle("core/table", BlockStyle{Name: "stripes", Label: "Stripes"})
+}
+
+// RegisterBlockStyleVariationsFromThemeJSON registers block style variations
+// read from theme.json partials under /styles (wp_register_block_style_variations_from_theme_json_partials, P5.40).
+// Existing styles for the same name are left untouched.
+func RegisterBlockStyleVariationsFromThemeJSON(r *BlockStyleRegistry, variations []theme.StyleVariation) {
+	if r == nil {
+		return
+	}
+	for _, v := range variations {
+		if len(v.BlockTypes) == 0 || len(v.Styles) == 0 {
+			continue
+		}
+		name := strings.TrimSpace(v.Slug)
+		if name == "" {
+			name = strings.TrimSpace(v.Title)
+		}
+		if name == "" {
+			continue
+		}
+		label := strings.TrimSpace(v.Title)
+		if label == "" {
+			label = name
+		}
+		style := BlockStyle{
+			Name:      name,
+			Label:     label,
+			StyleData: v.Styles,
+		}
+		for _, blockType := range v.BlockTypes {
+			blockType = strings.TrimSpace(blockType)
+			if blockType == "" {
+				continue
+			}
+			if r.IsRegistered(blockType, name) {
+				continue
+			}
+			_ = r.RegisterBlockStyle(blockType, style)
+		}
+	}
 }
