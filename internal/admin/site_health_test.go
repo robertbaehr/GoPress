@@ -34,4 +34,63 @@ func TestSiteHealthStubScreen(t *testing.T) {
 	if !strings.Contains(body, "Site Health") || !strings.Contains(body, "site-health") {
 		t.Fatalf("unexpected body %q", body)
 	}
+	if !strings.Contains(body, "site-health-info.php") {
+		t.Fatalf("expected Info tab link: %q", body)
+	}
+}
+
+func TestSiteHealthInfoScreen(t *testing.T) {
+	c := bootOrSkip(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/site-health-info.php", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/site-health-info.php") {
+		t.Fatal("site-health-info.php not handled")
+	}
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "Site Health Info") || !strings.Contains(body, "GoPress") {
+		t.Fatalf("unexpected body %q", body)
+	}
+	if !strings.Contains(body, "health-check-debug") || !strings.Contains(body, "Active Theme") {
+		t.Fatalf("missing debug table: %q", body)
+	}
+}
+
+func TestSiteHealthDebugTabRedirects(t *testing.T) {
+	c := bootOrSkip(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/site-health.php?tab=debug", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/site-health.php") {
+		t.Fatal("site-health.php not handled")
+	}
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if loc := rec.Header().Get("Location"); loc != "/wp-admin/site-health-info.php" {
+		t.Fatalf("Location=%q", loc)
+	}
 }
