@@ -360,6 +360,48 @@ func TestFrontFeedPrettyPath(t *testing.T) {
 	}
 }
 
+func TestFrontFeedRSS2SiteIconImage(t *testing.T) {
+	// P3.52: channel <image> when site_icon attachment is set (rss2_site_icon).
+	c := testBoot(t)
+	orig := c.Options.GetOption("site_icon", "0")
+	t.Cleanup(func() { _, _ = c.Options.UpdateOption("site_icon", orig, "yes") })
+	if _, err := c.Options.UpdateOption("site_icon", "5", "yes"); err != nil {
+		t.Fatalf("UpdateOption: %v", err)
+	}
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?feed=rss2", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		"<image>",
+		"<url>",
+		"sample-photo-a.jpg",
+		"<width>32</width>",
+		"<height>32</height>",
+		"</image>",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in feed: %q", want, body[:min(800, len(body))])
+		}
+	}
+}
+
+func TestFrontFeedRSS2OmitsImageWithoutSiteIcon(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?feed=rss2", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if strings.Contains(body, "<image>") {
+		t.Fatalf("unexpected channel image without site_icon: %q", body[:min(600, len(body))])
+	}
+}
+
 func TestFrontFeedOmitsPubSubHubbub(t *testing.T) {
 	// P3.51: feeds must not advertise PubSubHubbub hub endpoints.
 	c := testBoot(t)
