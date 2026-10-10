@@ -6,9 +6,10 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// Widgets and sidebars are out of scope for GoPress (P4.18 / P4.54).
-// Collection GET routes return []; every other method and all item routes
-// respond with rest_widgets_disabled so classic widget APIs stay cleanly off.
+// Widgets and sidebars are out of scope for GoPress (P4.18 / P4.54 / P4.102).
+// Collection GET for users with edit_theme_options returns []; anonymous and
+// unauthorized callers get rest_cannot_manage_widgets (WP permission parity).
+// Writes and item routes remain rest_widgets_disabled once authorized.
 
 func (s *Server) serveWidgets(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	s.serveWidgetsGoneCollection(w, r, c)
@@ -16,7 +17,7 @@ func (s *Server) serveWidgets(w http.ResponseWriter, r *http.Request, c *wp.Cont
 
 func (s *Server) serveWidgetItem(w http.ResponseWriter, r *http.Request, c *wp.Context, id string) {
 	_ = id
-	s.serveWidgetsDisabled(w, r, c)
+	s.serveWidgetsItemOrWrite(w, r, c)
 }
 
 func (s *Server) serveWidgetTypes(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -25,7 +26,7 @@ func (s *Server) serveWidgetTypes(w http.ResponseWriter, r *http.Request, c *wp.
 
 func (s *Server) serveWidgetTypeItem(w http.ResponseWriter, r *http.Request, c *wp.Context, id string) {
 	_ = id
-	s.serveWidgetsDisabled(w, r, c)
+	s.serveWidgetsItemOrWrite(w, r, c)
 }
 
 func (s *Server) serveSidebars(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -34,13 +35,16 @@ func (s *Server) serveSidebars(w http.ResponseWriter, r *http.Request, c *wp.Con
 
 func (s *Server) serveSidebarItem(w http.ResponseWriter, r *http.Request, c *wp.Context, id string) {
 	_ = id
-	s.serveWidgetsDisabled(w, r, c)
+	s.serveWidgetsItemOrWrite(w, r, c)
 }
 
 func (s *Server) serveWidgetsGoneCollection(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	_ = c
 	switch r.Method {
 	case http.MethodGet, http.MethodHead:
+		if !canManageWidgets(c) {
+			s.serveWidgetsCannotManage(w, r, c)
+			return
+		}
 		w.Header().Set("Allow", "GET")
 		w.Header().Set("X-GoPress-Widgets", "disabled")
 		if r.Method == http.MethodHead {
@@ -52,8 +56,34 @@ func (s *Server) serveWidgetsGoneCollection(w http.ResponseWriter, r *http.Reque
 		w.Header().Set("Allow", "GET")
 		w.WriteHeader(http.StatusOK)
 	default:
-		s.serveWidgetsDisabled(w, r, c)
+		s.serveWidgetsItemOrWrite(w, r, c)
 	}
+}
+
+func (s *Server) serveWidgetsItemOrWrite(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if !canManageWidgets(c) {
+		s.serveWidgetsCannotManage(w, r, c)
+		return
+	}
+	s.serveWidgetsDisabled(w, r, c)
+}
+
+func canManageWidgets(c *wp.Context) bool {
+	return c != nil && c.CurrentUser != nil && c.UserCan(c.CurrentUser, "edit_theme_options")
+}
+
+func (s *Server) serveWidgetsCannotManage(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	_ = r
+	status := http.StatusUnauthorized
+	if c != nil && c.CurrentUser != nil {
+		status = http.StatusForbidden
+	}
+	w.Header().Set("X-GoPress-Widgets", "disabled")
+	writeJSON(w, status, map[string]any{
+		"code":    "rest_cannot_manage_widgets",
+		"message": "Sorry, you are not allowed to manage widgets on this site.",
+		"data":    map[string]any{"status": status},
+	})
 }
 
 func (s *Server) serveWidgetsDisabled(w http.ResponseWriter, r *http.Request, c *wp.Context) {
