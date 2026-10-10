@@ -144,8 +144,74 @@ func PersonalDataExportDownloadURL(fileName string) string {
 	return "/wp-admin/export-personal-data.php?action=download&file=" + urlQueryEscapePrivacy(fileName)
 }
 
+// PrivacyExportExpiration returns the export file lifetime in seconds
+// (wp_privacy_export_expiration, default 3 days — P8.20).
+func PrivacyExportExpiration(c *Context) int {
+	expiration := privacyExportExpirationSecs
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("wp_privacy_export_expiration", expiration); v != nil {
+			switch t := v.(type) {
+			case int:
+				if t > 0 {
+					expiration = t
+				}
+			case int64:
+				if t > 0 {
+					expiration = int(t)
+				}
+			}
+		}
+	}
+	return expiration
+}
+
+// PersonalDataExportExpired reports whether an export file is past its lifetime (P8.20).
+func PersonalDataExportExpired(c *Context, fullPath string) bool {
+	st, err := os.Stat(fullPath)
+	if err != nil {
+		return true
+	}
+	age := time.Since(st.ModTime())
+	return age > time.Duration(PrivacyExportExpiration(c))*time.Second
+}
+
+// DeleteExpiredPersonalDataExports removes aged export files (P8.20).
+// Mirrors wp_privacy_delete_old_export_files.
+func DeleteExpiredPersonalDataExports(c *Context) int {
+	dir := PrivacyExportsDir(c)
+	if dir == "" {
+		return 0
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return 0
+	}
+	expiration := PrivacyExportExpiration(c)
+	cutoff := time.Now().Add(-time.Duration(expiration) * time.Second)
+	n := 0
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		if name == "index.php" {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		if info.ModTime().Before(cutoff) {
+			if err := os.Remove(filepath.Join(dir, name)); err == nil {
+				n++
+			}
+		}
+	}
+	return n
+}
+
 // ResolvePersonalDataExportFile returns the absolute path for a downloadable export
-// basename under PrivacyExportsDir, or "" when the name is unsafe / missing (P8.6).
+// basename under PrivacyExportsDir, or "" when the name is unsafe / missing / expired (P8.6 / P8.20).
 func ResolvePersonalDataExportFile(c *Context, fileName string) string {
 	fileName = filepath.Base(strings.TrimSpace(fileName))
 	if fileName == "" || fileName == "." || fileName == ".." || fileName == "index.php" {
@@ -166,6 +232,11 @@ func ResolvePersonalDataExportFile(c *Context, fileName string) string {
 		return ""
 	}
 	if st, err := os.Stat(full); err != nil || st.IsDir() {
+		return ""
+	}
+	// P8.20: refuse (and delete) expired exports on resolve/download.
+	if PersonalDataExportExpired(c, full) {
+		_ = os.Remove(full)
 		return ""
 	}
 	return full
@@ -199,6 +270,11 @@ func ListPersonalDataExportFiles(c *Context, limit int) []string {
 		}
 		info, err := e.Info()
 		if err != nil {
+			continue
+		}
+		// P8.20: skip expired files in the requests table listing.
+		full := filepath.Join(dir, name)
+		if PersonalDataExportExpired(c, full) {
 			continue
 		}
 		items = append(items, item{name: name, mod: info.ModTime().UnixNano()})

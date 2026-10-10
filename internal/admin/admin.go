@@ -3218,6 +3218,8 @@ func (h *Handler) serveExportPersonalData(w http.ResponseWriter, r *http.Request
 
 func (h *Handler) servePersonalDataExportDownload(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	fileName := strings.TrimSpace(r.URL.Query().Get("file"))
+	// P8.20: prune aged exports (wp_privacy_delete_old_export_files) before resolve.
+	_ = wp.DeleteExpiredPersonalDataExports(c)
 	full := wp.ResolvePersonalDataExportFile(c, fileName)
 	if full == "" {
 		http.Error(w, "Export file not found.\n", http.StatusNotFound)

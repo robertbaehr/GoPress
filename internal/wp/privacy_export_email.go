@@ -33,21 +33,7 @@ func SendPersonalDataExportEmail(c *Context, email, exportFileURL string) error 
 
 	siteName := optionStringPrivacy(c, "blogname", "GoPress")
 	siteURL := strings.TrimRight(optionStringPrivacy(c, "home", optionStringPrivacy(c, "siteurl", "")), "/")
-	expiration := privacyExportExpirationSecs
-	if c != nil && c.Hooks != nil {
-		if v := c.Hooks.ApplyFilters("wp_privacy_export_expiration", expiration); v != nil {
-			switch t := v.(type) {
-			case int:
-				if t > 0 {
-					expiration = t
-				}
-			case int64:
-				if t > 0 {
-					expiration = int(t)
-				}
-			}
-		}
-	}
+	expiration := PrivacyExportExpiration(c)
 	dateFmt := optionStringPrivacy(c, "date_format", "F j, Y")
 	expirationDate := time.Now().UTC().Add(time.Duration(expiration) * time.Second).Format(goDateFromWP(dateFmt))
 

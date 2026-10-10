@@ -4677,3 +4677,18 @@
   task: P3.73
   api: n/a
   notes: "P3.73 — content:encoded body runs applyTheContentFeed"
+
+# P8.20: privacy export download expiration (wp_privacy_export_expiration).
+- prefix: wp-includes/functions.php#wp_privacy_delete_old_export_files
+  go: internal/wp/privacy_export.go
+  status: partial
+  task: P8.20
+  api: n/a
+  notes: "P8.20 — DeleteExpiredPersonalDataExports + refuse expired downloads"
+
+- prefix: wp-admin/export-personal-data.php#download-expire
+  go: internal/admin/admin.go
+  status: partial
+  task: P8.20
+  api: n/a
+  notes: "P8.20 — download action 404s when file past wp_privacy_export_expiration"
