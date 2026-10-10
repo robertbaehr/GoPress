@@ -626,3 +626,10 @@
   status: partial
   task: P7.26
   api: n/a
+
+# P8.5: Personal data erasure stub (ErasePersonalData in privacy_erase.go).
+- prefix: wp-admin/erase-personal-data.php
+  go: internal/wp/privacy_erase.go
+  status: partial
+  task: P8.5
+  api: exported

@@ -1033,11 +1033,49 @@ func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, c *wp.Context, n
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveErasePersonalData is a privacy tools stub (P8.2).
+// serveErasePersonalData is a privacy tools stub (P8.2) with erasure action (P8.5).
 func (h *Handler) serveErasePersonalData(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	h.servePrivacyStub(w, c, "Erase Personal Data",
-		"Manage requests to erase personal data.",
-		"GoPress privacy erasure stub — full request workflow lands later.")
+	note := "GoPress privacy erasure stub — full request workflow lands later."
+	if r.Method == http.MethodPost {
+		_ = r.ParseForm()
+		email := strings.TrimSpace(r.Form.Get("username"))
+		if email == "" {
+			email = strings.TrimSpace(r.Form.Get("email"))
+		}
+		if res, err := wp.ErasePersonalData(c, email); err != nil {
+			note = "Erasure failed: " + err.Error()
+		} else {
+			note = res.Message
+		}
+	}
+	h.servePrivacyErasePage(w, c, note)
+}
+
+func (h *Handler) servePrivacyErasePage(w http.ResponseWriter, c *wp.Context, note string) {
+	blogname := optionString(c, "blogname", "GoPress")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Erase Personal Data &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui privacy-settings\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap\" id=\"privacy-settings\">\n")
+	b.WriteString("<h1>Erase Personal Data</h1>\n")
+	b.WriteString("<p>Manage requests to erase personal data.</p>\n")
+	b.WriteString("<p class=\"description\">")
+	b.WriteString(html.EscapeString(note))
+	b.WriteString("</p>\n")
+	b.WriteString("<form method=\"post\" action=\"/wp-admin/erase-personal-data.php\" class=\"wp-privacy-request-form\">\n")
+	b.WriteString("<p><label for=\"username\">Username or email address</label><br>\n")
+	b.WriteString("<input name=\"username\" type=\"text\" id=\"username\" class=\"regular-text\" required></p>\n")
+	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Send Request\"></p>\n")
+	b.WriteString("</form>\n")
+	b.WriteString("<table class=\"wp-list-table widefat fixed striped privacy-requests\">\n")
+	b.WriteString("<thead><tr><th scope=\"col\">Requester</th><th scope=\"col\">Status</th></tr></thead>\n")
+	b.WriteString("<tbody><tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"2\">No requests found.</td></tr></tbody>\n")
+	b.WriteString("</table>\n</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
 }
 
 // serveOptionsPrivacy is a privacy settings stub (P8.2).
