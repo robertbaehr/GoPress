@@ -839,6 +839,30 @@
   task: P5.37
   api: exported
 
+- prefix: wp-includes/class-wp-block-pattern-categories-registry.php
+  go: internal/wp/pattern_categories.go
+  status: partial
+  task: P5.38
+  api: exported
+
+- prefix: wp-includes/block-patterns.php
+  go: internal/wp/pattern_categories.go
+  status: partial
+  task: P5.38
+  api: exported
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-pattern-categories-controller.php
+  go: internal/rest/block_patterns.go
+  status: partial
+  task: P5.38
+  api: exported
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-patterns-controller.php
+  go: internal/rest/block_patterns.go
+  status: partial
+  task: P5.38
+  api: exported
+
 - prefix: wp-includes/class-wp-session-tokens.php
   go: internal/wp/auth_cookie.go
   status: partial

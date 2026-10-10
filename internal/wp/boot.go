@@ -58,6 +58,10 @@ func Boot(ctx context.Context, cfg *config.Config) (*Context, error) {
 	c.Patterns = NewPatternRegistry()
 	_ = LoadPatterns(c)
 
+	// Block pattern categories (P5.38).
+	c.PatternCategories = NewPatternCategoryRegistry()
+	RegisterDefaultPatternCategories(c.PatternCategories, stylesheet)
+
 	// Block styles registry (P5.26).
 	c.BlockStyles = NewBlockStyleRegistry()
 	RegisterDefaultBlockStyles(c.BlockStyles)
