@@ -373,20 +373,30 @@ func attachmentRelativeFile(c *wp.Context, id int64) string {
 }
 
 func buildMediaDetails(c *wp.Context, id int64, mime, sourceURL, attached string) any {
-	raw := ""
-	if c != nil && c.Meta != nil {
-		raw = asString(c.Meta.GetMetadata(wp.MetaPost, id, "_wp_attachment_metadata", true))
-	}
-	if strings.TrimSpace(raw) == "" {
+	// P8.22: read via wp_get_attachment_metadata.
+	meta, ok := wp.GetAttachmentMetadata(c, id)
+	if !ok || meta == nil {
 		return map[string]any{}
 	}
-	parsed, err := wp.UnserializePHP(raw)
-	if err != nil || parsed == nil {
-		return map[string]any{}
+	details := map[string]any{}
+	for k, v := range meta {
+		details[k] = v
 	}
-	details, ok := phpToJSONMap(parsed)
-	if !ok {
-		return map[string]any{}
+	// Coerce nested PHP maps for JSON (sizes entries).
+	if sizesRaw, has := details["sizes"]; has {
+		if sm, ok := phpToJSONMap(sizesRaw); ok {
+			details["sizes"] = sm
+		} else if m, ok := sizesRaw.(map[string]any); ok {
+			coerced := map[string]any{}
+			for sk, sv := range m {
+				if nested, ok := phpToJSONMap(sv); ok {
+					coerced[sk] = nested
+				} else {
+					coerced[sk] = sv
+				}
+			}
+			details["sizes"] = coerced
+		}
 	}
 	// Enrich sizes with source_url and mime_type (WP REST prepare_item_for_response).
 	uploadsBase := strings.TrimRight(wp.GetUploadDir(c).Baseurl, "/")

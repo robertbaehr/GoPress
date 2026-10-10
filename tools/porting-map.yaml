@@ -3638,6 +3638,14 @@
   task: P3.7
   api: n/a
 
+# P8.22: wp_get_attachment_metadata read path + filter.
+- prefix: wp-includes/post.php#wp_get_attachment_metadata
+  go: internal/wp/media.go
+  status: partial
+  task: P8.22
+  api: exported
+  notes: "P8.22 — GetAttachmentMetadata / Unfiltered; sizes normalize; filter; REST media details"
+
 - prefix: wp-includes/ID3/
   go: internal/wp/media.go
   status: partial
