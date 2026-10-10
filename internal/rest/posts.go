@@ -54,7 +54,9 @@ func (s *Server) servePostCollection(w http.ResponseWriter, r *http.Request, c *
 		return
 	}
 	perPage := parsePerPage(r, 10)
-	posts, err := listPosts(c, postType, perPage)
+	page := parsePage(r)
+	edit := r.URL.Query().Get("context") == "edit" && canEditPosts(c)
+	total, err := countPosts(c, postType)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",
@@ -63,6 +65,20 @@ func (s *Server) servePostCollection(w http.ResponseWriter, r *http.Request, c *
 		})
 		return
 	}
+	posts, err := listPostsPaged(c, postType, perPage, page, edit)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_post_query",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	totalPages := 0
+	if perPage > 0 {
+		totalPages = (total + perPage - 1) / perPage
+	}
+	setCollectionHeaders(w, r, total, totalPages, page)
 	writeJSON(w, http.StatusOK, posts)
 }
 
@@ -125,20 +141,35 @@ func parsePerPage(r *http.Request, def int) int {
 	return perPage
 }
 
-func listPosts(c *wp.Context, postType string, limit int) ([]Post, error) {
+func parsePage(r *http.Request) int {
+	page := 1
+	if v := r.URL.Query().Get("page"); v != "" {
+		n, err := strconv.Atoi(v)
+		if err == nil && n > 0 {
+			page = n
+		}
+	}
+	return page
+}
+
+func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool) ([]Post, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
 	if limit <= 0 {
 		limit = 10
 	}
+	if page <= 0 {
+		page = 1
+	}
 	if postType == "" {
 		postType = "post"
 	}
+	offset := (page - 1) * limit
 	q, args, err := c.DB.Prepare(
 		"SELECT ID, post_date, post_name, post_status, post_type, post_title, post_content, post_excerpt FROM "+
-			c.DB.Posts()+" WHERE post_type = %s AND post_status = %s ORDER BY post_date DESC LIMIT %d",
-		postType, "publish", limit,
+			c.DB.Posts()+" WHERE post_type = %s AND post_status = %s ORDER BY post_date DESC LIMIT %d OFFSET %d",
+		postType, "publish", limit, offset,
 	)
 	if err != nil {
 		return nil, err
@@ -150,9 +181,33 @@ func listPosts(c *wp.Context, postType string, limit int) ([]Post, error) {
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	out := make([]Post, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, postFromRow(row, home, false))
+		out = append(out, postFromRow(row, home, edit))
 	}
 	return out, nil
+}
+
+func countPosts(c *wp.Context, postType string) (int, error) {
+	if c == nil || c.DB == nil {
+		return 0, fmt.Errorf("nil DB")
+	}
+	if postType == "" {
+		postType = "post"
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT COUNT(*) AS total FROM "+c.DB.Posts()+" WHERE post_type = %s AND post_status = %s",
+		postType, "publish",
+	)
+	if err != nil {
+		return 0, err
+	}
+	row, err := c.DB.GetRow(q, args...)
+	if err != nil {
+		return 0, err
+	}
+	if row == nil {
+		return 0, nil
+	}
+	return int(asInt64(row["total"])), nil
 }
 
 func getPostByID(c *wp.Context, postType string, id int64, edit bool) (*Post, error) {
