@@ -75,6 +75,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/users.php":
 		h.requireLogin(w, r, c, h.serveUsers)
 		return true
+	case "/wp-admin/user-edit.php", "/wp-admin/user/user-edit.php":
+		h.requireLogin(w, r, c, h.serveUserEdit)
+		return true
 	case "/wp-admin/user-new.php":
 		h.requireLogin(w, r, c, h.serveUserNew)
 		return true
@@ -2724,9 +2727,14 @@ func (h *Handler) serveUsers(w http.ResponseWriter, r *http.Request, c *wp.Conte
 		b.WriteString("<tr id=\"user-")
 		b.WriteString(strconv.FormatInt(u.ID, 10))
 		b.WriteString("\">")
-		b.WriteString("<td class=\"username column-username has-row-actions column-primary\" data-colname=\"Username\"><strong>")
+		b.WriteString("<td class=\"username column-username has-row-actions column-primary\" data-colname=\"Username\"><strong><a href=\"/wp-admin/user-edit.php?user_id=")
+		b.WriteString(strconv.FormatInt(u.ID, 10))
+		b.WriteString("\">")
 		b.WriteString(html.EscapeString(u.Login))
-		b.WriteString("</strong></td>")
+		b.WriteString("</a></strong>")
+		b.WriteString("<div class=\"row-actions\"><span class=\"edit\"><a href=\"/wp-admin/user-edit.php?user_id=")
+		b.WriteString(strconv.FormatInt(u.ID, 10))
+		b.WriteString("\">Edit</a></span></div></td>")
 		b.WriteString("<td class=\"name column-name\" data-colname=\"Name\">")
 		b.WriteString(html.EscapeString(u.Name))
 		b.WriteString("</td>")
@@ -2909,6 +2917,120 @@ func (h *Handler) serveAttachmentEdit(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString("<div id=\"publishing-action\"><input type=\"submit\" name=\"save\" id=\"publish\" class=\"button button-primary button-large\" value=\"Update\" /></div>\n")
 	b.WriteString("<div class=\"clear\"></div>\n</div></div></div></div></div>\n")
 	b.WriteString("</div></div></form>\n</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
+// serveUserEdit renders user-edit.php for another (or current) user (P7.47).
+func (h *Handler) serveUserEdit(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if c == nil || c.CurrentUser == nil {
+		http.Error(w, "Unauthorized\n", http.StatusUnauthorized)
+		return
+	}
+	userID, _ := strconv.ParseInt(r.URL.Query().Get("user_id"), 10, 64)
+	if userID <= 0 {
+		userID = c.CurrentUser.ID
+	}
+	if !c.CurrentUserCan("edit_user", userID) {
+		http.Error(w, "Sorry, you are not allowed to edit this user.\n", http.StatusForbidden)
+		return
+	}
+	target, err := c.GetUserBy("id", userID)
+	if err != nil {
+		http.Error(w, "user: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	if target == nil {
+		http.Error(w, "Invalid user ID.\n", http.StatusNotFound)
+		return
+	}
+
+	updated := false
+	if r.Method == http.MethodPost {
+		_ = r.ParseForm()
+		if c.VerifyNonce(r.FormValue("_wpnonce"), "update-user_"+strconv.FormatInt(userID, 10)) == 0 {
+			http.Error(w, "Invalid nonce\n", http.StatusForbidden)
+			return
+		}
+		displayName := strings.TrimSpace(r.FormValue("display_name"))
+		email := strings.TrimSpace(r.FormValue("email"))
+		url := strings.TrimSpace(r.FormValue("url"))
+		desc := strings.TrimSpace(r.FormValue("description"))
+		upd := wp.UserUpdate{ID: userID}
+		if displayName != "" {
+			upd.DisplayName = &displayName
+		}
+		if email != "" {
+			upd.Email = &email
+		}
+		upd.URL = &url
+		upd.Description = &desc
+		if err := c.UpdateUser(upd); err != nil {
+			http.Error(w, "user-edit: "+err.Error()+"\n", http.StatusInternalServerError)
+			return
+		}
+		target, _ = c.GetUserBy("id", userID)
+		updated = true
+	}
+
+	desc := ""
+	if c.Meta != nil {
+		desc = asString(c.Meta.GetMetadata(wp.MetaUser, userID, "description", true))
+	}
+	nonce := c.CreateNonce("update-user_" + strconv.FormatInt(userID, 10))
+	heading := "Edit User"
+	if userID == c.CurrentUser.ID {
+		heading = "Profile"
+	}
+	blogname := optionString(c, "blogname", "GoPress")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>")
+	b.WriteString(html.EscapeString(heading))
+	b.WriteString(" &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui user-edit-php\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap\" id=\"profile-page\">\n")
+	b.WriteString("<h1 class=\"wp-heading-inline\">")
+	b.WriteString(html.EscapeString(heading))
+	b.WriteString("</h1>\n")
+	if updated {
+		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p><strong>User updated.</strong></p></div>\n")
+	}
+	b.WriteString("<form id=\"your-profile\" method=\"post\" action=\"/wp-admin/user-edit.php?user_id=")
+	b.WriteString(strconv.FormatInt(userID, 10))
+	b.WriteString("\">\n")
+	b.WriteString("<input type=\"hidden\" id=\"_wpnonce\" name=\"_wpnonce\" value=\"")
+	b.WriteString(html.EscapeString(nonce))
+	b.WriteString("\" />\n")
+	b.WriteString("<input type=\"hidden\" name=\"user_id\" id=\"user_id\" value=\"")
+	b.WriteString(strconv.FormatInt(userID, 10))
+	b.WriteString("\" />\n")
+	b.WriteString("<h2>Name</h2>\n<table class=\"form-table\" role=\"presentation\">\n")
+	b.WriteString("<tr class=\"user-user-login-wrap\"><th><label for=\"user_login\">Username</label></th><td><input type=\"text\" name=\"user_login\" id=\"user_login\" value=\"")
+	b.WriteString(html.EscapeString(target.Login))
+	b.WriteString("\" disabled=\"disabled\" class=\"regular-text\" /> <span class=\"description\">Usernames cannot be changed.</span></td></tr>\n")
+	b.WriteString("<tr class=\"user-display-name-wrap\"><th><label for=\"display_name\">Display name publicly as</label></th><td><input type=\"text\" name=\"display_name\" id=\"display_name\" value=\"")
+	b.WriteString(html.EscapeString(target.DisplayName))
+	b.WriteString("\" class=\"regular-text\" /></td></tr>\n")
+	b.WriteString("</table>\n")
+	b.WriteString("<h2>Contact Info</h2>\n<table class=\"form-table\" role=\"presentation\">\n")
+	b.WriteString("<tr class=\"user-email-wrap\"><th><label for=\"email\">Email <span class=\"description\">(required)</span></label></th><td><input type=\"email\" name=\"email\" id=\"email\" value=\"")
+	b.WriteString(html.EscapeString(target.Email))
+	b.WriteString("\" class=\"regular-text ltr\" /></td></tr>\n")
+	b.WriteString("<tr class=\"user-url-wrap\"><th><label for=\"url\">Website</label></th><td><input type=\"url\" name=\"url\" id=\"url\" value=\"")
+	b.WriteString(html.EscapeString(target.URL))
+	b.WriteString("\" class=\"regular-text code\" /></td></tr>\n")
+	b.WriteString("</table>\n")
+	b.WriteString("<h2>About the user</h2>\n<table class=\"form-table\" role=\"presentation\">\n")
+	b.WriteString("<tr class=\"user-description-wrap\"><th><label for=\"description\">Biographical Info</label></th><td><textarea name=\"description\" id=\"description\" rows=\"5\" cols=\"30\">")
+	b.WriteString(html.EscapeString(desc))
+	b.WriteString("</textarea></td></tr>\n")
+	b.WriteString("</table>\n")
+	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Update User\" /></p>\n")
+	b.WriteString("<p class=\"description\">GoPress user-edit stub (P7.47).</p>\n")
+	b.WriteString("</form>\n</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
 
