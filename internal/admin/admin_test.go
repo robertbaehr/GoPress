@@ -159,6 +159,24 @@ func TestAdminScreensLoggedIn(t *testing.T) {
 	}
 }
 
+func TestLinkManagerOutOfScope(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	for _, path := range []string{"/wp-admin/link-manager.php", "/wp-admin/link-add.php", "/wp-admin/link.php"} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		req.AddCookie(ck)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Fatalf("%s status=%d body=%q", path, rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "out of scope") {
+			t.Fatalf("%s expected out-of-scope message, got %q", path, rec.Body.String())
+		}
+	}
+}
+
 func TestCustomizerOutOfScope(t *testing.T) {
 	c := bootOrSkip(t)
 	ck := loginCookie(t, c)

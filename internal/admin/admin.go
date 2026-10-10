@@ -82,6 +82,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/update-core.php":
 		h.requireLogin(w, r, c, h.serveUpdateCoreGone)
 		return true
+	case "/wp-admin/link-manager.php", "/wp-admin/link-add.php", "/wp-admin/link.php":
+		h.requireLogin(w, r, c, h.serveLinkManagerGone)
+		return true
 	case "/wp-admin/admin-ajax.php":
 		h.serveAdminAjax(w, r, c)
 		return true
@@ -1087,6 +1090,21 @@ func (h *Handler) serveUpdateCoreGone(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString("<body class=\"wp-admin\">\n")
 	b.WriteString("<h1>Core updates unavailable</h1>\n")
 	b.WriteString("<p>WordPress core updates are out of scope for GoPress. Deploy a new GoPress build instead of using <code>update-core.php</code>.</p>\n")
+	b.WriteString("</body>\n</html>\n")
+	writeHTML(w, http.StatusForbidden, b.String())
+}
+
+// serveLinkManagerGone rejects the legacy Links Manager as out of scope (P7.25).
+func (h *Handler) serveLinkManagerGone(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Links &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin\">\n")
+	b.WriteString("<h1>Link Manager unavailable</h1>\n")
+	b.WriteString("<p>The classic Links Manager (<code>link-manager.php</code>) is out of scope for GoPress.</p>\n")
 	b.WriteString("</body>\n</html>\n")
 	writeHTML(w, http.StatusForbidden, b.String())
 }
