@@ -143,6 +143,78 @@ func TestBlockPatternsHEAD(t *testing.T) {
 	}
 }
 
+func TestBlockPatternCategoriesOPTIONSAndContext(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodOptions, "/wp-json/wp/v2/block-patterns/categories", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("OPTIONS status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if allow := rec.Header().Get("Allow"); !strings.Contains(allow, "OPTIONS") {
+		t.Fatalf("Allow=%q", allow)
+	}
+	var schema map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &schema); err != nil {
+		t.Fatal(err)
+	}
+	if schema["title"] != "block-pattern-category" {
+		t.Fatalf("schema title=%v", schema["title"])
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/block-patterns/categories?context=bogus", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("bogus context status=%d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "rest_invalid_param") {
+		t.Fatalf("body=%s", rec.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/block-patterns/categories?context=edit", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("edit context status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var cats []rest.RESTBlockPatternCategory
+	if err := json.Unmarshal(rec.Body.Bytes(), &cats); err != nil {
+		t.Fatal(err)
+	}
+	if len(cats) < 5 {
+		t.Fatalf("expected categories, got %d", len(cats))
+	}
+	// description key always present (may be empty).
+	raw := rec.Body.String()
+	if !strings.Contains(raw, `"description"`) {
+		t.Fatalf("expected description field: %s", raw[:min(200, len(raw))])
+	}
+}
+
+func min(a, b int) int {
+	if a < b {
+		return a
+	}
+	return b
+}
+
 func TestBlockPatternSchemaFields(t *testing.T) {
 	c := bootOrSkip(t)
 	t.Cleanup(func() { _ = c.DB.Close() })
