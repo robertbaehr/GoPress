@@ -174,6 +174,10 @@ func (e *Env) RenderBlock(block Block) string {
 		return e.renderMore(block)
 	case "core/nextpage":
 		return e.renderNextPage(block)
+	case "core/social-links":
+		out = e.renderSocialLinks(block)
+	case "core/social-link":
+		return e.renderSocialLink(block)
 	default:
 		// Unknown blocks: prefer saved markup with nested reconstruction.
 		if len(block.InnerBlocks) > 0 || len(block.InnerContent) > 0 {

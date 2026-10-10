@@ -1351,6 +1351,19 @@
   task: P5.49
   api: internal
 
+# P5.50: core/social-links + core/social-link server render.
+- prefix: wp-includes/blocks/social-link.php
+  go: internal/blocks/social_links.go
+  status: partial
+  task: P5.50
+  api: internal
+
+- prefix: wp-includes/blocks/social-links
+  go: internal/blocks/social_links.go
+  status: partial
+  task: P5.50
+  api: internal
+
 - prefix: wp-includes/blocks/
   go: internal/blocks
   status: partial
