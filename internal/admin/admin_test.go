@@ -69,6 +69,10 @@ func TestAdminRedirectsAnonymous(t *testing.T) {
 		"/wp-admin/options-general.php",
 		"/wp-admin/plugins.php",
 		"/wp-admin/profile.php",
+		"/wp-admin/upload.php",
+		"/wp-admin/edit-comments.php",
+		"/wp-admin/themes.php",
+		"/wp-admin/users.php",
 	} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		rec := httptest.NewRecorder()
@@ -96,6 +100,10 @@ func TestAdminScreensLoggedIn(t *testing.T) {
 		{"/wp-admin/options-general.php", `name="blogname"`},
 		{"/wp-admin/plugins.php", "Plugins"},
 		{"/wp-admin/profile.php", `id="your-profile"`},
+		{"/wp-admin/upload.php", "Media Library"},
+		{"/wp-admin/edit-comments.php", "Comments"},
+		{"/wp-admin/themes.php", "Themes"},
+		{"/wp-admin/users.php", "Users"},
 		{"/wp-admin/", "Dashboard"},
 	}
 	for _, tc := range cases {
@@ -126,5 +134,38 @@ func TestEditPostsListsTitles(t *testing.T) {
 	body := rec.Body.String()
 	if !strings.Contains(body, "Hello world!") && !strings.Contains(body, "Fixture Post") {
 		t.Fatalf("expected post titles in table, got %q", body)
+	}
+}
+
+func TestUploadListsMedia(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/upload.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "sample-photo") && !strings.Contains(body, "wp-list-table") {
+		t.Fatalf("expected media list, got %q", body)
+	}
+}
+
+func TestUsersListsAdmin(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/users.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "admin") {
+		t.Fatalf("expected admin user, got %q", rec.Body.String())
 	}
 }

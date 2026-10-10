@@ -33,6 +33,18 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/profile.php":
 		h.requireLogin(w, r, c, h.serveProfile)
 		return true
+	case "/wp-admin/upload.php":
+		h.requireLogin(w, r, c, h.serveUpload)
+		return true
+	case "/wp-admin/edit-comments.php":
+		h.requireLogin(w, r, c, h.serveEditComments)
+		return true
+	case "/wp-admin/themes.php":
+		h.requireLogin(w, r, c, h.serveThemes)
+		return true
+	case "/wp-admin/users.php":
+		h.requireLogin(w, r, c, h.serveUsers)
+		return true
 	case "/wp-admin/admin-ajax.php":
 		h.serveAdminAjax(w, r, c)
 		return true
@@ -184,6 +196,132 @@ func (h *Handler) serveProfile(w http.ResponseWriter, r *http.Request, c *wp.Con
 	writeHTML(w, http.StatusOK, b.String())
 }
 
+func (h *Handler) serveUpload(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	items, err := recentMedia(c, 20)
+	if err != nil {
+		http.Error(w, "media: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Media Library &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<h1>Media Library</h1>\n")
+	b.WriteString("<table class=\"wp-list-table widefat fixed striped media\">\n")
+	b.WriteString("<thead><tr><th scope=\"col\" class=\"column-title\">File</th><th scope=\"col\" class=\"column-mime\">Type</th></tr></thead>\n")
+	b.WriteString("<tbody id=\"the-list\">\n")
+	if len(items) == 0 {
+		b.WriteString("<tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"2\">No media items found.</td></tr>\n")
+	}
+	for _, m := range items {
+		b.WriteString("<tr id=\"post-")
+		b.WriteString(strconv.FormatInt(m.ID, 10))
+		b.WriteString("\"><td class=\"title column-title\"><strong>")
+		b.WriteString(html.EscapeString(m.Title))
+		b.WriteString("</strong></td><td class=\"column-mime\">")
+		b.WriteString(html.EscapeString(m.Mime))
+		b.WriteString("</td></tr>\n")
+	}
+	b.WriteString("</tbody>\n</table>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
+func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	items, err := recentComments(c, 20)
+	if err != nil {
+		http.Error(w, "comments: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Comments &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<h1>Comments</h1>\n")
+	b.WriteString("<table class=\"wp-list-table widefat fixed striped comments\">\n")
+	b.WriteString("<thead><tr><th scope=\"col\" class=\"column-author\">Author</th><th scope=\"col\" class=\"column-comment\">Comment</th></tr></thead>\n")
+	b.WriteString("<tbody id=\"the-comment-list\">\n")
+	if len(items) == 0 {
+		b.WriteString("<tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"2\">No comments found.</td></tr>\n")
+	}
+	for _, item := range items {
+		b.WriteString("<tr id=\"comment-")
+		b.WriteString(strconv.FormatInt(item.ID, 10))
+		b.WriteString("\"><td class=\"author column-author\">")
+		b.WriteString(html.EscapeString(item.Author))
+		b.WriteString("</td><td class=\"comment column-comment\"><p>")
+		b.WriteString(html.EscapeString(item.Content))
+		b.WriteString("</p></td></tr>\n")
+	}
+	b.WriteString("</tbody>\n</table>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
+func (h *Handler) serveThemes(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	stylesheet := optionString(c, "stylesheet", "twentytwentytwo")
+	template := optionString(c, "template", stylesheet)
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Themes &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<h1>Themes</h1>\n")
+	b.WriteString("<div class=\"theme-browser\">\n")
+	b.WriteString("<div class=\"theme active\" data-slug=\"")
+	b.WriteString(html.EscapeString(stylesheet))
+	b.WriteString("\">\n")
+	b.WriteString("<h2 class=\"theme-name\">")
+	b.WriteString(html.EscapeString(stylesheet))
+	b.WriteString(" <span>Active</span></h2>\n")
+	b.WriteString("<p class=\"theme-template\">Template: ")
+	b.WriteString(html.EscapeString(template))
+	b.WriteString("</p>\n")
+	b.WriteString("<p>GoPress themes stub (P7.4).</p>\n")
+	b.WriteString("</div>\n</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
+func (h *Handler) serveUsers(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	users, err := listUsers(c, 20)
+	if err != nil {
+		http.Error(w, "users: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Users &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<h1>Users</h1>\n")
+	b.WriteString("<table class=\"wp-list-table widefat fixed striped users\">\n")
+	b.WriteString("<thead><tr><th scope=\"col\" class=\"column-username\">Username</th><th scope=\"col\" class=\"column-email\">Email</th></tr></thead>\n")
+	b.WriteString("<tbody id=\"the-list\">\n")
+	for _, u := range users {
+		b.WriteString("<tr id=\"user-")
+		b.WriteString(strconv.FormatInt(u.ID, 10))
+		b.WriteString("\"><td class=\"username column-username\"><strong>")
+		b.WriteString(html.EscapeString(u.Login))
+		b.WriteString("</strong></td><td class=\"email column-email\">")
+		b.WriteString(html.EscapeString(u.Email))
+		b.WriteString("</td></tr>\n")
+	}
+	b.WriteString("</tbody>\n</table>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
 type postRow struct {
 	ID    int64
 	Title string
@@ -215,6 +353,114 @@ func recentPosts(c *wp.Context, limit int) ([]postRow, error) {
 			ID:    asInt64(row["ID"]),
 			Title: asString(row["post_title"]),
 			Date:  asString(row["post_date"]),
+		})
+	}
+	return out, nil
+}
+
+type mediaRow struct {
+	ID    int64
+	Title string
+	Mime  string
+}
+
+type commentRow struct {
+	ID      int64
+	Author  string
+	Content string
+}
+
+type userRow struct {
+	ID    int64
+	Login string
+	Email string
+}
+
+func recentMedia(c *wp.Context, limit int) ([]mediaRow, error) {
+	if c == nil || c.DB == nil {
+		return nil, fmt.Errorf("nil DB")
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT ID, post_title, post_mime_type FROM "+c.DB.Posts()+
+			" WHERE post_type = %s ORDER BY post_date DESC LIMIT %d",
+		"attachment", limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := c.DB.GetResults(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]mediaRow, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, mediaRow{
+			ID:    asInt64(row["ID"]),
+			Title: asString(row["post_title"]),
+			Mime:  asString(row["post_mime_type"]),
+		})
+	}
+	return out, nil
+}
+
+func recentComments(c *wp.Context, limit int) ([]commentRow, error) {
+	if c == nil || c.DB == nil {
+		return nil, fmt.Errorf("nil DB")
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT comment_ID, comment_author, comment_content FROM "+c.DB.Comments()+
+			" ORDER BY comment_date DESC LIMIT %d",
+		limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := c.DB.GetResults(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]commentRow, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, commentRow{
+			ID:      asInt64(row["comment_ID"]),
+			Author:  asString(row["comment_author"]),
+			Content: asString(row["comment_content"]),
+		})
+	}
+	return out, nil
+}
+
+func listUsers(c *wp.Context, limit int) ([]userRow, error) {
+	if c == nil || c.DB == nil {
+		return nil, fmt.Errorf("nil DB")
+	}
+	if limit <= 0 {
+		limit = 20
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT ID, user_login, user_email FROM "+c.DB.Users()+
+			" ORDER BY user_login ASC LIMIT %d",
+		limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := c.DB.GetResults(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]userRow, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, userRow{
+			ID:    asInt64(row["ID"]),
+			Login: asString(row["user_login"]),
+			Email: asString(row["user_email"]),
 		})
 	}
 	return out, nil
