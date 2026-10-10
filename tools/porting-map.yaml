@@ -1063,6 +1063,15 @@
   task: P2.87
   api: exported
 
+
+# P2.89: deepen wp_filter_object_list empty-args + isset field match.
+- prefix: wp-includes/functions.php#wp_filter_object_list#p2.89
+  go: internal/wp/filter_object_list.go
+  status: partial
+  task: P2.89
+  api: exported
+  notes: "P2.89 — empty args ignore operator; struct nil pointer fields missing (isset)"
+
 # P2.43: wp_filter_object_list / wp_list_filter.
 - prefix: wp-includes/functions.php#wp_filter_object_list
   go: internal/wp/filter_object_list.go
