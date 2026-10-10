@@ -398,8 +398,12 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 			})
 			return
 		}
-		if kind == "theme" {
+		switch kind {
+		case "theme":
 			s.serveGlobalStylesTheme(w, r, c, stylesheet)
+			return
+		case "theme-variations":
+			s.serveGlobalStylesThemeVariations(w, r, c, stylesheet)
 			return
 		}
 		s.serveGlobalStylesItem(w, r, c, id)

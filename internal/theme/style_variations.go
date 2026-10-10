@@ -15,15 +15,20 @@ type StyleVariation struct {
 	Slug       string         `json:"slug,omitempty"`
 	Title      string         `json:"title,omitempty"`
 	BlockTypes []string       `json:"blockTypes,omitempty"`
+	Settings   map[string]any `json:"settings,omitempty"`
 	Styles     map[string]any `json:"styles,omitempty"`
+	Version    int            `json:"version,omitempty"`
 	Path       string         `json:"-"`
+	Raw        map[string]any `json:"-"`
 }
 
 type variationFileShape struct {
 	Slug       string         `json:"slug"`
 	Title      string         `json:"title"`
 	BlockTypes []string       `json:"blockTypes"`
+	Settings   map[string]any `json:"settings"`
 	Styles     map[string]any `json:"styles"`
+	Version    int            `json:"version"`
 }
 
 // LoadStyleVariations loads style variation JSON files under
@@ -52,12 +57,17 @@ func LoadStyleVariations(absPath, stylesheet, scope string) ([]StyleVariation, e
 		if err := json.Unmarshal(raw, &shape); err != nil {
 			continue
 		}
+		var rawMap map[string]any
+		_ = json.Unmarshal(raw, &rawMap)
 		v := StyleVariation{
 			Slug:       strings.TrimSpace(shape.Slug),
 			Title:      strings.TrimSpace(shape.Title),
 			BlockTypes: shape.BlockTypes,
+			Settings:   shape.Settings,
 			Styles:     shape.Styles,
+			Version:    shape.Version,
 			Path:       path,
+			Raw:        rawMap,
 		}
 		if v.Title == "" {
 			v.Title = strings.TrimSuffix(filepath.Base(path), filepath.Ext(path))

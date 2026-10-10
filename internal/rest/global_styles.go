@@ -3,6 +3,7 @@ package rest
 import (
 	"encoding/json"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 
@@ -10,10 +11,11 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// GlobalStylesTheme is GET /wp/v2/global-styles/themes/{stylesheet} (P4.22).
+// GlobalStylesTheme is GET /wp/v2/global-styles/themes/{stylesheet} (P4.22 / P4.71).
 type GlobalStylesTheme struct {
 	Settings map[string]any `json:"settings"`
 	Styles   map[string]any `json:"styles"`
+	Links    map[string]any `json:"_links,omitempty"`
 }
 
 // GlobalStylesItem is GET /wp/v2/global-styles/{id} for a wp_global_styles post.
@@ -60,8 +62,8 @@ func (s *Server) serveGlobalStylesTheme(w http.ResponseWriter, r *http.Request, 
 			"Sorry, you are not allowed to access the global styles on this site.")
 		return
 	}
-	stylesheet = strings.TrimSpace(stylesheet)
-	if stylesheet == "" || strings.Contains(stylesheet, "..") || strings.ContainsAny(stylesheet, `/\`) {
+	stylesheet = sanitizeGlobalStylesStylesheet(stylesheet)
+	if stylesheet == "" {
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"code":    "rest_theme_not_found",
 			"message": "Theme not found.",
@@ -90,8 +92,109 @@ func (s *Server) serveGlobalStylesTheme(w http.ResponseWriter, r *http.Request, 
 	if styles == nil {
 		styles = map[string]any{}
 	}
+	selfHref := "/wp-json/wp/v2/global-styles/themes/" + url.PathEscape(stylesheet)
 	w.Header().Set("Allow", "GET")
-	writeJSON(w, http.StatusOK, GlobalStylesTheme{Settings: settings, Styles: styles})
+	writeJSON(w, http.StatusOK, GlobalStylesTheme{
+		Settings: settings,
+		Styles:   styles,
+		Links: map[string]any{
+			"self": []map[string]any{{"href": selfHref}},
+		},
+	})
+}
+
+// serveGlobalStylesThemeVariations is GET …/global-styles/themes/{stylesheet}/variations (P4.71).
+func (s *Server) serveGlobalStylesThemeVariations(w http.ResponseWriter, r *http.Request, c *wp.Context, stylesheet string) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
+			"code":    "rest_no_route",
+			"message": "No route was found matching the URL and request method.",
+			"data":    map[string]any{"status": 405},
+		})
+		return
+	}
+	if !canViewGlobalStyles(c) {
+		writeGlobalStylesForbidden(w, c, "rest_cannot_read_global_styles",
+			"Sorry, you are not allowed to access the global styles on this site.")
+		return
+	}
+	stylesheet = sanitizeGlobalStylesStylesheet(stylesheet)
+	if stylesheet == "" {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"code":    "rest_theme_not_found",
+			"message": "Theme not found.",
+			"data":    map[string]any{"status": 404},
+		})
+		return
+	}
+	abs := ""
+	if c != nil && c.Config != nil {
+		abs = c.Config.ABSPATH
+	}
+	// Ensure the theme exists (active-theme check is soft: load theme.json).
+	if _, err := theme.LoadActive(abs, stylesheet); err != nil {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"code":    "rest_theme_not_found",
+			"message": "Theme not found.",
+			"data":    map[string]any{"status": 404},
+		})
+		return
+	}
+	vars, err := theme.LoadStyleVariations(abs, stylesheet, "theme")
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_global_styles",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	out := make([]map[string]any, 0, len(vars))
+	for _, v := range vars {
+		if v.Raw != nil {
+			out = append(out, v.Raw)
+			continue
+		}
+		item := map[string]any{"title": v.Title, "slug": v.Slug}
+		if v.Settings != nil {
+			item["settings"] = v.Settings
+		}
+		if v.Styles != nil {
+			item["styles"] = v.Styles
+		}
+		if v.Version != 0 {
+			item["version"] = v.Version
+		}
+		out = append(out, item)
+	}
+	w.Header().Set("Allow", "GET")
+	writeJSON(w, http.StatusOK, out)
+}
+
+// sanitizeGlobalStylesStylesheet mirrors WP _sanitize_global_styles_callback +
+// theme directory validation (URL-decode; allow one optional subdirectory).
+func sanitizeGlobalStylesStylesheet(stylesheet string) string {
+	stylesheet = strings.TrimSpace(stylesheet)
+	if stylesheet == "" {
+		return ""
+	}
+	if decoded, err := url.PathUnescape(stylesheet); err == nil {
+		stylesheet = decoded
+	}
+	stylesheet = strings.Trim(stylesheet, "/")
+	if stylesheet == "" || strings.Contains(stylesheet, "..") {
+		return ""
+	}
+	parts := strings.Split(stylesheet, "/")
+	if len(parts) > 2 {
+		return ""
+	}
+	for _, p := range parts {
+		if p == "" || strings.ContainsAny(p, `:<>*?"|`) {
+			return ""
+		}
+	}
+	return stylesheet
 }
 
 func (s *Server) serveGlobalStylesItem(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
@@ -165,7 +268,8 @@ func parseGlobalStylesContent(content string) (settings, styles map[string]any) 
 	return settings, styles
 }
 
-// parseGlobalStylesPath matches themes/{stylesheet} or numeric id under /wp/v2/global-styles/.
+// parseGlobalStylesPath matches themes/{stylesheet}[/variations] or numeric id
+// under /wp/v2/global-styles/ (P4.71).
 func parseGlobalStylesPath(path string) (kind string, stylesheet string, id int64, ok bool) {
 	rest := strings.TrimPrefix(path, "/wp/v2/global-styles/")
 	rest = strings.Trim(rest, "/")
@@ -175,7 +279,19 @@ func parseGlobalStylesPath(path string) (kind string, stylesheet string, id int6
 	if strings.HasPrefix(rest, "themes/") {
 		ss := strings.TrimPrefix(rest, "themes/")
 		ss = strings.Trim(ss, "/")
-		if ss == "" || strings.Contains(ss, "/") {
+		if ss == "" {
+			return "", "", 0, false
+		}
+		if strings.HasSuffix(ss, "/variations") {
+			ss = strings.TrimSuffix(ss, "/variations")
+			ss = strings.Trim(ss, "/")
+			if ss == "" {
+				return "", "", 0, false
+			}
+			return "theme-variations", ss, 0, true
+		}
+		// Allow stylesheet or parent/child subdirectory (one slash).
+		if strings.Count(ss, "/") > 1 {
 			return "", "", 0, false
 		}
 		return "theme", ss, 0, true
