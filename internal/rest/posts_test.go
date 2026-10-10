@@ -757,4 +757,3 @@ func TestPostsAfterBeforeQueryParams(t *testing.T) {
 		t.Fatalf("expected X-WP-Total=0, got %q", rec.Header().Get("X-WP-Total"))
 	}
 }
-
