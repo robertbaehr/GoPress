@@ -1017,11 +1017,19 @@
   task: P2.36
   api: exported
 
-# P2.37: wp_list_pluck / WP_List_Util::pluck.
+# P2.37 / P2.87: wp_list_pluck / WP_List_Util::pluck.
 - prefix: wp-includes/functions.php#wp_list_pluck
   go: internal/wp/list_pluck.go
   status: partial
-  task: P2.37
+  task: P2.87
+  api: exported
+  notes: "P2.87 — json tag + pointer struct + map[string]string pluck"
+
+# P2.87: wp_list_pluck deepen.
+- prefix: wp-includes/functions.php#wp_list_pluck.p2.87
+  go: internal/wp/list_pluck.go
+  status: partial
+  task: P2.87
   api: exported
 
 # P2.43: wp_filter_object_list / wp_list_filter.

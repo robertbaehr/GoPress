@@ -3,13 +3,17 @@ package wp
 import (
 	"fmt"
 	"reflect"
+	"strings"
 )
 
-// ListPluck extracts a field from each element of a list (wp_list_pluck, P2.37).
+// ListPluck extracts a field from each element of a list (wp_list_pluck, P2.37 / P2.87).
 //
 // input may be a slice/array of maps or structs. When indexKey is empty, values
 // are returned in input order (slice). When indexKey is set, results are keyed
 // by that field (map[any]any), matching array_column / WP_List_Util::pluck.
+//
+// P2.87: struct fields also match json tags (e.g. field "name" → `json:"name"`),
+// and pointer-to-struct / map[string]string elements are supported.
 func ListPluck(input any, field string, indexKey string) any {
 	if field == "" || input == nil {
 		if indexKey == "" {
@@ -87,25 +91,47 @@ func pluckFieldOK(elem reflect.Value, field string) (any, bool) {
 		}
 		return got.Interface(), true
 	case reflect.Struct:
-		f := elem.FieldByName(field)
-		if !f.IsValid() {
-			// Case-insensitive / exported-only fallback via name match.
-			t := elem.Type()
-			for i := 0; i < t.NumField(); i++ {
-				sf := t.Field(i)
-				if sf.Name == field || equalFoldASCII(sf.Name, field) {
-					f = elem.Field(i)
-					break
-				}
-			}
+		if f, ok := structFieldByPluckName(elem, field); ok {
+			return f.Interface(), true
 		}
-		if !f.IsValid() || !f.CanInterface() {
-			return nil, false
-		}
-		return f.Interface(), true
+		return nil, false
 	default:
 		return nil, false
 	}
+}
+
+// structFieldByPluckName finds an exported struct field by Go name, case-insensitive
+// name, or json tag (P2.87).
+func structFieldByPluckName(elem reflect.Value, field string) (reflect.Value, bool) {
+	f := elem.FieldByName(field)
+	if f.IsValid() && f.CanInterface() {
+		return f, true
+	}
+	t := elem.Type()
+	for i := 0; i < t.NumField(); i++ {
+		sf := t.Field(i)
+		if sf.PkgPath != "" { // unexported
+			continue
+		}
+		if sf.Name == field || equalFoldASCII(sf.Name, field) {
+			fv := elem.Field(i)
+			if fv.CanInterface() {
+				return fv, true
+			}
+		}
+		if tag := sf.Tag.Get("json"); tag != "" && tag != "-" {
+			if comma := strings.IndexByte(tag, ','); comma >= 0 {
+				tag = tag[:comma]
+			}
+			if tag != "" && (tag == field || equalFoldASCII(tag, field)) {
+				fv := elem.Field(i)
+				if fv.CanInterface() {
+					return fv, true
+				}
+			}
+		}
+	}
+	return reflect.Value{}, false
 }
 
 func normalizeMapKey(v any) any {
