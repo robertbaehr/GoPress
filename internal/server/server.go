@@ -142,6 +142,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		serveWLWManifestStub(w, r)
 		return
 	}
+	if path == "/rsd.xml" {
+		serveRSDXMLStub(w, r)
+		return
+	}
 	if path == "/wp-comments-post.php" {
 		c := s.requestContext(w, r)
 		s.serveCommentsPost(w, r, c)
