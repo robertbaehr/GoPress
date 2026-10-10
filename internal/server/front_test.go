@@ -188,6 +188,41 @@ func TestFrontAttachmentByRewrite(t *testing.T) {
 	}
 }
 
+func TestFrontEmbedByQuery(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?p=1&embed=true", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	if rec.Header().Get("X-WP-embed") != "true" {
+		t.Fatalf("missing X-WP-embed header")
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `class="wp-embed"`) || !strings.Contains(body, "Hello world") {
+		t.Fatalf("expected embed markup, got %q", body)
+	}
+}
+
+func TestFrontEmbedPrettyPath(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/2024/06/15/hello-world/embed/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	if rec.Header().Get("X-WP-embed") != "true" {
+		t.Fatalf("missing X-WP-embed header")
+	}
+	if !strings.Contains(rec.Body.String(), "wp-embed-heading") {
+		t.Fatalf("expected embed heading, got %q", rec.Body.String())
+	}
+}
+
 func TestFrontFeedQueryRSS2(t *testing.T) {
 	c := testBoot(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}

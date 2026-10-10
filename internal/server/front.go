@@ -49,6 +49,10 @@ func (f *Front) ServeFront(w http.ResponseWriter, r *http.Request, c *wp.Context
 	}
 
 	if isSingularVars(parsed.QueryVars) {
+		if isEmbedVars(parsed.QueryVars) {
+			f.renderEmbed(w, c, parsed.QueryVars)
+			return
+		}
 		f.renderSingular(w, c, parsed.QueryVars)
 		return
 	}
@@ -114,6 +118,14 @@ func isSingularVars(vars map[string]string) bool {
 		}
 	}
 	return false
+}
+
+func isEmbedVars(vars map[string]string) bool {
+	if vars == nil {
+		return false
+	}
+	v := strings.ToLower(strings.TrimSpace(vars["embed"]))
+	return v == "true" || v == "1"
 }
 
 func (f *Front) renderHome(w http.ResponseWriter, c *wp.Context) {
@@ -375,6 +387,76 @@ func (f *Front) renderSingularShim(w http.ResponseWriter, c *wp.Context, post *s
 	setFrontSingularLinks(w, c, post)
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(b.String()))
+}
+
+// renderEmbed serves the post embed endpoint (P3.18) — theme-compat/embed.php shape.
+func (f *Front) renderEmbed(w http.ResponseWriter, c *wp.Context, vars map[string]string) {
+	post, err := loadSingularPost(c, vars)
+	if err != nil {
+		http.Error(w, "post: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	if post == nil {
+		f.renderEmbed404(w, c)
+		return
+	}
+	blogname := optionString(c, "blogname", "GoPress")
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	perm := singularPermalink(home, post)
+	excerpt := wp.TheContent(c, post.Content)
+	excerpt = wp.ProcessInteractivityHTML(wp.KsesPost(excerpt))
+	// Keep embed payloads small.
+	if len(excerpt) > 400 {
+		excerpt = excerpt[:400] + "&hellip;"
+	}
+
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\" class=\"no-js\">\n<head>\n")
+	b.WriteString("<meta charset=\"UTF-8\" />\n")
+	b.WriteString("<title>")
+	b.WriteString(html.EscapeString(post.Title))
+	b.WriteString(" &#8212; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString("</title>\n")
+	b.WriteString("</head>\n<body class=\"")
+	b.WriteString(html.EscapeString(wp.BodyClassWithAdminBar(c, "wp-embed")))
+	b.WriteString("\">\n")
+	b.WriteString("<div class=\"wp-embed\">\n")
+	b.WriteString("<p class=\"wp-embed-heading\"><a href=\"")
+	b.WriteString(html.EscapeString(perm))
+	b.WriteString("\" target=\"_top\">")
+	b.WriteString(html.EscapeString(post.Title))
+	b.WriteString("</a></p>\n")
+	b.WriteString("<div class=\"wp-embed-excerpt\">")
+	b.WriteString(excerpt)
+	b.WriteString("</div>\n")
+	b.WriteString("<div class=\"wp-embed-footer\">\n")
+	b.WriteString("<a href=\"")
+	b.WriteString(html.EscapeString(home + "/"))
+	b.WriteString("\" target=\"_top\">")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString("</a>\n")
+	b.WriteString("</div>\n</div>\n</body>\n</html>\n")
+
+	w.Header().Set("X-WP-embed", "true")
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(b.String()))
+}
+
+func (f *Front) renderEmbed404(w http.ResponseWriter, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\" class=\"no-js\">\n<head>\n")
+	b.WriteString("<meta charset=\"UTF-8\" />\n<title>")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString("</title>\n</head>\n<body class=\"wp-embed\">\n")
+	b.WriteString("<div class=\"wp-embed\"><p class=\"wp-embed-heading\">Oops! That embed could not be found.</p></div>\n")
+	b.WriteString("</body>\n</html>\n")
+	w.Header().Set("X-WP-embed", "true")
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusNotFound)
 	_, _ = w.Write([]byte(b.String()))
 }
 

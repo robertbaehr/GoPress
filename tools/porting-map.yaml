@@ -229,6 +229,18 @@
   task: P3.17
   api: n/a
 
+- prefix: wp-includes/embed.php
+  go: internal/server/front.go
+  status: partial
+  task: P3.18
+  api: n/a
+
+- prefix: wp-includes/theme-compat/embed.php
+  go: internal/server/front.go
+  status: partial
+  task: P3.18
+  api: n/a
+
 - prefix: wp-includes/feed-rss2.php
   go: internal/server/front.go
   status: partial
