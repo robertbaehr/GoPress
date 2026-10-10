@@ -594,12 +594,11 @@ func (e *Env) renderPostDate(block Block) string {
 	timeHTML += `>` + html.EscapeString(display) + `</time>`
 	inner := timeHTML
 	if isLinkAttr(block.Attrs) && e.currentPost.Link != "" {
+		// WP render_block_core_post_date: link is href-only unless attrs set target/rel.
 		aAttrs := ` href="` + html.EscapeString(e.currentPost.Link) + `"`
-		target := strings.TrimSpace(attrString(block.Attrs, "linkTarget"))
-		if target == "" {
-			target = "_self"
+		if target := strings.TrimSpace(attrString(block.Attrs, "linkTarget")); target != "" {
+			aAttrs += ` target="` + html.EscapeString(target) + `"`
 		}
-		aAttrs += ` target="` + html.EscapeString(target) + `"`
 		if rel := strings.TrimSpace(attrString(block.Attrs, "rel")); rel != "" {
 			aAttrs += ` rel="` + html.EscapeString(rel) + `"`
 		}
