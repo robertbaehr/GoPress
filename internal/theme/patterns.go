@@ -31,7 +31,7 @@ var (
 	// Common i18n echo forms in theme patterns (P5.16): keep the source string.
 	phpEscHTMLEre    = regexp.MustCompile(`<\?php\s+(?:echo\s+)?esc_html_e\s*\(\s*'([^']*)'\s*,\s*'[^']*'\s*\)\s*;\s*\?>`)
 	phpEscHTMLEchoRe = regexp.MustCompile(`<\?php\s+echo\s+esc_html__\s*\(\s*'([^']*)'\s*,\s*'[^']*'\s*\)\s*;\s*\?>`)
-	phpEscAttrEre = regexp.MustCompile(`<\?php\s+(?:echo\s+)?esc_attr_e\s*\(\s*'([^']*)'\s*,\s*'[^']*'\s*\)\s*;\s*\?>`)
+	phpEscAttrEre    = regexp.MustCompile(`<\?php\s+(?:echo\s+)?esc_attr_e\s*\(\s*'([^']*)'\s*,\s*'[^']*'\s*\)\s*;\s*\?>`)
 	// TT5 footer printf designed-with block (multiline).
 	phpDesignedWithRe = regexp.MustCompile(`(?s)<\?php\s+printf\s*\(\s*.*?esc_html__\s*\(\s*'Designed with %s'\s*,\s*'[^']*'\s*\)\s*,\s*.*?WordPress</a>'\s*\)\s*;\s*\?>`)
 )
