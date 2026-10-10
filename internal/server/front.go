@@ -2121,6 +2121,8 @@ func (f *Front) writeCommentsSection(b *strings.Builder, c *wp.Context, post *si
 	if err != nil {
 		comments = nil
 	}
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	perm := singularPermalink(home, post)
 	b.WriteString("<section id=\"comments\" class=\"comments-area\">\n")
 	b.WriteString("<h2 class=\"comments-title\">Comments</h2>\n")
 	if len(comments) == 0 {
@@ -2137,7 +2139,24 @@ func (f *Front) writeCommentsSection(b *strings.Builder, c *wp.Context, post *si
 			b.WriteString("</b></footer>\n")
 			b.WriteString("<div class=\"comment-content\">\n")
 			b.WriteString(wp.KsesData(cm.Content))
-			b.WriteString("\n</div>\n</article>\n</li>\n")
+			b.WriteString("\n</div>\n")
+			// P3.97: reply link (?replytocom=ID#respond).
+			replyHref := perm
+			if strings.Contains(replyHref, "?") {
+				replyHref += "&replytocom=" + strconv.FormatInt(cm.ID, 10) + "#respond"
+			} else {
+				replyHref += "?replytocom=" + strconv.FormatInt(cm.ID, 10) + "#respond"
+			}
+			b.WriteString(`<div class="reply"><a rel="nofollow" class="comment-reply-link" href="`)
+			b.WriteString(html.EscapeString(replyHref))
+			b.WriteString(`" data-commentid="`)
+			b.WriteString(strconv.FormatInt(cm.ID, 10))
+			b.WriteString(`" data-postid="`)
+			b.WriteString(strconv.FormatInt(post.ID, 10))
+			b.WriteString(`" aria-label="Reply to `)
+			b.WriteString(html.EscapeString(cm.Author))
+			b.WriteString(`">Reply</a></div>` + "\n")
+			b.WriteString("</article>\n</li>\n")
 		}
 		b.WriteString("</ol>\n")
 	}
@@ -2145,7 +2164,30 @@ func (f *Front) writeCommentsSection(b *strings.Builder, c *wp.Context, post *si
 	b.WriteString("</section>\n")
 }
 
-// commentFormHTML mirrors WP comment_form() markup used under posts (P5.18).
+// commentReplyToID resolves ?replytocom= for the current request (P3.97 / _get_comment_reply_id).
+func commentReplyToID(c *wp.Context, post *singularPost) (int64, string) {
+	if c == nil || c.Req == nil || post == nil {
+		return 0, ""
+	}
+	raw := strings.TrimSpace(c.Req.URL.Query().Get("replytocom"))
+	if raw == "" {
+		return 0, ""
+	}
+	id, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || id <= 0 {
+		return 0, ""
+	}
+	cm, err := wp.GetCommentByID(c, id)
+	if err != nil || cm == nil {
+		return 0, ""
+	}
+	if cm.PostID != post.ID || cm.Approved != "1" {
+		return 0, ""
+	}
+	return cm.ID, cm.Author
+}
+
+// commentFormHTML mirrors WP comment_form() markup used under posts (P5.18 / P3.97).
 func commentFormHTML(c *wp.Context, post *singularPost) string {
 	if post == nil {
 		return ""
@@ -2155,21 +2197,31 @@ func commentFormHTML(c *wp.Context, post *singularPost) string {
 	if home != "" {
 		action = home + "/wp-comments-post.php"
 	}
+	replyID, replyAuthor := commentReplyToID(c, post)
 	cancelHref := "#respond"
 	if home != "" {
-		// WP prints a root-relative cancel URL on front templates.
+		// WP prints a root-relative cancel URL on front templates (strip replytocom).
 		perm := singularPermalink(home, post)
 		cancelHref = strings.TrimPrefix(perm, home) + "#respond"
 		if !strings.HasPrefix(cancelHref, "/") {
 			cancelHref = "/" + cancelHref
 		}
 	}
+	title := "Leave a Reply"
+	cancelStyle := ` style="display:none;"`
+	if replyID > 0 {
+		title = "Leave a Reply to " + html.EscapeString(replyAuthor)
+		cancelStyle = ""
+	}
 	var b strings.Builder
 	b.WriteString(`<div id="respond" class="comment-respond wp-block-post-comments-form">` + "\n")
-	b.WriteString(`<h3 id="reply-title" class="comment-reply-title">Leave a Reply `)
-	b.WriteString(`<small><a rel="nofollow" id="cancel-comment-reply-link" href="`)
+	b.WriteString(`<h3 id="reply-title" class="comment-reply-title">`)
+	b.WriteString(title)
+	b.WriteString(` <small><a rel="nofollow" id="cancel-comment-reply-link" href="`)
 	b.WriteString(html.EscapeString(cancelHref))
-	b.WriteString(`" style="display:none;">Cancel reply</a></small></h3>`)
+	b.WriteString(`"`)
+	b.WriteString(cancelStyle)
+	b.WriteString(`>Cancel reply</a></small></h3>`)
 	b.WriteString(`<form action="`)
 	b.WriteString(html.EscapeString(action))
 	b.WriteString(`" method="post" id="commentform" class="comment-form">`)
@@ -2191,7 +2243,9 @@ func commentFormHTML(c *wp.Context, post *singularPost) string {
 	b.WriteString(`<input type="hidden" name="comment_post_ID" value="`)
 	b.WriteString(strconv.FormatInt(post.ID, 10))
 	b.WriteString(`" id="comment_post_ID" />` + "\n")
-	b.WriteString(`<input type="hidden" name="comment_parent" id="comment_parent" value="0" />` + "\n")
+	b.WriteString(`<input type="hidden" name="comment_parent" id="comment_parent" value="`)
+	b.WriteString(strconv.FormatInt(replyID, 10))
+	b.WriteString(`" />` + "\n")
 	b.WriteString(`</p></form></div><!-- #respond -->` + "\n")
 	return b.String()
 }
