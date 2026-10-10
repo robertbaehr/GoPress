@@ -105,6 +105,26 @@ func TestFrontSingularByQueryP(t *testing.T) {
 	}
 }
 
+func TestFrontSingularOmitsXPingback(t *testing.T) {
+	// P3.41: XML-RPC is gone, so singular responses must not advertise X-Pingback.
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?p=1", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	if got := rec.Header().Get("X-Pingback"); got != "" {
+		t.Fatalf("X-Pingback must not be sent, got %q", got)
+	}
+	for _, v := range rec.Header().Values("X-Pingback") {
+		if strings.TrimSpace(v) != "" {
+			t.Fatalf("X-Pingback values=%v", rec.Header().Values("X-Pingback"))
+		}
+	}
+}
+
 func TestFrontSingularOEmbedDiscoveryLinks(t *testing.T) {
 	c := testBoot(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}

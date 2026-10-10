@@ -59,6 +59,13 @@
   task: ""
   api: n/a
 
+# P3.41: never send X-Pingback (XML-RPC/pingbacks gone).
+- prefix: wp-includes/class-wp.php#X-Pingback
+  go: internal/server/front.go
+  status: done
+  task: P3.41
+  api: n/a
+
 # P3.32: /rsd.xml stub (xmlrpc.php?rsd stays 403).
 # P10.31: e2e coverage in tests/e2e/rsd.spec.js.
 - prefix: rsd.xml

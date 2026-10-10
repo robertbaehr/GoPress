@@ -2627,6 +2627,7 @@ func setFrontAPILink(w http.ResponseWriter, c *wp.Context) {
 }
 
 // setFrontSingularLinks mirrors WP Link headers for singular views (P5.17).
+// X-Pingback is intentionally omitted: XML-RPC/pingbacks are out of scope (P3.41).
 func setFrontSingularLinks(w http.ResponseWriter, c *wp.Context, post *singularPost) {
 	siteURL := strings.TrimRight(optionString(c, "siteurl", ""), "/")
 	home := strings.TrimRight(optionString(c, "home", siteURL), "/")
@@ -2636,6 +2637,8 @@ func setFrontSingularLinks(w http.ResponseWriter, c *wp.Context, post *singularP
 	if home == "" || post == nil {
 		return
 	}
+	// Never advertise xmlrpc.php via X-Pingback (gone with Tier-2 XML-RPC).
+	w.Header().Del("X-Pingback")
 	w.Header().Add("Link", fmt.Sprintf(`<%s/wp-json/>; rel="https://api.w.org/"`, home))
 	restType := "posts"
 	if post.Type == "page" {
