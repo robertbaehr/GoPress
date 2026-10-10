@@ -144,6 +144,23 @@ func TestWPCronEndpoint200(t *testing.T) {
 	}
 }
 
+// TestWPCronSetsDoingCron covers P2.67: wp-cron.php marks Scope.IsCron.
+func TestWPCronSetsDoingCron(t *testing.T) {
+	c := cronBoot(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-cron.php", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	wp.ServeCron(rec, req, c)
+	if !c.Scope.IsCron {
+		t.Fatal("expected Scope.IsCron after ServeCron")
+	}
+	if !wp.DoingCron(c) {
+		t.Fatal("expected DoingCron true after ServeCron")
+	}
+}
+
 func cronBoot(t *testing.T) *wp.Context {
 	t.Helper()
 	cfg := &config.Config{

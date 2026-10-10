@@ -1042,6 +1042,21 @@
   api: n/a
   notes: "P2.66 — serveAdminAjax sets Scope.IsAjax (DOING_AJAX)"
 
+# P2.67: wp_doing_cron (DOING_CRON / wp-cron.php).
+- prefix: wp-includes/load.php#wp_doing_cron
+  go: internal/wp/doing_cron.go
+  status: done
+  task: P2.67
+  api: exported
+  notes: "P2.67 — DoingCron from Scope.IsCron + wp_doing_cron filter"
+
+- prefix: wp-cron.php#DOING_CRON
+  go: internal/wp/cron.go
+  status: partial
+  task: P2.67
+  api: n/a
+  notes: "P2.67 — ServeCron sets Scope.IsCron (DOING_CRON)"
+
 - prefix: wp-includes/class-wp-list-util.php
   go: internal/wp/filter_object_list.go
   status: partial
