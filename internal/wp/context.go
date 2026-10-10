@@ -73,6 +73,9 @@ type Context struct {
 	// BlockBindings is the block bindings sources registry (P5.39).
 	BlockBindings *BlockBindingsRegistry
 
+	// FontLibrary holds registered font collections (P4.55).
+	FontLibrary *FontLibrary
+
 	// Shortcodes is the shortcode tag registry (P2.11).
 	Shortcodes *Shortcodes
 
@@ -137,6 +140,7 @@ func (c *Context) ForRequest(w http.ResponseWriter, r *http.Request) *Context {
 		BlockStyles:       c.BlockStyles,
 		BlockVariations:   c.BlockVariations,
 		BlockBindings:     c.BlockBindings,
+		FontLibrary:       c.FontLibrary,
 		Shortcodes:        c.Shortcodes,
 		Mailer:            c.Mailer,
 		Req:               r,

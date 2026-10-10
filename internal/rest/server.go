@@ -349,6 +349,11 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 			return
 		}
 		s.serveFontFamilyItem(w, r, c, familyID)
+	case path == "/wp/v2/font-collections":
+		s.serveFontCollections(w, r, c)
+	case strings.HasPrefix(path, "/wp/v2/font-collections/"):
+		slug := strings.Trim(strings.TrimPrefix(path, "/wp/v2/font-collections/"), "/")
+		s.serveFontCollectionItem(w, r, c, slug)
 	case path == "/wp/v2/templates":
 		s.serveTemplates(w, r, c)
 	case strings.HasPrefix(path, "/wp/v2/templates/"):
