@@ -11,6 +11,7 @@ import (
 
 	"github.com/robertbaehr/GoPress/internal/config"
 	"github.com/robertbaehr/GoPress/internal/db"
+	"github.com/robertbaehr/GoPress/internal/theme"
 )
 
 // ctxKey is the private context.Context key for *Context.
@@ -52,6 +53,9 @@ type Context struct {
 
 	// Roles holds wp_user_roles and UserCan helpers (P2.3).
 	Roles *Roles
+
+	// Theme is the active theme.json settings/styles subset (P5.4).
+	Theme *theme.JSON
 
 	// CurrentUser is the authenticated user for this request (P2.2+).
 	CurrentUser *User
@@ -105,6 +109,7 @@ func (c *Context) ForRequest(w http.ResponseWriter, r *http.Request) *Context {
 		Auth:    c.Auth,
 		Users:   c.Users,
 		Roles:   c.Roles,
+		Theme:   c.Theme,
 		Req:     r,
 		Res:     w,
 		Scope:   NewRequestScope(),

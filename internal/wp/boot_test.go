@@ -17,6 +17,7 @@ func TestBootLoadsBlogname(t *testing.T) {
 		DBHost:      "127.0.0.1:3306",
 		DBCharset:   "utf8mb4",
 		TablePrefix: "wp_",
+		ABSPATH:     "/workspace/",
 		AuthKey:     "k", SecureAuthKey: "k", LoggedInKey: "k", NonceKey: "k",
 		AuthSalt: "s", SecureAuthSalt: "s", LoggedInSalt: "s", NonceSalt: "s",
 	}
