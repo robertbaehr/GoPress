@@ -2617,6 +2617,14 @@
   task: P7.42
   api: n/a
 
+# P7.61: bulk delete permanently on upload.php list view.
+- prefix: wp-admin/upload.php#bulk-delete
+  go: internal/admin/media_bulk.go
+  status: partial
+  task: P7.61
+  api: n/a
+  notes: "P7.61 — list checkboxes + Delete permanently; force-delete attachment + meta"
+
 - prefix: wp-admin/profile.php
   go: internal/admin/admin.go
   status: partial

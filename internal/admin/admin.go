@@ -1598,25 +1598,6 @@ func (h *Handler) serveProfile(w http.ResponseWriter, r *http.Request, c *wp.Con
 	writeAdminPage(w, c, newAdminChrome(c, "Profile", "profile-php"), b.String())
 }
 
-func (h *Handler) serveUpload(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	blogname := optionString(c, "blogname", "GoPress")
-	items, err := recentMedia(c, 20)
-	if err != nil {
-		http.Error(w, "media: "+err.Error()+"\n", http.StatusInternalServerError)
-		return
-	}
-	// P7.42: grid is the WP default; ?mode=list keeps the list table.
-	mode := strings.TrimSpace(r.URL.Query().Get("mode"))
-	if mode != "list" && mode != "grid" {
-		mode = mediaLibraryMode(c)
-	}
-	if mode == "grid" {
-		writeHTML(w, http.StatusOK, renderMediaGrid(blogname, items, c))
-		return
-	}
-	writeHTML(w, http.StatusOK, renderMediaList(blogname, items, c))
-}
-
 func mediaLibraryMode(c *wp.Context) string {
 	if c != nil && c.CurrentUser != nil && c.Meta != nil {
 		if v, ok := c.Meta.GetMetadata(wp.MetaUser, c.CurrentUser.ID, "media_library_mode", true).(string); ok {
@@ -1649,7 +1630,7 @@ func mediaViewSwitcher(mode string) string {
 	return b.String()
 }
 
-func renderMediaGrid(blogname string, items []mediaRow, c *wp.Context) string {
+func renderMediaGrid(blogname string, items []mediaRow, c *wp.Context, r *http.Request) string {
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>Media Library &lsaquo; ")
@@ -1657,6 +1638,7 @@ func renderMediaGrid(blogname string, items []mediaRow, c *wp.Context) string {
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
 	b.WriteString("<body class=\"wp-admin wp-core-ui upload-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
+	b.WriteString(mediaBulkDeletedNotice(r))
 	b.WriteString("<div class=\"wrap\" id=\"wp-media-grid\" data-search=\"\">\n")
 	b.WriteString("<h1 class=\"wp-heading-inline\">Media Library</h1>\n")
 	b.WriteString("<a class=\"page-title-action\" href=\"/wp-admin/media-new.php\">Add Media File</a>\n")
@@ -1684,7 +1666,7 @@ func renderMediaGrid(blogname string, items []mediaRow, c *wp.Context) string {
 	return b.String()
 }
 
-func renderMediaList(blogname string, items []mediaRow, c *wp.Context) string {
+func renderMediaList(blogname string, items []mediaRow, c *wp.Context, r *http.Request) string {
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>Media Library &lsaquo; ")
@@ -1692,21 +1674,36 @@ func renderMediaList(blogname string, items []mediaRow, c *wp.Context) string {
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
 	b.WriteString("<body class=\"wp-admin wp-core-ui upload-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
+	b.WriteString(mediaBulkDeletedNotice(r))
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1 class=\"wp-heading-inline\">Media Library</h1>\n")
 	b.WriteString("<a class=\"page-title-action\" href=\"/wp-admin/media-new.php\">Add New Media File</a>\n")
 	b.WriteString(mediaViewSwitcher("list"))
 	b.WriteString("<hr class=\"wp-header-end\">\n")
+	b.WriteString(`<form method="post" action="/wp-admin/upload.php?mode=list" id="posts-filter">` + "\n")
+	b.WriteString(`<div class="tablenav top"><div class="alignleft actions bulkactions">`)
+	b.WriteString(`<label for="bulk-action-selector-top" class="screen-reader-text">Select bulk action</label>`)
+	b.WriteString(`<select name="action" id="bulk-action-selector-top">`)
+	b.WriteString(`<option value="-1">Bulk actions</option>`)
+	b.WriteString(`<option value="delete">Delete permanently</option>`)
+	b.WriteString(`</select> `)
+	b.WriteString(`<input type="submit" id="doaction" class="button action" value="Apply" />`)
+	b.WriteString(`</div></div>` + "\n")
 	b.WriteString("<table class=\"wp-list-table widefat fixed striped media\">\n")
-	b.WriteString("<thead><tr><th scope=\"col\" class=\"column-title\">File</th><th scope=\"col\" class=\"column-mime\">Type</th></tr></thead>\n")
+	b.WriteString("<thead><tr>")
+	b.WriteString(`<td id="cb" class="manage-column column-cb check-column"><input id="cb-select-all-1" type="checkbox" /></td>`)
+	b.WriteString("<th scope=\"col\" class=\"column-title\">File</th><th scope=\"col\" class=\"column-mime\">Type</th></tr></thead>\n")
 	b.WriteString("<tbody id=\"the-list\">\n")
 	if len(items) == 0 {
-		b.WriteString("<tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"2\">No media items found.</td></tr>\n")
+		b.WriteString("<tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"3\">No media items found.</td></tr>\n")
 	}
 	for _, m := range items {
 		b.WriteString("<tr id=\"post-")
 		b.WriteString(strconv.FormatInt(m.ID, 10))
-		b.WriteString("\"><td class=\"title column-title\"><strong><a class=\"row-title\" href=\"/wp-admin/post.php?post=")
+		b.WriteString(`"><th scope="row" class="check-column"><input type="checkbox" name="media[]" value="`)
+		b.WriteString(strconv.FormatInt(m.ID, 10))
+		b.WriteString(`" /></th>`)
+		b.WriteString("<td class=\"title column-title\"><strong><a class=\"row-title\" href=\"/wp-admin/post.php?post=")
 		b.WriteString(strconv.FormatInt(m.ID, 10))
 		b.WriteString("&amp;action=edit\">")
 		b.WriteString(html.EscapeString(m.Title))
@@ -1717,7 +1714,16 @@ func renderMediaList(blogname string, items []mediaRow, c *wp.Context) string {
 		b.WriteString(html.EscapeString(m.Mime))
 		b.WriteString("</td></tr>\n")
 	}
-	b.WriteString("</tbody>\n</table>\n</div>\n</body>\n</html>\n")
+	b.WriteString("</tbody>\n</table>\n")
+	b.WriteString(`<div class="tablenav bottom"><div class="alignleft actions bulkactions">`)
+	b.WriteString(`<label for="bulk-action-selector-bottom" class="screen-reader-text">Select bulk action</label>`)
+	b.WriteString(`<select name="action2" id="bulk-action-selector-bottom">`)
+	b.WriteString(`<option value="-1">Bulk actions</option>`)
+	b.WriteString(`<option value="delete">Delete permanently</option>`)
+	b.WriteString(`</select> `)
+	b.WriteString(`<input type="submit" id="doaction2" class="button action" value="Apply" />`)
+	b.WriteString(`</div></div>` + "\n")
+	b.WriteString("</form>\n</div>\n</body>\n</html>\n")
 	return b.String()
 }
 
