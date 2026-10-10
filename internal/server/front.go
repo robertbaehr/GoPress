@@ -506,11 +506,28 @@ func optionString(c *wp.Context, name, fallback string) string {
 	}
 }
 
-// blockRenderEnv wires dynamic block resolvers (template parts, later navigation).
+// blockRenderEnv wires dynamic block resolvers (template parts, navigation).
 func blockRenderEnv(c *wp.Context) *blocks.Env {
 	return &blocks.Env{
 		LoadTemplatePart: func(slug string) (string, bool) {
 			return wp.ResolveTemplatePart(c, slug)
+		},
+		LoadNavigation: func(ref int64) (string, bool) {
+			return wp.LoadNavigationContent(c, ref)
+		},
+		ListPages: func() []blocks.NavLink {
+			pages, err := wp.ListPublishedPages(c, 50)
+			if err != nil {
+				return nil
+			}
+			out := make([]blocks.NavLink, 0, len(pages))
+			for _, p := range pages {
+				out = append(out, blocks.NavLink{
+					Label: p.Title,
+					URL:   wp.PagePermalink(c, p),
+				})
+			}
+			return out
 		},
 	}
 }
