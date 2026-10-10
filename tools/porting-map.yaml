@@ -2189,6 +2189,14 @@
   task: P9.11
   api: n/a
 
+# P9.13: WP_Plugin_Dependencies stub (Requires Plugins header, no remote API).
+- prefix: wp-includes/class-wp-plugin-dependencies.php
+  go: internal/plugins/dependencies.go
+  status: partial
+  task: P9.13
+  api: exported
+  notes: "P9.13 — sanitize slugs, Has/GetDependencies, unmet check; no plugins_api"
+
 # P9.10: get_mu_plugins() header parse for top-level mu-plugins.
 - prefix: wp-admin/includes/plugin.php#get_mu_plugins
   go: internal/plugins/headers.go
