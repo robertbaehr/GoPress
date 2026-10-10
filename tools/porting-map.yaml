@@ -1889,6 +1889,35 @@
   api: internal
   notes: "P5.61 — prefer saved markup; synthesize figure>blockquote value/citation; align; className"
 
+# P5.64: polish core/heading + core/paragraph (ensure classes, synthesize content/level).
+- prefix: wp-includes/blocks/heading.php
+  go: internal/blocks/heading_paragraph.go
+  status: partial
+  task: P5.64
+  api: internal
+  notes: "P5.64 — ensure wp-block-heading; synthesize level/textAlign/align/content"
+
+- prefix: wp-includes/blocks/heading
+  go: internal/blocks/heading_paragraph.go
+  status: partial
+  task: P5.64
+  api: internal
+  notes: "P5.64 — ensure wp-block-heading; synthesize level/textAlign/align/content"
+
+- prefix: wp-includes/blocks/paragraph.php
+  go: internal/blocks/heading_paragraph.go
+  status: partial
+  task: P5.64
+  api: internal
+  notes: "P5.64 — ensure wp-block-paragraph; synthesize content/dropCap/textAlign"
+
+- prefix: wp-includes/blocks/paragraph
+  go: internal/blocks/heading_paragraph.go
+  status: partial
+  task: P5.64
+  api: internal
+  notes: "P5.64 — ensure wp-block-paragraph; synthesize content/dropCap/textAlign"
+
 # P5.63: polish core/list + core/list-item (wp-block-list class, synthesize ordered attrs).
 - prefix: wp-includes/blocks/list.php
   go: internal/blocks/list.go

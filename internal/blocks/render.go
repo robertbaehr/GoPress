@@ -45,7 +45,7 @@ func (e *Env) RenderBlock(block Block) string {
 		// Freeform / classic HTML.
 		return block.InnerHTML
 	case "core/paragraph":
-		out = addRootClass(e.renderSaved(block), "wp-block-paragraph")
+		out = e.renderParagraph(block)
 	case "core/quote":
 		out = e.renderQuote(block)
 	case "core/terms-query":
@@ -74,8 +74,9 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderList(block)
 	case "core/list-item":
 		out = e.renderListItem(block)
-	case "core/heading",
-		"core/html", "core/table",
+	case "core/heading":
+		out = e.renderHeading(block)
+	case "core/html", "core/table",
 		"core/details":
 		out = e.renderSaved(block)
 	case "core/code":
