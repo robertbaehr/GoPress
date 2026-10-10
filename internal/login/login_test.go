@@ -489,3 +489,95 @@ func bootOrSkip(t *testing.T) *wp.Context {
 	}
 	return c
 }
+
+func TestConfirmAdminEmailRequiresLogin(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?action=confirm_admin_email&redirect_to=/wp-admin/", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	loc := rec.Header().Get("Location")
+	if !strings.Contains(loc, "wp-login.php") {
+		t.Fatalf("Location=%q", loc)
+	}
+}
+
+func TestConfirmAdminEmailForm(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?action=confirm_admin_email&redirect_to=/wp-admin/", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		"admin-email-confirm-form",
+		"Administration email verification",
+		"correct-admin-email",
+		"login-action-confirm_admin_email",
+		"Remind me later",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in %q", want, body)
+		}
+	}
+}
+
+func TestConfirmAdminEmailCorrectRedirect(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	// GET form to mint nonce under authenticated context.
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?action=confirm_admin_email&redirect_to=/wp-admin/", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	body := rec.Body.String()
+	idx := strings.Index(body, `name="confirm_admin_email_nonce" value="`)
+	if idx < 0 {
+		t.Fatalf("missing nonce in %q", body)
+	}
+	idx += len(`name="confirm_admin_email_nonce" value="`)
+	end := strings.Index(body[idx:], `"`)
+	nonce := body[idx : idx+end]
+
+	form := strings.NewReader("correct-admin-email=1&confirm_admin_email_nonce=" + nonce + "&redirect_to=%2Fwp-admin%2F")
+	req = httptest.NewRequest(http.MethodPost, "/wp-login.php?action=confirm_admin_email", form)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	loc := rec.Header().Get("Location")
+	if !strings.Contains(loc, "/wp-admin") {
+		t.Fatalf("Location=%q", loc)
+	}
+}
