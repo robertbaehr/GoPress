@@ -164,6 +164,10 @@ func (r *Roles) MapMetaCap(cap string, userID int64, _ ...int64) []string {
 	case "customize":
 		// WordPress maps customize → edit_theme_options; parity filter denies first.
 		return []string{"do_not_allow"}
+	case "view_site_health_checks":
+		// P7.92: WP grants via install_plugins; GoPress denies install_plugins,
+		// so map to manage_options (admin Site Health screens).
+		return []string{"manage_options"}
 	default:
 		return []string{cap}
 	}
