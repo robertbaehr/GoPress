@@ -314,3 +314,100 @@ func TestSearchTermInclude(t *testing.T) {
 		t.Fatalf("want 1 term, got %d: %+v", len(results), results)
 	}
 }
+
+func TestSearchOrderByIncludeAndID(t *testing.T) {
+	// P4.122: orderby/order on post + term search.
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/search?search=&include=1,436&orderby=include&per_page=10", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var results []rest.SearchResult
+	if err := json.Unmarshal(rec.Body.Bytes(), &results); err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 2 {
+		t.Fatalf("want 2 got %d: %+v", len(results), results)
+	}
+	id0 := searchResultID(results[0])
+	id1 := searchResultID(results[1])
+	if id0 != 1 || id1 != 436 {
+		t.Fatalf("orderby=include: ids=%d,%d", id0, id1)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/search?search=&subtype=page&orderby=id&order=asc&per_page=2", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if err := json.Unmarshal(rec.Body.Bytes(), &results); err != nil {
+		t.Fatal(err)
+	}
+	if len(results) < 2 {
+		t.Fatalf("expected pages: %+v", results)
+	}
+	if searchResultID(results[0]) > searchResultID(results[1]) {
+		t.Fatalf("orderby=id asc: %+v", results)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/search?type=term&include=6,5,1&orderby=include&per_page=10", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if err := json.Unmarshal(rec.Body.Bytes(), &results); err != nil {
+		t.Fatal(err)
+	}
+	if len(results) < 2 {
+		t.Fatalf("term include: %+v", results)
+	}
+	if searchResultID(results[0]) != 6 {
+		t.Fatalf("term orderby=include first=%d want 6", searchResultID(results[0]))
+	}
+}
+
+func TestSearchRestPostSearchQueryFilter(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	c.Hooks.AddFilter("rest_post_search_query", func(value any, _ ...any) any {
+		m, ok := value.(map[string]any)
+		if !ok {
+			return value
+		}
+		m["post__in"] = []int64{1}
+		m["orderby"] = "id"
+		m["order"] = "asc"
+		return m
+	}, 10, 2)
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/search?search=&per_page=10", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var results []rest.SearchResult
+	if err := json.Unmarshal(rec.Body.Bytes(), &results); err != nil {
+		t.Fatal(err)
+	}
+	if len(results) != 1 || searchResultID(results[0]) != 1 {
+		t.Fatalf("filter post__in: %+v", results)
+	}
+}
+
+func searchResultID(r rest.SearchResult) int64 {
+	switch id := r.ID.(type) {
+	case float64:
+		return int64(id)
+	case int64:
+		return id
+	case int:
+		return int64(id)
+	default:
+		return 0
+	}
+}
