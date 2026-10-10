@@ -36,6 +36,9 @@ func (h *Handler) serveAdminAjax(w http.ResponseWriter, r *http.Request, c *wp.C
 	switch action {
 	case "heartbeat":
 		h.ajaxHeartbeat(w, r, c, loggedIn)
+	case "wp-auth-check":
+		// Dedicated auth-check probe (P2.19); mirrors heartbeat's wp-auth-check key.
+		h.ajaxAuthCheck(w, r, c)
 	case "rest-nonce":
 		if !loggedIn {
 			// Privileged action: WP dies with "0" for unknown nopriv actions.
@@ -63,15 +66,33 @@ func (h *Handler) serveAdminAjax(w http.ResponseWriter, r *http.Request, c *wp.C
 }
 
 func (h *Handler) ajaxHeartbeat(w http.ResponseWriter, r *http.Request, c *wp.Context, loggedIn bool) {
-	_ = c
 	_ = r
+	_ = loggedIn
 	// Match wp_ajax_heartbeat / wp_ajax_nopriv_heartbeat + wp_auth_check key order.
 	resp := struct {
 		WPAuthCheck bool  `json:"wp-auth-check"`
 		ServerTime  int64 `json:"server_time"`
 	}{
-		WPAuthCheck: loggedIn,
+		WPAuthCheck: c.AuthCheck(),
 		ServerTime:  time.Now().Unix(),
+	}
+	body, err := json.Marshal(resp)
+	if err != nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte("0"))
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write(body)
+}
+
+func (h *Handler) ajaxAuthCheck(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	_ = r
+	resp := struct {
+		WPAuthCheck bool `json:"wp-auth-check"`
+	}{
+		WPAuthCheck: c.AuthCheck(),
 	}
 	body, err := json.Marshal(resp)
 	if err != nil {
