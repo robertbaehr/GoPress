@@ -163,12 +163,7 @@
   task: P2.21
   api: exported
 
-# P2.24: expanded sanitize_title golden (tests/golden/formatting/sanitize_title.json).
-- prefix: wp-includes/formatting.php
-  go: internal/wp/formatting.go
-  status: partial
-  task: P2.24
-  api: exported
+# P2.24: expanded sanitize_title golden — tests/golden/formatting/sanitize_title.json
 
 # P2.21: wp_check_password covers $wp$ / phpass; application passwords reuse it.
 - prefix: wp-includes/class-wp-application-passwords.php
@@ -738,3 +733,4 @@
 
 # P10.16: e2e update blogname via REST settings — tests/e2e/rest-settings.spec.js
 # P10.19: e2e front search /?s= — tests/e2e/search.spec.js
+# P10.20: e2e front date archives /YYYY/ /YYYY/MM/ — tests/e2e/archive.spec.js
