@@ -79,7 +79,13 @@ func (s *Server) serveNavigation(w http.ResponseWriter, r *http.Request, c *wp.C
 }
 
 func (s *Server) serveNavigationItem(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
-	if r.Method != http.MethodGet {
+	switch r.Method {
+	case http.MethodGet:
+		// continue below
+	case http.MethodDelete:
+		s.deleteNavigation(w, r, c, id)
+		return
+	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
@@ -109,6 +115,7 @@ func (s *Server) serveNavigationItem(w http.ResponseWriter, r *http.Request, c *
 		return
 	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
 	writeJSON(w, http.StatusOK, navigationFromWP(*row, home))
 }
 

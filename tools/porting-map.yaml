@@ -1796,6 +1796,14 @@
 # P4.38: POST /wp/v2/navigation handled in internal/rest/navigation_write.go
 # (wp_navigation CPT uses WP_REST_Posts_Controller upstream).
 
+# P4.72: DELETE /wp/v2/navigation/{id}?force=true.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#navigation-delete
+  go: internal/rest/navigation_write.go
+  status: partial
+  task: P4.72
+  api: exported
+  notes: "P4.72 — DELETE navigation requires force=true; returns deleted+previous"
+
 - prefix: wp-includes/block-bindings.php
   go: internal/blocks/bindings.go
   status: partial
