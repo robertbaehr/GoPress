@@ -54,6 +54,10 @@ func TestHelloDollyActivateHooksAdminNotices(t *testing.T) {
 	if lyric == "" {
 		t.Fatal("empty lyric")
 	}
+	head := c.CaptureAdminHead()
+	if !strings.Contains(head, `id="dolly-css"`) && !strings.Contains(head, "#dolly") {
+		t.Fatalf("expected dolly CSS on admin_head, got %q", head)
+	}
 }
 
 func TestScanMUPluginFiles(t *testing.T) {
