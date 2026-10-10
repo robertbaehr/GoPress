@@ -2335,17 +2335,19 @@ func rss2SiteIconImage(c *wp.Context, title, home string) string {
 	return b.String()
 }
 
+// feedCategoryNames returns category + tag names for a post (get_the_category_rss, P3.59).
 func feedCategoryNames(c *wp.Context, postID int64) []string {
 	out := []string{}
 	if c == nil || c.DB == nil || postID <= 0 {
 		return out
 	}
+	// WP get_the_category_rss merges get_the_category() and get_the_tags().
 	q, args, err := c.DB.Prepare(
 		"SELECT t.name FROM "+c.DB.Terms()+" t "+
 			"INNER JOIN "+c.DB.TermTaxonomy()+" tt ON t.term_id = tt.term_id "+
 			"INNER JOIN "+c.DB.TermRelationships()+" tr ON tr.term_taxonomy_id = tt.term_taxonomy_id "+
-			"WHERE tr.object_id = %d AND tt.taxonomy = %s ORDER BY t.name ASC",
-		postID, "category",
+			"WHERE tr.object_id = %d AND tt.taxonomy IN (%s, %s) ORDER BY t.name ASC",
+		postID, "category", "post_tag",
 	)
 	if err != nil {
 		return out
@@ -2354,6 +2356,7 @@ func feedCategoryNames(c *wp.Context, postID int64) []string {
 	if err != nil {
 		return out
 	}
+	seen := map[string]bool{}
 	for _, row := range rows {
 		name := ""
 		switch v := row["name"].(type) {
@@ -2362,9 +2365,12 @@ func feedCategoryNames(c *wp.Context, postID int64) []string {
 		case []byte:
 			name = string(v)
 		}
-		if name != "" {
-			out = append(out, name)
+		name = strings.TrimSpace(name)
+		if name == "" || seen[name] {
+			continue
 		}
+		seen[name] = true
+		out = append(out, name)
 	}
 	return out
 }
