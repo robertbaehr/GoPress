@@ -15,13 +15,14 @@ import (
 
 // BlockType is a minimal wp/v2 block-types object (P4.14 stub).
 type BlockType struct {
-	Name        string         `json:"name"`
-	Title       string         `json:"title"`
-	Category    string         `json:"category"`
-	Description string         `json:"description,omitempty"`
-	APIVersion  int            `json:"api_version"`
-	Attributes  map[string]any `json:"attributes"`
-	IsDynamic   bool           `json:"is_dynamic"`
+	Name        string              `json:"name"`
+	Title       string              `json:"title"`
+	Category    string              `json:"category"`
+	Description string              `json:"description,omitempty"`
+	APIVersion  int                 `json:"api_version"`
+	Attributes  map[string]any      `json:"attributes"`
+	IsDynamic   bool                `json:"is_dynamic"`
+	Variations  []wp.BlockVariation `json:"variations,omitempty"`
 }
 
 func knownBlockTypes() []BlockType {
@@ -90,7 +91,7 @@ func (s *Server) serveBlockTypes(w http.ResponseWriter, r *http.Request, c *wp.C
 		return
 	}
 	ns := strings.TrimSpace(r.URL.Query().Get("namespace"))
-	all := knownBlockTypes()
+	all := attachBlockVariations(c, knownBlockTypes())
 	if ns == "" {
 		writeJSON(w, http.StatusOK, all)
 		return
@@ -103,6 +104,21 @@ func (s *Server) serveBlockTypes(w http.ResponseWriter, r *http.Request, c *wp.C
 		}
 	}
 	writeJSON(w, http.StatusOK, filtered)
+}
+
+// attachBlockVariations copies registered variations onto block-type payloads (P5.37).
+func attachBlockVariations(c *wp.Context, types []BlockType) []BlockType {
+	if c == nil || c.BlockVariations == nil {
+		return types
+	}
+	out := make([]BlockType, len(types))
+	copy(out, types)
+	for i := range out {
+		if vars := c.BlockVariations.ForBlock(out[i].Name); len(vars) > 0 {
+			out[i].Variations = vars
+		}
+	}
+	return out
 }
 
 func (s *Server) serveBlockRenderer(w http.ResponseWriter, r *http.Request, c *wp.Context, name string) {

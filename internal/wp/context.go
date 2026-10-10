@@ -64,6 +64,9 @@ type Context struct {
 	// BlockStyles is the block styles registry (P5.26).
 	BlockStyles *BlockStyleRegistry
 
+	// BlockVariations is the block variations registry (P5.37).
+	BlockVariations *BlockVariationRegistry
+
 	// Shortcodes is the shortcode tag registry (P2.11).
 	Shortcodes *Shortcodes
 
@@ -111,25 +114,26 @@ func (c *Context) ForRequest(w http.ResponseWriter, r *http.Request) *Context {
 		parent = r.Context()
 	}
 	return &Context{
-		Parent:      parent,
-		Config:      c.Config,
-		DB:          c.DB,
-		Hooks:       c.Hooks,
-		Cache:       c.Cache,
-		Options:     c.Options,
-		Meta:        c.Meta,
-		Locale:      c.Locale,
-		Auth:        c.Auth,
-		Users:       c.Users,
-		Roles:       c.Roles,
-		Theme:       c.Theme,
-		Patterns:    c.Patterns,
-		BlockStyles: c.BlockStyles,
-		Shortcodes:  c.Shortcodes,
-		Mailer:      c.Mailer,
-		Req:         r,
-		Res:         w,
-		Scope:       NewRequestScope(),
+		Parent:          parent,
+		Config:          c.Config,
+		DB:              c.DB,
+		Hooks:           c.Hooks,
+		Cache:           c.Cache,
+		Options:         c.Options,
+		Meta:            c.Meta,
+		Locale:          c.Locale,
+		Auth:            c.Auth,
+		Users:           c.Users,
+		Roles:           c.Roles,
+		Theme:           c.Theme,
+		Patterns:        c.Patterns,
+		BlockStyles:     c.BlockStyles,
+		BlockVariations: c.BlockVariations,
+		Shortcodes:      c.Shortcodes,
+		Mailer:          c.Mailer,
+		Req:             r,
+		Res:             w,
+		Scope:           NewRequestScope(),
 	}
 }
 
