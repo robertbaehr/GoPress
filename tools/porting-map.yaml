@@ -1396,6 +1396,13 @@
   task: P4.57
   api: exported
 
+# P4.58: GET /wp/v2/statuses (+ single status).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-post-statuses-controller.php
+  go: internal/rest/statuses.go
+  status: partial
+  task: P4.58
+  api: exported
+
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-menu-locations-controller.php
   go: internal/rest/menus.go
   status: partial

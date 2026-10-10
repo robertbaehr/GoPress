@@ -78,6 +78,19 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 		s.serveOEmbed(w, r, c)
 	case path == "/wp/v2/types":
 		s.serveTypes(w, r, c)
+	case path == "/wp/v2/statuses":
+		s.serveStatuses(w, r, c)
+	case strings.HasPrefix(path, "/wp/v2/statuses/"):
+		slug := strings.Trim(strings.TrimPrefix(path, "/wp/v2/statuses/"), "/")
+		if slug == "" || strings.Contains(slug, "/") {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"code":    "rest_no_route",
+				"message": "No route was found matching the URL and request method.",
+				"data":    map[string]any{"status": 404},
+			})
+			return
+		}
+		s.serveStatusItem(w, r, c, slug)
 	case path == "/wp/v2/posts":
 		s.servePosts(w, r, c)
 	case strings.HasPrefix(path, "/wp/v2/posts/"):
