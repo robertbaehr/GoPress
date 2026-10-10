@@ -72,6 +72,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/export.php":
 		h.requireLogin(w, r, c, h.serveExport)
 		return true
+	case "/wp-admin/import.php":
+		h.requireLogin(w, r, c, h.serveImport)
+		return true
 	default:
 		return false
 	}
@@ -461,6 +464,27 @@ func listNavMenus(c *wp.Context) ([]navMenuTerm, error) {
 		})
 	}
 	return out, nil
+}
+
+// serveImport is the Tools → Import screen stub (P7.11).
+func (h *Handler) serveImport(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Import &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap\">\n")
+	b.WriteString("<h1>Import</h1>\n")
+	b.WriteString("<p>Choose an importer to bring content from another platform into this site.</p>\n")
+	b.WriteString("<p class=\"description\">GoPress import stub — importer plugins land later.</p>\n")
+	b.WriteString("<table class=\"widefat importers striped\">\n")
+	b.WriteString("<thead><tr><th scope=\"col\">Importer</th><th scope=\"col\">Description</th></tr></thead>\n")
+	b.WriteString("<tbody><tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"2\">No importers are available.</td></tr></tbody>\n")
+	b.WriteString("</table>\n</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
 }
 
 // serveExport is the Tools → Export screen stub (P7.10).
