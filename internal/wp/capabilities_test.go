@@ -244,6 +244,10 @@ func TestCurrentUserCan(t *testing.T) {
 	if !c.CurrentUserCan("erase_others_personal_data") {
 		t.Fatal("admin should erase_others_personal_data via manage_options")
 	}
+	// P7.98: export_others_personal_data maps to manage_options.
+	if !c.CurrentUserCan("export_others_personal_data") {
+		t.Fatal("admin should export_others_personal_data via manage_options")
+	}
 	if !c.CurrentUserCan("edit_posts") {
 		t.Fatal("admin should edit_posts")
 	}

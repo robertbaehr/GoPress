@@ -4961,12 +4961,20 @@ wp-login.php#language-switcher-post
   task: P8.5
   api: exported
 
-# P8.6 / P7.39: export personal data UI + download wiring.
+# P8.6 / P7.39 / P7.98: export personal data UI + download wiring + caps/views.
 - prefix: wp-admin/export-personal-data.php
   go: internal/admin/admin.go
   status: partial
-  task: P7.39
+  task: P7.98
   api: n/a
+  notes: "P7.98 — export_others_personal_data gate; filter-status views; user_request create"
+
+- prefix: wp-admin/export-personal-data.php#caps
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.98
+  api: exported
+  notes: "P7.98 — export_others_personal_data → manage_options; status views"
 
 - prefix: wp-admin/includes/schema.php
   go: internal/db

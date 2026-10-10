@@ -94,6 +94,7 @@ func TestExportPersonalDataUsesPrivacyRequestsTable(t *testing.T) {
 	for _, want := range []string{
 		"requests-table",
 		"privacy-requests",
+		"subsubsub",
 		"column-email",
 		"column-status",
 		"column-created_timestamp",
@@ -107,6 +108,31 @@ func TestExportPersonalDataUsesPrivacyRequestsTable(t *testing.T) {
 			}
 			t.Fatalf("missing %q in %q", want, trunc(body, 600))
 		}
+	}
+}
+
+func TestExportPersonalDataRequiresCapability(t *testing.T) {
+	c := bootOrSkip(t)
+	user, err := c.GetUserBy("login", "subscriber")
+	if err != nil || user == nil {
+		t.Fatalf("subscriber: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/export-personal-data.php", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/export-personal-data.php") {
+		t.Fatal("not handled")
+	}
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "not allowed to export personal data") {
+		t.Fatalf("body=%s", rec.Body.String())
 	}
 }
 
