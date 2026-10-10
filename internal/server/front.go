@@ -516,9 +516,12 @@ func (f *Front) renderHome(w http.ResponseWriter, c *wp.Context) {
 	f.renderHomeShim(w, c)
 }
 
-// renderSearch serves /?s= front search results (P3.21 / P3.36).
+// renderSearch serves /?s= front search results (P3.21 / P3.36 / P3.82).
 func (f *Front) renderSearch(w http.ResponseWriter, c *wp.Context, term string) {
-	if c != nil && c.Scope != nil {
+	if c != nil {
+		if c.Scope == nil {
+			c.Scope = &wp.RequestScope{}
+		}
 		c.Scope.IsSearch = true
 		if term == "" {
 			term = c.Scope.SearchQuery
@@ -529,6 +532,7 @@ func (f *Front) renderSearch(w http.ResponseWriter, c *wp.Context, term string) 
 	// Prefer theme templates/search.html (then index) and ensure header/footer parts.
 	slugs := wp.SearchTemplateSlugs()
 	if tpl, ok := wp.ResolveBlockTemplate(c, slugs...); ok && strings.TrimSpace(tpl) != "" {
+		tpl = applySearchTemplateContentFilter(c, tpl)
 		f.renderSearchBlockTemplate(w, c, EnsureSearchTemplateParts(tpl), term)
 		return
 	}
@@ -537,6 +541,19 @@ func (f *Front) renderSearch(w http.ResponseWriter, c *wp.Context, term string) 
 		return
 	}
 	f.renderSearchShim(w, c, term)
+}
+
+// applySearchTemplateContentFilter lets hooks adjust resolved search block markup (P3.82).
+func applySearchTemplateContentFilter(c *wp.Context, tpl string) string {
+	if c == nil || c.Hooks == nil {
+		return tpl
+	}
+	if v := c.Hooks.ApplyFilters("search_template_content", tpl); v != nil {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return tpl
 }
 
 // EnsureSearchTemplateParts prepends/appends header/footer template parts when
@@ -567,6 +584,7 @@ func EnsureSearchTemplateParts(template string) string {
 }
 
 // wrapSearchShimWithParts builds a minimal search block document using theme parts.
+// P3.82: richer post-template (date + excerpt) and query-no-results fallback.
 func wrapSearchShimWithParts(c *wp.Context, term string) (string, bool) {
 	if c == nil {
 		return "", false
@@ -582,8 +600,13 @@ func wrapSearchShimWithParts(c *wp.Context, term string) (string, bool) {
 			`<main class="wp-block-group"><!-- wp:query-title {"type":"search"} /-->` +
 			`<!-- wp:search {"label":"Search","showLabel":false,"placeholder":"Type here...","buttonText":"Search"} /-->` +
 			`<!-- wp:query {"query":{"perPage":10,"inherit":true}} -->` +
-			`<div class="wp-block-query"><!-- wp:post-template --><!-- wp:post-title {"isLink":true} /--><!-- /wp:post-template --></div>` +
-			`<!-- /wp:query --></main><!-- /wp:group -->`,
+			`<div class="wp-block-query"><!-- wp:post-template -->` +
+			`<!-- wp:post-title {"isLink":true} /-->` +
+			`<!-- wp:post-date /-->` +
+			`<!-- wp:post-excerpt /-->` +
+			`<!-- /wp:post-template -->` +
+			`<!-- wp:query-no-results --><!-- wp:paragraph --><p>No results found.</p><!-- /wp:paragraph --><!-- /wp:query-no-results -->` +
+			`</div><!-- /wp:query --></main><!-- /wp:group -->`,
 	), true
 }
 
@@ -608,20 +631,13 @@ func (f *Front) renderSearchBlockTemplate(w http.ResponseWriter, c *wp.Context, 
 	bodyClasses = wp.BodyClassWithAdminBar(c, bodyClasses)
 	safe = ensureMainSkipTarget(safe)
 
-	title := blogname
-	if term != "" {
-		title = "Search Results for &#8220;" + html.EscapeString(term) + "&#8221; &#8211; " + html.EscapeString(blogname)
-	} else {
-		title = "Search &#8211; " + html.EscapeString(blogname)
-	}
-
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
 	b.WriteString(frontRobotsMetaTag(c))
 	b.WriteString("<title>")
-	b.WriteString(title)
+	b.WriteString(frontSearchDocumentTitle(c, blogname, term))
 	b.WriteString("</title>\n")
 	extraTitle, extraHref := "", ""
 	if term != "" {
@@ -646,6 +662,37 @@ func (f *Front) renderSearchBlockTemplate(w http.ResponseWriter, c *wp.Context, 
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(b.String()))
+}
+
+// frontSearchDocumentTitle builds the search <title> and honors document_title_parts (P3.82).
+func frontSearchDocumentTitle(c *wp.Context, blogname, term string) string {
+	titlePart := "Search"
+	if strings.TrimSpace(term) != "" {
+		titlePart = "Search Results for \u201C" + term + "\u201D"
+	}
+	parts := map[string]string{
+		"title":   titlePart,
+		"page":    "",
+		"tagline": "",
+		"site":    blogname,
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("document_title_parts", parts); v != nil {
+			if m, ok := v.(map[string]string); ok {
+				parts = m
+			}
+		}
+	}
+	title := strings.TrimSpace(parts["title"])
+	if title == "" {
+		title = "Search"
+	}
+	site := strings.TrimSpace(parts["site"])
+	out := html.EscapeString(title)
+	if site != "" {
+		out += " &#8211; " + html.EscapeString(site)
+	}
+	return out
 }
 
 // renderDateArchive serves year/month(/day) front archives (P3.22).
@@ -1292,6 +1339,10 @@ func (f *Front) renderDateArchiveShim(w http.ResponseWriter, c *wp.Context, titl
 
 func (f *Front) renderSearchShim(w http.ResponseWriter, c *wp.Context, term string) {
 	blogname := optionString(c, "blogname", "GoPress")
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	if home == "" {
+		home = "/"
+	}
 	posts, err := wp.GetPosts(c, wp.QueryArgs{
 		PostType: "post", PostStatus: "publish", PostsPerPage: 10, Search: term,
 	})
@@ -1299,19 +1350,40 @@ func (f *Front) renderSearchShim(w http.ResponseWriter, c *wp.Context, term stri
 		http.Error(w, "search: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
+	bodyClass := "search search-results"
+	if term == "" || len(posts) == 0 {
+		bodyClass = "search search-no-results"
+		if term != "" {
+			bodyClass = "search search-results search-no-results"
+		}
+	}
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
-	b.WriteString("<title>Search Results for &#8220;")
-	b.WriteString(html.EscapeString(term))
-	b.WriteString("&#8221; &#8211; ")
-	b.WriteString(html.EscapeString(blogname))
+	b.WriteString("<title>")
+	b.WriteString(frontSearchDocumentTitle(c, blogname, term))
 	b.WriteString("</title>\n</head>\n<body class=\"")
-	b.WriteString(html.EscapeString(wp.BodyClassWithAdminBar(c, "search search-results")))
+	b.WriteString(html.EscapeString(wp.BodyClassWithAdminBar(c, bodyClass)))
 	b.WriteString("\">\n")
 	b.WriteString(wp.AdminBarHTML(c))
+	b.WriteString("<main id=\"wp--skip-link--target\">\n")
 	b.WriteString("<h1 class=\"page-title\">Search results for: ")
 	b.WriteString(html.EscapeString(term))
-	b.WriteString("</h1>\n<ul class=\"posts\">\n")
+	b.WriteString("</h1>\n")
+	// P3.82: classic shim search form for refining the query.
+	action := home
+	if !strings.HasSuffix(action, "/") {
+		action += "/"
+	}
+	b.WriteString(`<form role="search" method="get" action="`)
+	b.WriteString(html.EscapeString(action))
+	b.WriteString(`" class="search-form wp-block-search">`)
+	b.WriteString(`<label><span class="screen-reader-text">Search</span>`)
+	b.WriteString(`<input type="search" name="s" value="`)
+	b.WriteString(html.EscapeString(term))
+	b.WriteString(`" placeholder="Search"/></label>`)
+	b.WriteString(`<input type="submit" value="Search"/>`)
+	b.WriteString("</form>\n")
+	b.WriteString("<ul class=\"posts\">\n")
 	if len(posts) == 0 {
 		b.WriteString("<li class=\"no-results\">No results found.</li>\n")
 	}
@@ -1320,9 +1392,15 @@ func (f *Front) renderSearchShim(w http.ResponseWriter, c *wp.Context, term stri
 		b.WriteString(strconv.FormatInt(p.ID, 10))
 		b.WriteString("\">")
 		b.WriteString(html.EscapeString(p.Title))
-		b.WriteString("</a></li>\n")
+		b.WriteString("</a>")
+		if ex := strings.TrimSpace(p.Excerpt); ex != "" {
+			b.WriteString("<p class=\"excerpt\">")
+			b.WriteString(html.EscapeString(ex))
+			b.WriteString("</p>")
+		}
+		b.WriteString("</li>\n")
 	}
-	b.WriteString("</ul>\n</body>\n</html>\n")
+	b.WriteString("</ul>\n</main>\n</body>\n</html>\n")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(b.String()))
