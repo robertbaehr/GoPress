@@ -2021,7 +2021,6 @@
   compare: headers
   nonce: null
 
-
 - id: rest-json-template-parts-header-revisions
   role: anon
   method: GET
@@ -3273,15 +3272,6 @@
   compare: headers
   nonce: null
 
-- id: rest-p10116-taxonomies-invalid
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/taxonomies/nope
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: rest-p10116-route-taxonomies-category
   role: anon
   method: GET
@@ -3313,15 +3303,6 @@
   role: anon
   method: GET
   path: /wp-json/wp/v2/comments/1
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10116-posts-1-fields
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts/1?_fields=id,slug
   headers: {}
   body: null
   compare: headers
@@ -3381,10 +3362,29 @@
   compare: headers
   nonce: null
 
-- id: rest-p10116-media-6
+
+- id: rest-p10116-block-types-anon
   role: anon
   method: GET
-  path: /wp-json/wp/v2/media/6
+  path: /wp-json/wp/v2/block-types
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10116-plugins-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/plugins
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10116-themes-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/themes
   headers: {}
   body: null
   compare: headers

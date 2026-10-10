@@ -592,19 +592,19 @@
   compare: headers
   nonce: null
 
-- id: front-p10116-author-admin
+- id: front-p10116-date-2024
   role: anon
   method: GET
-  path: /author/admin/
+  path: /2024/
   headers: {}
   body: null
   compare: headers
   nonce: null
 
-- id: front-p10116-date-2024
+- id: front-p10116-robots
   role: anon
   method: GET
-  path: /2024/
+  path: /robots.txt
   headers: {}
   body: null
   compare: headers
