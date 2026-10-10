@@ -61,3 +61,85 @@ func TestPatternDirectoryAuthEmptyRemoteBlocked(t *testing.T) {
 		t.Fatalf("expected empty list (remote blocked), got %#v", out)
 	}
 }
+
+func TestPatternDirectoryEmptySearchInvalid(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/pattern-directory/patterns?search=", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var errBody map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &errBody); err != nil {
+		t.Fatal(err)
+	}
+	if errBody["code"] != "rest_invalid_param" {
+		t.Fatalf("code=%v", errBody["code"])
+	}
+}
+
+func TestPatternDirectoryInvalidCategory(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/pattern-directory/patterns?category=0", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestPatternDirectoryHeadEmpty(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodHead, "/wp-json/wp/v2/pattern-directory/patterns", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if rec.Header().Get("X-GoPress-Pattern-Directory") != "remote-blocked" {
+		t.Fatalf("missing remote-blocked header: %v", rec.Header())
+	}
+	if rec.Body.Len() != 0 {
+		t.Fatalf("HEAD should have empty body, got %q", rec.Body.String())
+	}
+}

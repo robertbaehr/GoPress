@@ -4094,6 +4094,14 @@
   task: P4.37
   api: exported
 
+# P4.105: pattern-directory collection param validation + HEAD (remote still empty).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-pattern-directory-controller.php#p4.105
+  go: internal/rest/pattern_directory.go
+  status: partial
+  task: P4.105
+  api: exported
+  notes: "P4.105 — search minLength, category/keyword >=1, orderby/order enums, HEAD short-circuit; remote still empty"
+
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-directory-controller.php
   go: internal/rest/block_directory.go
   status: partial
