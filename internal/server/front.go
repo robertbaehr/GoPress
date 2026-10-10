@@ -235,7 +235,8 @@ func (f *Front) renderSingular(w http.ResponseWriter, c *wp.Context, vars map[st
 	}
 
 	// P5.17/P5.24: prefer block theme singular hierarchy when available.
-	if post.Type == "page" || post.Type == "post" || post.Type == "attachment" {
+	// Attachments keep the shim until attachment-* templates land.
+	if post.Type == "page" || post.Type == "post" {
 		slugs := wp.SingularTemplateSlugs(post.Type, post.Name, post.ID)
 		if tpl, ok := wp.ResolveBlockTemplate(c, slugs...); ok && strings.TrimSpace(tpl) != "" {
 			f.renderSingularBlockTemplate(w, c, post, tpl)
