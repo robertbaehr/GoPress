@@ -288,8 +288,23 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	b.WriteString("<h1>")
 	b.WriteString(html.EscapeString(heading))
 	b.WriteString("</h1>\n")
+	// P7.68: bulk actions form wrapping the posts list table.
+	b.WriteString(`<form id="posts-filter" method="get">` + "\n")
+	b.WriteString(`<input type="hidden" name="post_type" value="`)
+	b.WriteString(html.EscapeString(postType))
+	b.WriteString(`" />` + "\n")
+	b.WriteString(`<div class="tablenav top"><div class="alignleft actions bulkactions">` + "\n")
+	b.WriteString(`<label for="bulk-action-selector-top" class="screen-reader-text">Select bulk action</label>` + "\n")
+	b.WriteString(`<select name="action" id="bulk-action-selector-top">` + "\n")
+	b.WriteString(`<option value="-1">Bulk actions</option>` + "\n")
+	b.WriteString(`<option value="edit" class="hide-if-no-js">Edit</option>` + "\n")
+	b.WriteString(`<option value="trash">Move to Trash</option>` + "\n")
+	b.WriteString(`</select>` + "\n")
+	b.WriteString(`<input type="submit" id="doaction" class="button action" value="Apply" />` + "\n")
+	b.WriteString(`</div></div>` + "\n")
 	b.WriteString("<table class=\"wp-list-table widefat fixed striped table-view-list posts\">\n")
 	b.WriteString("<thead><tr>")
+	b.WriteString(`<td id="cb" class="manage-column column-cb check-column"><input id="cb-select-all-1" type="checkbox" /></td>`)
 	b.WriteString("<th scope=\"col\" class=\"manage-column column-title column-primary\">Title</th>")
 	b.WriteString("<th scope=\"col\" class=\"manage-column column-author\">Author</th>")
 	b.WriteString("<th scope=\"col\" class=\"manage-column column-date\">Date</th>")
@@ -310,6 +325,11 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 			b.WriteString(" sticky")
 		}
 		b.WriteString("\">")
+		b.WriteString(`<th scope="row" class="check-column"><input id="cb-select-`)
+		b.WriteString(strconv.FormatInt(p.ID, 10))
+		b.WriteString(`" type="checkbox" name="post[]" value="`)
+		b.WriteString(strconv.FormatInt(p.ID, 10))
+		b.WriteString(`" /></th>`)
 		b.WriteString("<td class=\"title column-title has-row-actions column-primary page-title\" data-colname=\"Title\"><strong>")
 		b.WriteString("<a class=\"row-title\" href=\"/wp-admin/post.php?post=")
 		b.WriteString(strconv.FormatInt(p.ID, 10))
@@ -368,13 +388,14 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		b.WriteString("</td></tr>\n")
 	}
 	b.WriteString("</tbody>\n</table>\n")
-	// P7.66: inline Quick Edit form stub (hidden; JS wires editinline).
+	b.WriteString("</form>\n")
+	// P7.66 / P7.68: inline Quick Edit + Bulk Edit form stubs (hidden; JS wires).
 	b.WriteString(postQuickEditStubHTML(postType))
 	_ = blogname
 	writeAdminPage(w, c, newAdminChrome(c, heading, "edit-php"), b.String())
 }
 
-// postQuickEditStubHTML emits the hidden inline-edit row template for edit.php (P7.66).
+// postQuickEditStubHTML emits the hidden inline-edit + bulk-edit row templates for edit.php (P7.66 / P7.68).
 func postQuickEditStubHTML(postType string) string {
 	if postType == "" {
 		postType = "post"
@@ -384,7 +405,7 @@ func postQuickEditStubHTML(postType string) string {
 	b.WriteString(`<tr id="inline-edit" class="inline-edit-row inline-edit-row-post quick-edit-row quick-edit-row-post inline-edit-`)
 	b.WriteString(html.EscapeString(postType))
 	b.WriteString(`" style="display: none">` + "\n")
-	b.WriteString(`<td colspan="4" class="colspanchange">` + "\n")
+	b.WriteString(`<td colspan="5" class="colspanchange">` + "\n")
 	b.WriteString(`<div class="inline-edit-wrapper" role="region" aria-labelledby="quick-edit-legend">` + "\n")
 	b.WriteString(`<fieldset class="inline-edit-col-left">` + "\n")
 	b.WriteString(`<legend class="inline-edit-legend" id="quick-edit-legend">Quick Edit</legend>` + "\n")
@@ -407,7 +428,40 @@ func postQuickEditStubHTML(postType string) string {
 	b.WriteString(`" />` + "\n")
 	b.WriteString(`<br class="clear" />` + "\n")
 	b.WriteString(`</div></div></td></tr>` + "\n")
+	// P7.68: Bulk Edit row stub (WP_Posts_List_Table inline_edit bulk mode).
+	b.WriteString(postBulkEditStubHTML(postType))
 	b.WriteString(`</tbody></table>` + "\n")
+	return b.String()
+}
+
+// postBulkEditStubHTML emits the hidden #bulk-edit row for edit.php (P7.68).
+func postBulkEditStubHTML(postType string) string {
+	if postType == "" {
+		postType = "post"
+	}
+	var b strings.Builder
+	b.WriteString(`<tr id="bulk-edit" class="inline-edit-row inline-edit-row-post bulk-edit-row bulk-edit-row-post bulk-edit-`)
+	b.WriteString(html.EscapeString(postType))
+	b.WriteString(`" style="display: none">` + "\n")
+	b.WriteString(`<td colspan="5" class="colspanchange">` + "\n")
+	b.WriteString(`<div class="inline-edit-wrapper" role="region" aria-labelledby="bulk-edit-legend">` + "\n")
+	b.WriteString(`<fieldset class="inline-edit-col-left">` + "\n")
+	b.WriteString(`<legend class="inline-edit-legend" id="bulk-edit-legend">Bulk Edit</legend>` + "\n")
+	b.WriteString(`<div class="inline-edit-col">` + "\n")
+	b.WriteString(`<div id="bulk-title-div"><div id="bulk-titles"></div></div>` + "\n")
+	b.WriteString(`<label class="inline-edit-status"><span class="title">Status</span><select name="_status"><option value="-1">&mdash; No Change &mdash;</option><option value="publish">Published</option><option value="pending">Pending Review</option><option value="draft">Draft</option><option value="private">Private</option></select></label>` + "\n")
+	if postType == "post" {
+		b.WriteString(`<label class="alignleft"><span class="title">Sticky</span><select name="sticky"><option value="-1">&mdash; No Change &mdash;</option><option value="sticky">Sticky</option><option value="unsticky">Not Sticky</option></select></label>` + "\n")
+	}
+	b.WriteString(`</div></fieldset>` + "\n")
+	b.WriteString(`<div class="submit inline-edit-save">` + "\n")
+	b.WriteString(`<button type="button" class="button cancel alignleft">Cancel</button>` + "\n")
+	b.WriteString(`<input type="submit" name="bulk_edit" id="bulk_edit" class="button button-primary alignright" value="Update" />` + "\n")
+	b.WriteString(`<input type="hidden" name="post_type" value="`)
+	b.WriteString(html.EscapeString(postType))
+	b.WriteString(`" />` + "\n")
+	b.WriteString(`<br class="clear" />` + "\n")
+	b.WriteString(`</div></div></td></tr>` + "\n")
 	return b.String()
 }
 
