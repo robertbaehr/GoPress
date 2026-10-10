@@ -11,8 +11,13 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// serveImport is the Tools → Import screen with a WordPress WXR upload stub (P7.54).
+// serveImport is the Tools → Import screen with a WordPress WXR upload stub (P7.54 / P7.91).
 func (h *Handler) serveImport(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	// P7.91: import capability gate (mirrors import.php wp_die).
+	if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "import") {
+		http.Error(w, "Sorry, you are not allowed to import content into this site.\n", http.StatusForbidden)
+		return
+	}
 	note := ""
 	noteClass := "notice notice-info"
 	if r.Method == http.MethodPost {
@@ -24,11 +29,18 @@ func (h *Handler) serveImport(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	b.WriteString("<title>Import &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
+	// P7.91: import-php body class like get_body_class for this screen.
+	b.WriteString("<body class=\"wp-admin wp-core-ui import-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1>Import</h1>\n")
-	b.WriteString("<p>Choose an importer to bring content from another platform into this site.</p>\n")
+	if inv := strings.TrimSpace(r.URL.Query().Get("invalid")); inv != "" {
+		b.WriteString("<div class=\"notice notice-error\"><p><strong>Error:</strong> The ")
+		b.WriteString("<strong>")
+		b.WriteString(html.EscapeString(inv))
+		b.WriteString("</strong> importer is invalid or is not installed.</p></div>\n")
+	}
+	b.WriteString("<p>If you have posts or comments in another system, WordPress can import those into this site. To get started, choose a system to import from below:</p>\n")
 	if note != "" {
 		b.WriteString("<div class=\"")
 		b.WriteString(html.EscapeString(noteClass))
@@ -40,16 +52,18 @@ func (h *Handler) serveImport(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	b.WriteString("<thead><tr><th scope=\"col\">Importer</th><th scope=\"col\">Description</th></tr></thead>\n")
 	b.WriteString("<tbody>\n")
 	b.WriteString("<tr class=\"importer-item\">\n")
-	b.WriteString("<td class=\"import-system row-title\"><strong>WordPress</strong></td>\n")
-	b.WriteString("<td class=\"desc\"><span class=\"importer-desc\">Import posts, pages, comments, custom fields, categories, and tags from a WordPress export (WXR) file.</span></td>\n")
+	b.WriteString("<td class=\"import-system row-title\"><a href=\"#wordpress-importer\" aria-label=\"Run WordPress\"><strong>WordPress</strong></a> ")
+	b.WriteString("<span class=\"importer-action\"><a href=\"#wordpress-importer\">Run Importer</a></span></td>\n")
+	b.WriteString("<td class=\"desc\"><span class=\"importer-desc\">Import posts, pages, comments, custom fields, categories, and tags from a WordPress export file.</span></td>\n")
 	b.WriteString("</tr>\n")
 	b.WriteString("</tbody>\n</table>\n")
 	b.WriteString("<div class=\"wp-upload-form\" id=\"wordpress-importer\">\n")
 	b.WriteString("<h2>Import WordPress</h2>\n")
-	b.WriteString("<p class=\"description\">Upload a WXR (.xml) file exported from WordPress. GoPress validates the document and reports item counts; full import lands later.</p>\n")
+	b.WriteString("<p class=\"description\">Howdy! Upload your WordPress eXtended RSS (WXR) file and we&#8217;ll import the posts, pages, comments, custom fields, categories, and tags into this site.</p>\n")
+	b.WriteString("<p class=\"description\">Choose a WXR (.xml) file to upload, then click Upload file and import. GoPress validates the document and reports item counts; full import lands later.</p>\n")
 	b.WriteString("<form enctype=\"multipart/form-data\" method=\"post\" action=\"/wp-admin/import.php\">\n")
 	b.WriteString("<input type=\"hidden\" name=\"import\" value=\"wordpress\">\n")
-	b.WriteString("<p><label for=\"wxr-upload\">Choose a WXR file</label><br>\n")
+	b.WriteString("<p><label for=\"wxr-upload\">Choose a WXR file from your computer:</label><br>\n")
 	b.WriteString("<input type=\"file\" id=\"wxr-upload\" name=\"import_file\" accept=\".xml,text/xml,application/xml\"></p>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Upload file and import\"></p>\n")
 	b.WriteString("</form>\n</div>\n")
@@ -79,10 +93,14 @@ func (h *Handler) handleWXRUpload(r *http.Request) (note, noteClass string) {
 		return "Import rejected: " + html.EscapeString(err.Error()) +
 			" (" + html.EscapeString(name) + ")", "notice notice-error"
 	}
-	return "Parsed WXR " + html.EscapeString(name) +
+	msg := "Parsed WXR " + html.EscapeString(name) +
 		": version " + html.EscapeString(result.Version) +
-		", " + strconv.Itoa(result.Items) + " item(s)" +
-		". Full import is not enabled in this stub.", "notice notice-success"
+		", " + strconv.Itoa(result.Items) + " item(s)"
+	if strings.TrimSpace(result.Title) != "" {
+		msg += ", site “" + html.EscapeString(strings.TrimSpace(result.Title)) + "”"
+	}
+	msg += ". Full import is not enabled in this stub."
+	return msg, "notice notice-success"
 }
 
 type wxrParseResult struct {

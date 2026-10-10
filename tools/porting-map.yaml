@@ -4793,6 +4793,14 @@
   api: n/a
   notes: "P7.54 — WXR upload validates/parses; full import later"
 
+# P7.91: deepen import.php screen (cap, body class, invalid notice, Run Importer).
+- prefix: wp-admin/import.php#p7.91
+  go: internal/admin/import_wxr.go
+  status: partial
+  task: P7.91
+  api: n/a
+  notes: "P7.91 — import cap gate; import-php body; ?invalid= notice; Run Importer + WP copy"
+
 # P7.53: minimal WXR export download from export.php?download=true.
 - prefix: wp-admin/export.php
   go: internal/admin/export_wxr.go
