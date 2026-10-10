@@ -216,7 +216,9 @@ func (f *Front) renderCommentsFeedRSS2(w http.ResponseWriter, r *http.Request, c
 	b.WriteString("\thourly\t</sy:updatePeriod>\n")
 	b.WriteString("\t<sy:updateFrequency>\n")
 	b.WriteString("\t1\t</sy:updateFrequency>\n")
-	b.WriteString("\t<generator>https://wordpress.org/?v=7.2-alpha-64260</generator>\n")
+	b.WriteString("\t")
+	b.WriteString(wp.GetTheGenerator("rss2"))
+	b.WriteString("\n")
 
 	for _, cm := range comments {
 		post, _ := wp.GetPostByID(c, cm.PostID)
@@ -330,7 +332,8 @@ func (f *Front) renderCommentsFeedAtom(w http.ResponseWriter, r *http.Request, c
 	b.WriteString("\t<id>")
 	b.WriteString(xmlEscape(self))
 	b.WriteString("</id>\n")
-	b.WriteString("<generator uri=\"https://wordpress.org/\" version=\"7.2-alpha-64260\">WordPress</generator>\n")
+	b.WriteString(wp.GetTheGenerator("atom"))
+	b.WriteString("\n")
 
 	for _, cm := range comments {
 		post, _ := wp.GetPostByID(c, cm.PostID)
@@ -1769,7 +1772,9 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, c *wp.Context) {
 	b.WriteString("\thourly\t</sy:updatePeriod>\n")
 	b.WriteString("\t<sy:updateFrequency>\n")
 	b.WriteString("\t1\t</sy:updateFrequency>\n")
-	b.WriteString("\t<generator>https://wordpress.org/?v=7.2-alpha-64260</generator>\n")
+	b.WriteString("\t")
+	b.WriteString(wp.GetTheGenerator("rss2"))
+	b.WriteString("\n")
 	for i, p := range posts {
 		link := postPermalink(home, p.Post)
 		guid := home + "/?p=" + strconv.FormatInt(p.ID, 10)
@@ -1894,7 +1899,9 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString("\t<link rel=\"self\" type=\"application/atom+xml\" href=\"")
 	b.WriteString(xmlEscape(self))
 	b.WriteString("\" />\n\n")
-	b.WriteString("\t<generator uri=\"https://wordpress.org/\" version=\"7.2-alpha-64260\">WordPress</generator>\n")
+	b.WriteString("\t")
+	b.WriteString(wp.GetTheGenerator("atom"))
+	b.WriteString("\n")
 
 	for _, p := range posts {
 		link := postPermalink(home, p.Post)
@@ -2695,7 +2702,8 @@ func writeFrontHeadLinks(b *strings.Builder, home, blogname, permalink, restPath
 	b.WriteString("<link rel=\"EditURI\" type=\"application/rsd+xml\" title=\"RSD\" href=\"")
 	b.WriteString(html.EscapeString(home + "/xmlrpc.php?rsd"))
 	b.WriteString("\" />\n")
-	b.WriteString("<meta name=\"generator\" content=\"WordPress 7.2-alpha-64260\" />\n")
+	b.WriteString(wp.MetaGeneratorXHTML())
+	b.WriteString("\n")
 	// P3.42: rel=canonical (wp_get_canonical_url / rel_canonical) on singular.
 	if permalink != "" {
 		b.WriteString("<link rel=\"canonical\" href=\"")
