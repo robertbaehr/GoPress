@@ -79,8 +79,9 @@ func Texturize(s string) string {
 				continue
 			}
 			if i+1 < len(s) && s[i+1] == '-' {
-				prevSpace := i > 0 && (s[i-1] == ' ' || s[i-1] == '\t' || s[i-1] == '\n')
-				nextSpace := i+2 < len(s) && (s[i+2] == ' ' || s[i+2] == '\t' || s[i+2] == '\n')
+				// Surrounding "spaces" use wp_spaces_regexp subset (P2.48).
+				prevSpace := i > 0 && isTexturizeSpaceByte(s[i-1])
+				nextSpace := i+2 < len(s) && isTexturizeSpaceByte(s[i+2])
 				if prevSpace && nextSpace {
 					b.WriteString("&#8212;")
 				} else {
@@ -158,4 +159,10 @@ func looksLikeEntity(rest string) bool {
 
 func isHexByte(c byte) bool {
 	return (c >= '0' && c <= '9') || (c >= 'a' && c <= 'f') || (c >= 'A' && c <= 'F')
+}
+
+// isTexturizeSpaceByte is the ASCII subset of wp_spaces_regexp used for dash
+// decisions in Texturize (full pattern also matches NBSP / &nbsp;).
+func isTexturizeSpaceByte(c byte) bool {
+	return c == ' ' || c == '\t' || c == '\n' || c == '\r'
 }
