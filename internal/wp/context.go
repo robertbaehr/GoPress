@@ -57,6 +57,9 @@ type Context struct {
 	// Theme is the active theme.json settings/styles subset (P5.4).
 	Theme *theme.JSON
 
+	// Mailer records wp_mail sends (P3.9).
+	Mailer *Mailer
+
 	// CurrentUser is the authenticated user for this request (P2.2+).
 	CurrentUser *User
 
@@ -110,6 +113,7 @@ func (c *Context) ForRequest(w http.ResponseWriter, r *http.Request) *Context {
 		Users:   c.Users,
 		Roles:   c.Roles,
 		Theme:   c.Theme,
+		Mailer:  c.Mailer,
 		Req:     r,
 		Res:     w,
 		Scope:   NewRequestScope(),

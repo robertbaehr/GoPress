@@ -33,6 +33,7 @@ func Boot(ctx context.Context, cfg *config.Config) (*Context, error) {
 	c.Auth = NewAuth(cfg)
 	c.Users = NewUsers(handle, c.Cache)
 	c.Roles = NewRoles(c.Options)
+	c.Mailer = NewMailer()
 
 	if err := c.Options.LoadAutoload(); err != nil {
 		_ = handle.Close()
