@@ -3268,9 +3268,17 @@ func (f *Front) tryCanonicalPostRedirect(w http.ResponseWriter, r *http.Request,
 }
 
 func (f *Front) render404(w http.ResponseWriter, c *wp.Context) {
+	// P3.81: always mark the query as 404 before rendering (body_class / conditionals).
+	if c != nil {
+		if c.Scope == nil {
+			c.Scope = &wp.RequestScope{}
+		}
+		c.Scope.Is404 = true
+	}
 	// P3.16: prefer block theme templates/404.html when present.
 	// P3.35: ensure header/footer template parts wrap the 404 content.
 	if tpl, ok := wp.ResolveBlockTemplate(c, "404"); ok && strings.TrimSpace(tpl) != "" {
+		tpl = apply404TemplateContentFilter(c, tpl)
 		f.render404BlockTemplate(w, c, Ensure404TemplateParts(tpl))
 		return
 	}
@@ -3280,6 +3288,19 @@ func (f *Front) render404(w http.ResponseWriter, c *wp.Context) {
 		return
 	}
 	f.render404Shim(w, c)
+}
+
+// apply404TemplateContentFilter lets hooks adjust resolved 404 block markup (P3.81).
+func apply404TemplateContentFilter(c *wp.Context, tpl string) string {
+	if c == nil || c.Hooks == nil {
+		return tpl
+	}
+	if v := c.Hooks.ApplyFilters("404_template_content", tpl); v != nil {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return tpl
 }
 
 // Ensure404TemplateParts prepends/appends core/template-part header and footer
@@ -3310,6 +3331,7 @@ func Ensure404TemplateParts(template string) string {
 }
 
 // wrap404ShimWithParts builds a minimal 404 block document using theme parts.
+// P3.81: includes a search block and home link like common theme 404 patterns.
 func wrap404ShimWithParts(c *wp.Context) (string, bool) {
 	if c == nil {
 		return "", false
@@ -3322,7 +3344,10 @@ func wrap404ShimWithParts(c *wp.Context) (string, bool) {
 	return Ensure404TemplateParts(
 		`<!-- wp:group {"tagName":"main","layout":{"type":"constrained"}} -->` +
 			`<main class="wp-block-group"><!-- wp:heading {"level":1} --><h1 class="wp-block-heading">Page not found</h1><!-- /wp:heading -->` +
-			`<!-- wp:paragraph --><p>The requested content could not be found.</p><!-- /wp:paragraph --></main><!-- /wp:group -->`,
+			`<!-- wp:paragraph --><p>The requested content could not be found. Try a search or return home.</p><!-- /wp:paragraph -->` +
+			`<!-- wp:search {"label":"Search","buttonText":"Search"} /-->` +
+			`<!-- wp:paragraph --><p><a href="/">Home</a></p><!-- /wp:paragraph -->` +
+			`</main><!-- /wp:group -->`,
 	), true
 }
 
@@ -3346,8 +3371,8 @@ func (f *Front) render404BlockTemplate(w http.ResponseWriter, c *wp.Context, tem
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
 	b.WriteString(frontRobotsMetaTag(c))
-	b.WriteString("<title>Page not found &#8211; ")
-	b.WriteString(html.EscapeString(blogname))
+	b.WriteString("<title>")
+	b.WriteString(front404DocumentTitle(c, blogname))
 	b.WriteString("</title>\n")
 	writeFrontHeadLinks(&b, home, blogname, "", "", "", "", "", "")
 	b.WriteString(wp.EmojiHeadHTML())
@@ -3369,22 +3394,70 @@ func (f *Front) render404BlockTemplate(w http.ResponseWriter, c *wp.Context, tem
 
 func (f *Front) render404Shim(w http.ResponseWriter, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	if home == "" {
+		home = "/"
+	}
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
-	b.WriteString("<title>Page not found &#8212; ")
-	b.WriteString(html.EscapeString(blogname))
+	b.WriteString("<title>")
+	b.WriteString(front404DocumentTitle(c, blogname))
 	b.WriteString("</title>\n</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(wp.BodyClassWithAdminBar(c, "error404")))
 	b.WriteString("\">\n")
 	b.WriteString(wp.AdminBarHTML(c))
+	b.WriteString("<main id=\"wp--skip-link--target\">\n")
 	b.WriteString("<h1>Page not found</h1>\n")
-	b.WriteString("<p>The requested content could not be found.</p>\n")
+	b.WriteString("<p>The requested content could not be found. Try a search or return home.</p>\n")
+	// P3.81: classic shim search form (parity with block theme search pattern).
+	action := home
+	if !strings.HasSuffix(action, "/") {
+		action += "/"
+	}
+	b.WriteString(`<form role="search" method="get" action="`)
+	b.WriteString(html.EscapeString(action))
+	b.WriteString(`" class="search-form wp-block-search">`)
+	b.WriteString(`<label><span class="screen-reader-text">Search</span>`)
+	b.WriteString(`<input type="search" name="s" value="" placeholder="Search"/></label>`)
+	b.WriteString(`<input type="submit" value="Search"/>`)
+	b.WriteString("</form>\n")
+	b.WriteString(`<p><a href="`)
+	b.WriteString(html.EscapeString(home))
+	b.WriteString(`">Home</a></p>`)
+	b.WriteString("\n</main>\n")
 	b.WriteString("</body>\n</html>\n")
 
 	setFrontAPILink(w, c)
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusNotFound)
 	_, _ = w.Write([]byte(b.String()))
+}
+
+// front404DocumentTitle builds the 404 <title> and honors document_title_parts (P3.81).
+func front404DocumentTitle(c *wp.Context, blogname string) string {
+	parts := map[string]string{
+		"title":   "Page not found",
+		"page":    "",
+		"tagline": "",
+		"site":    blogname,
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("document_title_parts", parts); v != nil {
+			if m, ok := v.(map[string]string); ok {
+				parts = m
+			}
+		}
+	}
+	title := strings.TrimSpace(parts["title"])
+	if title == "" {
+		title = "Page not found"
+	}
+	site := strings.TrimSpace(parts["site"])
+	out := html.EscapeString(title)
+	if site != "" {
+		out += " &#8211; " + html.EscapeString(site)
+	}
+	return out
 }
 
 // pathEscapeSearch encodes a search term for /search/{term}/feed/ paths (P3.39).

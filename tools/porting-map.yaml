@@ -1557,6 +1557,14 @@
   task: P3.35
   api: n/a
 
+# P3.81: deepen 404 — Is404 scope, document_title_parts, search/home shim.
+- prefix: wp-includes/template-loader.php#404#p3.81
+  go: internal/server/front.go
+  status: partial
+  task: P3.81
+  api: n/a
+  notes: "P3.81 — Scope.Is404; document_title_parts; 404_template_content; shim search+home"
+
 # P6.12: typed login error messages (invalid_username / incorrect_password / empty).
 - prefix: wp-login.php#errors
   go: internal/login/login.go
