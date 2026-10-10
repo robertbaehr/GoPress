@@ -88,6 +88,9 @@ func TestInterimLoginForm(t *testing.T) {
 	if strings.Contains(body, `id="login_error"`) {
 		t.Fatalf("interim info message should not use login_error: %q", body)
 	}
+	if !strings.Contains(body, "html{background-color: transparent;}") {
+		t.Fatalf("expected transparent interim chrome: %q", body)
+	}
 	// P6.22: interim form footer forces links to open in a new tab.
 	if !strings.Contains(body, "links[i].target = '_blank'") {
 		t.Fatalf("expected interim blank-target script: %q", body)
@@ -141,11 +144,33 @@ func TestInterimLoginSuccess(t *testing.T) {
 		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
 	}
 	body := rec.Body.String()
-	if !strings.Contains(body, "interim-login-success") {
-		t.Fatalf("expected interim-login-success: %q", body)
+	if !strings.Contains(body, "interim-login") || !strings.Contains(body, "interim-login-success") {
+		t.Fatalf("expected interim-login + interim-login-success: %q", body)
 	}
 	if !strings.Contains(body, "You have logged in successfully.") {
 		t.Fatalf("expected success message: %q", body)
+	}
+	if !strings.Contains(body, "html{background-color: transparent;}") {
+		t.Fatalf("expected transparent interim chrome: %q", body)
+	}
+	if !strings.Contains(body, `id="login-message"`) {
+		t.Fatalf("expected login-message id: %q", body)
+	}
+	// P6.25: auth cookies must be set so the parent auth-check can proceed.
+	cookies := rec.Result().Cookies()
+	hasLoggedIn := false
+	for _, ck := range cookies {
+		if strings.Contains(ck.Name, "wordpress_logged_in") || strings.HasPrefix(ck.Name, "wordpress_logged_in_") {
+			hasLoggedIn = true
+			break
+		}
+	}
+	if !hasLoggedIn {
+		names := make([]string, 0, len(cookies))
+		for _, ck := range cookies {
+			names = append(names, ck.Name)
+		}
+		t.Fatalf("expected logged_in Set-Cookie on interim success, got %v", names)
 	}
 	if loc := rec.Header().Get("Location"); loc != "" {
 		t.Fatalf("interim success should not redirect, Location=%q", loc)

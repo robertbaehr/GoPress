@@ -707,6 +707,14 @@
   api: n/a
   notes: "P6.22 — POST-only interim-login; links target=_blank in interim form"
 
+# P6.25: interim login success polish (transparent chrome, login_message, auth cookies).
+- prefix: wp-login.php#interim-success
+  go: internal/login/login.go
+  status: partial
+  task: P6.25
+  api: n/a
+  notes: "P6.25 — transparent html; empty title; login_message filter; logged_in cookies; auth-check class"
+
 # P2.40: wp_parse_url (protocol-relative + path-only placeholders).
 - prefix: wp-includes/http.php#wp_parse_url
   go: internal/wp/parse_url.go
