@@ -288,6 +288,8 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 			return
 		}
 		s.serveTemplatePartItem(w, r, c, id)
+	case path == "/wp-block-editor/v1/url-details":
+		s.serveURLDetails(w, r, c)
 	default:
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"code":    "rest_no_route",
@@ -702,21 +704,35 @@ func extraIndexRoutes() map[string]RouteIndex {
 		"/wp-site-health/v1/tests/page-cache":           getOnly("wp-site-health/v1"),
 		"/wp-block-editor/v1":                           getOnly("wp-block-editor/v1"),
 		"/wp-block-editor/v1/export":                    getOnly("wp-block-editor/v1"),
-		"/wp-block-editor/v1/url-details":               getOnly("wp-block-editor/v1"),
-		"/wp-block-editor/v1/navigation-fallback":       getOnly("wp-block-editor/v1"),
-		"/wp-abilities/v1":                              getOnly("wp-abilities/v1"),
-		"/wp-abilities/v1/abilities":                    getOnly("wp-abilities/v1"),
-		"/wp-abilities/v1/categories":                   getOnly("wp-abilities/v1"),
-		"/wp/v2/users":                                  collectionRoute(ns),
-		"/wp/v2/users/(?P<id>[\\d]+)":                   itemRoute(ns),
-		"/wp/v2/themes":                                 getOnly(ns),
-		"/wp/v2/plugins":                                collectionRoute(ns),
-		"/wp/v2/menu-items":                             collectionRoute(ns),
-		"/wp/v2/menu-items/(?P<id>[\\d]+)":              itemRoute(ns),
-		"/wp/v2/menus":                                  collectionRoute(ns),
-		"/wp/v2/menus/(?P<id>[\\d]+)":                   itemRoute(ns),
-		"/wp/v2/menu-locations":                         getOnly(ns),
-		"/wp/v2/templates":                              collectionRoute(ns),
+		"/wp-block-editor/v1/url-details": {
+			Namespace: "wp-block-editor/v1",
+			Methods:   []string{"GET"},
+			Endpoints: []RouteEndpoint{{
+				Methods: []string{"GET"},
+				Args: map[string]any{
+					"url": map[string]any{
+						"description": "The URL to process.",
+						"format":      "uri",
+						"required":    true,
+						"type":        "string",
+					},
+				},
+			}},
+		},
+		"/wp-block-editor/v1/navigation-fallback": getOnly("wp-block-editor/v1"),
+		"/wp-abilities/v1":                        getOnly("wp-abilities/v1"),
+		"/wp-abilities/v1/abilities":              getOnly("wp-abilities/v1"),
+		"/wp-abilities/v1/categories":             getOnly("wp-abilities/v1"),
+		"/wp/v2/users":                            collectionRoute(ns),
+		"/wp/v2/users/(?P<id>[\\d]+)":             itemRoute(ns),
+		"/wp/v2/themes":                           getOnly(ns),
+		"/wp/v2/plugins":                          collectionRoute(ns),
+		"/wp/v2/menu-items":                       collectionRoute(ns),
+		"/wp/v2/menu-items/(?P<id>[\\d]+)":        itemRoute(ns),
+		"/wp/v2/menus":                            collectionRoute(ns),
+		"/wp/v2/menus/(?P<id>[\\d]+)":             itemRoute(ns),
+		"/wp/v2/menu-locations":                   getOnly(ns),
+		"/wp/v2/templates":                        collectionRoute(ns),
 		"/wp/v2/templates/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)": itemRoute(ns),
 		"/wp/v2/template-parts": collectionRoute(ns),
 		"/wp/v2/template-parts/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)": itemRoute(ns),
