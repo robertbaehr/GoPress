@@ -434,6 +434,10 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	b.WriteString(`<td id="cb" class="manage-column column-cb check-column"><input id="cb-select-all-1" type="checkbox" /></td>`)
 	b.WriteString("<th scope=\"col\" class=\"manage-column column-title column-primary\">Title</th>")
 	b.WriteString("<th scope=\"col\" class=\"manage-column column-author\">Author</th>")
+	// P7.79: pages list shows menu_order as Order column.
+	if postType == "page" {
+		b.WriteString("<th scope=\"col\" class=\"manage-column column-menu_order\">Order</th>")
+	}
 	b.WriteString("<th scope=\"col\" class=\"manage-column column-date\">Date</th>")
 	b.WriteString("<th scope=\"col\" class=\"manage-column column-status\">Status</th>")
 	b.WriteString("</tr></thead>\n")
@@ -527,6 +531,12 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		b.WriteString("<td class=\"author column-author\" data-colname=\"Author\">")
 		b.WriteString(html.EscapeString(p.Author))
 		b.WriteString("</td>")
+		// P7.79: menu_order cell on pages list.
+		if postType == "page" {
+			b.WriteString("<td class=\"menu_order column-menu_order\" data-colname=\"Order\">")
+			b.WriteString(strconv.Itoa(p.MenuOrder))
+			b.WriteString("</td>")
+		}
 		b.WriteString("<td class=\"date column-date\" data-colname=\"Date\"><abbr>")
 		b.WriteString(html.EscapeString(displayPostDateLabel(p.Status)))
 		b.WriteString("</abbr><br>")
@@ -4205,6 +4215,8 @@ type postRow struct {
 	// Parent / Level support hierarchical page indent (P7.78).
 	Parent int64
 	Level  int
+	// MenuOrder is post.menu_order (P7.79 pages Order column).
+	MenuOrder int
 }
 
 func countPostsByTypeStatus(c *wp.Context, postType, status string) int {
@@ -4333,12 +4345,13 @@ func recentPostsByType(c *wp.Context, postType string, limit int, search string,
 			title = "(no title)"
 		}
 		out = append(out, postRow{
-			ID:     asInt64(row["ID"]),
-			Title:  title,
-			Date:   asString(row["post_date"]),
-			Status: asString(row["post_status"]),
-			Author: author,
-			Parent: asInt64(row["post_parent"]),
+			ID:        asInt64(row["ID"]),
+			Title:     title,
+			Date:      asString(row["post_date"]),
+			Status:    asString(row["post_status"]),
+			Author:    author,
+			Parent:    asInt64(row["post_parent"]),
+			MenuOrder: int(asInt64(row["menu_order"])),
 		})
 	}
 	// P7.78: nest pages under parents with depth levels for indent display.

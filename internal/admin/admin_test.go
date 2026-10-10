@@ -1101,6 +1101,77 @@ func TestEditPagesHierarchicalIndent(t *testing.T) {
 	}
 }
 
+func TestEditPagesMenuOrderColumn(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+
+	// Distinct menu_order on a fixture page so the cell is observable.
+	q, args, err := c.DB.Prepare("SELECT menu_order AS n FROM "+c.DB.Posts()+" WHERE ID = %d", 436)
+	if err != nil {
+		t.Fatal(err)
+	}
+	row, err := c.DB.GetRow(q, args...)
+	if err != nil || row == nil {
+		t.Fatalf("load menu_order: %v", err)
+	}
+	prev, _ := strconv.ParseInt(strings.TrimSpace(fmt.Sprint(row["n"])), 10, 64)
+	uq, uargs, err := c.DB.Prepare("UPDATE "+c.DB.Posts()+" SET menu_order = %d WHERE ID = %d", 7, int64(436))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := c.DB.Exec(uq, uargs...); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		rq, rargs, _ := c.DB.Prepare("UPDATE "+c.DB.Posts()+" SET menu_order = %d WHERE ID = %d", prev, int64(436))
+		_, _ = c.DB.Exec(rq, rargs...)
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?post_type=page", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`column-menu_order`,
+		`>Order</th>`,
+		`data-colname="Order"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected pages Order column %q", want)
+		}
+	}
+	// Posts list must not show the Order column.
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if strings.Contains(rec.Body.String(), `column-menu_order`) {
+		t.Fatal("posts list should not show menu_order column")
+	}
+
+	// Page 436 cell should render the updated menu_order.
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?post_type=page", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	idx := strings.Index(rec.Body.String(), `id="post-436"`)
+	if idx < 0 {
+		t.Fatal("missing post-436 row")
+	}
+	chunk := rec.Body.String()[idx:]
+	if end := strings.Index(chunk[10:], `id="post-`); end >= 0 {
+		chunk = chunk[:10+end]
+	}
+	if !strings.Contains(chunk, `menu_order column-menu_order`) || !strings.Contains(chunk, `>7</td>`) {
+		t.Fatalf("expected menu_order=7 cell in page row: %q", chunk[:min(500, len(chunk))])
+	}
+}
+
 func TestEditPostsBulkEditStub(t *testing.T) {
 	c := bootOrSkip(t)
 	ck := loginCookie(t, c)

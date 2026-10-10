@@ -4432,6 +4432,21 @@
   api: internal
   notes: "P4.94 — orderByClause menu_order column"
 
+# P7.79: edit.php pages list Order (menu_order) column.
+- prefix: wp-admin/includes/class-wp-posts-list-table.php#menu_order
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.79
+  api: n/a
+  notes: "P7.79 — column-menu_order Order column on pages list"
+
+- prefix: wp-admin/edit.php#pages-menu-order
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.79
+  api: n/a
+  notes: "P7.79 — postRow.MenuOrder from posts.menu_order"
+
 # P4.93: REST pages ?parent= / ?parent_exclude= (post_parent__in / __not_in).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#parent
   go: internal/rest/posts.go
