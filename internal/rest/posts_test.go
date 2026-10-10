@@ -150,6 +150,58 @@ func TestPostsOrderbyQueryParam(t *testing.T) {
 	}
 }
 
+func TestPostsSearchQueryParam(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?search=Hello&per_page=10", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("search=Hello status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var hits []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &hits); err != nil {
+		t.Fatal(err)
+	}
+	if len(hits) == 0 {
+		t.Fatal("expected search hits for Hello")
+	}
+	found := false
+	for _, p := range hits {
+		if strings.Contains(strings.ToLower(p.Title.Rendered), "hello") {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Fatalf("expected Hello in titles, got %+v", hits)
+	}
+	total := rec.Header().Get("X-WP-Total")
+	if total == "" || total == "0" {
+		t.Fatalf("expected X-WP-Total > 0, got %q", total)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?search=zzznomatchterm999&per_page=10", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("miss status=%d", rec.Code)
+	}
+	var miss []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &miss); err != nil {
+		t.Fatal(err)
+	}
+	if len(miss) != 0 {
+		t.Fatalf("expected empty miss, got %+v", miss)
+	}
+	if rec.Header().Get("X-WP-Total") != "0" {
+		t.Fatalf("expected X-WP-Total=0, got %q", rec.Header().Get("X-WP-Total"))
+	}
+}
+
 func TestPostsStickyQueryParam(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()

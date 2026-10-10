@@ -50,7 +50,8 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 	stickyFilter := parseStickyQuery(r)
 	orderby := parsePostsOrderby(r)
 	order := parsePostsOrder(r)
-	total, err := countPosts(c, postType, stickyFilter)
+	search := parsePostsSearch(r)
+	total, err := countPosts(c, postType, stickyFilter, search)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",
@@ -59,7 +60,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		})
 		return
 	}
-	posts, err := listPostsPaged(c, postType, perPage, page, edit, stickyFilter, orderby, order)
+	posts, err := listPostsPaged(c, postType, perPage, page, edit, stickyFilter, orderby, order, search)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",
