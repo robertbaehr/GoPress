@@ -87,14 +87,22 @@ func (s *Server) servePostRevisions(w http.ResponseWriter, r *http.Request, c *w
 }
 
 func (s *Server) servePostRevisionItem(w http.ResponseWriter, r *http.Request, c *wp.Context, parentID, revID int64) {
-	if r.Method != http.MethodGet && r.Method != http.MethodHead && r.Method != http.MethodOptions {
+	switch r.Method {
+	case http.MethodGet, http.MethodHead, http.MethodOptions:
+		s.getPostRevisionItem(w, r, c, parentID, revID)
+	case http.MethodDelete:
+		s.deletePostRevision(w, r, c, parentID, revID)
+	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
 			"data":    map[string]any{"status": 405},
 		})
-		return
 	}
+}
+
+func (s *Server) getPostRevisionItem(w http.ResponseWriter, r *http.Request, c *wp.Context, parentID, revID int64) {
+	_ = r
 	parent, err := wp.GetPostByID(c, parentID)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
@@ -143,8 +151,103 @@ func (s *Server) servePostRevisionItem(w http.ResponseWriter, r *http.Request, c
 		return
 	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
-	w.Header().Set("Allow", "GET")
+	w.Header().Set("Allow", "GET, DELETE")
 	writeJSON(w, http.StatusOK, revisionFromWP(c, *row, home, parentID))
+}
+
+// deletePostRevision handles DELETE /wp/v2/posts/{parent}/revisions/{id} (P4.68).
+// Revisions do not support trashing; force=true is required.
+func (s *Server) deletePostRevision(w http.ResponseWriter, r *http.Request, c *wp.Context, parentID, revID int64) {
+	if c == nil || c.CurrentUser == nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]any{
+			"code":    "rest_cannot_delete",
+			"message": "Sorry, you are not allowed to delete revisions of this post.",
+			"data":    map[string]any{"status": 401},
+		})
+		return
+	}
+	parent, err := wp.GetPostByID(c, parentID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_post_query",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	if parent == nil || parent.Type != "post" {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"code":    "rest_post_invalid_parent",
+			"message": "Invalid post parent ID.",
+			"data":    map[string]any{"status": 404},
+		})
+		return
+	}
+	if !c.UserCan(c.CurrentUser, "delete_post", parentID) {
+		writeJSON(w, http.StatusForbidden, map[string]any{
+			"code":    "rest_cannot_delete",
+			"message": "Sorry, you are not allowed to delete revisions of this post.",
+			"data":    map[string]any{"status": 403},
+		})
+		return
+	}
+	row, err := wp.GetPostByID(c, revID)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_revision_query",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	if row == nil || row.Type != "revision" || row.Parent != parentID {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"code":    "rest_post_invalid_id",
+			"message": "Invalid revision ID.",
+			"data":    map[string]any{"status": 404},
+		})
+		return
+	}
+	// WP map_meta_cap returns do_not_allow for delete_post on revision IDs;
+	// authorize via parent (checked above), matching WP REST's effective gate.
+	force := r.URL.Query().Get("force") == "true"
+	if !force {
+		writeJSON(w, http.StatusNotImplemented, map[string]any{
+			"code":    "rest_trash_not_supported",
+			"message": "Revisions do not support trashing. Set 'force=true' to delete.",
+			"data":    map[string]any{"status": 501},
+		})
+		return
+	}
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	previous := revisionFromWP(c, *row, home, parentID)
+	if err := hardDeleteRevision(c, revID); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_cannot_delete",
+			"message": "The post cannot be deleted.",
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"deleted":  true,
+		"previous": previous,
+	})
+}
+
+func hardDeleteRevision(c *wp.Context, id int64) error {
+	if c == nil || c.DB == nil || id <= 0 {
+		return fmt.Errorf("invalid delete")
+	}
+	q, args, err := c.DB.Prepare(
+		"DELETE FROM "+c.DB.Posts()+" WHERE ID = %d AND post_type = %s",
+		id, "revision",
+	)
+	if err != nil {
+		return err
+	}
+	_, err = c.DB.Exec(q, args...)
+	return err
 }
 
 func listPostRevisions(c *wp.Context, parentID int64) ([]wp.Post, error) {
