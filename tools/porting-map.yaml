@@ -3846,8 +3846,16 @@
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-directory-controller.php
   go: internal/rest/block_directory.go
   status: partial
-  task: P4.42
+  task: P4.101
   api: exported
+  notes: "P4.101 — require term (minLength 1); remote wordpress.org still 403"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-directory-controller.php#term
+  go: internal/rest/block_directory.go
+  status: partial
+  task: P4.101
+  api: exported
+  notes: "P4.101 — missing term → rest_missing_callback_param; empty → rest_invalid_param"
 
 # P4.38: POST /wp/v2/navigation handled in internal/rest/navigation_write.go
 # (wp_navigation CPT uses WP_REST_Posts_Controller upstream).
