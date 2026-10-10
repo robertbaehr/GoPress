@@ -28,7 +28,14 @@ test('edit.php trash and restore row actions', async ({ page, baseURL }) => {
   await expect(page.locator('option[value="trash"]')).toBeAttached();
   await expect(page.locator('#the-list .row-actions .trash a').first()).toBeAttached();
 
-  // Trash Fixture Post 01 via row action (stable fixture slug).
+  // Search finds Fixture Post 01 (not always on page 1 among block fixtures).
+  await page.fill('#post-search-input', 'Fixture Post 01');
+  await Promise.all([
+    page.waitForURL(/[?&]s=/),
+    page.click('#search-submit'),
+  ]);
+  await expect(page.locator('#the-list')).toContainText('Fixture Post 01');
+
   const trashLink = page.locator('#the-list tr').filter({ hasText: 'Fixture Post 01' }).locator('.row-actions .trash a');
   await expect(trashLink).toBeAttached();
   await Promise.all([
@@ -37,7 +44,7 @@ test('edit.php trash and restore row actions', async ({ page, baseURL }) => {
   ]);
   await expect(page.locator('body')).toContainText(/moved to the Trash|trashed/i);
 
-  await page.goto('/wp-admin/edit.php?post_status=trash');
+  await page.goto('/wp-admin/edit.php?post_status=trash&s=Fixture+Post+01');
   await expect(page.locator('#the-list')).toContainText('Fixture Post 01');
   await expect(page.locator('option[value="untrash"]')).toBeAttached();
   await expect(page.locator('#the-list .row-actions .untrash a').first()).toBeAttached();
@@ -49,6 +56,6 @@ test('edit.php trash and restore row actions', async ({ page, baseURL }) => {
   ]);
   await expect(page.locator('body')).toContainText(/restored from the Trash|untrashed/i);
 
-  await page.goto('/wp-admin/edit.php');
+  await page.goto('/wp-admin/edit.php?s=Fixture+Post+01');
   await expect(page.locator('#the-list')).toContainText('Fixture Post 01');
 });
