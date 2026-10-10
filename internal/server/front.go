@@ -2035,6 +2035,7 @@ func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	b.WriteString("\txmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"\n")
 	b.WriteString("\txmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n")
 	b.WriteString("\txmlns:sy=\"http://purl.org/rss/1.0/modules/syndication/\"\n")
+	b.WriteString("\txmlns:admin=\"http://webns.net/mvcb/\"\n")
 	b.WriteString("\txmlns:content=\"http://purl.org/rss/1.0/modules/content/\"\n")
 	b.WriteString("\t>\n")
 	b.WriteString("<channel rdf:about=\"")
@@ -2059,6 +2060,10 @@ func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	b.WriteString("\t1\n")
 	b.WriteString("\t</sy:updateFrequency>\n")
 	b.WriteString("\t<sy:updateBase>2000-01-01T12:00+00:00</sy:updateBase>\n")
+	// P3.56: rdf_header → the_generator (admin:generatorAgent).
+	b.WriteString("\t")
+	b.WriteString(wp.GetTheGenerator("rdf"))
+	b.WriteString("\n")
 	b.WriteString("\t<items>\n")
 	b.WriteString("\t\t<rdf:Seq>\n")
 	for _, p := range posts {
