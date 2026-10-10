@@ -133,3 +133,22 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.122: heartbeat screens after comments/plugins deepen.
+- id: ajax-p10122-heartbeat-edit-comments
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=edit-comments
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10122-heartbeat-plugins
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=plugins
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

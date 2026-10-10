@@ -6750,6 +6750,14 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P10.120 — tags include/orderby, oembed xml/maxwidth, checkemail action, pages list, heartbeat; grow after P5.105–P6.44; 550 cases"
 
+# P10.122: expand diff corpus after P5.106–P9.23.
+- prefix: tests/corpus/#p10-122
+  go: tests/corpus/
+  status: partial
+  task: P10.122
+  api: n/a
+  notes: "P10.122 — search orderby, columns block-types, edit-comments search/views, heartbeat, feeds; grow after P5.106–P9.23; 591 cases"
+
 # P10.121: STATUS/PORTING refresh after P5.105–P10.120.
 - prefix: docs/STATUS.md#p10-121
   go: docs/STATUS.md
