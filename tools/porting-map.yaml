@@ -2688,6 +2688,28 @@
   api: n/a
   notes: "P3.67 — feedParseUTC + Atom date share TZ conversion"
 
+# P3.68: feed item slash:comments via get_comments_number filter.
+- prefix: wp-includes/feed-rss2.php#slash_comments
+  go: internal/server/front.go
+  status: partial
+  task: P3.68
+  api: n/a
+  notes: "P3.68 — <slash:comments> uses get_comments_number filter"
+
+- prefix: wp-includes/comment-template.php#get_comments_number
+  go: internal/server/front.go
+  status: partial
+  task: P3.68
+  api: exported
+  notes: "P3.68 — feedCommentCount applies get_comments_number"
+
+- prefix: wp-includes/feed-rss2.php#slash_comments#test
+  go: internal/server/feed_slash_comments_test.go
+  status: partial
+  task: P3.68
+  api: n/a
+  notes: "P3.68 — unit coverage for filtered slash:comments"
+
 # P3.66: feed item dc:creator / Atom author via the_author filter.
 - prefix: wp-includes/feed-rss2.php#dc-creator
   go: internal/server/front.go
