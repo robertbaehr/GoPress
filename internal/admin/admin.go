@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"path/filepath"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -3355,8 +3356,13 @@ func listNavMenus(c *wp.Context) ([]navMenuTerm, error) {
 	return out, nil
 }
 
-// serveSiteHealth is the Tools → Site Health screen stub (P8.3 / P7.45).
+// serveSiteHealth is the Tools → Site Health screen stub (P8.3 / P7.45 / P7.92).
 func (h *Handler) serveSiteHealth(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	// P7.92: capability gate (view_site_health_checks → manage_options).
+	if !canViewSiteHealthAdmin(c) {
+		http.Error(w, "Sorry, you are not allowed to access site health information.\n", http.StatusForbidden)
+		return
+	}
 	// WP routes ?tab=debug to the Info view (site-health-info.php in GoPress).
 	if r.URL.Query().Get("tab") == "debug" {
 		http.Redirect(w, r, "/wp-admin/site-health-info.php", http.StatusFound)
@@ -3368,11 +3374,11 @@ func (h *Handler) serveSiteHealth(w http.ResponseWriter, r *http.Request, c *wp.
 	b.WriteString("<title>Site Health - Status &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui js site-health\">\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui js site-health site-health-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap health-check-header\" id=\"site-health\">\n")
 	b.WriteString("<h1>Site Health</h1>\n")
-	b.WriteString(siteHealthTabsHTML(""))
+	b.WriteString(siteHealthTabsHTML(c, ""))
 	b.WriteString("<div class=\"health-check-body health-check-status-tab\">\n")
 	b.WriteString("<div class=\"site-health-progress-wrapper\" role=\"region\" aria-labelledby=\"site-health-progress-heading\">\n")
 	b.WriteString("<h2 id=\"site-health-progress-heading\" class=\"screen-reader-text\">Site health status</h2>\n")
@@ -3383,16 +3389,27 @@ func (h *Handler) serveSiteHealth(w http.ResponseWriter, r *http.Request, c *wp.
 	b.WriteString("<h2>Site health checks</h2>\n")
 	b.WriteString("<p>GoPress site-health stub — async REST checks land later. All stub checks report good.</p>\n")
 	b.WriteString("<ul class=\"health-check-accordion\">\n")
-	b.WriteString("<li class=\"health-check-accordion-item\">\n")
-	b.WriteString("<h3 class=\"health-check-accordion-heading\"><button type=\"button\" aria-expanded=\"false\" class=\"health-check-accordion-trigger\">")
-	b.WriteString("<span class=\"title\">WordPress</span><span class=\"badge blue\">Good</span></button></h3>\n")
-	b.WriteString("<div class=\"health-check-accordion-panel\"><p>Runtime is GoPress (Go). Core update checks are out of scope.</p></div>\n")
-	b.WriteString("</li>\n</ul>\n</div>\n</div>\n</body>\n</html>\n")
+	for _, item := range siteHealthStatusAccordionItems() {
+		b.WriteString("<li class=\"health-check-accordion-item\">\n")
+		b.WriteString("<h3 class=\"health-check-accordion-heading\"><button type=\"button\" aria-expanded=\"false\" class=\"health-check-accordion-trigger\">")
+		b.WriteString("<span class=\"title\">")
+		b.WriteString(html.EscapeString(item.title))
+		b.WriteString("</span><span class=\"badge blue\">Good</span></button></h3>\n")
+		b.WriteString("<div class=\"health-check-accordion-panel\"><p>")
+		b.WriteString(html.EscapeString(item.body))
+		b.WriteString("</p></div>\n")
+		b.WriteString("</li>\n")
+	}
+	b.WriteString("</ul>\n</div>\n</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveSiteHealthInfo is the Site Health → Info (debug) tab stub (P7.44 / P7.45).
+// serveSiteHealthInfo is the Site Health → Info (debug) tab stub (P7.44 / P7.45 / P7.92).
 func (h *Handler) serveSiteHealthInfo(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if !canViewSiteHealthAdmin(c) {
+		http.Error(w, "Sorry, you are not allowed to access site health information.\n", http.StatusForbidden)
+		return
+	}
 	blogname := optionString(c, "blogname", "GoPress")
 	version := optionString(c, "db_version", "")
 	stylesheet := ""
@@ -3405,11 +3422,11 @@ func (h *Handler) serveSiteHealthInfo(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString("<title>Site Health - Info &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui js site-health\">\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui js site-health site-health-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap health-check-header\" id=\"site-health\">\n")
 	b.WriteString("<h1>Site Health</h1>\n")
-	b.WriteString(siteHealthTabsHTML("debug"))
+	b.WriteString(siteHealthTabsHTML(c, "debug"))
 	b.WriteString("<div class=\"health-check-body health-check-debug-tab hide-if-no-js\">\n")
 	b.WriteString("<h2>Site Health Info</h2>\n")
 	b.WriteString("<p>This page can show debugging information about your GoPress configuration. For status checks, see the ")
@@ -3436,23 +3453,83 @@ func (h *Handler) serveSiteHealthInfo(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString("</td></tr>\n")
 	b.WriteString("<tr><td>Runtime</td><td>GoPress (Go)</td></tr>\n")
 	b.WriteString("</tbody></table></div>\n")
-	b.WriteString("<p class=\"description\">GoPress site-health info stub (P7.45).</p>\n")
+	b.WriteString("<p class=\"description\">GoPress site-health info stub (P7.92).</p>\n")
 	b.WriteString("</div>\n</div>\n</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// siteHealthTabsHTML renders WP-shaped Status/Info secondary tabs (P7.45).
-func siteHealthTabsHTML(active string) string {
-	statusClass, debugClass := "health-check-tab", "health-check-tab"
-	if active == "debug" {
-		debugClass += " active"
-	} else {
-		statusClass += " active"
+type siteHealthAccordionItem struct {
+	title string
+	body  string
+}
+
+func siteHealthStatusAccordionItems() []siteHealthAccordionItem {
+	return []siteHealthAccordionItem{
+		{title: "WordPress", body: "Runtime is GoPress (Go). Core update checks are out of scope."},
+		{title: "HTTPS status", body: "HTTPS detection uses is_ssl; remote certificate probes are stubbed as good."},
+		{title: "Loopback request", body: "Loopback REST checks are stubbed; Site Health REST tests report good."},
+		{title: "Background updates", body: "Automatic updates are out of scope for GoPress."},
 	}
-	return `<nav class="health-check-tabs-wrapper hide-if-no-js tab-count-2" aria-label="Secondary menu">` +
-		`<a href="site-health.php" class="` + statusClass + `">Status</a>` +
-		`<a href="site-health.php?tab=debug" class="` + debugClass + `">Info</a>` +
-		`</nav>` + "\n"
+}
+
+// canViewSiteHealthAdmin mirrors site-health.php current_user_can('view_site_health_checks') (P7.92).
+func canViewSiteHealthAdmin(c *wp.Context) bool {
+	if c == nil || c.CurrentUser == nil {
+		return false
+	}
+	return c.UserCan(c.CurrentUser, "view_site_health_checks")
+}
+
+// siteHealthTabsHTML renders WP-shaped Status/Info secondary tabs (P7.45 / P7.92).
+// Honors site_health_navigation_tabs filter for extra tab labels (hrefs stay stubbed).
+func siteHealthTabsHTML(c *wp.Context, active string) string {
+	tabs := map[string]string{
+		"":      "Status",
+		"debug": "Info",
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("site_health_navigation_tabs", tabs); v != nil {
+			if m, ok := v.(map[string]string); ok && len(m) > 0 {
+				tabs = m
+			}
+		}
+	}
+	// Stable order: Status, Info, then extras sorted.
+	order := []string{"", "debug"}
+	for k := range tabs {
+		if k == "" || k == "debug" {
+			continue
+		}
+		order = append(order, k)
+	}
+	sort.Strings(order[2:])
+	var b strings.Builder
+	b.WriteString(`<nav class="health-check-tabs-wrapper hide-if-no-js tab-count-`)
+	b.WriteString(strconv.Itoa(len(tabs)))
+	b.WriteString(`" aria-label="Secondary menu">`)
+	for _, slug := range order {
+		label, ok := tabs[slug]
+		if !ok {
+			continue
+		}
+		class := "health-check-tab"
+		if slug == active || (active == "" && slug == "") {
+			class += " active"
+		}
+		href := "site-health.php"
+		if slug != "" {
+			href += "?tab=" + html.EscapeString(slug)
+		}
+		b.WriteString(`<a href="`)
+		b.WriteString(href)
+		b.WriteString(`" class="`)
+		b.WriteString(class)
+		b.WriteString(`">`)
+		b.WriteString(html.EscapeString(label))
+		b.WriteString(`</a>`)
+	}
+	b.WriteString("</nav>\n")
+	return b.String()
 }
 
 // serveTools is the Tools screen stub (P7.26 / P7.89).

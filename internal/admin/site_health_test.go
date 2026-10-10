@@ -43,6 +43,35 @@ func TestSiteHealthStubScreen(t *testing.T) {
 	if !strings.Contains(body, "Site Health - Status") {
 		t.Fatalf("expected Status title: %q", body)
 	}
+	if !strings.Contains(body, "site-health-php") {
+		t.Fatalf("expected site-health-php body class: %q", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, "HTTPS status") || !strings.Contains(body, "Loopback request") {
+		t.Fatalf("expected deepened accordion items: %q", body)
+	}
+}
+
+func TestSiteHealthCapDenied(t *testing.T) {
+	c := bootOrSkip(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	// Strip caps for this request context (no auth cookie → AuthenticateRequest keeps CurrentUser).
+	user.AllCaps = map[string]bool{"read": true}
+	c.CurrentUser = user
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/site-health.php", nil)
+	rec := httptest.NewRecorder()
+	if !(&admin.Handler{}).Handle(rec, req, c, "/wp-admin/site-health.php") {
+		t.Fatal("site-health.php not handled")
+	}
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status=%d want 403 body=%s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "not allowed to access site health") {
+		t.Fatalf("body=%s", rec.Body.String())
+	}
 }
 
 func TestSiteHealthInfoScreen(t *testing.T) {
