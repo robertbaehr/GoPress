@@ -671,3 +671,66 @@
   body: null
   compare: headers
   nonce: null
+
+- id: rest-posts-per-page-2
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?per_page=2&orderby=date&order=desc
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-pages-per-page-2
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?per_page=2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-tags-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/tags/1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-search-type-post-hello
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?type=post&search=hello&per_page=2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-categories-1
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/categories/1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-comments-1
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/comments/1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-block-types-paragraph-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/paragraph
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

@@ -118,3 +118,12 @@
   body: null
   compare: headers
   nonce: null
+
+- id: login-checkemail-registered
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=registered
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

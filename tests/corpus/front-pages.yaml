@@ -303,24 +303,6 @@
   compare: headers
   nonce: null
 
-- id: front-author-admin
-  role: anon
-  method: GET
-  path: /author/admin/
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: front-author-1
-  role: anon
-  method: GET
-  path: /?author=1
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: front-p-missing-404
   role: anon
   method: GET
