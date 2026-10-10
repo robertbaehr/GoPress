@@ -11,21 +11,6 @@ var (
 	schemeHostRE   = regexp.MustCompile(`(?i)^[a-z][a-z0-9+.-]*://[^/]*`)
 )
 
-// IsSSL reports whether the current request is HTTPS (is_ssl subset, P3.37).
-func IsSSL(c *Context) bool {
-	if c == nil || c.Req == nil {
-		return false
-	}
-	if c.Req.TLS != nil {
-		return true
-	}
-	proto := strings.ToLower(strings.TrimSpace(c.Req.Header.Get("X-Forwarded-Proto")))
-	if proto == "https" {
-		return true
-	}
-	return c.Req.URL != nil && strings.EqualFold(c.Req.URL.Scheme, "https")
-}
-
 // SetURLScheme applies a scheme to url (set_url_scheme, P3.37).
 // scheme may be "", "http", "https", "relative", "admin", "login", "login_post", "rest", "rpc".
 func SetURLScheme(c *Context, rawURL, scheme string) string {
