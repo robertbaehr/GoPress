@@ -1364,6 +1364,21 @@
   task: P3.13
   api: n/a
 
+# P3.50: atom:link rel=self via get_self_link() (request URI).
+- prefix: wp-includes/feed.php#get_self_link
+  go: internal/server/front.go
+  status: partial
+  task: P3.50
+  api: n/a
+  notes: "P3.50 — RSS2 atom:link href uses feedSelfLink(RequestURI)"
+
+- prefix: wp-includes/feed-rss2.php#atom:link
+  go: internal/server/front.go
+  status: partial
+  task: P3.50
+  api: n/a
+  notes: "P3.50 — channel atom:link self mirrors request"
+
 # P3.45: rss_enclosure / atom_enclosure from enclosure postmeta.
 - prefix: wp-includes/feed.php#rss_enclosure
   go: internal/server/front.go
