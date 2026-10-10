@@ -3690,6 +3690,14 @@
   api: internal
   notes: "P5.85 — ListPosts wires non-inherit query args + sticky only/exclude/ignore"
 
+# P5.86: core/post-featured-image polish (sizeSlug, dimensions, scale, link, overlay).
+- prefix: wp-includes/blocks/post-featured-image.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.86
+  api: internal
+  notes: "P5.86 — sizeSlug/width/height/aspectRatio/scale; isLink+target/rel; dimRatio overlay; align"
+
 - prefix: wp-includes/blocks/
   go: internal/blocks
   status: partial

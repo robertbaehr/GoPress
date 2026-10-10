@@ -91,7 +91,8 @@ func TestRenderPostFeaturedImage(t *testing.T) {
 	if !strings.Contains(out, `src="http://example.test/uploads/photo.jpg"`) {
 		t.Fatalf("missing img src: %q", out)
 	}
-	if !strings.Contains(out, `alt="A photo"`) {
+	// P5.86: linked featured image uses the post title as alt.
+	if !strings.Contains(out, `alt="With Thumb"`) {
 		t.Fatalf("missing alt: %q", out)
 	}
 	if !strings.Contains(out, `<a href="/?p=1"`) {
