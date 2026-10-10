@@ -218,6 +218,8 @@ type RequestScope struct {
 	Is404      bool
 	IsAdmin    bool
 	IsREST     bool
+	// IsAjax marks admin-ajax.php requests (DOING_AJAX / wp_doing_ajax, P2.66).
+	IsAjax bool
 	// RESTDispatching counts nested rest.Server dispatches (is_dispatching).
 	RESTDispatching int
 	IsFeed          bool
@@ -292,6 +294,16 @@ func (s *RequestScope) SetREST(v bool) {
 	}
 	s.mu.Lock()
 	s.IsREST = v
+	s.mu.Unlock()
+}
+
+// SetAjax marks the request as a WordPress Ajax request (P2.66).
+func (s *RequestScope) SetAjax(v bool) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.IsAjax = v
 	s.mu.Unlock()
 }
 

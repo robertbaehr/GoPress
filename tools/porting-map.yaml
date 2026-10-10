@@ -1019,6 +1019,21 @@
   api: exported
   notes: "P2.65 — IsServingRESTRequest (REST_REQUEST / Scope.IsREST)"
 
+# P2.66: wp_doing_ajax (DOING_AJAX / admin-ajax.php).
+- prefix: wp-includes/load.php#wp_doing_ajax
+  go: internal/wp/doing_ajax.go
+  status: done
+  task: P2.66
+  api: exported
+  notes: "P2.66 — DoingAjax from Scope.IsAjax + wp_doing_ajax filter"
+
+- prefix: wp-admin/admin-ajax.php#DOING_AJAX
+  go: internal/admin/ajax.go
+  status: partial
+  task: P2.66
+  api: n/a
+  notes: "P2.66 — serveAdminAjax sets Scope.IsAjax (DOING_AJAX)"
+
 - prefix: wp-includes/class-wp-list-util.php
   go: internal/wp/filter_object_list.go
   status: partial

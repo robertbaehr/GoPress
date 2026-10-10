@@ -9,6 +9,7 @@ import (
 
 	"github.com/robertbaehr/GoPress/internal/admin"
 	"github.com/robertbaehr/GoPress/internal/server"
+	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
 func TestAdminAjaxHeartbeatAnon(t *testing.T) {
@@ -32,6 +33,24 @@ func TestAdminAjaxHeartbeatAnon(t *testing.T) {
 	}
 	if _, ok := resp["success"]; ok {
 		t.Fatalf("unexpected success field: %#v", resp)
+	}
+}
+
+// TestAdminAjaxSetsDoingAjax covers P2.66: admin-ajax marks Scope.IsAjax.
+func TestAdminAjaxSetsDoingAjax(t *testing.T) {
+	c := bootOrSkip(t)
+	h := &admin.Handler{}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/admin-ajax.php?action=heartbeat", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	if !h.Handle(rec, req, c, "/wp-admin/admin-ajax.php") {
+		t.Fatal("expected admin-ajax handled")
+	}
+	if !c.Scope.IsAjax {
+		t.Fatal("expected Scope.IsAjax after admin-ajax")
+	}
+	if !wp.DoingAjax(c) {
+		t.Fatal("expected DoingAjax true after admin-ajax")
 	}
 }
 
