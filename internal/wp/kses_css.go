@@ -6,22 +6,35 @@ import (
 )
 
 // Subset of safecss_filter_attr — enough for golden vectors (color; reject expression()).
+// Expanded toward WP safecss_filter_attr defaults (golden safe_style_css was empty).
 var safeStyleCSS = map[string]bool{
 	"background": true, "background-color": true, "background-image": true,
 	"background-position": true, "background-repeat": true, "background-size": true,
+	"background-attachment": true, "background-blend-mode": true,
 	"border": true, "border-radius": true, "border-width": true, "border-color": true,
 	"border-style": true, "border-right": true, "border-bottom": true, "border-left": true,
-	"border-top": true, "color": true, "display": true, "float": true, "font": true,
+	"border-top": true, "border-collapse": true, "border-spacing": true,
+	"color": true, "display": true, "float": true, "font": true,
 	"font-family": true, "font-size": true, "font-style": true, "font-weight": true,
+	"font-variant": true, "letter-spacing": true, "text-transform": true,
 	"height": true, "width": true, "margin": true, "margin-top": true, "margin-right": true,
-	"margin-bottom": true, "margin-left": true, "padding": true, "padding-top": true,
+	"margin-bottom": true, "margin-left": true, "margin-block": true, "margin-inline": true,
+	"padding": true, "padding-top": true,
 	"padding-right": true, "padding-bottom": true, "padding-left": true,
-	"text-align": true, "text-decoration": true, "vertical-align": true,
+	"padding-block": true, "padding-inline": true,
+	"text-align": true, "text-decoration": true, "text-shadow": true, "vertical-align": true,
 	"line-height": true, "list-style": true, "list-style-type": true,
 	"opacity": true, "overflow": true, "position": true, "top": true, "right": true,
 	"bottom": true, "left": true, "z-index": true, "clear": true, "cursor": true,
-	"direction": true, "visibility": true, "white-space": true, "min-height": true,
-	"max-height": true, "min-width": true, "max-width": true,
+	"direction": true, "visibility": true, "white-space": true, "writing-mode": true,
+	"min-height": true, "max-height": true, "min-width": true, "max-width": true,
+	"object-fit": true, "object-position": true, "aspect-ratio": true,
+	"gap": true, "column-gap": true, "row-gap": true,
+	"flex": true, "flex-grow": true, "flex-shrink": true, "flex-basis": true,
+	"flex-direction": true, "flex-wrap": true, "justify-content": true, "align-items": true,
+	"align-content": true, "align-self": true, "order": true,
+	"grid-template-columns": true, "grid-template-rows": true, "grid-column": true, "grid-row": true,
+	"box-shadow": true, "filter": true, "transform": true, "clip-path": true,
 }
 
 var (
