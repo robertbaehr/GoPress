@@ -2189,6 +2189,28 @@
   api: n/a
   notes: "P10.62 — Playwright coverage for edit.php search box + author/category filters"
 
+# P10.66: e2e edit.php trash/restore + STATUS/PORTING refresh after P5.74–P6.31.
+- prefix: tests/e2e/edit-trash.spec.js
+  go: tests/e2e/edit-trash.spec.js
+  status: partial
+  task: P10.66
+  api: n/a
+  notes: "P10.66 — Playwright coverage for edit.php Trash/Restore (P7.74)"
+
+- prefix: docs/STATUS.md#P10.66
+  go: docs/STATUS.md
+  status: partial
+  task: P10.66
+  api: n/a
+  notes: "P10.66 — summarize loginout, include/exclude, date filter, development mode, slash:comments, login_messages"
+
+- prefix: PORTING.md#P10.66
+  go: PORTING.md
+  status: partial
+  task: P10.66
+  api: n/a
+  notes: "P10.66 — regenerate porting-status after stacked P5.74–P6.31"
+
 # P10.65: STATUS/PORTING refresh after P5.73–P9.17.
 - prefix: docs/STATUS.md#P10.65
   go: docs/STATUS.md
