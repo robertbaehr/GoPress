@@ -40,8 +40,14 @@
 - prefix: wp-cron.php
   go: internal/wp/cron.go
   status: partial
-  task: P3.8
+  task: P2.16
   api: n/a
+
+- prefix: wp-includes/cron.php
+  go: internal/wp/cron.go
+  status: partial
+  task: P2.16
+  api: exported
 
 - prefix: wp-comments-post.php
   go: internal/server
