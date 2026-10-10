@@ -63,3 +63,41 @@ func TestRenderTableFixtureMusician(t *testing.T) {
 		}
 	}
 }
+
+func TestRenderTablePolishAnchorColors(t *testing.T) {
+	// P5.105: polish saved markup + applySupports colors.
+	src := `<!-- wp:table {"anchor":"stats","align":"wide","className":"is-style-stripes","textColor":"contrast","backgroundColor":"base","hasFixedLayout":true} -->
+<figure class="wp-block-table"><table><tbody><tr><td>A</td></tr></tbody></table></figure>
+<!-- /wp:table -->`
+	out := blocks.Render(src)
+	for _, want := range []string{
+		`wp-block-table`,
+		`alignwide`,
+		`is-style-stripes`,
+		`id="stats"`,
+		`has-fixed-layout`,
+		`has-contrast-color`,
+		`has-base-background-color`,
+		`<td>A</td>`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
+
+func TestRenderTableSynthesizeAnchorAlignCell(t *testing.T) {
+	out := blocks.Render(`<!-- wp:table {"anchor":"grid","hasFixedLayout":true,"body":[{"cells":[{"content":"C","tag":"td","align":"center"}]}]} /-->`)
+	for _, want := range []string{
+		`id="grid"`,
+		`has-fixed-layout`,
+		`data-align="center"`,
+		`has-text-align-center`,
+		`<td`,
+		`>C</td>`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
