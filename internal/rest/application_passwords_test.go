@@ -143,3 +143,55 @@ func TestApplicationPasswordsRequiresAuth(t *testing.T) {
 		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
 	}
 }
+
+func TestApplicationPasswordIntrospect(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	prev := c.Meta.GetMetadata(wp.MetaUser, user.ID, "_application_passwords", true)
+	t.Cleanup(func() {
+		_, _, _, _ = c.Meta.UpdateMetadata(wp.MetaUser, user.ID, "_application_passwords", prev, "")
+	})
+	_, _ = wp.DeleteAllApplicationPasswords(c, user.ID)
+
+	plain, item, err := wp.CreateApplicationPassword(c, user.ID, "Introspect App", "")
+	if err != nil {
+		t.Fatal(err)
+	}
+	plain = strings.ReplaceAll(plain, " ", "")
+
+	// Cookie auth → no authenticated app password → 404.
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("SetAuthCookie: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/users/me/application-passwords/introspect", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("cookie introspect status=%d body=%s", rec.Code, rec.Body.String())
+	}
+
+	// Basic auth with application password → 200 + uuid.
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/users/me/application-passwords/introspect", nil)
+	req.SetBasicAuth("admin", plain)
+	rec = httptest.NewRecorder()
+	rc = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("app-password introspect status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var got map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &got); err != nil {
+		t.Fatal(err)
+	}
+	if got["uuid"] != item.UUID || got["name"] != "Introspect App" {
+		t.Fatalf("introspect body=%v want uuid=%s", got, item.UUID)
+	}
+}

@@ -4,6 +4,8 @@ package wp
 import (
 	"crypto/rand"
 	"fmt"
+	"net"
+	"net/http"
 	"regexp"
 	"strings"
 	"time"
@@ -29,6 +31,7 @@ type ApplicationPassword struct {
 
 // AuthenticateApplicationPassword attempts REST/XML-RPC Basic auth using application passwords.
 // When CurrentUser is already set, or Basic credentials are absent, this is a no-op.
+// On success sets AuthenticatedAppPasswordUUID (P4.110) and records last_used.
 func (c *Context) AuthenticateApplicationPassword() {
 	if c == nil || c.Req == nil || c.CurrentUser != nil || c.Users == nil || c.Meta == nil {
 		return
@@ -37,52 +40,97 @@ func (c *Context) AuthenticateApplicationPassword() {
 	if !ok || user == "" || pass == "" {
 		return
 	}
-	u, err := c.authenticateApplicationPassword(user, pass)
-	if err != nil || u == nil {
+	u, uuid, err := c.authenticateApplicationPassword(user, pass)
+	if err != nil || u == nil || uuid == "" {
 		return
 	}
 	c.CurrentUser = u
+	c.AuthenticatedAppPasswordUUID = uuid
+	_ = RecordApplicationPasswordUsage(c, u.ID, uuid)
 }
 
-func (c *Context) authenticateApplicationPassword(username, password string) (*User, error) {
+func (c *Context) authenticateApplicationPassword(username, password string) (*User, string, error) {
 	u, err := c.GetUserBy("login", username)
 	if err != nil {
-		return nil, err
+		return nil, "", err
 	}
 	if u == nil {
 		u, err = c.GetUserBy("email", username)
 		if err != nil {
-			return nil, err
+			return nil, "", err
 		}
 	}
 	if u == nil {
-		return nil, fmt.Errorf("wp: application password: unknown user")
+		return nil, "", fmt.Errorf("wp: application password: unknown user")
 	}
-	if !CheckApplicationPassword(c, u.ID, password) {
-		return nil, fmt.Errorf("wp: application password: invalid")
+	uuid := MatchApplicationPasswordUUID(c, u.ID, password)
+	if uuid == "" {
+		return nil, "", fmt.Errorf("wp: application password: invalid")
 	}
-	return u, nil
+	return u, uuid, nil
 }
 
 // CheckApplicationPassword reports whether plaintext matches a stored application password hash.
 func CheckApplicationPassword(c *Context, userID int64, password string) bool {
+	return MatchApplicationPasswordUUID(c, userID, password) != ""
+}
+
+// MatchApplicationPasswordUUID returns the UUID of the matching application password, or "" (P4.110).
+func MatchApplicationPasswordUUID(c *Context, userID int64, password string) string {
 	if c == nil || c.Meta == nil || userID <= 0 || password == "" {
-		return false
+		return ""
 	}
 	password = reAppPasswordAlnum.ReplaceAllString(password, "")
 	if password == "" {
-		return false
+		return ""
 	}
 	list, err := GetUserApplicationPasswords(c, userID)
 	if err != nil {
-		return false
+		return ""
 	}
 	for _, item := range list {
 		if VerifyApplicationPasswordHash(password, item.Password) {
-			return true
+			return item.UUID
 		}
 	}
-	return false
+	return ""
+}
+
+// GetAuthenticatedAppPasswordUUID mirrors rest_get_authenticated_app_password (P4.110).
+func (c *Context) GetAuthenticatedAppPasswordUUID() string {
+	if c == nil {
+		return ""
+	}
+	return strings.TrimSpace(c.AuthenticatedAppPasswordUUID)
+}
+
+// RecordApplicationPasswordUsage updates last_used / last_ip (at most once per day) (P4.110).
+func RecordApplicationPasswordUsage(c *Context, userID int64, uuid string) error {
+	if c == nil || c.Meta == nil || userID <= 0 || uuid == "" {
+		return fmt.Errorf("wp: RecordApplicationPasswordUsage: invalid state")
+	}
+	list, err := GetUserApplicationPasswords(c, userID)
+	if err != nil {
+		return err
+	}
+	const daySeconds int64 = 86400
+	now := time.Now().Unix()
+	for i := range list {
+		if list[i].UUID != uuid {
+			continue
+		}
+		if list[i].LastUsed != nil && *list[i].LastUsed+daySeconds > now {
+			return nil
+		}
+		list[i].LastUsed = &now
+		if c.Req != nil {
+			if ip := clientIPFromRequest(c.Req); ip != "" {
+				list[i].LastIP = &ip
+			}
+		}
+		return setUserApplicationPasswords(c, userID, list)
+	}
+	return fmt.Errorf("application_password_not_found")
 }
 
 // GetUserApplicationPasswords returns stored application passwords for a user.
@@ -350,6 +398,18 @@ func setUserApplicationPasswords(c *Context, userID int64, list []ApplicationPas
 	}
 	_, _, _, err = c.Meta.UpdateMetadata(MetaUser, userID, applicationPasswordsMetaKey, serialized, "")
 	return err
+}
+
+// clientIPFromRequest returns REMOTE_ADDR without a trailing :port when possible.
+func clientIPFromRequest(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	host, _, err := net.SplitHostPort(strings.TrimSpace(r.RemoteAddr))
+	if err == nil && host != "" {
+		return host
+	}
+	return strings.TrimSpace(r.RemoteAddr)
 }
 
 // ChunkPassword splits a password into 4-char groups (WP_Application_Passwords::chunk_password).
