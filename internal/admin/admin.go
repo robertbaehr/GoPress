@@ -2666,6 +2666,12 @@ func (h *Handler) serveExportPersonalData(w http.ResponseWriter, r *http.Request
 				jsonDL := wp.PersonalDataExportDownloadURL(jsonName)
 				htmlDL := wp.PersonalDataExportDownloadURL(htmlName)
 				note = "Export file generated for " + email + "."
+				// P8.15: email the completed export download link.
+				if err := wp.SendPersonalDataExportEmailForResult(c, email, res); err != nil {
+					note += " Export email failed: " + err.Error() + "."
+				} else {
+					note += " Export email sent to " + email + "."
+				}
 				downloadLinks = "<p class=\"export-download-links\">" +
 					"<a class=\"button button-primary\" href=\"" + html.EscapeString(jsonDL) + "\">Download JSON</a> " +
 					"<a class=\"button\" href=\"" + html.EscapeString(htmlDL) + "\">Download HTML</a>" +
@@ -2685,6 +2691,12 @@ func (h *Handler) serveExportPersonalData(w http.ResponseWriter, r *http.Request
 				jsonDL := wp.PersonalDataExportDownloadURL(jsonName)
 				htmlDL := wp.PersonalDataExportDownloadURL(htmlName)
 				note = "Export file generated for " + email + "."
+				// P8.15: email when generating without confirmation checkbox.
+				if err := wp.SendPersonalDataExportEmailForResult(c, email, res); err != nil {
+					note += " Export email failed: " + err.Error() + "."
+				} else {
+					note += " Export email sent to " + email + "."
+				}
 				downloadLinks = "<p class=\"export-download-links\">" +
 					"<a class=\"button button-primary\" href=\"" + html.EscapeString(jsonDL) + "\">Download JSON</a> " +
 					"<a class=\"button\" href=\"" + html.EscapeString(htmlDL) + "\">Download HTML</a>" +

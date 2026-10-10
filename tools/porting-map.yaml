@@ -2598,6 +2598,14 @@
   task: P7.28
   api: n/a
 
+# P8.15: send personal data export completion email (wp_mail stub).
+- prefix: wp-admin/includes/privacy-tools.php#wp_privacy_send_personal_data_export_email
+  go: internal/wp/privacy_export_email.go
+  status: partial
+  task: P8.15
+  api: exported
+  notes: "P8.15 — SendPersonalDataExportEmail via Mail; placeholders + filters"
+
 # P8.5: Personal data erasure stub (ErasePersonalData in privacy_erase.go).
 - prefix: wp-admin/erase-personal-data.php
   go: internal/wp/privacy_erase.go
