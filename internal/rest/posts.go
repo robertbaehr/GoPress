@@ -196,7 +196,7 @@ func parsePage(r *http.Request) int {
 	return page
 }
 
-func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool) ([]Post, error) {
+func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order string) ([]Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -212,6 +212,8 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 		PostStatus:   "publish",
 		PostsPerPage: limit,
 		Offset:       offset,
+		OrderBy:      orderby,
+		Order:        order,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	rows, err := wp.GetPosts(c, args)
@@ -225,6 +227,28 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 		out = append(out, postFromWP(c, row, home, edit, sticky))
 	}
 	return out, nil
+}
+
+// parsePostsOrderby accepts REST orderby=title|date|id|slug (P4.83). Default date.
+func parsePostsOrderby(r *http.Request) string {
+	v := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("orderby")))
+	switch v {
+	case "title", "date", "id", "slug":
+		return v
+	case "":
+		return "date"
+	default:
+		return "date"
+	}
+}
+
+// parsePostsOrder accepts REST order=asc|desc (P4.83). Default desc.
+func parsePostsOrder(r *http.Request) string {
+	v := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("order")))
+	if v == "asc" {
+		return "asc"
+	}
+	return "desc"
 }
 
 func countPosts(c *wp.Context, postType string, stickyFilter *bool) (int, error) {

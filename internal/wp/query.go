@@ -39,6 +39,10 @@ type QueryArgs struct {
 	PostIn []int64
 	// PostNotIn excludes these IDs (post__not_in; REST sticky=false, P4.82).
 	PostNotIn []int64
+	// OrderBy is a WP_Query orderby alias: date (default), title, id, slug (P4.83).
+	OrderBy string
+	// Order is ASC or DESC (default DESC) (P4.83).
+	Order string
 }
 
 // Post is a row from wp_posts used by front and REST helpers.
@@ -307,7 +311,7 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 	aliased := strings.Contains(from, " tr ")
 	q := "SELECT " + selectPostColumns(aliased) + " FROM " +
 		from + " WHERE " + whereSQL +
-		" ORDER BY " + orderByPostDate(aliased) + " DESC"
+		" ORDER BY " + orderByClause(args.OrderBy, args.Order, aliased)
 	if limit >= 0 {
 		q += " LIMIT %d"
 		vals = append(vals, limit)
@@ -445,6 +449,41 @@ func orderByPostDate(aliased bool) string {
 		return "p.post_date"
 	}
 	return "post_date"
+}
+
+// orderByClause maps QueryArgs.OrderBy/Order onto SQL (P4.83).
+// Supported orderby: date (default), title, id, slug. Order: ASC|DESC (default DESC).
+func orderByClause(orderby, order string, aliased bool) string {
+	col := orderByPostDate(aliased)
+	switch strings.ToLower(strings.TrimSpace(orderby)) {
+	case "title":
+		if aliased {
+			col = "p.post_title"
+		} else {
+			col = "post_title"
+		}
+	case "id":
+		if aliased {
+			col = "p.ID"
+		} else {
+			col = "ID"
+		}
+	case "slug", "post_name", "name":
+		if aliased {
+			col = "p.post_name"
+		} else {
+			col = "post_name"
+		}
+	case "date", "post_date", "":
+		// default
+	default:
+		// Unknown aliases fall back to date (safe default).
+	}
+	dir := "DESC"
+	if strings.EqualFold(strings.TrimSpace(order), "ASC") {
+		dir = "ASC"
+	}
+	return col + " " + dir
 }
 
 // postInNotInSQL builds post__in / post__not_in fragments (P4.82).
