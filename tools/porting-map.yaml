@@ -2901,6 +2901,14 @@
   api: exported
   notes: "P8.15 — SendPersonalDataExportEmail via Mail; placeholders + filters"
 
+# P8.16: send personal data erasure fulfillment email (wp_mail stub).
+- prefix: wp-includes/user.php#_wp_privacy_send_erasure_fulfillment_notification
+  go: internal/wp/privacy_erase_email.go
+  status: partial
+  task: P8.16
+  api: exported
+  notes: "P8.16 — SendPersonalDataErasureEmail via Mail; placeholders + filters"
+
 # P8.5: Personal data erasure stub (ErasePersonalData in privacy_erase.go).
 - prefix: wp-admin/erase-personal-data.php
   go: internal/wp/privacy_erase.go
