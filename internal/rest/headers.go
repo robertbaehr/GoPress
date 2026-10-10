@@ -33,12 +33,12 @@ func restRootURL(c *wp.Context) string {
 }
 
 // setCollectionHeaders adds X-WP-Total, X-WP-TotalPages, and Link pagination headers.
-func setCollectionHeaders(w http.ResponseWriter, r *http.Request, total, totalPages, page int) {
+func setCollectionHeaders(w http.ResponseWriter, r *http.Request, c *wp.Context, total, totalPages, page int) {
 	w.Header().Set("X-WP-Total", strconv.Itoa(total))
 	w.Header().Set("X-WP-TotalPages", strconv.Itoa(totalPages))
 	w.Header().Set("Access-Control-Expose-Headers", "X-WP-Total, X-WP-TotalPages, Link")
 
-	base := collectionURL(r)
+	base := collectionURL(r, c)
 	var links []string
 	if page > 1 {
 		links = append(links, fmt.Sprintf(`<%s>; rel="prev"`, withPage(base, page-1)))
@@ -51,31 +51,60 @@ func setCollectionHeaders(w http.ResponseWriter, r *http.Request, total, totalPa
 	}
 }
 
-func collectionURL(r *http.Request) *url.URL {
+func collectionURL(r *http.Request, c *wp.Context) *url.URL {
 	u := *r.URL
-	// Prefer absolute URL when Host is present (httptest may leave it empty).
-	if r.Host != "" {
+	// Prefer site home/url (matches WP get_rest_url host) over the request Host,
+	// so Go on :8082 still emits Link targets against the configured site URL.
+	if root := restRootURL(c); root != "" {
+		if parsed, err := url.Parse(root); err == nil && parsed.Host != "" {
+			u.Scheme = parsed.Scheme
+			if u.Scheme == "" {
+				u.Scheme = "http"
+			}
+			u.Host = parsed.Host
+		}
+	} else if r.Host != "" {
 		u.Scheme = "http"
 		if r.TLS != nil {
 			u.Scheme = "https"
 		}
 		u.Host = r.Host
 	}
-	q := u.Query()
-	// page is rewritten per link; drop existing so withPage can set it.
-	q.Del("page")
-	u.RawQuery = q.Encode()
+	// Preserve original query param order; drop page so withPage can append it.
+	u.RawQuery = stripQueryParam(u.RawQuery, "page")
 	return &u
+}
+
+func stripQueryParam(raw, key string) string {
+	if raw == "" {
+		return ""
+	}
+	parts := strings.Split(raw, "&")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if p == "" {
+			continue
+		}
+		k, _, _ := strings.Cut(p, "=")
+		if k == key {
+			continue
+		}
+		out = append(out, p)
+	}
+	return strings.Join(out, "&")
 }
 
 func withPage(base *url.URL, page int) string {
 	u := *base
-	q := u.Query()
-	if page <= 1 {
-		q.Del("page")
-	} else {
-		q.Set("page", strconv.Itoa(page))
+	raw := stripQueryParam(u.RawQuery, "page")
+	if page > 1 {
+		pageQ := "page=" + strconv.Itoa(page)
+		if raw == "" {
+			raw = pageQ
+		} else {
+			raw = raw + "&" + pageQ
+		}
 	}
-	u.RawQuery = q.Encode()
+	u.RawQuery = raw
 	return u.String()
 }

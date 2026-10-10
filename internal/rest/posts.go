@@ -78,7 +78,10 @@ func (s *Server) servePostCollection(w http.ResponseWriter, r *http.Request, c *
 	if perPage > 0 {
 		totalPages = (total + perPage - 1) / perPage
 	}
-	setCollectionHeaders(w, r, total, totalPages, page)
+	setCollectionHeaders(w, r, c, total, totalPages, page)
+	if canEditPosts(c) {
+		w.Header().Set("Allow", "GET, POST")
+	}
 	writeJSON(w, http.StatusOK, posts)
 }
 
