@@ -6,8 +6,10 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -157,7 +159,8 @@ func MaybeSpawnCron(c *Context) {
 	_ = SpawnCron(c)
 }
 
-// ServeCron handles GET/POST /wp-cron.php — runs due events then returns 200.
+// ServeCron handles GET/POST/HEAD /wp-cron.php (P2.16 / P3.95).
+// Mirrors wp-cron.php: non-empty POST dies; lock via doing_wp_cron; empty body 200.
 func ServeCron(w http.ResponseWriter, r *http.Request, c *Context) {
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.Header().Set("Expires", "Wed, 11 Jan 1984 05:00:00 GMT")
@@ -166,12 +169,78 @@ func ServeCron(w http.ResponseWriter, r *http.Request, c *Context) {
 	if c != nil && c.Scope != nil {
 		c.Scope.SetCron(true)
 	}
-	if c != nil {
+	method := http.MethodGet
+	if r != nil {
+		method = r.Method
+	}
+	// P3.95: non-empty POST → die() without running (wp-cron.php).
+	if method == http.MethodPost && r != nil && r.Body != nil {
+		raw, _ := io.ReadAll(io.LimitReader(r.Body, 1<<20))
+		_ = r.Body.Close()
+		if len(raw) > 0 {
+			w.WriteHeader(http.StatusOK)
+			return
+		}
+	}
+	if c != nil && acquireCronLock(c, r) {
 		_ = RunCron(c)
 	}
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte{})
-	_ = r
+	if method != http.MethodHead {
+		_, _ = w.Write([]byte{})
+	}
+}
+
+// acquireCronLock implements the wp-cron.php doing_wp_cron lock (P3.95).
+// Returns true when this request should run due events.
+func acquireCronLock(c *Context, r *http.Request) bool {
+	if c == nil || c.Options == nil {
+		return false
+	}
+	now := float64(time.Now().Unix())
+	ready := readyCronTimestamps(c, int64(now))
+	if len(ready) == 0 {
+		return false
+	}
+	doing := ""
+	if r != nil {
+		doing = strings.TrimSpace(r.URL.Query().Get("doing_wp_cron"))
+	}
+	lockStr := doingCronLockString(c)
+	if doing == "" {
+		// External hit: try to grab a lock when none (or stale).
+		lockF := 0.0
+		if lockStr != "" {
+			lockF, _ = strconv.ParseFloat(lockStr, 64)
+		}
+		if lockF > 0 && lockF+float64(CronLockTimeout) > now {
+			return false
+		}
+		doing = fmt.Sprintf("%.22f", now)
+		_ = c.SetTransient("doing_cron", doing, CronLockTimeout)
+		_, _ = c.Options.UpdateOption("doing_cron", doing, "no")
+		return true
+	}
+	// Spawned hit: lock value must match.
+	return lockStr != "" && lockStr == doing
+}
+
+func doingCronLockString(c *Context) string {
+	if c == nil {
+		return ""
+	}
+	if v, ok := c.GetTransient("doing_cron"); ok {
+		s := strings.TrimSpace(fmt.Sprint(v))
+		if s != "" && s != "<nil>" {
+			return s
+		}
+	}
+	raw := c.Options.GetOption("doing_cron", nil)
+	s := strings.TrimSpace(fmt.Sprint(raw))
+	if s == "" || s == "<nil>" {
+		return ""
+	}
+	return s
 }
 
 // RunCron executes due cron hooks and rewrites the cron option (wp-cron.php body).

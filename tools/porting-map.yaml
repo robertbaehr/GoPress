@@ -407,8 +407,9 @@ wp-login.php#language-switcher-post
 - prefix: wp-cron.php
   go: internal/wp/cron.go
   status: partial
-  task: P2.16
+  task: P3.95
   api: n/a
+  notes: "P3.95 — doing_wp_cron lock; non-empty POST dies; HEAD empty body; ready-job gate; P2.16 base"
 
 - prefix: wp-includes/cron.php
   go: internal/wp/cron.go
