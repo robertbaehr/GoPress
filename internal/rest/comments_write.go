@@ -39,7 +39,17 @@ func (s *Server) listComments(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	perPage := parsePerPage(r, 10)
 	page := parsePage(r)
 	postID := parseOptionalInt64(r, "post")
-	total, err := countComments(c, postID)
+	// P4.98: ?status=approve|hold|spam|trash|all (non-approve needs edit_posts).
+	status, code, msg := parseCommentsStatus(r, c)
+	if code != 0 {
+		writeJSON(w, code, map[string]any{
+			"code":    "rest_forbidden_param",
+			"message": msg,
+			"data":    map[string]any{"status": code, "params": map[string]any{"status": msg}},
+		})
+		return
+	}
+	total, err := countComments(c, postID, status)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_comment_query",
@@ -48,7 +58,7 @@ func (s *Server) listComments(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		})
 		return
 	}
-	comments, err := listCommentsPaged(c, postID, perPage, page)
+	comments, err := listCommentsPaged(c, postID, perPage, page, status)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_comment_query",

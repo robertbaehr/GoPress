@@ -48,7 +48,16 @@ func (s *Server) serveCommentItem(w http.ResponseWriter, r *http.Request, c *wp.
 }
 
 func (s *Server) getCommentItem(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
-	comment, err := getCommentByID(c, id)
+	// P4.98: moderators may fetch hold/spam/trash items; anon only approved.
+	var (
+		comment *Comment
+		err     error
+	)
+	if c != nil && c.CurrentUser != nil && c.UserCan(c.CurrentUser, "moderate_comments") {
+		comment, err = getCommentByIDAny(c, id)
+	} else {
+		comment, err = getCommentByID(c, id)
+	}
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_comment_query",
@@ -83,7 +92,15 @@ func parseOptionalInt64(r *http.Request, key string) int64 {
 	return n
 }
 
-func listCommentsPaged(c *wp.Context, postID int64, limit, page int) ([]Comment, error) {
+// commentStatusFilter selects comment_approved values for REST ?status= (P4.98).
+// empty Approved means "all" (0 or 1). Any means no approved filter.
+type commentStatusFilter struct {
+	Approved []string // concrete comment_approved values
+	All      bool     // hold OR approve
+	Any      bool     // no status filter (moderators only; unused today)
+}
+
+func listCommentsPaged(c *wp.Context, postID int64, limit, page int, status commentStatusFilter) ([]Comment, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
@@ -94,30 +111,23 @@ func listCommentsPaged(c *wp.Context, postID int64, limit, page int) ([]Comment,
 		page = 1
 	}
 	offset := (page - 1) * limit
-	var (
-		q    string
-		args []any
-		err  error
-	)
-	base := "SELECT comment_ID, comment_post_ID, comment_author, comment_author_email, comment_author_url, " +
+	where, whereArgs := commentStatusWhere(status)
+	sql := "SELECT comment_ID, comment_post_ID, comment_author, comment_author_email, comment_author_url, " +
 		"comment_date, comment_date_gmt, comment_content, comment_approved, comment_type, comment_parent, user_id " +
 		"FROM " + c.DB.Comments() +
-		" WHERE comment_approved = %s AND comment_type IN (%s, %s)"
+		" WHERE " + where + " AND comment_type IN (%s, %s)"
+	args := append(append([]any{}, whereArgs...), "comment", "")
 	if postID > 0 {
-		q, args, err = c.DB.Prepare(
-			base+" AND comment_post_ID = %d ORDER BY comment_date_gmt DESC LIMIT %d OFFSET %d",
-			"1", "comment", "", postID, limit, offset,
-		)
-	} else {
-		q, args, err = c.DB.Prepare(
-			base+" ORDER BY comment_date_gmt DESC LIMIT %d OFFSET %d",
-			"1", "comment", "", limit, offset,
-		)
+		sql += " AND comment_post_ID = %d"
+		args = append(args, postID)
 	}
+	sql += " ORDER BY comment_date_gmt DESC LIMIT %d OFFSET %d"
+	args = append(args, limit, offset)
+	q, prepArgs, err := c.DB.Prepare(sql, args...)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := c.DB.GetResults(q, args...)
+	rows, err := c.DB.GetResults(q, prepArgs...)
 	if err != nil {
 		return nil, err
 	}
@@ -129,26 +139,23 @@ func listCommentsPaged(c *wp.Context, postID int64, limit, page int) ([]Comment,
 	return out, nil
 }
 
-func countComments(c *wp.Context, postID int64) (int, error) {
+func countComments(c *wp.Context, postID int64, status commentStatusFilter) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
-	var (
-		q    string
-		args []any
-		err  error
-	)
-	base := "SELECT COUNT(*) AS total FROM " + c.DB.Comments() +
-		" WHERE comment_approved = %s AND comment_type IN (%s, %s)"
+	where, whereArgs := commentStatusWhere(status)
+	sql := "SELECT COUNT(*) AS total FROM " + c.DB.Comments() +
+		" WHERE " + where + " AND comment_type IN (%s, %s)"
+	args := append(append([]any{}, whereArgs...), "comment", "")
 	if postID > 0 {
-		q, args, err = c.DB.Prepare(base+" AND comment_post_ID = %d", "1", "comment", "", postID)
-	} else {
-		q, args, err = c.DB.Prepare(base, "1", "comment", "")
+		sql += " AND comment_post_ID = %d"
+		args = append(args, postID)
 	}
+	q, prepArgs, err := c.DB.Prepare(sql, args...)
 	if err != nil {
 		return 0, err
 	}
-	row, err := c.DB.GetRow(q, args...)
+	row, err := c.DB.GetRow(q, prepArgs...)
 	if err != nil {
 		return 0, err
 	}
@@ -156,6 +163,30 @@ func countComments(c *wp.Context, postID int64) (int, error) {
 		return 0, nil
 	}
 	return int(asInt64(row["total"])), nil
+}
+
+// commentStatusWhere builds the comment_approved SQL fragment + bind args (P4.98).
+func commentStatusWhere(status commentStatusFilter) (string, []any) {
+	if status.Any {
+		return "1=1", nil
+	}
+	if status.All {
+		return "(comment_approved = %s OR comment_approved = %s)", []any{"0", "1"}
+	}
+	vals := status.Approved
+	if len(vals) == 0 {
+		vals = []string{"1"}
+	}
+	if len(vals) == 1 {
+		return "comment_approved = %s", []any{vals[0]}
+	}
+	parts := make([]string, len(vals))
+	args := make([]any, len(vals))
+	for i, v := range vals {
+		parts[i] = "comment_approved = %s"
+		args[i] = v
+	}
+	return "(" + strings.Join(parts, " OR ") + ")", args
 }
 
 func getCommentByID(c *wp.Context, id int64) (*Comment, error) {
@@ -185,6 +216,41 @@ func getCommentByID(c *wp.Context, id int64) (*Comment, error) {
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	cm := commentFromRow(c, row, home)
 	return &cm, nil
+}
+
+// parseCommentsStatus reads REST ?status= (default approve). Non-approve values
+// require edit_posts, matching WP_REST_Comments_Controller (P4.98).
+func parseCommentsStatus(r *http.Request, c *wp.Context) (commentStatusFilter, int, string) {
+	raw := "approve"
+	if r != nil {
+		if v := strings.TrimSpace(r.URL.Query().Get("status")); v != "" {
+			raw = strings.ToLower(v)
+		}
+	}
+	needAuth := raw != "approve" && raw != "approved" && raw != "1"
+	if needAuth {
+		if c == nil || c.CurrentUser == nil {
+			return commentStatusFilter{}, http.StatusUnauthorized, "Sorry, you are not allowed to filter comments by this status."
+		}
+		if !c.UserCan(c.CurrentUser, "edit_posts") {
+			return commentStatusFilter{}, http.StatusForbidden, "Sorry, you are not allowed to filter comments by this status."
+		}
+	}
+	switch raw {
+	case "approve", "approved", "1":
+		return commentStatusFilter{Approved: []string{"1"}}, 0, ""
+	case "hold", "0":
+		return commentStatusFilter{Approved: []string{"0"}}, 0, ""
+	case "spam":
+		return commentStatusFilter{Approved: []string{"spam"}}, 0, ""
+	case "trash":
+		return commentStatusFilter{Approved: []string{"trash"}}, 0, ""
+	case "all":
+		return commentStatusFilter{All: true}, 0, ""
+	default:
+		// Custom status string (e.g. post-trashed) — treat as literal approved value.
+		return commentStatusFilter{Approved: []string{raw}}, 0, ""
+	}
 }
 
 func commentFromRow(c *wp.Context, row map[string]any, home string) Comment {
