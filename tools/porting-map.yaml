@@ -3948,6 +3948,21 @@
   api: exported
   notes: "P8.22 — GetAttachmentMetadata / Unfiltered; sizes normalize; filter; REST media details"
 
+# P8.25: wp_read_image_metadata + generate/store attachment image_meta on upload.
+- prefix: wp-admin/includes/image.php#wp_read_image_metadata
+  go: internal/wp/image_meta.go
+  status: partial
+  task: P8.25
+  api: exported
+  notes: "P8.25 — ReadImageMetadata default bag + filter; EXIF/IPTC stub"
+
+- prefix: wp-admin/includes/image.php#wp_generate_attachment_metadata
+  go: internal/wp/image_meta.go
+  status: partial
+  task: P8.25
+  api: exported
+  notes: "P8.25 — GenerateAttachmentMetadata width/height/file/sizes/image_meta; Store on upload"
+
 - prefix: wp-includes/ID3/
   go: internal/wp/media.go
   status: partial
