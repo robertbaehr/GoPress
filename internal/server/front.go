@@ -1829,18 +1829,9 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 		b.WriteString(p.ExcerptRSS)
 		b.WriteString("]]></description>\n")
 		b.WriteString("\t\t\t\t\t\t\t\t\t\t")
-		if p.ContentRSS != "" {
-			b.WriteString("<content:encoded><![CDATA[")
-			if !strings.HasPrefix(p.ContentRSS, "\n") {
-				b.WriteString("\n")
-			}
-			b.WriteString(p.ContentRSS)
-			if !strings.HasSuffix(p.ContentRSS, "\n") {
-				b.WriteString("\n")
-			}
-			b.WriteString("]]></content:encoded>\n")
-		} else {
-			b.WriteString("<content:encoded><![CDATA[\n]]></content:encoded>\n")
+		// P3.63: content:encoded when available (skipped when rss_use_excerpt).
+		if tag := rss2ContentEncodedTag(c, p); tag != "" {
+			b.WriteString(tag)
 		}
 		b.WriteString("\t\t\t\t\t\n")
 		if p.CommentCount > 0 || p.CommentStatus == "open" {
@@ -2086,9 +2077,12 @@ func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		b.WriteString("\t\t<description><![CDATA[")
 		b.WriteString(p.ExcerptRSS)
 		b.WriteString("]]></description>\n")
-		b.WriteString("\t\t<content:encoded><![CDATA[")
-		b.WriteString(p.ContentRSS)
-		b.WriteString("]]></content:encoded>\n")
+		// P3.63: RDF content:encoded when available (feed-rdf.php).
+		if body, ok := rssContentEncodedBody(c, p); ok {
+			b.WriteString("\t\t<content:encoded><![CDATA[")
+			b.WriteString(body)
+			b.WriteString("]]></content:encoded>\n")
+		}
 		b.WriteString("</item>\n")
 	}
 	b.WriteString("</rdf:RDF>\n")
@@ -2169,6 +2163,50 @@ func latestFeedPosts(c *wp.Context, limit int, authorID int64) ([]feedPost, erro
 		out = append(out, fp)
 	}
 	return out, nil
+}
+
+// rssUseExcerpt reports get_option('rss_use_excerpt') (P3.63).
+func rssUseExcerpt(c *wp.Context) bool {
+	if c == nil || c.Options == nil {
+		return false
+	}
+	raw := strings.TrimSpace(fmt.Sprint(c.Options.GetOption("rss_use_excerpt", "0")))
+	if raw == "" || raw == "<nil>" {
+		return false
+	}
+	return raw != "0" && !strings.EqualFold(raw, "false")
+}
+
+// rssContentEncodedBody returns the content:encoded CDATA body when the tag
+// should be emitted (P3.63). Omitted when rss_use_excerpt is on. When full
+// content is empty, falls back to the excerpt (WP feed-rss2.php).
+func rssContentEncodedBody(c *wp.Context, p feedPost) (body string, ok bool) {
+	if rssUseExcerpt(c) {
+		return "", false
+	}
+	if len(p.ContentRSS) > 0 {
+		return p.ContentRSS, true
+	}
+	return p.ExcerptRSS, true
+}
+
+// rss2ContentEncodedTag emits the RSS2 content:encoded element, or "" when omitted.
+func rss2ContentEncodedTag(c *wp.Context, p feedPost) string {
+	body, ok := rssContentEncodedBody(c, p)
+	if !ok {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString("<content:encoded><![CDATA[")
+	if !strings.HasPrefix(body, "\n") {
+		b.WriteString("\n")
+	}
+	b.WriteString(body)
+	if !strings.HasSuffix(body, "\n") {
+		b.WriteString("\n")
+	}
+	b.WriteString("]]></content:encoded>\n")
+	return b.String()
 }
 
 // feedAuthorFilterID returns the author user ID when the request is an author feed (P3.60).
