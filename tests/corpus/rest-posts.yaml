@@ -1821,3 +1821,148 @@
   compare: headers
   nonce: null
 
+# P10.98: application-passwords introspect + more block-types / rest_route headers.
+- id: rest-app-passwords-me-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/users/me/application-passwords
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-app-passwords-introspect-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/users/me/application-passwords/introspect
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-app-passwords-user1-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/users/1/application-passwords
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-app-passwords-user1-introspect-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/users/1/application-passwords/introspect
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-block-types-text-columns-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/text-columns
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-template-parts-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/template-parts
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-block-directory-term-foo-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-directory/search?term=foo
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-block-types-page-list
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/page-list
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-block-types-more
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/more
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-block-types-nextpage
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/nextpage
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-block-types-post-navigation-link
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/post-navigation-link
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-block-types-text-columns
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/text-columns
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-app-passwords
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/users/me/application-passwords
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-block-patterns-categories
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-patterns/categories
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-template-parts
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/template-parts
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-block-directory-term-foo
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-directory/search&term=foo
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+

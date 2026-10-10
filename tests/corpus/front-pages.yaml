@@ -459,3 +459,77 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.98: date/tag/feed query header cases.
+- id: front-date-feed-2024-02-01
+  role: anon
+  method: GET
+  path: /2024/02/01/feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-date-feed-2024-02
+  role: anon
+  method: GET
+  path: /2024/02/feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-date-feed-2024
+  role: anon
+  method: GET
+  path: /2024/feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-comments-feed-rss
+  role: anon
+  method: GET
+  path: /comments/feed/rss/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-feed-atom-query
+  role: anon
+  method: GET
+  path: /?feed=atom
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-feed-rss2-query
+  role: anon
+  method: GET
+  path: /?feed=rss2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-paged-2-query
+  role: anon
+  method: GET
+  path: /?paged=2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-tag-template
+  role: anon
+  method: GET
+  path: /tag/template/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+

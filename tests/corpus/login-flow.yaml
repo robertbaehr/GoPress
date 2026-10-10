@@ -231,3 +231,32 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.98: interim + loggedout language / redirect header cases.
+- id: login-interim-wp-lang
+  role: anon
+  method: GET
+  path: /wp-login.php?interim-login=1&wp_lang=en_US
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-loggedout-wp-lang
+  role: anon
+  method: GET
+  path: /wp-login.php?loggedout=true&wp_lang=en_US
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-lostpassword-redirect-admin
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword&redirect_to=%2Fwp-admin%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
