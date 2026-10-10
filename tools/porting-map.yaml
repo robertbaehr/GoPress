@@ -569,6 +569,13 @@
   task: P6.18
   api: n/a
 
+# P6.19: interim-login session-expired notice (login-message).
+- prefix: wp-login.php#interim-message
+  go: internal/login/login.go
+  status: partial
+  task: P6.19
+  api: n/a
+
 # P2.40: wp_parse_url (protocol-relative + path-only placeholders).
 - prefix: wp-includes/http.php#wp_parse_url
   go: internal/wp/parse_url.go

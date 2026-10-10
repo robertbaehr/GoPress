@@ -334,6 +334,9 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		b.WriteString("\t\t<div id=\"login_error\">")
 		b.WriteString(errMsg)
 		b.WriteString("</div>\n")
+	} else if interim {
+		// P6.19: WP interim login shows session-expired info message (not an error).
+		b.WriteString("\t<div class=\"notice notice-info message\" id=\"login-message\"><p>Your session has expired. Please log in to continue where you left off.</p></div>\n")
 	}
 	actionURL := loginURL
 	if interim {
