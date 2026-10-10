@@ -14,9 +14,7 @@ func GetUserOption(c *Context, option string, userID int64) string {
 		return ""
 	}
 	if userID <= 0 {
-		if c.CurrentUser != nil {
-			userID = c.CurrentUser.ID
-		}
+		userID = GetCurrentUserID(c)
 	}
 	if userID <= 0 {
 		return ""
