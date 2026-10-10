@@ -78,6 +78,61 @@ func TestOptionsPermalinkSave(t *testing.T) {
 	}
 }
 
+func TestOptionsPermalinkManageOptionsAndTags(t *testing.T) {
+	// P7.102: manage_options gate + available tags + body class.
+	c := bootOrSkip(t)
+	h := &admin.Handler{}
+
+	editor, err := c.GetUserBy("login", "editor")
+	if err != nil || editor == nil {
+		t.Skipf("editor unavailable: %v", err)
+	}
+	edSet, err := c.SetAuthCookie(editor, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("SetAuthCookie editor: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/options-permalink.php", nil)
+	req.AddCookie(&http.Cookie{Name: edSet.LoggedInName, Value: edSet.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !h.Handle(rec, req, rc, "/wp-admin/options-permalink.php") {
+		t.Fatal("options-permalink.php not handled")
+	}
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("editor status=%d want 403", rec.Code)
+	}
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Skipf("admin unavailable: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("SetAuthCookie: %v", err)
+	}
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/options-permalink.php", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec = httptest.NewRecorder()
+	rc = c.ForRequest(rec, req)
+	if !h.Handle(rec, req, rc, "/wp-admin/options-permalink.php") {
+		t.Fatal("options-permalink.php not handled")
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`options-permalink-php`,
+		`Available tags:`,
+		`%postname%`,
+		`%category%`,
+		`available-structure-tags`,
+		`wp-settings-section-optional`,
+		`permalink-structure-optional-description`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in permalink screen", want)
+		}
+	}
+}
+
 func TestOptionsPermalinkSaveCustom(t *testing.T) {
 	c := bootOrSkip(t)
 
