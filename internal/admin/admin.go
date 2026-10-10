@@ -54,6 +54,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/admin-ajax.php":
 		h.serveAdminAjax(w, r, c)
 		return true
+	case "/wp-admin/async-upload.php":
+		h.requireLogin(w, r, c, h.serveAsyncUpload)
+		return true
 	default:
 		return false
 	}
@@ -234,6 +237,45 @@ func (h *Handler) serveUpload(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	}
 	b.WriteString("</tbody>\n</table>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
+}
+
+// serveAsyncUpload handles multipart POST /wp-admin/async-upload.php (P7.7).
+func (h *Handler) serveAsyncUpload(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if r.Method != http.MethodPost {
+		http.Error(w, "Method not allowed\n", http.StatusMethodNotAllowed)
+		return
+	}
+	if c == nil || c.CurrentUser == nil {
+		http.Error(w, "Unauthorized\n", http.StatusUnauthorized)
+		return
+	}
+	if !c.UserCan(c.CurrentUser, "upload_files") && !c.UserCan(c.CurrentUser, "edit_posts") {
+		http.Error(w, "Forbidden\n", http.StatusForbidden)
+		return
+	}
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		http.Error(w, "No data supplied\n", http.StatusBadRequest)
+		return
+	}
+	file, hdr, err := r.FormFile("async-upload")
+	if err != nil {
+		// WP also accepts "file" in some clients.
+		file, hdr, err = r.FormFile("file")
+	}
+	if err != nil {
+		http.Error(w, "No data supplied\n", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+	up, err := wp.SaveUploadedMedia(c, hdr.Filename, file, hdr.Size)
+	if err != nil {
+		http.Error(w, err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	fmt.Fprintf(w, `{"success":true,"data":{"id":%d,"url":%q,"filename":%q}}`+"\n",
+		up.ID, up.URL, up.RelPath)
 }
 
 func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *wp.Context) {
