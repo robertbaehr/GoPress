@@ -231,6 +231,46 @@ func TestFrontFeedPrettyPath(t *testing.T) {
 	}
 }
 
+func TestFrontFeedAtom(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?feed=atom", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	ct := rec.Header().Get("Content-Type")
+	if !strings.Contains(ct, "atom") {
+		t.Fatalf("content-type=%q", ct)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `<feed`) || !strings.Contains(body, `xmlns="http://www.w3.org/2005/Atom"`) {
+		t.Fatalf("expected Atom feed, got %q", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, "<entry>") || !strings.Contains(body, "<author>") {
+		t.Fatalf("expected entries with author, got %q", body[:min(800, len(body))])
+	}
+	if !strings.Contains(body, `type="application/atom+xml"`) {
+		t.Fatalf("expected self atom link, got %q", body[:min(600, len(body))])
+	}
+}
+
+func TestFrontFeedAtomPrettyPath(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/feed/atom/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `xmlns="http://www.w3.org/2005/Atom"`) || !strings.Contains(body, "<entry>") {
+		t.Fatalf("expected Atom feed via pretty path, got %q", body[:min(400, len(body))])
+	}
+}
+
 func TestFrontTrailingSlashCanonical(t *testing.T) {
 	c := testBoot(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
