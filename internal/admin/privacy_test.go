@@ -95,6 +95,7 @@ func TestPrivacyEraseAnonymizes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cookie: %v", err)
 	}
+	// Unchecked confirmation → erase immediately (admin-confirmed).
 	form := strings.NewReader("username=erase-post%40example.com")
 	req := httptest.NewRequest(http.MethodPost, "/wp-admin/erase-personal-data.php", form)
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -113,6 +114,55 @@ func TestPrivacyEraseAnonymizes(t *testing.T) {
 	}
 	if !strings.Contains(body, "wp-privacy-request-form") {
 		t.Fatalf("expected erase form, got %q", body)
+	}
+	if !strings.Contains(body, "send_confirmation_email") {
+		t.Fatalf("expected confirmation checkbox, got %q", body)
+	}
+}
+
+func TestPrivacyEraseConfirmationFlow(t *testing.T) {
+	c := bootOrSkip(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	h := &admin.Handler{}
+	form := strings.NewReader("username=erase-confirm%40example.com&send_confirmation_email=1")
+	req := httptest.NewRequest(http.MethodPost, "/wp-admin/erase-personal-data.php", form)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !h.Handle(rec, req, rc, "/wp-admin/erase-personal-data.php") {
+		t.Fatal("not handled")
+	}
+	body := rec.Body.String()
+	if strings.Contains(body, "Erased personal data for") {
+		t.Fatalf("should not erase yet: %q", body)
+	}
+	if !strings.Contains(body, "Confirmation required") || !strings.Contains(body, "Pending confirmation") {
+		t.Fatalf("expected pending confirm UI: %q", body)
+	}
+	if !strings.Contains(body, `name="action" value="confirm_erasure"`) {
+		t.Fatalf("expected confirm form: %q", body)
+	}
+
+	confirm := strings.NewReader("action=confirm_erasure&email=erase-confirm%40example.com")
+	req = httptest.NewRequest(http.MethodPost, "/wp-admin/erase-personal-data.php", confirm)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec = httptest.NewRecorder()
+	rc = c.ForRequest(rec, req)
+	if !h.Handle(rec, req, rc, "/wp-admin/erase-personal-data.php") {
+		t.Fatal("confirm not handled")
+	}
+	body = rec.Body.String()
+	if !strings.Contains(body, "Erased personal data for erase-confirm@example.com") {
+		t.Fatalf("expected erasure after confirm: %q", body)
 	}
 }
 
