@@ -3290,6 +3290,21 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P3.92 — get_oembed_endpoint_url + oembed_endpoint_url/oembed_discovery_links filters; P3.20 discovery links"
 
+# P3.99: deepen oEmbed embed response — rich iframe HTML + format=xml.
+- prefix: wp-includes/embed.php#get_oembed_response_data_rich
+  go: internal/rest/oembed.go
+  status: partial
+  task: P3.99
+  api: exported
+  notes: "P3.99 — blockquote+iframe data-secret; /embed/ src; format=xml; oembed_response_data filter"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-oembed-controller.php
+  go: internal/rest/oembed.go
+  status: partial
+  task: P3.99
+  api: exported
+  notes: "P3.99 — maxwidth/maxheight; format json|xml; rich HTML; P4.15 base"
+
 - prefix: wp-includes/theme-compat/embed.php
   go: internal/server/front.go
   status: partial
