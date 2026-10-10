@@ -227,6 +227,15 @@ func (f *Front) renderSingular(w http.ResponseWriter, c *wp.Context, vars map[st
 	b.WriteString("<h1 class=\"entry-title\">")
 	b.WriteString(html.EscapeString(post.Title))
 	b.WriteString("</h1>\n")
+	if post.FeaturedImageURL != "" {
+		b.WriteString("<figure class=\"post-thumbnail\">\n")
+		b.WriteString(`<img src="`)
+		b.WriteString(html.EscapeString(post.FeaturedImageURL))
+		b.WriteString(`" alt="`)
+		b.WriteString(html.EscapeString(post.FeaturedImageAlt))
+		b.WriteString(`" class="attachment-post-thumbnail size-post-thumbnail"/>` + "\n")
+		b.WriteString("</figure>\n")
+	}
 	b.WriteString("<div class=\"entry-content\">\n")
 	b.WriteString(safeContent)
 	b.WriteString("\n</div>\n</article>\n")
@@ -478,12 +487,14 @@ type postListItem struct {
 }
 
 type singularPost struct {
-	ID      int64
-	Title   string
-	Content string
-	Type    string
-	Name    string
-	Status  string
+	ID               int64
+	Title            string
+	Content          string
+	Type             string
+	Name             string
+	Status           string
+	FeaturedImageURL string
+	FeaturedImageAlt string
 }
 
 func loadSingularPost(c *wp.Context, vars map[string]string) (*singularPost, error) {
@@ -531,14 +542,36 @@ func singularFromQuery(c *wp.Context, args wp.QueryArgs) (*singularPost, error) 
 	if p == nil {
 		return nil, nil
 	}
+	thumbURL := wp.GetPostThumbnailURL(c, p.ID)
+	alt := ""
+	if thumbID := wp.GetPostThumbnailID(c, p.ID); thumbID > 0 && c.Meta != nil {
+		alt = asMetaString(c.Meta.GetMetadata(wp.MetaPost, thumbID, "_wp_attachment_image_alt", true))
+	}
 	return &singularPost{
-		ID:      p.ID,
-		Title:   p.Title,
-		Content: p.Content,
-		Type:    p.Type,
-		Name:    p.Name,
-		Status:  p.Status,
+		ID:               p.ID,
+		Title:            p.Title,
+		Content:          p.Content,
+		Type:             p.Type,
+		Name:             p.Name,
+		Status:           p.Status,
+		FeaturedImageURL: thumbURL,
+		FeaturedImageAlt: alt,
 	}, nil
+}
+
+func asMetaString(v any) string {
+	switch t := v.(type) {
+	case string:
+		return t
+	case []byte:
+		return string(t)
+	default:
+		s := fmt.Sprint(t)
+		if s == "" || s == "<nil>" {
+			return ""
+		}
+		return s
+	}
 }
 
 func latestPosts(c *wp.Context, limit int) ([]postListItem, error) {
@@ -620,13 +653,20 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 			out := make([]blocks.QueryPost, 0, len(posts))
 			for _, p := range posts {
+				thumbURL := wp.GetPostThumbnailURL(c, p.ID)
+				alt := ""
+				if thumbID := wp.GetPostThumbnailID(c, p.ID); thumbID > 0 && c.Meta != nil {
+					alt = asMetaString(c.Meta.GetMetadata(wp.MetaPost, thumbID, "_wp_attachment_image_alt", true))
+				}
 				out = append(out, blocks.QueryPost{
-					ID:      p.ID,
-					Title:   p.Title,
-					Content: p.Content,
-					Excerpt: p.Excerpt,
-					Date:    p.Date,
-					Link:    postPermalink(home, p),
+					ID:               p.ID,
+					Title:            p.Title,
+					Content:          p.Content,
+					Excerpt:          p.Excerpt,
+					Date:             p.Date,
+					Link:             postPermalink(home, p),
+					FeaturedImageURL: thumbURL,
+					FeaturedImageAlt: alt,
 				})
 			}
 			return out

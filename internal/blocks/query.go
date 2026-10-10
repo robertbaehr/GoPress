@@ -9,12 +9,14 @@ import (
 
 // QueryPost is a post row used while rendering core/query / post-template (P5.13).
 type QueryPost struct {
-	ID      int64
-	Title   string
-	Content string
-	Excerpt string
-	Date    string
-	Link    string
+	ID               int64
+	Title            string
+	Content          string
+	Excerpt          string
+	Date             string
+	Link             string
+	FeaturedImageURL string
+	FeaturedImageAlt string
 }
 
 // QueryLoopArgs selects posts for a query block.
@@ -174,10 +176,18 @@ func (e *Env) renderPostDate(block Block) string {
 }
 
 func (e *Env) renderPostFeaturedImage(block Block) string {
-	_ = e
-	_ = block
-	// Featured image resolution lands with media meta; stub empty for now.
-	return ""
+	e = e.ensure()
+	if e.currentPost == nil || e.currentPost.FeaturedImageURL == "" {
+		return ""
+	}
+	url := e.currentPost.FeaturedImageURL
+	alt := e.currentPost.FeaturedImageAlt
+	img := `<img src="` + html.EscapeString(url) + `" alt="` + html.EscapeString(alt) + `" class="attachment-post-thumbnail size-post-thumbnail"/>`
+	inner := img
+	if isLinkAttr(block.Attrs) && e.currentPost.Link != "" {
+		inner = `<a href="` + html.EscapeString(e.currentPost.Link) + `">` + img + `</a>`
+	}
+	return `<figure class="wp-block-post-featured-image">` + inner + `</figure>`
 }
 
 func queryArgsFromAttrs(attrs map[string]any) QueryLoopArgs {
