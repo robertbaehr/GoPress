@@ -196,7 +196,7 @@ func parsePage(r *http.Request) int {
 	return page
 }
 
-func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, author int64, categoryIn, tagIn []int64) ([]Post, error) {
+func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, author int64, categoryIn, tagIn []int64, statuses []string) ([]Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -210,6 +210,7 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 	args := wp.QueryArgs{
 		PostType:     postType,
 		PostStatus:   "publish",
+		PostStatuses:  statuses,
 		PostsPerPage: limit,
 		Offset:       offset,
 		OrderBy:      orderby,
@@ -296,6 +297,50 @@ func parsePostsTags(r *http.Request) []int64 {
 	return parsePostsTermIDs(r, "tags")
 }
 
+// parsePostsStatus reads REST ?status= (maps to WP_Query post_status, P4.88).
+// Default is publish. Non-publish values require edit_posts (editors).
+// Returns http status code + message on forbidden (0 on success).
+func parsePostsStatus(r *http.Request, c *wp.Context) (statuses []string, code int, message string) {
+	if r == nil {
+		return []string{"publish"}, 0, ""
+	}
+	var raw []string
+	for _, v := range r.URL.Query()["status"] {
+		for _, part := range strings.Split(v, ",") {
+			part = strings.ToLower(strings.TrimSpace(part))
+			if part != "" {
+				raw = append(raw, part)
+			}
+		}
+	}
+	if len(raw) == 0 {
+		return []string{"publish"}, 0, ""
+	}
+	// Dedupe while preserving order.
+	seen := map[string]bool{}
+	out := make([]string, 0, len(raw))
+	for _, s := range raw {
+		if seen[s] {
+			continue
+		}
+		seen[s] = true
+		out = append(out, s)
+	}
+	for _, s := range out {
+		if s == "publish" {
+			continue
+		}
+		if !canEditPosts(c) {
+			code := http.StatusUnauthorized
+			if c != nil && c.CurrentUser != nil {
+				code = http.StatusForbidden
+			}
+			return nil, code, "Status is forbidden."
+		}
+	}
+	return out, 0, ""
+}
+
 func parsePostsTermIDs(r *http.Request, key string) []int64 {
 	if r == nil || key == "" {
 		return nil
@@ -331,7 +376,7 @@ func parsePostsTermIDs(r *http.Request, key string) []int64 {
 	return out
 }
 
-func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, author int64, categoryIn, tagIn []int64) (int, error) {
+func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, author int64, categoryIn, tagIn []int64, statuses []string) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
@@ -339,12 +384,13 @@ func countPosts(c *wp.Context, postType string, stickyFilter *bool, search strin
 		postType = "post"
 	}
 	args := wp.QueryArgs{
-		PostType:   postType,
-		PostStatus: "publish",
-		Search:     search,
-		Author:     author,
-		CategoryIn: categoryIn,
-		TagIn:      tagIn,
+		PostType:    postType,
+		PostStatus:  "publish",
+		PostStatuses: statuses,
+		Search:      search,
+		Author:      author,
+		CategoryIn:  categoryIn,
+		TagIn:       tagIn,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	return wp.CountPosts(c, args)
