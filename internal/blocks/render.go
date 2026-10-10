@@ -239,14 +239,33 @@ func (e *Env) renderSpacer(block Block) string {
 		return e.renderSaved(block)
 	}
 	height := "100px"
-	if h, ok := block.Attrs["height"].(string); ok && h != "" {
+	if h := attrLength(block.Attrs["height"]); h != "" {
 		height = h
 	}
 	style := fmt.Sprintf("height:%s", html.EscapeString(height))
-	if w, ok := block.Attrs["width"].(string); ok && w != "" {
+	if w := attrLength(block.Attrs["width"]); w != "" {
 		style += ";width:" + html.EscapeString(w)
 	}
 	return fmt.Sprintf(`<div style="%s" aria-hidden="true" class="wp-block-spacer"></div>`, style)
+}
+
+// attrLength coerces string or numeric block attrs to a CSS length (P4.50).
+func attrLength(v any) string {
+	switch t := v.(type) {
+	case string:
+		return strings.TrimSpace(t)
+	case float64:
+		if t == float64(int64(t)) {
+			return fmt.Sprintf("%dpx", int64(t))
+		}
+		return fmt.Sprintf("%gpx", t)
+	case int:
+		return fmt.Sprintf("%dpx", t)
+	case int64:
+		return fmt.Sprintf("%dpx", t)
+	default:
+		return ""
+	}
 }
 
 func (e *Env) renderEmbed(block Block) string {
