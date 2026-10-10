@@ -245,3 +245,22 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.78: remaining sitemap taxonomy slices.
+- id: front-sitemap-taxonomies-post-tag
+  role: anon
+  method: GET
+  path: /wp-sitemap-taxonomies-post_tag-1.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-sitemap-taxonomies-post-format
+  role: anon
+  method: GET
+  path: /wp-sitemap-taxonomies-post_format-1.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

@@ -32,9 +32,9 @@ type User struct {
 }
 
 func (s *Server) serveUsersMe(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	// P4.99: WP advertises GET + write methods on /users/me.
-	w.Header().Set("Allow", "GET, POST, PUT, PATCH")
+	// WP rest_send_allow_header: anonymous callers only see GET; authed get write verbs (P4.99/P10.78).
 	if c == nil || c.CurrentUser == nil {
+		w.Header().Set("Allow", "GET")
 		writeJSON(w, http.StatusUnauthorized, map[string]any{
 			"code":    "rest_not_logged_in",
 			"message": "You are not currently logged in.",
@@ -42,6 +42,7 @@ func (s *Server) serveUsersMe(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		})
 		return
 	}
+	w.Header().Set("Allow", "GET, POST, PUT, PATCH")
 	switch r.Method {
 	case http.MethodGet:
 		writeJSON(w, http.StatusOK, buildCurrentUser(c))
