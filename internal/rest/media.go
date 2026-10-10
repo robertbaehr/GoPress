@@ -27,6 +27,10 @@ type Media struct {
 }
 
 func (s *Server) serveMedia(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if r.Method == http.MethodPost {
+		s.createMedia(w, r, c)
+		return
+	}
 	if r.Method != http.MethodGet {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
@@ -61,6 +65,63 @@ func (s *Server) serveMedia(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	}
 	setCollectionHeaders(w, r, c, total, totalPages, page)
 	writeJSON(w, http.StatusOK, items)
+}
+
+func (s *Server) createMedia(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if c == nil || c.CurrentUser == nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]any{
+			"code":    "rest_cannot_create",
+			"message": "Sorry, you are not allowed to upload media.",
+			"data":    map[string]any{"status": 401},
+		})
+		return
+	}
+	if !c.UserCan(c.CurrentUser, "upload_files") && !c.UserCan(c.CurrentUser, "edit_posts") {
+		writeJSON(w, http.StatusForbidden, map[string]any{
+			"code":    "rest_cannot_create",
+			"message": "Sorry, you are not allowed to upload media.",
+			"data":    map[string]any{"status": 403},
+		})
+		return
+	}
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_upload_no_data",
+			"message": "No data supplied.",
+			"data":    map[string]any{"status": 400},
+		})
+		return
+	}
+	file, hdr, err := r.FormFile("file")
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_upload_no_data",
+			"message": "No data supplied.",
+			"data":    map[string]any{"status": 400},
+		})
+		return
+	}
+	defer file.Close()
+	up, err := wp.SaveUploadedMedia(c, hdr.Filename, file, hdr.Size)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_upload_unknown_error",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	item, err := getMediaByID(c, up.ID)
+	if err != nil || item == nil {
+		writeJSON(w, http.StatusCreated, map[string]any{
+			"id":         up.ID,
+			"source_url": up.URL,
+			"mime_type":  up.MimeType,
+		})
+		return
+	}
+	w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
+	writeJSON(w, http.StatusCreated, item)
 }
 
 func (s *Server) serveMediaItem(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
