@@ -4489,3 +4489,11 @@
   task: P9.18
   api: n/a
   notes: "P9.18 — action=uninstall nonce + notice"
+
+# P10.69: STATUS/PORTING refresh after P5.77–P9.18 stack.
+- prefix: docs/STATUS.md
+  go: docs/STATUS.md
+  status: partial
+  task: P10.69
+  api: n/a
+  notes: "P10.69 — STATUS refresh after legacy-widget, parent=, hierarchical pages, session token, category domain, uninstall button"
