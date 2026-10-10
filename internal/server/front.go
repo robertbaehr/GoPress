@@ -1843,7 +1843,7 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 			b.WriteString("</slash:comments>\n")
 		}
 		for _, enc := range p.Enclosures {
-			b.WriteString(rssEnclosureTag(enc))
+			b.WriteString(rssEnclosureTag(c, enc))
 		}
 		// P3.64: optional RSS 2.0 <source> when post meta provides attribution.
 		if tag := rssItemSourceTag(c, p.ID); tag != "" {
@@ -1982,7 +1982,7 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 			b.WriteString("</thr:total>\n")
 		}
 		for _, enc := range p.Enclosures {
-			b.WriteString(atomEnclosureTag(enc))
+			b.WriteString(atomEnclosureTag(c, enc))
 		}
 		b.WriteString("\t\t\t</entry>\n")
 	}
@@ -2249,8 +2249,8 @@ func feedChannelTitle(c *wp.Context, blogname string, authorID int64) string {
 	return xmlEscape(name) + " &#8211; " + xmlEscape(blogname)
 }
 
-// feedEnclosuresForPost reads enclosure postmeta (rss_enclosure / atom_enclosure, P3.45).
-// Meta value shape is "url\nlength\nmime …".
+// feedEnclosuresForPost reads enclosure postmeta (rss_enclosure / atom_enclosure, P3.45 / P3.65).
+// Meta value shape is "url\nlength\nmime …"; multiple meta rows each become an enclosure.
 func feedEnclosuresForPost(c *wp.Context, postID int64) []feedEnclosure {
 	if c == nil || c.Meta == nil || postID <= 0 {
 		return nil
@@ -2260,8 +2260,11 @@ func feedEnclosuresForPost(c *wp.Context, postID int64) []feedEnclosure {
 	if !ok || len(vals) == 0 {
 		return nil
 	}
+	seen := map[string]bool{}
 	var out []feedEnclosure
 	for _, enc := range vals {
+		enc = strings.ReplaceAll(enc, "\r\n", "\n")
+		enc = strings.ReplaceAll(enc, "\r", "\n")
 		parts := strings.Split(enc, "\n")
 		if len(parts) < 3 {
 			continue
@@ -2276,17 +2279,29 @@ func feedEnclosuresForPost(c *wp.Context, postID int64) []feedEnclosure {
 		if len(mime) == 0 {
 			continue
 		}
+		if seen[url] {
+			continue
+		}
+		seen[url] = true
 		out = append(out, feedEnclosure{URL: url, Length: length, Type: mime[0]})
 	}
 	return out
 }
 
-func rssEnclosureTag(enc feedEnclosure) string {
+func rssEnclosureTag(c *wp.Context, enc feedEnclosure) string {
 	length := enc.Length
 	if length == "" {
 		length = "0"
 	}
-	return `<enclosure url="` + xmlEscape(enc.URL) + `" length="` + xmlEscape(length) + `" type="` + xmlEscape(enc.Type) + `" />` + "\n"
+	tag := `<enclosure url="` + xmlEscape(enc.URL) + `" length="` + xmlEscape(length) + `" type="` + xmlEscape(enc.Type) + `" />` + "\n"
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("rss_enclosure", tag); v != nil {
+			if s, ok := v.(string); ok {
+				return s
+			}
+		}
+	}
+	return tag
 }
 
 // feedItemSourceURLTitle reads optional RSS <source> attribution from post meta (P3.64).
@@ -2315,13 +2330,21 @@ func rssItemSourceTag(c *wp.Context, postID int64) string {
 	return `<source url="` + xmlEscape(url) + `">` + xmlEscape(title) + `</source>` + "\n"
 }
 
-func atomEnclosureTag(enc feedEnclosure) string {
+func atomEnclosureTag(c *wp.Context, enc feedEnclosure) string {
 	length := enc.Length
 	if length == "" {
 		length = "0"
 	}
-	return fmt.Sprintf("<link href=\"%s\" rel=\"enclosure\" length=\"%s\" type=\"%s\" />\n",
+	tag := fmt.Sprintf("<link href=\"%s\" rel=\"enclosure\" length=\"%s\" type=\"%s\" />\n",
 		xmlEscape(enc.URL), xmlEscape(length), xmlEscape(enc.Type))
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("atom_enclosure", tag); v != nil {
+			if s, ok := v.(string); ok {
+				return s
+			}
+		}
+	}
+	return tag
 }
 
 func feedBuildDate(posts []feedPost) string {
