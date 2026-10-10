@@ -1490,6 +1490,28 @@
   task: P3.13
   api: n/a
 
+# P3.53: feed language from site locale (bloginfo_rss('language')).
+- prefix: wp-includes/general-template.php#get_bloginfo_language
+  go: internal/wp/bloginfo_language.go
+  status: partial
+  task: P3.53
+  api: exported
+  notes: "P3.53 — BlogInfoLanguage from Locale/WPLANG; underscore→hyphen"
+
+- prefix: wp-includes/feed-rss2.php#language
+  go: internal/server/front.go
+  status: partial
+  task: P3.53
+  api: n/a
+  notes: "P3.53 — channel <language> via BlogInfoLanguage"
+
+- prefix: wp-includes/feed-atom.php#xml:lang
+  go: internal/server/front.go
+  status: partial
+  task: P3.53
+  api: n/a
+  notes: "P3.53 — feed xml:lang via BlogInfoLanguage"
+
 # P3.52: RSS2 channel <image> from site icon (rss2_site_icon).
 - prefix: wp-includes/feed.php#rss2_site_icon
   go: internal/server/front.go
