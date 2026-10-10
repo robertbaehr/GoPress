@@ -2,6 +2,7 @@ package diff
 
 import (
 	"net/http"
+	"strings"
 	"testing"
 )
 
@@ -51,6 +52,22 @@ func TestNormalizeNonceAndCookie(t *testing.T) {
 	}
 	if !Equal(na, nb) {
 		t.Fatalf("nonce/cookie scrub failed\nA:%+v\nB:%+v\nA body:%s\nB body:%s", na.Cookies, nb.Cookies, na.Body, nb.Body)
+	}
+}
+
+func TestNormalizePreservesMediaTimestamps(t *testing.T) {
+	// Video attachment metadata uses negative created_timestamp values whose
+	// absolute value is 10 hex digits; scrub must not turn them into NONCE.
+	body := []byte(`{"created_timestamp":-2082844800,"nonce":"abcdef1234"}`)
+	n, err := Normalize(Response{Status: 200, Body: body}, CompareJSON)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(n.Body, `"created_timestamp": -2082844800`) {
+		t.Fatalf("timestamp scrubbed: %s", n.Body)
+	}
+	if !strings.Contains(n.Body, `"nonce": "NONCE"`) {
+		t.Fatalf("nonce not scrubbed: %s", n.Body)
 	}
 }
 
