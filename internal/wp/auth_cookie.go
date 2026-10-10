@@ -350,7 +350,8 @@ func (c *Context) AuthenticateRequest() {
 	if err != nil || user == nil {
 		return
 	}
-	c.CurrentUser = user
+	// P2.84: route through SetCurrentUser (wp_set_current_user / set_current_user).
+	SetCurrentUser(c, user.ID)
 	if parts, err := ParseAuthCookie(cookie.Value, "logged_in"); err == nil && parts != nil {
 		c.SessionToken = parts.Token
 	}

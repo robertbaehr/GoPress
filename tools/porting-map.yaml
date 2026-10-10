@@ -1195,6 +1195,21 @@
   api: n/a
   notes: "P2.72 — unit coverage for anonymous + authenticated IDs"
 
+# P2.84: deepen get_current_user_id — SetCurrentUser, ID<=0 anonymous, set_current_user action.
+- prefix: wp-includes/pluggable.php#wp_set_current_user
+  go: internal/wp/current_user.go
+  status: partial
+  task: P2.84
+  api: exported
+  notes: "P2.84 — SetCurrentUser by ID; fires set_current_user; AuthenticateRequest uses it"
+
+- prefix: wp-includes/user.php#get_current_user_id#zero
+  go: internal/wp/current_user.go
+  status: partial
+  task: P2.84
+  api: exported
+  notes: "P2.84 — GetCurrentUser/ID treat ID<=0 as anonymous"
+
 # P2.70: wp_get_development_mode / wp_is_development_mode.
 - prefix: wp-includes/load.php#wp_get_development_mode
   go: internal/wp/development_mode.go
