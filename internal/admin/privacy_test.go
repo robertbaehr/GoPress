@@ -242,6 +242,77 @@ func TestPrivacyEraseConfirmationFlow(t *testing.T) {
 	}
 }
 
+func TestPrivacyEraseUIPolish(t *testing.T) {
+	c := bootOrSkip(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/erase-personal-data.php", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/erase-personal-data.php") {
+		t.Fatal("not handled")
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		"Add Data Erasure Request",
+		"username_or_email_for_privacy_request",
+		"send_confirmation_email",
+		"Send personal data erasure confirmation email.",
+		"wp-header-end",
+		"nosubsub",
+		"erase-personal-data-php",
+		"wp-privacy-request-form-field",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in %q", want, body)
+		}
+	}
+}
+
+func TestPrivacyEraseConfirmUIPolish(t *testing.T) {
+	c := bootOrSkip(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	form := strings.NewReader("username_or_email_for_privacy_request=erase-ui%40example.com&send_confirmation_email=1")
+	req := httptest.NewRequest(http.MethodPost, "/wp-admin/erase-personal-data.php", form)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/erase-personal-data.php") {
+		t.Fatal("not handled")
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		"erase-confirm-pending",
+		"wp-privacy-erase-confirm-form",
+		"Confirm Erasure",
+		"Confirmation required",
+		"Pending confirmation",
+		`name="action" value="confirm_erasure"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in %q", want, body)
+		}
+	}
+	if strings.Contains(body, "P8.8 stub") {
+		t.Fatalf("confirm UI should not mention stub label: %q", body)
+	}
+}
+
 func TestPrivacyExportUIPolish(t *testing.T) {
 	c := bootOrSkip(t)
 	user, err := c.GetUserBy("login", "admin")

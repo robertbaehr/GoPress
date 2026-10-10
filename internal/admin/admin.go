@@ -2456,18 +2456,19 @@ func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, c *wp.Context, n
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveErasePersonalData is a privacy tools stub (P8.2) with erasure (P8.5) and confirm (P8.8).
+// serveErasePersonalData is a privacy tools stub (P8.2) with erasure (P8.5),
+// confirm (P8.8), and confirm UI polish (P8.13).
 func (h *Handler) serveErasePersonalData(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	note := "GoPress privacy erasure stub — full request workflow lands later."
+	note := "This tool helps site owners comply with local laws and regulations by deleting or anonymizing known data for a given user."
 	pendingEmail := ""
 	if r.Method == http.MethodPost {
 		_ = r.ParseForm()
-		email := strings.TrimSpace(r.Form.Get("username"))
+		email := strings.TrimSpace(r.Form.Get("username_or_email_for_privacy_request"))
 		if email == "" {
-			email = strings.TrimSpace(r.Form.Get("email"))
+			email = strings.TrimSpace(r.Form.Get("username"))
 		}
 		if email == "" {
-			email = strings.TrimSpace(r.Form.Get("username_or_email_for_privacy_request"))
+			email = strings.TrimSpace(r.Form.Get("email"))
 		}
 		action := strings.TrimSpace(r.Form.Get("action"))
 		switch action {
@@ -2500,11 +2501,12 @@ func (h *Handler) servePrivacyErasePage(w http.ResponseWriter, c *wp.Context, no
 	b.WriteString("<title>Erase Personal Data &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui privacy-settings\">\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui privacy-settings erase-personal-data-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
-	b.WriteString("<div class=\"wrap\" id=\"privacy-settings\">\n")
+	b.WriteString("<div class=\"wrap nosubsub\" id=\"privacy-settings\">\n")
 	b.WriteString("<h1>Erase Personal Data</h1>\n")
-	b.WriteString("<p>Manage requests to erase personal data.</p>\n")
+	b.WriteString("<p>This tool helps site owners comply with local laws and regulations by deleting or anonymizing known data for a given user.</p>\n")
+	b.WriteString("<hr class=\"wp-header-end\">\n")
 	b.WriteString("<p class=\"description\">")
 	b.WriteString(html.EscapeString(note))
 	b.WriteString("</p>\n")
@@ -2512,7 +2514,7 @@ func (h *Handler) servePrivacyErasePage(w http.ResponseWriter, c *wp.Context, no
 		b.WriteString("<div class=\"notice notice-warning\" id=\"erase-confirm-pending\"><p>")
 		b.WriteString("A confirmation email would be sent to <strong>")
 		b.WriteString(html.EscapeString(pendingEmail))
-		b.WriteString("</strong>. Confirm below to complete erasure (P8.8 stub).</p>\n")
+		b.WriteString("</strong>. Confirm below to complete erasure.</p>\n")
 		b.WriteString("<form method=\"post\" action=\"/wp-admin/erase-personal-data.php\" class=\"wp-privacy-erase-confirm-form\">\n")
 		b.WriteString("<input type=\"hidden\" name=\"action\" value=\"confirm_erasure\">\n")
 		b.WriteString("<input type=\"hidden\" name=\"email\" value=\"")
@@ -2523,12 +2525,16 @@ func (h *Handler) servePrivacyErasePage(w http.ResponseWriter, c *wp.Context, no
 	}
 	b.WriteString("<form method=\"post\" action=\"/wp-admin/erase-personal-data.php\" class=\"wp-privacy-request-form\">\n")
 	b.WriteString("<h2>Add Data Erasure Request</h2>\n")
-	b.WriteString("<p><label for=\"username\">Username or email address</label><br>\n")
-	b.WriteString("<input name=\"username\" type=\"text\" id=\"username\" class=\"regular-text\" required></p>\n")
-	b.WriteString("<p><input type=\"checkbox\" name=\"send_confirmation_email\" id=\"send_confirmation_email\" value=\"1\" checked=\"checked\">\n")
-	b.WriteString("<label for=\"send_confirmation_email\">Send personal data erasure confirmation email.</label></p>\n")
+	b.WriteString("<div class=\"wp-privacy-request-form-field\">\n")
+	b.WriteString("<table class=\"form-table\">\n")
+	b.WriteString("<tr><th scope=\"row\"><label for=\"username_or_email_for_privacy_request\">Username or email address</label></th>\n")
+	b.WriteString("<td><input name=\"username_or_email_for_privacy_request\" type=\"text\" id=\"username_or_email_for_privacy_request\" class=\"regular-text ltr\" required></td></tr>\n")
+	b.WriteString("<tr><th scope=\"row\">Confirmation email</th><td>\n")
+	b.WriteString("<input type=\"checkbox\" name=\"send_confirmation_email\" id=\"send_confirmation_email\" value=\"1\" checked=\"checked\">\n")
+	b.WriteString("<label for=\"send_confirmation_email\">Send personal data erasure confirmation email.</label>\n")
+	b.WriteString("</td></tr>\n</table>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Send Request\"></p>\n")
-	b.WriteString("</form>\n")
+	b.WriteString("</div>\n</form>\n")
 	b.WriteString(renderErasePrivacyRequestsTable(pendingEmail))
 	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
