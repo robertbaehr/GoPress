@@ -1696,6 +1696,21 @@
   api: n/a
   notes: "P10.54 — summarize code/preformatted/verse, themes REST activate, plugins bulk, mime types, RDF generator, interim success, e2e"
 
+# P10.58: e2e edit.php Quick Edit + STATUS/PORTING refresh after P5.66–P6.27.
+- prefix: tests/e2e/quick-edit.spec.js
+  go: tests/e2e/quick-edit.spec.js
+  status: partial
+  task: P10.58
+  api: n/a
+  notes: "P10.58 — Playwright coverage for edit.php Quick Edit stub + sticky toggle"
+
+- prefix: docs/STATUS.md#P10.58
+  go: docs/STATUS.md
+  status: partial
+  task: P10.58
+  api: n/a
+  notes: "P10.58 — summarize table polish, sticky REST/admin, tempnam, author feeds, login nocache, e2e"
+
 # P10.57: STATUS/PORTING refresh after P5.65–P9.15.
 - prefix: docs/STATUS.md#P10.57
   go: docs/STATUS.md
