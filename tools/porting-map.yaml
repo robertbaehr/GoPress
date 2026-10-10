@@ -838,19 +838,37 @@
 - prefix: wp-includes/block-bindings.php
   go: internal/blocks/bindings.go
   status: partial
-  task: P5.20
+  task: P5.39
   api: partial
 
 - prefix: wp-includes/block-bindings/
   go: internal/blocks/bindings.go
   status: partial
-  task: P5.25
+  task: P5.39
   api: partial
 
 - prefix: wp-includes/block-bindings/pattern-overrides.php
   go: internal/blocks/bindings.go
   status: partial
   task: P5.25
+  api: partial
+
+- prefix: wp-includes/block-bindings/post-data.php
+  go: internal/blocks/bindings.go
+  status: partial
+  task: P5.39
+  api: partial
+
+- prefix: wp-includes/block-bindings/post-meta.php
+  go: internal/blocks/bindings.go
+  status: partial
+  task: P5.20
+  api: partial
+
+- prefix: wp-includes/block-bindings/term-data.php
+  go: internal/blocks/bindings.go
+  status: partial
+  task: P5.39
   api: partial
 
 - prefix: wp-includes/blocks/block.php
@@ -860,10 +878,10 @@
   api: partial
 
 - prefix: wp-includes/class-wp-block-bindings-
-  go: internal/blocks/bindings.go
+  go: internal/wp/block_bindings.go
   status: partial
-  task: P5.20
-  api: partial
+  task: P5.39
+  api: exported
 
 - prefix: wp-includes/class-wp-block-styles-registry.php
   go: internal/wp/block_styles.go
