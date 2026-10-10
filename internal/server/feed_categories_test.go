@@ -100,11 +100,31 @@ func TestFeedRSSEmitsTagCategoriesWhenPresent(t *testing.T) {
 		t.Fatalf("status=%d", rec.Code)
 	}
 	body := rec.Body.String()
-	if !strings.Contains(body, "<category><![CDATA[Fixture Tag 01]]></category>") {
-		t.Fatalf("rss missing tag category: %q", body[:min(1200, len(body))])
+	if !strings.Contains(body, `<category domain="post_tag"><![CDATA[Fixture Tag 01]]></category>`) {
+		t.Fatalf("rss missing tag category domain: %q", body[:min(1200, len(body))])
 	}
-	if !strings.Contains(body, "<category><![CDATA[Uncategorized]]></category>") {
-		t.Fatalf("rss missing category: %q", body[:min(800, len(body))])
+	if !strings.Contains(body, `<category domain="category"><![CDATA[Uncategorized]]></category>`) {
+		t.Fatalf("rss missing category domain: %q", body[:min(800, len(body))])
+	}
+}
+
+func TestFeedCategoriesDomain(t *testing.T) {
+	c := testBootFeedCats(t)
+	cats := feedCategories(c, 13)
+	var leaf, tag *feedCategory
+	for i := range cats {
+		switch cats[i].Name {
+		case "Fixture Leaf":
+			leaf = &cats[i]
+		case "Fixture Tag 01":
+			tag = &cats[i]
+		}
+	}
+	if leaf == nil || leaf.Domain != "category" {
+		t.Fatalf("Fixture Leaf domain=%v want category", leaf)
+	}
+	if tag == nil || tag.Domain != "post_tag" {
+		t.Fatalf("Fixture Tag 01 domain=%v want post_tag", tag)
 	}
 }
 
