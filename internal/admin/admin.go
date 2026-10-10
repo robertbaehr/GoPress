@@ -52,6 +52,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/upload.php":
 		h.requireLogin(w, r, c, h.serveUpload)
 		return true
+	case "/wp-admin/media-new.php":
+		h.requireLogin(w, r, c, h.serveMediaNew)
+		return true
 	case "/wp-admin/edit-comments.php":
 		h.requireLogin(w, r, c, h.serveEditComments)
 		return true
@@ -668,6 +671,7 @@ func (h *Handler) serveUpload(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<h1>Media Library</h1>\n")
+	b.WriteString("<a class=\"page-title-action\" href=\"/wp-admin/media-new.php\">Add New Media File</a>\n")
 	b.WriteString("<table class=\"wp-list-table widefat fixed striped media\">\n")
 	b.WriteString("<thead><tr><th scope=\"col\" class=\"column-title\">File</th><th scope=\"col\" class=\"column-mime\">Type</th></tr></thead>\n")
 	b.WriteString("<tbody id=\"the-list\">\n")
@@ -685,6 +689,70 @@ func (h *Handler) serveUpload(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	}
 	b.WriteString("</tbody>\n</table>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
+}
+
+// serveMediaNew is the Upload New Media form stub (P7.27 / media-new.php).
+func (h *Handler) serveMediaNew(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if c == nil || c.CurrentUser == nil {
+		http.Error(w, "Unauthorized\n", http.StatusUnauthorized)
+		return
+	}
+	if !c.UserCan(c.CurrentUser, "upload_files") && !c.UserCan(c.CurrentUser, "edit_posts") {
+		http.Error(w, "Sorry, you are not allowed to upload files.\n", http.StatusForbidden)
+		return
+	}
+	if r.Method == http.MethodPost {
+		h.handleMediaNewUpload(w, r, c)
+		return
+	}
+	blogname := optionString(c, "blogname", "GoPress")
+	nonce := c.CreateNonce("media-form")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Upload New Media &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap\">\n")
+	b.WriteString("<h1>Upload New Media</h1>\n")
+	b.WriteString("<form enctype=\"multipart/form-data\" method=\"post\" action=\"/wp-admin/media-new.php\" class=\"wp-upload-form media-upload-form html-uploader\" id=\"file-form\">\n")
+	b.WriteString("<input type=\"hidden\" id=\"_wpnonce\" name=\"_wpnonce\" value=\"")
+	b.WriteString(html.EscapeString(nonce))
+	b.WriteString("\" />\n")
+	b.WriteString("<input type=\"hidden\" name=\"post_id\" id=\"post_id\" value=\"0\" />\n")
+	b.WriteString("<p><label for=\"async-upload\">Choose a file</label>\n")
+	b.WriteString("<input type=\"file\" id=\"async-upload\" name=\"async-upload\" /></p>\n")
+	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"html-upload\" id=\"html-upload\" class=\"button\" value=\"Upload\" /></p>\n")
+	b.WriteString("</form>\n")
+	b.WriteString("<p><a href=\"/wp-admin/upload.php\">&larr; Back to Media Library</a></p>\n")
+	b.WriteString("</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
+func (h *Handler) handleMediaNewUpload(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		http.Error(w, "No data supplied\n", http.StatusBadRequest)
+		return
+	}
+	if c.VerifyNonce(r.FormValue("_wpnonce"), "media-form") == 0 {
+		http.Error(w, "Invalid nonce\n", http.StatusForbidden)
+		return
+	}
+	file, hdr, err := r.FormFile("async-upload")
+	if err != nil {
+		file, hdr, err = r.FormFile("file")
+	}
+	if err != nil {
+		http.Error(w, "No data supplied\n", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+	if _, err := wp.SaveUploadedMedia(c, hdr.Filename, file, hdr.Size); err != nil {
+		http.Error(w, err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	http.Redirect(w, r, "/wp-admin/upload.php", http.StatusFound)
 }
 
 // serveAsyncUpload handles multipart POST /wp-admin/async-upload.php (P7.7).
