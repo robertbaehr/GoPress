@@ -1576,6 +1576,13 @@
   task: P7.14
   api: n/a
 
+# P9.10: get_mu_plugins() header parse for top-level mu-plugins.
+- prefix: wp-admin/includes/plugin.php#get_mu_plugins
+  go: internal/plugins/headers.go
+  status: partial
+  task: P9.10
+  api: exported
+
 # P9.9 / P10.35: file-level plugin.php admin includes (headers + activate hooks).
 - prefix: wp-admin/includes/plugin.php
   go: internal/plugins/plugin.go

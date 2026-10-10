@@ -49,6 +49,45 @@ var pluginHeaderMap = []struct {
 	{"RequiresPlugins", "Requires Plugins"},
 }
 
+// ListMUPlugins returns must-use plugin headers like get_mu_plugins() (P9.10).
+// Only top-level *.php files under wp-content/mu-plugins are included; when a
+// file has no Plugin Name header, Name defaults to the basename.
+func ListMUPlugins(c *wp.Context) ([]PluginData, error) {
+	dir := MUPluginDir(c)
+	if dir == "" {
+		return nil, nil
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return nil, nil
+		}
+		return nil, err
+	}
+	var out []PluginData
+	for _, ent := range entries {
+		name := ent.Name()
+		if ent.IsDir() || strings.HasPrefix(name, ".") {
+			continue
+		}
+		if !strings.HasSuffix(strings.ToLower(name), ".php") {
+			continue
+		}
+		abs := filepath.Join(dir, name)
+		data, err := GetPluginData(abs)
+		if err != nil {
+			continue
+		}
+		if data.Name == "" {
+			data.Name = name
+			data.Title = name
+		}
+		data.File = name
+		out = append(out, data)
+	}
+	return out, nil
+}
+
 // GetPluginData parses WordPress plugin headers from the first 8 KiB of a .php file (P9.2).
 func GetPluginData(pluginFile string) (PluginData, error) {
 	f, err := os.Open(pluginFile)
