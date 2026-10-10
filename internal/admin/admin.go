@@ -1073,15 +1073,98 @@ func (h *Handler) serveUpload(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		http.Error(w, "media: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
+	// P7.42: grid is the WP default; ?mode=list keeps the list table.
+	mode := strings.TrimSpace(r.URL.Query().Get("mode"))
+	if mode != "list" && mode != "grid" {
+		mode = mediaLibraryMode(c)
+	}
+	if mode == "grid" {
+		writeHTML(w, http.StatusOK, renderMediaGrid(blogname, items, c))
+		return
+	}
+	writeHTML(w, http.StatusOK, renderMediaList(blogname, items, c))
+}
+
+func mediaLibraryMode(c *wp.Context) string {
+	if c != nil && c.CurrentUser != nil && c.Meta != nil {
+		if v, ok := c.Meta.GetMetadata(wp.MetaUser, c.CurrentUser.ID, "media_library_mode", true).(string); ok {
+			v = strings.TrimSpace(v)
+			if v == "list" || v == "grid" {
+				return v
+			}
+		}
+	}
+	return "grid"
+}
+
+func mediaViewSwitcher(mode string) string {
+	var b strings.Builder
+	b.WriteString(`<div class="view-switch media-grid-view-switch">`)
+	gridClass := "view-grid"
+	listClass := "view-list"
+	if mode == "grid" {
+		gridClass += " current"
+	} else {
+		listClass += " current"
+	}
+	b.WriteString(`<a href="/wp-admin/upload.php?mode=grid" class="`)
+	b.WriteString(gridClass)
+	b.WriteString(`" aria-label="Grid view"><span class="screen-reader-text">Grid view</span></a>`)
+	b.WriteString(`<a href="/wp-admin/upload.php?mode=list" class="`)
+	b.WriteString(listClass)
+	b.WriteString(`" aria-label="List view"><span class="screen-reader-text">List view</span></a>`)
+	b.WriteString(`</div>`)
+	return b.String()
+}
+
+func renderMediaGrid(blogname string, items []mediaRow, c *wp.Context) string {
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>Media Library &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui upload-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
-	b.WriteString("<h1>Media Library</h1>\n")
+	b.WriteString("<div class=\"wrap\" id=\"wp-media-grid\" data-search=\"\">\n")
+	b.WriteString("<h1 class=\"wp-heading-inline\">Media Library</h1>\n")
+	b.WriteString("<a class=\"page-title-action\" href=\"/wp-admin/media-new.php\">Add Media File</a>\n")
+	b.WriteString(mediaViewSwitcher("grid"))
+	b.WriteString("<hr class=\"wp-header-end\">\n")
+	b.WriteString("<div class=\"notice notice-error hide-if-js\"><p>The grid view for the Media Library requires JavaScript. ")
+	b.WriteString(`<a href="/wp-admin/upload.php?mode=list">Switch to the list view</a>.</p></div>` + "\n")
+	b.WriteString("<ul class=\"attachments ui-sortable ui-sortable-disabled\" tabindex=\"-1\">\n")
+	if len(items) == 0 {
+		b.WriteString("<li class=\"no-media\">No media items found.</li>\n")
+	}
+	for _, m := range items {
+		b.WriteString(`<li class="attachment save-ready" id="post-`)
+		b.WriteString(strconv.FormatInt(m.ID, 10))
+		b.WriteString(`" data-id="`)
+		b.WriteString(strconv.FormatInt(m.ID, 10))
+		b.WriteString(`"><div class="attachment-preview"><div class="thumbnail"><div class="filename"><div>`)
+		b.WriteString(html.EscapeString(m.Title))
+		b.WriteString(`</div></div></div></div>`)
+		b.WriteString(`<a class="edit" href="/wp-admin/post.php?post=`)
+		b.WriteString(strconv.FormatInt(m.ID, 10))
+		b.WriteString(`&amp;action=edit">Edit</a></li>` + "\n")
+	}
+	b.WriteString("</ul>\n</div>\n</body>\n</html>\n")
+	return b.String()
+}
+
+func renderMediaList(blogname string, items []mediaRow, c *wp.Context) string {
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Media Library &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui upload-php\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap\">\n")
+	b.WriteString("<h1 class=\"wp-heading-inline\">Media Library</h1>\n")
 	b.WriteString("<a class=\"page-title-action\" href=\"/wp-admin/media-new.php\">Add New Media File</a>\n")
+	b.WriteString(mediaViewSwitcher("list"))
+	b.WriteString("<hr class=\"wp-header-end\">\n")
 	b.WriteString("<table class=\"wp-list-table widefat fixed striped media\">\n")
 	b.WriteString("<thead><tr><th scope=\"col\" class=\"column-title\">File</th><th scope=\"col\" class=\"column-mime\">Type</th></tr></thead>\n")
 	b.WriteString("<tbody id=\"the-list\">\n")
@@ -1102,8 +1185,8 @@ func (h *Handler) serveUpload(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		b.WriteString(html.EscapeString(m.Mime))
 		b.WriteString("</td></tr>\n")
 	}
-	b.WriteString("</tbody>\n</table>\n</body>\n</html>\n")
-	writeHTML(w, http.StatusOK, b.String())
+	b.WriteString("</tbody>\n</table>\n</div>\n</body>\n</html>\n")
+	return b.String()
 }
 
 // serveMediaNew is the Upload New Media form stub (P7.27 / media-new.php).

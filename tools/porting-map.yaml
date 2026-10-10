@@ -1345,6 +1345,13 @@
   task: P7.27
   api: n/a
 
+# P7.42: Media Library grid view stub on upload.php (?mode=grid default).
+- prefix: wp-admin/upload.php
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.42
+  api: n/a
+
 - prefix: wp-admin/profile.php
   go: internal/admin/admin.go
   status: partial
