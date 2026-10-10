@@ -24,6 +24,7 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 		return
 	}
 	c.AuthenticateRequest()
+	setAPILinkHeader(w, c)
 
 	path := restPath(r.URL.Path)
 	switch {
@@ -161,6 +162,10 @@ func (s *Server) serveIndex(w http.ResponseWriter, c *wp.Context) {
 
 func writeJSON(w http.ResponseWriter, status int, v any) {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+	// WP rest_send_allow_header: anonymous-readable routes advertise GET.
+	if status == http.StatusOK && w.Header().Get("Allow") == "" {
+		w.Header().Set("Allow", "GET")
+	}
 	w.WriteHeader(status)
 	enc := json.NewEncoder(w)
 	enc.SetEscapeHTML(false)

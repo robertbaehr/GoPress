@@ -11,6 +11,26 @@ import (
 	"github.com/robertbaehr/GoPress/internal/rest"
 )
 
+func TestIndexAllowAndAPILink(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "http://127.0.0.1:8082/wp-json/", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if got := rec.Header().Get("Allow"); got != "GET" {
+		t.Fatalf("Allow=%q", got)
+	}
+	link := rec.Header().Get("Link")
+	if !strings.Contains(link, `/wp-json/>; rel="https://api.w.org/"`) {
+		t.Fatalf("Link=%q", link)
+	}
+}
+
 func TestPostsCollectionHeaders(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
@@ -25,6 +45,9 @@ func TestPostsCollectionHeaders(t *testing.T) {
 	ct := rec.Header().Get("Content-Type")
 	if !strings.Contains(ct, "application/json") {
 		t.Fatalf("Content-Type=%q", ct)
+	}
+	if got := rec.Header().Get("Allow"); got != "GET" {
+		t.Fatalf("Allow=%q", got)
 	}
 	total := rec.Header().Get("X-WP-Total")
 	totalPages := rec.Header().Get("X-WP-TotalPages")
