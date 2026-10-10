@@ -222,3 +222,33 @@ func TestFrontFeedPrettyPath(t *testing.T) {
 		t.Fatalf("expected RSS2 with namespaces, got %q", body[:min(400, len(body))])
 	}
 }
+
+func TestFrontTrailingSlashCanonical(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/sample-page", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusMovedPermanently {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	loc := rec.Header().Get("Location")
+	if loc != "/sample-page/" {
+		t.Fatalf("Location=%q", loc)
+	}
+}
+
+func TestFrontTrailingSlashCanonicalPreservesQuery(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/sample-page?utm=1", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusMovedPermanently {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	loc := rec.Header().Get("Location")
+	if loc != "/sample-page/?utm=1" {
+		t.Fatalf("Location=%q", loc)
+	}
+}

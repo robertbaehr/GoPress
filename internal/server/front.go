@@ -33,6 +33,11 @@ func (f *Front) ServeFront(w http.ResponseWriter, r *http.Request, c *wp.Context
 	}
 	parsed := c.ParseRequest(rules)
 
+	// redirect_canonical: enforce trailing slash on pretty permalinks (P3.15).
+	if f.tryTrailingSlashRedirect(w, r, c, parsed) {
+		return
+	}
+
 	if isFeedVars(parsed.QueryVars) {
 		f.renderFeedRSS2(w, c)
 		return
@@ -792,6 +797,67 @@ func stripTagsSimple(s string) string {
 		}
 	}
 	return b.String()
+}
+
+// tryTrailingSlashRedirect issues a 301 when a pretty content path is missing
+// the trailing slash expected by permalink_structure (WP redirect_canonical subset).
+func (f *Front) tryTrailingSlashRedirect(w http.ResponseWriter, r *http.Request, c *wp.Context, parsed *wp.ParseResult) bool {
+	if r == nil || r.URL == nil || parsed == nil {
+		return false
+	}
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		return false
+	}
+	path := r.URL.Path
+	if path == "" || path == "/" || strings.HasSuffix(path, "/") {
+		return false
+	}
+	// Query-style URLs (?p=, ?page_id=) do not use trailing slashes.
+	if r.URL.RawQuery != "" && (strings.Contains(r.URL.RawQuery, "p=") ||
+		strings.Contains(r.URL.RawQuery, "page_id=") ||
+		strings.Contains(r.URL.RawQuery, "attachment_id=") ||
+		strings.Contains(r.URL.RawQuery, "feed=")) {
+		return false
+	}
+	if !permalinkUsesTrailingSlash(c) {
+		return false
+	}
+	if !needsTrailingSlashCanonical(parsed) {
+		return false
+	}
+	target := path + "/"
+	if r.URL.RawQuery != "" {
+		target += "?" + r.URL.RawQuery
+	}
+	http.Redirect(w, r, target, http.StatusMovedPermanently)
+	return true
+}
+
+func permalinkUsesTrailingSlash(c *wp.Context) bool {
+	if c == nil || c.Options == nil {
+		return true
+	}
+	structure := strings.TrimSpace(fmt.Sprint(c.Options.GetOption("permalink_structure", "")))
+	if structure == "" {
+		return true
+	}
+	return strings.HasSuffix(structure, "/")
+}
+
+func needsTrailingSlashCanonical(parsed *wp.ParseResult) bool {
+	if parsed == nil || parsed.IsHome {
+		return false
+	}
+	if isSingularVars(parsed.QueryVars) || isFeedVars(parsed.QueryVars) {
+		return true
+	}
+	for _, k := range []string{"category_name", "tag", "year", "monthnum", "author_name"} {
+		if parsed.QueryVars[k] != "" {
+			return true
+		}
+	}
+	// Matched pretty request path with a rewrite rule (non-empty Request).
+	return parsed.Request != "" && parsed.MatchedRule != ""
 }
 
 // tryCanonicalPostRedirect issues a 301 to the post's pretty permalink when the
