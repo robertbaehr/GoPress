@@ -1384,6 +1384,14 @@
   api: internal
   notes: "P5.54 — renderCover synthesize from url/id + featured image before inner container"
 
+# P5.55: core/media-text synthesize + useFeaturedImage injection.
+- prefix: wp-includes/blocks/media-text.php
+  go: internal/blocks/media_text.go
+  status: partial
+  task: P5.55
+  api: internal
+  notes: "P5.55 — renderMediaText synthesize from mediaUrl/mediaId + featured image in figure"
+
 # P5.42: calendar / archives / latest-posts / latest-comments / tag-cloud / search.
 - prefix: wp-includes/blocks/calendar.php
   go: internal/blocks/widget_blocks.go
