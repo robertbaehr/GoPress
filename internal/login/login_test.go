@@ -436,6 +436,49 @@ func TestRegisterPostCreatesSubscriber(t *testing.T) {
 	}
 }
 
+func TestCheckEmailConfirmAndRegisteredChrome(t *testing.T) {
+	// P6.44: Check your email title + notice-info login-message with login link.
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?checkemail=confirm", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`Check your email &lsaquo;`,
+		`login-action-checkemail`,
+		`id="login-message"`,
+		`notice notice-info message`,
+		`confirmation link`,
+		`>login page</a>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("confirm missing %q", want)
+		}
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-login.php?action=checkemail&checkemail=registered", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	body = rec.Body.String()
+	for _, want := range []string{
+		`Check your email &lsaquo;`,
+		`login-action-checkemail`,
+		`Registration complete`,
+		`>login page</a>`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("registered missing %q", want)
+		}
+	}
+}
+
 func TestRegistrationDisabledMessage(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
