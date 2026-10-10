@@ -203,6 +203,30 @@ func TestBlockSupportsLayoutGridClasses(t *testing.T) {
 	}
 }
 
+func TestBlockSupportsBorderSidesAndClasses(t *testing.T) {
+	in := `<!-- wp:group {"borderColor":"vivid-cyan-blue","style":{"border":{"width":"2","radius":"8","top":{"color":"#111","width":"3px","style":"dashed"},"bottom":{"color":"var:preset|color|vivid-red","width":"1px","style":"solid"}}}} -->
+<div class="wp-block-group">X</div>
+<!-- /wp:group -->`
+	out := blocks.Render(in)
+	for _, want := range []string{
+		"has-border-color",
+		"has-vivid-cyan-blue-border-color",
+		"border-color:var(--wp--preset--color--vivid-cyan-blue)",
+		"border-width:2px",
+		"border-radius:8px",
+		"border-top-color:#111",
+		"border-top-width:3px",
+		"border-top-style:dashed",
+		"border-bottom-color:var(--wp--preset--color--vivid-red)",
+		"border-bottom-width:1px",
+		"border-bottom-style:solid",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
+
 func TestBlockSupportsLayoutFlexHorizontalJustify(t *testing.T) {
 	in := `<!-- wp:group {"layout":{"type":"flex","justifyContent":"space-between","verticalAlignment":"center"}} -->
 <div class="wp-block-group">X</div>

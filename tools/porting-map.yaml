@@ -300,6 +300,13 @@
   task: P5.30
   api: internal
 
+# P5.31: border block support (sides, radius px, borderColor class).
+- prefix: wp-includes/block-supports/border.php
+  go: internal/blocks/supports.go
+  status: partial
+  task: P5.31
+  api: internal
+
 - prefix: wp-includes/template.php
   go: internal/wp/template_hierarchy.go
   status: partial
