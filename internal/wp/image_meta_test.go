@@ -68,6 +68,9 @@ func TestGenerateAndStoreAttachmentMetadataOnUpload(t *testing.T) {
 	if meta["width"] == nil || meta["height"] == nil {
 		t.Fatalf("missing dimensions: %#v", meta)
 	}
+	if meta["filesize"] == nil {
+		t.Fatalf("missing filesize: %#v", meta)
+	}
 	im, ok := meta["image_meta"].(map[string]any)
 	if !ok {
 		// may arrive as map[any]any from unserialize
@@ -78,6 +81,65 @@ func TestGenerateAndStoreAttachmentMetadataOnUpload(t *testing.T) {
 	}
 	if _, has := im["keywords"]; !has {
 		t.Fatalf("image_meta.keywords missing: %#v", im)
+	}
+}
+
+func TestGenerateAttachmentMetadataFilesizeAndUpdateContext(t *testing.T) {
+	c := mediaBoot(t)
+	dir := t.TempDir()
+	path := filepath.Join(dir, "meta.png")
+	writeTinyPNG(t, path)
+
+	var sawContext string
+	c.Hooks.AddFilter("wp_generate_attachment_metadata", func(value any, args ...any) any {
+		if len(args) >= 2 {
+			if s, ok := args[1].(string); ok {
+				sawContext = s
+			}
+		}
+		return value
+	}, 10, 3)
+
+	meta := wp.GenerateAttachmentMetadata(c, 99, path)
+	if meta["filesize"] == nil {
+		t.Fatalf("expected filesize: %#v", meta)
+	}
+	fs, _ := meta["filesize"].(int64)
+	if fs <= 0 {
+		// may be int from JSON-ish paths
+		switch v := meta["filesize"].(type) {
+		case int:
+			fs = int64(v)
+		case float64:
+			fs = int64(v)
+		}
+	}
+	if fs <= 0 {
+		t.Fatalf("filesize=%v", meta["filesize"])
+	}
+	if want := wp.Filesize(path); want != fs {
+		t.Fatalf("filesize=%d want %d", fs, want)
+	}
+	if sawContext != "create" {
+		t.Fatalf("create context=%q", sawContext)
+	}
+
+	_ = wp.UpdateAttachmentMetadata(c, 99, path)
+	if sawContext != "update" {
+		t.Fatalf("update context=%q", sawContext)
+	}
+
+	// Non-image: filesize + file only.
+	txt := filepath.Join(dir, "note.txt")
+	if err := os.WriteFile(txt, []byte("hello gopress"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	nonImg := wp.GenerateAttachmentMetadata(c, 1, txt)
+	if nonImg["file"] == nil || nonImg["filesize"] == nil {
+		t.Fatalf("non-image meta: %#v", nonImg)
+	}
+	if nonImg["width"] != nil {
+		t.Fatalf("non-image should not have width: %#v", nonImg)
 	}
 }
 
