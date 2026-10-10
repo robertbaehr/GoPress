@@ -1429,6 +1429,21 @@
   api: n/a
   notes: "P10.51 — summarize spacer, font-families write, users bulk, ext2type, feed language, export email"
 
+# P10.53: e2e plugins REST write activate/deactivate + STATUS/PORTING refresh after P5.61–P9.14.
+- prefix: tests/e2e/plugins-rest-write.spec.js
+  go: tests/e2e/plugins-rest-write.spec.js
+  status: partial
+  task: P10.53
+  api: n/a
+  notes: "P10.53 — Playwright coverage for PUT /wp/v2/plugins/{plugin} status (P4.77)"
+
+- prefix: docs/STATUS.md#P10.53
+  go: docs/STATUS.md
+  status: partial
+  task: P10.53
+  api: n/a
+  notes: "P10.53 — summarize quote/pullquote, plugins REST write, themes activate, check_filetype, lastBuildDate, action links, e2e"
+
 # P10.52: e2e menu-locations DELETE unset + STATUS/PORTING refresh after P5.60–P6.24.
 - prefix: tests/e2e/menu-location-delete.spec.js
   go: tests/e2e/menu-location-delete.spec.js
