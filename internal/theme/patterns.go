@@ -5,28 +5,37 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
 // PatternFile is metadata + content extracted from a theme patterns/*.php file.
 type PatternFile struct {
-	Slug        string
-	Title       string
-	Description string
-	Categories  []string
-	BlockTypes  []string
-	Inserter    bool
-	Content     string
-	FilePath    string
+	Slug          string
+	Title         string
+	Description   string
+	Categories    []string
+	Keywords      []string
+	BlockTypes    []string
+	PostTypes     []string
+	TemplateTypes []string
+	Inserter      bool
+	ViewportWidth int
+	Content       string
+	FilePath      string
 }
 
 var (
-	headerTitle       = regexp.MustCompile(`(?mi)^\s*\*\s*Title:\s*(.+?)\s*$`)
-	headerSlug        = regexp.MustCompile(`(?mi)^\s*\*\s*Slug:\s*(.+?)\s*$`)
-	headerDescription = regexp.MustCompile(`(?mi)^\s*\*\s*Description:\s*(.+?)\s*$`)
-	headerCategories  = regexp.MustCompile(`(?mi)^\s*\*\s*Categories:\s*(.+?)\s*$`)
-	headerBlockTypes  = regexp.MustCompile(`(?mi)^\s*\*\s*Block Types:\s*(.+?)\s*$`)
-	headerInserter    = regexp.MustCompile(`(?mi)^\s*\*\s*Inserter:\s*(.+?)\s*$`)
+	headerTitle         = regexp.MustCompile(`(?mi)^\s*\*\s*Title:\s*(.+?)\s*$`)
+	headerSlug          = regexp.MustCompile(`(?mi)^\s*\*\s*Slug:\s*(.+?)\s*$`)
+	headerDescription   = regexp.MustCompile(`(?mi)^\s*\*\s*Description:\s*(.+?)\s*$`)
+	headerCategories    = regexp.MustCompile(`(?mi)^\s*\*\s*Categories:\s*(.+?)\s*$`)
+	headerKeywords      = regexp.MustCompile(`(?mi)^\s*\*\s*Keywords:\s*(.+?)\s*$`)
+	headerBlockTypes    = regexp.MustCompile(`(?mi)^\s*\*\s*Block Types:\s*(.+?)\s*$`)
+	headerPostTypes     = regexp.MustCompile(`(?mi)^\s*\*\s*Post Types:\s*(.+?)\s*$`)
+	headerTemplateTypes = regexp.MustCompile(`(?mi)^\s*\*\s*Template Types:\s*(.+?)\s*$`)
+	headerViewportWidth = regexp.MustCompile(`(?mi)^\s*\*\s*Viewport Width:\s*(\d+)\s*$`)
+	headerInserter      = regexp.MustCompile(`(?mi)^\s*\*\s*Inserter:\s*(.+?)\s*$`)
 	phpTagStrip       = regexp.MustCompile(`(?s)<\?(?:php|=)?.*?\?>`)
 	// Common i18n echo forms in theme patterns (P5.16 / P3.16): keep the source string.
 	phpEscHTMLEre    = regexp.MustCompile(`<\?php\s+(?:echo\s+)?esc_html_e\s*\(\s*'([^']*)'\s*,\s*'[^']*'\s*\)\s*;\s*\?>`)
@@ -91,8 +100,22 @@ func parsePatternFile(path, raw string) (PatternFile, bool) {
 	if m := headerCategories.FindStringSubmatch(raw); len(m) > 1 {
 		pf.Categories = splitCSV(m[1])
 	}
+	if m := headerKeywords.FindStringSubmatch(raw); len(m) > 1 {
+		pf.Keywords = splitCSV(m[1])
+	}
 	if m := headerBlockTypes.FindStringSubmatch(raw); len(m) > 1 {
 		pf.BlockTypes = splitCSV(m[1])
+	}
+	if m := headerPostTypes.FindStringSubmatch(raw); len(m) > 1 {
+		pf.PostTypes = splitCSV(m[1])
+	}
+	if m := headerTemplateTypes.FindStringSubmatch(raw); len(m) > 1 {
+		pf.TemplateTypes = splitCSV(m[1])
+	}
+	if m := headerViewportWidth.FindStringSubmatch(raw); len(m) > 1 {
+		if n, err := strconv.Atoi(strings.TrimSpace(m[1])); err == nil && n > 0 {
+			pf.ViewportWidth = n
+		}
 	}
 	if m := headerInserter.FindStringSubmatch(raw); len(m) > 1 {
 		v := strings.ToLower(strings.TrimSpace(m[1]))

@@ -4168,6 +4168,21 @@
   api: exported
   notes: "P4.105 — search minLength, category/keyword >=1, orderby/order enums, HEAD short-circuit; remote still empty"
 
+# P4.106: block-patterns REST schema fields + HEAD.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-patterns-controller.php#p4.106
+  go: internal/rest/block_patterns.go
+  status: partial
+  task: P4.106
+  api: exported
+  notes: "P4.106 — keywords/post_types/template_types/viewport_width; HEAD on patterns+categories; theme header parse"
+
+- prefix: wp-includes/block-patterns.php#p4.106
+  go: internal/theme/patterns.go
+  status: partial
+  task: P4.106
+  api: exported
+  notes: "P4.106 — Keywords/Post Types/Template Types/Viewport Width pattern headers"
+
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-directory-controller.php
   go: internal/rest/block_directory.go
   status: partial
