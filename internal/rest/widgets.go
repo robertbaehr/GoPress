@@ -6,10 +6,11 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// Widgets and sidebars are out of scope for GoPress (P4.18 / P4.54 / P4.102).
+// Widgets and sidebars are out of scope for GoPress (P4.18 / P4.54 / P4.102 / P4.104).
 // Collection GET for users with edit_theme_options returns []; anonymous and
 // unauthorized callers get rest_cannot_manage_widgets (WP permission parity).
-// Writes and item routes remain rest_widgets_disabled once authorized.
+// Widget/sidebar/widget-type item GETs return invalid_id / invalid type (404);
+// writes remain rest_widgets_disabled once authorized.
 
 func (s *Server) serveWidgets(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	s.serveWidgetsGoneCollection(w, r, c)
@@ -26,7 +27,31 @@ func (s *Server) serveWidgetTypes(w http.ResponseWriter, r *http.Request, c *wp.
 
 func (s *Server) serveWidgetTypeItem(w http.ResponseWriter, r *http.Request, c *wp.Context, id string) {
 	_ = id
-	s.serveWidgetsItemOrWrite(w, r, c)
+	// P4.104: no classic widget types are registered (widgets out of scope).
+	// Authorized GET/HEAD → rest_widget_type_invalid (404); writes stay disabled.
+	if !canManageWidgets(c) {
+		s.serveWidgetsCannotManage(w, r, c)
+		return
+	}
+	switch r.Method {
+	case http.MethodGet, http.MethodHead:
+		w.Header().Set("Allow", "GET")
+		w.Header().Set("X-GoPress-Widgets", "disabled")
+		if r.Method == http.MethodHead {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"code":    "rest_widget_type_invalid",
+			"message": "Invalid widget type.",
+			"data":    map[string]any{"status": 404},
+		})
+	case http.MethodOptions:
+		w.Header().Set("Allow", "GET")
+		w.WriteHeader(http.StatusOK)
+	default:
+		s.serveWidgetsDisabled(w, r, c)
+	}
 }
 
 func (s *Server) serveSidebars(w http.ResponseWriter, r *http.Request, c *wp.Context) {

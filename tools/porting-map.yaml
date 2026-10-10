@@ -3941,6 +3941,14 @@
   api: exported
   notes: "P4.103 — auth GET item → rest_sidebar_invalid_id 404; writes → rest_widgets_disabled"
 
+# P4.104: widget-types REST item — no registered types → rest_widget_type_invalid on GET.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-widget-types-controller.php#item
+  go: internal/rest/widgets.go
+  status: out-of-scope
+  task: P4.104
+  api: exported
+  notes: "P4.104 — auth GET item → rest_widget_type_invalid 404; writes → rest_widgets_disabled"
+
 - prefix: wp-includes/IXR/
   go: Tier 2
   status: out-of-scope
