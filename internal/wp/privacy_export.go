@@ -135,6 +135,103 @@ func GeneratePersonalDataExportFile(c *Context, email string) (*PersonalDataExpo
 	}, nil
 }
 
+// PersonalDataExportDownloadURL builds an admin download URL for an export file (P8.6).
+func PersonalDataExportDownloadURL(fileName string) string {
+	fileName = filepath.Base(strings.TrimSpace(fileName))
+	if fileName == "" || fileName == "." || fileName == ".." {
+		return ""
+	}
+	return "/wp-admin/export-personal-data.php?action=download&file=" + urlQueryEscapePrivacy(fileName)
+}
+
+// ResolvePersonalDataExportFile returns the absolute path for a downloadable export
+// basename under PrivacyExportsDir, or "" when the name is unsafe / missing (P8.6).
+func ResolvePersonalDataExportFile(c *Context, fileName string) string {
+	fileName = filepath.Base(strings.TrimSpace(fileName))
+	if fileName == "" || fileName == "." || fileName == ".." || fileName == "index.php" {
+		return ""
+	}
+	if !strings.HasPrefix(fileName, "wp-personal-data-file-") {
+		return ""
+	}
+	if !strings.HasSuffix(fileName, ".json") && !strings.HasSuffix(fileName, ".html") {
+		return ""
+	}
+	dir := PrivacyExportsDir(c)
+	if dir == "" {
+		return ""
+	}
+	full := filepath.Join(dir, fileName)
+	if !strings.HasPrefix(full, dir+string(os.PathSeparator)) && full != dir {
+		return ""
+	}
+	if st, err := os.Stat(full); err != nil || st.IsDir() {
+		return ""
+	}
+	return full
+}
+
+// ListPersonalDataExportFiles returns recent export basenames (newest first, P8.6).
+func ListPersonalDataExportFiles(c *Context, limit int) []string {
+	dir := PrivacyExportsDir(c)
+	if dir == "" {
+		return nil
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	type item struct {
+		name string
+		mod  int64
+	}
+	var items []item
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		if !strings.HasPrefix(name, "wp-personal-data-file-") {
+			continue
+		}
+		if !strings.HasSuffix(name, ".json") && !strings.HasSuffix(name, ".html") {
+			continue
+		}
+		info, err := e.Info()
+		if err != nil {
+			continue
+		}
+		items = append(items, item{name: name, mod: info.ModTime().UnixNano()})
+	}
+	for i := 0; i < len(items); i++ {
+		for j := i + 1; j < len(items); j++ {
+			if items[j].mod > items[i].mod {
+				items[i], items[j] = items[j], items[i]
+			}
+		}
+	}
+	if limit <= 0 || limit > len(items) {
+		limit = len(items)
+	}
+	out := make([]string, 0, limit)
+	for _, it := range items[:limit] {
+		out = append(out, it.name)
+	}
+	return out
+}
+
+func urlQueryEscapePrivacy(s string) string {
+	replacer := strings.NewReplacer(
+		" ", "%20",
+		"&", "%26",
+		"=", "%3D",
+		"?", "%3F",
+		"#", "%23",
+		"+", "%2B",
+	)
+	return replacer.Replace(s)
+}
+
 func randomHex(n int) (string, error) {
 	b := make([]byte, n)
 	if _, err := rand.Read(b); err != nil {
