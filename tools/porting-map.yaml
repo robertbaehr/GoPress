@@ -158,6 +158,12 @@
   task: P1.9
   api: exported
 
+- prefix: wp-includes/functions.php#wp_json_encode
+  go: internal/wp/json_encode.go
+  status: partial
+  task: P2.32
+  api: exported
+
 - prefix: wp-includes/functions.php
   go: internal/wp/auth_check.go
   status: partial
