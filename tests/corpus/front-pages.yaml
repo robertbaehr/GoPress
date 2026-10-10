@@ -562,11 +562,11 @@
   compare: headers
   nonce: null
 
-# P10.108: author query var header case.
-- id: front-author-query-1
+# P10.108: author_name query var header case.
+- id: front-author-name-admin
   role: anon
   method: GET
-  path: /?author=1
+  path: /?author_name=admin
   headers: {}
   body: null
   compare: headers

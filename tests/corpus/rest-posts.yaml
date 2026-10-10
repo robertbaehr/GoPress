@@ -2763,3 +2763,30 @@
   body: null
   compare: headers
   nonce: null
+
+- id: rest-route-themes-status-active
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/themes&status=active
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-plugins-status-active
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/plugins&status=active
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-json-block-directory-search-hello
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-directory/search?term=hello
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
