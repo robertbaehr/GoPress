@@ -1436,7 +1436,7 @@ func (h *Handler) serveSiteEditor(w http.ResponseWriter, r *http.Request, c *wp.
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveNavMenus is a classic menus admin stub (P7.9).
+// serveNavMenus is a classic menus admin stub (P7.9) with location save (P7.35).
 func (h *Handler) serveNavMenus(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
 	menus, err := listNavMenus(c)
@@ -1444,6 +1444,28 @@ func (h *Handler) serveNavMenus(w http.ResponseWriter, r *http.Request, c *wp.Co
 		http.Error(w, "menus: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
+	note := ""
+	locationsScreen := r.URL.Query().Get("action") == "locations" || r.Method == http.MethodPost
+	if r.Method == http.MethodPost {
+		_ = r.ParseForm()
+		// Save theme menu location assignments (nav-menus.php Manage Locations, P7.35).
+		registered := wp.RegisteredNavMenus(c)
+		for loc := range registered {
+			raw := strings.TrimSpace(r.Form.Get("menu-locations[" + loc + "]"))
+			id, _ := strconv.ParseInt(raw, 10, 64)
+			if err := wp.SetNavMenuLocation(c, loc, id); err != nil {
+				note = "Failed to save menu locations: " + err.Error()
+				break
+			}
+		}
+		if note == "" {
+			note = "Menu locations updated."
+			locationsScreen = true
+		}
+	}
+	locs := wp.GetNavMenuLocations(c)
+	registered := wp.RegisteredNavMenus(c)
+
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>Menus &lsaquo; ")
@@ -1453,24 +1475,99 @@ func (h *Handler) serveNavMenus(w http.ResponseWriter, r *http.Request, c *wp.Co
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap\" id=\"menu-management\">\n")
 	b.WriteString("<h1>Menus</h1>\n")
-	b.WriteString("<p>GoPress nav-menus stub (P7.9) — drag-and-drop editor lands later.</p>\n")
-	b.WriteString("<div id=\"nav-menus-frame\" class=\"wp-clearfix\">\n")
-	b.WriteString("<ul class=\"menu\">\n")
-	if len(menus) == 0 {
-		b.WriteString("<li class=\"no-items\">No menus found.</li>\n")
-	} else {
-		for _, m := range menus {
-			b.WriteString("<li class=\"menu-item\" data-menu-id=\"")
-			b.WriteString(strconv.FormatInt(m.ID, 10))
-			b.WriteString("\"><strong>")
-			b.WriteString(html.EscapeString(m.Name))
-			b.WriteString("</strong> <span class=\"menu-slug\">")
-			b.WriteString(html.EscapeString(m.Slug))
-			b.WriteString("</span></li>\n")
-		}
+	if note != "" {
+		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p>")
+		b.WriteString(html.EscapeString(note))
+		b.WriteString("</p></div>\n")
 	}
-	b.WriteString("</ul>\n</div>\n</div>\n</body>\n</html>\n")
+	b.WriteString("<h2 class=\"nav-tab-wrapper wp-clearfix\">\n")
+	editClass, locClass := " nav-tab-active", ""
+	if locationsScreen {
+		editClass, locClass = "", " nav-tab-active"
+	}
+	b.WriteString("<a href=\"/wp-admin/nav-menus.php\" class=\"nav-tab")
+	b.WriteString(editClass)
+	b.WriteString("\">Edit Menus</a>\n")
+	b.WriteString("<a href=\"/wp-admin/nav-menus.php?action=locations\" class=\"nav-tab")
+	b.WriteString(locClass)
+	b.WriteString("\">Manage Locations</a>\n")
+	b.WriteString("</h2>\n")
+
+	if locationsScreen {
+		b.WriteString("<div id=\"menu-locations-wrap\">\n")
+		b.WriteString("<form method=\"post\" action=\"/wp-admin/nav-menus.php?action=locations\">\n")
+		b.WriteString("<table class=\"widefat fixed\" id=\"menu-locations-table\">\n")
+		b.WriteString("<thead><tr><th scope=\"col\">Theme Location</th><th scope=\"col\">Assigned Menu</th></tr></thead>\n")
+		b.WriteString("<tbody class=\"menu-locations\">\n")
+		// Stable order: primary then footer then others.
+		order := []string{"primary", "footer"}
+		seen := map[string]bool{}
+		for _, loc := range order {
+			if _, ok := registered[loc]; ok {
+				writeNavMenuLocationRow(&b, loc, registered[loc], menus, locs[loc])
+				seen[loc] = true
+			}
+		}
+		for loc, desc := range registered {
+			if seen[loc] {
+				continue
+			}
+			writeNavMenuLocationRow(&b, loc, desc, menus, locs[loc])
+		}
+		b.WriteString("</tbody>\n</table>\n")
+		b.WriteString("<p class=\"button-controls wp-clearfix\">")
+		b.WriteString("<input type=\"submit\" name=\"nav-menu-locations\" id=\"nav-menu-locations\" class=\"button button-primary left\" value=\"Save Changes\">")
+		b.WriteString("</p>\n</form>\n</div>\n")
+	} else {
+		b.WriteString("<p>GoPress nav-menus stub (P7.9) — drag-and-drop editor lands later.</p>\n")
+		b.WriteString("<div id=\"nav-menus-frame\" class=\"wp-clearfix\">\n")
+		b.WriteString("<ul class=\"menu\">\n")
+		if len(menus) == 0 {
+			b.WriteString("<li class=\"no-items\">No menus found.</li>\n")
+		} else {
+			for _, m := range menus {
+				b.WriteString("<li class=\"menu-item\" data-menu-id=\"")
+				b.WriteString(strconv.FormatInt(m.ID, 10))
+				b.WriteString("\"><strong>")
+				b.WriteString(html.EscapeString(m.Name))
+				b.WriteString("</strong> <span class=\"menu-slug\">")
+				b.WriteString(html.EscapeString(m.Slug))
+				b.WriteString("</span></li>\n")
+			}
+		}
+		b.WriteString("</ul>\n</div>\n")
+	}
+	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
+}
+
+func writeNavMenuLocationRow(b *strings.Builder, loc, desc string, menus []navMenuTerm, assigned int64) {
+	b.WriteString("<tr class=\"menu-locations-row\">\n")
+	b.WriteString("<td><label for=\"locations-")
+	b.WriteString(html.EscapeString(loc))
+	b.WriteString("\"><strong>")
+	b.WriteString(html.EscapeString(desc))
+	b.WriteString("</strong></label><br><span class=\"theme-location-name\">")
+	b.WriteString(html.EscapeString(loc))
+	b.WriteString("</span></td>\n<td>\n")
+	b.WriteString("<select name=\"menu-locations[")
+	b.WriteString(html.EscapeString(loc))
+	b.WriteString("]\" id=\"locations-")
+	b.WriteString(html.EscapeString(loc))
+	b.WriteString("\">\n")
+	b.WriteString("<option value=\"0\">— Select a Menu —</option>\n")
+	for _, m := range menus {
+		b.WriteString("<option value=\"")
+		b.WriteString(strconv.FormatInt(m.ID, 10))
+		b.WriteString("\"")
+		if m.ID == assigned {
+			b.WriteString(" selected=\"selected\"")
+		}
+		b.WriteString(">")
+		b.WriteString(html.EscapeString(m.Name))
+		b.WriteString("</option>\n")
+	}
+	b.WriteString("</select>\n</td>\n</tr>\n")
 }
 
 type navMenuTerm struct {

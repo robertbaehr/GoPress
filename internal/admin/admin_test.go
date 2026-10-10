@@ -559,3 +559,59 @@ func TestProfileUpdateDisplayName(t *testing.T) {
 		t.Fatalf("display_name=%q want %q", fresh.DisplayName, wantName)
 	}
 }
+
+func TestNavMenusLocationsSave(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	t.Cleanup(func() {
+		_ = wp.SetNavMenuLocation(c, "primary", 0)
+		_ = wp.SetNavMenuLocation(c, "footer", 0)
+	})
+	h := &admin.Handler{}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/nav-menus.php?action=locations", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !h.Handle(rec, req, rc, "/wp-admin/nav-menus.php") {
+		t.Fatal("GET locations not handled")
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		"menu-locations-table",
+		`name="menu-locations[primary]"`,
+		`name="menu-locations[footer]"`,
+		"Manage Locations",
+		"Save Changes",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in %q", want, body[:min(800, len(body))])
+		}
+	}
+
+	form := url.Values{}
+	form.Set("menu-locations[primary]", "37")
+	form.Set("menu-locations[footer]", "0")
+	form.Set("nav-menu-locations", "Save Changes")
+	req = httptest.NewRequest(http.MethodPost, "/wp-admin/nav-menus.php?action=locations", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	rc = c.ForRequest(rec, req)
+	if !h.Handle(rec, req, rc, "/wp-admin/nav-menus.php") {
+		t.Fatal("POST locations not handled")
+	}
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "Menu locations updated") {
+		t.Fatalf("missing save notice: %q", rec.Body.String()[:min(500, rec.Body.Len())])
+	}
+	if !strings.Contains(rec.Body.String(), `value="37" selected="selected"`) {
+		t.Fatalf("expected primary selected: %q", rec.Body.String()[:min(1200, rec.Body.Len())])
+	}
+	locs := wp.GetNavMenuLocations(c)
+	if locs["primary"] != 37 {
+		t.Fatalf("primary location=%v want 37", locs)
+	}
+}
