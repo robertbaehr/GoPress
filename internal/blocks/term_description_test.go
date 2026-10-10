@@ -51,3 +51,28 @@ func TestTermDescriptionLinkColorClass(t *testing.T) {
 		t.Fatalf("expected description: %q", out)
 	}
 }
+
+func TestTermDescriptionWrapperClassNameAndColors(t *testing.T) {
+	env := &blocks.Env{
+		TermContext: &blocks.TermBindingContext{
+			ID:          3,
+			Taxonomy:    "category",
+			Description: "Blurb",
+		},
+	}
+	markup := `<!-- wp:term-description {"className":"is-style-wide","textColor":"vivid-red","backgroundColor":"cyan-bluish-gray","style":{"color":{"text":"#111111","background":"#eeeeee"}}} /-->`
+	out := blocks.RenderWith(env, markup)
+	for _, want := range []string{
+		"wp-block-term-description",
+		"is-style-wide",
+		"has-text-color",
+		"has-vivid-red-color",
+		"has-background",
+		"has-cyan-bluish-gray-background-color",
+		"Blurb",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
