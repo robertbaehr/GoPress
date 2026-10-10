@@ -326,8 +326,8 @@ func (s *Server) handleCacheFlush(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	env := wp.GetEnvironmentType(s.WP)
-	if env != "local" && env != "development" {
+	// P2.82: IsEnvironmentType mirrors wp_get_environment_type allow-list checks.
+	if !wp.IsEnvironmentType(s.WP, "local") && !wp.IsEnvironmentType(s.WP, "development") {
 		http.NotFound(w, r)
 		return
 	}

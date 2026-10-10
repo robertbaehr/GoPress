@@ -45,9 +45,39 @@ func TestGetEnvironmentTypeFromProcessEnv(t *testing.T) {
 	if got := wp.GetEnvironmentType(c); got != "development" {
 		t.Fatalf("got %q want development", got)
 	}
-	// Config wins when set.
+	// Config wins when set (define overrides getenv).
 	c.Config.EnvironmentType = "staging"
 	if got := wp.GetEnvironmentType(c); got != "staging" {
 		t.Fatalf("config should win, got %q", got)
+	}
+}
+
+func TestGetEnvironmentTypeEmptyEnvIsProduction(t *testing.T) {
+	// WP: getenv present but empty → not in allow-list → production.
+	t.Setenv("WP_ENVIRONMENT_TYPE", "")
+	c := &wp.Context{Config: &config.Config{}}
+	if got := wp.GetEnvironmentType(c); got != "production" {
+		t.Fatalf("empty getenv → production, got %q", got)
+	}
+	t.Setenv("WP_ENVIRONMENT_TYPE", "   ")
+	if got := wp.GetEnvironmentType(c); got != "production" {
+		t.Fatalf("whitespace getenv → production, got %q", got)
+	}
+}
+
+func TestIsEnvironmentType(t *testing.T) {
+	os.Unsetenv("WP_ENVIRONMENT_TYPE")
+	c := &wp.Context{Config: &config.Config{EnvironmentType: "local"}}
+	if !wp.IsEnvironmentType(c, "local") {
+		t.Fatal("expected local match")
+	}
+	if !wp.IsEnvironmentType(c, "LOCAL") {
+		t.Fatal("expected case-insensitive match")
+	}
+	if wp.IsEnvironmentType(c, "staging") {
+		t.Fatal("local should not match staging")
+	}
+	if wp.IsEnvironmentType(c, "nope") {
+		t.Fatal("unknown type never matches")
 	}
 }

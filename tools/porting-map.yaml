@@ -1058,6 +1058,14 @@
   task: P2.41
   api: exported
 
+# P2.82: deepen wp_get_environment_type resolution + IsEnvironmentType helper.
+- prefix: wp-includes/load.php#wp_get_environment_type#p2.82
+  go: internal/wp/environment_type.go
+  status: partial
+  task: P2.82
+  api: exported
+  notes: "P2.82 — getenv then define/config override; empty/invalid → production; IsEnvironmentType"
+
 # P2.81: deepen is_ssl (HTTPS CGI header + port 443).
 - prefix: wp-includes/load.php#is_ssl
   go: internal/wp/is_ssl.go
