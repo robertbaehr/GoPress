@@ -1289,6 +1289,21 @@
   api: internal
   notes: "P5.52 — renderFile synthesize + displayPreview interactive/object attrs"
 
+# P5.53: core/audio + core/video synthesize and video dimensions.
+- prefix: wp-includes/blocks/audio
+  go: internal/blocks/audio_video.go
+  status: partial
+  task: P5.53
+  api: internal
+  notes: "P5.53 — renderAudio synthesize from src/id attrs"
+
+- prefix: wp-includes/blocks/video.php
+  go: internal/blocks/audio_video.go
+  status: partial
+  task: P5.53
+  api: internal
+  notes: "P5.53 — renderVideo synthesize + width/height aspect-ratio"
+
 # P5.42: calendar / archives / latest-posts / latest-comments / tag-cloud / search.
 - prefix: wp-includes/blocks/calendar.php
   go: internal/blocks/widget_blocks.go
