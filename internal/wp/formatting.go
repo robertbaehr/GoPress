@@ -2,13 +2,25 @@
 package wp
 
 import (
+	"fmt"
 	"html"
+	"math"
 	"regexp"
 	"strings"
 	"unicode"
 	"unicode/utf8"
 
 	"golang.org/x/text/unicode/norm"
+)
+
+// Byte size constants (wp-includes/default-constants.php).
+const (
+	KBInBytes = 1024
+	MBInBytes = 1024 * KBInBytes
+	GBInBytes = 1024 * MBInBytes
+	TBInBytes = 1024 * GBInBytes
+	PBInBytes = 1024 * TBInBytes
+	EBInBytes = 1024 * PBInBytes
 )
 
 var (
@@ -606,4 +618,40 @@ func phpStripslashes(s string) string {
 		b.WriteByte(s[i])
 	}
 	return b.String()
+}
+
+// SizeFormat converts a byte count to a human-readable size string (size_format, P2.28).
+// decimals mirrors the PHP $decimals argument (number_format_i18n subset).
+// Returns "" when bytes is negative (PHP returns false).
+func SizeFormat(bytes float64, decimals int) string {
+	if math.IsNaN(bytes) || math.IsInf(bytes, 0) || bytes < 0 {
+		return ""
+	}
+	if decimals < 0 {
+		decimals = 0
+	}
+	quant := []struct {
+		unit string
+		mag  float64
+	}{
+		{"TB", TBInBytes},
+		{"GB", GBInBytes},
+		{"MB", MBInBytes},
+		{"KB", KBInBytes},
+		{"B", 1},
+	}
+	if bytes == 0 {
+		return numberFormatI18n(0, decimals) + " B"
+	}
+	for _, q := range quant {
+		if bytes >= q.mag {
+			return numberFormatI18n(bytes/q.mag, decimals) + " " + q.unit
+		}
+	}
+	return ""
+}
+
+// numberFormatI18n is a minimal number_format_i18n (period decimal, no thousands sep).
+func numberFormatI18n(n float64, decimals int) string {
+	return fmt.Sprintf("%.*f", decimals, n)
 }

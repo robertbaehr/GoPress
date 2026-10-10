@@ -328,6 +328,13 @@
   task: P7.33
   api: n/a
 
+# P2.28: size_format helper.
+- prefix: wp-includes/functions.php#size_format
+  go: internal/wp/formatting.go
+  status: partial
+  task: P2.28
+  api: exported
+
 # P4.47: REST PATCH/PUT /wp/v2/media/{id} title + alt_text.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-attachments-controller.php#update
   go: internal/rest/media_write.go
