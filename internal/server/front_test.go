@@ -185,11 +185,17 @@ func TestFrontFeedQueryRSS2(t *testing.T) {
 		t.Fatalf("content-type=%q", ct)
 	}
 	body := rec.Body.String()
-	if !strings.Contains(body, `<rss version="2.0">`) || !strings.Contains(body, "<channel>") {
+	if !strings.Contains(body, `<rss version="2.0"`) || !strings.Contains(body, "<channel>") {
 		t.Fatalf("expected RSS2 channel, got %q", body)
 	}
-	if !strings.Contains(body, "<item>") {
-		t.Fatalf("expected feed items, got %q", body)
+	if !strings.Contains(body, "xmlns:content=") || !strings.Contains(body, "<atom:link") {
+		t.Fatalf("expected WP feed namespaces/atom:link, got %q", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, "<item>") || !strings.Contains(body, "<dc:creator>") {
+		t.Fatalf("expected feed items with dc:creator, got %q", body[:min(800, len(body))])
+	}
+	if !strings.Contains(body, "<content:encoded>") {
+		t.Fatalf("expected content:encoded, got %q", body[:min(800, len(body))])
 	}
 }
 
@@ -202,7 +208,8 @@ func TestFrontFeedPrettyPath(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
 	}
-	if !strings.Contains(rec.Body.String(), `<rss version="2.0">`) {
-		t.Fatalf("expected RSS2, got %q", rec.Body.String())
+	body := rec.Body.String()
+	if !strings.Contains(body, `<rss version="2.0"`) || !strings.Contains(body, "xmlns:atom=") {
+		t.Fatalf("expected RSS2 with namespaces, got %q", body[:min(400, len(body))])
 	}
 }

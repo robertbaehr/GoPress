@@ -308,45 +308,102 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, c *wp.Context) {
 	}
 
 	var b strings.Builder
-	b.WriteString(xml.Header)
-	b.WriteString(`<rss version="2.0">` + "\n")
+	// Match WP feed-rss2.php channel shape (P3.13).
+	b.WriteString(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"` + "\n")
+	b.WriteString("\txmlns:content=\"http://purl.org/rss/1.0/modules/content/\"\n")
+	b.WriteString("\txmlns:wfw=\"http://wellformedweb.org/CommentAPI/\"\n")
+	b.WriteString("\txmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n")
+	b.WriteString("\txmlns:atom=\"http://www.w3.org/2005/Atom\"\n")
+	b.WriteString("\txmlns:sy=\"http://purl.org/rss/1.0/modules/syndication/\"\n")
+	b.WriteString("\txmlns:slash=\"http://purl.org/rss/1.0/modules/slash/\"\n")
+	b.WriteString("\t>\n\n")
 	b.WriteString("<channel>\n")
-	b.WriteString("<title>")
+	b.WriteString("\t<title>")
 	b.WriteString(xmlEscape(blogname))
 	b.WriteString("</title>\n")
-	b.WriteString("<link>")
-	b.WriteString(xmlEscape(home + "/"))
+	b.WriteString("\t<atom:link href=\"")
+	b.WriteString(xmlEscape(home + "/feed/"))
+	b.WriteString("\" rel=\"self\" type=\"application/rss+xml\" />\n")
+	b.WriteString("\t<link>")
+	b.WriteString(xmlEscape(home))
 	b.WriteString("</link>\n")
-	b.WriteString("<description>")
+	b.WriteString("\t<description>")
 	b.WriteString(xmlEscape(desc))
 	b.WriteString("</description>\n")
-	b.WriteString("<lastBuildDate>")
-	b.WriteString(time.Now().UTC().Format(time.RFC1123Z))
+	b.WriteString("\t<lastBuildDate>")
+	b.WriteString(xmlEscape(feedBuildDate(posts)))
 	b.WriteString("</lastBuildDate>\n")
-	b.WriteString("<language>en-US</language>\n")
+	b.WriteString("\t<language>en-US</language>\n")
+	b.WriteString("\t<sy:updatePeriod>\n")
+	b.WriteString("\thourly\t</sy:updatePeriod>\n")
+	b.WriteString("\t<sy:updateFrequency>\n")
+	b.WriteString("\t1\t</sy:updateFrequency>\n")
+	b.WriteString("\t<generator>https://wordpress.org/?v=7.2-alpha-64260</generator>\n")
 	for _, p := range posts {
-		link := fmt.Sprintf("%s/?p=%d", home, p.ID)
-		b.WriteString("<item>\n")
-		b.WriteString("<title>")
+		link := postPermalink(home, p.Post)
+		guid := home + "/?p=" + strconv.FormatInt(p.ID, 10)
+		if p.GUID != "" {
+			guid = p.GUID
+		}
+		b.WriteString("\t<item>\n")
+		b.WriteString("\t\t<title>")
 		b.WriteString(xmlEscape(p.Title))
 		b.WriteString("</title>\n")
-		b.WriteString("<link>")
+		b.WriteString("\t\t<link>")
 		b.WriteString(xmlEscape(link))
 		b.WriteString("</link>\n")
-		b.WriteString("<guid isPermaLink=\"false\">")
-		b.WriteString(xmlEscape(link))
-		b.WriteString("</guid>\n")
-		if p.Date != "" {
-			if t, err := time.Parse("2006-01-02 15:04:05", p.Date); err == nil {
-				b.WriteString("<pubDate>")
-				b.WriteString(t.Format(time.RFC1123Z))
-				b.WriteString("</pubDate>\n")
+		if p.CommentCount > 0 || p.CommentStatus == "open" {
+			anchor := "#respond"
+			if p.CommentCount > 0 {
+				anchor = "#comments"
 			}
+			b.WriteString("\t\t\t\t\t<comments>")
+			b.WriteString(xmlEscape(strings.TrimRight(link, "/") + "/" + anchor))
+			b.WriteString("</comments>\n")
+			b.WriteString("\t\t\n")
 		}
-		b.WriteString("<description><![CDATA[")
-		b.WriteString(wp.KsesPost(p.Content))
+		b.WriteString("\t\t<dc:creator><![CDATA[")
+		b.WriteString(p.AuthorName)
+		b.WriteString("]]></dc:creator>\n")
+		b.WriteString("\t\t<pubDate>")
+		b.WriteString(xmlEscape(feedRFC822(p.DateGMT, p.Date)))
+		b.WriteString("</pubDate>\n")
+		for _, cat := range p.Categories {
+			b.WriteString("\t\t\t\t<category><![CDATA[")
+			b.WriteString(cat)
+			b.WriteString("]]></category>\n")
+		}
+		b.WriteString("\t\t<guid isPermaLink=\"false\">")
+		b.WriteString(xmlEscape(guid))
+		b.WriteString("</guid>\n\n")
+		b.WriteString("\t\t\t\t\t<description><![CDATA[")
+		b.WriteString(p.ExcerptRSS)
 		b.WriteString("]]></description>\n")
-		b.WriteString("</item>\n")
+		b.WriteString("\t\t\t\t\t\t\t\t\t\t")
+		if p.ContentRSS != "" {
+			b.WriteString("<content:encoded><![CDATA[")
+			if !strings.HasPrefix(p.ContentRSS, "\n") {
+				b.WriteString("\n")
+			}
+			b.WriteString(p.ContentRSS)
+			if !strings.HasSuffix(p.ContentRSS, "\n") {
+				b.WriteString("\n")
+			}
+			b.WriteString("]]></content:encoded>\n")
+		} else {
+			b.WriteString("<content:encoded><![CDATA[\n]]></content:encoded>\n")
+		}
+		b.WriteString("\t\t\t\t\t\n")
+		if p.CommentCount > 0 || p.CommentStatus == "open" {
+			b.WriteString("\t\t\t\t\t<wfw:commentRss>")
+			b.WriteString(xmlEscape(strings.TrimRight(link, "/") + "/feed/"))
+			b.WriteString("</wfw:commentRss>\n")
+			b.WriteString("\t\t\t<slash:comments>")
+			b.WriteString(strconv.FormatInt(p.CommentCount, 10))
+			b.WriteString("</slash:comments>\n")
+		}
+		b.WriteString("\t\t\n\t\t\n")
+		b.WriteString("\t\t\t</item>\n")
 	}
 	b.WriteString("</channel>\n</rss>\n")
 
@@ -363,10 +420,12 @@ func xmlEscape(s string) string {
 }
 
 type feedPost struct {
-	ID      int64
-	Title   string
-	Content string
-	Date    string
+	wp.Post
+	AuthorName   string
+	Categories   []string
+	CommentCount int64
+	ExcerptRSS   string
+	ContentRSS   string
 }
 
 func latestFeedPosts(c *wp.Context, limit int) ([]feedPost, error) {
@@ -379,9 +438,188 @@ func latestFeedPosts(c *wp.Context, limit int) ([]feedPost, error) {
 	}
 	out := make([]feedPost, 0, len(posts))
 	for _, p := range posts {
-		out = append(out, feedPost{ID: p.ID, Title: p.Title, Content: p.Content, Date: p.Date})
+		fp := feedPost{Post: p}
+		fp.AuthorName = feedAuthorName(c, p.Author)
+		fp.Categories = feedCategoryNames(c, p.ID)
+		fp.CommentCount = feedCommentCount(c, p.ID)
+		fp.ExcerptRSS = feedExcerptRSS(p)
+		// Feed content:encoded follows the_content_feed (no post-save KSES strip),
+		// so data: URIs in fixture video blocks are preserved like WP.
+		rendered := wp.TheContent(c, p.Content)
+		fp.ContentRSS = strings.TrimLeft(rendered, " \t\r")
+		out = append(out, fp)
 	}
 	return out, nil
+}
+
+func feedBuildDate(posts []feedPost) string {
+	if len(posts) == 0 {
+		return time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05 +0000")
+	}
+	return feedRFC822(posts[0].DateGMT, posts[0].Date)
+}
+
+func feedRFC822(gmt, local string) string {
+	for _, src := range []string{gmt, local} {
+		if src == "" {
+			continue
+		}
+		if t, err := time.Parse("2006-01-02 15:04:05", src); err == nil {
+			return t.UTC().Format("Mon, 02 Jan 2006 15:04:05 +0000")
+		}
+	}
+	return time.Now().UTC().Format("Mon, 02 Jan 2006 15:04:05 +0000")
+}
+
+func feedAuthorName(c *wp.Context, authorID int64) string {
+	if c == nil || authorID <= 0 {
+		return ""
+	}
+	u, err := c.GetUserBy("id", authorID)
+	if err != nil || u == nil {
+		return ""
+	}
+	if u.DisplayName != "" {
+		return u.DisplayName
+	}
+	return u.Login
+}
+
+func feedCategoryNames(c *wp.Context, postID int64) []string {
+	out := []string{}
+	if c == nil || c.DB == nil || postID <= 0 {
+		return out
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT t.name FROM "+c.DB.Terms()+" t "+
+			"INNER JOIN "+c.DB.TermTaxonomy()+" tt ON t.term_id = tt.term_id "+
+			"INNER JOIN "+c.DB.TermRelationships()+" tr ON tr.term_taxonomy_id = tt.term_taxonomy_id "+
+			"WHERE tr.object_id = %d AND tt.taxonomy = %s ORDER BY t.name ASC",
+		postID, "category",
+	)
+	if err != nil {
+		return out
+	}
+	rows, err := c.DB.GetResults(q, args...)
+	if err != nil {
+		return out
+	}
+	for _, row := range rows {
+		name := ""
+		switch v := row["name"].(type) {
+		case string:
+			name = v
+		case []byte:
+			name = string(v)
+		}
+		if name != "" {
+			out = append(out, name)
+		}
+	}
+	return out
+}
+
+func feedCommentCount(c *wp.Context, postID int64) int64 {
+	if c == nil || c.DB == nil || postID <= 0 {
+		return 0
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT comment_count FROM "+c.DB.Posts()+" WHERE ID = %d LIMIT 1",
+		postID,
+	)
+	if err != nil {
+		return 0
+	}
+	row, err := c.DB.GetRow(q, args...)
+	if err != nil || row == nil {
+		return 0
+	}
+	switch v := row["comment_count"].(type) {
+	case int64:
+		return v
+	case int:
+		return int64(v)
+	case []byte:
+		n, _ := strconv.ParseInt(string(v), 10, 64)
+		return n
+	case string:
+		n, _ := strconv.ParseInt(v, 10, 64)
+		return n
+	}
+	return 0
+}
+
+func feedExcerptRSS(p wp.Post) string {
+	if strings.TrimSpace(p.Excerpt) != "" {
+		return strings.TrimSpace(stripTagsSimple(p.Excerpt))
+	}
+	// Approximate WP excerpt_remove_blocks: drop media blocks, keep textual blocks.
+	raw := p.Content
+	raw = stripBlockType(raw, "video")
+	raw = stripBlockType(raw, "audio")
+	raw = stripBlockType(raw, "image")
+	raw = stripBlockType(raw, "gallery")
+	raw = stripBlockType(raw, "embed")
+	raw = stripBlockType(raw, "text-columns")
+	raw = stripBlockType(raw, "columns")
+	raw = stripBlockType(raw, "terms-query")
+	raw = stripBlockType(raw, "query")
+	for {
+		start := strings.Index(raw, "<!--")
+		if start < 0 {
+			break
+		}
+		end := strings.Index(raw[start:], "-->")
+		if end < 0 {
+			break
+		}
+		raw = raw[:start] + raw[start+end+3:]
+	}
+	text := strings.TrimSpace(stripTagsSimple(raw))
+	text = strings.Join(strings.Fields(text), " ")
+	return text
+}
+
+// stripBlockType removes <!-- wp:name ... --> ... <!-- /wp:name --> regions (and self-closing).
+func stripBlockType(s, name string) string {
+	for {
+		open := "<!-- wp:" + name
+		i := strings.Index(s, open)
+		if i < 0 {
+			// also core/name form is already "wp:name"
+			return s
+		}
+		rest := s[i:]
+		selfClose := strings.Index(rest, "/-->")
+		close := strings.Index(rest, "<!-- /wp:"+name+" -->")
+		if selfClose >= 0 && (close < 0 || selfClose < close) {
+			// self-closing block comment
+			end := i + selfClose + len("/-->")
+			s = s[:i] + s[end:]
+			continue
+		}
+		if close < 0 {
+			return s
+		}
+		end := i + close + len("<!-- /wp:"+name+" -->")
+		s = s[:i] + s[end:]
+	}
+}
+
+func stripTagsSimple(s string) string {
+	var b strings.Builder
+	inTag := false
+	for _, r := range s {
+		switch {
+		case r == '<':
+			inTag = true
+		case r == '>':
+			inTag = false
+		case !inTag:
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 // tryCanonicalPostRedirect issues a 301 to the post's pretty permalink when the
