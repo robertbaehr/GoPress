@@ -210,6 +210,25 @@ func (set *AuthCookieSet) WriteAuthCookies(w http.ResponseWriter, path string) {
 	write(set.LoggedInName, set.LoggedInValue, set.Expire)
 }
 
+// AuthenticateRequest reads the logged_in auth cookie and sets CurrentUser when valid.
+// Invalid or missing cookies leave CurrentUser nil (anonymous).
+func (c *Context) AuthenticateRequest() {
+	if c == nil || c.Req == nil || c.Auth == nil || c.Users == nil {
+		return
+	}
+	name := c.AuthCookieName("logged_in")
+	cookie, err := c.Req.Cookie(name)
+	if err != nil || cookie == nil || cookie.Value == "" {
+		return
+	}
+	ajaxOrPOST := c.Req.Method == http.MethodPost
+	user, err := c.ValidateAuthCookie(cookie.Value, "logged_in", 0, ajaxOrPOST)
+	if err != nil || user == nil {
+		return
+	}
+	c.CurrentUser = user
+}
+
 // Login authenticates login/password, sets CurrentUser, and returns auth cookies.
 func (c *Context) Login(login, password string, remember, secure bool, now int64) (*AuthCookieSet, error) {
 	if c == nil || c.Users == nil {
