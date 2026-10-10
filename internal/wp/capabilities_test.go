@@ -208,3 +208,65 @@ func TestPHPUnserializeRolesRoundTrip(t *testing.T) {
 		t.Fatal("install_plugins should be denied")
 	}
 }
+
+func TestCurrentUserCan(t *testing.T) {
+	if os.Getenv("GOPRESS_SKIP_DB") != "" {
+		t.Skip("GOPRESS_SKIP_DB set")
+	}
+	c, err := wp.Boot(context.Background(), testBootConfig())
+	if err != nil {
+		t.Skipf("Boot unavailable: %v", err)
+	}
+	defer c.DB.Close()
+
+	if c.CurrentUserCan("read") {
+		t.Fatal("expected false with no CurrentUser")
+	}
+
+	admin, err := c.GetUserBy("login", "admin")
+	if err != nil || admin == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	c.CurrentUser = admin
+
+	if !c.CurrentUserCan("manage_options") {
+		t.Fatal("admin should manage_options")
+	}
+	if !c.CurrentUserCan("edit_posts") {
+		t.Fatal("admin should edit_posts")
+	}
+	// Self edit_user / app password meta caps map to exist.
+	if !c.CurrentUserCan("edit_user", admin.ID) {
+		t.Fatal("admin should edit self")
+	}
+	if !c.CurrentUserCan("list_app_passwords", admin.ID) {
+		t.Fatal("admin should list own app passwords")
+	}
+	if !c.CurrentUserCan("create_app_password", admin.ID) {
+		t.Fatal("admin should create own app passwords")
+	}
+}
+
+func TestMapMetaCapEditUserSelf(t *testing.T) {
+	if os.Getenv("GOPRESS_SKIP_DB") != "" {
+		t.Skip("GOPRESS_SKIP_DB set")
+	}
+	c, err := wp.Boot(context.Background(), testBootConfig())
+	if err != nil {
+		t.Skipf("Boot unavailable: %v", err)
+	}
+	defer c.DB.Close()
+
+	caps := c.MapMetaCap("edit_user", 1, 1)
+	if len(caps) != 1 || caps[0] != "exist" {
+		t.Fatalf("self edit_user caps=%v", caps)
+	}
+	caps = c.MapMetaCap("edit_user", 1, 2)
+	if len(caps) != 1 || caps[0] != "edit_users" {
+		t.Fatalf("other edit_user caps=%v", caps)
+	}
+	caps = c.MapMetaCap("list_app_passwords", 1, 1)
+	if len(caps) != 1 || caps[0] != "exist" {
+		t.Fatalf("list_app_passwords self caps=%v", caps)
+	}
+}

@@ -202,7 +202,7 @@ func userHasCaps(user *User, required []string) bool {
 }
 
 // MapMetaCap maps a capability to primitives, including edit_post/delete_post
-// ownership based on post_author (P1.13).
+// ownership based on post_author (P1.13) and edit_user / app-password meta caps (P2.23).
 func (c *Context) MapMetaCap(cap string, userID int64, args ...int64) []string {
 	if c == nil || c.Roles == nil {
 		return []string{"do_not_allow"}
@@ -212,9 +212,29 @@ func (c *Context) MapMetaCap(cap string, userID int64, args ...int64) []string {
 		return c.mapEditDeletePost(cap, userID, args...)
 	case "delete_post", "delete_page":
 		return c.mapEditDeletePost(cap, userID, args...)
+	case "edit_user":
+		return c.mapEditUser(userID, args...)
+	case "create_app_password", "list_app_passwords", "read_app_password",
+		"edit_app_password", "delete_app_passwords", "delete_app_password":
+		return c.mapEditUser(userID, args...)
 	default:
 		return c.Roles.MapMetaCap(cap, userID, args...)
 	}
+}
+
+// mapEditUser mirrors WP map_meta_cap('edit_user'): self-edit needs no primitive;
+// otherwise edit_users is required.
+func (c *Context) mapEditUser(userID int64, args ...int64) []string {
+	if userID < 1 {
+		return []string{"do_not_allow"}
+	}
+	if len(args) > 0 && args[0] == userID {
+		return []string{"exist"}
+	}
+	if len(args) == 0 {
+		return []string{"edit_users"}
+	}
+	return []string{"edit_users"}
 }
 
 func (c *Context) mapEditDeletePost(cap string, userID int64, args ...int64) []string {
@@ -306,6 +326,14 @@ func (c *Context) UserCan(user *User, cap string, args ...int64) bool {
 	}
 	required := c.MapMetaCap(cap, user.ID, args...)
 	return userHasCaps(user, required)
+}
+
+// CurrentUserCan mirrors current_user_can() for the authenticated user (P2.23).
+func (c *Context) CurrentUserCan(cap string, args ...int64) bool {
+	if c == nil || c.CurrentUser == nil {
+		return false
+	}
+	return c.UserCan(c.CurrentUser, cap, args...)
 }
 
 // GetUserBy loads a user and initializes role/capability maps when Roles/Meta exist.
