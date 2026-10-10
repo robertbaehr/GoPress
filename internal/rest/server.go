@@ -115,6 +115,8 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 			return
 		}
 		s.serveMediaItem(w, r, c, id)
+	case path == "/wp/v2/search":
+		s.serveSearch(w, r, c)
 	default:
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"code":    "rest_no_route",
@@ -268,6 +270,21 @@ func buildIndex(c *wp.Context) Index {
 		"/wp/v2/comments/(?P<id>[\\d]+)":   itemRoute("wp/v2"),
 		"/wp/v2/media":                     collectionRoute("wp/v2"),
 		"/wp/v2/media/(?P<id>[\\d]+)":      itemRoute("wp/v2"),
+		"/wp/v2/search": {
+			Namespace: "wp/v2",
+			Methods:   []string{"GET"},
+			Endpoints: []RouteEndpoint{{
+				Methods: []string{"GET"},
+				Args: map[string]any{
+					"context":  map[string]any{"default": "view", "required": false},
+					"page":     map[string]any{"default": 1, "required": false},
+					"per_page": map[string]any{"default": 10, "required": false},
+					"search":   map[string]any{"required": false},
+					"type":     map[string]any{"required": false},
+					"subtype":  map[string]any{"required": false},
+				},
+			}},
+		},
 	}
 
 	// When authenticated, advertise additional admin-oriented routes (best-effort).
