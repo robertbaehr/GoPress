@@ -485,13 +485,20 @@ func (h *Handler) serveLostPasswordPost(w http.ResponseWriter, r *http.Request, 
 		h.serveLostPassword(w, r, c, msg)
 		return
 	}
-	redirectTo := r.FormValue("redirect_to")
+	// P6.35: honor redirect_to via lostpassword_redirect + wp_safe_redirect.
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	requested := strings.TrimSpace(r.FormValue("redirect_to"))
+	if requested == "" {
+		requested = strings.TrimSpace(r.URL.Query().Get("redirect_to"))
+	}
+	redirectTo := applyLostPasswordRedirect(c, requested)
 	if redirectTo == "" {
-		home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 		redirectTo = home + "/wp-login.php?checkemail=confirm"
 		if home == "" {
 			redirectTo = "/wp-login.php?checkemail=confirm"
 		}
+	} else {
+		redirectTo = sanitizeRedirect(redirectTo, home)
 	}
 	http.Redirect(w, r, redirectTo, http.StatusFound)
 }
@@ -709,6 +716,16 @@ func (h *Handler) serveLostPassword(w http.ResponseWriter, r *http.Request, c *w
 	loginURL := home + "/wp-login.php"
 	actionURL := loginURL + "?action=lostpassword"
 
+	// P6.35: preserve redirect_to through the form (lostpassword_redirect filter).
+	requested := ""
+	if r != nil {
+		requested = strings.TrimSpace(r.URL.Query().Get("redirect_to"))
+		if requested == "" {
+			requested = strings.TrimSpace(r.FormValue("redirect_to"))
+		}
+	}
+	redirectTo := applyLostPasswordRedirect(c, requested)
+
 	var b strings.Builder
 	writeLoginHead(&b, home, blogname, "Lost Password", "lostpassword")
 	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Lost Password</h1>\n")
@@ -729,7 +746,9 @@ func (h *Handler) serveLostPassword(w http.ResponseWriter, r *http.Request, c *w
 	b.WriteString("\t\t\t\t<label for=\"user_login\">Username or Email Address</label>\n")
 	b.WriteString("\t\t\t\t<input type=\"text\" name=\"user_login\" id=\"user_login\" class=\"input ltr\" value=\"\" size=\"20\" autocapitalize=\"off\" autocomplete=\"username\" required=\"required\" />\n")
 	b.WriteString("\t\t\t</p>\n")
-	b.WriteString("\t\t\t\t\t\t<input type=\"hidden\" name=\"redirect_to\" value=\"\" />\n")
+	b.WriteString("\t\t\t\t\t\t<input type=\"hidden\" name=\"redirect_to\" value=\"")
+	b.WriteString(html.EscapeString(redirectTo))
+	b.WriteString("\" />\n")
 	b.WriteString("\t\t\t<p class=\"submit\">\n")
 	b.WriteString("\t\t\t\t<input type=\"submit\" name=\"wp-submit\" id=\"wp-submit\" class=\"button button-primary button-large\" value=\"Get New Password\" />\n")
 	b.WriteString("\t\t\t</p>\n")
@@ -1298,6 +1317,23 @@ func adjustDefaultAdminLoginRedirect(c *wp.Context, redirectTo, home string, use
 		return "/"
 	}
 	return "/wp-admin/"
+}
+
+// applyLostPasswordRedirect runs the lostpassword_redirect filter (P6.35).
+func applyLostPasswordRedirect(c *wp.Context, requested string) string {
+	redirectTo := strings.TrimSpace(requested)
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("lostpassword_redirect", redirectTo); v != nil {
+			if s, ok := v.(string); ok {
+				return strings.TrimSpace(s)
+			}
+			s := strings.TrimSpace(fmt.Sprint(v))
+			if s != "" && s != "<nil>" {
+				return s
+			}
+		}
+	}
+	return redirectTo
 }
 
 // sanitizeRedirect validates redirect_to like wp_validate_redirect (P6.20).
