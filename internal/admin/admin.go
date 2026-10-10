@@ -310,9 +310,37 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		b.WriteString("&amp;action=edit\">")
 		b.WriteString(html.EscapeString(p.Title))
 		b.WriteString("</a></strong>")
-		b.WriteString("<div class=\"row-actions\"><span class=\"edit\"><a href=\"/wp-admin/post.php?post=")
+		// P7.66: Quick Edit row action + hidden inline data stub.
+		b.WriteString("<div class=\"row-actions\">")
+		b.WriteString("<span class=\"edit\"><a href=\"/wp-admin/post.php?post=")
 		b.WriteString(strconv.FormatInt(p.ID, 10))
-		b.WriteString("&amp;action=edit\">Edit</a></span></div></td>")
+		b.WriteString("&amp;action=edit\">Edit</a> | </span>")
+		b.WriteString("<span class=\"inline hide-if-no-js\"><button type=\"button\" class=\"button-link editinline\" aria-label=\"Quick edit &#8220;")
+		b.WriteString(html.EscapeString(p.Title))
+		b.WriteString("&#8221; inline\" aria-expanded=\"false\">Quick&nbsp;Edit</button></span>")
+		b.WriteString("</div>")
+		b.WriteString("<button type=\"button\" class=\"toggle-row\"><span class=\"screen-reader-text\">Show more details</span></button>")
+		b.WriteString("<div class=\"hidden\" id=\"inline_")
+		b.WriteString(strconv.FormatInt(p.ID, 10))
+		b.WriteString("\">")
+		b.WriteString("<div class=\"post_title\">")
+		b.WriteString(html.EscapeString(p.Title))
+		b.WriteString("</div>")
+		b.WriteString("<div class=\"post_name\"></div>")
+		b.WriteString("<div class=\"post_author\">")
+		b.WriteString(html.EscapeString(p.Author))
+		b.WriteString("</div>")
+		b.WriteString("<div class=\"comment_status\">open</div>")
+		b.WriteString("<div class=\"ping_status\">open</div>")
+		b.WriteString("<div class=\"_status\">")
+		b.WriteString(html.EscapeString(p.Status))
+		b.WriteString("</div>")
+		b.WriteString("<div class=\"jj\"></div><div class=\"mm\"></div><div class=\"aa\"></div>")
+		b.WriteString("<div class=\"hh\"></div><div class=\"mn\"></div><div class=\"ss\"></div>")
+		b.WriteString("<div class=\"post_password\"></div><div class=\"page_template\">default</div>")
+		b.WriteString("<div class=\"post_category\">1</div><div class=\"tags_input\"></div>")
+		b.WriteString("<div class=\"sticky\"></div><div class=\"post_format\"></div>")
+		b.WriteString("</div></td>")
 		b.WriteString("<td class=\"author column-author\" data-colname=\"Author\">")
 		b.WriteString(html.EscapeString(p.Author))
 		b.WriteString("</td>")
@@ -326,8 +354,42 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		b.WriteString("</td></tr>\n")
 	}
 	b.WriteString("</tbody>\n</table>\n")
+	// P7.66: inline Quick Edit form stub (hidden; JS wires editinline).
+	b.WriteString(postQuickEditStubHTML(postType))
 	_ = blogname
 	writeAdminPage(w, c, newAdminChrome(c, heading, "edit-php"), b.String())
+}
+
+// postQuickEditStubHTML emits the hidden inline-edit row template for edit.php (P7.66).
+func postQuickEditStubHTML(postType string) string {
+	if postType == "" {
+		postType = "post"
+	}
+	var b strings.Builder
+	b.WriteString(`<table style="display: none"><tbody id="inlineedit">` + "\n")
+	b.WriteString(`<tr id="inline-edit" class="inline-edit-row inline-edit-row-post quick-edit-row quick-edit-row-post inline-edit-`)
+	b.WriteString(html.EscapeString(postType))
+	b.WriteString(`" style="display: none">` + "\n")
+	b.WriteString(`<td colspan="4" class="colspanchange">` + "\n")
+	b.WriteString(`<div class="inline-edit-wrapper" role="region" aria-labelledby="quick-edit-legend">` + "\n")
+	b.WriteString(`<fieldset class="inline-edit-col-left">` + "\n")
+	b.WriteString(`<legend class="inline-edit-legend" id="quick-edit-legend">Quick Edit</legend>` + "\n")
+	b.WriteString(`<div class="inline-edit-col">` + "\n")
+	b.WriteString(`<label><span class="title">Title</span><span class="input-text-wrap"><input type="text" name="post_title" class="ptitle" value="" /></span></label>` + "\n")
+	b.WriteString(`<label><span class="title">Slug</span><span class="input-text-wrap"><input type="text" name="post_name" value="" autocomplete="off" spellcheck="false" /></span></label>` + "\n")
+	b.WriteString(`<label class="inline-edit-status"><span class="title">Status</span><select name="_status"><option value="publish">Published</option><option value="pending">Pending Review</option><option value="draft">Draft</option><option value="private">Private</option></select></label>` + "\n")
+	b.WriteString(`</div></fieldset>` + "\n")
+	b.WriteString(`<div class="submit inline-edit-save">` + "\n")
+	b.WriteString(`<button type="button" class="button cancel alignleft">Cancel</button>` + "\n")
+	b.WriteString(`<button type="button" class="button button-primary save alignright">Update</button>` + "\n")
+	b.WriteString(`<span class="spinner"></span>` + "\n")
+	b.WriteString(`<input type="hidden" name="post_type" value="`)
+	b.WriteString(html.EscapeString(postType))
+	b.WriteString(`" />` + "\n")
+	b.WriteString(`<br class="clear" />` + "\n")
+	b.WriteString(`</div></div></td></tr>` + "\n")
+	b.WriteString(`</tbody></table>` + "\n")
+	return b.String()
 }
 
 // serveEditTags is Categories / Tags list + add/delete (P7.29 / P7.58 / P7.59 / edit-tags.php).

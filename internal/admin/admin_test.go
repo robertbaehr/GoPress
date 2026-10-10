@@ -421,6 +421,34 @@ func TestEditPostsListsTitles(t *testing.T) {
 	}
 }
 
+func TestEditPostsQuickEditStub(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`class="button-link editinline"`,
+		"Quick&nbsp;Edit",
+		`id="inline-edit"`,
+		`id="inlineedit"`,
+		"Quick Edit",
+		`name="post_title"`,
+		`name="_status"`,
+		`id="inline_`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected quick-edit stub %q, got %q", want, body[:min(800, len(body))])
+		}
+	}
+}
+
 func TestUploadListsMedia(t *testing.T) {
 	c := bootOrSkip(t)
 	ck := loginCookie(t, c)
