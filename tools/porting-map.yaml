@@ -363,6 +363,13 @@
   task: P8.8
   api: n/a
 
+# P10.26: E2E comments RSS feed /comments/feed/.
+- prefix: tests/e2e/comments-feed.spec.js
+  go: tests/e2e/comments-feed.spec.js
+  status: partial
+  task: P10.26
+  api: n/a
+
 # P4.49: REST /wp/v2/search type=post|term|post-format filters.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-search-controller.php#type
   go: internal/rest/search.go
