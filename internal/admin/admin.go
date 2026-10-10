@@ -284,7 +284,9 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	catID := parseEditCategoryFilter(r)
 	// P7.72: tag dropdown filter (?tag_id=).
 	tagID := parseEditTagFilter(r)
-	posts, err := recentPostsByType(c, postType, 20, search, authorID, catID, tagID)
+	// P7.73: status view links (?post_status=publish|draft|trash).
+	postStatus := parseEditPostStatus(r)
+	posts, err := recentPostsByType(c, postType, 20, search, authorID, catID, tagID, postStatus)
 	if err != nil {
 		http.Error(w, "posts: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
@@ -296,6 +298,7 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		categories, _ = editPostCategories(c)
 		tags, _ = editPostTags(c)
 	}
+	counts := countPostsByStatus(c, postType)
 	heading := "Posts"
 	searchLabel := "Search Posts"
 	if postType == "page" {
@@ -306,11 +309,17 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	b.WriteString("<h1>")
 	b.WriteString(html.EscapeString(heading))
 	b.WriteString("</h1>\n")
+	writeEditStatusViews(&b, postType, postStatus, counts)
 	// P7.68: bulk actions form wrapping the posts list table.
 	b.WriteString(`<form id="posts-filter" method="get">` + "\n")
 	b.WriteString(`<input type="hidden" name="post_type" value="`)
 	b.WriteString(html.EscapeString(postType))
 	b.WriteString(`" />` + "\n")
+	if postStatus != "" {
+		b.WriteString(`<input type="hidden" name="post_status" value="`)
+		b.WriteString(html.EscapeString(postStatus))
+		b.WriteString(`" />` + "\n")
+	}
 	// P7.69: WP_List_Table::search_box (input_id=post → post-search-input).
 	b.WriteString(`<p class="search-box">` + "\n")
 	b.WriteString(`<label class="screen-reader-text" for="post-search-input">`)
@@ -4070,7 +4079,7 @@ func countComments(c *wp.Context, approved string) int {
 	return int(asInt64(row["n"]))
 }
 
-func recentPostsByType(c *wp.Context, postType string, limit int, search string, authorID, catID, tagID int64) ([]postRow, error) {
+func recentPostsByType(c *wp.Context, postType string, limit int, search string, authorID, catID, tagID int64, postStatus string) ([]postRow, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
@@ -4093,8 +4102,18 @@ func recentPostsByType(c *wp.Context, postType string, limit int, search string,
 			"INNER JOIN " + c.DB.TermTaxonomy() + " ttt ON ttt.term_taxonomy_id = trt.term_taxonomy_id " +
 			"INNER JOIN " + c.DB.Terms() + " tg ON tg.term_id = ttt.term_id "
 	}
-	sql += " WHERE p.post_type = %s AND p.post_status IN (%s, %s, %s, %s, %s) "
-	prepArgs := []any{postType, "publish", "draft", "pending", "private", "future"}
+	var prepArgs []any
+	sql += " WHERE p.post_type = %s "
+	prepArgs = append(prepArgs, postType)
+	// P7.73: single-status view, else All (admin list excludes trash/auto-draft).
+	switch postStatus {
+	case "publish", "draft", "pending", "private", "future", "trash":
+		sql += "AND p.post_status = %s "
+		prepArgs = append(prepArgs, postStatus)
+	default:
+		sql += "AND p.post_status IN (%s, %s, %s, %s, %s) "
+		prepArgs = append(prepArgs, "publish", "draft", "pending", "private", "future")
+	}
 	if catID > 0 {
 		sql += "AND tt.taxonomy = %s AND t.term_id = %d "
 		prepArgs = append(prepArgs, "category", catID)
@@ -4236,6 +4255,106 @@ func parseEditTagFilter(r *http.Request) int64 {
 		return 0
 	}
 	return n
+}
+
+// parseEditPostStatus reads ?post_status= from edit.php views (P7.73).
+func parseEditPostStatus(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	s := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("post_status")))
+	switch s {
+	case "publish", "draft", "pending", "private", "future", "trash":
+		return s
+	default:
+		return ""
+	}
+}
+
+type editStatusCounts struct {
+	All     int
+	Publish int
+	Draft   int
+	Trash   int
+}
+
+func countPostsByStatus(c *wp.Context, postType string) editStatusCounts {
+	var out editStatusCounts
+	if c == nil || c.DB == nil {
+		return out
+	}
+	if postType == "" {
+		postType = "post"
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT post_status, COUNT(*) AS n FROM "+c.DB.Posts()+
+			" WHERE post_type = %s AND post_status NOT IN (%s) GROUP BY post_status",
+		postType, "auto-draft",
+	)
+	if err != nil {
+		return out
+	}
+	rows, err := c.DB.GetResults(q, args...)
+	if err != nil {
+		return out
+	}
+	for _, row := range rows {
+		n := int(asInt64(row["n"]))
+		switch asString(row["post_status"]) {
+		case "publish":
+			out.Publish = n
+			out.All += n
+		case "draft", "pending", "private", "future":
+			if asString(row["post_status"]) == "draft" {
+				out.Draft = n
+			}
+			out.All += n
+		case "trash":
+			out.Trash = n
+		}
+	}
+	return out
+}
+
+// writeEditStatusViews emits WP_Posts_List_Table::get_views subset (P7.73).
+func writeEditStatusViews(b *strings.Builder, postType, current string, counts editStatusCounts) {
+	if b == nil {
+		return
+	}
+	base := "edit.php"
+	if postType != "" && postType != "post" {
+		base = "edit.php?post_type=" + url.QueryEscape(postType)
+	}
+	link := func(status, label string, n int, isCurrent bool) string {
+		href := base
+		if status != "" {
+			sep := "?"
+			if strings.Contains(base, "?") {
+				sep = "&"
+			}
+			href = base + sep + "post_status=" + url.QueryEscape(status)
+		}
+		cls := ""
+		if isCurrent {
+			cls = ` class="current"`
+		}
+		return fmt.Sprintf(`<a href="%s"%s>%s <span class="count">(%d)</span></a>`,
+			html.EscapeString(href), cls, label, n)
+	}
+	b.WriteString(`<ul class="subsubsub">` + "\n")
+	b.WriteString(`<li class="all">`)
+	b.WriteString(link("", "All", counts.All, current == ""))
+	b.WriteString(` |</li>` + "\n")
+	b.WriteString(`<li class="publish">`)
+	b.WriteString(link("publish", "Published", counts.Publish, current == "publish"))
+	b.WriteString(` |</li>` + "\n")
+	b.WriteString(`<li class="draft">`)
+	b.WriteString(link("draft", "Drafts", counts.Draft, current == "draft"))
+	b.WriteString(` |</li>` + "\n")
+	b.WriteString(`<li class="trash">`)
+	b.WriteString(link("trash", "Trash", counts.Trash, current == "trash"))
+	b.WriteString(`</li>` + "\n")
+	b.WriteString(`</ul>` + "\n")
 }
 
 // editPostTags returns tags for the edit.php filter dropdown (P7.72).
