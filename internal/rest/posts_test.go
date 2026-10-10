@@ -757,3 +757,63 @@ func TestPostsAfterBeforeQueryParams(t *testing.T) {
 		t.Fatalf("expected X-WP-Total=0, got %q", rec.Header().Get("X-WP-Total"))
 	}
 }
+
+func TestPostsOffset(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	// Baseline first page.
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?per_page=2&orderby=id&order=asc", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("baseline status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var page1 []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &page1); err != nil {
+		t.Fatal(err)
+	}
+	if len(page1) < 2 {
+		t.Fatalf("need ≥2 posts for offset test, got %d", len(page1))
+	}
+	total := rec.Header().Get("X-WP-Total")
+
+	// offset=1 should skip the first item (takes precedence over page).
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?per_page=2&orderby=id&order=asc&offset=1&page=1", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("offset status=%d", rec.Code)
+	}
+	var offsetHits []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &offsetHits); err != nil {
+		t.Fatal(err)
+	}
+	if len(offsetHits) == 0 {
+		t.Fatal("expected posts with offset=1")
+	}
+	if offsetHits[0].ID == page1[0].ID {
+		t.Fatalf("offset=1 should skip first post id=%d", page1[0].ID)
+	}
+	if offsetHits[0].ID != page1[1].ID {
+		t.Fatalf("offset=1 first=%d want %d", offsetHits[0].ID, page1[1].ID)
+	}
+	if rec.Header().Get("X-WP-Total") != total {
+		t.Fatalf("offset should not change X-WP-Total: got %q want %q", rec.Header().Get("X-WP-Total"), total)
+	}
+
+	// Large offset → empty collection, total unchanged.
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?per_page=5&offset=99999", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	var empty []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &empty); err != nil {
+		t.Fatal(err)
+	}
+	if len(empty) != 0 {
+		t.Fatalf("expected empty for huge offset, got %d", len(empty))
+	}
+}

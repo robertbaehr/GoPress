@@ -196,7 +196,24 @@ func parsePage(r *http.Request) int {
 	return page
 }
 
-func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, author int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string) ([]Post, error) {
+// parsePostsOffset returns REST ?offset= when present (P4.92).
+// ok is false when the param is absent or non-numeric; negative values become 0.
+func parsePostsOffset(r *http.Request) (offset int, ok bool) {
+	v := strings.TrimSpace(r.URL.Query().Get("offset"))
+	if v == "" {
+		return 0, false
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return 0, false
+	}
+	if n < 0 {
+		n = 0
+	}
+	return n, true
+}
+
+func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, author int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, offsetOverride int, useOffset bool) ([]Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -206,7 +223,11 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 	if postType == "" {
 		postType = "post"
 	}
+	// WP_Query: numeric offset takes precedence over paged (P4.92).
 	offset := (page - 1) * limit
+	if useOffset {
+		offset = offsetOverride
+	}
 	args := wp.QueryArgs{
 		PostType:       postType,
 		PostStatus:     "publish",
