@@ -39,32 +39,33 @@ func RenderBlock(block Block) string {
 func (e *Env) RenderBlock(block Block) string {
 	e = e.ensure()
 	name := blockName(block)
+	var out string
 	switch name {
 	case "":
 		// Freeform / classic HTML.
 		return block.InnerHTML
 	case "core/paragraph":
-		return addRootClass(e.renderSaved(block), "wp-block-paragraph")
+		out = addRootClass(e.renderSaved(block), "wp-block-paragraph")
 	case "core/quote":
 		html := e.renderSaved(block)
 		html = addRootClass(html, "is-layout-flow")
-		return addRootClass(html, "wp-block-quote-is-layout-flow")
+		out = addRootClass(html, "wp-block-quote-is-layout-flow")
 	case "core/heading", "core/list", "core/list-item",
 		"core/image", "core/code", "core/html",
 		"core/group", "core/columns", "core/column", "core/buttons", "core/button",
 		"core/pullquote", "core/preformatted", "core/verse", "core/table",
 		"core/file", "core/audio", "core/video", "core/cover", "core/media-text":
-		return e.renderSaved(block)
+		out = e.renderSaved(block)
 	case "core/separator":
-		return e.renderSeparator(block)
+		out = e.renderSeparator(block)
 	case "core/spacer":
-		return e.renderSpacer(block)
+		out = e.renderSpacer(block)
 	case "core/embed":
-		return e.renderEmbed(block)
+		out = e.renderEmbed(block)
 	case "core/template-part":
 		return e.renderTemplatePart(block)
 	case "core/navigation":
-		return e.renderNavigation(block)
+		out = e.renderNavigation(block)
 	case "core/navigation-link":
 		return e.renderNavigationLink(block)
 	case "core/page-list":
@@ -73,14 +74,16 @@ func (e *Env) RenderBlock(block Block) string {
 		if items == "" {
 			return ""
 		}
-		return `<ul class="wp-block-page-list">` + items + `</ul>`
+		out = `<ul class="wp-block-page-list">` + items + `</ul>`
 	default:
 		// Unknown blocks: prefer saved markup with nested reconstruction.
 		if len(block.InnerBlocks) > 0 || len(block.InnerContent) > 0 {
-			return e.renderSaved(block)
+			out = e.renderSaved(block)
+		} else {
+			out = block.InnerHTML
 		}
-		return block.InnerHTML
 	}
+	return applySupports(out, block.Attrs)
 }
 
 func (e *Env) renderTemplatePart(block Block) string {
