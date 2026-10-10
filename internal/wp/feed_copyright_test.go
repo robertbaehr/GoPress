@@ -2,7 +2,6 @@ package wp_test
 
 import (
 	"context"
-	"fmt"
 	"os"
 	"testing"
 	"time"
@@ -19,6 +18,7 @@ func TestFeedCopyrightEmptyByDefault(t *testing.T) {
 		t.Skipf("Boot unavailable: %v", err)
 	}
 	defer c.DB.Close()
+	_, _ = c.Options.DeleteOption("rss_copyright")
 	if got := wp.FeedCopyright(c, time.Date(2024, 6, 15, 0, 0, 0, 0, time.UTC)); got != "" {
 		t.Fatalf("expected empty default, got %q", got)
 	}
@@ -33,8 +33,7 @@ func TestFeedCopyrightAutoAndCustom(t *testing.T) {
 		t.Skipf("Boot unavailable: %v", err)
 	}
 	defer c.DB.Close()
-	prev := fmt.Sprint(c.Options.GetOption("rss_copyright", ""))
-	t.Cleanup(func() { _, _ = c.Options.UpdateOption("rss_copyright", prev, "yes") })
+	t.Cleanup(func() { _, _ = c.Options.DeleteOption("rss_copyright") })
 
 	if _, err := c.Options.UpdateOption("rss_copyright", "auto", "yes"); err != nil {
 		t.Fatal(err)

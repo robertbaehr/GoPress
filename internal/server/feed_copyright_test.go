@@ -1,7 +1,6 @@
 package server_test
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -12,8 +11,7 @@ import (
 
 func TestFeedCopyrightEmittedWhenOptionSet(t *testing.T) {
 	c := testBoot(t)
-	prev := fmt.Sprint(c.Options.GetOption("rss_copyright", ""))
-	t.Cleanup(func() { _, _ = c.Options.UpdateOption("rss_copyright", prev, "yes") })
+	t.Cleanup(func() { _, _ = c.Options.DeleteOption("rss_copyright") })
 	if _, err := c.Options.UpdateOption("rss_copyright", "auto", "yes"); err != nil {
 		t.Fatal(err)
 	}
