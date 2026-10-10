@@ -821,6 +821,21 @@
   task: P6.18
   api: n/a
 
+# P6.32: interim-login aria-describedby focus association for login-message.
+- prefix: wp-login.php#interim-aria-describedby
+  go: internal/login/login.go
+  status: partial
+  task: P6.32
+  api: n/a
+  notes: "P6.32 — aria-describedby=login-message on user_login/user_pass for interim"
+
+- prefix: wp-login.php#interim-aria-describedby#test
+  go: internal/login/login_test.go
+  status: partial
+  task: P6.32
+  api: n/a
+  notes: "P6.32 — unit coverage for interim aria-describedby + wp_attempt_focus"
+
 # P6.31: interim-login session-expired message via login_messages filter.
 - prefix: wp-login.php#login_messages
   go: internal/login/login.go
