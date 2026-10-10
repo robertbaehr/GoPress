@@ -548,6 +548,13 @@
   task: P6.17
   api: n/a
 
+# P6.18: reauth=1 forces login form (clears cookies; skips logged-in redirect).
+- prefix: wp-login.php#reauth
+  go: internal/login/login.go
+  status: partial
+  task: P6.18
+  api: n/a
+
 # P2.40: wp_parse_url (protocol-relative + path-only placeholders).
 - prefix: wp-includes/http.php#wp_parse_url
   go: internal/wp/parse_url.go

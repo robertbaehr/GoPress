@@ -301,6 +301,9 @@ func (h *Handler) serveLogout(w http.ResponseWriter, r *http.Request, c *wp.Cont
 }
 
 func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Context, errMsg string) {
+	if c != nil {
+		c.AuthenticateRequest()
+	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "/")), "/")
 	blogname := optionString(c, "blogname", "GoPress")
 	redirectTo := r.URL.Query().Get("redirect_to")
@@ -310,6 +313,12 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	loginURL := home + "/wp-login.php"
 	reauth := r.URL.Query().Get("reauth") == "1"
 	interim := isInterimLogin(r)
+
+	// Logged-in users skip the form unless reauth=1 forces re-authentication (P6.18).
+	if c != nil && c.CurrentUser != nil && !reauth && !interim && errMsg == "" {
+		http.Redirect(w, r, sanitizeRedirect(redirectTo), http.StatusFound)
+		return
+	}
 
 	var b strings.Builder
 	extraClass := ""
@@ -402,6 +411,10 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	b.WriteString("\t")
 
 	writeLoginHTML(w, b.String(), reauth, c)
+	if reauth && c != nil {
+		c.CurrentUser = nil
+		c.SessionToken = ""
+	}
 }
 
 func (h *Handler) serveLostPasswordPost(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -836,12 +849,17 @@ func writeLoginHTML(w http.ResponseWriter, body string, reauth bool, c *wp.Conte
 func clearAuthCookiesForReauth(w http.ResponseWriter, c *wp.Context) {
 	expired := time.Unix(0, 0).UTC()
 	cookieHash := ""
+	userID := int64(0)
 	if c != nil {
 		cookieHash = c.CookieHash()
+		if c.CurrentUser != nil {
+			userID = c.CurrentUser.ID
+		}
 	}
 	if cookieHash == "" {
 		cookieHash = "0"
 	}
+	settingsID := fmt.Sprintf("%d", userID)
 	type namedPath struct {
 		name string
 		path string
@@ -854,8 +872,8 @@ func clearAuthCookiesForReauth(w http.ResponseWriter, c *wp.Context) {
 		{"wordpress_sec_" + cookieHash, "/wp-content/plugins"},
 		{"wordpress_logged_in_" + cookieHash, "/"},
 		{"wordpress_logged_in_" + cookieHash, "/"},
-		{"wp-settings-0", "/"},
-		{"wp-settings-time-0", "/"},
+		{"wp-settings-" + settingsID, "/"},
+		{"wp-settings-time-" + settingsID, "/"},
 		{"wordpress_" + cookieHash, "/"},
 		{"wordpress_" + cookieHash, "/"},
 		{"wordpress_sec_" + cookieHash, "/"},
