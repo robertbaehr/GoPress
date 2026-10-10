@@ -342,6 +342,13 @@
   task: P4.51
   api: exported
 
+# P7.36: options-permalink.php structure stub.
+- prefix: wp-admin/options-permalink.php
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.36
+  api: n/a
+
 # P4.50: REST POST /wp/v2/block-renderer/{name} with attributes + post_id.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-renderer-controller.php
   go: internal/rest/block_types.go
