@@ -62,32 +62,38 @@ func (s *Server) serveTagItem(w http.ResponseWriter, r *http.Request, c *wp.Cont
 }
 
 func (s *Server) serveTermItem(w http.ResponseWriter, r *http.Request, c *wp.Context, taxonomy string, id int64) {
-	if r.Method != http.MethodGet {
+	switch r.Method {
+	case http.MethodGet:
+		term, err := getTermByID(c, taxonomy, id)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{
+				"code":    "rest_term_query",
+				"message": err.Error(),
+				"data":    map[string]any{"status": 500},
+			})
+			return
+		}
+		if term == nil {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"code":    "rest_term_invalid",
+				"message": "Term does not exist.",
+				"data":    map[string]any{"status": 404},
+			})
+			return
+		}
+		if canManageTerms(c) {
+			w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
+		}
+		writeJSON(w, http.StatusOK, term)
+	case http.MethodDelete:
+		s.deleteTerm(w, r, c, taxonomy, id)
+	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
 			"data":    map[string]any{"status": 405},
 		})
-		return
 	}
-	term, err := getTermByID(c, taxonomy, id)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]any{
-			"code":    "rest_term_query",
-			"message": err.Error(),
-			"data":    map[string]any{"status": 500},
-		})
-		return
-	}
-	if term == nil {
-		writeJSON(w, http.StatusNotFound, map[string]any{
-			"code":    "rest_term_invalid",
-			"message": "Term does not exist.",
-			"data":    map[string]any{"status": 404},
-		})
-		return
-	}
-	writeJSON(w, http.StatusOK, term)
 }
 
 func builtinTaxonomies() map[string]Taxonomy {

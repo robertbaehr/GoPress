@@ -286,10 +286,11 @@
   api: exported
 
 # P4.44: POST /wp/v2/categories and /wp/v2/tags for editors (manage_categories).
+# P4.65: DELETE /wp/v2/categories/{id} and /wp/v2/tags/{id} (force=true).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-terms-controller.php
   go: internal/rest/taxonomies_write.go
   status: partial
-  task: P4.44
+  task: P4.65
   api: exported
 
 # P4.45: POST /wp/v2/comments when logged in.

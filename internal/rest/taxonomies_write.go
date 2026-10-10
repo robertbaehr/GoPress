@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/robertbaehr/GoPress/internal/wp"
@@ -145,6 +146,135 @@ func canManageTerms(c *wp.Context) bool {
 		return false
 	}
 	return c.UserCan(c.CurrentUser, "manage_categories")
+}
+
+// deleteTerm handles DELETE /wp/v2/categories/{id} and /wp/v2/tags/{id} (P4.65).
+// Terms do not support trashing; force=true is required (WP_REST_Terms_Controller).
+func (s *Server) deleteTerm(w http.ResponseWriter, r *http.Request, c *wp.Context, taxonomy string, id int64) {
+	if c == nil || c.CurrentUser == nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]any{
+			"code":    "rest_cannot_delete",
+			"message": "Sorry, you are not allowed to delete this term.",
+			"data":    map[string]any{"status": 401},
+		})
+		return
+	}
+	if !canManageTerms(c) {
+		writeJSON(w, http.StatusForbidden, map[string]any{
+			"code":    "rest_cannot_delete",
+			"message": "Sorry, you are not allowed to delete this term.",
+			"data":    map[string]any{"status": 403},
+		})
+		return
+	}
+	term, err := getTermByID(c, taxonomy, id)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_term_query",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	if term == nil {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"code":    "rest_term_invalid",
+			"message": "Term does not exist.",
+			"data":    map[string]any{"status": 404},
+		})
+		return
+	}
+	force := r.URL.Query().Get("force") == "true"
+	if !force {
+		writeJSON(w, http.StatusNotImplemented, map[string]any{
+			"code":    "rest_trash_not_supported",
+			"message": "Terms do not support trashing. Set 'force=true' to delete.",
+			"data":    map[string]any{"status": 501},
+		})
+		return
+	}
+	if taxonomy == "category" && isDefaultCategory(c, id) {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_cannot_delete",
+			"message": "The term cannot be deleted.",
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	if err := deleteTermRow(c, taxonomy, id); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_cannot_delete",
+			"message": "The term cannot be deleted.",
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"deleted":  true,
+		"previous": term,
+	})
+}
+
+func isDefaultCategory(c *wp.Context, id int64) bool {
+	if c == nil || c.Options == nil || id <= 0 {
+		return false
+	}
+	raw := strings.TrimSpace(fmt.Sprint(c.Options.GetOption("default_category", "1")))
+	defID, _ := strconv.ParseInt(raw, 10, 64)
+	return defID == id
+}
+
+func deleteTermRow(c *wp.Context, taxonomy string, id int64) error {
+	if c == nil || c.DB == nil {
+		return fmt.Errorf("nil DB")
+	}
+	// Resolve term_taxonomy_id for relationship cleanup.
+	tq, targs, err := c.DB.Prepare(
+		"SELECT term_taxonomy_id FROM "+c.DB.TermTaxonomy()+" WHERE term_id = %d AND taxonomy = %s LIMIT 1",
+		id, taxonomy,
+	)
+	if err != nil {
+		return err
+	}
+	row, err := c.DB.GetRow(tq, targs...)
+	if err != nil {
+		return err
+	}
+	if row == nil {
+		return fmt.Errorf("term taxonomy missing")
+	}
+	ttID := asInt64(row["term_taxonomy_id"])
+	if ttID > 0 {
+		dq, dargs, err := c.DB.Prepare(
+			"DELETE FROM "+c.DB.TermRelationships()+" WHERE term_taxonomy_id = %d",
+			ttID,
+		)
+		if err != nil {
+			return err
+		}
+		if _, err := c.DB.Exec(dq, dargs...); err != nil {
+			return err
+		}
+	}
+	dq, dargs, err := c.DB.Prepare(
+		"DELETE FROM "+c.DB.TermTaxonomy()+" WHERE term_id = %d AND taxonomy = %s",
+		id, taxonomy,
+	)
+	if err != nil {
+		return err
+	}
+	if _, err := c.DB.Exec(dq, dargs...); err != nil {
+		return err
+	}
+	dq, dargs, err = c.DB.Prepare(
+		"DELETE FROM "+c.DB.Terms()+" WHERE term_id = %d",
+		id,
+	)
+	if err != nil {
+		return err
+	}
+	_, err = c.DB.Exec(dq, dargs...)
+	return err
 }
 
 func decodeTermWriteBody(r *http.Request) (termWriteBody, error) {
