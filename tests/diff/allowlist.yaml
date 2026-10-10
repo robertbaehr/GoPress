@@ -53,3 +53,35 @@
 - id: rest-index-anon
   reason: Full WP index route arg catalogs (~200KB) intentionally incomplete; namespaces/top-level/site fields + route keys expanded (P4.16)
   remove_by: "2027-06-01"
+
+- id: front-sitemap
+  reason: Sitemap index/child URL set still a stub vs full WP sitemap provider
+  remove_by: "2027-06-01"
+
+- id: rest-media-list-anon
+  reason: Media REST schema incomplete (media_details/sizes/_links)
+  remove_by: "2027-06-01"
+
+- id: rest-comments-list-anon
+  reason: Comments REST schema incomplete (_links/author_avatar)
+  remove_by: "2027-06-01"
+
+- id: rest-categories-list-anon
+  reason: Categories REST schema incomplete (_links/meta)
+  remove_by: "2027-06-01"
+
+- id: rest-tags-list-anon
+  reason: Tags REST schema incomplete (_links/meta)
+  remove_by: "2027-06-01"
+
+- id: rest-search-anon
+  reason: Search REST schema incomplete (_links/subtype details)
+  remove_by: "2027-06-01"
+
+- id: rest-revisions-admin
+  reason: Revisions REST schema still diverges (X-WP-Total/body fields)
+  remove_by: "2027-06-01"
+
+- id: rest-autosaves-admin
+  reason: Autosaves REST is a stub until full autosave storage
+  remove_by: "2027-06-01"
