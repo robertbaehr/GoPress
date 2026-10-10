@@ -890,6 +890,14 @@
   task: P4.66
   api: n/a
 
+# P4.69: REST POST /wp/v2/posts/{id}/autosaves.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-autosaves-controller.php#create_item
+  go: internal/rest/autosaves.go
+  status: partial
+  task: P4.69
+  api: exported
+  notes: "P4.69 — POST autosave (draft in-place or {id}-autosave-v1 revision)"
+
 # P4.68: REST DELETE /wp/v2/posts/{parent}/revisions/{id} (force=true).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-revisions-controller.php#delete
   go: internal/rest/revisions.go

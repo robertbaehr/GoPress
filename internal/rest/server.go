@@ -777,8 +777,11 @@ func builtInIndexRoutes() map[string]RouteIndex {
 		},
 		"/wp/v2/posts/(?P<id>[\\d]+)/autosaves": {
 			Namespace: "wp/v2",
-			Methods:   []string{"GET"},
-			Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}},
+			Methods:   []string{"GET", "POST"},
+			Endpoints: []RouteEndpoint{
+				{Methods: []string{"GET"}},
+				{Methods: []string{"POST"}},
+			},
 		},
 		"/wp/v2/posts/(?P<parent>[\\d]+)/autosaves/(?P<id>[\\d]+)": {
 			Namespace: "wp/v2",
