@@ -496,6 +496,74 @@ func (e *Env) renderSiteLogo(block Block) string {
 	return `<div class="` + classes + `">` + inner + `</div>`
 }
 
+// renderReadMore renders core/read-more as a permalink link (P5.47).
+func (e *Env) renderReadMore(block Block) string {
+	e = e.ensure()
+	if e.currentPost == nil {
+		return ""
+	}
+	link := strings.TrimSpace(e.currentPost.Link)
+	if link == "" {
+		return ""
+	}
+	title := strings.TrimSpace(e.currentPost.Title)
+	if title == "" {
+		title = fmt.Sprintf("untitled post %d", e.currentPost.ID)
+	}
+	moreText := "Read more"
+	if content, ok := block.Attrs["content"].(string); ok && strings.TrimSpace(content) != "" {
+		moreText = strings.TrimSpace(content)
+	}
+	target := "_self"
+	if t, ok := block.Attrs["linkTarget"].(string); ok && strings.TrimSpace(t) != "" {
+		target = strings.TrimSpace(t)
+	}
+	classes := "wp-block-read-more"
+	if justify, ok := block.Attrs["justifyContent"].(string); ok && strings.TrimSpace(justify) != "" {
+		classes += " is-justified-" + strings.TrimSpace(justify)
+	}
+	screenReader := ": " + title
+	return `<a class="` + html.EscapeString(classes) + `" href="` + html.EscapeString(link) +
+		`" target="` + html.EscapeString(target) + `">` + html.EscapeString(moreText) +
+		`<span class="screen-reader-text">` + html.EscapeString(screenReader) + `</span></a>`
+}
+
+// renderMore emits the classic <!--more--> marker from core/more (P5.47).
+func (e *Env) renderMore(block Block) string {
+	_ = e
+	custom := ""
+	if t, ok := block.Attrs["customText"].(string); ok {
+		custom = strings.TrimSpace(t)
+	}
+	out := "<!--more"
+	if custom != "" {
+		out += " " + custom
+	}
+	out += "-->"
+	noTeaser := false
+	if v, ok := block.Attrs["noTeaser"]; ok {
+		switch t := v.(type) {
+		case bool:
+			noTeaser = t
+		case float64:
+			noTeaser = t != 0
+		case string:
+			noTeaser = t == "1" || strings.EqualFold(t, "true")
+		}
+	}
+	if noTeaser {
+		out += "\n<!--noteaser-->"
+	}
+	return out
+}
+
+// renderNextPage emits the <!--nextpage--> marker from core/nextpage (P5.47).
+func (e *Env) renderNextPage(block Block) string {
+	_ = e
+	_ = block
+	return "<!--nextpage-->"
+}
+
 // isLinkAttrDefaultTrue mirrors block.json isLink default:true when the attr is omitted.
 func isLinkAttrDefaultTrue(attrs map[string]any) bool {
 	if attrs == nil {
