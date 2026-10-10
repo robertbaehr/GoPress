@@ -187,3 +187,58 @@ func TestEditCommentsSpamViewBulkUnspam(t *testing.T) {
 		t.Fatalf("approved=%q", got)
 	}
 }
+
+func TestEditCommentsSearchAndResponseColumns(t *testing.T) {
+	// P7.107: search box + In response to + Submitted on columns.
+	c := bootOrSkip(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/edit-comments.php", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/edit-comments.php") {
+		t.Fatal("not handled")
+	}
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, needle := range []string{
+		`class="search-box"`,
+		`id="comment-search-input"`,
+		`name="s"`,
+		`column-response`,
+		`In response to`,
+		`column-date`,
+		`Submitted on`,
+		`comments-view-item-link`,
+		`class="submitted-on"`,
+	} {
+		if !strings.Contains(body, needle) {
+			t.Fatalf("missing %q", needle)
+		}
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit-comments.php?s=zzznomatchcomment999", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec = httptest.NewRecorder()
+	rc = c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/edit-comments.php") {
+		t.Fatal("not handled")
+	}
+	body = rec.Body.String()
+	if !strings.Contains(body, "No comments found") {
+		t.Fatalf("expected empty search results: %q", trunc(body, 400))
+	}
+	if !strings.Contains(body, `value="zzznomatchcomment999"`) {
+		t.Fatal("search input should retain query")
+	}
+}
