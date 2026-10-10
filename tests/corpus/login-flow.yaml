@@ -137,3 +137,12 @@
   body: null
   compare: headers
   nonce: null
+
+- id: login-lostpassword-empty-username
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword&error=empty_username
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
