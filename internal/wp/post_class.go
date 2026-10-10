@@ -2,6 +2,7 @@ package wp
 
 import (
 	"strconv"
+	"strings"
 )
 
 // GetPostClass mirrors get_post_class() for front query loops (P5.19).
@@ -47,6 +48,60 @@ func IsSticky(c *Context, postID int64) bool {
 		}
 	}
 	return false
+}
+
+// StickPost adds postID to sticky_posts (stick_post, P4.97).
+func StickPost(c *Context, postID int64) error {
+	if c == nil || c.Options == nil || postID <= 0 {
+		return nil
+	}
+	ids := stickyPostIDs(c)
+	for _, id := range ids {
+		if id == postID {
+			return nil
+		}
+	}
+	ids = append(ids, postID)
+	return saveStickyPosts(c, ids)
+}
+
+// UnstickPost removes postID from sticky_posts (unstick_post, P4.97).
+func UnstickPost(c *Context, postID int64) error {
+	if c == nil || c.Options == nil || postID <= 0 {
+		return nil
+	}
+	ids := stickyPostIDs(c)
+	out := make([]int64, 0, len(ids))
+	found := false
+	for _, id := range ids {
+		if id == postID {
+			found = true
+			continue
+		}
+		out = append(out, id)
+	}
+	if !found {
+		return nil
+	}
+	return saveStickyPosts(c, out)
+}
+
+func saveStickyPosts(c *Context, ids []int64) error {
+	// PHP array of ints: a:N:{i:0;i:id;…}
+	var b strings.Builder
+	b.WriteString("a:")
+	b.WriteString(strconv.Itoa(len(ids)))
+	b.WriteString(":{")
+	for i, id := range ids {
+		b.WriteString("i:")
+		b.WriteString(strconv.Itoa(i))
+		b.WriteString(";i:")
+		b.WriteString(strconv.FormatInt(id, 10))
+		b.WriteString(";")
+	}
+	b.WriteString("}")
+	_, err := c.Options.UpdateOption("sticky_posts", b.String(), "yes")
+	return err
 }
 
 func objectTermClasses(c *Context, postID int64) []string {

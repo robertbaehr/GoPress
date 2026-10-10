@@ -141,6 +141,71 @@ func TestCreateUpdateDeletePost(t *testing.T) {
 	}
 }
 
+func TestCreateUpdatePostSticky(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+	prev, _ := c.Options.GetOption("sticky_posts", "").(string)
+	t.Cleanup(func() {
+		if prev != "" {
+			_, _ = c.Options.UpdateOption("sticky_posts", prev, "yes")
+		} else {
+			_, _ = c.Options.UpdateOption("sticky_posts", "a:0:{}", "yes")
+		}
+	})
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	ck := &http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue}
+
+	createBody := `{"title":"Sticky Write","content":"x","status":"publish","slug":"sticky-write-p497","sticky":true}`
+	req := httptest.NewRequest(http.MethodPost, "/wp-json/wp/v2/posts", bytes.NewBufferString(createBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var created rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &created); err != nil {
+		t.Fatal(err)
+	}
+	id := created.ID
+	t.Cleanup(func() {
+		q, args, err := c.DB.Prepare("DELETE FROM "+c.DB.Posts()+" WHERE ID = %d", id)
+		if err == nil {
+			_, _ = c.DB.Exec(q, args...)
+		}
+	})
+	if !created.Sticky {
+		t.Fatalf("expected sticky on create: %+v", created)
+	}
+
+	req = httptest.NewRequest(http.MethodPut, fmt.Sprintf("/wp-json/wp/v2/posts/%d", id), bytes.NewBufferString(`{"sticky":false}`))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	rc = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("unstick status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var updated rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &updated); err != nil {
+		t.Fatal(err)
+	}
+	if updated.Sticky {
+		t.Fatalf("expected unstuck: %+v", updated)
+	}
+}
+
 func TestPatchPost(t *testing.T) {
 	c := bootOrSkip(t)
 	t.Cleanup(func() { _ = c.DB.Close() })
