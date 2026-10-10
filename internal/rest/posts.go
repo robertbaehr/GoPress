@@ -213,7 +213,7 @@ func parsePostsOffset(r *http.Request) (offset int, ok bool) {
 	return n, true
 }
 
-func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, author int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, offsetOverride int, useOffset bool) ([]Post, error) {
+func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, author int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, offsetOverride int, useOffset bool) ([]Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -243,6 +243,8 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 		NameIn:         slugs,
 		PostIn:         include,
 		PostNotIn:      exclude,
+		ParentIn:       parentIn,
+		ParentNotIn:    parentNotIn,
 		DateAfter:      dateAfter,
 		DateBefore:     dateBefore,
 		ModifiedAfter:  modifiedAfter,
@@ -333,6 +335,57 @@ func parsePostsInclude(r *http.Request) []int64 {
 // parsePostsExclude reads REST ?exclude= (maps to post__not_in, P4.90).
 func parsePostsExclude(r *http.Request) []int64 {
 	return parsePostsTermIDs(r, "exclude")
+}
+
+// parsePostsParent reads REST ?parent= (maps to post_parent__in, P4.93).
+// Allows 0 for top-level hierarchical posts/pages. nil when absent.
+func parsePostsParent(r *http.Request) []int64 {
+	return parsePostsParentIDs(r, "parent")
+}
+
+// parsePostsParentExclude reads REST ?parent_exclude= (post_parent__not_in, P4.93).
+func parsePostsParentExclude(r *http.Request) []int64 {
+	return parsePostsParentIDs(r, "parent_exclude")
+}
+
+// parsePostsParentIDs parses parent / parent_exclude, allowing 0.
+// Returns nil when the query key is absent; non-nil (possibly empty) when present.
+func parsePostsParentIDs(r *http.Request, key string) []int64 {
+	if r == nil || key == "" {
+		return nil
+	}
+	q := r.URL.Query()
+	vals, ok := q[key]
+	if !ok {
+		return nil
+	}
+	seen := map[int64]bool{}
+	var out []int64
+	add := func(raw string) {
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			return
+		}
+		for _, part := range strings.Split(raw, ",") {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			n, err := strconv.ParseInt(part, 10, 64)
+			if err != nil || n < 0 || seen[n] {
+				continue
+			}
+			seen[n] = true
+			out = append(out, n)
+		}
+	}
+	for _, v := range vals {
+		add(v)
+	}
+	if out == nil {
+		out = []int64{}
+	}
+	return out
 }
 
 // parsePostsAfter reads REST ?after= (ISO8601 → MySQL datetime, P4.91).
@@ -491,7 +544,7 @@ func parsePostsTermIDs(r *http.Request, key string) []int64 {
 	return out
 }
 
-func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, author int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string) (int, error) {
+func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, author int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
@@ -509,6 +562,8 @@ func countPosts(c *wp.Context, postType string, stickyFilter *bool, search strin
 		NameIn:         slugs,
 		PostIn:         include,
 		PostNotIn:      exclude,
+		ParentIn:       parentIn,
+		ParentNotIn:    parentNotIn,
 		DateAfter:      dateAfter,
 		DateBefore:     dateBefore,
 		ModifiedAfter:  modifiedAfter,

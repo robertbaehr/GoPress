@@ -758,6 +758,65 @@ func TestPostsAfterBeforeQueryParams(t *testing.T) {
 	}
 }
 
+func TestPagesParentQueryParam(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	// Fixture: Parent(436) → Child(437) → Grandchild(438).
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/pages?parent=436&per_page=100", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var kids []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &kids); err != nil {
+		t.Fatal(err)
+	}
+	if len(kids) == 0 {
+		t.Fatal("expected child pages for parent=436")
+	}
+	for _, p := range kids {
+		if p.Parent != 436 {
+			t.Fatalf("page %d parent=%d want 436", p.ID, p.Parent)
+		}
+	}
+
+	// parent=0 → top-level pages only.
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/pages?parent=0&per_page=100", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	var top []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &top); err != nil {
+		t.Fatal(err)
+	}
+	if len(top) == 0 {
+		t.Fatal("expected top-level pages for parent=0")
+	}
+	for _, p := range top {
+		if p.Parent != 0 {
+			t.Fatalf("top-level page %d parent=%d want 0", p.ID, p.Parent)
+		}
+	}
+
+	// parent_exclude=436 → no direct children of 436.
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/pages?parent_exclude=436&per_page=100", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	var excl []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &excl); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range excl {
+		if p.Parent == 436 {
+			t.Fatalf("parent_exclude=436 still returned page %d", p.ID)
+		}
+	}
+}
+
 func TestPostsOffset(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
