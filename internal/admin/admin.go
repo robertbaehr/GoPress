@@ -292,12 +292,14 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	catID := parseEditCategoryFilter(r)
 	// P7.72: tag dropdown filter (?tag_id=).
 	tagID := parseEditTagFilter(r)
+	// P7.81: post format dropdown filter (?post_format=).
+	formatSlug := parseEditFormatFilter(r)
 	// P7.75: months dropdown filter (?m=YYYYMM).
 	monthFilter := parseEditDateFilter(r)
 	// P7.73: status view links (?post_status=publish|draft|trash).
 	postStatus := parseEditPostStatus(r)
 	perPage := wp.EditPostsPerPage(c, postType)
-	posts, err := recentPostsByType(c, postType, perPage, search, authorID, catID, tagID, postStatus, monthFilter)
+	posts, err := recentPostsByType(c, postType, perPage, search, authorID, catID, tagID, formatSlug, postStatus, monthFilter)
 	if err != nil {
 		http.Error(w, "posts: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
@@ -306,9 +308,11 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	months, _ := editPostMonths(c, postType, postStatus)
 	var categories []editCategoryOpt
 	var tags []editTagOpt
+	var formats []editFormatOpt
 	if postType == "post" {
 		categories, _ = editPostCategories(c)
 		tags, _ = editPostTags(c)
+		formats, _ = editPostFormats(c)
 	}
 	counts := countPostsByStatus(c, postType)
 	heading := "Posts"
@@ -428,6 +432,28 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 			b.WriteString(`</option>` + "\n")
 		}
 		b.WriteString(`</select>` + "\n")
+		// P7.81: post format filter (name=post_format, id=filter-by-format).
+		if len(formats) > 0 {
+			b.WriteString(`<label for="filter-by-format" class="screen-reader-text">Filter by post format</label>` + "\n")
+			b.WriteString(`<select name="post_format" id="filter-by-format">` + "\n")
+			b.WriteString(`<option value=""`)
+			if formatSlug == "" {
+				b.WriteString(` selected="selected"`)
+			}
+			b.WriteString(`>All formats</option>` + "\n")
+			for _, f := range formats {
+				b.WriteString(`<option value="`)
+				b.WriteString(html.EscapeString(f.Slug))
+				b.WriteString(`"`)
+				if f.Slug == formatSlug {
+					b.WriteString(` selected="selected"`)
+				}
+				b.WriteString(`>`)
+				b.WriteString(html.EscapeString(f.Name))
+				b.WriteString(`</option>` + "\n")
+			}
+			b.WriteString(`</select>` + "\n")
+		}
 	}
 	b.WriteString(`<input type="submit" name="filter_action" id="post-query-submit" class="button" value="Filter" />` + "\n")
 	b.WriteString(`</div></div>` + "\n")
@@ -4275,7 +4301,7 @@ func countComments(c *wp.Context, approved string) int {
 	return int(asInt64(row["n"]))
 }
 
-func recentPostsByType(c *wp.Context, postType string, limit int, search string, authorID, catID, tagID int64, postStatus string, monthFilter int) ([]postRow, error) {
+func recentPostsByType(c *wp.Context, postType string, limit int, search string, authorID, catID, tagID int64, formatSlug, postStatus string, monthFilter int) ([]postRow, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
@@ -4298,6 +4324,12 @@ func recentPostsByType(c *wp.Context, postType string, limit int, search string,
 			"INNER JOIN " + c.DB.TermTaxonomy() + " ttt ON ttt.term_taxonomy_id = trt.term_taxonomy_id " +
 			"INNER JOIN " + c.DB.Terms() + " tg ON tg.term_id = ttt.term_id "
 	}
+	formatSlug = strings.TrimSpace(strings.ToLower(formatSlug))
+	if formatSlug != "" && formatSlug != "standard" {
+		sql += "INNER JOIN " + c.DB.TermRelationships() + " trf ON trf.object_id = p.ID " +
+			"INNER JOIN " + c.DB.TermTaxonomy() + " ttf ON ttf.term_taxonomy_id = trf.term_taxonomy_id " +
+			"INNER JOIN " + c.DB.Terms() + " tf ON tf.term_id = ttf.term_id "
+	}
 	var prepArgs []any
 	sql += " WHERE p.post_type = %s "
 	prepArgs = append(prepArgs, postType)
@@ -4317,6 +4349,10 @@ func recentPostsByType(c *wp.Context, postType string, limit int, search string,
 	if tagID > 0 {
 		sql += "AND ttt.taxonomy = %s AND tg.term_id = %d "
 		prepArgs = append(prepArgs, "post_tag", tagID)
+	}
+	if formatSlug != "" && formatSlug != "standard" {
+		sql += "AND ttf.taxonomy = %s AND tf.slug = %s "
+		prepArgs = append(prepArgs, "post_format", "post-format-"+formatSlug)
 	}
 	if authorID > 0 {
 		sql += "AND p.post_author = %d "
@@ -4513,6 +4549,73 @@ func parseEditTagFilter(r *http.Request) int64 {
 		return 0
 	}
 	return n
+}
+
+type editFormatOpt struct {
+	Slug string
+	Name string
+}
+
+// parseEditFormatFilter reads ?post_format= from edit.php (P7.81).
+func parseEditFormatFilter(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	raw := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("post_format")))
+	if raw == "" || raw == "0" || raw == "standard" {
+		return ""
+	}
+	switch raw {
+	case "aside", "chat", "gallery", "link", "image", "quote", "status", "video", "audio":
+		return raw
+	default:
+		return ""
+	}
+}
+
+var editFormatPrettyNames = map[string]string{
+	"aside":   "Aside",
+	"chat":    "Chat",
+	"gallery": "Gallery",
+	"link":    "Link",
+	"image":   "Image",
+	"quote":   "Quote",
+	"status":  "Status",
+	"video":   "Video",
+	"audio":   "Audio",
+}
+
+// editPostFormats returns used post formats for the edit.php filter (P7.81).
+func editPostFormats(c *wp.Context) ([]editFormatOpt, error) {
+	if c == nil || c.DB == nil {
+		return nil, fmt.Errorf("nil DB")
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT t.slug FROM "+c.DB.Terms()+" t "+
+			"INNER JOIN "+c.DB.TermTaxonomy()+" tt ON tt.term_id = t.term_id "+
+			"WHERE tt.taxonomy = %s AND tt.count > 0 ORDER BY t.name ASC",
+		"post_format",
+	)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := c.DB.GetResults(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]editFormatOpt, 0, len(rows))
+	for _, row := range rows {
+		slug := strings.TrimPrefix(asString(row["slug"]), "post-format-")
+		if slug == "" || slug == "standard" {
+			continue
+		}
+		name := editFormatPrettyNames[slug]
+		if name == "" {
+			name = slug
+		}
+		out = append(out, editFormatOpt{Slug: slug, Name: name})
+	}
+	return out, nil
 }
 
 type editMonthOpt struct {

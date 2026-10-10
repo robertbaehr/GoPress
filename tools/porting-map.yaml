@@ -4730,3 +4730,11 @@
   task: P4.96
   api: n/a
   notes: "P4.96 — appendPostFormatFilter EXISTS/NOT EXISTS on post_format"
+
+# P7.81: edit.php post format filter dropdown (?post_format=).
+- prefix: wp-admin/includes/class-wp-posts-list-table.php#formats_dropdown
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.81
+  api: n/a
+  notes: "P7.81 — filter-by-format select; used formats only; ?post_format= slug filter"

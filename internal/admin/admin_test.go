@@ -997,6 +997,62 @@ func TestEditPostsTrashRestore(t *testing.T) {
 	}
 }
 
+func TestEditPostsFormatFilter(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`id="filter-by-format"`,
+		`name="post_format"`,
+		"All formats",
+		`value="status"`,
+		"Status",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected format filter %q in edit.php", want)
+		}
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?post_format=status", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("post_format=status status=%d", rec.Code)
+	}
+	body = rec.Body.String()
+	if !strings.Contains(body, `selected="selected"`) || !strings.Contains(body, `value="status"`) {
+		t.Fatalf("expected post_format=status selected: %q", body[:min(800, len(body))])
+	}
+	if !strings.Contains(body, "Fixture Post 15") {
+		t.Fatalf("expected Fixture Post 15 for post_format=status")
+	}
+	if strings.Contains(body, "Hello world!") {
+		t.Fatalf("Hello world should not appear for post_format=status")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?post_format=video", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("post_format=video status=%d", rec.Code)
+	}
+	body = rec.Body.String()
+	if strings.Contains(body, "Fixture Post 15") {
+		t.Fatalf("unused format should not list Fixture Post 15")
+	}
+}
+
 func TestEditPostsTagFilter(t *testing.T) {
 	c := bootOrSkip(t)
 	ck := loginCookie(t, c)
