@@ -380,3 +380,43 @@ func TestFrontSearchResults(t *testing.T) {
 		t.Fatal("search should not 501")
 	}
 }
+
+func TestFrontDateArchiveYearMonth(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+
+	req := httptest.NewRequest(http.MethodGet, "/2024/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("year status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "archive") || !strings.Contains(body, "date") {
+		t.Fatalf("expected archive date body class: %q", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, "Year:") {
+		t.Fatalf("expected Year heading: %q", body[:min(800, len(body))])
+	}
+	if !strings.Contains(body, "Hello world") && !strings.Contains(body, "Hello World") {
+		t.Fatalf("expected post in year archive: %q", body)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/2024/06/", nil)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("month status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body = rec.Body.String()
+	if !strings.Contains(body, "Month:") || !strings.Contains(body, "June") {
+		t.Fatalf("expected Month: June heading: %q", body[:min(800, len(body))])
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/2019/", nil)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("empty year want 404, got %d body=%q", rec.Code, rec.Body.String()[:min(200, rec.Body.Len())])
+	}
+}

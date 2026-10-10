@@ -72,6 +72,12 @@ func (f *Front) ServeFront(w http.ResponseWriter, r *http.Request, c *wp.Context
 		return
 	}
 
+	// Date archives: /YYYY/ and /YYYY/MM/ (P3.22).
+	if isDateArchiveVars(parsed.QueryVars) {
+		f.renderDateArchive(w, c, parsed.QueryVars)
+		return
+	}
+
 	// redirect_canonical lite: unmatched pretty paths whose last segment is a
 	// published post slug (e.g. /blog/uncategorized/hello-world/ → date permalink).
 	if parsed.Request != "" {
@@ -80,11 +86,22 @@ func (f *Front) ServeFront(w http.ResponseWriter, r *http.Request, c *wp.Context
 		}
 	}
 
-	// Later tasks: date/author archives.
+	// Later tasks: author archives.
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusNotImplemented)
 	fmt.Fprintf(w, "GoPress: front route not implemented (request=%q rule=%q)\n",
 		parsed.Request, parsed.MatchedRule)
+}
+
+func isDateArchiveVars(vars map[string]string) bool {
+	if vars == nil || vars["year"] == "" {
+		return false
+	}
+	// Singular date permalinks carry name/p; those are handled earlier.
+	if vars["name"] != "" || vars["p"] != "" || vars["page_id"] != "" || vars["pagename"] != "" {
+		return false
+	}
+	return true
 }
 
 func isFeedVars(vars map[string]string) bool {
@@ -212,6 +229,150 @@ func (f *Front) renderSearchBlockTemplate(w http.ResponseWriter, c *wp.Context, 
 
 	setFrontAPILink(w, c)
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(b.String()))
+}
+
+// renderDateArchive serves year/month(/day) front archives (P3.22).
+func (f *Front) renderDateArchive(w http.ResponseWriter, c *wp.Context, vars map[string]string) {
+	year := atoiFront(vars["year"])
+	month := atoiFront(vars["monthnum"])
+	day := atoiFront(vars["day"])
+	if year <= 0 {
+		f.render404(w, c)
+		return
+	}
+	if c != nil && c.Scope != nil {
+		c.Scope.IsArchive = true
+		c.Scope.IsDate = true
+		c.Scope.DateYear = year
+		c.Scope.DateMonth = month
+		c.Scope.DateDay = day
+		c.Scope.IsYear = month == 0 && day == 0
+		c.Scope.IsMonth = month > 0 && day == 0
+		c.Scope.IsDay = month > 0 && day > 0
+	}
+	posts, err := wp.GetPosts(c, wp.QueryArgs{
+		PostType: "post", PostStatus: "publish", PostsPerPage: 1,
+		Year: year, MonthNum: month, Day: day,
+	})
+	if err != nil {
+		http.Error(w, "archive: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	if len(posts) == 0 {
+		if c != nil && c.Scope != nil {
+			c.Scope.Is404 = true
+		}
+		f.render404(w, c)
+		return
+	}
+	title := dateArchiveTitle(year, month, day)
+	slugs := wp.DateTemplateSlugs()
+	if tpl, ok := wp.ResolveBlockTemplate(c, slugs...); ok && strings.TrimSpace(tpl) != "" {
+		f.renderDateArchiveBlockTemplate(w, c, tpl, title)
+		return
+	}
+	f.renderDateArchiveShim(w, c, title, year, month, day)
+}
+
+func dateArchiveTitle(year, month, day int) string {
+	if day > 0 && month > 0 {
+		return fmt.Sprintf("Day: %s %d, %d", time.Month(month).String(), day, year)
+	}
+	if month > 0 {
+		return fmt.Sprintf("Month: %s %d", time.Month(month).String(), year)
+	}
+	return fmt.Sprintf("Year: %d", year)
+}
+
+func atoiFront(s string) int {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return 0
+	}
+	n, err := strconv.Atoi(s)
+	if err != nil || n < 0 {
+		return 0
+	}
+	return n
+}
+
+func (f *Front) renderDateArchiveBlockTemplate(w http.ResponseWriter, c *wp.Context, template, archiveTitle string) {
+	blogname := optionString(c, "blogname", "GoPress")
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	stylesheet := activeStylesheet(c)
+	env := blockRenderEnv(c)
+	env.ArchiveTitle = archiveTitle
+	body := blocks.RenderWith(env, template)
+	safe := wp.ProcessInteractivityHTML(wp.KsesPost(body))
+	safe = ensureMainSkipTarget(safe)
+
+	bodyClasses := "archive date wp-embed-responsive"
+	if stylesheet != "" {
+		bodyClasses += " wp-theme-" + stylesheet
+	}
+	bodyClasses = wp.BodyClassWithAdminBar(c, bodyClasses)
+
+	pageTitle := html.EscapeString(archiveTitle) + " &#8211; " + html.EscapeString(blogname)
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
+	b.WriteString("<meta charset=\"UTF-8\" />\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
+	b.WriteString("<meta name='robots' content='max-image-preview:large' />\n")
+	b.WriteString("<title>")
+	b.WriteString(pageTitle)
+	b.WriteString("</title>\n")
+	writeFrontHeadLinks(&b, home, blogname, "", "", "")
+	b.WriteString(wp.EmojiHeadHTML())
+	b.WriteString("</head>\n<body class=\"")
+	b.WriteString(html.EscapeString(bodyClasses))
+	b.WriteString("\">\n")
+	b.WriteString(wp.AdminBarHTML(c))
+	b.WriteString("<a class=\"skip-link screen-reader-text\" id=\"wp-skip-link\" href=\"#wp--skip-link--target\">Skip to content</a>")
+	b.WriteString("<div class=\"wp-site-blocks\">")
+	b.WriteString(safe)
+	b.WriteString("</div>\n")
+	b.WriteString("</body>\n</html>\n")
+
+	setFrontAPILink(w, c)
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(b.String()))
+}
+
+func (f *Front) renderDateArchiveShim(w http.ResponseWriter, c *wp.Context, title string, year, month, day int) {
+	blogname := optionString(c, "blogname", "GoPress")
+	posts, err := wp.GetPosts(c, wp.QueryArgs{
+		PostType: "post", PostStatus: "publish", PostsPerPage: 10,
+		Year: year, MonthNum: month, Day: day,
+	})
+	if err != nil {
+		http.Error(w, "archive: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>")
+	b.WriteString(html.EscapeString(title))
+	b.WriteString(" &#8211; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString("</title>\n</head>\n<body class=\"")
+	b.WriteString(html.EscapeString(wp.BodyClassWithAdminBar(c, "archive date")))
+	b.WriteString("\">\n")
+	b.WriteString(wp.AdminBarHTML(c))
+	b.WriteString("<h1 class=\"page-title\">")
+	b.WriteString(html.EscapeString(title))
+	b.WriteString("</h1>\n<ul class=\"posts\">\n")
+	for _, p := range posts {
+		b.WriteString("<li><a href=\"?p=")
+		b.WriteString(strconv.FormatInt(p.ID, 10))
+		b.WriteString("\">")
+		b.WriteString(html.EscapeString(p.Title))
+		b.WriteString("</a></li>\n")
+	}
+	b.WriteString("</ul>\n</body>\n</html>\n")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(b.String()))
 }
@@ -1627,9 +1788,16 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 				postType = "post"
 			}
 			search := ""
+			year, month, day := 0, 0, 0
 			// Inherit search results on /?s= (P3.21).
 			if q.Inherit && c != nil && c.Scope != nil && c.Scope.IsSearch {
 				search = c.Scope.SearchQuery
+			}
+			// Inherit date archive filters (P3.22).
+			if q.Inherit && c != nil && c.Scope != nil && c.Scope.IsDate {
+				year = c.Scope.DateYear
+				month = c.Scope.DateMonth
+				day = c.Scope.DateDay
 			}
 			posts, err := wp.GetPosts(c, wp.QueryArgs{
 				PostType:     postType,
@@ -1637,8 +1805,11 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 				PostsPerPage: limit,
 				Offset:       q.Offset,
 				Search:       search,
+				Year:         year,
+				MonthNum:     month,
+				Day:          day,
 				// Sticky posts are prepended for front query loops (inherit or not).
-				StickyFirst: postType == "post" && search == "",
+				StickyFirst: postType == "post" && search == "" && year == 0,
 			})
 			if err != nil {
 				return nil
