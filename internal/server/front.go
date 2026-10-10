@@ -4700,8 +4700,9 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			return out
 		},
 		CommentOrder: optionString(c, "comment_order", "asc"),
-		AdjacentPost: func(postID int64, previous bool) *blocks.QueryPost {
+		AdjacentPost: func(postID int64, previous bool, taxonomy string) *blocks.QueryPost {
 			// previous = older (date ASC toward past); next = newer.
+			// P5.97: taxonomy non-empty → in_same_term join (get_{next,previous}_post_link).
 			op, order := "<", "DESC"
 			if !previous {
 				op, order = ">", "ASC"
@@ -4710,12 +4711,31 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			if err != nil || p == nil {
 				return nil
 			}
-			q, args, err := c.DB.Prepare(
-				"SELECT ID, post_title, post_name, post_date FROM "+c.DB.Posts()+
-					" WHERE post_type = %s AND post_status = %s AND post_date "+op+" %s "+
-					"ORDER BY post_date "+order+" LIMIT 1",
-				"post", "publish", p.Date,
-			)
+			var q string
+			var args []any
+			taxonomy = strings.TrimSpace(taxonomy)
+			if taxonomy != "" {
+				q, args, err = c.DB.Prepare(
+					"SELECT p.ID, p.post_title, p.post_name, p.post_date FROM "+c.DB.Posts()+" p "+
+						"INNER JOIN "+c.DB.TermRelationships()+" tr ON p.ID = tr.object_id "+
+						"INNER JOIN "+c.DB.TermTaxonomy()+" tt ON tr.term_taxonomy_id = tt.term_taxonomy_id "+
+						"AND tt.taxonomy = %s "+
+						"WHERE p.post_type = %s AND p.post_status = %s AND p.post_date "+op+" %s "+
+						"AND tt.term_taxonomy_id IN ("+
+						"SELECT tt2.term_taxonomy_id FROM "+c.DB.TermRelationships()+" tr2 "+
+						"INNER JOIN "+c.DB.TermTaxonomy()+" tt2 ON tr2.term_taxonomy_id = tt2.term_taxonomy_id "+
+						"WHERE tr2.object_id = %d AND tt2.taxonomy = %s"+
+						") ORDER BY p.post_date "+order+" LIMIT 1",
+					taxonomy, "post", "publish", p.Date, postID, taxonomy,
+				)
+			} else {
+				q, args, err = c.DB.Prepare(
+					"SELECT ID, post_title, post_name, post_date FROM "+c.DB.Posts()+
+						" WHERE post_type = %s AND post_status = %s AND post_date "+op+" %s "+
+						"ORDER BY post_date "+order+" LIMIT 1",
+					"post", "publish", p.Date,
+				)
+			}
 			if err != nil {
 				return nil
 			}

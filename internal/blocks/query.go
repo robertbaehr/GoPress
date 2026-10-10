@@ -1861,8 +1861,9 @@ func (e *Env) renderCommentsTitle(block Block) string {
 		`" id="comments">` + html.EscapeString(text) + `</` + tag + `>`
 }
 
-// renderPostNavigationLink renders core/post-navigation-link (P5.3 / P5.72).
-// Honors type, label, showTitle, linkLabel, arrow, and textAlign.
+// renderPostNavigationLink renders core/post-navigation-link (P5.3 / P5.72 / P5.97).
+// Honors type, label, showTitle, linkLabel, arrow, textAlign, taxonomy,
+// and wrapper className / has-link-color / textColor / backgroundColor.
 func (e *Env) renderPostNavigationLink(block Block) string {
 	e = e.ensure()
 	if e.currentPost == nil || e.AdjacentPost == nil {
@@ -1878,13 +1879,10 @@ func (e *Env) renderPostNavigationLink(block Block) string {
 		}
 	}
 	prev := navType == "previous"
-	adj := e.AdjacentPost(e.currentPost.ID, prev)
+	taxonomy := strings.TrimSpace(attrString(block.Attrs, "taxonomy"))
+	adj := e.AdjacentPost(e.currentPost.ID, prev, taxonomy)
 
-	classes := "post-navigation-link-" + navType
-	if ta := strings.TrimSpace(attrString(block.Attrs, "textAlign")); ta != "" {
-		classes += " has-text-align-" + ta
-	}
-	classes += " wp-block-post-navigation-link"
+	classes := postNavigationLinkWrapperClasses(navType, block.Attrs)
 
 	if adj == nil {
 		return `<div class="` + html.EscapeString(classes) + `"></div>`
@@ -1976,6 +1974,35 @@ func (e *Env) renderPostNavigationLink(block Block) string {
 	}
 	b.WriteString(`</div>`)
 	return b.String()
+}
+
+// postNavigationLinkWrapperClasses mirrors get_block_wrapper_attributes for
+// core/post-navigation-link (P5.97): textAlign, has-link-color, colors, className.
+func postNavigationLinkWrapperClasses(navType string, attrs map[string]any) string {
+	parts := []string{"post-navigation-link-" + navType}
+	if ta := strings.TrimSpace(attrString(attrs, "textAlign")); ta != "" {
+		parts = append(parts, "has-text-align-"+sanitizeClassToken(ta))
+	}
+	parts = append(parts, "wp-block-post-navigation-link")
+	if hasLinkColorAttr(attrs) {
+		parts = append(parts, "has-link-color")
+	}
+	if tc := strings.TrimSpace(attrString(attrs, "textColor")); tc != "" {
+		parts = append(parts, "has-text-color", "has-"+sanitizeClassToken(tc)+"-color")
+	}
+	if bg := strings.TrimSpace(attrString(attrs, "backgroundColor")); bg != "" {
+		parts = append(parts, "has-background", "has-"+sanitizeClassToken(bg)+"-background-color")
+	}
+	if hasCustomTextColor(attrs) {
+		parts = append(parts, "has-text-color")
+	}
+	if hasCustomBackgroundColor(attrs) {
+		parts = append(parts, "has-background")
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		parts = append(parts, cn)
+	}
+	return strings.Join(parts, " ")
 }
 
 func (e *Env) renderCommentTemplate(block Block) string {
