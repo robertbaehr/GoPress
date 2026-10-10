@@ -2800,12 +2800,21 @@
   api: n/a
   notes: "P3.83 — always Scope; document_title_parts; author_template_content; shim excerpts + author-N classes"
 
-# P3.24: /tag/{slug}/ tag archives.
+# P3.24 / P3.85: /tag/{slug}/ tag archives.
 - prefix: wp-includes/taxonomy.php#tag-archive
   go: internal/server/front.go
   status: partial
-  task: P3.24
+  task: P3.85
   api: n/a
+  notes: "P3.85 — Scope ensure; document_title_parts; tag_template_content; shim excerpts/body classes"
+
+# P3.85: deepen tag archive (mirror P3.84 category deepen).
+- prefix: wp-includes/taxonomy.php#tag-archive-p385
+  go: internal/server/front.go
+  status: partial
+  task: P3.85
+  api: n/a
+  notes: "P3.85 — document_title_parts; tag_template_content; shim excerpts + tag-N classes"
 
 # P3.25: /category/{slug}/ category archives.
 - prefix: wp-includes/taxonomy.php#category-archive
