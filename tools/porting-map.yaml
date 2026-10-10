@@ -1445,6 +1445,14 @@
   task: P3.13
   api: n/a
 
+# P3.52: RSS2 channel <image> from site icon (rss2_site_icon).
+- prefix: wp-includes/feed.php#rss2_site_icon
+  go: internal/server/front.go
+  status: partial
+  task: P3.52
+  api: n/a
+  notes: "P3.52 — channel <image> when custom site_icon set"
+
 # P3.50: atom:link rel=self via get_self_link() (request URI).
 - prefix: wp-includes/feed.php#get_self_link
   go: internal/server/front.go

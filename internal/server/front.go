@@ -1779,6 +1779,10 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString("\t")
 	b.WriteString(wp.GetTheGenerator("rss2"))
 	b.WriteString("\n")
+	// P3.52: rss2_site_icon channel <image> when a custom site icon is set.
+	if img := rss2SiteIconImage(c, blogname, home); img != "" {
+		b.WriteString(img)
+	}
 	for i, p := range posts {
 		link := postPermalink(home, p.Post)
 		guid := home + "/?p=" + strconv.FormatInt(p.ID, 10)
@@ -2256,6 +2260,33 @@ func feedSelfLink(r *http.Request, c *wp.Context) string {
 		return path
 	}
 	return home + path
+}
+
+// rss2SiteIconImage emits the RSS2 channel <image> block (rss2_site_icon, P3.52).
+// Empty when no custom site icon is configured (matches get_site_icon_url fallback "").
+func rss2SiteIconImage(c *wp.Context, title, home string) string {
+	url := wp.GetSiteIconURL(c, 32, "")
+	if url == "" {
+		return ""
+	}
+	if strings.TrimSpace(title) == "" {
+		title = optionString(c, "blogname", "GoPress")
+	}
+	var b strings.Builder
+	b.WriteString("\n<image>\n")
+	b.WriteString("\t<url>")
+	b.WriteString(xmlEscape(url))
+	b.WriteString("</url>\n")
+	b.WriteString("\t<title>")
+	b.WriteString(xmlEscape(title))
+	b.WriteString("</title>\n")
+	b.WriteString("\t<link>")
+	b.WriteString(xmlEscape(home))
+	b.WriteString("</link>\n")
+	b.WriteString("\t<width>32</width>\n")
+	b.WriteString("\t<height>32</height>\n")
+	b.WriteString("</image> \n")
+	return b.String()
 }
 
 func feedCategoryNames(c *wp.Context, postID int64) []string {
