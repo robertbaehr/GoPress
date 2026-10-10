@@ -4388,6 +4388,21 @@
   task: P5.40
   api: exported
 
+# P9.20: theme.json Merge / MergeLayers (WP_Theme_JSON::merge subset).
+- prefix: wp-includes/class-wp-theme-json.php#merge
+  go: internal/theme/merge.go
+  status: partial
+  task: P9.20
+  api: exported
+  notes: "P9.20 — deep merge settings/styles; leaf arrays replaced; MergeLayers default→theme→custom"
+
+- prefix: wp-includes/class-wp-theme-json-resolver.php#get_merged_data
+  go: internal/theme/merge.go
+  status: partial
+  task: P9.20
+  api: exported
+  notes: "P9.20 — MergeLayers origin stack subset"
+
 - prefix: wp-includes/class-wp-block-type.php#variations
   go: internal/wp/block_variations.go
   status: partial
