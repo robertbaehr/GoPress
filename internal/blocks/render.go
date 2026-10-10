@@ -2,7 +2,6 @@ package blocks
 
 import (
 	"fmt"
-	"html"
 	"strings"
 )
 
@@ -273,17 +272,6 @@ func isSafeHTMLTag(tag string) bool {
 	default:
 		return false
 	}
-}
-
-func (e *Env) renderSeparator(block Block) string {
-	if block.InnerHTML != "" {
-		return e.renderSaved(block)
-	}
-	class := "wp-block-separator"
-	if cn, ok := block.Attrs["className"].(string); ok && cn != "" {
-		class += " " + html.EscapeString(cn)
-	}
-	return fmt.Sprintf(`<hr class="%s"/>`, class)
 }
 
 // attrLength coerces string or numeric block attrs to a CSS length (P4.50).
