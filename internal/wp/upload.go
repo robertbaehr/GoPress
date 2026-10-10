@@ -9,7 +9,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-	"unicode"
 )
 
 // UploadFixedSubdir is the fixture-aligned uploads subdirectory for new files.
@@ -121,19 +120,7 @@ func insertAttachmentRow(c *Context, author int64, now, title, slug, mimeType, g
 }
 
 func sanitizeUploadName(name string) string {
-	name = strings.TrimSpace(name)
-	var b strings.Builder
-	for _, r := range name {
-		switch {
-		case unicode.IsLetter(r), unicode.IsDigit(r):
-			b.WriteRune(r)
-		case r == '.', r == '-', r == '_':
-			b.WriteRune(r)
-		case r == ' ':
-			b.WriteByte('-')
-		}
-	}
-	return b.String()
+	return SanitizeFileName(strings.TrimSpace(name))
 }
 
 func uniqueFilename(dir, name string) string {

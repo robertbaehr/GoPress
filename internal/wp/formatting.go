@@ -42,7 +42,18 @@ var (
 	reNormDecEntity = regexp.MustCompile(`&amp;#(0*[1-9][0-9]{0,6});`)
 	reNormHexEntity = regexp.MustCompile(`&amp;#[Xx](0*[1-9A-Fa-f][0-9A-Fa-f]{0,5});`)
 	reNormNamedEnt  = regexp.MustCompile(`&amp;([A-Za-z]{2,8}[0-9]{0,2});`)
+	reFileDots      = regexp.MustCompile(`\.{2,}`)
+	reFileDashes    = regexp.MustCompile(`[\r\n\t -]+`)
+	reFileSpaceSep  = regexp.MustCompile(`\p{Zs}`)
+	reFileAlphaExt  = regexp.MustCompile(`(?i)^[a-z]{2,5}\d?$`)
 )
+
+// specialFileNameChars mirrors sanitize_file_name's $special_chars list.
+var specialFileNameChars = []string{
+	"?", "[", "]", "/", "\\", "=", "<", ">", ":", ";", ",", "'", "\"",
+	"&", "$", "#", "*", "(", ")", "|", "~", "`", "!", "{", "}", "%", "+",
+	"\u2019", "\u00ab", "\u00bb", "\u201d", "\u201c", "\x00",
+}
 
 // named entities accepted by a minimal wp_kses_normalize_entities subset.
 var namedEntities = map[string]bool{
@@ -153,6 +164,99 @@ func SanitizeTextField(str string) string {
 func SanitizeTitle(title string) string {
 	title = removeAccents(title)
 	return sanitizeTitleWithDashes(title)
+}
+
+// SanitizeFileName sanitizes a filename (sanitize_file_name, P2.29).
+func SanitizeFileName(filename string) string {
+	filename = removeAccents(filename)
+
+	if !utf8.ValidString(filename) {
+		ext := ""
+		name := filename
+		if i := strings.LastIndex(filename, "."); i >= 0 {
+			ext = filename[i+1:]
+			name = filename[:i]
+		}
+		filename = sanitizeTitleWithDashes(name)
+		if ext != "" {
+			filename = filename + "." + ext
+		}
+	}
+
+	filename = reFileSpaceSep.ReplaceAllString(filename, " ")
+
+	for _, ch := range specialFileNameChars {
+		filename = strings.ReplaceAll(filename, ch, "")
+	}
+	filename = strings.ReplaceAll(filename, "%20", "-")
+	filename = strings.ReplaceAll(filename, "+", "-")
+	filename = reFileDots.ReplaceAllString(filename, ".")
+	filename = reFileDashes.ReplaceAllString(filename, "-")
+	filename = strings.Trim(filename, ".-_")
+
+	if filename != "" && !strings.Contains(filename, ".") {
+		if checkFiletypeExt("test."+filename) == filename {
+			filename = "unnamed-file." + filename
+		}
+	}
+
+	parts := strings.Split(filename, ".")
+	if len(parts) <= 2 {
+		return filename
+	}
+
+	base := parts[0]
+	ext := parts[len(parts)-1]
+	middles := parts[1 : len(parts)-1]
+	for _, part := range middles {
+		base += "." + part
+		if reFileAlphaExt.MatchString(part) && !isAllowedFileExt(part) {
+			base += "_"
+		}
+	}
+	return base + "." + ext
+}
+
+// mimeTypeExtGroups is a subset of wp_get_mime_types / get_allowed_mime_types keys.
+var mimeTypeExtGroups = []string{
+	"jpg|jpeg|jpe", "gif", "png", "bmp", "tiff|tif", "webp", "avif", "ico",
+	"heic", "heif", "heics", "heifs",
+	"asf|asx", "wmv", "wmx", "wm", "avi", "divx", "flv", "mov|qt", "mpeg|mpg|mpe",
+	"mp4|m4v", "ogv", "webm", "mkv",
+	"3gp|3gpp", "3g2|3gp2",
+	"txt|asc|c|cc|h|srt", "csv", "tsv", "ics", "rtx", "css", "htm|html", "vtt",
+	"mp3|m4a|m4b", "aac", "ra|ram", "wav|x-wav", "ogg|oga", "mid|midi", "wma", "wax", "mka",
+	"rtf", "js", "pdf", "class", "tar", "zip", "gz|gzip", "rar", "7z",
+	"doc", "pot|pps|ppt", "wri", "xla|xls|xlt|xlw", "mdb", "mpp", "docx", "docm", "dotx", "dotm",
+	"xlsx", "xlsm", "xlsb", "xltx", "xltm", "xlam", "pptx", "pptm", "ppsx", "ppsm", "potx", "potm", "ppam",
+	"sldx", "sldm", "onetoc|onetoc2|onetmp|onepkg", "oxps", "xps",
+	"odt", "odp", "ods", "odg", "odc", "odb", "odf",
+	"wp|wpd", "key", "numbers", "pages",
+}
+
+func checkFiletypeExt(filename string) string {
+	lower := strings.ToLower(filename)
+	for _, group := range mimeTypeExtGroups {
+		for _, ext := range strings.Split(group, "|") {
+			if strings.HasSuffix(lower, "."+ext) {
+				return ext
+			}
+		}
+	}
+	return ""
+}
+
+func isAllowedFileExt(part string) bool {
+	part = strings.ToLower(part)
+	for _, group := range mimeTypeExtGroups {
+		for _, ext := range strings.Split(group, "|") {
+			if part == ext {
+				return true
+			}
+		}
+	}
+	// get_allowed_mime_types unsets swf/exe and often htm|html/js — treat as disallowed.
+	return false
 }
 
 // WPStripAllTags strips HTML tags (wp_strip_all_tags). removeBreaks collapses whitespace.
