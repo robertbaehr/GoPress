@@ -119,7 +119,7 @@ func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, templa
 	env := blockRenderEnv(c)
 	env.IsFrontPage = func() bool { return true }
 	body := blocks.RenderWith(env, template)
-	safe := wp.KsesPost(body)
+	safe := wp.ProcessInteractivityHTML(wp.KsesPost(body))
 
 	bodyClasses := "home blog wp-embed-responsive"
 	if stylesheet != "" {
@@ -259,7 +259,7 @@ func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context
 		return commentFormSlot
 	}
 	body := blocks.RenderWith(env, template)
-	safe := wp.KsesPost(body)
+	safe := wp.ProcessInteractivityHTML(wp.KsesPost(body))
 	safe = strings.Replace(safe, commentFormSlot, commentFormHTML(c, post), 1)
 	safe = ensureMainSkipTarget(safe)
 
@@ -318,7 +318,7 @@ func (f *Front) renderSingularShim(w http.ResponseWriter, c *wp.Context, post *s
 	}
 	// the_content: blocks → shortcodes → texturize (P5.11).
 	content = wp.TheContent(c, content)
-	safeContent := wp.KsesPost(content)
+	safeContent := wp.ProcessInteractivityHTML(wp.KsesPost(content))
 
 	bodyClass := "singular"
 	if post.Type == "attachment" {
