@@ -34,6 +34,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/options-reading.php":
 		h.requireLogin(w, r, c, h.serveOptionsReading)
 		return true
+	case "/wp-admin/options-discussion.php":
+		h.requireLogin(w, r, c, h.serveOptionsDiscussion)
+		return true
 	case "/wp-admin/plugins.php":
 		h.requireLogin(w, r, c, h.servePlugins)
 		return true
@@ -339,6 +342,141 @@ func (h *Handler) serveOptionsReading(w http.ResponseWriter, r *http.Request, c 
 	}
 	b.WriteString("> Discourage search engines from indexing this site</label>\n")
 	b.WriteString("</td>\n</tr>\n")
+	b.WriteString("</table>\n")
+	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Save Changes\"></p>\n")
+	b.WriteString("</form>\n</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
+// serveOptionsDiscussion is the Settings → Discussion screen stub (P7.22).
+func (h *Handler) serveOptionsDiscussion(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	defaultCommentStatus := optionString(c, "default_comment_status", "open")
+	defaultPingStatus := optionString(c, "default_ping_status", "open")
+	requireNameEmail := optionString(c, "require_name_email", "1")
+	commentRegistration := optionString(c, "comment_registration", "0")
+	closeOld := optionString(c, "close_comments_for_old_posts", "0")
+	closeDays := optionString(c, "close_comments_days_old", "14")
+	threadComments := optionString(c, "thread_comments", "1")
+	threadDepth := optionString(c, "thread_comments_depth", "5")
+	pageComments := optionString(c, "page_comments", "0")
+	commentsPerPage := optionString(c, "comments_per_page", "50")
+	commentsNotify := optionString(c, "comments_notify", "1")
+	moderationNotify := optionString(c, "moderation_notify", "1")
+	commentModeration := optionString(c, "comment_moderation", "0")
+	previouslyApproved := optionString(c, "comment_previously_approved", "1")
+	showAvatars := optionString(c, "show_avatars", "1")
+
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Discussion Settings &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap\">\n")
+	b.WriteString("<h1>Discussion Settings</h1>\n")
+	b.WriteString("<p class=\"description\">GoPress discussion settings stub — save lands with options.php.</p>\n")
+	b.WriteString("<form method=\"post\" action=\"options.php\">\n")
+	b.WriteString("<table class=\"form-table indent-children\" role=\"presentation\">\n")
+
+	b.WriteString("<tr>\n<th scope=\"row\">Default post settings</th>\n<td><fieldset>\n")
+	b.WriteString("<label for=\"default_ping_status\"><input name=\"default_ping_status\" type=\"checkbox\" id=\"default_ping_status\" value=\"open\"")
+	if defaultPingStatus == "open" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString("> Allow link notifications from other blogs (pingbacks and trackbacks) on new posts</label><br>\n")
+	b.WriteString("<label for=\"default_comment_status\"><input name=\"default_comment_status\" type=\"checkbox\" id=\"default_comment_status\" value=\"open\"")
+	if defaultCommentStatus == "open" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString("> Allow people to submit comments on new posts</label>\n")
+	b.WriteString("</fieldset></td>\n</tr>\n")
+
+	b.WriteString("<tr>\n<th scope=\"row\">Other comment settings</th>\n<td><fieldset>\n")
+	b.WriteString("<label for=\"require_name_email\"><input type=\"checkbox\" name=\"require_name_email\" id=\"require_name_email\" value=\"1\"")
+	if requireNameEmail == "1" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString("> Comment author must fill out name and email</label><br>\n")
+	b.WriteString("<label for=\"comment_registration\"><input name=\"comment_registration\" type=\"checkbox\" id=\"comment_registration\" value=\"1\"")
+	if commentRegistration == "1" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString("> Users must be registered and logged in to comment</label><br>\n")
+	b.WriteString("<input name=\"close_comments_for_old_posts\" type=\"checkbox\" id=\"close_comments_for_old_posts\" value=\"1\"")
+	if closeOld == "1" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString("> <label for=\"close_comments_for_old_posts\">Automatically close comments on old posts</label>\n")
+	b.WriteString("<ul><li><label for=\"close_comments_days_old\">Close comments when post is how many days old</label> ")
+	b.WriteString("<input name=\"close_comments_days_old\" type=\"number\" step=\"1\" min=\"0\" id=\"close_comments_days_old\" value=\"")
+	b.WriteString(html.EscapeString(closeDays))
+	b.WriteString("\" class=\"small-text\" /></li></ul>\n")
+	b.WriteString("<input name=\"thread_comments\" type=\"checkbox\" id=\"thread_comments\" value=\"1\"")
+	if threadComments == "1" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString("> <label for=\"thread_comments\">Enable threaded (nested) comments</label>\n")
+	b.WriteString("<ul><li><label for=\"thread_comments_depth\">Number of levels for threaded (nested) comments</label> ")
+	b.WriteString("<select name=\"thread_comments_depth\" id=\"thread_comments_depth\">\n")
+	for _, d := range []string{"2", "3", "4", "5", "6", "7", "8", "9", "10"} {
+		b.WriteString("<option value=\"")
+		b.WriteString(d)
+		b.WriteString("\"")
+		if threadDepth == d {
+			b.WriteString(" selected=\"selected\"")
+		}
+		b.WriteString(">")
+		b.WriteString(d)
+		b.WriteString("</option>\n")
+	}
+	b.WriteString("</select></li></ul>\n")
+	b.WriteString("<input name=\"page_comments\" type=\"checkbox\" id=\"page_comments\" value=\"1\"")
+	if pageComments == "1" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString("> <label for=\"page_comments\">Break comments into pages</label>\n")
+	b.WriteString("<ul><li><label for=\"comments_per_page\">Top level comments per page</label> ")
+	b.WriteString("<input name=\"comments_per_page\" type=\"number\" step=\"1\" min=\"0\" id=\"comments_per_page\" value=\"")
+	b.WriteString(html.EscapeString(commentsPerPage))
+	b.WriteString("\" class=\"small-text\" /></li></ul>\n")
+	b.WriteString("</fieldset></td>\n</tr>\n")
+
+	b.WriteString("<tr>\n<th scope=\"row\">Email me whenever</th>\n<td><fieldset>\n")
+	b.WriteString("<label for=\"comments_notify\"><input name=\"comments_notify\" type=\"checkbox\" id=\"comments_notify\" value=\"1\"")
+	if commentsNotify == "1" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString("> Anyone posts a comment</label><br>\n")
+	b.WriteString("<label for=\"moderation_notify\"><input name=\"moderation_notify\" type=\"checkbox\" id=\"moderation_notify\" value=\"1\"")
+	if moderationNotify == "1" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString("> A comment is held for moderation</label>\n")
+	b.WriteString("</fieldset></td>\n</tr>\n")
+
+	b.WriteString("<tr>\n<th scope=\"row\">Before a comment appears</th>\n<td><fieldset>\n")
+	b.WriteString("<label for=\"comment_moderation\"><input name=\"comment_moderation\" type=\"checkbox\" id=\"comment_moderation\" value=\"1\"")
+	if commentModeration == "1" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString("> Comment must be manually approved</label><br>\n")
+	b.WriteString("<label for=\"comment_previously_approved\"><input type=\"checkbox\" name=\"comment_previously_approved\" id=\"comment_previously_approved\" value=\"1\"")
+	if previouslyApproved == "1" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString("> Comment author must have a previously approved comment</label>\n")
+	b.WriteString("</fieldset></td>\n</tr>\n")
+
+	b.WriteString("<tr>\n<th scope=\"row\">Avatars</th>\n<td>\n")
+	b.WriteString("<label for=\"show_avatars\"><input name=\"show_avatars\" type=\"checkbox\" id=\"show_avatars\" value=\"1\"")
+	if showAvatars == "1" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString("> Show Avatars</label>\n")
+	b.WriteString("</td>\n</tr>\n")
+
 	b.WriteString("</table>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Save Changes\"></p>\n")
 	b.WriteString("</form>\n</div>\n</body>\n</html>\n")
