@@ -57,10 +57,92 @@ func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string
 				}
 			}
 			styles = CompileStyle(style)
+			if filterID, filterCSS := duotoneFromStyle(style); filterID != "" {
+				classes = appendUnique(classes, filterID)
+				if filterCSS != "" {
+					styles = mergeCSSDecls(styles, filterCSS)
+				}
+			}
 		}
 	}
 	classes = append(classes, layoutClasses(blockName, attrs)...)
 	return classes, styles
+}
+
+// duotoneFromStyle extracts WP duotone support (P5.22): class wp-duotone-{slug}
+// plus an inline filter declaration for preset / unset values.
+// Attr paths: style.color.duotone (legacy) and style.filter.duotone (current).
+func duotoneFromStyle(style map[string]any) (filterID, filterCSS string) {
+	attr := duotoneAttr(style)
+	if attr == nil {
+		return "", ""
+	}
+	switch v := attr.(type) {
+	case string:
+		v = strings.TrimSpace(v)
+		if v == "" {
+			return "", ""
+		}
+		if slug := duotoneSlugFromAttr(v); slug != "" {
+			filterID = "wp-duotone-" + slug
+			filterCSS = "filter:var(--wp--preset--duotone--" + slug + ")"
+			return filterID, filterCSS
+		}
+		// CSS values like "unset".
+		slug := slugifySupport(v)
+		if slug == "" {
+			slug = "custom"
+		}
+		return "wp-duotone-" + slug, "filter:" + html.EscapeString(v)
+	case []any:
+		parts := make([]string, 0, len(v))
+		for _, c := range v {
+			s, ok := c.(string)
+			if !ok {
+				continue
+			}
+			s = strings.TrimPrefix(strings.TrimSpace(s), "#")
+			if s != "" {
+				parts = append(parts, slugifySupport(s))
+			}
+		}
+		if len(parts) == 0 {
+			return "", ""
+		}
+		return "wp-duotone-" + strings.Join(parts, "-"), ""
+	default:
+		return "", ""
+	}
+}
+
+func duotoneAttr(style map[string]any) any {
+	if style == nil {
+		return nil
+	}
+	if filter, ok := style["filter"].(map[string]any); ok {
+		if d, ok := filter["duotone"]; ok && d != nil {
+			return d
+		}
+	}
+	if color, ok := style["color"].(map[string]any); ok {
+		if d, ok := color["duotone"]; ok && d != nil {
+			return d
+		}
+	}
+	return nil
+}
+
+func duotoneSlugFromAttr(attr string) string {
+	attr = strings.TrimSpace(attr)
+	if strings.HasPrefix(attr, "var:preset|duotone|") {
+		return slugifySupport(strings.TrimPrefix(attr, "var:preset|duotone|"))
+	}
+	const prefix = "var(--wp--preset--duotone--"
+	if strings.HasPrefix(attr, prefix) && strings.HasSuffix(attr, ")") {
+		inner := strings.TrimSuffix(strings.TrimPrefix(attr, prefix), ")")
+		return slugifySupport(inner)
+	}
+	return ""
 }
 
 // layoutClasses mirrors WP block layout support classnames (P5.19).

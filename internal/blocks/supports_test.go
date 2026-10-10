@@ -44,3 +44,36 @@ func TestBlockSupportsSpacingStyles(t *testing.T) {
 		t.Fatalf("missing padding bottom: %q", out)
 	}
 }
+
+func TestBlockSupportsDuotonePreset(t *testing.T) {
+	in := `<!-- wp:image {"style":{"color":{"duotone":"var:preset|duotone|blue-orange"}}} -->
+<figure class="wp-block-image"><img src="/x.png" alt=""/></figure>
+<!-- /wp:image -->`
+	out := blocks.Render(in)
+	if !strings.Contains(out, "wp-duotone-blue-orange") {
+		t.Fatalf("missing duotone class: %q", out)
+	}
+	if !strings.Contains(out, "filter:var(--wp--preset--duotone--blue-orange)") {
+		t.Fatalf("missing duotone filter style: %q", out)
+	}
+}
+
+func TestBlockSupportsDuotoneFilterPath(t *testing.T) {
+	in := `<!-- wp:image {"style":{"filter":{"duotone":"var(--wp--preset--duotone--grayscale)"}}} -->
+<figure class="wp-block-image"><img src="/x.png" alt=""/></figure>
+<!-- /wp:image -->`
+	out := blocks.Render(in)
+	if !strings.Contains(out, "wp-duotone-grayscale") {
+		t.Fatalf("missing duotone class: %q", out)
+	}
+}
+
+func TestBlockSupportsDuotoneCustomColors(t *testing.T) {
+	in := `<!-- wp:image {"style":{"color":{"duotone":["#000000","#ffffff"]}}} -->
+<figure class="wp-block-image"><img src="/x.png" alt=""/></figure>
+<!-- /wp:image -->`
+	out := blocks.Render(in)
+	if !strings.Contains(out, "wp-duotone-000000-ffffff") {
+		t.Fatalf("missing custom duotone class: %q", out)
+	}
+}
