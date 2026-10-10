@@ -2309,52 +2309,6 @@ func (h *Handler) servePrivacyPolicyGuide(w http.ResponseWriter, r *http.Request
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-func (h *Handler) servePrivacyStub(w http.ResponseWriter, c *wp.Context, title, lead, note string, withTabs bool) {
-	blogname := optionString(c, "blogname", "GoPress")
-	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
-	b.WriteString("<title>")
-	b.WriteString(html.EscapeString(title))
-	b.WriteString(" &lsaquo; ")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui privacy-settings\">\n")
-	b.WriteString(adminNoticesHTML(c))
-	if withTabs {
-		b.WriteString("<div class=\"privacy-settings-header\">\n")
-		b.WriteString("<div class=\"privacy-settings-title-section\"><h1>")
-		b.WriteString(html.EscapeString(title))
-		b.WriteString("</h1></div>\n")
-		b.WriteString("<nav class=\"privacy-settings-tabs-wrapper\" aria-label=\"Secondary menu\">\n")
-		b.WriteString("<a href=\"/wp-admin/options-privacy.php\" class=\"privacy-settings-tab active\" aria-current=\"true\">Settings</a>\n")
-		b.WriteString("<a href=\"/wp-admin/privacy-policy-guide.php\" class=\"privacy-settings-tab\">Policy Guide</a>\n")
-		b.WriteString("</nav>\n</div>\n<hr class=\"wp-header-end\">\n")
-	}
-	b.WriteString("<div class=\"wrap\" id=\"privacy-settings\">\n")
-	if !withTabs {
-		b.WriteString("<h1>")
-		b.WriteString(html.EscapeString(title))
-		b.WriteString("</h1>\n")
-	}
-	b.WriteString("<p>")
-	b.WriteString(html.EscapeString(lead))
-	b.WriteString("</p>\n")
-	b.WriteString("<p class=\"description\">")
-	b.WriteString(html.EscapeString(note))
-	b.WriteString("</p>\n")
-	// P8.9: link the configured Privacy Policy page (edit screen).
-	if withTabs {
-		b.WriteString("<p class=\"privacy-policy-page-link\">")
-		b.WriteString(wp.PrivacyPolicyAdminSummary(c))
-		b.WriteString("</p>\n")
-	}
-	b.WriteString("<table class=\"wp-list-table widefat fixed striped privacy-requests\">\n")
-	b.WriteString("<thead><tr><th scope=\"col\">Requester</th><th scope=\"col\">Status</th></tr></thead>\n")
-	b.WriteString("<tbody><tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"2\">No requests found.</td></tr></tbody>\n")
-	b.WriteString("</table>\n</div>\n</body>\n</html>\n")
-	writeHTML(w, http.StatusOK, b.String())
-}
-
 // serveCustomizerGone rejects the Customizer as out of scope (P7.6).
 func (h *Handler) serveCustomizerGone(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
