@@ -939,6 +939,9 @@ func TestFrontTagArchive(t *testing.T) {
 	if !strings.Contains(body, "Fixture Post") {
 		t.Fatalf("expected tagged post: %q", body)
 	}
+	if !strings.Contains(body, "tag-fixture-tag-01") {
+		t.Fatalf("expected tag slug body class: %q", body[:min(500, len(body))])
+	}
 	if strings.Contains(body, "GoPress: front route not implemented") {
 		t.Fatal("tag archive should not 501")
 	}
@@ -948,6 +951,30 @@ func TestFrontTagArchive(t *testing.T) {
 	srv.ServeHTTP(rec, req)
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("missing tag want 404, got %d", rec.Code)
+	}
+}
+
+func TestFrontTagArchiveDocumentTitleFilter(t *testing.T) {
+	c := testBoot(t)
+	c.Hooks.AddFilter("document_title_parts", func(value any, _ ...any) any {
+		parts, _ := value.(map[string]string)
+		if parts == nil {
+			parts = map[string]string{}
+		}
+		parts["title"] = "Tags Only"
+		parts["site"] = "GoPress Test"
+		return parts
+	}, 10, 1)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/tag/fixture-tag-01/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "Tags Only") || !strings.Contains(body, "GoPress Test") {
+		t.Fatalf("document_title_parts not applied: %q", body[:min(600, len(body))])
 	}
 }
 
