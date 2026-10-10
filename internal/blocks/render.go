@@ -27,12 +27,22 @@ func RenderBlock(block Block) string {
 		// Freeform / classic HTML.
 		return block.InnerHTML
 	case "core/paragraph", "core/heading", "core/list", "core/list-item",
-		"core/image", "core/quote", "core/code", "core/html":
+		"core/image", "core/quote", "core/code", "core/html",
+		"core/group", "core/columns", "core/column", "core/buttons", "core/button",
+		"core/pullquote", "core/preformatted", "core/verse", "core/table",
+		"core/file", "core/audio", "core/video", "core/cover", "core/media-text":
 		return renderSaved(block)
 	case "core/separator":
 		return renderSeparator(block)
+	case "core/spacer":
+		return renderSpacer(block)
+	case "core/embed":
+		return renderEmbed(block)
 	default:
-		// Unknown blocks: emit saved innerHTML as-is.
+		// Unknown blocks: prefer saved markup with nested reconstruction.
+		if len(block.InnerBlocks) > 0 || len(block.InnerContent) > 0 {
+			return renderSaved(block)
+		}
 		return block.InnerHTML
 	}
 }
@@ -46,6 +56,46 @@ func renderSeparator(block Block) string {
 		class += " " + html.EscapeString(cn)
 	}
 	return fmt.Sprintf(`<hr class="%s"/>`, class)
+}
+
+func renderSpacer(block Block) string {
+	if block.InnerHTML != "" {
+		return renderSaved(block)
+	}
+	height := "100px"
+	if h, ok := block.Attrs["height"].(string); ok && h != "" {
+		height = h
+	}
+	style := fmt.Sprintf("height:%s", html.EscapeString(height))
+	if w, ok := block.Attrs["width"].(string); ok && w != "" {
+		style += ";width:" + html.EscapeString(w)
+	}
+	return fmt.Sprintf(`<div style="%s" aria-hidden="true" class="wp-block-spacer"></div>`, style)
+}
+
+func renderEmbed(block Block) string {
+	if block.InnerHTML != "" {
+		return renderSaved(block)
+	}
+	url, _ := block.Attrs["url"].(string)
+	if url == "" {
+		return ""
+	}
+	esc := html.EscapeString(url)
+	caption, _ := block.Attrs["caption"].(string)
+	var b strings.Builder
+	b.WriteString(`<figure class="wp-block-embed"><div class="wp-block-embed__wrapper"><a href="`)
+	b.WriteString(esc)
+	b.WriteString(`">`)
+	b.WriteString(esc)
+	b.WriteString(`</a></div>`)
+	if caption != "" {
+		b.WriteString(`<figcaption class="wp-element-caption">`)
+		b.WriteString(html.EscapeString(caption))
+		b.WriteString(`</figcaption>`)
+	}
+	b.WriteString(`</figure>`)
+	return b.String()
 }
 
 // renderSaved reconstructs block HTML from innerContent + nested blocks.
