@@ -47,6 +47,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 		return true
 	case "/wp-admin/options-media.php":
 		h.requireLogin(w, r, c, h.serveOptionsMedia)
+		return true
 	case "/wp-admin/options-permalink.php":
 		h.requireLogin(w, r, c, h.serveOptionsPermalink)
 		return true
