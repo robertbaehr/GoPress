@@ -362,6 +362,13 @@
   task: P10.22
   api: n/a
 
+# P10.23: E2E tag archive /tag/fixture-tag-01/.
+- prefix: tests/e2e/tag.spec.js
+  go: tests/e2e/tag.spec.js
+  status: partial
+  task: P10.23
+  api: n/a
+
 # P3.22: year/month date archives on the front controller.
 - prefix: wp-includes/general-template.php
   go: internal/server/front.go
