@@ -18,10 +18,6 @@
   reason: Plugins screen stub
   remove_by: "2027-06-01"
 
-- id: login-admin-profile-headers
-  reason: Profile stub headers differ until full admin chrome
-  remove_by: "2027-06-01"
-
 - id: front-home
   reason: Block theme HTML not yet byte-parity with twentytwentyfive
   remove_by: "2027-06-01"
