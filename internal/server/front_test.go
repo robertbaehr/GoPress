@@ -599,6 +599,48 @@ func TestFrontFeedRDF(t *testing.T) {
 	}
 }
 
+func TestFrontFeedRDFUpdateFiltersAndNamespaces(t *testing.T) {
+	c := testBoot(t)
+	c.Hooks.AddFilter("rss_update_period", func(value any, _ ...any) any { return "daily" }, 10, 1)
+	c.Hooks.AddFilter("rss_update_frequency", func(value any, _ ...any) any { return 3 }, 10, 1)
+	c.Hooks.AddFilter("wp_feed_namespaces", func(value any, args ...any) any {
+		prev, _ := value.(string)
+		if len(args) > 0 && args[0] == "rdf" {
+			return prev + "\txmlns:taxo=\"http://purl.org/rss/1.0/modules/taxonomy/\"\n"
+		}
+		return value
+	}, 10, 2)
+	sawPre, sawHeader, sawItem := false, false, false
+	c.Hooks.AddAction("rss_tag_pre", func(args ...any) {
+		if len(args) > 0 && args[0] == "rdf" {
+			sawPre = true
+		}
+	}, 10, 1)
+	c.Hooks.AddAction("rdf_header", func(args ...any) { sawHeader = true }, 10, 0)
+	c.Hooks.AddAction("rdf_item", func(args ...any) { sawItem = true }, 10, 0)
+
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?feed=rdf", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		"<sy:updatePeriod>\n\tdaily\n\t</sy:updatePeriod>",
+		"<sy:updateFrequency>\n\t3\n\t</sy:updateFrequency>",
+		`xmlns:taxo="http://purl.org/rss/1.0/modules/taxonomy/"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in %q", want, body[:min(900, len(body))])
+		}
+	}
+	if !sawPre || !sawHeader || !sawItem {
+		t.Fatalf("hooks pre=%v header=%v item=%v", sawPre, sawHeader, sawItem)
+	}
+}
+
 func TestFrontFeedRDFPrettyPath(t *testing.T) {
 	c := testBoot(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}

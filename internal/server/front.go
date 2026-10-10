@@ -2520,7 +2520,7 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 	_, _ = w.Write([]byte(b.String()))
 }
 
-// renderFeedRDF emits a WordPress-shaped RDF/RSS 1.0 feed stub (feed-rdf.php, P3.33).
+// renderFeedRDF emits a WordPress-shaped RDF/RSS 1.0 feed stub (feed-rdf.php, P3.33 / P3.89).
 func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	_ = r
 	blogname := optionString(c, "blogname", "GoPress")
@@ -2533,6 +2533,33 @@ func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		return
 	}
 
+	// P3.89: rss_tag_pre before the RDF root (feed-rdf.php).
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("rss_tag_pre", "rdf")
+	}
+
+	updatePeriod := "hourly"
+	updateFrequency := "1"
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("rss_update_period", updatePeriod); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				updatePeriod = strings.TrimSpace(s)
+			}
+		}
+		if v := c.Hooks.ApplyFilters("rss_update_frequency", updateFrequency); v != nil {
+			switch x := v.(type) {
+			case string:
+				if strings.TrimSpace(x) != "" {
+					updateFrequency = strings.TrimSpace(x)
+				}
+			case int:
+				updateFrequency = strconv.Itoa(x)
+			case int64:
+				updateFrequency = strconv.FormatInt(x, 10)
+			}
+		}
+	}
+
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
 	b.WriteString("<rdf:RDF\n")
@@ -2542,6 +2569,8 @@ func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	b.WriteString("\txmlns:sy=\"http://purl.org/rss/1.0/modules/syndication/\"\n")
 	b.WriteString("\txmlns:admin=\"http://webns.net/mvcb/\"\n")
 	b.WriteString("\txmlns:content=\"http://purl.org/rss/1.0/modules/content/\"\n")
+	// P3.89: rdf_ns / wp_feed_namespaces('rdf') for extra xmlns attrs.
+	b.WriteString(feedRDFExtraNamespaces(c))
 	b.WriteString("\t>\n")
 	b.WriteString("<channel rdf:about=\"")
 	b.WriteString(xmlEscape(home))
@@ -2559,16 +2588,24 @@ func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	b.WriteString(xmlEscape(feedAtomDate(c, feedBuildDateGMT(posts), "")))
 	b.WriteString("\t</dc:date>\n")
 	b.WriteString("\t<sy:updatePeriod>\n")
-	b.WriteString("\thourly\n")
+	b.WriteString("\t")
+	b.WriteString(xmlEscape(updatePeriod))
+	b.WriteString("\n")
 	b.WriteString("\t</sy:updatePeriod>\n")
 	b.WriteString("\t<sy:updateFrequency>\n")
-	b.WriteString("\t1\n")
+	b.WriteString("\t")
+	b.WriteString(xmlEscape(updateFrequency))
+	b.WriteString("\n")
 	b.WriteString("\t</sy:updateFrequency>\n")
 	b.WriteString("\t<sy:updateBase>2000-01-01T12:00+00:00</sy:updateBase>\n")
 	// P3.56: rdf_header → the_generator (admin:generatorAgent).
 	b.WriteString("\t")
 	b.WriteString(wp.GetTheGenerator("rdf"))
 	b.WriteString("\n")
+	// P3.89: rdf_header action after generator (plugins append channel markup).
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("rdf_header")
+	}
 	b.WriteString("\t<items>\n")
 	b.WriteString("\t\t<rdf:Seq>\n")
 	for _, p := range posts {
@@ -2616,6 +2653,10 @@ func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Cont
 			b.WriteString(body)
 			b.WriteString("]]></content:encoded>\n")
 		}
+		// P3.89: rdf_item at the end of each item.
+		if c != nil && c.Hooks != nil {
+			c.Hooks.DoAction("rdf_item")
+		}
 		b.WriteString("</item>\n")
 	}
 	b.WriteString("</rdf:RDF>\n")
@@ -2624,6 +2665,29 @@ func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	w.Header().Set("Content-Type", "application/rdf+xml; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(b.String()))
+}
+
+// feedRDFExtraNamespaces collects extra xmlns attrs from wp_feed_namespaces / rdf_ns (P3.89).
+func feedRDFExtraNamespaces(c *wp.Context) string {
+	if c == nil || c.Hooks == nil {
+		return ""
+	}
+	extra := ""
+	if v := c.Hooks.ApplyFilters("wp_feed_namespaces", "", "rdf"); v != nil {
+		if s, ok := v.(string); ok {
+			extra = s
+		}
+	}
+	// rdf_ns historically printed xmlns attrs directly; capture via filter-shaped hooks
+	// that append to a shared string is awkward, so plugins should use wp_feed_namespaces.
+	c.Hooks.DoAction("rdf_ns")
+	if strings.TrimSpace(extra) == "" {
+		return ""
+	}
+	if !strings.HasSuffix(extra, "\n") {
+		extra += "\n"
+	}
+	return extra
 }
 
 func feedBuildDateGMT(posts []feedPost) string {
