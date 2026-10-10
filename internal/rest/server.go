@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/robertbaehr/GoPress/internal/wp"
@@ -28,8 +29,34 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	switch {
 	case path == "/" || path == "":
 		s.serveIndex(w, c)
+	case path == "/wp/v2/types":
+		s.serveTypes(w, r, c)
 	case path == "/wp/v2/posts":
 		s.servePosts(w, r, c)
+	case strings.HasPrefix(path, "/wp/v2/posts/"):
+		id, ok := parseTrailingID(path, "/wp/v2/posts/")
+		if !ok {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"code":    "rest_no_route",
+				"message": "No route was found matching the URL and request method.",
+				"data":    map[string]any{"status": 404},
+			})
+			return
+		}
+		s.servePostItem(w, r, c, id)
+	case path == "/wp/v2/pages":
+		s.servePages(w, r, c)
+	case strings.HasPrefix(path, "/wp/v2/pages/"):
+		id, ok := parseTrailingID(path, "/wp/v2/pages/")
+		if !ok {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"code":    "rest_no_route",
+				"message": "No route was found matching the URL and request method.",
+				"data":    map[string]any{"status": 404},
+			})
+			return
+		}
+		s.servePageItem(w, r, c, id)
 	default:
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"code":    "rest_no_route",
@@ -37,6 +64,19 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 			"data":    map[string]any{"status": 404},
 		})
 	}
+}
+
+func parseTrailingID(path, prefix string) (int64, bool) {
+	rest := strings.TrimPrefix(path, prefix)
+	rest = strings.Trim(rest, "/")
+	if rest == "" || strings.Contains(rest, "/") {
+		return 0, false
+	}
+	id, err := strconv.ParseInt(rest, 10, 64)
+	if err != nil || id <= 0 {
+		return 0, false
+	}
+	return id, true
 }
 
 func restPath(urlPath string) string {
@@ -130,7 +170,8 @@ func buildIndex(c *wp.Context) Index {
 				},
 			}},
 		},
-		"/wp/v2/posts": collectionRoute("wp/v2"),
+		"/wp/v2/posts":                collectionRoute("wp/v2"),
+		"/wp/v2/posts/(?P<id>[\\d]+)": itemRoute("wp/v2"),
 		"/wp/v2/types": {
 			Namespace: "wp/v2",
 			Methods:   []string{"GET"},
@@ -145,7 +186,8 @@ func buildIndex(c *wp.Context) Index {
 				},
 			}},
 		},
-		"/wp/v2/pages": collectionRoute("wp/v2"),
+		"/wp/v2/pages":                collectionRoute("wp/v2"),
+		"/wp/v2/pages/(?P<id>[\\d]+)": itemRoute("wp/v2"),
 	}
 
 	// When authenticated, advertise additional admin-oriented routes (best-effort).
@@ -199,6 +241,20 @@ func collectionRoute(ns string) RouteIndex {
 				},
 			},
 		},
+	}
+}
+
+func itemRoute(ns string) RouteIndex {
+	return RouteIndex{
+		Namespace: ns,
+		Methods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
+		Endpoints: []RouteEndpoint{{
+			Methods: []string{"GET"},
+			Args: map[string]any{
+				"id":      map[string]any{"required": false},
+				"context": map[string]any{"default": "view", "required": false},
+			},
+		}},
 	}
 }
 
