@@ -4462,6 +4462,21 @@
   api: exported
   notes: "P2.74 — raw helper only; validated wp_get_referer deferred"
 
+# P3.72: RSS2 item wfw:commentRss via get_post_comments_feed_link.
+- prefix: wp-includes/feed-rss2.php#commentRss
+  go: internal/server/front.go
+  status: partial
+  task: P3.72
+  api: n/a
+  notes: "P3.72 — wfw:commentRss from postCommentsFeedLink (rss2)"
+
+- prefix: wp-includes/link-template.php#get_post_comments_feed_link
+  go: internal/server/front.go
+  status: partial
+  task: P3.72
+  api: internal
+  notes: "P3.72 — postCommentsFeedLink pretty-permalink /feed/ and /feed/{type}/"
+
 # P4.93: REST pages ?parent= / ?parent_exclude= (post_parent__in / __not_in).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#parent
   go: internal/rest/posts.go
