@@ -146,3 +146,22 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.88: more login error/reauth header cases.
+- id: login-reauth-bare
+  role: anon
+  method: GET
+  path: /wp-login.php?reauth=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-lostpassword-empty-password
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword&error=empty_password
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

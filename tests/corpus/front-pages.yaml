@@ -366,3 +366,49 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.88: author/category/tag 404s + search headers.
+- id: front-author-missing-404
+  role: anon
+  method: GET
+  path: /author/nobody-here/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-category-missing-404
+  role: anon
+  method: GET
+  path: /category/missing-cat/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-tag-missing-xyz-404
+  role: anon
+  method: GET
+  path: /tag/missing-tag-xyz/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-search-world
+  role: anon
+  method: GET
+  path: /?s=world
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-search-fixture
+  role: anon
+  method: GET
+  path: /?s=fixture
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

@@ -5574,3 +5574,11 @@
   task: P10.87
   api: n/a
   notes: "P10.87 — STATUS/PORTING refresh after P5.88–P10.86 (165/165 corpus)"
+
+# P10.88: expand diff corpus after P5.89–P8.25.
+- prefix: tests/corpus#p10.88
+  go: tests/corpus
+  status: partial
+  task: P10.88
+  api: n/a
+  notes: "P10.88 — block-types post-excerpt/content/title/query/…; REST order/search; author/cat/tag 404; login reauth/empty_password"
