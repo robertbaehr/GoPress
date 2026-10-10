@@ -429,6 +429,234 @@ func GetPostThumbnailURL(c *Context, postID int64) string {
 	return GetAttachmentURL(c, id)
 }
 
+// AttachmentImageSrc is the result of wp_get_attachment_image_src (P8.32).
+type AttachmentImageSrc struct {
+	URL     string
+	Width   int
+	Height  int
+	Resized bool // intermediate size (not full)
+}
+
+// ImageDownsize returns src/width/height/is_intermediate for an attachment size
+// (image_downsize subset, P8.32). ok false when no image URL is available.
+func ImageDownsize(c *Context, attachmentID int64, size string) (AttachmentImageSrc, bool) {
+	var out AttachmentImageSrc
+	if c == nil || attachmentID <= 0 {
+		return out, false
+	}
+	size = strings.TrimSpace(size)
+	if size == "" {
+		size = "medium"
+	}
+	// image_downsize filter short-circuit.
+	if c.Hooks != nil {
+		filtered := c.Hooks.ApplyFilters("image_downsize", false, attachmentID, size)
+		switch t := filtered.(type) {
+		case AttachmentImageSrc:
+			if t.URL != "" {
+				return t, true
+			}
+		case []any:
+			if len(t) >= 3 {
+				src := AttachmentImageSrc{URL: strings.TrimSpace(fmt.Sprint(t[0]))}
+				src.Width, _ = strconv.Atoi(fmt.Sprint(t[1]))
+				src.Height, _ = strconv.Atoi(fmt.Sprint(t[2]))
+				if len(t) >= 4 {
+					src.Resized = optionTruthy(t[3])
+				}
+				if src.URL != "" {
+					return src, true
+				}
+			}
+		case bool:
+			// false → continue
+		}
+	}
+	fullURL := GetAttachmentURL(c, attachmentID)
+	if fullURL == "" {
+		return out, false
+	}
+	meta, ok := GetAttachmentMetadata(c, attachmentID)
+	width := 0
+	height := 0
+	if ok {
+		width = anyToInt(meta["width"])
+		height = anyToInt(meta["height"])
+	}
+	isIntermediate := false
+	imgURL := fullURL
+	if size != "full" && ok {
+		if sizes, okSizes := meta["sizes"].(map[string]any); okSizes {
+			if sz, okSz := sizes[size].(map[string]any); okSz {
+				file := strings.TrimSpace(fmt.Sprint(sz["file"]))
+				if file != "" {
+					base := path.Base(fullURL)
+					imgURL = strings.Replace(fullURL, base, path.Base(file), 1)
+					width = anyToInt(sz["width"])
+					height = anyToInt(sz["height"])
+					isIntermediate = true
+				}
+			}
+		}
+	}
+	if width == 0 && height == 0 && ok {
+		width = anyToInt(meta["width"])
+		height = anyToInt(meta["height"])
+	}
+	out = AttachmentImageSrc{URL: imgURL, Width: width, Height: height, Resized: isIntermediate}
+	return out, out.URL != ""
+}
+
+// GetAttachmentImageSrc is wp_get_attachment_image_src (P8.32).
+func GetAttachmentImageSrc(c *Context, attachmentID int64, size string, icon bool) (AttachmentImageSrc, bool) {
+	_ = icon // mime icons deferred
+	src, ok := ImageDownsize(c, attachmentID, size)
+	if !ok {
+		return src, false
+	}
+	if c != nil && c.Hooks != nil {
+		arr := []any{src.URL, src.Width, src.Height, src.Resized}
+		filtered := c.Hooks.ApplyFilters("wp_get_attachment_image_src", arr, attachmentID, size, icon)
+		if t, ok := filtered.([]any); ok && len(t) >= 1 {
+			src.URL = strings.TrimSpace(fmt.Sprint(t[0]))
+			if len(t) >= 2 {
+				src.Width, _ = strconv.Atoi(fmt.Sprint(t[1]))
+			}
+			if len(t) >= 3 {
+				src.Height, _ = strconv.Atoi(fmt.Sprint(t[2]))
+			}
+			if len(t) >= 4 {
+				src.Resized = optionTruthy(t[3])
+			}
+		}
+	}
+	if src.URL == "" {
+		return src, false
+	}
+	return src, true
+}
+
+// GetAttachmentImageURL is wp_get_attachment_image_url (P8.32).
+func GetAttachmentImageURL(c *Context, attachmentID int64, size string, icon bool) string {
+	src, ok := GetAttachmentImageSrc(c, attachmentID, size, icon)
+	if !ok {
+		return ""
+	}
+	return src.URL
+}
+
+// GetAttachmentImage returns an HTML <img> for an attachment (wp_get_attachment_image, P8.32).
+// attr may include class, alt, loading, decoding.
+func GetAttachmentImage(c *Context, attachmentID int64, size string, icon bool, attr map[string]string) string {
+	if size == "" {
+		size = "thumbnail"
+	}
+	src, ok := GetAttachmentImageSrc(c, attachmentID, size, icon)
+	if !ok {
+		return ""
+	}
+	sizeClass := sanitizeImageSizeClass(size)
+	class := "attachment-" + sizeClass + " size-" + sizeClass
+	alt := ""
+	if c != nil && c.Meta != nil {
+		alt = strings.TrimSpace(fmt.Sprint(c.Meta.GetMetadata(MetaPost, attachmentID, "_wp_attachment_image_alt", true)))
+		if alt == "<nil>" {
+			alt = ""
+		}
+	}
+	loading := "lazy"
+	decoding := "async"
+	if attr != nil {
+		if v, ok := attr["class"]; ok && strings.TrimSpace(v) != "" {
+			class = strings.TrimSpace(v)
+		}
+		if v, ok := attr["alt"]; ok {
+			alt = v
+		}
+		if v, ok := attr["loading"]; ok {
+			loading = v
+		}
+		if v, ok := attr["decoding"]; ok {
+			decoding = v
+		}
+		if v, ok := attr["src"]; ok && strings.TrimSpace(v) != "" {
+			src.URL = strings.TrimSpace(v)
+		}
+	}
+	var b strings.Builder
+	b.WriteString(`<img src="`)
+	b.WriteString(htmlEscapeAttr(src.URL))
+	b.WriteString(`" class="`)
+	b.WriteString(htmlEscapeAttr(class))
+	b.WriteString(`"`)
+	if src.Width > 0 {
+		b.WriteString(` width="`)
+		b.WriteString(strconv.Itoa(src.Width))
+		b.WriteString(`"`)
+	}
+	if src.Height > 0 {
+		b.WriteString(` height="`)
+		b.WriteString(strconv.Itoa(src.Height))
+		b.WriteString(`"`)
+	}
+	b.WriteString(` alt="`)
+	b.WriteString(htmlEscapeAttr(alt))
+	b.WriteString(`"`)
+	if decoding != "" && decoding != "false" {
+		b.WriteString(` decoding="`)
+		b.WriteString(htmlEscapeAttr(decoding))
+		b.WriteString(`"`)
+	}
+	if loading != "" && loading != "false" {
+		b.WriteString(` loading="`)
+		b.WriteString(htmlEscapeAttr(loading))
+		b.WriteString(`"`)
+	}
+	b.WriteString(` />`)
+	html := b.String()
+	if c != nil && c.Hooks != nil {
+		filtered := c.Hooks.ApplyFilters("wp_get_attachment_image", html, attachmentID, size, icon, attr)
+		if s, ok := filtered.(string); ok {
+			html = s
+		}
+	}
+	return html
+}
+
+func sanitizeImageSizeClass(size string) string {
+	size = strings.TrimSpace(size)
+	if size == "" {
+		return "thumbnail"
+	}
+	var b strings.Builder
+	for _, r := range size {
+		switch {
+		case r >= 'a' && r <= 'z', r >= 'A' && r <= 'Z', r >= '0' && r <= '9', r == '-', r == '_':
+			b.WriteRune(r)
+		default:
+			b.WriteByte('-')
+		}
+	}
+	return b.String()
+}
+
+func anyToInt(v any) int {
+	switch t := v.(type) {
+	case int:
+		return t
+	case int64:
+		return int(t)
+	case float64:
+		return int(t)
+	case string:
+		n, _ := strconv.Atoi(strings.TrimSpace(t))
+		return n
+	default:
+		n, _ := strconv.Atoi(strings.TrimSpace(fmt.Sprint(v)))
+		return n
+	}
+}
+
 // AttachmentPermalink returns the front URL for an attachment page.
 func AttachmentPermalink(c *Context, attachmentID int64, slug string) string {
 	home := strings.TrimRight(optionStringValue(c, "home", optionStringValue(c, "siteurl", "")), "/")
