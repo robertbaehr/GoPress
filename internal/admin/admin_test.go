@@ -371,6 +371,15 @@ func TestPluginsListsHelloDollyHeaders(t *testing.T) {
 	if !strings.Contains(body, "Matt Mullenweg") {
 		t.Fatalf("expected author from headers, got %q", body)
 	}
+	if !strings.Contains(body, "Version 1.7.2") {
+		t.Fatalf("expected Version from headers, got %q", body)
+	}
+	if !strings.Contains(body, "Visit plugin site") || !strings.Contains(body, "wordpress.org/plugins/hello-dolly") {
+		t.Fatalf("expected Plugin URI link, got %q", body)
+	}
+	if !strings.Contains(body, "plugin-version-author-uri") {
+		t.Fatalf("expected plugin meta line, got %q", body)
+	}
 	if !strings.Contains(body, "action=activate") {
 		t.Fatalf("expected activate link, got %q", body)
 	}
