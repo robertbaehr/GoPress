@@ -187,6 +187,12 @@
   task: P4.39
   api: exported
 
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-settings-controller.php
+  go: internal/rest/settings.go
+  status: partial
+  task: P4.40
+  api: exported
+
 - prefix: wp-includes/rest-api/
   go: internal/rest
   status: partial
