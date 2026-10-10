@@ -3620,6 +3620,21 @@
   task: P9.11
   api: n/a
 
+# P9.17: Plugin Updates via update.php N/A in GoPress.
+- prefix: wp-admin/update.php#upgrade-plugin
+  go: internal/plugins/plugin_update.go
+  status: out-of-scope
+  task: P9.17
+  api: n/a
+  notes: "P9.17 — PluginUpdateGoneNotice; RejectPluginUpdate; no wordpress.org upgrades"
+
+- prefix: wp-admin/plugins.php#plugin-updates
+  go: internal/admin/admin.go
+  status: out-of-scope
+  task: P9.17
+  api: n/a
+  notes: "P9.17 — plugins.php surfaces plugin-update N/A notice + row note"
+
 # P9.16: Plugin Automatic Updates N/A in GoPress.
 - prefix: wp-admin/includes/class-wp-plugins-list-table.php#auto-updates
   go: internal/plugins/auto_update.go

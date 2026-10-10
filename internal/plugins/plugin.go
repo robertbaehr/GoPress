@@ -51,6 +51,8 @@ func LoadActive(c *wp.Context) error {
 	CheckNetworkActivateGone(c)
 	// P9.16: Plugin Automatic Updates are N/A in GoPress.
 	CheckAutoUpdateGone(c)
+	// P9.17: Plugin Updates from wordpress.org (update.php) are N/A.
+	CheckPluginUpdateGone(c)
 	if c == nil || c.Options == nil {
 		return nil
 	}

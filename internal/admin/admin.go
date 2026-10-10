@@ -1667,6 +1667,8 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString(plugins.NetworkActivateGoneNotice + "\n")
 	// P9.16: Plugin Automatic Updates are N/A in GoPress.
 	b.WriteString(plugins.AutoUpdateGoneNotice + "\n")
+	// P9.17: Plugin Updates via update.php are N/A in GoPress.
+	b.WriteString(plugins.PluginUpdateGoneNotice + "\n")
 	bulkNonce := ""
 	if c != nil {
 		bulkNonce = c.CreateNonce("bulk-plugins")
@@ -1720,6 +1722,8 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 		}
 		// P9.16: no Automatic Updates column / toggles.
 		b.WriteString(plugins.AutoUpdateColumnGoneNote)
+		// P9.17: no wordpress.org "Update available" row.
+		b.WriteString(plugins.PluginUpdateRowGoneNote)
 		if p.RequiresWP != "" || p.RequiresPHP != "" {
 			b.WriteString("<div class=\"plugin-requirements\">")
 			var reqs []string
@@ -3613,7 +3617,7 @@ func (h *Handler) serveUpdateCoreGone(w http.ResponseWriter, r *http.Request, c 
 	writeHTML(w, http.StatusForbidden, b.String())
 }
 
-// serveUpdatePHPGone rejects update.php as out of scope (P7.46).
+// serveUpdatePHPGone rejects update.php as out of scope (P7.46 / P9.17).
 // Plugin/theme upgrade workflows from wordpress.org are unavailable.
 func (h *Handler) serveUpdatePHPGone(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
@@ -3625,6 +3629,8 @@ func (h *Handler) serveUpdatePHPGone(w http.ResponseWriter, r *http.Request, c *
 	b.WriteString("<body class=\"wp-admin\">\n")
 	b.WriteString("<h1>Updates unavailable</h1>\n")
 	b.WriteString("<p>Installing or updating plugins and themes via <code>update.php</code> is out of scope for GoPress. Use the <a href=\"/wp-admin/plugins.php\">Plugins</a> and <a href=\"/wp-admin/themes.php\">Themes</a> screens to manage local packages.</p>\n")
+	// P9.17: explicit plugin-update gone notice on update.php.
+	b.WriteString(plugins.PluginUpdateGoneNotice + "\n")
 	b.WriteString("</body>\n</html>\n")
 	writeHTML(w, http.StatusForbidden, b.String())
 }
