@@ -1606,6 +1606,21 @@
   api: exported
   notes: "P4.87 — QueryArgs.TagIn joins term relationships by post_tag term_id"
 
+# P4.92: REST GET /wp/v2/posts?offset= (takes precedence over page).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#offset
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.92
+  api: exported
+  notes: "P4.92 — ?offset= → QueryArgs.Offset; overrides (page-1)*per_page"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#offset-test
+  go: internal/rest/posts_test.go
+  status: partial
+  task: P4.92
+  api: n/a
+  notes: "P4.92 — unit coverage for offset vs page and X-WP-Total"
+
 # P4.91: REST GET /wp/v2/posts?after=&before=&modified_after=&modified_before=.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#after
   go: internal/rest/posts.go

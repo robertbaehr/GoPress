@@ -46,6 +46,7 @@ func (s *Server) servePostCollection(w http.ResponseWriter, r *http.Request, c *
 func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *wp.Context, postType string) {
 	perPage := parsePerPage(r, 10)
 	page := parsePage(r)
+	offset, useOffset := parsePostsOffset(r)
 	edit := r.URL.Query().Get("context") == "edit" && canEditPosts(c)
 	stickyFilter := parseStickyQuery(r)
 	orderby := parsePostsOrderby(r)
@@ -79,7 +80,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		})
 		return
 	}
-	posts, err := listPostsPaged(c, postType, perPage, page, edit, stickyFilter, orderby, order, search, author, categories, tags, statuses, slugs, include, exclude, dateAfter, dateBefore, modifiedAfter, modifiedBefore)
+	posts, err := listPostsPaged(c, postType, perPage, page, edit, stickyFilter, orderby, order, search, author, categories, tags, statuses, slugs, include, exclude, dateAfter, dateBefore, modifiedAfter, modifiedBefore, offset, useOffset)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",
