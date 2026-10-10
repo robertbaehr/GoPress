@@ -180,7 +180,7 @@ func MediaSideloadImage(c *Context, file string, postID int64, desc, returnType 
 		}
 	}
 	if !allowed[ext] {
-		return nil, fmt.Errorf("image_sideload_failed: Invalid image URL.")
+		return nil, fmt.Errorf("image_sideload_failed: invalid image URL")
 	}
 	// Copy to a temp file so HandleSideload can consume/move it.
 	tmp, err := copyToTemp(path, filepath.Base(path))
@@ -258,10 +258,8 @@ func copyFile(src, dst string) error {
 
 func copyToTemp(src, name string) (string, error) {
 	tmpDir := os.TempDir()
-	dest := filepath.Join(tmpDir, "gopress-sideload-"+SanitizeFileName(name))
-	// Ensure uniqueness.
-	dest = UniqueFilename(tmpDir, "gopress-sideload-"+SanitizeFileName(name))
-	dest = filepath.Join(tmpDir, dest)
+	base := UniqueFilename(tmpDir, "gopress-sideload-"+SanitizeFileName(name))
+	dest := filepath.Join(tmpDir, base)
 	if err := copyFile(src, dest); err != nil {
 		return "", err
 	}
