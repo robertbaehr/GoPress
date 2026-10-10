@@ -55,13 +55,23 @@ func TestSettingsAdmin(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &settings); err != nil {
 		t.Fatal(err)
 	}
-	for _, key := range []string{"blogname", "blogdescription", "siteurl", "home", "timezone", "date_format", "time_format", "posts_per_page"} {
+	for _, key := range []string{
+		"title", "description", "url", "email", "timezone", "date_format", "time_format",
+		"start_of_week", "language", "use_smilies", "default_category", "default_post_format",
+		"posts_per_page", "show_on_front", "page_on_front", "page_for_posts",
+		"page_for_privacy_policy", "default_ping_status", "default_comment_status",
+		"site_logo", "site_icon",
+		"blogname", "blogdescription", "siteurl", "home",
+	} {
 		if _, ok := settings[key]; !ok {
 			t.Fatalf("missing %q in %v", key, settings)
 		}
 	}
-	if settings["blogname"] != "GoPress Fixture" {
-		t.Fatalf("blogname=%v", settings["blogname"])
+	if settings["blogname"] != "GoPress Fixture" || settings["title"] != "GoPress Fixture" {
+		t.Fatalf("blogname/title=%v/%v", settings["blogname"], settings["title"])
+	}
+	if settings["email"] == "" {
+		t.Fatalf("expected admin email, got %#v", settings["email"])
 	}
 }
 
@@ -99,7 +109,14 @@ func TestSettingsUpdateAdmin(t *testing.T) {
 		_, _ = c.Options.UpdateOption("posts_per_page", origPPP, "")
 	}()
 
-	body := `{"title":"GoPress Settings Write","posts_per_page":7}`
+	origEmail := c.Options.GetOption("admin_email", "")
+	origCat := c.Options.GetOption("default_category", 1)
+	defer func() {
+		_, _ = c.Options.UpdateOption("admin_email", origEmail, "")
+		_, _ = c.Options.UpdateOption("default_category", origCat, "")
+	}()
+
+	body := `{"title":"GoPress Settings Write","posts_per_page":7,"email":"settings@example.com","default_category":2}`
 	req := httptest.NewRequest(http.MethodPost, "/wp-json/wp/v2/settings", strings.NewReader(body))
 	req.Header.Set("Content-Type", "application/json")
 	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
@@ -118,6 +135,12 @@ func TestSettingsUpdateAdmin(t *testing.T) {
 	}
 	if int(settings["posts_per_page"].(float64)) != 7 {
 		t.Fatalf("posts_per_page=%v", settings["posts_per_page"])
+	}
+	if settings["email"] != "settings@example.com" {
+		t.Fatalf("email=%v", settings["email"])
+	}
+	if int(settings["default_category"].(float64)) != 2 {
+		t.Fatalf("default_category=%v", settings["default_category"])
 	}
 	if got := c.Options.GetOption("blogname", ""); got != "GoPress Settings Write" {
 		t.Fatalf("option blogname=%v", got)
