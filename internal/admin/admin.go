@@ -106,6 +106,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/import.php":
 		h.requireLogin(w, r, c, h.serveImport)
 		return true
+	case "/wp-admin/tools.php":
+		h.requireLogin(w, r, c, h.serveTools)
+		return true
 	case "/wp-admin/site-health.php":
 		h.requireLogin(w, r, c, h.serveSiteHealth)
 		return true
@@ -897,6 +900,44 @@ func (h *Handler) serveSiteHealth(w http.ResponseWriter, r *http.Request, c *wp.
 	b.WriteString("<ul class=\"health-check-accordion\">\n")
 	b.WriteString("<li class=\"health-check-accordion-item\"><h2>Status</h2><p>All stub checks report good.</p></li>\n")
 	b.WriteString("</ul>\n</div>\n</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
+// serveTools is the Tools screen stub (P7.26).
+func (h *Handler) serveTools(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	// Legacy privacy redirects from tools.php?page=… (WP 5.3+).
+	if page := r.URL.Query().Get("page"); page != "" {
+		switch page {
+		case "export_personal_data":
+			http.Redirect(w, r, "/wp-admin/export-personal-data.php", http.StatusMovedPermanently)
+			return
+		case "remove_personal_data":
+			http.Redirect(w, r, "/wp-admin/erase-personal-data.php", http.StatusMovedPermanently)
+			return
+		}
+	}
+	blogname := optionString(c, "blogname", "GoPress")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Tools &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap\">\n")
+	b.WriteString("<h1>Tools</h1>\n")
+	b.WriteString("<p>Press This, Categories and Tags Converter, and other tools live here.</p>\n")
+	b.WriteString("<p class=\"description\">GoPress tools stub — converter plugins land later.</p>\n")
+	b.WriteString("<div class=\"card\">\n")
+	b.WriteString("<h2 class=\"title\">Categories and Tags Converter</h2>\n")
+	b.WriteString("<p>If you want to convert your categories to tags (or vice versa), use the ")
+	b.WriteString("<a href=\"import.php\">Categories and Tags Converter</a> available from the Import screen.</p>\n")
+	b.WriteString("</div>\n")
+	b.WriteString("<p><a href=\"export.php\">Export</a> · <a href=\"import.php\">Import</a> · ")
+	b.WriteString("<a href=\"site-health.php\">Site Health</a> · ")
+	b.WriteString("<a href=\"export-personal-data.php\">Export Personal Data</a> · ")
+	b.WriteString("<a href=\"erase-personal-data.php\">Erase Personal Data</a></p>\n")
+	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
 
