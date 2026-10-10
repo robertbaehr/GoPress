@@ -242,6 +242,13 @@
   task: P4
   api: exported
 
+# P4.46: GET /wp/v2/users collection (list_users vs published authors).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-users-controller.php
+  go: internal/rest/users.go
+  status: partial
+  task: P4.46
+  api: exported
+
 - prefix: wp-includes/style-engine/
   go: internal/blocks/style_engine.go
   status: partial

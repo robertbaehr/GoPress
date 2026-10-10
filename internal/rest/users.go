@@ -8,17 +8,19 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// User is a minimal wp/v2 user object (users/me).
+// User is a minimal wp/v2 user object (users/me + collection).
 type User struct {
-	ID          int64    `json:"id"`
-	Name        string   `json:"name"`
-	URL         string   `json:"url"`
-	Description string   `json:"description"`
-	Link        string   `json:"link"`
-	Slug        string   `json:"slug"`
-	Username    string   `json:"username,omitempty"`
-	Email       string   `json:"email,omitempty"`
-	Roles       []string `json:"roles,omitempty"`
+	ID          int64          `json:"id"`
+	Name        string         `json:"name"`
+	URL         string         `json:"url"`
+	Description string         `json:"description"`
+	Link        string         `json:"link"`
+	Slug        string         `json:"slug"`
+	Username    string         `json:"username,omitempty"`
+	Email       string         `json:"email,omitempty"`
+	Roles       []string       `json:"roles,omitempty"`
+	Meta        []any          `json:"meta,omitempty"`
+	Links       map[string]any `json:"_links,omitempty"`
 }
 
 func (s *Server) serveUsersMe(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -43,6 +45,68 @@ func (s *Server) serveUsersMe(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	writeJSON(w, http.StatusOK, buildCurrentUser(c))
 }
 
+// serveUsers handles GET /wp/v2/users (P4.46).
+// Users with list_users see the full collection; others only authors with published posts.
+func (s *Server) serveUsers(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
+			"code":    "rest_no_route",
+			"message": "No route was found matching the URL and request method.",
+			"data":    map[string]any{"status": 405},
+		})
+		return
+	}
+	w.Header().Set("Allow", "GET")
+	canList := c != nil && c.CurrentUser != nil && c.UserCan(c.CurrentUser, "list_users")
+	context := strings.TrimSpace(r.URL.Query().Get("context"))
+	if context == "" {
+		context = "view"
+	}
+	if context == "edit" && !canList {
+		status := http.StatusUnauthorized
+		if c != nil && c.CurrentUser != nil {
+			status = http.StatusForbidden
+		}
+		writeJSON(w, status, map[string]any{
+			"code":    "rest_forbidden_context",
+			"message": "Sorry, you are not allowed to edit users.",
+			"data":    map[string]any{"status": status},
+		})
+		return
+	}
+
+	perPage := parsePerPage(r, 10)
+	page := parsePage(r)
+	total, err := countUsers(c, !canList)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_user_query",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	users, err := listUsersPaged(c, perPage, page, !canList)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_user_query",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	out := make([]User, 0, len(users))
+	for _, u := range users {
+		out = append(out, buildListedUser(c, u, canList, context))
+	}
+	totalPages := 0
+	if perPage > 0 {
+		totalPages = (total + perPage - 1) / perPage
+	}
+	setCollectionHeaders(w, r, c, total, totalPages, page)
+	writeJSON(w, http.StatusOK, out)
+}
+
 func buildCurrentUser(c *wp.Context) User {
 	u := c.CurrentUser
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
@@ -59,9 +123,121 @@ func buildCurrentUser(c *wp.Context) User {
 		Slug:        u.Nicename,
 		Username:    u.Login,
 		Email:       u.Email,
+		Meta:        []any{},
 	}
 	if len(u.Roles) > 0 {
 		out.Roles = append([]string{}, u.Roles...)
 	}
 	return out
+}
+
+func buildListedUser(c *wp.Context, u *wp.User, canList bool, context string) User {
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	desc := ""
+	if c != nil && c.Meta != nil {
+		desc = asString(c.Meta.GetMetadata(wp.MetaUser, u.ID, "description", true))
+	}
+	slug := u.Nicename
+	if slug == "" {
+		slug = u.Login
+	}
+	out := User{
+		ID:          u.ID,
+		Name:        u.DisplayName,
+		URL:         u.URL,
+		Description: desc,
+		Link:        fmt.Sprintf("%s/author/%s/", home, slug),
+		Slug:        slug,
+		Meta:        []any{},
+		Links: map[string]any{
+			"self": []map[string]any{{
+				"href":        fmt.Sprintf("%s/wp-json/wp/v2/users/%d", home, u.ID),
+				"targetHints": map[string]any{"allow": []string{"GET"}},
+			}},
+			"collection": []map[string]any{{
+				"href": fmt.Sprintf("%s/wp-json/wp/v2/users", home),
+			}},
+		},
+	}
+	if canList {
+		if len(u.Roles) > 0 {
+			out.Roles = append([]string{}, u.Roles...)
+		}
+		if context == "edit" {
+			out.Username = u.Login
+			out.Email = u.Email
+		}
+	}
+	return out
+}
+
+func countUsers(c *wp.Context, publishedOnly bool) (int, error) {
+	if c == nil || c.DB == nil {
+		return 0, fmt.Errorf("nil DB")
+	}
+	q := "SELECT COUNT(*) AS total FROM " + c.DB.Users() + " u"
+	if publishedOnly {
+		q += " WHERE EXISTS (SELECT 1 FROM " + c.DB.Posts() +
+			" p WHERE p.post_author = u.ID AND p.post_status = 'publish' AND p.post_type IN ('post','page'))"
+	}
+	sqlStr, args, err := c.DB.Prepare(q)
+	if err != nil {
+		return 0, err
+	}
+	row, err := c.DB.GetRow(sqlStr, args...)
+	if err != nil {
+		return 0, err
+	}
+	if row == nil {
+		return 0, nil
+	}
+	return int(asInt64(row["total"])), nil
+}
+
+func listUsersPaged(c *wp.Context, limit, page int, publishedOnly bool) ([]*wp.User, error) {
+	if c == nil || c.DB == nil {
+		return nil, fmt.Errorf("nil DB")
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+	if page <= 0 {
+		page = 1
+	}
+	offset := (page - 1) * limit
+	q := "SELECT u.ID, u.user_login, u.user_pass, u.user_nicename, u.user_email, u.user_url, " +
+		"u.user_registered, u.user_activation_key, u.user_status, u.display_name FROM " + c.DB.Users() + " u"
+	if publishedOnly {
+		q += " WHERE EXISTS (SELECT 1 FROM " + c.DB.Posts() +
+			" p WHERE p.post_author = u.ID AND p.post_status = 'publish' AND p.post_type IN ('post','page'))"
+	}
+	q += " ORDER BY u.display_name ASC LIMIT %d OFFSET %d"
+	sqlStr, args, err := c.DB.Prepare(q, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := c.DB.GetResults(sqlStr, args...)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]*wp.User, 0, len(rows))
+	for _, row := range rows {
+		u := &wp.User{
+			ID:            asInt64(row["ID"]),
+			Login:         asString(row["user_login"]),
+			Pass:          asString(row["user_pass"]),
+			Nicename:      asString(row["user_nicename"]),
+			Email:         asString(row["user_email"]),
+			URL:           asString(row["user_url"]),
+			Registered:    asString(row["user_registered"]),
+			ActivationKey: asString(row["user_activation_key"]),
+			Status:        int(asInt64(row["user_status"])),
+			DisplayName:   asString(row["display_name"]),
+		}
+		if c.Roles != nil {
+			_ = c.Roles.InitUser(u, c.Meta)
+		}
+		out = append(out, u)
+	}
+	return out, nil
 }
