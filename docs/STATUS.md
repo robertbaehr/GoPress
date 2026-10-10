@@ -43,12 +43,12 @@ make check
 - `make diff` / `gopress-tools diff` reloads `tests/fixtures/site.sql` into `gopress_ref` and `gopress_go` unless `--skip-db`.
 - After e2e uploads or other writes, restart `gopress serve` (or omit `--skip-db`) so object-cache/options match the reloaded fixture. Stale process memory can make a green corpus look red.
 
-## Recent stack (through P10.30)
+## Recent stack (through P10.31)
 
-- P5.38 Block pattern categories registry + REST
-- P4.54 Sidebars/widgets REST stay disabled
-- P7.39 Export personal data UI polish
-- P2.34 `wp_validate_boolean`
-- P3.32 `/rsd.xml` stub (`xmlrpc.php?rsd` 403)
-- P6.14 Login `confirm_admin_email` stub
-- P10.30 Status / PORTING refresh
+- P5.39 Block bindings sources registry + post/term data
+- P4.55 REST font-collections stub
+- P7.40 Dashboard secondary widgets
+- P2.35 `wp_parse_str`
+- P3.33 RDF feed stub
+- P9.8 Akismet not bundled
+- P10.31 E2E for `/rsd.xml`
