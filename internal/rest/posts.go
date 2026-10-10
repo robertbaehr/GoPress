@@ -301,7 +301,7 @@ func postFromWP(c *wp.Context, row wp.Post, home string, edit bool, sticky map[i
 		Parent:        row.Parent,
 		MenuOrder:     row.MenuOrder,
 		ClassList:     buildClassList(c, row, format, cats),
-		Links:         buildPostLinks(home, row, edit),
+		Links:         buildPostLinks(c, home, row, edit),
 	}
 	if edit {
 		titleRaw, contentRaw, excerptRaw, guidRaw := row.Title, row.Content, row.Excerpt, row.GUID
@@ -341,7 +341,7 @@ func buildClassList(c *wp.Context, row wp.Post, format string, catIDs []int64) [
 	return out
 }
 
-func buildPostLinks(home string, row wp.Post, edit bool) map[string]any {
+func buildPostLinks(c *wp.Context, home string, row wp.Post, edit bool) map[string]any {
 	restRoot := strings.TrimRight(home, "/") + "/wp-json/wp/v2"
 	base := "posts"
 	if row.Type == "page" {
@@ -350,6 +350,10 @@ func buildPostLinks(home string, row wp.Post, edit bool) map[string]any {
 	allow := []string{"GET"}
 	if edit {
 		allow = []string{"GET", "POST", "PUT", "PATCH", "DELETE"}
+	}
+	revCount := 0
+	if row.Type == "post" {
+		revCount = countPostRevisions(c, row.ID)
 	}
 	links := map[string]any{
 		"self": []map[string]any{{
@@ -367,7 +371,7 @@ func buildPostLinks(home string, row wp.Post, edit bool) map[string]any {
 			"href":       fmt.Sprintf("%s/comments?post=%d", restRoot, row.ID),
 		}},
 		"version-history": []map[string]any{{
-			"count": 0,
+			"count": revCount,
 			"href":  fmt.Sprintf("%s/%s/%d/revisions", restRoot, base, row.ID),
 		}},
 		"wp:attachment": []map[string]any{{
