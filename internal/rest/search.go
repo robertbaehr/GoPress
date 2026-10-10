@@ -63,6 +63,9 @@ func (s *Server) serveSearch(w http.ResponseWriter, r *http.Request, c *wp.Conte
 	// P4.100: include/exclude ID filters (WP_REST_Search_Controller collection params).
 	include := parsePostsInclude(r)
 	exclude := parsePostsExclude(r)
+	// P4.122: collection orderby/order (parent REST controller params).
+	orderby := parseSearchOrderBy(r, searchType)
+	order := parseSearchOrder(r, searchType)
 
 	var (
 		total   int
@@ -73,15 +76,17 @@ func (s *Server) serveSearch(w http.ResponseWriter, r *http.Request, c *wp.Conte
 	case "term":
 		total, err = countTermSearch(c, term, subtype, include, exclude)
 		if err == nil {
-			results, err = listTermSearchPaged(c, term, subtype, include, exclude, perPage, page)
+			results, err = listTermSearchPaged(c, term, subtype, include, exclude, orderby, order, perPage, page)
 		}
 	case "post-format":
 		total, results, err = listPostFormatSearch(c, term, perPage, page)
 	default:
 		postTypes := resolvePostSearchSubtypes(subtype)
+		// P4.122: rest_post_search_query filter (query-arg map subset).
+		postTypes, term, include, exclude, orderby, order = applyRestPostSearchQuery(c, r, postTypes, term, include, exclude, orderby, order)
 		total, err = countSearch(c, term, postTypes, include, exclude)
 		if err == nil {
-			results, err = listSearchPaged(c, term, postTypes, include, exclude, perPage, page)
+			results, err = listSearchPaged(c, term, postTypes, include, exclude, orderby, order, perPage, page)
 		}
 	}
 	if err != nil {
@@ -147,7 +152,7 @@ func resolvePostSearchSubtypes(subtype []string) []string {
 	return out
 }
 
-func listSearchPaged(c *wp.Context, term string, postTypes []string, include, exclude []int64, limit, page int) ([]SearchResult, error) {
+func listSearchPaged(c *wp.Context, term string, postTypes []string, include, exclude []int64, orderby, order string, limit, page int) ([]SearchResult, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
@@ -162,7 +167,7 @@ func listSearchPaged(c *wp.Context, term string, postTypes []string, include, ex
 	}
 	offset := (page - 1) * limit
 	like := "%" + db.EscapeLike(term) + "%"
-	args := make([]any, 0, len(postTypes)+len(include)+len(exclude)+4)
+	args := make([]any, 0, len(postTypes)+len(include)+len(exclude)+6)
 	args = append(args, "publish")
 	inParts := make([]string, len(postTypes))
 	for i, pt := range postTypes {
@@ -170,12 +175,15 @@ func listSearchPaged(c *wp.Context, term string, postTypes []string, include, ex
 		args = append(args, pt)
 	}
 	whereExtra, args := searchIncludeExcludeSQL("ID", include, exclude, args)
-	args = append(args, like, like, limit, offset)
+	args = append(args, like, like, like)
+	orderSQL, orderArgs := searchPostOrderSQL(orderby, order, include)
+	args = append(args, orderArgs...)
+	args = append(args, limit, offset)
 	q, prepArgs, err := c.DB.Prepare(
 		"SELECT ID, post_date, post_name, post_title, post_type, post_parent FROM "+c.DB.Posts()+
 			" WHERE post_status = %s AND post_type IN ("+strings.Join(inParts, ", ")+
-			")"+whereExtra+" AND (post_title LIKE %s OR post_content LIKE %s) "+
-			"ORDER BY post_date DESC LIMIT %d OFFSET %d",
+			")"+whereExtra+" AND (post_title LIKE %s OR post_content LIKE %s OR post_excerpt LIKE %s) "+
+			"ORDER BY "+orderSQL+" LIMIT %d OFFSET %d",
 		args...,
 	)
 	if err != nil {
@@ -191,6 +199,130 @@ func listSearchPaged(c *wp.Context, term string, postTypes []string, include, ex
 		out = append(out, searchFromRow(c, row, home))
 	}
 	return out, nil
+}
+
+// parseSearchOrderBy reads REST ?orderby= for search collections (P4.122).
+// Posts default date; terms default name.
+func parseSearchOrderBy(r *http.Request, searchType string) string {
+	def := "date"
+	if searchType == "term" {
+		def = "name"
+	}
+	if r == nil {
+		return def
+	}
+	switch strings.ToLower(strings.TrimSpace(r.URL.Query().Get("orderby"))) {
+	case "id":
+		return "id"
+	case "title", "name":
+		if searchType == "term" {
+			return "name"
+		}
+		return "title"
+	case "slug":
+		return "slug"
+	case "include":
+		return "include"
+	case "relevance":
+		return "relevance"
+	case "date":
+		return "date"
+	default:
+		return def
+	}
+}
+
+// parseSearchOrder reads REST ?order= for search (P4.122).
+// Posts default desc; terms default asc.
+func parseSearchOrder(r *http.Request, searchType string) string {
+	def := "desc"
+	if searchType == "term" {
+		def = "asc"
+	}
+	if r == nil {
+		return def
+	}
+	switch strings.ToLower(strings.TrimSpace(r.URL.Query().Get("order"))) {
+	case "asc":
+		return "asc"
+	case "desc":
+		return "desc"
+	default:
+		return def
+	}
+}
+
+// searchPostOrderSQL builds ORDER BY for post search (P4.122).
+func searchPostOrderSQL(orderby, order string, include []int64) (string, []any) {
+	dir := "DESC"
+	if order == "asc" {
+		dir = "ASC"
+	}
+	switch orderby {
+	case "id":
+		return "ID " + dir, nil
+	case "title":
+		return "post_title " + dir + ", ID ASC", nil
+	case "slug":
+		return "post_name " + dir + ", ID ASC", nil
+	case "include":
+		if len(include) == 0 {
+			return "post_date DESC, ID ASC", nil
+		}
+		parts := make([]string, len(include))
+		args := make([]any, len(include))
+		for i, id := range include {
+			parts[i] = "%d"
+			args[i] = id
+		}
+		return "FIELD(ID, " + strings.Join(parts, ", ") + ")", args
+	case "relevance":
+		// Without FULLTEXT, approximate relevance as title match priority then date.
+		return "post_title ASC, post_date DESC, ID ASC", nil
+	default: // date
+		return "post_date " + dir + ", ID ASC", nil
+	}
+}
+
+// applyRestPostSearchQuery applies rest_post_search_query (P4.122).
+// Filter value is map[string]any with keys: s, post_type ([]string), post__in,
+// post__not_in, orderby, order.
+func applyRestPostSearchQuery(c *wp.Context, r *http.Request, postTypes []string, term string, include, exclude []int64, orderby, order string) ([]string, string, []int64, []int64, string, string) {
+	if c == nil || c.Hooks == nil {
+		return postTypes, term, include, exclude, orderby, order
+	}
+	args := map[string]any{
+		"s":            term,
+		"post_type":    append([]string(nil), postTypes...),
+		"post__in":     append([]int64(nil), include...),
+		"post__not_in": append([]int64(nil), exclude...),
+		"orderby":      orderby,
+		"order":        order,
+	}
+	filtered := c.Hooks.ApplyFilters("rest_post_search_query", args, r)
+	m, ok := filtered.(map[string]any)
+	if !ok || m == nil {
+		return postTypes, term, include, exclude, orderby, order
+	}
+	if s, ok := m["s"].(string); ok {
+		term = s
+	}
+	if pts, ok := m["post_type"].([]string); ok && len(pts) > 0 {
+		postTypes = pts
+	}
+	if in, ok := m["post__in"].([]int64); ok {
+		include = in
+	}
+	if ex, ok := m["post__not_in"].([]int64); ok {
+		exclude = ex
+	}
+	if ob, ok := m["orderby"].(string); ok && ob != "" {
+		orderby = ob
+	}
+	if o, ok := m["order"].(string); ok && o != "" {
+		order = o
+	}
+	return postTypes, term, include, exclude, orderby, order
 }
 
 func countSearch(c *wp.Context, term string, postTypes []string, include, exclude []int64) (int, error) {
@@ -209,11 +341,11 @@ func countSearch(c *wp.Context, term string, postTypes []string, include, exclud
 		args = append(args, pt)
 	}
 	whereExtra, args := searchIncludeExcludeSQL("ID", include, exclude, args)
-	args = append(args, like, like)
+	args = append(args, like, like, like)
 	q, prepArgs, err := c.DB.Prepare(
 		"SELECT COUNT(*) AS total FROM "+c.DB.Posts()+
 			" WHERE post_status = %s AND post_type IN ("+strings.Join(inParts, ", ")+
-			")"+whereExtra+" AND (post_title LIKE %s OR post_content LIKE %s)",
+			")"+whereExtra+" AND (post_title LIKE %s OR post_content LIKE %s OR post_excerpt LIKE %s)",
 		args...,
 	)
 	if err != nil {
@@ -314,7 +446,7 @@ func resolveTermTaxonomies(subtype []string) []string {
 	return out
 }
 
-func listTermSearchPaged(c *wp.Context, term string, subtype []string, include, exclude []int64, limit, page int) ([]SearchResult, error) {
+func listTermSearchPaged(c *wp.Context, term string, subtype []string, include, exclude []int64, orderby, order string, limit, page int) ([]SearchResult, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
@@ -329,19 +461,22 @@ func listTermSearchPaged(c *wp.Context, term string, subtype []string, include, 
 	like := "%" + db.EscapeLike(term) + "%"
 
 	// Build IN list via repeated placeholders.
-	args := make([]any, 0, len(taxonomies)+len(include)+len(exclude)+3)
+	args := make([]any, 0, len(taxonomies)+len(include)+len(exclude)+5)
 	inParts := make([]string, len(taxonomies))
 	for i, tax := range taxonomies {
 		inParts[i] = "%s"
 		args = append(args, tax)
 	}
 	whereExtra, args := searchIncludeExcludeSQL("t.term_id", include, exclude, args)
-	args = append(args, like, limit, offset)
+	args = append(args, like)
+	orderSQL, orderArgs := searchTermOrderSQL(orderby, order, include)
+	args = append(args, orderArgs...)
+	args = append(args, limit, offset)
 	q, prepArgs, err := c.DB.Prepare(
 		"SELECT t.term_id, t.name, t.slug, tt.taxonomy, tt.parent FROM "+
 			c.DB.Terms()+" t INNER JOIN "+c.DB.TermTaxonomy()+
 			" tt ON t.term_id = tt.term_id WHERE tt.taxonomy IN ("+strings.Join(inParts, ", ")+
-			")"+whereExtra+" AND t.name LIKE %s ORDER BY t.name ASC LIMIT %d OFFSET %d",
+			")"+whereExtra+" AND t.name LIKE %s ORDER BY "+orderSQL+" LIMIT %d OFFSET %d",
 		args...,
 	)
 	if err != nil {
@@ -390,6 +525,33 @@ func countTermSearch(c *wp.Context, term string, subtype []string, include, excl
 		return 0, nil
 	}
 	return int(asInt64(row["total"])), nil
+}
+
+// searchTermOrderSQL builds ORDER BY for term search (P4.122).
+func searchTermOrderSQL(orderby, order string, include []int64) (string, []any) {
+	dir := "ASC"
+	if order == "desc" {
+		dir = "DESC"
+	}
+	switch orderby {
+	case "id":
+		return "t.term_id " + dir, nil
+	case "slug":
+		return "t.slug " + dir + ", t.name ASC", nil
+	case "include":
+		if len(include) == 0 {
+			return "t.name ASC", nil
+		}
+		parts := make([]string, len(include))
+		args := make([]any, len(include))
+		for i, id := range include {
+			parts[i] = "%d"
+			args[i] = id
+		}
+		return "FIELD(t.term_id, " + strings.Join(parts, ", ") + ")", args
+	default: // name
+		return "t.name " + dir, nil
+	}
 }
 
 func termSearchFromRow(c *wp.Context, row map[string]any, home string) SearchResult {

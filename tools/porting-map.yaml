@@ -1850,6 +1850,14 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P4.100 — ?include= / ?exclude= for type=post and type=term"
 
+# P4.122: REST /wp/v2/search orderby/order + excerpt + rest_post_search_query.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-search-controller.php#orderby
+  go: internal/rest/search.go
+  status: partial
+  task: P4.122
+  api: exported
+  notes: "P4.122 — ?orderby=/?order=; post_excerpt match; rest_post_search_query filter"
+
 # P7.87: themes.php search box, theme-count, Add Theme link.
 - prefix: wp-admin/themes.php#search
   go: internal/admin/admin.go
