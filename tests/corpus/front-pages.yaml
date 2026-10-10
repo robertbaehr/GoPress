@@ -109,3 +109,139 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.76: more front headers + rest_route door.
+- id: front-rdf-feed
+  role: anon
+  method: GET
+  path: /feed/rdf/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-comments-atom-feed
+  role: anon
+  method: GET
+  path: /comments/feed/atom/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-blog
+  role: anon
+  method: GET
+  path: /blog/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-sitemap-posts
+  role: anon
+  method: GET
+  path: /wp-sitemap-posts-post-1.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-rest-route
+  role: anon
+  method: GET
+  path: /?rest_route=/
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: front-date-2024-06
+  role: anon
+  method: GET
+  path: /2024/06/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-date-2024-06-15
+  role: anon
+  method: GET
+  path: /2024/06/15/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-sitemap-users
+  role: anon
+  method: GET
+  path: /wp-sitemap-users-1.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-sitemap-taxonomies-category
+  role: anon
+  method: GET
+  path: /wp-sitemap-taxonomies-category-1.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-sitemap-pages
+  role: anon
+  method: GET
+  path: /wp-sitemap-posts-page-1.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-feed-rss
+  role: anon
+  method: GET
+  path: /feed/rss/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-feed-rss2
+  role: anon
+  method: GET
+  path: /feed/rss2/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-comments-feed-rss2
+  role: anon
+  method: GET
+  path: /comments/feed/rss2/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-blog-page-2
+  role: anon
+  method: GET
+  path: /blog/page/2/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-page-2
+  role: anon
+  method: GET
+  path: /page/2/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
