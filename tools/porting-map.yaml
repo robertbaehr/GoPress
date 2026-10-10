@@ -4942,3 +4942,18 @@
   task: P2.78
   api: exported
   notes: "P2.78 — SpecialcharsDecode with ENT_NOQUOTES/COMPAT/QUOTES + single/double"
+
+# P3.76: get_the_guid filter on feed item guid (isPermaLink already P3.62).
+- prefix: wp-includes/post-template.php#get_the_guid
+  go: internal/server/front.go
+  status: partial
+  task: P3.76
+  api: n/a
+  notes: "P3.76 — feedItemGUID applies get_the_guid filter; isPermaLink=false retained"
+
+- prefix: wp-includes/feed-rss2.php#guid#get_the_guid
+  go: internal/server/front.go
+  status: partial
+  task: P3.76
+  api: n/a
+  notes: "P3.76 — RSS/Atom item guid/id via filtered get_the_guid"

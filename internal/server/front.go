@@ -1828,7 +1828,7 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 	}
 	for i, p := range posts {
 		link := postPermalink(home, p.Post)
-		guid := feedItemGUID(home, p.ID, p.GUID)
+		guid := feedItemGUID(c, home, p.ID, p.GUID)
 		// WP feed-rss2.php indents the first item with one tab and later items with two.
 		if i == 0 {
 			b.WriteString("\t<item>\n")
@@ -1983,7 +1983,7 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 
 	for i, p := range posts {
 		link := postPermalink(home, p.Post)
-		guid := feedItemGUID(home, p.ID, p.GUID)
+		guid := feedItemGUID(c, home, p.ID, p.GUID)
 		b.WriteString("\t<entry>\n")
 		b.WriteString("\t\t<author>\n")
 		b.WriteString("\t\t\t<name>")
@@ -2861,15 +2861,29 @@ func asFeedString(v any) string {
 
 // feedCommentsLink builds the RSS <comments> URL (comments_link_feed / get_comments_link, P3.61).
 // Appends #comments when the post has comments, else #respond; runs comments_link_feed filter.
-// feedItemGUID resolves the RSS/Atom item guid value (get_the_guid).
+// feedItemGUID resolves the RSS/Atom item guid value via get_the_guid (P3.62 / P3.76).
 // Prefers the stored post GUID (often a pretty permalink URL on fixture/import
-// data); otherwise falls back to home/?p={id}.
-func feedItemGUID(home string, id int64, storedGUID string) string {
-	if g := strings.TrimSpace(storedGUID); g != "" {
-		return g
+// data); otherwise falls back to home/?p={id}. Runs the get_the_guid filter.
+func feedItemGUID(c *wp.Context, home string, id int64, storedGUID string) string {
+	guid := strings.TrimSpace(storedGUID)
+	if guid == "" {
+		home = strings.TrimRight(home, "/")
+		guid = home + "/?p=" + strconv.FormatInt(id, 10)
 	}
-	home = strings.TrimRight(home, "/")
-	return home + "/?p=" + strconv.FormatInt(id, 10)
+	// P3.76: apply_filters( 'get_the_guid', $post_guid, $post_id ).
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("get_the_guid", guid, id); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				guid = s
+			} else {
+				s := strings.TrimSpace(fmt.Sprint(v))
+				if s != "" && s != "<nil>" {
+					guid = s
+				}
+			}
+		}
+	}
+	return guid
 }
 
 // feedGUIDIsPermaLink reports the isPermaLink attribute for RSS <guid>.
