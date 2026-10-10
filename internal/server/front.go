@@ -133,7 +133,7 @@ func isFeedVars(vars map[string]string) bool {
 	}
 	// WP default feed is rss2; "feed" is the permalink alias for the default.
 	switch strings.ToLower(feed) {
-	case "feed", "rss", "rss2", "atom":
+	case "feed", "rss", "rss2", "atom", "rdf":
 		return true
 	default:
 		return false
@@ -144,6 +144,8 @@ func (f *Front) renderFeed(w http.ResponseWriter, r *http.Request, c *wp.Context
 	switch strings.ToLower(feed) {
 	case "atom":
 		f.renderFeedAtom(w, r, c)
+	case "rdf":
+		f.renderFeedRDF(w, r, c)
 	default:
 		f.renderFeedRSS2(w, c)
 	}
@@ -1722,6 +1724,110 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 	w.Header().Set("Content-Type", "application/atom+xml; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(b.String()))
+}
+
+// renderFeedRDF emits a WordPress-shaped RDF/RSS 1.0 feed stub (feed-rdf.php, P3.33).
+func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	_ = r
+	blogname := optionString(c, "blogname", "GoPress")
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	desc := optionString(c, "blogdescription", "")
+	posts, err := latestFeedPosts(c, 10)
+	if err != nil {
+		http.Error(w, "feed: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+
+	var b strings.Builder
+	b.WriteString(`<?xml version="1.0" encoding="UTF-8"?>`)
+	b.WriteString("<rdf:RDF\n")
+	b.WriteString("\txmlns=\"http://purl.org/rss/1.0/\"\n")
+	b.WriteString("\txmlns:rdf=\"http://www.w3.org/1999/02/22-rdf-syntax-ns#\"\n")
+	b.WriteString("\txmlns:dc=\"http://purl.org/dc/elements/1.1/\"\n")
+	b.WriteString("\txmlns:sy=\"http://purl.org/rss/1.0/modules/syndication/\"\n")
+	b.WriteString("\txmlns:content=\"http://purl.org/rss/1.0/modules/content/\"\n")
+	b.WriteString("\t>\n")
+	b.WriteString("<channel rdf:about=\"")
+	b.WriteString(xmlEscape(home))
+	b.WriteString("\">\n")
+	b.WriteString("\t<title>")
+	b.WriteString(xmlEscape(blogname))
+	b.WriteString("</title>\n")
+	b.WriteString("\t<link>")
+	b.WriteString(xmlEscape(home))
+	b.WriteString("</link>\n")
+	b.WriteString("\t<description>")
+	b.WriteString(xmlEscape(desc))
+	b.WriteString("</description>\n")
+	b.WriteString("\t<dc:date>")
+	b.WriteString(xmlEscape(feedAtomDate(feedBuildDateGMT(posts), "")))
+	b.WriteString("\t</dc:date>\n")
+	b.WriteString("\t<sy:updatePeriod>\n")
+	b.WriteString("\thourly\n")
+	b.WriteString("\t</sy:updatePeriod>\n")
+	b.WriteString("\t<sy:updateFrequency>\n")
+	b.WriteString("\t1\n")
+	b.WriteString("\t</sy:updateFrequency>\n")
+	b.WriteString("\t<sy:updateBase>2000-01-01T12:00+00:00</sy:updateBase>\n")
+	b.WriteString("\t<items>\n")
+	b.WriteString("\t\t<rdf:Seq>\n")
+	for _, p := range posts {
+		link := postPermalink(home, p.Post)
+		b.WriteString("\t\t\t<rdf:li rdf:resource=\"")
+		b.WriteString(xmlEscape(link))
+		b.WriteString("\"/>\n")
+	}
+	b.WriteString("\t\t</rdf:Seq>\n")
+	b.WriteString("\t</items>\n")
+	b.WriteString("</channel>\n")
+	for _, p := range posts {
+		link := postPermalink(home, p.Post)
+		b.WriteString("<item rdf:about=\"")
+		b.WriteString(xmlEscape(link))
+		b.WriteString("\">\n")
+		b.WriteString("\t<title>")
+		b.WriteString(xmlEscape(p.Title))
+		b.WriteString("</title>\n")
+		b.WriteString("\t<link>")
+		b.WriteString(xmlEscape(link))
+		b.WriteString("</link>\n")
+		b.WriteString("\n")
+		b.WriteString("\t<dc:creator><![CDATA[")
+		b.WriteString(p.AuthorName)
+		b.WriteString("]]></dc:creator>\n")
+		b.WriteString("\t<dc:date>")
+		b.WriteString(xmlEscape(feedAtomDate(p.DateGMT, p.Date)))
+		b.WriteString("</dc:date>\n")
+		for _, cat := range p.Categories {
+			b.WriteString("\t\t\t\t<dc:subject><![CDATA[")
+			b.WriteString(cat)
+			b.WriteString("]]></dc:subject>\n")
+		}
+		b.WriteString("\n")
+		b.WriteString("\t\t<description><![CDATA[")
+		b.WriteString(p.ExcerptRSS)
+		b.WriteString("]]></description>\n")
+		b.WriteString("\t\t<content:encoded><![CDATA[")
+		b.WriteString(p.ContentRSS)
+		b.WriteString("]]></content:encoded>\n")
+		b.WriteString("</item>\n")
+	}
+	b.WriteString("</rdf:RDF>\n")
+
+	setFrontAPILink(w, c)
+	w.Header().Set("Content-Type", "application/rdf+xml; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(b.String()))
+}
+
+func feedBuildDateGMT(posts []feedPost) string {
+	if len(posts) == 0 {
+		return ""
+	}
+	if posts[0].DateGMT != "" {
+		return posts[0].DateGMT
+	}
+	return posts[0].Date
 }
 
 func xmlEscape(s string) string {
