@@ -543,3 +543,22 @@
   compare: headers
   nonce: null
 
+# P10.102: rest_route pages header case.
+- id: front-rest-route-pages
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/pages
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-feed-rss-query
+  role: anon
+  method: GET
+  path: /?feed=rss
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
