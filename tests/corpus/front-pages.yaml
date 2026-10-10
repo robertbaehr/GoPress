@@ -51,3 +51,14 @@
   body: null
   compare: raw
   nonce: null
+
+# P10.21: front search. Full HTML still diverges (robots meta, search form,
+# query-title curly quotes, pagination); headers compare matches today.
+- id: front-search-hello
+  role: anon
+  method: GET
+  path: /?s=hello
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
