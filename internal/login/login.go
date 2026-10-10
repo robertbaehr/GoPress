@@ -1017,7 +1017,8 @@ func (h *Handler) servePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	redirectTo = sanitizeRedirect(redirectTo, homeForRedirect)
 	interim := isInterimLogin(r)
 
-	secure := r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
+	// P6.38: derive secure from is_ssl() (TLS, HTTPS CGI, :443, X-Forwarded-Proto).
+	secure := wp.IsSSL(c)
 	set, err := c.Login(login, password, remember, secure, 0)
 	// P6.21: mirror wp-login.php testcookie handling. After signon, request
 	// cookies still lack the logged-in cookie; if the form posted testcookie
