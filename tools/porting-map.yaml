@@ -1081,6 +1081,14 @@
   api: exported
   notes: "P2.82 — getenv then define/config override; empty/invalid → production; IsEnvironmentType"
 
+# P2.83: wp_debug_mode — WP_DEBUG / DISPLAY / LOG + enable_wp_debug_mode_checks.
+- prefix: wp-includes/load.php#wp_debug_mode
+  go: internal/wp/debug_mode.go
+  status: partial
+  task: P2.83
+  api: exported
+  notes: "P2.83 — ApplyDebugMode/IsDebugDisplay; log path; suppress DisplayErrors for REST/ajax/JSON"
+
 # P2.81: deepen is_ssl (HTTPS CGI header + port 443).
 - prefix: wp-includes/load.php#is_ssl
   go: internal/wp/is_ssl.go

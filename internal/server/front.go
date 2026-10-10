@@ -3708,8 +3708,9 @@ func optionString(c *wp.Context, name, fallback string) string {
 func blockRenderEnv(c *wp.Context) *blocks.Env {
 	paged, maxPages := mainQueryPagination(c)
 	return &blocks.Env{
-		Paged:    paged,
-		MaxPages: maxPages,
+		Paged:        paged,
+		MaxPages:     maxPages,
+		DebugDisplay: wp.IsDebugDisplay(c),
 		GetAttachmentURL: func(id int64) string {
 			return wp.GetAttachmentURL(c, id)
 		},

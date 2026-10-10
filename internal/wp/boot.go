@@ -90,5 +90,8 @@ func Boot(ctx context.Context, cfg *config.Config) (*Context, error) {
 	c.Shortcodes = NewShortcodes()
 	RegisterDefaultShortcodes(c.Shortcodes)
 
+	// WP_DEBUG / WP_DEBUG_DISPLAY / WP_DEBUG_LOG (P2.83).
+	ApplyDebugMode(c)
+
 	return c, nil
 }

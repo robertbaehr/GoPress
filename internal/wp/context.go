@@ -96,6 +96,9 @@ type Context struct {
 
 	// Scope holds lazily computed request-local WordPress state.
 	Scope *RequestScope
+
+	// Debug holds effective WP_DEBUG* state after ApplyDebugMode (P2.83).
+	Debug DebugModeState
 }
 
 // NewContext builds a Context with an empty RequestScope.
