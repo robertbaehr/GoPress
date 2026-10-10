@@ -10,8 +10,8 @@ import (
 // elementsSeq is the per-process counter for wp-elements-* class names (P5.32).
 var elementsSeq uint64
 
-// applySupports injects basic color/spacing/typography/layout/shadow/position/border/elements
-// classes and styles from block attributes onto the rendered root element (P5.10 / P5.19 / P5.27–P5.32).
+// applySupports injects basic color/spacing/typography/layout/shadow/position/border/elements/background
+// classes and styles from block attributes onto the rendered root element (P5.10 / P5.19 / P5.27–P5.33).
 func applySupports(htmlFragment string, attrs map[string]any, blockName string) string {
 	if htmlFragment == "" {
 		return htmlFragment
@@ -93,6 +93,13 @@ func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string
 					}
 				}
 			}
+			// Background image/gradient support (P5.33 / wp_render_background_support).
+			if bg, ok := style["background"].(map[string]any); ok && bg != nil {
+				applyBackgroundDefaults(bg)
+				if backgroundHasValue(bg) {
+					classes = appendUnique(classes, "has-background")
+				}
+			}
 			styles = mergeCSSDecls(styles, CompileStyle(style))
 			if filterID, filterCSS := duotoneFromStyle(style); filterID != "" {
 				classes = appendUnique(classes, filterID)
@@ -127,6 +134,34 @@ func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string
 		styles = mergeCSSDecls(styles, layoutCSS)
 	}
 	return classes, styles, elementsCSS
+}
+
+// applyBackgroundDefaults mirrors wp_render_background_support size/position defaults (P5.33).
+func applyBackgroundDefaults(bg map[string]any) {
+	if bg == nil {
+		return
+	}
+	if backgroundImageCSS(bg["backgroundImage"]) == "" {
+		return
+	}
+	size := borderScalar(bg["backgroundSize"])
+	if size == "" {
+		bg["backgroundSize"] = "cover"
+		size = "cover"
+	}
+	if size == "contain" && borderScalar(bg["backgroundPosition"]) == "" {
+		bg["backgroundPosition"] = "50% 50%"
+	}
+}
+
+func backgroundHasValue(bg map[string]any) bool {
+	if bg == nil {
+		return false
+	}
+	if backgroundImageCSS(bg["backgroundImage"]) != "" {
+		return true
+	}
+	return borderScalar(bg["gradient"]) != ""
 }
 
 // elementsSupport mirrors wp-includes/block-supports/elements.php for link/button colors (P5.32).

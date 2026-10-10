@@ -314,6 +314,13 @@
   task: P5.32
   api: internal
 
+# P5.33: background image/gradient/size/position/repeat/attachment block support.
+- prefix: wp-includes/block-supports/background.php
+  go: internal/blocks/supports.go
+  status: partial
+  task: P5.33
+  api: internal
+
 # P4.48: create post revision on REST post update.
 - prefix: wp-includes/revision.php#wp_save_post_revision
   go: internal/rest/posts_write.go

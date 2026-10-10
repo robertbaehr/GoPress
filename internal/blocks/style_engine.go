@@ -36,6 +36,10 @@ func CompileStyle(style map[string]any) string {
 	if border, ok := style["border"].(map[string]any); ok {
 		parts = append(parts, borderStyles(border)...)
 	}
+	// Background block support (P5.33): style.background → background-image/size/…
+	if bg, ok := style["background"].(map[string]any); ok {
+		parts = append(parts, backgroundStyles(bg)...)
+	}
 	// Shadow block support (P5.27): style.shadow → box-shadow.
 	if shadow, ok := style["shadow"].(string); ok && shadow != "" {
 		parts = append(parts, "box-shadow:"+cssValue(shadow))
@@ -43,6 +47,59 @@ func CompileStyle(style map[string]any) string {
 	// Position block support (P5.28): style.position → position/z-index/sides.
 	parts = append(parts, positionStyles(style["position"])...)
 	return strings.Join(parts, ";")
+}
+
+// backgroundStyles mirrors WP background block support / style engine (P5.33).
+// Expects defaults (cover / 50% 50%) already applied by applyBackgroundDefaults.
+func backgroundStyles(bg map[string]any) []string {
+	if bg == nil {
+		return nil
+	}
+	var out []string
+	if img := backgroundImageCSS(bg["backgroundImage"]); img != "" {
+		out = append(out, "background-image:"+img)
+	}
+	if v := borderScalar(bg["backgroundPosition"]); v != "" {
+		out = append(out, "background-position:"+cssValue(v))
+	}
+	if v := borderScalar(bg["backgroundRepeat"]); v != "" {
+		out = append(out, "background-repeat:"+cssValue(v))
+	}
+	if v := borderScalar(bg["backgroundSize"]); v != "" {
+		out = append(out, "background-size:"+cssValue(v))
+	}
+	if v := borderScalar(bg["backgroundAttachment"]); v != "" {
+		out = append(out, "background-attachment:"+cssValue(v))
+	}
+	if v := borderScalar(bg["gradient"]); v != "" {
+		// Style engine maps background.gradient → background-image (may coexist
+		// with url() background-image when both are set; last writer wins in CSS).
+		out = append(out, "background-image:"+cssValue(v))
+	}
+	return out
+}
+
+// backgroundImageCSS turns a string or {url:…} object into a CSS value.
+func backgroundImageCSS(v any) string {
+	switch t := v.(type) {
+	case string:
+		s := strings.TrimSpace(t)
+		if s == "" {
+			return ""
+		}
+		return cssValue(s)
+	case map[string]any:
+		url, _ := t["url"].(string)
+		url = strings.TrimSpace(url)
+		if url == "" {
+			return ""
+		}
+		// Match WP get_url_or_value_css_declaration: url('…')
+		escaped := strings.ReplaceAll(url, `'`, `\'`)
+		return "url('" + escaped + "')"
+	default:
+		return ""
+	}
 }
 
 // typographyStyles mirrors WP typography block support CSS (P5.30).
