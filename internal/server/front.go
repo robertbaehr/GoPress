@@ -2023,8 +2023,10 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 		b.WriteString("\t\t\t\t\t<content type=\"html\" xml:base=\"")
 		b.WriteString(xmlEscape(link))
 		b.WriteString("\"><![CDATA[\n")
-		b.WriteString(p.ContentRSS)
-		if p.ContentRSS != "" && !strings.HasSuffix(p.ContentRSS, "\n") {
+		// P3.73: Atom content via the_content_feed('atom').
+		atomBody := applyTheContentFeed(c, p.ContentRSS, "atom")
+		b.WriteString(atomBody)
+		if atomBody != "" && !strings.HasSuffix(atomBody, "\n") {
 			b.WriteString("\n")
 		}
 		b.WriteString("]]></content>\n")
@@ -2155,8 +2157,8 @@ func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		b.WriteString("\t\t<description><![CDATA[")
 		b.WriteString(p.ExcerptRSS)
 		b.WriteString("]]></description>\n")
-		// P3.63: RDF content:encoded when available (feed-rdf.php).
-		if body, ok := rssContentEncodedBody(c, p); ok {
+		// P3.63 / P3.73: RDF content:encoded via the_content_feed('rdf').
+		if body, ok := rssContentEncodedBodyTyped(c, p, "rdf"); ok {
 			b.WriteString("\t\t<content:encoded><![CDATA[")
 			b.WriteString(body)
 			b.WriteString("]]></content:encoded>\n")
@@ -2245,8 +2247,8 @@ func latestFeedPosts(c *wp.Context, limit int, authorID int64) ([]feedPost, erro
 		fp.Categories = feedCategories(c, p.ID)
 		fp.CommentCount = feedCommentCount(c, p.ID)
 		fp.ExcerptRSS = feedExcerptRSS(p)
-		// Feed content:encoded follows the_content_feed (no post-save KSES strip),
-		// so data: URIs in fixture video blocks are preserved like WP.
+		// Feed content runs the_content then the_content_feed at emit time (P3.73).
+		// Skip post-save KSES so data: URIs in fixture video blocks match WP.
 		rendered := wp.TheContent(c, p.Content)
 		fp.ContentRSS = strings.TrimLeft(rendered, " \t\r")
 		if strings.TrimSpace(p.Password) == "" {
@@ -2255,6 +2257,27 @@ func latestFeedPosts(c *wp.Context, limit int, authorID int64) ([]feedPost, erro
 		out = append(out, fp)
 	}
 	return out, nil
+}
+
+// applyTheContentFeed mirrors get_the_content_feed post-processing (P3.73):
+// escape CDATA terminators, then apply the_content_feed filter.
+func applyTheContentFeed(c *wp.Context, content, feedType string) string {
+	content = strings.ReplaceAll(content, "]]>", "]]&gt;")
+	if feedType == "" {
+		feedType = "rss2"
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("the_content_feed", content, feedType); v != nil {
+			if s, ok := v.(string); ok {
+				return s
+			}
+			s := strings.TrimSpace(fmt.Sprint(v))
+			if s != "" && s != "<nil>" {
+				return s
+			}
+		}
+	}
+	return content
 }
 
 // rssUseExcerpt reports get_option('rss_use_excerpt') (P3.63).
@@ -2270,21 +2293,26 @@ func rssUseExcerpt(c *wp.Context) bool {
 }
 
 // rssContentEncodedBody returns the content:encoded CDATA body when the tag
-// should be emitted (P3.63). Omitted when rss_use_excerpt is on. When full
-// content is empty, falls back to the excerpt (WP feed-rss2.php).
+// should be emitted (P3.63 / P3.73). Omitted when rss_use_excerpt is on. When
+// full content is empty, falls back to the excerpt (WP feed-rss2.php).
 func rssContentEncodedBody(c *wp.Context, p feedPost) (body string, ok bool) {
+	return rssContentEncodedBodyTyped(c, p, "rss2")
+}
+
+func rssContentEncodedBodyTyped(c *wp.Context, p feedPost, feedType string) (body string, ok bool) {
 	if rssUseExcerpt(c) {
 		return "", false
 	}
-	if len(p.ContentRSS) > 0 {
-		return p.ContentRSS, true
+	raw := p.ContentRSS
+	if len(raw) == 0 {
+		raw = p.ExcerptRSS
 	}
-	return p.ExcerptRSS, true
+	return applyTheContentFeed(c, raw, feedType), true
 }
 
 // rss2ContentEncodedTag emits the RSS2 content:encoded element, or "" when omitted.
 func rss2ContentEncodedTag(c *wp.Context, p feedPost) string {
-	body, ok := rssContentEncodedBody(c, p)
+	body, ok := rssContentEncodedBodyTyped(c, p, "rss2")
 	if !ok {
 		return ""
 	}
