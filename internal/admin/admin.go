@@ -1293,30 +1293,135 @@ func (h *Handler) serveAsyncUpload(w http.ResponseWriter, r *http.Request, c *wp
 }
 
 func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	// P7.43: bulk actions (approve / unapprove / spam / trash / delete).
+	if r.Method == http.MethodPost {
+		if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "moderate_comments") {
+			http.Error(w, "Sorry, you are not allowed to edit comments.\n", http.StatusForbidden)
+			return
+		}
+		_ = r.ParseForm()
+		action := strings.TrimSpace(r.FormValue("action"))
+		if action == "" || action == "-1" {
+			action = strings.TrimSpace(r.FormValue("action2"))
+		}
+		ids := r.Form["delete_comments[]"]
+		if len(ids) == 0 {
+			ids = r.Form["delete_comments"]
+		}
+		if len(ids) == 0 {
+			if raw := strings.TrimSpace(r.FormValue("ids")); raw != "" {
+				ids = strings.Split(raw, ",")
+			}
+		}
+		counts := map[string]int{}
+		for _, raw := range ids {
+			cid, _ := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
+			if cid <= 0 {
+				continue
+			}
+			switch action {
+			case "approve":
+				if updateCommentApproved(c, cid, "1") == nil {
+					counts["approved"]++
+				}
+			case "unapprove":
+				if updateCommentApproved(c, cid, "0") == nil {
+					counts["unapproved"]++
+				}
+			case "spam":
+				if updateCommentApproved(c, cid, "spam") == nil {
+					counts["spammed"]++
+				}
+			case "trash":
+				if updateCommentApproved(c, cid, "trash") == nil {
+					counts["trashed"]++
+				}
+			case "delete":
+				if deleteAdminComment(c, cid) == nil {
+					counts["deleted"]++
+				}
+			}
+		}
+		loc := "/wp-admin/edit-comments.php"
+		sep := "?"
+		for k, n := range counts {
+			if n <= 0 {
+				continue
+			}
+			loc += sep + k + "=" + strconv.Itoa(n)
+			sep = "&"
+		}
+		if sep == "?" {
+			loc += "?bulk=1"
+		}
+		http.Redirect(w, r, loc, http.StatusFound)
+		return
+	}
+
 	blogname := optionString(c, "blogname", "GoPress")
-	items, err := recentComments(c, 20)
+	items, err := recentComments(c, 50)
 	if err != nil {
 		http.Error(w, "comments: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
 	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
-	b.WriteString("<title>Comments &lsaquo; ")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
-	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<h1>Comments</h1>\n")
-	b.WriteString("<table class=\"wp-list-table widefat fixed striped comments\">\n")
-	b.WriteString("<thead><tr><th scope=\"col\" class=\"column-author\">Author</th><th scope=\"col\" class=\"column-comment\">Comment</th></tr></thead>\n")
+	if n := r.URL.Query().Get("approved"); n != "" {
+		b.WriteString(`<div id="message" class="updated notice is-dismissible"><p>`)
+		b.WriteString(html.EscapeString(n))
+		b.WriteString(` comment(s) approved.</p></div>` + "\n")
+	}
+	if n := r.URL.Query().Get("spammed"); n != "" {
+		b.WriteString(`<div id="message" class="updated notice is-dismissible"><p>`)
+		b.WriteString(html.EscapeString(n))
+		b.WriteString(` comment(s) marked as spam.</p></div>` + "\n")
+	}
+	if n := r.URL.Query().Get("trashed"); n != "" {
+		b.WriteString(`<div id="message" class="updated notice is-dismissible"><p>`)
+		b.WriteString(html.EscapeString(n))
+		b.WriteString(` comment(s) moved to the Trash.</p></div>` + "\n")
+	}
+	if n := r.URL.Query().Get("deleted"); n != "" {
+		b.WriteString(`<div id="message" class="updated notice is-dismissible"><p>`)
+		b.WriteString(html.EscapeString(n))
+		b.WriteString(` comment(s) permanently deleted.</p></div>` + "\n")
+	}
+	if n := r.URL.Query().Get("unapproved"); n != "" {
+		b.WriteString(`<div id="message" class="updated notice is-dismissible"><p>`)
+		b.WriteString(html.EscapeString(n))
+		b.WriteString(` comment(s) unapproved.</p></div>` + "\n")
+	}
+	b.WriteString(`<form method="post" action="/wp-admin/edit-comments.php" id="comments-form">` + "\n")
+	b.WriteString(`<div class="tablenav top"><div class="alignleft actions bulkactions">`)
+	b.WriteString(`<label for="bulk-action-selector-top" class="screen-reader-text">Select bulk action</label>`)
+	b.WriteString(`<select name="action" id="bulk-action-selector-top">`)
+	b.WriteString(`<option value="-1">Bulk actions</option>`)
+	b.WriteString(`<option value="unapprove">Unapprove</option>`)
+	b.WriteString(`<option value="approve">Approve</option>`)
+	b.WriteString(`<option value="spam">Mark as spam</option>`)
+	b.WriteString(`<option value="trash">Move to Trash</option>`)
+	b.WriteString(`<option value="delete">Delete permanently</option>`)
+	b.WriteString(`</select> `)
+	b.WriteString(`<input type="submit" id="doaction" class="button action" value="Apply" />`)
+	b.WriteString(`</div></div>` + "\n")
+	b.WriteString("<table class=\"wp-list-table widefat fixed striped table-view-list comments\">\n")
+	b.WriteString("<thead><tr>")
+	b.WriteString(`<td id="cb" class="manage-column column-cb check-column"><input id="cb-select-all-1" type="checkbox" /></td>`)
+	b.WriteString("<th scope=\"col\" class=\"column-author\">Author</th>")
+	b.WriteString("<th scope=\"col\" class=\"column-comment\">Comment</th>")
+	b.WriteString("</tr></thead>\n")
 	b.WriteString("<tbody id=\"the-comment-list\">\n")
 	if len(items) == 0 {
-		b.WriteString("<tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"2\">No comments found.</td></tr>\n")
+		b.WriteString("<tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"3\">No comments found.</td></tr>\n")
 	}
 	for _, item := range items {
 		b.WriteString("<tr id=\"comment-")
 		b.WriteString(strconv.FormatInt(item.ID, 10))
-		b.WriteString("\"><td class=\"author column-author\">")
+		b.WriteString(`" class="comment">`)
+		b.WriteString(`<th scope="row" class="check-column"><input type="checkbox" name="delete_comments[]" value="`)
+		b.WriteString(strconv.FormatInt(item.ID, 10))
+		b.WriteString(`" /></th>`)
+		b.WriteString("<td class=\"author column-author\">")
 		b.WriteString(html.EscapeString(item.Author))
 		b.WriteString("</td><td class=\"comment column-comment\"><p>")
 		b.WriteString(html.EscapeString(item.Content))
@@ -1324,8 +1429,21 @@ func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *w
 		b.WriteString(strconv.FormatInt(item.ID, 10))
 		b.WriteString(`">Edit</a></span></div></td></tr>` + "\n")
 	}
-	b.WriteString("</tbody>\n</table>\n</body>\n</html>\n")
-	writeHTML(w, http.StatusOK, b.String())
+	b.WriteString("</tbody>\n</table>\n")
+	b.WriteString(`<div class="tablenav bottom"><div class="alignleft actions bulkactions">`)
+	b.WriteString(`<label for="bulk-action-selector-bottom" class="screen-reader-text">Select bulk action</label>`)
+	b.WriteString(`<select name="action2" id="bulk-action-selector-bottom">`)
+	b.WriteString(`<option value="-1">Bulk actions</option>`)
+	b.WriteString(`<option value="unapprove">Unapprove</option>`)
+	b.WriteString(`<option value="approve">Approve</option>`)
+	b.WriteString(`<option value="spam">Mark as spam</option>`)
+	b.WriteString(`<option value="trash">Move to Trash</option>`)
+	b.WriteString(`<option value="delete">Delete permanently</option>`)
+	b.WriteString(`</select> `)
+	b.WriteString(`<input type="submit" id="doaction2" class="button action" value="Apply" />`)
+	b.WriteString(`</div></div></form>` + "\n")
+	_ = blogname
+	writeAdminPage(w, c, newAdminChrome(c, "Comments", "edit-comments-php"), b.String())
 }
 
 // serveCommentModerate is the comment.php moderation / edit stub (P7.30).
