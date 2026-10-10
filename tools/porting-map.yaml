@@ -853,6 +853,13 @@
   task: P4.55
   api: exported
 
+# P4.56: richer url-details (same-site enrichment + HTML head parsers; no remote fetch).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-url-details-controller.php
+  go: internal/rest/url_details.go
+  status: partial
+  task: P4.56
+  api: exported
+
 - prefix: wp-includes/fonts/class-wp-font-collection.php
   go: internal/wp/font_collections.go
   status: partial
