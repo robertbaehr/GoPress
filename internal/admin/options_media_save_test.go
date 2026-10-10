@@ -68,15 +68,15 @@ func TestOptionsMediaSaveViaOptionsPHP(t *testing.T) {
 		t.Fatalf("Location=%q", loc)
 	}
 	want := map[string]string{
-		"thumbnail_size_w":               "160",
-		"thumbnail_size_h":               "160",
-		"thumbnail_crop":                 "1",
-		"medium_size_w":                  "320",
-		"medium_size_h":                  "320",
-		"large_size_w":                   "1200",
-		"large_size_h":                   "1200",
-		"embed_autourls":                 "0",
-		"uploads_use_yearmonth_folders":  "0",
+		"thumbnail_size_w":              "160",
+		"thumbnail_size_h":              "160",
+		"thumbnail_crop":                "1",
+		"medium_size_w":                 "320",
+		"medium_size_h":                 "320",
+		"large_size_w":                  "1200",
+		"large_size_h":                  "1200",
+		"embed_autourls":                "0",
+		"uploads_use_yearmonth_folders": "0",
 	}
 	for k, v := range want {
 		if got := strings.TrimSpace(fmt.Sprint(c.Options.GetOption(k, ""))); got != v {
