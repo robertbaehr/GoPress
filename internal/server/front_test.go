@@ -94,8 +94,11 @@ func TestFrontSingularByQueryP(t *testing.T) {
 	if !strings.Contains(body, "Hello world!") {
 		t.Fatalf("expected title, got %q", body)
 	}
-	if !strings.Contains(body, "entry-content") || !strings.Contains(body, "Welcome to WordPress") {
+	if !strings.Contains(body, "Welcome to WordPress") {
 		t.Fatalf("expected content, got %q", body)
+	}
+	if !strings.Contains(body, "entry-content") && !strings.Contains(body, "wp-site-blocks") {
+		t.Fatalf("expected singular content wrapper, got %q", body)
 	}
 	if strings.Contains(body, "<!-- wp:") {
 		t.Fatalf("block comments should be rendered away, got %q", body)

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -234,6 +235,96 @@ func (f *Front) renderSingular(w http.ResponseWriter, c *wp.Context, vars map[st
 		return
 	}
 
+	// P5.17: prefer block theme single/page templates when available.
+	if post.Type == "page" || post.Type == "post" {
+		slugs := []string{"single"}
+		if post.Type == "page" {
+			slugs = []string{"page", "single"}
+		} else {
+			slugs = []string{"single"}
+		}
+		if tpl, ok := wp.ResolveBlockTemplate(c, slugs...); ok && strings.TrimSpace(tpl) != "" {
+			f.renderSingularBlockTemplate(w, c, post, tpl)
+			return
+		}
+	}
+
+	f.renderSingularShim(w, c, post)
+}
+
+func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context, post *singularPost, template string) {
+	blogname := optionString(c, "blogname", "GoPress")
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	stylesheet := activeStylesheet(c)
+	env := blockRenderEnv(c)
+	env.SetCurrentPost(&blocks.QueryPost{
+		ID:               post.ID,
+		Title:            post.Title,
+		Content:          post.Content,
+		Date:             "",
+		Link:             singularPermalink(home, post),
+		FeaturedImageURL: post.FeaturedImageURL,
+		FeaturedImageAlt: post.FeaturedImageAlt,
+	})
+	body := blocks.RenderWith(env, template)
+	safe := wp.KsesPost(body)
+
+	bodyClasses := "wp-embed-responsive singular"
+	if post.Type == "page" {
+		bodyClasses = "wp-embed-responsive page-template-default page page-id-" + strconv.FormatInt(post.ID, 10)
+	} else {
+		bodyClasses = "wp-embed-responsive single single-post postid-" + strconv.FormatInt(post.ID, 10)
+	}
+	if stylesheet != "" {
+		bodyClasses += " wp-theme-" + stylesheet
+	}
+	bodyClasses = wp.BodyClassWithAdminBar(c, bodyClasses)
+
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
+	b.WriteString("<meta charset=\"UTF-8\" />\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
+	b.WriteString("<meta name='robots' content='max-image-preview:large' />\n")
+	b.WriteString("<title>")
+	b.WriteString(html.EscapeString(post.Title))
+	b.WriteString(" &#8211; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString("</title>\n")
+	if home != "" {
+		b.WriteString("<link rel=\"https://api.w.org/\" href=\"")
+		b.WriteString(html.EscapeString(home + "/wp-json/"))
+		b.WriteString("\" />\n")
+		b.WriteString("<link rel=\"alternate\" type=\"application/json\" title=\"oEmbed (JSON)\" href=\"")
+		b.WriteString(html.EscapeString(home + "/wp-json/oembed/1.0/embed?url=" + url.QueryEscape(singularPermalink(home, post))))
+		b.WriteString("\" />\n")
+		b.WriteString("<link rel=\"stylesheet\" id=\"wp-block-library-css\" href=\"")
+		b.WriteString(html.EscapeString(home + "/wp-includes/css/dist/block-library/style.min.css"))
+		b.WriteString("\" media=\"all\" />\n")
+	}
+	b.WriteString(wp.EmojiHeadHTML())
+	b.WriteString("</head>\n<body class=\"")
+	b.WriteString(html.EscapeString(bodyClasses))
+	b.WriteString("\">\n")
+	b.WriteString(wp.AdminBarHTML(c))
+	b.WriteString("<a class=\"skip-link screen-reader-text\" href=\"#wp--skip-link--target\">Skip to content</a>")
+	b.WriteString("<div class=\"wp-site-blocks\">")
+	b.WriteString(safe)
+	// Until comment blocks fully render (P5.18), keep classic comment form under posts/pages.
+	if (post.Type == "post" || post.Type == "page") &&
+		!strings.Contains(safe, "id=\"commentform\"") &&
+		!strings.Contains(safe, "wp-block-post-comments-form") {
+		f.writeCommentsSection(&b, c, post)
+	}
+	b.WriteString("</div>\n")
+	b.WriteString("</body>\n</html>\n")
+
+	setFrontSingularLinks(w, c, post)
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(b.String()))
+}
+
+func (f *Front) renderSingularShim(w http.ResponseWriter, c *wp.Context, post *singularPost) {
 	blogname := optionString(c, "blogname", "GoPress")
 	content := post.Content
 	if post.Type == "attachment" && content == "" {
@@ -286,10 +377,24 @@ func (f *Front) renderSingular(w http.ResponseWriter, c *wp.Context, vars map[st
 	}
 	b.WriteString("</body>\n</html>\n")
 
-	setFrontAPILink(w, c)
+	setFrontSingularLinks(w, c, post)
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(b.String()))
+}
+
+func singularPermalink(home string, post *singularPost) string {
+	if post == nil {
+		return home + "/"
+	}
+	if post.Type == "page" && post.Name != "" {
+		return home + "/" + post.Name + "/"
+	}
+	if post.Name != "" {
+		// Best-effort; date permalinks are resolved via rewrite for requests.
+		return home + "/?p=" + strconv.FormatInt(post.ID, 10)
+	}
+	return home + "/?p=" + strconv.FormatInt(post.ID, 10)
 }
 
 func (f *Front) writeCommentsSection(b *strings.Builder, c *wp.Context, post *singularPost) {
@@ -766,6 +871,29 @@ func setFrontAPILink(w http.ResponseWriter, c *wp.Context) {
 	w.Header().Set("Link", fmt.Sprintf(`<%s/wp-json/>; rel="https://api.w.org/"`, home))
 }
 
+// setFrontSingularLinks mirrors WP Link headers for singular views (P5.17).
+func setFrontSingularLinks(w http.ResponseWriter, c *wp.Context, post *singularPost) {
+	siteURL := strings.TrimRight(optionString(c, "siteurl", ""), "/")
+	home := strings.TrimRight(optionString(c, "home", siteURL), "/")
+	if home == "" {
+		home = siteURL
+	}
+	if home == "" || post == nil {
+		return
+	}
+	w.Header().Add("Link", fmt.Sprintf(`<%s/wp-json/>; rel="https://api.w.org/"`, home))
+	restType := "posts"
+	if post.Type == "page" {
+		restType = "pages"
+	}
+	if post.Type == "post" || post.Type == "page" {
+		w.Header().Add("Link", fmt.Sprintf(
+			`<%s/wp-json/wp/v2/%s/%d>; rel="alternate"; title="JSON"; type="application/json"`,
+			home, restType, post.ID))
+		w.Header().Add("Link", fmt.Sprintf(`<%s/?p=%d>; rel=shortlink`, home, post.ID))
+	}
+}
+
 type postListItem struct {
 	ID    int64
 	Title string
@@ -921,6 +1049,14 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			limit := q.PerPage
 			if limit <= 0 {
 				limit = 10
+			}
+			// WP: inherit:true uses the main query's posts_per_page (P5.17).
+			if q.Inherit {
+				if v := optionString(c, "posts_per_page", "10"); v != "" {
+					if n, err := strconv.Atoi(v); err == nil && n > 0 {
+						limit = n
+					}
+				}
 			}
 			postType := q.PostType
 			if postType == "" {
