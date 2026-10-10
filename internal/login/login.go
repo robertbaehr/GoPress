@@ -50,13 +50,13 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 			h.serveRegister(w, r, c)
 		case "confirm_admin_email":
 			h.serveConfirmAdminEmail(w, r, c)
+		case "checkemail":
+			// P6.44: WP sets $action=checkemail when ?checkemail= is present.
+			h.serveCheckEmail(w, r, c)
 		default:
-			if r.URL.Query().Get("checkemail") == "confirm" {
-				h.serveCheckEmailConfirm(w, r, c)
-				return
-			}
-			if r.URL.Query().Get("checkemail") == "registered" {
-				h.serveCheckEmailRegistered(w, r, c)
+			// WP: if ( isset( $_GET['checkemail'] ) ) { $action = 'checkemail'; }
+			if r.URL.Query().Get("checkemail") != "" {
+				h.serveCheckEmail(w, r, c)
 				return
 			}
 			errMsg := ""
@@ -436,26 +436,55 @@ func extractLoginErrorCode(errHTML string) string {
 	return ""
 }
 
-// serveCheckEmailRegistered shows the post-registration notice (P6.43).
+// serveCheckEmailRegistered shows the post-registration notice (P6.43 / P6.44).
 func (h *Handler) serveCheckEmailRegistered(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	h.serveCheckEmail(w, r, c)
+}
+
+// serveCheckEmail renders wp-login.php?checkemail=confirm|registered (P6.44).
+// Matches WP login_header( 'Check your email' ) + notice-info message with login link.
+func (h *Handler) serveCheckEmail(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "/")), "/")
 	blogname := optionString(c, "blogname", "GoPress")
 	loginURL := home + "/wp-login.php"
+	if home == "" {
+		loginURL = "/wp-login.php"
+	}
+	kind := strings.TrimSpace(r.URL.Query().Get("checkemail"))
+	msg := ""
+	switch kind {
+	case "confirm":
+		msg = "Check your email for the confirmation link, then visit the <a href=\"" +
+			html.EscapeString(loginURL) + "\">login page</a>."
+	case "registered":
+		msg = "Registration complete. Please check your email, then visit the <a href=\"" +
+			html.EscapeString(loginURL) + "\">login page</a>."
+	default:
+		// Unknown checkemail value: still show the checkemail chrome (WP does).
+		msg = "Check your email."
+	}
+	// P6.44: wp_login_errors filter (message-type errors).
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("wp_login_errors", msg, home+"/wp-admin/"); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				msg = s
+			}
+		}
+	}
 	var b strings.Builder
-	writeLoginHead(&b, home, blogname, "Log In", "login")
-	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Log In</h1>\n")
+	writeLoginHead(&b, home, blogname, "Check your email", "checkemail")
+	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Check your email</h1>\n")
 	b.WriteString("\t\t\t<div id=\"login\">\n")
 	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
-	b.WriteString("<div class=\"notice notice-info message\"><p>Registration complete. Please check your email.</p></div>\n")
+	b.WriteString("<div class=\"notice notice-info message\" id=\"login-message\"><p>")
+	b.WriteString(msg)
+	b.WriteString("</p></div>\n")
 	b.WriteString("\t\t<p id=\"backtoblog\">\n")
 	b.WriteString("\t\t\t<a href=\"")
 	b.WriteString(html.EscapeString(home + "/"))
 	b.WriteString("\">&larr; Go to ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString("</a>\t\t</p>\n")
-	b.WriteString("\t\t<p id=\"nav\"><a class=\"wp-login-log-in\" href=\"")
-	b.WriteString(html.EscapeString(loginURL))
-	b.WriteString("\">Log in</a></p>\n")
 	b.WriteString("\t\t\t</div>\n")
 	b.WriteString("\t</body>\n")
 	b.WriteString("\t</html>\n")
@@ -710,24 +739,7 @@ func (h *Handler) serveLostPasswordPost(w http.ResponseWriter, r *http.Request, 
 }
 
 func (h *Handler) serveCheckEmailConfirm(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "/")), "/")
-	blogname := optionString(c, "blogname", "GoPress")
-	loginURL := home + "/wp-login.php"
-	var b strings.Builder
-	writeLoginHead(&b, home, blogname, "Log In", "login")
-	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Log In</h1>\n")
-	b.WriteString("\t\t\t<div id=\"login\">\n")
-	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
-	b.WriteString("<p class=\"message\">Check your email for the confirmation link, then visit the login page.</p>\n")
-	b.WriteString("\t\t<p id=\"nav\">\n")
-	b.WriteString("\t\t\t<a class=\"wp-login-log-in\" href=\"")
-	b.WriteString(html.EscapeString(loginURL))
-	b.WriteString("\">Log in</a>\n")
-	b.WriteString("\t\t\t\t\t</p>\n")
-	b.WriteString("\t\t\t</div>\n")
-	b.WriteString("\t</body>\n")
-	b.WriteString("\t</html>\n")
-	writeLoginHTML(w, r, b.String(), false, c)
+	h.serveCheckEmail(w, r, c)
 }
 
 func lostPasswordErrorFromQuery(r *http.Request) string {

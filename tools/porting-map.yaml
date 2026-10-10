@@ -295,6 +295,14 @@
   api: n/a
   notes: "P6.43 — registerform GET/POST; InsertUser subscriber; checkemail=registered; P6.9 disabled redirect"
 
+# P6.44: deepen checkemail=confirm|registered chrome (title, notice, login link).
+- prefix: wp-login.php#checkemail
+  go: internal/login/login.go
+  status: partial
+  task: P6.44
+  api: n/a
+  notes: "P6.44 — Check your email title; login-action-checkemail; notice-info#login-message; wp_login_errors"
+
 # P6.15: password-protected post form + wp-login.php?action=postpass cookie.
 - prefix: wp-login.php#postpass
   go: internal/login/login.go
