@@ -53,6 +53,28 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		s.serveStatic(w, r, path)
 		return
 	}
+
+	// P6.4: when not installed, serve install placeholder at / and install.php.
+	if path == "/" || path == "/wp-admin/install.php" {
+		c := s.requestContext(w, r)
+		if !wp.IsInstalled(c) {
+			serveInstallPlaceholder(w, r)
+			return
+		}
+		if path == "/wp-admin/install.php" {
+			// Already installed — leave behavior unchanged (404 via admin fallthrough).
+			ah := s.Admin
+			if ah == nil {
+				ah = &admin.Handler{}
+			}
+			if ah.Handle(w, r, c, path) {
+				return
+			}
+			http.NotFound(w, r)
+			return
+		}
+	}
+
 	if path == "/wp-cron.php" {
 		c := s.requestContext(w, r)
 		wp.ServeCron(w, r, c)
