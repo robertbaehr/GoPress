@@ -1776,6 +1776,12 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString("\t<language>")
 	b.WriteString(xmlEscape(wp.BlogInfoLanguage(c)))
 	b.WriteString("</language>\n")
+	// P3.54: optional channel <copyright> when rss_copyright option is set.
+	if copy := wp.FeedCopyright(c, feedCopyrightWhen(posts)); copy != "" {
+		b.WriteString("\t<copyright>")
+		b.WriteString(xmlEscape(copy))
+		b.WriteString("</copyright>\n")
+	}
 	b.WriteString("\t<sy:updatePeriod>\n")
 	b.WriteString("\thourly\t</sy:updatePeriod>\n")
 	b.WriteString("\t<sy:updateFrequency>\n")
@@ -1914,6 +1920,12 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString("\t<link rel=\"self\" type=\"application/atom+xml\" href=\"")
 	b.WriteString(xmlEscape(self))
 	b.WriteString("\" />\n\n")
+	// P3.54: optional Atom <rights> when rss_copyright option is set.
+	if copy := wp.FeedCopyright(c, feedCopyrightWhen(posts)); copy != "" {
+		b.WriteString("\t<rights>")
+		b.WriteString(xmlEscape(copy))
+		b.WriteString("</rights>\n")
+	}
 	b.WriteString("\t")
 	b.WriteString(wp.GetTheGenerator("atom"))
 	b.WriteString("\n")
@@ -2266,6 +2278,21 @@ func feedSelfLink(r *http.Request, c *wp.Context) string {
 		return path
 	}
 	return home + path
+}
+
+// feedCopyrightWhen picks a UTC time for auto copyright year (P3.54).
+func feedCopyrightWhen(posts []feedPost) time.Time {
+	if len(posts) == 0 {
+		return time.Now().UTC()
+	}
+	raw := posts[0].DateGMT
+	if raw == "" {
+		raw = posts[0].Date
+	}
+	if t, err := time.Parse("2006-01-02 15:04:05", raw); err == nil {
+		return t.UTC()
+	}
+	return time.Now().UTC()
 }
 
 // rss2SiteIconImage emits the RSS2 channel <image> block (rss2_site_icon, P3.52).
