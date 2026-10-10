@@ -36,6 +36,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/options-general.php":
 		h.requireLogin(w, r, c, h.serveOptionsGeneral)
 		return true
+	case "/wp-admin/options.php":
+		h.requireLogin(w, r, c, h.serveOptionsPHP)
+		return true
 	case "/wp-admin/options-writing.php":
 		h.requireLogin(w, r, c, h.serveOptionsWriting)
 		return true
@@ -469,7 +472,43 @@ func (h *Handler) serveOptionsGeneral(w http.ResponseWriter, r *http.Request, c 
 	writeAdminPage(w, c, newAdminChrome(c, "General Settings", "options-general-php"), b.String())
 }
 
-// serveOptionsWriting is the Settings → Writing screen stub (P7.13).
+// serveOptionsPHP handles /wp-admin/options.php saves (P7.48 writing subset).
+func (h *Handler) serveOptionsPHP(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if r.Method != http.MethodPost {
+		http.Redirect(w, r, "/wp-admin/options-general.php", http.StatusFound)
+		return
+	}
+	_ = r.ParseForm()
+	optionPage := strings.TrimSpace(r.Form.Get("option_page"))
+	if optionPage == "" {
+		optionPage = "options"
+	}
+	if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "manage_options") {
+		http.Error(w, "Sorry, you are not allowed to manage options for this site.\n", http.StatusForbidden)
+		return
+	}
+	switch optionPage {
+	case "writing":
+		if c.Options != nil {
+			if v := strings.TrimSpace(r.Form.Get("default_category")); v != "" {
+				_, _ = c.Options.UpdateOption("default_category", v, "yes")
+			}
+			if _, ok := r.Form["default_post_format"]; ok {
+				v := strings.TrimSpace(r.Form.Get("default_post_format"))
+				if v == "" {
+					v = "0"
+				}
+				_, _ = c.Options.UpdateOption("default_post_format", v, "yes")
+			}
+		}
+		http.Redirect(w, r, "/wp-admin/options-writing.php?settings-updated=true", http.StatusFound)
+		return
+	default:
+		http.Error(w, "Unrecognized settings group.\n", http.StatusBadRequest)
+	}
+}
+
+// serveOptionsWriting is the Settings → Writing screen stub (P7.13 / P7.48).
 func (h *Handler) serveOptionsWriting(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
 	defaultCat := optionString(c, "default_category", "1")
@@ -483,8 +522,12 @@ func (h *Handler) serveOptionsWriting(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1>Writing Settings</h1>\n")
-	b.WriteString("<p class=\"description\">GoPress writing settings stub — save lands with options.php.</p>\n")
+	if r.URL.Query().Get("settings-updated") == "true" {
+		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p><strong>Settings saved.</strong></p></div>\n")
+	}
+	b.WriteString("<p class=\"description\">GoPress writing settings — POST saves via options.php.</p>\n")
 	b.WriteString("<form method=\"post\" action=\"options.php\">\n")
+	b.WriteString("<input type=\"hidden\" name=\"option_page\" value=\"writing\" />\n")
 	b.WriteString("<table class=\"form-table\" role=\"presentation\">\n")
 	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"default_category\">Default Post Category</label></th>\n")
 	b.WriteString("<td><input name=\"default_category\" type=\"text\" id=\"default_category\" value=\"")
