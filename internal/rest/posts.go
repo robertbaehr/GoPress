@@ -196,7 +196,7 @@ func parsePage(r *http.Request) int {
 	return page
 }
 
-func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order string) ([]Post, error) {
+func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string) ([]Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -214,6 +214,7 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 		Offset:       offset,
 		OrderBy:      orderby,
 		Order:        order,
+		Search:       search,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	rows, err := wp.GetPosts(c, args)
@@ -251,7 +252,15 @@ func parsePostsOrder(r *http.Request) string {
 	return "desc"
 }
 
-func countPosts(c *wp.Context, postType string, stickyFilter *bool) (int, error) {
+// parsePostsSearch reads REST ?search= (maps to WP_Query s / QueryArgs.Search, P4.84).
+func parsePostsSearch(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	return strings.TrimSpace(r.URL.Query().Get("search"))
+}
+
+func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
@@ -261,6 +270,7 @@ func countPosts(c *wp.Context, postType string, stickyFilter *bool) (int, error)
 	args := wp.QueryArgs{
 		PostType:   postType,
 		PostStatus: "publish",
+		Search:     search,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	return wp.CountPosts(c, args)

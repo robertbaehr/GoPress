@@ -41,7 +41,7 @@ func (s *Server) serveNavigation(w http.ResponseWriter, r *http.Request, c *wp.C
 	}
 	perPage := parsePerPage(r, 10)
 	page := parsePage(r)
-	total, err := countPosts(c, "wp_navigation", nil)
+	total, err := countPosts(c, "wp_navigation", nil, "")
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",

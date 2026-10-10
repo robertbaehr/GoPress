@@ -1345,6 +1345,21 @@
   api: n/a
   notes: "P4.82 — listPostCollection honors ?sticky="
 
+# P4.84: REST GET /wp/v2/posts?search= collection filter (WP_Query s).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#search
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.84
+  api: exported
+  notes: "P4.84 — ?search= → QueryArgs.Search title/excerpt/content LIKE"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#search-list
+  go: internal/rest/posts_write.go
+  status: partial
+  task: P4.84
+  api: exported
+  notes: "P4.84 — listPostCollection honors ?search= for posts/pages"
+
 # P4.83: REST GET /wp/v2/posts?orderby=title|date|id|slug (+ order=asc|desc).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#orderby
   go: internal/rest/posts.go
