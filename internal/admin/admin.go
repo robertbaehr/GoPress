@@ -57,6 +57,15 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/async-upload.php":
 		h.requireLogin(w, r, c, h.serveAsyncUpload)
 		return true
+	case "/wp-admin/export-personal-data.php":
+		h.requireLogin(w, r, c, h.serveExportPersonalData)
+		return true
+	case "/wp-admin/erase-personal-data.php":
+		h.requireLogin(w, r, c, h.serveErasePersonalData)
+		return true
+	case "/wp-admin/options-privacy.php":
+		h.requireLogin(w, r, c, h.serveOptionsPrivacy)
+		return true
 	default:
 		return false
 	}
@@ -359,6 +368,55 @@ func (h *Handler) serveSiteEditor(w http.ResponseWriter, r *http.Request, c *wp.
 	b.WriteString("</p>\n")
 	b.WriteString("<p>GoPress site editor stub (P7.5) — full block canvas lands later.</p>\n")
 	b.WriteString("</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
+// serveExportPersonalData is a privacy tools stub (P8.2).
+func (h *Handler) serveExportPersonalData(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	h.servePrivacyStub(w, c, "Export Personal Data",
+		"Manage requests for an export of personal data.",
+		"GoPress privacy export stub — full request workflow lands later.")
+}
+
+// serveErasePersonalData is a privacy tools stub (P8.2).
+func (h *Handler) serveErasePersonalData(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	h.servePrivacyStub(w, c, "Erase Personal Data",
+		"Manage requests to erase personal data.",
+		"GoPress privacy erasure stub — full request workflow lands later.")
+}
+
+// serveOptionsPrivacy is a privacy settings stub (P8.2).
+func (h *Handler) serveOptionsPrivacy(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	h.servePrivacyStub(w, c, "Privacy",
+		"Privacy settings and policy page.",
+		"GoPress privacy settings stub — policy guide lands later.")
+}
+
+func (h *Handler) servePrivacyStub(w http.ResponseWriter, c *wp.Context, title, lead, note string) {
+	blogname := optionString(c, "blogname", "GoPress")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>")
+	b.WriteString(html.EscapeString(title))
+	b.WriteString(" &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui privacy-settings\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap\" id=\"privacy-settings\">\n")
+	b.WriteString("<h1>")
+	b.WriteString(html.EscapeString(title))
+	b.WriteString("</h1>\n")
+	b.WriteString("<p>")
+	b.WriteString(html.EscapeString(lead))
+	b.WriteString("</p>\n")
+	b.WriteString("<p class=\"description\">")
+	b.WriteString(html.EscapeString(note))
+	b.WriteString("</p>\n")
+	b.WriteString("<table class=\"wp-list-table widefat fixed striped privacy-requests\">\n")
+	b.WriteString("<thead><tr><th scope=\"col\">Requester</th><th scope=\"col\">Status</th></tr></thead>\n")
+	b.WriteString("<tbody><tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"2\">No requests found.</td></tr></tbody>\n")
+	b.WriteString("</table>\n</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
 
