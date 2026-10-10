@@ -349,6 +349,13 @@
   task: P2.30
   api: exported
 
+# P3.28: legacy Windows Live Writer manifest stub.
+- prefix: wp-includes/wlwmanifest.xml
+  go: internal/server/wlwmanifest.go
+  status: partial
+  task: P3.28
+  api: n/a
+
 # P4.49: REST /wp/v2/search type=post|term|post-format filters.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-search-controller.php#type
   go: internal/rest/search.go
