@@ -335,6 +335,13 @@
   task: P5.35
   api: internal
 
+# P4.51: REST POST/PUT/PATCH /wp/v2/global-styles/{id}.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-global-styles-controller.php#update
+  go: internal/rest/global_styles_write.go
+  status: partial
+  task: P4.51
+  api: exported
+
 # P4.50: REST POST /wp/v2/block-renderer/{name} with attributes + post_id.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-renderer-controller.php
   go: internal/rest/block_types.go

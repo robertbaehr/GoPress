@@ -95,14 +95,21 @@ func (s *Server) serveGlobalStylesTheme(w http.ResponseWriter, r *http.Request, 
 }
 
 func (s *Server) serveGlobalStylesItem(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
-	if r.Method != http.MethodGet {
+	switch r.Method {
+	case http.MethodGet:
+		s.getGlobalStylesItem(w, r, c, id)
+	case http.MethodPost, http.MethodPut, http.MethodPatch:
+		s.updateGlobalStylesItem(w, r, c, id)
+	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
 			"data":    map[string]any{"status": 405},
 		})
-		return
 	}
+}
+
+func (s *Server) getGlobalStylesItem(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
 	if !canViewGlobalStyles(c) {
 		writeGlobalStylesForbidden(w, c, "rest_cannot_view",
 			"Sorry, you are not allowed to view this global style.")
@@ -126,7 +133,7 @@ func (s *Server) serveGlobalStylesItem(w http.ResponseWriter, r *http.Request, c
 		return
 	}
 	settings, styles := parseGlobalStylesContent(row.Content)
-	w.Header().Set("Allow", "GET")
+	w.Header().Set("Allow", "GET, POST, PUT, PATCH")
 	writeJSON(w, http.StatusOK, GlobalStylesItem{
 		ID:       row.ID,
 		Title:    map[string]string{"raw": row.Title, "rendered": row.Title},

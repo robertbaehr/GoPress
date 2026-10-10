@@ -833,7 +833,22 @@ func extraIndexRoutes() map[string]RouteIndex {
 		"/wp/v2/template-parts/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)": itemRoute(ns),
 		"/wp/v2/navigation":                       collectionRoute(ns),
 		"/wp/v2/navigation/(?P<id>[\\d]+)":        itemRoute(ns),
-		"/wp/v2/global-styles/(?P<id>[\\/\\d+]+)": getOnly(ns),
+		"/wp/v2/global-styles/(?P<id>[\\/\\d+]+)": {
+			Namespace: ns,
+			Methods:   []string{"GET", "POST", "PUT", "PATCH"},
+			Endpoints: []RouteEndpoint{
+				{Methods: []string{"GET"}},
+				{Methods: []string{"POST", "PUT", "PATCH"}, Args: map[string]any{
+					"styles":   map[string]any{"description": "Global styles.", "type": "object", "required": false},
+					"settings": map[string]any{"description": "Global settings.", "type": "object", "required": false},
+					"title": map[string]any{
+						"description": "Title of the global styles variation.",
+						"type":        []any{"object", "string"},
+						"required":    false,
+					},
+				}},
+			},
+		},
 		"/wp/v2/global-styles/themes/(?P<stylesheet>[\\/\\s%\\w\\.\\(\\)\\[\\]\\@_\\-]+)/variations":     getOnly(ns),
 		"/wp/v2/global-styles/themes/(?P<stylesheet>[^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)": getOnly(ns),
 		"/wp/v2/block-patterns/patterns":             getOnly(ns),
