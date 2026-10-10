@@ -65,10 +65,13 @@ func (h *Handler) serveAdminAjax(w http.ResponseWriter, r *http.Request, c *wp.C
 func (h *Handler) ajaxHeartbeat(w http.ResponseWriter, r *http.Request, c *wp.Context, loggedIn bool) {
 	_ = c
 	_ = r
-	// Match wp_ajax_heartbeat / wp_ajax_nopriv_heartbeat + wp_auth_check shape.
-	resp := map[string]any{
-		"wp-auth-check": loggedIn,
-		"server_time":   time.Now().Unix(),
+	// Match wp_ajax_heartbeat / wp_ajax_nopriv_heartbeat + wp_auth_check key order.
+	resp := struct {
+		WPAuthCheck bool  `json:"wp-auth-check"`
+		ServerTime  int64 `json:"server_time"`
+	}{
+		WPAuthCheck: loggedIn,
+		ServerTime:  time.Now().Unix(),
 	}
 	body, err := json.Marshal(resp)
 	if err != nil {

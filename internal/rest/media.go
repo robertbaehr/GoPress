@@ -59,7 +59,7 @@ func (s *Server) serveMedia(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	if perPage > 0 {
 		totalPages = (total + perPage - 1) / perPage
 	}
-	setCollectionHeaders(w, r, total, totalPages, page)
+	setCollectionHeaders(w, r, c, total, totalPages, page)
 	writeJSON(w, http.StatusOK, items)
 }
 

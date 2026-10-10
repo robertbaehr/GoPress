@@ -26,11 +26,53 @@ func TestLoginFormGET(t *testing.T) {
 		t.Fatalf("status=%d", rec.Code)
 	}
 	body := rec.Body.String()
-	if !strings.Contains(body, `action="wp-login.php"`) || !strings.Contains(body, `method="post"`) {
+	if !strings.Contains(body, "wp-login.php") || !strings.Contains(body, `method="post"`) {
 		t.Fatalf("expected login form, got %q", body)
 	}
 	if !strings.Contains(body, `name="log"`) || !strings.Contains(body, `name="pwd"`) {
 		t.Fatalf("expected log/pwd fields: %q", body)
+	}
+	if !strings.Contains(body, `name="testcookie"`) || !strings.Contains(body, `user-pass-wrap`) {
+		t.Fatalf("expected WP-shaped markup: %q", body)
+	}
+	if !strings.Contains(body, `login-action-login`) {
+		t.Fatalf("expected login-action-login body class: %q", body)
+	}
+	foundTestCookie := false
+	for _, ck := range rec.Result().Cookies() {
+		if ck.Name == "wordpress_test_cookie" {
+			foundTestCookie = true
+		}
+	}
+	if !foundTestCookie {
+		t.Fatal("expected wordpress_test_cookie Set-Cookie")
+	}
+}
+
+func TestLostPasswordFormGET(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?action=lostpassword", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `name="lostpasswordform"`) || !strings.Contains(body, `id="lostpasswordform"`) {
+		t.Fatalf("expected lostpassword form: %q", body)
+	}
+	if !strings.Contains(body, `login-action-lostpassword`) {
+		t.Fatalf("expected lostpassword body class: %q", body)
+	}
+	if strings.Contains(body, `name="loginform"`) || strings.Contains(body, `name="pwd"`) {
+		t.Fatalf("lostpassword should not be generic login: %q", body)
+	}
+	if !strings.Contains(body, "Get New Password") {
+		t.Fatalf("expected submit label: %q", body)
 	}
 }
 

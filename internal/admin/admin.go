@@ -63,7 +63,8 @@ func (h *Handler) requireLogin(w http.ResponseWriter, r *http.Request, c *wp.Con
 
 func (h *Handler) serveDashboard(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
-	nonce := "stubnonce1"
+	restNonce := c.CreateNonce("wp_rest")
+	hbNonce := c.CreateNonce("heartbeat-nonce")
 	writeHTML(w, http.StatusOK, fmt.Sprintf(`<!DOCTYPE html>
 <html>
 <head>
@@ -77,7 +78,7 @@ func (h *Handler) serveDashboard(w http.ResponseWriter, r *http.Request, c *wp.C
 <p>GoPress admin stub (P6.2) — full screens land in P7.</p>
 </body>
 </html>
-`, html.EscapeString(blogname), nonce, nonce, html.EscapeString(blogname)))
+`, html.EscapeString(blogname), html.EscapeString(restNonce), html.EscapeString(hbNonce), html.EscapeString(blogname)))
 }
 
 func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.Context) {
