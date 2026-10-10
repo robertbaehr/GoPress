@@ -1,6 +1,8 @@
 package wp_test
 
 import (
+	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/robertbaehr/GoPress/internal/wp"
@@ -124,5 +126,44 @@ func TestGetMimeTypesFilter(t *testing.T) {
 	m := wp.GetMimeTypes(c)
 	if m["xyz"] != "application/x-xyz" {
 		t.Fatalf("mime_types filter not applied: %+v", m["xyz"])
+	}
+}
+
+func TestCheckFiletypeAndExtBasic(t *testing.T) {
+	got := wp.CheckFiletypeAndExt(nil, "", "photo.PNG", nil)
+	if got.Ext != "png" || got.Type != "image/png" {
+		t.Fatalf("got=%+v", got)
+	}
+}
+
+func TestCheckFiletypeAndExtCorrectsImageExt(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "misnamed.gif")
+	// Minimal JPEG magic.
+	data := []byte{0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 'J', 'F', 'I', 'F'}
+	if err := os.WriteFile(path, data, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got := wp.CheckFiletypeAndExt(nil, path, "misnamed.gif", nil)
+	if got.Type != "image/jpeg" {
+		t.Fatalf("type=%q want image/jpeg (%+v)", got.Type, got)
+	}
+	if got.ProperFilename != "misnamed.jpg" && got.Ext != "jpg" && got.Ext != "jpeg" {
+		t.Fatalf("expected corrected filename/ext: %+v", got)
+	}
+}
+
+func TestCheckFiletypeAndExtHonorsUploadMimes(t *testing.T) {
+	c := &wp.Context{Hooks: wp.NewHooks()}
+	c.Hooks.AddFilter("upload_mimes", func(value any, _ ...any) any {
+		return map[string]string{"custom": "application/x-custom"}
+	}, 10, 2)
+	ok := wp.CheckFiletypeAndExt(c, "", "a.custom", nil)
+	if ok.Ext != "custom" || ok.Type != "application/x-custom" {
+		t.Fatalf("custom mime: %+v", ok)
+	}
+	deny := wp.CheckFiletypeAndExt(c, "", "a.png", nil)
+	if deny.Ext != "" || deny.Type != "" {
+		t.Fatalf("png should be denied when upload_mimes narrowed: %+v", deny)
 	}
 }

@@ -54,3 +54,48 @@ func TestSaveUploadedMedia(t *testing.T) {
 		t.Fatalf("meta=%q want %q", fileMeta, up.RelPath)
 	}
 }
+
+func TestSaveUploadedMediaHonorsUploadMimes(t *testing.T) {
+	c := testBootQuery(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	c.CurrentUser = user
+	c.Hooks.AddFilter("upload_mimes", func(value any, _ ...any) any {
+		m := value.(map[string]string)
+		delete(m, "txt|asc|c|cc|h|srt")
+		return m
+	}, 10, 2)
+	_, err = wp.SaveUploadedMedia(c, "blocked.txt", bytes.NewReader([]byte("nope")), 4)
+	if err == nil {
+		t.Fatal("expected upload_mimes denial for txt")
+	}
+	if !strings.Contains(err.Error(), "not permitted") {
+		t.Fatalf("err=%v", err)
+	}
+}
+
+func TestSaveUploadedMediaUsesAllowedMime(t *testing.T) {
+	c := testBootQuery(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	c.CurrentUser = user
+	payload := []byte("plain-text-upload")
+	up, err := wp.SaveUploadedMedia(c, "notes.txt", bytes.NewReader(payload), int64(len(payload)))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() {
+		_ = os.Remove(up.AbsPath)
+		if c.DB != nil {
+			q, args, _ := c.DB.Prepare("DELETE FROM "+c.DB.Posts()+" WHERE ID = %d", up.ID)
+			_, _ = c.DB.Exec(q, args...)
+		}
+	})
+	if up.MimeType != "text/plain" {
+		t.Fatalf("mime=%q want text/plain", up.MimeType)
+	}
+}

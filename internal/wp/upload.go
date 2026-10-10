@@ -4,7 +4,6 @@ package wp
 import (
 	"fmt"
 	"io"
-	"mime"
 	"os"
 	"path/filepath"
 	"strings"
@@ -33,6 +32,11 @@ func SaveUploadedMedia(c *Context, filename string, r io.Reader, size int64) (*U
 	filename = sanitizeUploadName(filename)
 	if filename == "" || filename == "." || filename == ".." {
 		return nil, fmt.Errorf("wp: SaveUploadedMedia: empty filename")
+	}
+	// P8.24: reject filenames outside upload_mimes / get_allowed_mime_types.
+	preCheck := CheckFiletype(c, filename, nil)
+	if preCheck.Ext == "" || preCheck.Type == "" {
+		return nil, fmt.Errorf("wp: SaveUploadedMedia: sorry, this file type is not permitted for security reasons")
 	}
 
 	uploads := GetUploadDir(c)
@@ -65,7 +69,23 @@ func SaveUploadedMedia(c *Context, filename string, r io.Reader, size int64) (*U
 		return nil, fmt.Errorf("wp: SaveUploadedMedia: empty upload")
 	}
 
-	mimeType := mimeFromFilename(destName)
+	// P8.24: resolve mime via CheckFiletypeAndExt (upload_mimes + real image mime).
+	checked := CheckFiletypeAndExt(c, abs, destName, nil)
+	if checked.Ext == "" || checked.Type == "" {
+		_ = os.Remove(abs)
+		return nil, fmt.Errorf("wp: SaveUploadedMedia: sorry, this file type is not permitted for security reasons")
+	}
+	if checked.ProperFilename != "" {
+		proper := sanitizeUploadName(filepath.Base(checked.ProperFilename))
+		if proper != "" && proper != destName {
+			newAbs := filepath.Join(dir, proper)
+			if err := os.Rename(abs, newAbs); err == nil {
+				abs = newAbs
+				destName = proper
+			}
+		}
+	}
+	mimeType := checked.Type
 	rel := UploadFixedSubdir + "/" + destName
 	url := strings.TrimRight(uploads.Baseurl, "/") + "/" + rel
 	title := strings.TrimSuffix(destName, filepath.Ext(destName))
@@ -121,30 +141,4 @@ func insertAttachmentRow(c *Context, author int64, now, title, slug, mimeType, g
 
 func sanitizeUploadName(name string) string {
 	return SanitizeFileName(strings.TrimSpace(name))
-}
-
-func mimeFromFilename(name string) string {
-	ext := strings.ToLower(filepath.Ext(name))
-	if ext == "" {
-		return "application/octet-stream"
-	}
-	if mt := mime.TypeByExtension(ext); mt != "" {
-		return mt
-	}
-	switch ext {
-	case ".jpg", ".jpeg":
-		return "image/jpeg"
-	case ".png":
-		return "image/png"
-	case ".gif":
-		return "image/gif"
-	case ".webp":
-		return "image/webp"
-	case ".pdf":
-		return "application/pdf"
-	case ".mp3":
-		return "audio/mpeg"
-	default:
-		return "application/octet-stream"
-	}
 }
