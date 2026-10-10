@@ -33,115 +33,151 @@
 
 - prefix: wp-login.php
   go: internal/login
-  status: todo
+  status: partial
   task: P6.1
   api: n/a
 
 - prefix: wp-cron.php
   go: internal/wp/cron.go
-  status: todo
+  status: partial
   task: P3.8
   api: n/a
 
 - prefix: wp-comments-post.php
-  go: internal/frontend
-  status: todo
+  go: internal/server
+  status: partial
   task: P5.8
   api: n/a
 
 - prefix: index.php
   go: internal/server
-  status: todo
+  status: partial
   task: P3.1
   api: n/a
 
 - prefix: wp-blog-header.php
   go: internal/server
-  status: todo
+  status: partial
   task: P3.1
   api: n/a
 
 - prefix: wp-load.php
   go: internal/config
-  status: todo
+  status: done
   task: P1.2
   api: n/a
 
 - prefix: wp-settings.php
   go: internal/wp/boot.go
-  status: todo
+  status: partial
   task: P1.5
   api: n/a
 
 - prefix: wp-includes/class-wpdb.php
   go: internal/db
-  status: todo
+  status: done
   task: P1.3
   api: internal
 
 - prefix: wp-includes/plugin.php
-  go: internal/wp/plugin.go
-  status: todo
+  go: internal/wp/hooks.go
+  status: done
   task: P1.4
   api: exported
 
 - prefix: wp-includes/class-wp-hook.php
-  go: internal/wp/hook.go
-  status: todo
+  go: internal/wp/hooks.go
+  status: done
   task: P1.4
   api: internal
 
 - prefix: wp-includes/cache.php
   go: internal/wp/cache.go
-  status: todo
+  status: done
   task: P1.6
   api: exported
 
 - prefix: wp-includes/option.php
   go: internal/wp/option.go
-  status: todo
+  status: done
   task: P1.7
   api: exported
 
 - prefix: wp-includes/meta.php
   go: internal/wp/meta.go
-  status: todo
+  status: done
   task: P1.8
   api: exported
 
 - prefix: wp-includes/kses.php
   go: internal/wp/kses.go
-  status: todo
+  status: done
   task: P1.11
   api: exported
 
 - prefix: wp-includes/formatting.php
   go: internal/wp/formatting.go
-  status: todo
+  status: done
   task: P1.10
+  api: exported
+
+- prefix: wp-includes/l10n.php
+  go: internal/wp/locale.go
+  status: partial
+  task: P1.9
+  api: exported
+
+- prefix: wp-includes/functions.php
+  go: internal/wp/dates.go
+  status: partial
+  task: P2.13
+  api: exported
+
+- prefix: wp-includes/pluggable.php
+  go: internal/wp/auth.go
+  status: partial
+  task: P2.1
+  api: exported
+
+- prefix: wp-includes/user.php
+  go: internal/wp/user.go
+  status: partial
+  task: P2.2
+  api: exported
+
+- prefix: wp-includes/capabilities.php
+  go: internal/wp/capabilities.go
+  status: partial
+  task: P2.3
   api: exported
 
 - prefix: wp-includes/html-api/
   go: internal/htmlapi
-  status: todo
+  status: partial
   task: P1.12
   api: internal
 
 - prefix: wp-includes/rest-api/
   go: internal/rest
-  status: todo
+  status: partial
   task: P4
   api: exported
 
+- prefix: wp-includes/style-engine/
+  go: internal/blocks/style_engine.go
+  status: partial
+  task: P5.12
+  api: internal
+
 - prefix: wp-includes/block-supports/
-  go: internal/blocks/supports
-  status: todo
-  task: P5.2
+  go: internal/blocks/supports.go
+  status: partial
+  task: P5.10
   api: internal
 
 - prefix: wp-includes/blocks/
-  go: internal/blocks/library
-  status: todo
+  go: internal/blocks
+  status: partial
   task: P5.3
   api: internal
 
@@ -171,7 +207,7 @@
 
 - prefix: wp-includes/ID3/
   go: internal/wp/media.go
-  status: todo
+  status: partial
   task: P2.10
   api: n/a
 
@@ -199,9 +235,15 @@
   task: ""
   api: n/a
 
+- prefix: wp-includes/js/wp-emoji
+  go: internal/wp/emoji.go
+  status: partial
+  task: P3.12
+  api: n/a
+
 - prefix: wp-includes/
   go: internal/wp
-  status: todo
+  status: partial
   task: P1
   api: partial
 
@@ -243,56 +285,62 @@
 
 - prefix: wp-admin/includes/schema.php
   go: internal/db
-  status: todo
+  status: partial
   task: P1.3
   api: internal
 
 - prefix: wp-admin/includes/upgrade.php
-  go: internal/install
-  status: todo
-  task: P6.2
+  go: internal/wp/install.go
+  status: partial
+  task: P6.4
   api: internal
 
 - prefix: wp-admin/includes/ajax-actions.php
-  go: internal/ajax
-  status: todo
-  task: P7
+  go: internal/admin/ajax.go
+  status: partial
+  task: P7.3
+  api: n/a
+
+- prefix: wp-admin/nav-menus.php
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.9
   api: n/a
 
 - prefix: wp-admin/
   go: internal/admin
-  status: todo
+  status: partial
   task: P7
   api: n/a
 
 - prefix: wp-content/plugins/hello.php
   go: plugins/hellodolly
-  status: todo
+  status: done
   task: P9.7
   api: n/a
 
 - prefix: wp-content/themes/twentytwentytwo/
-  go: internal/wp/themeshims
-  status: todo
-  task: P5.7
+  go: internal/theme
+  status: partial
+  task: P5.4
   api: n/a
 
 - prefix: wp-content/themes/twentytwentythree/
-  go: internal/wp/themeshims
-  status: todo
-  task: P5.7
+  go: internal/theme
+  status: partial
+  task: P5.4
   api: n/a
 
 - prefix: wp-content/themes/twentytwentyfour/
-  go: internal/wp/themeshims
-  status: todo
-  task: P5.7
+  go: internal/theme
+  status: partial
+  task: P5.4
   api: n/a
 
 - prefix: wp-content/themes/twentytwentyfive/
-  go: internal/wp/themeshims
-  status: todo
-  task: P5.7
+  go: internal/theme
+  status: partial
+  task: P5.4
   api: n/a
 
 - prefix: wp-content/themes/
