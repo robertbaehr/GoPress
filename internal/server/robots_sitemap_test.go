@@ -58,6 +58,12 @@ func TestRobotsTXTFilter(t *testing.T) {
 	c := testBoot(t)
 	c.Hooks.AddFilter("robots_txt", func(value any, args ...any) any {
 		out, _ := value.(string)
+		if len(args) < 1 {
+			t.Fatal("expected public bool arg")
+		}
+		if _, ok := args[0].(bool); !ok {
+			t.Fatalf("public arg type %T", args[0])
+		}
 		return out + "Disallow: /private/\n"
 	}, 10, 2)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}

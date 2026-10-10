@@ -861,6 +861,45 @@ func TestEnsureSearchTemplateParts(t *testing.T) {
 	}
 }
 
+func TestFrontSearchRobotsNoindex(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?s=Hello", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `content='max-image-preview:large, noindex'`) &&
+		!strings.Contains(body, `content='noindex, max-image-preview:large'`) {
+		// Accept either directive order; must include both.
+		if !strings.Contains(body, "noindex") || !strings.Contains(body, "max-image-preview:large") {
+			t.Fatalf("expected search robots noindex + max-image-preview: %q", body)
+		}
+	}
+}
+
+func TestFrontRobotsFilter(t *testing.T) {
+	c := testBoot(t)
+	c.Hooks.AddFilter("wp_robots", func(value any, _ ...any) any {
+		m, _ := value.(map[string]any)
+		if m == nil {
+			m = map[string]any{}
+		}
+		m["noarchive"] = true
+		return m
+	}, 10, 1)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	body := rec.Body.String()
+	if !strings.Contains(body, "noarchive") || !strings.Contains(body, "max-image-preview:large") {
+		t.Fatalf("expected wp_robots filter output: %q", body)
+	}
+}
+
 func TestFrontSearchDocumentTitlePartsFilter(t *testing.T) {
 	c := testBoot(t)
 	c.Hooks.AddFilter("document_title_parts", func(value any, _ ...any) any {

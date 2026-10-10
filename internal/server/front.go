@@ -2024,6 +2024,10 @@ func (f *Front) renderSingularShim(w http.ResponseWriter, c *wp.Context, post *s
 
 // renderEmbed serves the post embed endpoint (P3.18) — theme-compat/embed.php shape.
 func (f *Front) renderEmbed(w http.ResponseWriter, c *wp.Context, vars map[string]string) {
+	if c.Scope == nil {
+		c.Scope = wp.NewRequestScope()
+	}
+	c.Scope.IsEmbed = true
 	post, err := loadSingularPost(c, vars)
 	if err != nil {
 		http.Error(w, "post: "+err.Error()+"\n", http.StatusInternalServerError)
@@ -2046,6 +2050,8 @@ func (f *Front) renderEmbed(w http.ResponseWriter, c *wp.Context, vars map[strin
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\" class=\"no-js\">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
+	// P3.90: embed_head includes wp_robots (noindex on embeds).
+	b.WriteString(frontRobotsMetaTag(c))
 	b.WriteString("<title>")
 	b.WriteString(html.EscapeString(post.Title))
 	b.WriteString(" &#8212; ")
@@ -3945,13 +3951,99 @@ func writeArchiveRelLinks(b *strings.Builder, c *wp.Context, home string) {
 	b.WriteString(wp.ArchiveRelPrevNextHTML(base, paged, maxPages))
 }
 
-// frontRobotsMetaTag returns the <meta name='robots' …> line (wp_robots subset, P3.44).
-// When blog_public=0: noindex, nofollow. Otherwise: max-image-preview:large.
+// frontRobotsMetaTag returns the <meta name='robots' …> line (wp_robots, P3.44 / P3.90).
+// Applies the wp_robots filter after default directives matching WP core callbacks:
+// noindex/nofollow when blog_public=0; noindex on search/embed; max-image-preview:large when public.
 func frontRobotsMetaTag(c *wp.Context) string {
-	if !optionTruthy(c, "blog_public") {
-		return "<meta name='robots' content='noindex, nofollow' />\n"
+	robots := frontRobotsDirectives(c)
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("wp_robots", robots); v != nil {
+			switch t := v.(type) {
+			case map[string]any:
+				robots = t
+			case map[string]bool:
+				robots = map[string]any{}
+				for k, val := range t {
+					robots[k] = val
+				}
+			}
+		}
 	}
-	return "<meta name='robots' content='max-image-preview:large' />\n"
+	content := formatRobotsDirectives(robots)
+	if content == "" {
+		return ""
+	}
+	return "<meta name='robots' content='" + html.EscapeString(content) + "' />\n"
+}
+
+// frontRobotsDirectives builds the default wp_robots directive map (P3.90).
+func frontRobotsDirectives(c *wp.Context) map[string]any {
+	public := optionTruthy(c, "blog_public")
+	robots := map[string]any{}
+	if !public {
+		// wp_robots_noindex → wp_robots_no_robots when blog_public=0.
+		robots["noindex"] = true
+		robots["nofollow"] = true
+		return robots
+	}
+	// wp_robots_max_image_preview_large when public.
+	robots["max-image-preview"] = "large"
+	if c != nil && c.Scope != nil {
+		// wp_robots_noindex_search / wp_robots_noindex_embeds.
+		if c.Scope.IsSearch || c.Scope.IsEmbed {
+			robots["noindex"] = true
+		}
+	}
+	return robots
+}
+
+// formatRobotsDirectives joins wp_robots directives into a meta content string (P3.90).
+func formatRobotsDirectives(robots map[string]any) string {
+	if len(robots) == 0 {
+		return ""
+	}
+	// Stable order for common directives (matches typical WP output).
+	order := []string{"max-image-preview", "noindex", "nofollow", "noarchive", "nosnippet"}
+	seen := map[string]bool{}
+	var parts []string
+	appendDir := func(k string, v any) {
+		k = strings.TrimSpace(k)
+		if k == "" || seen[k] {
+			return
+		}
+		seen[k] = true
+		switch t := v.(type) {
+		case bool:
+			if t {
+				parts = append(parts, k)
+			}
+		case string:
+			t = strings.TrimSpace(t)
+			if t != "" {
+				parts = append(parts, k+":"+t)
+			}
+		default:
+			if v != nil {
+				s := strings.TrimSpace(fmt.Sprint(v))
+				if s != "" && s != "false" && s != "0" {
+					if s == "true" || s == "1" {
+						parts = append(parts, k)
+					} else {
+						parts = append(parts, k+":"+s)
+					}
+				}
+			}
+		}
+	}
+	for _, k := range order {
+		if v, ok := robots[k]; ok {
+			appendDir(k, v)
+		}
+	}
+	for k, v := range robots {
+		appendDir(k, v)
+	}
+	return strings.Join(parts, ", ")
 }
 
 // writeFrontHeadLinks emits wp_head discovery links (feeds, api.w.org, oEmbed, canonical).
