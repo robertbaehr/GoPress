@@ -1054,6 +1054,26 @@
   task: P8.12
   api: exported
 
+# P8.14: suggested privacy policy text changed notice + cache.
+- prefix: wp-admin/includes/class-wp-privacy-policy-content.php#text_change_check
+  go: internal/wp/privacy_policy_updated.go
+  status: partial
+  task: P8.14
+  api: exported
+  notes: "P8.14 — TextChangeCheck + policy-text-updated notice"
+
+- prefix: wp-admin/includes/class-wp-privacy-policy-content.php#policy_text_changed_notice
+  go: internal/wp/privacy_policy_updated.go
+  status: partial
+  task: P8.14
+  api: exported
+
+- prefix: wp-admin/includes/class-wp-privacy-policy-content.php#_policy_page_updated
+  go: internal/wp/privacy_policy_updated.go
+  status: partial
+  task: P8.14
+  api: exported
+
 # P7.41: save wp_page_for_privacy_policy on options-privacy.php.
 - prefix: wp-admin/options-privacy.php
   go: internal/admin/admin.go
