@@ -192,7 +192,7 @@ func TestCustomizerOutOfScope(t *testing.T) {
 	c := bootOrSkip(t)
 	ck := loginCookie(t, c)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
-	req := httptest.NewRequest(http.MethodGet, "/wp-admin/customize.php", nil)
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/customize.php?return=/wp-admin/themes.php", nil)
 	req.AddCookie(ck)
 	rec := httptest.NewRecorder()
 	srv.ServeHTTP(rec, req)
@@ -205,6 +205,38 @@ func TestCustomizerOutOfScope(t *testing.T) {
 	}
 	if !strings.Contains(body, "site-editor.php") {
 		t.Fatalf("expected site editor link, got %q", body)
+	}
+	if !strings.Contains(body, "wp-customizer") {
+		t.Fatalf("expected wp-customizer body class, got %q", body)
+	}
+	if !strings.Contains(body, "not allowed to customize") {
+		t.Fatalf("expected customize capability denial, got %q", body)
+	}
+	if !strings.Contains(body, `href="/wp-admin/themes.php"`) {
+		t.Fatalf("expected validated return link, got %q", body)
+	}
+	if rec.Header().Get("X-GoPress-Customizer") != "disabled" {
+		t.Fatalf("missing X-GoPress-Customizer header")
+	}
+}
+
+func TestCustomizerRejectsExternalReturn(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/customize.php?return=https://evil.example/", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if strings.Contains(body, "evil.example") {
+		t.Fatalf("external return must be rejected: %q", body)
+	}
+	if !strings.Contains(body, `href="/wp-admin/"`) {
+		t.Fatalf("expected fallback return, got %q", body)
 	}
 }
 

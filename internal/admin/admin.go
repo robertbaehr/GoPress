@@ -4064,18 +4064,41 @@ func privacyPolicyGuideSearchScript() string {
 `
 }
 
-// serveCustomizerGone rejects the Customizer as out of scope (P7.6).
+// serveCustomizerGone rejects the Customizer as out of scope (P7.6 / P7.88).
+// Mirrors customize.php bootstrap: logged-in gate (caller), customize capability
+// denial messaging, optional validated return URL, and Site Editor fallback.
 func (h *Handler) serveCustomizerGone(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
+	returnURL := "/wp-admin/"
+	if r != nil {
+		if raw := strings.TrimSpace(r.URL.Query().Get("return")); raw != "" {
+			if safe := wp.ValidateRedirect(c, raw, ""); safe != "" {
+				returnURL = safe
+			}
+		}
+	}
+	// P7.88: customize maps to do_not_allow in GoPress (Customizer gone).
+	canCustomize := c != nil && c.CurrentUser != nil && c.UserCan(c.CurrentUser, "customize")
+
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n")
 	b.WriteString("<title>Customizer &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin\">\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui wp-customizer js iframe\">\n")
+	b.WriteString("<div class=\"wrap\" id=\"customize-controls\">\n")
+	if !canCustomize {
+		b.WriteString("<h1>You need a higher level of permission.</h1>\n")
+		b.WriteString("<p>Sorry, you are not allowed to customize this site.</p>\n")
+	}
 	b.WriteString("<h1>Customizer unavailable</h1>\n")
 	b.WriteString("<p>The Customizer is out of scope for GoPress. Use the <a href=\"/wp-admin/site-editor.php\">Site Editor</a> instead.</p>\n")
-	b.WriteString("</body>\n</html>\n")
+	b.WriteString("<p><a class=\"button\" href=\"")
+	b.WriteString(html.EscapeString(returnURL))
+	b.WriteString("\">&larr; Back</a></p>\n")
+	b.WriteString("</div>\n</body>\n</html>\n")
+	w.Header().Set("X-GoPress-Customizer", "disabled")
 	writeHTML(w, http.StatusForbidden, b.String())
 }
 
