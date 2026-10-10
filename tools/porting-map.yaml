@@ -307,6 +307,13 @@
   task: P5.31
   api: internal
 
+# P4.47: REST PATCH/PUT /wp/v2/media/{id} title + alt_text.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-attachments-controller.php#update
+  go: internal/rest/media_write.go
+  status: partial
+  task: P4.47
+  api: n/a
+
 - prefix: wp-includes/template.php
   go: internal/wp/template_hierarchy.go
   status: partial
