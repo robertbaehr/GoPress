@@ -26,6 +26,13 @@
   task: ""
   api: n/a
 
+# P3.32: /rsd.xml stub (xmlrpc.php?rsd stays 403).
+- prefix: rsd.xml
+  go: internal/server/rsd.go
+  status: partial
+  task: P3.32
+  api: n/a
+
 - prefix: wp-signup.php
   go: Tier 2
   status: out-of-scope
