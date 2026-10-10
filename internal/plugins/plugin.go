@@ -41,6 +41,10 @@ func LoadActive(c *wp.Context) error {
 	if err := LoadMUPlugins(c); err != nil {
 		return err
 	}
+	// P9.3: detect PHP drop-ins (advanced-cache.php, object-cache.php, …) as unsupported.
+	if err := CheckDropIns(c); err != nil {
+		return err
+	}
 	if c == nil || c.Options == nil {
 		return nil
 	}
