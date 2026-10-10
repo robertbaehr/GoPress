@@ -753,11 +753,6 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 		b.WriteString("\"><td class=\"plugin-title\"><strong>")
 		b.WriteString(html.EscapeString(p.Name))
 		b.WriteString("</strong>")
-		if p.Version != "" {
-			b.WriteString(" <span class=\"plugin-version\">")
-			b.WriteString(html.EscapeString(p.Version))
-			b.WriteString("</span>")
-		}
 		b.WriteString("<div class=\"row-actions visible\">")
 		if active {
 			nonce := c.CreateNonce("deactivate-plugin_" + p.File)
@@ -775,13 +770,38 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 			b.WriteString("\">Activate</a></span>")
 		}
 		b.WriteString("</div>")
-		b.WriteString("</td><td class=\"column-description desc\"><p>")
+		b.WriteString("</td><td class=\"column-description desc\"><div class=\"plugin-description\"><p>")
 		b.WriteString(html.EscapeString(p.Description))
-		b.WriteString("</p>")
+		b.WriteString("</p></div>")
+		// Plugin header meta line (P9.5): Version | By Author | Visit plugin site.
+		b.WriteString("<div class=\"plugin-version-author-uri\">")
+		var metaParts []string
+		if p.Version != "" {
+			metaParts = append(metaParts, "Version "+html.EscapeString(p.Version))
+		}
 		if p.Author != "" {
-			b.WriteString("<p class=\"authors\">By ")
-			b.WriteString(html.EscapeString(p.Author))
-			b.WriteString("</p>")
+			author := html.EscapeString(p.Author)
+			if p.AuthorURI != "" {
+				author = `<a href="` + html.EscapeString(p.AuthorURI) + `">` + author + `</a>`
+			}
+			metaParts = append(metaParts, "By "+author)
+		}
+		if p.PluginURI != "" {
+			metaParts = append(metaParts, `<a href="`+html.EscapeString(p.PluginURI)+`" target="_blank">Visit plugin site</a>`)
+		}
+		b.WriteString(strings.Join(metaParts, " | "))
+		b.WriteString("</div>")
+		if p.RequiresWP != "" || p.RequiresPHP != "" {
+			b.WriteString("<div class=\"plugin-requirements\">")
+			var reqs []string
+			if p.RequiresWP != "" {
+				reqs = append(reqs, "Requires WordPress "+html.EscapeString(p.RequiresWP))
+			}
+			if p.RequiresPHP != "" {
+				reqs = append(reqs, "Requires PHP "+html.EscapeString(p.RequiresPHP))
+			}
+			b.WriteString(strings.Join(reqs, " | "))
+			b.WriteString("</div>")
 		}
 		b.WriteString("</td></tr>\n")
 	}
