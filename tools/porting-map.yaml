@@ -776,6 +776,13 @@
   task: P8.9
   api: exported
 
+# P3.37 / P10.35: file-level link-template row (fragments above are docs-only).
+- prefix: wp-includes/link-template.php
+  go: internal/wp/link_template.go
+  status: partial
+  task: P3.37
+  api: exported
+
 - prefix: wp-includes/template.php
   go: internal/wp/template_hierarchy.go
   status: partial
@@ -1392,10 +1399,11 @@
   task: P7.14
   api: n/a
 
+# P9.9 / P10.35: file-level plugin.php admin includes (headers + activate hooks).
 - prefix: wp-admin/includes/plugin.php
-  go: internal/plugins/headers.go
+  go: internal/plugins/plugin.go
   status: partial
-  task: P9.2
+  task: P9.9
   api: exported
 
 # P9.4: activate/deactivate Hello Dolly via plugins.php.
