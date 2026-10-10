@@ -80,6 +80,9 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderTable(block)
 	case "core/html":
 		out = e.renderHTML(block)
+	case "core/shortcode":
+		// P5.80: wpautop on shortcode text; expansion via DoShortcode later.
+		out = e.renderShortcode(block)
 	case "core/details":
 		out = e.renderDetails(block)
 	case "core/code":

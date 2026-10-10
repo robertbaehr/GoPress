@@ -4700,3 +4700,18 @@
   task: P10.71
   api: n/a
   notes: "P10.71 — STATUS refresh after rss block, modified_*, columns, referer, content_feed, export expire"
+
+# P5.80: core/shortcode — wpautop on shortcode text; expand via DoShortcode.
+- prefix: wp-includes/blocks/shortcode.php
+  go: internal/blocks/shortcode.go
+  status: partial
+  task: P5.80
+  api: internal
+  notes: "P5.80 — renderShortcode wpautop on text/InnerHTML; shortcodes expand in the_content"
+
+- prefix: wp-includes/blocks/shortcode/block.json
+  go: internal/rest/block_types.go
+  status: partial
+  task: P5.80
+  api: n/a
+  notes: "P5.80 — REST block-types library entry for core/shortcode"

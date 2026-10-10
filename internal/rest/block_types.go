@@ -40,6 +40,7 @@ func knownBlockTypes() []BlockType {
 		{"core/quote", "Quote", "text", "Give quoted text visual emphasis.", false},
 		{"core/code", "Code", "text", "Display code snippets that respect your spacing and tabs.", false},
 		{"core/html", "Custom HTML", "widgets", "Add custom HTML code and preview it as you edit.", false},
+		{"core/shortcode", "Shortcode", "widgets", "Insert additional custom elements with a WordPress shortcode.", false},
 		{"core/group", "Group", "design", "Gather blocks in a layout container.", false},
 		{"core/columns", "Columns", "design", "Display content in multiple columns, with blocks added to each column.", false},
 		{"core/column", "Column", "design", "A single column within a columns block.", false},
