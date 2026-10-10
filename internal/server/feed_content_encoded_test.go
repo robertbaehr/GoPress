@@ -77,6 +77,39 @@ func TestRSSContentEncodedBodyHelpers(t *testing.T) {
 	}
 }
 
+func TestTheExcerptRSSFilterOnDescription(t *testing.T) {
+	c := testBootFeedCats(t)
+	c.Hooks.AddFilter("the_excerpt_rss", func(value any, args ...any) any {
+		s, _ := value.(string)
+		return s + "<!--excerpt-rss-->"
+	}, 10, 1)
+
+	got := applyTheExcerptRSS(c, "Hello]]>World")
+	if !strings.Contains(got, "]]&gt;") {
+		t.Fatalf("expected CDATA escape, got %q", got)
+	}
+	if !strings.Contains(got, "<!--excerpt-rss-->") {
+		t.Fatalf("expected the_excerpt_rss marker, got %q", got)
+	}
+
+	srv := &Server{WP: c, AbsPath: "/workspace/", Front: &Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/feed/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "<!--excerpt-rss-->") {
+		t.Fatal("expected the_excerpt_rss applied in /feed/ description")
+	}
+	// Filter should hit description CDATA, not only content:encoded.
+	descIdx := strings.Index(body, "<description><![CDATA[")
+	if descIdx < 0 || !strings.Contains(body[descIdx:descIdx+400], "<!--excerpt-rss-->") {
+		t.Fatalf("marker missing near description")
+	}
+}
+
 func TestTheContentFeedFilterOnContentEncoded(t *testing.T) {
 	c := testBootFeedCats(t)
 	c.Hooks.AddFilter("the_content_feed", func(value any, args ...any) any {
