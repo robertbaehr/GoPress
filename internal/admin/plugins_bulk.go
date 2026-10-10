@@ -26,6 +26,9 @@ func handlePluginsBulk(r *http.Request, c *wp.Context) (string, error) {
 	case "enable-auto-update-selected", "disable-auto-update-selected":
 		// P9.16: auto-update bulk actions are out of scope.
 		return "", plugins.RejectAutoUpdate(action)
+	case "update-selected", "update-selected-plugins", "upgrade-plugin":
+		// P9.17: wordpress.org plugin upgrades are out of scope.
+		return "", plugins.RejectPluginUpdate(action)
 	default:
 		return "", nil
 	}

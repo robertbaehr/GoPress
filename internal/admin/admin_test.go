@@ -398,6 +398,10 @@ func TestUpdatePHPOutOfScope(t *testing.T) {
 	if !strings.Contains(body, "plugins.php") || !strings.Contains(body, "themes.php") {
 		t.Fatalf("expected plugins/themes links, got %q", body)
 	}
+	// P9.17: plugin-update gone notice on update.php.
+	if !strings.Contains(body, "gopress-plugin-update-gone") {
+		t.Fatalf("expected plugin-update-gone notice, got %q", body)
+	}
 }
 
 func TestEditPostsListsTitles(t *testing.T) {
@@ -1096,6 +1100,12 @@ func TestPluginsListsHelloDollyHeaders(t *testing.T) {
 	}
 	if !strings.Contains(body, "gopress-plugin-auto-update-gone") || !strings.Contains(body, "Automatic Updates") {
 		t.Fatalf("expected auto-update-gone notice, got %q", body)
+	}
+	if !strings.Contains(body, "gopress-plugin-update-gone") || !strings.Contains(body, "Plugin Updates") {
+		t.Fatalf("expected plugin-update-gone notice, got %q", body)
+	}
+	if !strings.Contains(body, "plugin-update-gone-notice") {
+		t.Fatalf("expected plugin-update row note, got %q", body)
 	}
 	if !strings.Contains(body, "auto-update-gone-notice") {
 		t.Fatalf("expected auto-update column N/A note, got %q", body)
