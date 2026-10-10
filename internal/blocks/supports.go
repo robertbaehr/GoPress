@@ -186,9 +186,7 @@ func layoutClasses(blockName string, attrs map[string]any) []string {
 		if info.FlexWrap == "nowrap" {
 			out = append(out, "is-nowrap")
 		}
-		if info.VerticalAlign != "" && (slug == "flex" || slug == "grid") {
-			out = append(out, "is-vertical-alignment-"+slugifySupport(info.VerticalAlign))
-		}
+		// verticalAlignment maps to CSS align-items/justify-content only (no classname in WP).
 		out = append(out, className)
 		if bn := blockClassStem(blockName); bn != "" {
 			out = append(out, bn+"-is-layout-"+slug)
@@ -197,13 +195,18 @@ func layoutClasses(blockName string, attrs map[string]any) []string {
 	return out
 }
 
-// layoutInlineStyles emits root-level flex/grid CSS for layout attrs (P5.29).
+// layoutInlineStyles emits root-level flex/grid CSS when layout attrs are set (P5.29).
 // WP stores these via the style engine; GoPress applies them inline on the wrapper.
+// Only runs for explicit layout attrs so default block layouts stay class-only (front HTML parity).
 func layoutInlineStyles(blockName string, attrs map[string]any) string {
-	info := layoutInfoFromAttrs(blockName, attrs)
-	if !info.FromAttrs && !blockHasDefaultLayout(blockName) {
+	if attrs == nil {
 		return ""
 	}
+	layout, ok := attrs["layout"].(map[string]any)
+	if !ok || layout == nil {
+		return ""
+	}
+	info := layoutInfoFromAttrs(blockName, attrs)
 	var parts []string
 	switch info.Type {
 	case "flex":
@@ -224,7 +227,7 @@ func layoutInlineStyles(blockName string, attrs map[string]any) string {
 			parts = append(parts, "flex-direction:column")
 			if j, ok := justifyMap[info.Justify]; ok {
 				parts = append(parts, "align-items:"+j)
-			} else {
+			} else if info.Justify == "" {
 				parts = append(parts, "align-items:flex-start")
 			}
 			if a, ok := alignMap[info.VerticalAlign]; ok {
@@ -324,7 +327,7 @@ func layoutInfoFromAttrs(blockName string, attrs map[string]any) layoutInfo {
 
 func defaultLayoutType(blockName string) string {
 	switch blockName {
-	case "core/columns", "core/navigation", "core/buttons", "core/gallery":
+	case "core/columns", "core/navigation", "core/buttons":
 		return "flex"
 	case "core/column", "core/group", "core/query", "core/post-template", "core/post-content", "core/quote":
 		return "default" // → flow

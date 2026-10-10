@@ -154,10 +154,11 @@ func TestBlockSupportsLayoutFlexClasses(t *testing.T) {
 		"is-vertical",
 		"is-content-justification-center",
 		"is-nowrap",
-		"is-vertical-alignment-top",
 		"display:flex",
 		"flex-direction:column",
 		"flex-wrap:nowrap",
+		"align-items:center",
+		"justify-content:flex-start",
 	} {
 		if !strings.Contains(out, want) {
 			t.Fatalf("missing %q in %q", want, out)
@@ -182,12 +183,20 @@ func TestBlockSupportsLayoutGridClasses(t *testing.T) {
 	}
 }
 
-func TestBlockSupportsGalleryDefaultFlex(t *testing.T) {
-	in := `<!-- wp:gallery -->
-<figure class="wp-block-gallery">X</figure>
-<!-- /wp:gallery -->`
+func TestBlockSupportsLayoutFlexHorizontalJustify(t *testing.T) {
+	in := `<!-- wp:group {"layout":{"type":"flex","justifyContent":"space-between","verticalAlignment":"center"}} -->
+<div class="wp-block-group">X</div>
+<!-- /wp:group -->`
 	out := blocks.Render(in)
-	if !strings.Contains(out, "is-layout-flex") {
-		t.Fatalf("gallery should default to flex layout: %q", out)
+	for _, want := range []string{
+		"is-layout-flex",
+		"is-content-justification-space-between",
+		"display:flex",
+		"justify-content:space-between",
+		"align-items:center",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
 	}
 }
