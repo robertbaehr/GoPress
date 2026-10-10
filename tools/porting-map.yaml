@@ -637,6 +637,19 @@
   task: P2.45
   api: exported
 
+# P2.46: array_key_first / array_key_last helpers.
+- prefix: wp-includes/compat.php#array_key_first
+  go: internal/wp/array_key.go
+  status: done
+  task: P2.46
+  api: exported
+
+- prefix: wp-includes/compat.php#array_key_last
+  go: internal/wp/array_key.go
+  status: done
+  task: P2.46
+  api: exported
+
 # P2.38: wp_array_slice_assoc.
 - prefix: wp-includes/functions.php#wp_array_slice_assoc
   go: internal/wp/array_slice_assoc.go
