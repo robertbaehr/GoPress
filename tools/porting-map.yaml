@@ -152,9 +152,9 @@
   api: exported
 
 - prefix: wp-includes/functions.php
-  go: internal/wp/dates.go
+  go: internal/wp/auth_check.go
   status: partial
-  task: P2.13
+  task: P2.19
   api: exported
 
 - prefix: wp-includes/pluggable.php

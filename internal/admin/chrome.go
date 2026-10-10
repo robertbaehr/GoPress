@@ -105,7 +105,7 @@ func (ch adminChrome) openHTML() string {
 	return b.String()
 }
 
-func (ch adminChrome) closeHTML() string {
+func (ch adminChrome) closeHTMLWith(c *wp.Context) string {
 	var b strings.Builder
 	b.WriteString("</div><!-- .wrap -->\n")
 	b.WriteString("</div><!-- #wpbody-content -->\n")
@@ -116,6 +116,9 @@ func (ch adminChrome) closeHTML() string {
 	b.WriteString("<p id=\"footer-upgrade\" class=\"alignright\">GoPress admin stub</p>\n")
 	b.WriteString("</div><!-- #wpfooter -->\n")
 	b.WriteString("</div><!-- #wpwrap -->\n")
+	if c != nil {
+		b.WriteString(c.AuthCheckHTML())
+	}
 	b.WriteString("</body>\n</html>\n")
 	return b.String()
 }
@@ -194,7 +197,7 @@ func writeAdminPage(w http.ResponseWriter, c *wp.Context, ch adminChrome, innerH
 	var b strings.Builder
 	b.WriteString(ch.openHTML())
 	b.WriteString(innerHTML)
-	b.WriteString(ch.closeHTML())
+	b.WriteString(ch.closeHTMLWith(c))
 	writeHTML(w, http.StatusOK, b.String())
 }
 

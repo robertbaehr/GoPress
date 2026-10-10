@@ -119,6 +119,42 @@ func TestAdminAjaxLoggedIn(t *testing.T) {
 	}
 }
 
+func TestAdminAjaxAuthCheck(t *testing.T) {
+	c := bootOrSkip(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/admin-ajax.php?action=wp-auth-check", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("anon status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	var anon map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &anon); err != nil {
+		t.Fatalf("anon json: %v", err)
+	}
+	if anon["wp-auth-check"] != false {
+		t.Fatalf("anon expected false, got %#v", anon)
+	}
+
+	ck := loginCookie(t, c)
+	req = httptest.NewRequest(http.MethodPost, "/wp-admin/admin-ajax.php", strings.NewReader("action=wp-auth-check"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("auth status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	var auth map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &auth); err != nil {
+		t.Fatalf("auth json: %v", err)
+	}
+	if auth["wp-auth-check"] != true {
+		t.Fatalf("auth expected true, got %#v", auth)
+	}
+}
+
 func TestAdminAjaxEmptyAction(t *testing.T) {
 	c := bootOrSkip(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
