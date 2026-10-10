@@ -1285,6 +1285,14 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P2.93 — IsWPError / IsWPErrorWithHooks fires is_wp_error_instance"
 
+# P2.95: wp_die handler selection + default/ajax/json renderers (no process exit).
+- prefix: wp-includes/functions.php#wp_die
+  go: internal/wp/die.go
+  status: partial
+  task: P2.95
+  api: exported
+  notes: "P2.95 — SelectDieHandler + ProcessDieInput + HTML/JSON/Ajax DieResult; WriteDie"
+
 # P2.46: array_key_first / array_key_last helpers.
 - prefix: wp-includes/compat.php#array_key_first
   go: internal/wp/array_key.go
