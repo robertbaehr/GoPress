@@ -974,6 +974,21 @@
   api: exported
   notes: "P2.63 — IsIniValueChangeable; static access table + fail-open unknown"
 
+# P2.64: wp_is_json_request / wp_is_json_media_type.
+- prefix: wp-includes/load.php#wp_is_json_request
+  go: internal/wp/json_request.go
+  status: done
+  task: P2.64
+  api: exported
+  notes: "P2.64 — IsJSONRequest from Accept/Content-Type via IsJSONMediaType"
+
+- prefix: wp-includes/load.php#wp_is_json_media_type
+  go: internal/wp/json_request.go
+  status: done
+  task: P2.64
+  api: exported
+  notes: "P2.64 — application/json (+json / json+oembed) media-type match"
+
 - prefix: wp-includes/class-wp-list-util.php
   go: internal/wp/filter_object_list.go
   status: partial
