@@ -67,9 +67,13 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderCover(block)
 	case "core/media-text":
 		out = e.renderMediaText(block)
+	case "core/columns":
+		out = e.renderColumns(block)
+	case "core/column":
+		out = e.renderColumn(block)
 	case "core/heading", "core/list", "core/list-item",
 		"core/code", "core/html",
-		"core/group", "core/columns", "core/column",
+		"core/group",
 		"core/pullquote", "core/preformatted", "core/verse", "core/table",
 		"core/details":
 		out = e.renderSaved(block)
