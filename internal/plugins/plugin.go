@@ -188,3 +188,77 @@ func ActivePluginFiles(c *wp.Context) ([]string, error) {
 	}
 	return out, nil
 }
+
+// IsPluginActive reports whether pluginFile is listed in active_plugins (P9.4).
+func IsPluginActive(c *wp.Context, pluginFile string) bool {
+	pluginFile = strings.TrimSpace(pluginFile)
+	if pluginFile == "" {
+		return false
+	}
+	files, err := ActivePluginFiles(c)
+	if err != nil {
+		return false
+	}
+	for _, f := range files {
+		if f == pluginFile {
+			return true
+		}
+	}
+	return false
+}
+
+// ActivatePlugin adds pluginFile to active_plugins and runs its Go shim (P9.4).
+func ActivatePlugin(c *wp.Context, pluginFile string) error {
+	pluginFile = strings.TrimSpace(pluginFile)
+	if pluginFile == "" {
+		return fmt.Errorf("plugins: empty plugin file")
+	}
+	if IsPluginActive(c, pluginFile) {
+		return nil
+	}
+	files, err := ActivePluginFiles(c)
+	if err != nil {
+		return err
+	}
+	files = append(files, pluginFile)
+	if err := saveActivePlugins(c, files); err != nil {
+		return err
+	}
+	activateRegistered(c, pluginFile)
+	return nil
+}
+
+// DeactivatePlugin removes pluginFile from active_plugins (P9.4).
+func DeactivatePlugin(c *wp.Context, pluginFile string) error {
+	pluginFile = strings.TrimSpace(pluginFile)
+	if pluginFile == "" {
+		return fmt.Errorf("plugins: empty plugin file")
+	}
+	files, err := ActivePluginFiles(c)
+	if err != nil {
+		return err
+	}
+	out := make([]string, 0, len(files))
+	for _, f := range files {
+		if f != pluginFile {
+			out = append(out, f)
+		}
+	}
+	return saveActivePlugins(c, out)
+}
+
+func saveActivePlugins(c *wp.Context, files []string) error {
+	if c == nil || c.Options == nil {
+		return fmt.Errorf("plugins: nil options")
+	}
+	arr := make(map[any]any, len(files))
+	for i, f := range files {
+		arr[int64(i)] = f
+	}
+	serialized, err := wp.SerializePHP(arr)
+	if err != nil {
+		return err
+	}
+	_, err = c.Options.UpdateOption("active_plugins", serialized, "yes")
+	return err
+}
