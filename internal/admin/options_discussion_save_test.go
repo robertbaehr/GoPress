@@ -25,8 +25,10 @@ func TestOptionsDiscussionSaveViaOptionsPHP(t *testing.T) {
 
 	keys := []string{
 		"default_comment_status", "default_ping_status", "require_name_email",
-		"comment_registration", "thread_comments", "thread_comments_depth",
-		"comments_per_page", "show_avatars",
+		"comment_registration", "close_comments_for_old_posts", "close_comments_days_old",
+		"thread_comments", "thread_comments_depth", "page_comments", "comments_per_page",
+		"comments_notify", "moderation_notify", "comment_moderation",
+		"comment_previously_approved", "show_avatars",
 	}
 	orig := map[string]any{}
 	for _, k := range keys {
