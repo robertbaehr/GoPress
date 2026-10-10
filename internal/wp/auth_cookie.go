@@ -210,6 +210,45 @@ func (set *AuthCookieSet) WriteAuthCookies(w http.ResponseWriter, path string) {
 	write(set.LoggedInName, set.LoggedInValue, set.Expire)
 }
 
+// ClearAuthCookies expires auth and logged_in cookies (wp_clear_auth_cookie).
+func (c *Context) ClearAuthCookies(w http.ResponseWriter, path string) {
+	if c == nil || w == nil {
+		return
+	}
+	if path == "" {
+		path = "/"
+	}
+	expired := time.Unix(1, 0)
+	for _, name := range []string{
+		c.AuthCookieName("auth"),
+		c.AuthCookieName("secure_auth"),
+		c.AuthCookieName("logged_in"),
+	} {
+		http.SetCookie(w, &http.Cookie{
+			Name:     name,
+			Value:    " ",
+			Path:     path,
+			Expires:  expired,
+			MaxAge:   -1,
+			HttpOnly: true,
+		})
+	}
+}
+
+// DestroySessionToken removes one session token from usermeta (wp_destroy_current_session subset).
+func (c *Context) DestroySessionToken(userID int64, token string) error {
+	if c == nil || c.Meta == nil || userID <= 0 || token == "" {
+		return nil
+	}
+	sessions, err := c.loadSessionTokens(userID)
+	if err != nil || sessions == nil {
+		return err
+	}
+	key := sessionTokenVerifier(token)
+	delete(sessions, key)
+	return c.saveSessionTokens(userID, sessions)
+}
+
 // AuthenticateRequest reads the logged_in auth cookie and sets CurrentUser when valid.
 // Invalid or missing cookies leave CurrentUser nil (anonymous).
 func (c *Context) AuthenticateRequest() {

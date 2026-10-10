@@ -7,6 +7,7 @@ import (
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/robertbaehr/GoPress/internal/config"
 	"github.com/robertbaehr/GoPress/internal/login"
@@ -126,6 +127,46 @@ func TestLoginPOSTBadPassword(t *testing.T) {
 	}
 	if !strings.Contains(rec.Body.String(), "Error") {
 		t.Fatalf("expected error HTML, got %q", rec.Body.String())
+	}
+}
+
+func TestLogoutClearsCookies(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?action=logout&redirect_to=/wp-admin/", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	loc := rec.Header().Get("Location")
+	if !strings.Contains(loc, "loggedout=true") && !strings.Contains(loc, "wp-login.php") {
+		t.Fatalf("Location=%q", loc)
+	}
+	cleared := map[string]bool{}
+	for _, ck := range rec.Result().Cookies() {
+		if ck.Name == set.LoggedInName || ck.Name == set.AuthName {
+			if ck.MaxAge >= 0 && (ck.Expires.IsZero() || ck.Expires.After(time.Now())) {
+				t.Fatalf("expected expired cookie %s: %#v", ck.Name, ck)
+			}
+			cleared[ck.Name] = true
+		}
+	}
+	if !cleared[set.LoggedInName] {
+		t.Fatalf("expected cleared logged_in cookie, got %#v", rec.Result().Cookies())
 	}
 }
 
