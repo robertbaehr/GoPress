@@ -652,6 +652,14 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P4.110 — Context.AuthenticatedAppPasswordUUID / GetAuthenticatedAppPasswordUUID"
 
+# P4.119: GET /wp/v2/taxonomies/{taxonomy} + _links + edit-context visibility.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-taxonomies-controller.php
+  go: internal/rest/taxonomies.go
+  status: partial
+  task: P4.119
+  api: exported
+  notes: "P4.119 — single taxonomy; collection/item _links; edit visibility; invalid 404"
+
 # P4.44: POST /wp/v2/categories and /wp/v2/tags for editors (manage_categories).
 # P4.65: DELETE /wp/v2/categories/{id} and /wp/v2/tags/{id} (force=true).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-terms-controller.php
