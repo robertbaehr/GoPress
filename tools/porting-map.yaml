@@ -951,6 +951,14 @@
   task: P2.41
   api: exported
 
+# P2.63: wp_is_ini_value_changeable (branch alias: ini-value-change-safe).
+- prefix: wp-includes/load.php#wp_is_ini_value_changeable
+  go: internal/wp/ini_value_changeable.go
+  status: partial
+  task: P2.63
+  api: exported
+  notes: "P2.63 — IsIniValueChangeable; static access table + fail-open unknown"
+
 - prefix: wp-includes/class-wp-list-util.php
   go: internal/wp/filter_object_list.go
   status: partial
