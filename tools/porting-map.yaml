@@ -492,6 +492,13 @@
   task: P4.50
   api: exported
 
+# P4.61: GET /wp/v2/block-types/{namespace} and /{namespace}/{name}.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-types-controller.php
+  go: internal/rest/block_types.go
+  status: partial
+  task: P4.61
+  api: exported
+
 # P7.35: save menu location assignments on nav-menus.php Manage Locations.
 - prefix: wp-admin/nav-menus.php#locations
   go: internal/admin/admin.go

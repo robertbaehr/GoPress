@@ -70,6 +70,15 @@ func knownBlockTypes() []BlockType {
 }
 
 func (s *Server) serveBlockTypes(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	s.serveBlockTypesFiltered(w, r, c, strings.TrimSpace(r.URL.Query().Get("namespace")))
+}
+
+// serveBlockTypesNamespace lists block types in a namespace path segment (P4.61).
+func (s *Server) serveBlockTypesNamespace(w http.ResponseWriter, r *http.Request, c *wp.Context, ns string) {
+	s.serveBlockTypesFiltered(w, r, c, strings.TrimSpace(ns))
+}
+
+func (s *Server) serveBlockTypesFiltered(w http.ResponseWriter, r *http.Request, c *wp.Context, ns string) {
 	if r.Method != http.MethodGet {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
@@ -90,7 +99,6 @@ func (s *Server) serveBlockTypes(w http.ResponseWriter, r *http.Request, c *wp.C
 		})
 		return
 	}
-	ns := strings.TrimSpace(r.URL.Query().Get("namespace"))
 	all := attachBlockVariations(c, knownBlockTypes())
 	if ns == "" {
 		writeJSON(w, http.StatusOK, all)
@@ -104,6 +112,53 @@ func (s *Server) serveBlockTypes(w http.ResponseWriter, r *http.Request, c *wp.C
 		}
 	}
 	writeJSON(w, http.StatusOK, filtered)
+}
+
+// serveBlockTypeItem serves GET /wp/v2/block-types/{namespace}/{name} (P4.61).
+func (s *Server) serveBlockTypeItem(w http.ResponseWriter, r *http.Request, c *wp.Context, namespace, name string) {
+	if r.Method != http.MethodGet {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
+			"code":    "rest_no_route",
+			"message": "No route was found matching the URL and request method.",
+			"data":    map[string]any{"status": 405},
+		})
+		return
+	}
+	if !canEditPosts(c) {
+		status := http.StatusUnauthorized
+		if c != nil && c.CurrentUser != nil {
+			status = http.StatusForbidden
+		}
+		writeJSON(w, status, map[string]any{
+			"code":    "rest_block_type_cannot_view",
+			"message": "Sorry, you are not allowed to manage block types.",
+			"data":    map[string]any{"status": status},
+		})
+		return
+	}
+	namespace = strings.TrimSpace(namespace)
+	name = strings.TrimSpace(name)
+	if namespace == "" || name == "" || strings.Contains(namespace, "..") || strings.Contains(name, "..") {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"code":    "rest_block_type_invalid",
+			"message": "Invalid block type.",
+			"data":    map[string]any{"status": 404},
+		})
+		return
+	}
+	full := namespace + "/" + name
+	all := attachBlockVariations(c, knownBlockTypes())
+	for _, bt := range all {
+		if bt.Name == full {
+			writeJSON(w, http.StatusOK, bt)
+			return
+		}
+	}
+	writeJSON(w, http.StatusNotFound, map[string]any{
+		"code":    "rest_block_type_invalid",
+		"message": "Invalid block type.",
+		"data":    map[string]any{"status": 404},
+	})
 }
 
 // attachBlockVariations copies registered variations onto block-type payloads (P5.37).
