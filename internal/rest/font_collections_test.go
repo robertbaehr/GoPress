@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/robertbaehr/GoPress/internal/rest"
@@ -75,5 +76,71 @@ func TestFontCollectionsListAndItem(t *testing.T) {
 	(&rest.Server{}).Handle(rec, req, c)
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("missing status=%d", rec.Code)
+	}
+}
+
+func TestFontCollectionsOPTIONSAndContext(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodOptions, "/wp-json/wp/v2/font-collections", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("OPTIONS status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if allow := rec.Header().Get("Allow"); !strings.Contains(allow, "OPTIONS") {
+		t.Fatalf("Allow=%q", allow)
+	}
+	var schema map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &schema); err != nil {
+		t.Fatal(err)
+	}
+	if schema["title"] != "font-collection" {
+		t.Fatalf("schema title=%v", schema["title"])
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/font-collections?context=bogus", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("bogus context status=%d", rec.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/font-collections?context=edit", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("edit context status=%d body=%s", rec.Code, rec.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/font-collections?page=99", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("invalid page status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var errBody map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &errBody); err != nil {
+		t.Fatal(err)
+	}
+	if errBody["code"] != "rest_post_invalid_page_number" {
+		t.Fatalf("code=%v", errBody["code"])
 	}
 }
