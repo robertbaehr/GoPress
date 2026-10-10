@@ -1370,9 +1370,17 @@
 - prefix: docs/STATUS.md
   go: docs/STATUS.md
   status: partial
-  task: P10.50
+  task: P10.51
   api: n/a
-  notes: "P10.50 — STATUS summary through group/menu-locations DELETE/edit-tags delete/unique filename/feed image/wp_lang/e2e"
+  notes: "P10.51 — STATUS summary through spacer/font-families write/users bulk/ext2type/feed language/export email"
+
+# P10.51: STATUS/PORTING refresh after P5.59–P8.15.
+- prefix: docs/STATUS.md#P10.51
+  go: docs/STATUS.md
+  status: partial
+  task: P10.51
+  api: n/a
+  notes: "P10.51 — summarize spacer, font-families write, users bulk, ext2type, feed language, export email"
 
 # P10.45: e2e WXR export download + STATUS/PORTING refresh after P5.53–P6.21.
 - prefix: tests/e2e/wxr-export.spec.js
