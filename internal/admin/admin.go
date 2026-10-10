@@ -694,8 +694,34 @@ func (h *Handler) serveOptionsMedia(w http.ResponseWriter, r *http.Request, c *w
 }
 
 func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	notice := ""
+	if r.Method == http.MethodPost || r.URL.Query().Get("action") != "" {
+		msg, err := handlePluginAction(r, c)
+		if err != nil {
+			http.Error(w, "plugins: "+err.Error()+"\n", http.StatusForbidden)
+			return
+		}
+		if msg != "" {
+			// PRG after mutation.
+			http.Redirect(w, r, "/wp-admin/plugins.php?"+msg, http.StatusFound)
+			return
+		}
+	}
+	if r.URL.Query().Get("activate") == "true" {
+		notice = "activate"
+	}
+	if r.URL.Query().Get("deactivate") == "true" {
+		notice = "deactivate"
+	}
+
 	var b strings.Builder
 	b.WriteString("<h1>Plugins</h1>\n")
+	switch notice {
+	case "activate":
+		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p>Plugin <strong>activated</strong>.</p></div>\n")
+	case "deactivate":
+		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p>Plugin <strong>deactivated</strong>.</p></div>\n")
+	}
 	b.WriteString("<table class=\"wp-list-table widefat plugins\">\n")
 	b.WriteString("<thead><tr><th scope=\"col\">Plugin</th><th scope=\"col\">Description</th></tr></thead>\n")
 	b.WriteString("<tbody id=\"the-list\">\n")
@@ -709,7 +735,14 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 		b.WriteString("<td class=\"column-description desc\"><p>GoPress plugin management stub (P7.1).</p></td></tr>\n")
 	}
 	for _, p := range installed {
-		b.WriteString("<tr class=\"inactive\" data-plugin=\"")
+		active := plugins.IsPluginActive(c, p.File)
+		rowClass := "inactive"
+		if active {
+			rowClass = "active"
+		}
+		b.WriteString("<tr class=\"")
+		b.WriteString(rowClass)
+		b.WriteString("\" data-plugin=\"")
 		b.WriteString(html.EscapeString(p.File))
 		b.WriteString("\"><td class=\"plugin-title\"><strong>")
 		b.WriteString(html.EscapeString(p.Name))
@@ -719,6 +752,23 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 			b.WriteString(html.EscapeString(p.Version))
 			b.WriteString("</span>")
 		}
+		b.WriteString("<div class=\"row-actions visible\">")
+		if active {
+			nonce := c.CreateNonce("deactivate-plugin_" + p.File)
+			b.WriteString("<span class=\"deactivate\"><a href=\"/wp-admin/plugins.php?action=deactivate&amp;plugin=")
+			b.WriteString(html.EscapeString(url.QueryEscape(p.File)))
+			b.WriteString("&amp;_wpnonce=")
+			b.WriteString(html.EscapeString(nonce))
+			b.WriteString("\">Deactivate</a></span>")
+		} else {
+			nonce := c.CreateNonce("activate-plugin_" + p.File)
+			b.WriteString("<span class=\"activate\"><a href=\"/wp-admin/plugins.php?action=activate&amp;plugin=")
+			b.WriteString(html.EscapeString(url.QueryEscape(p.File)))
+			b.WriteString("&amp;_wpnonce=")
+			b.WriteString(html.EscapeString(nonce))
+			b.WriteString("\">Activate</a></span>")
+		}
+		b.WriteString("</div>")
 		b.WriteString("</td><td class=\"column-description desc\"><p>")
 		b.WriteString(html.EscapeString(p.Description))
 		b.WriteString("</p>")
@@ -731,6 +781,47 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 	}
 	b.WriteString("</tbody>\n</table>\n")
 	writeAdminPage(w, c, newAdminChrome(c, "Plugins", "plugins-php"), b.String())
+}
+
+// handlePluginAction activates/deactivates a plugin via GET or POST (P9.4).
+// Returns a query fragment notice key ("activate" / "deactivate") on success.
+func handlePluginAction(r *http.Request, c *wp.Context) (string, error) {
+	_ = r.ParseForm()
+	action := strings.TrimSpace(r.FormValue("action"))
+	if action == "" {
+		action = strings.TrimSpace(r.URL.Query().Get("action"))
+	}
+	pluginFile := strings.TrimSpace(r.FormValue("plugin"))
+	if pluginFile == "" {
+		pluginFile = strings.TrimSpace(r.URL.Query().Get("plugin"))
+	}
+	if action == "" || pluginFile == "" {
+		return "", nil
+	}
+	nonce := r.FormValue("_wpnonce")
+	if nonce == "" {
+		nonce = r.URL.Query().Get("_wpnonce")
+	}
+	switch action {
+	case "activate":
+		if c.VerifyNonce(nonce, "activate-plugin_"+pluginFile) == 0 {
+			return "", fmt.Errorf("invalid nonce")
+		}
+		if err := plugins.ActivatePlugin(c, pluginFile); err != nil {
+			return "", err
+		}
+		return "activate=true", nil
+	case "deactivate":
+		if c.VerifyNonce(nonce, "deactivate-plugin_"+pluginFile) == 0 {
+			return "", fmt.Errorf("invalid nonce")
+		}
+		if err := plugins.DeactivatePlugin(c, pluginFile); err != nil {
+			return "", err
+		}
+		return "deactivate=true", nil
+	default:
+		return "", nil
+	}
 }
 
 func (h *Handler) serveProfile(w http.ResponseWriter, r *http.Request, c *wp.Context) {

@@ -11,6 +11,7 @@ import (
 	"github.com/robertbaehr/GoPress/internal/admin"
 	"github.com/robertbaehr/GoPress/internal/config"
 	"github.com/robertbaehr/GoPress/internal/login"
+	"github.com/robertbaehr/GoPress/internal/plugins"
 	"github.com/robertbaehr/GoPress/internal/server"
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
@@ -368,6 +369,96 @@ func TestPluginsListsHelloDollyHeaders(t *testing.T) {
 	if !strings.Contains(body, "Matt Mullenweg") {
 		t.Fatalf("expected author from headers, got %q", body)
 	}
+	if !strings.Contains(body, "action=activate") {
+		t.Fatalf("expected activate link, got %q", body)
+	}
+}
+
+func TestPluginsActivateDeactivateHelloDolly(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() {
+		_, _ = c.Options.UpdateOption("active_plugins", `a:0:{}`, "yes")
+	})
+	_, _ = c.Options.UpdateOption("active_plugins", `a:0:{}`, "yes")
+
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/plugins.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("list status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	activateHref := extractHref(body, "action=activate")
+	if activateHref == "" {
+		t.Fatalf("missing activate href in %q", body)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, activateHref, nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("activate status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	if !plugins.IsPluginActive(c, "hello.php") {
+		t.Fatal("expected hello.php active after activate")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/plugins.php", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	body = rec.Body.String()
+	if !strings.Contains(body, `class="active"`) {
+		t.Fatalf("expected active row: %q", body)
+	}
+	deactivateHref := extractHref(body, "action=deactivate")
+	if deactivateHref == "" {
+		t.Fatalf("missing deactivate href in %q", body)
+	}
+
+	u, err := url.Parse(deactivateHref)
+	if err != nil {
+		t.Fatal(err)
+	}
+	form := url.Values{}
+	form.Set("action", u.Query().Get("action"))
+	form.Set("plugin", u.Query().Get("plugin"))
+	form.Set("_wpnonce", u.Query().Get("_wpnonce"))
+	req = httptest.NewRequest(http.MethodPost, "/wp-admin/plugins.php", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("deactivate status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	if plugins.IsPluginActive(c, "hello.php") {
+		t.Fatal("expected hello.php inactive after deactivate")
+	}
+}
+
+func extractHref(body, needle string) string {
+	idx := strings.Index(body, needle)
+	if idx < 0 {
+		return ""
+	}
+	// Walk back to href="
+	start := strings.LastIndex(body[:idx], `href="`)
+	if start < 0 {
+		return ""
+	}
+	start += len(`href="`)
+	end := strings.Index(body[start:], `"`)
+	if end < 0 {
+		return ""
+	}
+	href := body[start : start+end]
+	return strings.ReplaceAll(href, "&amp;", "&")
 }
 
 func TestProfileUpdateDisplayName(t *testing.T) {
