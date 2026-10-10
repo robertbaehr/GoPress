@@ -122,6 +122,8 @@ func (e *Env) RenderBlock(block Block) string {
 		return e.renderNavigationLink(block)
 	case "core/home-link":
 		return e.renderHomeLink(block)
+	case "core/loginout":
+		return e.renderLoginout(block)
 	case "core/page-list":
 		// Standalone page-list (outside navigation): wrap as a simple list.
 		items := e.renderPageList(block)

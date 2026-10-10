@@ -91,6 +91,8 @@ func (e *Env) renderNavigationItems(items []Block) string {
 			b.WriteString(e.renderNavigationLink(item))
 		case "core/home-link":
 			b.WriteString(e.renderHomeLink(item))
+		case "core/loginout":
+			b.WriteString(e.renderLoginout(item))
 		case "core/page-list":
 			b.WriteString(e.renderPageList(item))
 		case "core/navigation-submenu":

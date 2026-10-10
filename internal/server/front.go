@@ -3480,6 +3480,50 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			// Front block templates set this via env flag when rendering home.
 			return false
 		},
+		// P5.74: core/loginout resolvers.
+		IsLoggedIn: func() bool {
+			return c != nil && c.CurrentUser != nil
+		},
+		CurrentURL: func() string {
+			if c == nil || c.Req == nil || c.Req.URL == nil {
+				return ""
+			}
+			home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+			path := c.Req.URL.RequestURI()
+			if home == "" {
+				return path
+			}
+			scheme := "http"
+			if c.Req.TLS != nil || strings.EqualFold(c.Req.Header.Get("X-Forwarded-Proto"), "https") {
+				scheme = "https"
+			}
+			host := c.Req.Host
+			if host == "" {
+				return home + path
+			}
+			return scheme + "://" + host + path
+		},
+		LoginURL: func(redirect string) string {
+			home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+			u := home + "/wp-login.php"
+			if redirect != "" {
+				u += "?redirect_to=" + url.QueryEscape(redirect)
+			}
+			return u
+		},
+		LogoutURL: func(redirect string) string {
+			home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+			u := home + "/wp-login.php?action=logout"
+			if redirect != "" {
+				u += "&redirect_to=" + url.QueryEscape(redirect)
+			}
+			if c != nil {
+				if n := c.CreateNonce("log-out"); n != "" {
+					u += "&_wpnonce=" + url.QueryEscape(n)
+				}
+			}
+			return u
+		},
 		FilterPostHTML: func(htmlBody string) string {
 			return wp.Texturize(htmlBody)
 		},
