@@ -155,3 +155,28 @@ func (u *Users) storeUser(user *User) {
 	}
 	u.Cache.Set(strconv.FormatInt(user.ID, 10), user, "users")
 }
+
+// UpdateDisplayName sets wp_users.display_name for the given user (P7.28).
+func (c *Context) UpdateDisplayName(userID int64, displayName string) error {
+	if c == nil || c.DB == nil || userID <= 0 {
+		return fmt.Errorf("wp: UpdateDisplayName: invalid state")
+	}
+	displayName = strings.TrimSpace(displayName)
+	q, args, err := c.DB.Prepare(
+		"UPDATE "+c.DB.Users()+" SET display_name = %s WHERE ID = %d",
+		displayName, userID,
+	)
+	if err != nil {
+		return err
+	}
+	if _, err := c.DB.Exec(q, args...); err != nil {
+		return err
+	}
+	if c.Users != nil && c.Users.Cache != nil {
+		c.Users.Cache.Delete(strconv.FormatInt(userID, 10), "users")
+	}
+	if c.CurrentUser != nil && c.CurrentUser.ID == userID {
+		c.CurrentUser.DisplayName = displayName
+	}
+	return nil
+}
