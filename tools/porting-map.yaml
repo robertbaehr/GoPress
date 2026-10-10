@@ -2791,6 +2791,14 @@
   task: P3.25
   api: n/a
 
+# P3.84: deepen category archive (document_title_parts, category_template_content, shim).
+- prefix: wp-includes/taxonomy.php#category-archive-p384
+  go: internal/server/front.go
+  status: partial
+  task: P3.84
+  api: n/a
+  notes: "P3.84 — Scope ensure; document_title_parts; category_template_content; shim excerpts/body classes"
+
 - prefix: wp-includes/feed-atom.php
   go: internal/server/front.go
   status: partial
