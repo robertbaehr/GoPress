@@ -1742,6 +1742,7 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 	}
 
 	// P3.50: atom:link rel=self via get_self_link() (request URI).
+	// P3.51: no PubSubHubbub atom:link rel="hub" (out of scope; never emit hub links).
 	self := feedSelfLink(r, c)
 
 	var b strings.Builder
@@ -1899,6 +1900,7 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString("\t<id>")
 	b.WriteString(xmlEscape(atomID))
 	b.WriteString("</id>\n")
+	// P3.51: self only — no PubSubHubbub <link rel="hub">.
 	b.WriteString("\t<link rel=\"self\" type=\"application/atom+xml\" href=\"")
 	b.WriteString(xmlEscape(self))
 	b.WriteString("\" />\n\n")

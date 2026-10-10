@@ -98,6 +98,21 @@
   api: n/a
   notes: "P3.46 — trackbacks gone; singular HTML omits RDF ping block"
 
+# P3.51: never emit PubSubHubbub hub links in feeds.
+- prefix: wp-includes/feed-rss2.php#pubsubhubbub
+  go: internal/server/front.go
+  status: done
+  task: P3.51
+  api: n/a
+  notes: "P3.51 — no atom:link/link rel=hub (PubSubHubbub out of scope)"
+
+- prefix: wp-includes/feed-atom.php#pubsubhubbub
+  go: internal/server/front.go
+  status: done
+  task: P3.51
+  api: n/a
+  notes: "P3.51 — Atom feed omits hub discovery links"
+
 # P3.32: /rsd.xml stub (xmlrpc.php?rsd stays 403).
 # P10.31: e2e coverage in tests/e2e/rsd.spec.js.
 - prefix: rsd.xml

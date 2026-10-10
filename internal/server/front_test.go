@@ -360,6 +360,27 @@ func TestFrontFeedPrettyPath(t *testing.T) {
 	}
 }
 
+func TestFrontFeedOmitsPubSubHubbub(t *testing.T) {
+	// P3.51: feeds must not advertise PubSubHubbub hub endpoints.
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	for _, path := range []string{"/?feed=rss2", "/feed/", "/?feed=atom", "/feed/atom/", "/comments/feed/"} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("%s status=%d", path, rec.Code)
+		}
+		body := strings.ToLower(rec.Body.String())
+		if strings.Contains(body, `rel="hub"`) || strings.Contains(body, "rel='hub'") {
+			t.Fatalf("%s must not emit rel=hub: %q", path, rec.Body.String()[:min(500, rec.Body.Len())])
+		}
+		if strings.Contains(body, "pubsubhubbub") || strings.Contains(body, "pub.sub") {
+			t.Fatalf("%s must not mention pubsubhubbub: %q", path, rec.Body.String()[:min(500, rec.Body.Len())])
+		}
+	}
+}
+
 func TestFrontFeedAtom(t *testing.T) {
 	c := testBoot(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
