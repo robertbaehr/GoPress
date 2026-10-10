@@ -48,3 +48,34 @@ func TestPrivacyStubScreens(t *testing.T) {
 		}
 	}
 }
+
+func TestPrivacyExportGeneratesFile(t *testing.T) {
+	c := bootOrSkip(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	form := strings.NewReader("username=privacy-post%40example.com")
+	req := httptest.NewRequest(http.MethodPost, "/wp-admin/export-personal-data.php", form)
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/export-personal-data.php") {
+		t.Fatal("not handled")
+	}
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "Export file generated:") {
+		t.Fatalf("expected generation note, got %q", body)
+	}
+	if !strings.Contains(body, "wp-personal-data-exports") {
+		t.Fatalf("expected export url path, got %q", body)
+	}
+}
