@@ -125,6 +125,30 @@ func TestFrontSingularOmitsXPingback(t *testing.T) {
 	}
 }
 
+func TestFrontSingularOmitsTrackbackRDF(t *testing.T) {
+	// P3.46: trackback_rdf() / xmlns:trackback must not appear on singular HTML.
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	for _, path := range []string{"/?p=1", "/sample-page/"} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		rec := httptest.NewRecorder()
+		srv.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("%s status=%d", path, rec.Code)
+		}
+		body := rec.Body.String()
+		for _, bad := range []string{
+			`xmlns:trackback=`,
+			`trackback:ping=`,
+			`<rdf:RDF xmlns:rdf=`,
+		} {
+			if strings.Contains(body, bad) {
+				t.Fatalf("%s must omit trackback RDF marker %q", path, bad)
+			}
+		}
+	}
+}
+
 func TestFrontSingularOEmbedDiscoveryLinks(t *testing.T) {
 	c := testBoot(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}

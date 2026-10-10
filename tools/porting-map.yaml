@@ -66,6 +66,14 @@
   task: P3.41
   api: n/a
 
+# P3.46: never emit trackback_rdf() / xmlns:trackback on singular HTML.
+- prefix: wp-includes/comment-template.php#trackback_rdf
+  go: internal/server/front.go
+  status: done
+  task: P3.46
+  api: n/a
+  notes: "P3.46 — trackbacks gone; singular HTML omits RDF ping block"
+
 # P3.32: /rsd.xml stub (xmlrpc.php?rsd stays 403).
 # P10.31: e2e coverage in tests/e2e/rsd.spec.js.
 - prefix: rsd.xml

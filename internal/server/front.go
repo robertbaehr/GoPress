@@ -1479,6 +1479,7 @@ func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context
 	b.WriteString("<div class=\"wp-site-blocks\">")
 	b.WriteString(safe)
 	b.WriteString("</div>\n")
+	// trackback_rdf() / xmlns:trackback is intentionally omitted (P3.46): trackbacks are gone.
 	b.WriteString("</body>\n</html>\n")
 
 	setFrontSingularLinks(w, c, post)
