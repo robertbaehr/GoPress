@@ -60,8 +60,12 @@ func (e *Env) RenderBlock(block Block) string {
 		}
 		html = addRootClass(html, "is-layout-flow")
 		out = addRootClass(html, "wp-block-terms-query-is-layout-flow")
+	case "core/image":
+		out = e.renderImage(block)
+	case "core/gallery":
+		out = e.renderGallery(block)
 	case "core/heading", "core/list", "core/list-item",
-		"core/image", "core/code", "core/html",
+		"core/code", "core/html",
 		"core/group", "core/columns", "core/column", "core/buttons", "core/button",
 		"core/pullquote", "core/preformatted", "core/verse", "core/table",
 		"core/file", "core/audio", "core/video", "core/cover", "core/media-text",

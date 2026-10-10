@@ -2836,6 +2836,9 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 	return &blocks.Env{
 		Paged:    paged,
 		MaxPages: maxPages,
+		GetAttachmentURL: func(id int64) string {
+			return wp.GetAttachmentURL(c, id)
+		},
 		LoadTemplatePart: func(slug string) (string, bool) {
 			return wp.ResolveTemplatePart(c, slug)
 		},
