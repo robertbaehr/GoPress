@@ -247,8 +247,5 @@ func commentStatus(approved string) string {
 }
 
 func commentPermalink(home string, postID, commentID int64) string {
-	if postID <= 0 {
-		return fmt.Sprintf("%s/?p=%d#comment-%d", home, postID, commentID)
-	}
 	return fmt.Sprintf("%s/?p=%d#comment-%d", home, postID, commentID)
 }
