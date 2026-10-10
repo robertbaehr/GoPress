@@ -21,8 +21,8 @@ type URLDetails struct {
 
 var (
 	reHTMLTitle   = regexp.MustCompile(`(?is)<title[^>]*>(.*?)</\s*title>`)
-	reHTMLIcon = regexp.MustCompile(`(?is)<link[^>]+rel=["']?(?:icon|shortcut icon|icon shortcut)["']?[^>]*>`)
-	reHrefAttr = regexp.MustCompile(`(?is)href=["']?([^"'\s>]+)`)
+	reHTMLIcon    = regexp.MustCompile(`(?is)<link[^>]+rel=["']?(?:icon|shortcut icon|icon shortcut)["']?[^>]*>`)
+	reHrefAttr    = regexp.MustCompile(`(?is)href=["']?([^"'\s>]+)`)
 	reMetaOG      = regexp.MustCompile(`(?is)<meta\s[^>]*(?:property|name)=["']?(og:title|og:description|og:image|og:image:url|description)["']?[^>]*>`)
 	reMetaContent = regexp.MustCompile(`(?is)content=["']([^"']*)["']`)
 )
