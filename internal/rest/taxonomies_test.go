@@ -35,6 +35,12 @@ func TestTaxonomiesList(t *testing.T) {
 		if tx.Slug != slug || tx.RestNamespace != "wp/v2" || tx.RestBase == "" || tx.Name == "" {
 			t.Fatalf("unexpected taxonomy: %+v", tx)
 		}
+		if tx.Links == nil || tx.Links["collection"] == nil || tx.Links["wp:items"] == nil {
+			t.Fatalf("expected taxonomy _links: %+v", tx.Links)
+		}
+		if tx.Visibility != nil {
+			t.Fatal("view context should omit visibility")
+		}
 	}
 	if !tax["category"].Hierarchical {
 		t.Fatal("category should be hierarchical")
@@ -44,6 +50,59 @@ func TestTaxonomiesList(t *testing.T) {
 	}
 	if tax["category"].RestBase != "categories" || tax["post_tag"].RestBase != "tags" {
 		t.Fatalf("rest_base category=%q tag=%q", tax["category"].RestBase, tax["post_tag"].RestBase)
+	}
+}
+
+func TestTaxonomySingleAndEditVisibility(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/taxonomies/category", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var tx rest.Taxonomy
+	if err := json.Unmarshal(rec.Body.Bytes(), &tx); err != nil {
+		t.Fatalf("json: %v", err)
+	}
+	if tx.Slug != "category" || tx.RestBase != "categories" || tx.Links == nil || tx.Links["wp:items"] == nil {
+		t.Fatalf("unexpected: %+v", tx)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/taxonomies/nope", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("invalid status=%d", rec.Code)
+	}
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Skipf("admin unavailable: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("SetAuthCookie: %v", err)
+	}
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/taxonomies/post_tag?context=edit", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	c.AuthenticateRequest()
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("edit status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var edit rest.Taxonomy
+	if err := json.Unmarshal(rec.Body.Bytes(), &edit); err != nil {
+		t.Fatal(err)
+	}
+	if edit.Visibility == nil || !edit.Visibility.Public || !edit.Visibility.ShowUI {
+		t.Fatalf("expected edit visibility: %+v", edit.Visibility)
 	}
 }
 

@@ -8,15 +8,27 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
+// TaxonomyVisibility is the edit-context visibility object (P4.119).
+type TaxonomyVisibility struct {
+	Public            bool `json:"public"`
+	PubliclyQueryable bool `json:"publicly_queryable"`
+	ShowAdminColumn   bool `json:"show_admin_column"`
+	ShowInNavMenus    bool `json:"show_in_nav_menus"`
+	ShowInQuickEdit   bool `json:"show_in_quick_edit"`
+	ShowUI            bool `json:"show_ui"`
+}
+
 // Taxonomy is a minimal wp/v2 taxonomy object (view context).
 type Taxonomy struct {
-	Name          string   `json:"name"`
-	Slug          string   `json:"slug"`
-	Description   string   `json:"description"`
-	Types         []string `json:"types"`
-	Hierarchical  bool     `json:"hierarchical"`
-	RestBase      string   `json:"rest_base"`
-	RestNamespace string   `json:"rest_namespace"`
+	Name          string              `json:"name"`
+	Slug          string              `json:"slug"`
+	Description   string              `json:"description"`
+	Types         []string            `json:"types"`
+	Hierarchical  bool                `json:"hierarchical"`
+	RestBase      string              `json:"rest_base"`
+	RestNamespace string              `json:"rest_namespace"`
+	Visibility    *TaxonomyVisibility `json:"visibility,omitempty"`
+	Links         map[string]any      `json:"_links,omitempty"`
 }
 
 // Term is a wp/v2 category or tag object (view context).
@@ -34,7 +46,7 @@ type Term struct {
 }
 
 func (s *Server) serveTaxonomies(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	if r.Method != http.MethodGet {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
@@ -42,7 +54,59 @@ func (s *Server) serveTaxonomies(w http.ResponseWriter, r *http.Request, c *wp.C
 		})
 		return
 	}
-	writeJSON(w, http.StatusOK, builtinTaxonomies())
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	edit := strings.EqualFold(r.URL.Query().Get("context"), "edit")
+	includeVis := edit && canManageTerms(c)
+	if edit && !canManageTerms(c) {
+		writeJSON(w, http.StatusUnauthorized, map[string]any{
+			"code":    "rest_cannot_view",
+			"message": "Sorry, you are not allowed to manage terms in this taxonomy.",
+			"data":    map[string]any{"status": 401},
+		})
+		return
+	}
+	out := map[string]Taxonomy{}
+	for slug, tx := range builtinTaxonomies() {
+		out[slug] = prepareTaxonomy(tx, home, includeVis)
+	}
+	writeJSON(w, http.StatusOK, out)
+}
+
+// serveTaxonomyItem handles GET /wp/v2/taxonomies/{taxonomy} (P4.119).
+func (s *Server) serveTaxonomyItem(w http.ResponseWriter, r *http.Request, c *wp.Context, slug string) {
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
+			"code":    "rest_no_route",
+			"message": "No route was found matching the URL and request method.",
+			"data":    map[string]any{"status": 405},
+		})
+		return
+	}
+	tx, ok := builtinTaxonomies()[slug]
+	if !ok {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"code":    "rest_taxonomy_invalid",
+			"message": "Invalid taxonomy.",
+			"data":    map[string]any{"status": 404},
+		})
+		return
+	}
+	edit := strings.EqualFold(r.URL.Query().Get("context"), "edit")
+	includeVis := edit && canManageTerms(c)
+	if edit && !canManageTerms(c) {
+		status := 401
+		if c != nil && c.CurrentUser != nil {
+			status = 403
+		}
+		writeJSON(w, status, map[string]any{
+			"code":    "rest_forbidden_context",
+			"message": "Sorry, you are not allowed to manage terms in this taxonomy.",
+			"data":    map[string]any{"status": status},
+		})
+		return
+	}
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	writeJSON(w, http.StatusOK, prepareTaxonomy(tx, home, includeVis))
 }
 
 func (s *Server) serveCategories(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -116,6 +180,38 @@ func builtinTaxonomies() map[string]Taxonomy {
 			RestBase:      "tags",
 			RestNamespace: "wp/v2",
 		},
+	}
+}
+
+func prepareTaxonomy(tx Taxonomy, home string, includeVisibility bool) Taxonomy {
+	tx.Links = buildTaxonomyLinks(home, tx.Slug, tx.RestBase)
+	if includeVisibility {
+		// Built-in category/post_tag visibility mirrors WP defaults.
+		tx.Visibility = &TaxonomyVisibility{
+			Public:            true,
+			PubliclyQueryable: true,
+			ShowAdminColumn:   true,
+			ShowInNavMenus:    true,
+			ShowInQuickEdit:   true,
+			ShowUI:            true,
+		}
+	}
+	return tx
+}
+
+func buildTaxonomyLinks(home, slug, restBase string) map[string]any {
+	restRoot := strings.TrimRight(home, "/") + "/wp-json/wp/v2"
+	if restBase == "" {
+		restBase = slug
+	}
+	return map[string]any{
+		"collection": []map[string]any{{"href": restRoot + "/taxonomies"}},
+		"wp:items":   []map[string]any{{"href": restRoot + "/" + restBase}},
+		"curies": []map[string]any{{
+			"name":      "wp",
+			"href":      "https://api.w.org/{rel}",
+			"templated": true,
+		}},
 	}
 }
 

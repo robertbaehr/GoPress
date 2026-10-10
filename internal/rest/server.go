@@ -196,6 +196,18 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 		s.serveApplicationPasswords(w, r, c, userKey, uuid)
 	case path == "/wp/v2/taxonomies":
 		s.serveTaxonomies(w, r, c)
+	case strings.HasPrefix(path, "/wp/v2/taxonomies/"):
+		slug := strings.TrimPrefix(path, "/wp/v2/taxonomies/")
+		slug = strings.Trim(slug, "/")
+		if slug == "" || strings.Contains(slug, "/") {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"code":    "rest_no_route",
+				"message": "No route was found matching the URL and request method.",
+				"data":    map[string]any{"status": 404},
+			})
+			return
+		}
+		s.serveTaxonomyItem(w, r, c, slug)
 	case path == "/wp/v2/categories":
 		s.serveCategories(w, r, c)
 	case strings.HasPrefix(path, "/wp/v2/categories/"):
