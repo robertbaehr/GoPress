@@ -2,6 +2,7 @@ package blocks
 
 import (
 	"fmt"
+	"html"
 	"strings"
 )
 
@@ -136,12 +137,17 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/loginout":
 		return e.renderLoginout(block)
 	case "core/page-list":
-		// Standalone page-list (outside navigation): wrap as a simple list.
+		// Standalone page-list (outside navigation): wrap as a simple list (P5.94).
 		items := e.renderPageList(block)
 		if items == "" {
 			return ""
 		}
-		out = `<ul class="wp-block-page-list">` + items + `</ul>`
+		classAttr, styleAttr := pageListWrapperAttrs(block.Attrs)
+		out = `<ul class="` + html.EscapeString(classAttr) + `"`
+		if styleAttr != "" {
+			out += ` style="` + html.EscapeString(styleAttr) + `"`
+		}
+		out += `>` + items + `</ul>`
 	case "core/query":
 		out = e.renderQuery(block)
 	case "core/query-title":

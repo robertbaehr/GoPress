@@ -10,8 +10,13 @@ import (
 func (e *Env) renderNavigation(block Block) string {
 	e = e.ensure()
 	prevNav := e.renderingNavigation
+	prevCtx := e.pageListNav
 	e.renderingNavigation = true
-	defer func() { e.renderingNavigation = prevNav }()
+	e.pageListNav = pageListNavCtxFromAttrs(block.Attrs)
+	defer func() {
+		e.renderingNavigation = prevNav
+		e.pageListNav = prevCtx
+	}()
 	inner := ""
 
 	ref := attrInt64(block.Attrs, "ref")
