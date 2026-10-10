@@ -1087,6 +1087,28 @@
   api: n/a
   notes: "P2.67 — ServeCron sets Scope.IsCron (DOING_CRON)"
 
+# P2.72: get_current_user_id / wp_get_current_user.
+- prefix: wp-includes/user.php#get_current_user_id
+  go: internal/wp/current_user.go
+  status: partial
+  task: P2.72
+  api: exported
+  notes: "P2.72 — GetCurrentUserID / GetCurrentUser from Context.CurrentUser"
+
+- prefix: wp-includes/pluggable.php#wp_get_current_user
+  go: internal/wp/current_user.go
+  status: partial
+  task: P2.72
+  api: exported
+  notes: "P2.72 — GetCurrentUser mirrors wp_get_current_user subset"
+
+- prefix: wp-includes/user.php#get_current_user_id#test
+  go: internal/wp/current_user_test.go
+  status: partial
+  task: P2.72
+  api: n/a
+  notes: "P2.72 — unit coverage for anonymous + authenticated IDs"
+
 # P2.70: wp_get_development_mode / wp_is_development_mode.
 - prefix: wp-includes/load.php#wp_get_development_mode
   go: internal/wp/development_mode.go
