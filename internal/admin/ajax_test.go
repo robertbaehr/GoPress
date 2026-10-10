@@ -24,8 +24,52 @@ func TestAdminAjaxHeartbeatAnon(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
 		t.Fatalf("json: %v body=%q", err, rec.Body.String())
 	}
-	if resp["success"] != true {
-		t.Fatalf("expected success:true, got %#v", resp)
+	if resp["wp-auth-check"] != false {
+		t.Fatalf("expected wp-auth-check:false, got %#v", resp)
+	}
+	if _, ok := resp["server_time"]; !ok {
+		t.Fatalf("expected server_time, got %#v", resp)
+	}
+	if _, ok := resp["success"]; ok {
+		t.Fatalf("unexpected success field: %#v", resp)
+	}
+}
+
+func TestAdminAjaxHeartbeatAuth(t *testing.T) {
+	c := bootOrSkip(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	ck := loginCookie(t, c)
+	req := httptest.NewRequest(http.MethodPost, "/wp-admin/admin-ajax.php", strings.NewReader("action=heartbeat&_nonce=x&screen_id=dashboard"))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	var resp map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &resp); err != nil {
+		t.Fatalf("json: %v body=%q", err, rec.Body.String())
+	}
+	if resp["wp-auth-check"] != true {
+		t.Fatalf("expected wp-auth-check:true, got %#v", resp)
+	}
+}
+
+func TestAdminAjaxRestNonceContentType(t *testing.T) {
+	c := bootOrSkip(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	ck := loginCookie(t, c)
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/admin-ajax.php?action=rest-nonce", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	ct := rec.Header().Get("Content-Type")
+	if !strings.Contains(ct, "text/html") {
+		t.Fatalf("Content-Type=%q want text/html", ct)
 	}
 }
 
