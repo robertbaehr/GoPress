@@ -146,6 +146,10 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/tools.php":
 		h.requireLogin(w, r, c, h.serveTools)
 		return true
+	case "/wp-admin/network.php":
+		// P7.96: Network Setup stub (multisite Tier 2 out of scope).
+		h.requireLogin(w, r, c, h.serveNetwork)
+		return true
 	case "/wp-admin/site-health.php":
 		h.requireLogin(w, r, c, h.serveSiteHealth)
 		return true
