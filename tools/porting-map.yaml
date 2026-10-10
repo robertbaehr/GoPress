@@ -4647,3 +4647,18 @@
   task: P7.80
   api: n/a
   notes: "P7.80 — get/save manageedit-{post|page}columnshidden PHP-serialized"
+
+# P2.75: wp_get_referer + wp_validate_redirect subset.
+- prefix: wp-includes/functions.php#wp_get_referer
+  go: internal/wp/referer.go
+  status: partial
+  task: P2.75
+  api: internal
+  notes: "P2.75 — GetReferer validates raw referer; rejects self + external hosts"
+
+- prefix: wp-includes/pluggable.php#wp_validate_redirect
+  go: internal/wp/referer.go
+  status: partial
+  task: P2.75
+  api: internal
+  notes: "P2.75 — ValidateRedirect relative + home host + allowed_redirect_hosts"
