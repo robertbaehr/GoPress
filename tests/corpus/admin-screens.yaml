@@ -55,11 +55,11 @@
   compare: headers
   nonce: null
 
-# P10.100: network.php Create a Network stub (headers-only).
-- id: admin-network
+# P10.100: about.php What's New stub (headers-only).
+- id: admin-about
   role: admin
   method: GET
-  path: /wp-admin/network.php
+  path: /wp-admin/about.php
   headers: {}
   body: null
   compare: headers
