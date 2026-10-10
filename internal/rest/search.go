@@ -75,9 +75,10 @@ func (s *Server) serveSearch(w http.ResponseWriter, r *http.Request, c *wp.Conte
 	case "post-format":
 		total, results, err = listPostFormatSearch(c, term, perPage, page)
 	default:
-		total, err = countSearch(c, term)
+		postTypes := resolvePostSearchSubtypes(subtype)
+		total, err = countSearch(c, term, postTypes)
 		if err == nil {
-			results, err = listSearchPaged(c, term, perPage, page)
+			results, err = listSearchPaged(c, term, postTypes, perPage, page)
 		}
 	}
 	if err != nil {
@@ -114,7 +115,36 @@ func parseSearchSubtypes(raw []string) []string {
 	return out
 }
 
-func listSearchPaged(c *wp.Context, term string, limit, page int) ([]SearchResult, error) {
+// publicRESTPostSearchTypes are post subtypes exposed by WP_REST_Post_Search_Handler
+// (public + show_in_rest, excluding attachment).
+var publicRESTPostSearchTypes = []string{"post", "page"}
+
+// resolvePostSearchSubtypes filters post search to requested subtypes (P4.67).
+// Empty / unknown / "any" → all publicRESTPostSearchTypes.
+func resolvePostSearchSubtypes(subtype []string) []string {
+	if len(subtype) == 0 {
+		return append([]string(nil), publicRESTPostSearchTypes...)
+	}
+	allowed := map[string]bool{}
+	for _, t := range publicRESTPostSearchTypes {
+		allowed[t] = true
+	}
+	var out []string
+	seen := map[string]bool{}
+	for _, s := range subtype {
+		if !allowed[s] || seen[s] {
+			continue
+		}
+		seen[s] = true
+		out = append(out, s)
+	}
+	if len(out) == 0 {
+		return append([]string(nil), publicRESTPostSearchTypes...)
+	}
+	return out
+}
+
+func listSearchPaged(c *wp.Context, term string, postTypes []string, limit, page int) ([]SearchResult, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
@@ -124,18 +154,30 @@ func listSearchPaged(c *wp.Context, term string, limit, page int) ([]SearchResul
 	if page <= 0 {
 		page = 1
 	}
+	if len(postTypes) == 0 {
+		postTypes = append([]string(nil), publicRESTPostSearchTypes...)
+	}
 	offset := (page - 1) * limit
 	like := "%" + db.EscapeLike(term) + "%"
-	q, args, err := c.DB.Prepare(
+	args := make([]any, 0, len(postTypes)+4)
+	args = append(args, "publish")
+	inParts := make([]string, len(postTypes))
+	for i, pt := range postTypes {
+		inParts[i] = "%s"
+		args = append(args, pt)
+	}
+	args = append(args, like, like, limit, offset)
+	q, prepArgs, err := c.DB.Prepare(
 		"SELECT ID, post_date, post_name, post_title, post_type, post_parent FROM "+c.DB.Posts()+
-			" WHERE post_status = %s AND post_type IN (%s, %s) AND (post_title LIKE %s OR post_content LIKE %s) "+
+			" WHERE post_status = %s AND post_type IN ("+strings.Join(inParts, ", ")+
+			") AND (post_title LIKE %s OR post_content LIKE %s) "+
 			"ORDER BY post_date DESC LIMIT %d OFFSET %d",
-		"publish", "post", "page", like, like, limit, offset,
+		args...,
 	)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := c.DB.GetResults(q, args...)
+	rows, err := c.DB.GetResults(q, prepArgs...)
 	if err != nil {
 		return nil, err
 	}
@@ -147,20 +189,32 @@ func listSearchPaged(c *wp.Context, term string, limit, page int) ([]SearchResul
 	return out, nil
 }
 
-func countSearch(c *wp.Context, term string) (int, error) {
+func countSearch(c *wp.Context, term string, postTypes []string) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
+	if len(postTypes) == 0 {
+		postTypes = append([]string(nil), publicRESTPostSearchTypes...)
+	}
 	like := "%" + db.EscapeLike(term) + "%"
-	q, args, err := c.DB.Prepare(
+	args := make([]any, 0, len(postTypes)+3)
+	args = append(args, "publish")
+	inParts := make([]string, len(postTypes))
+	for i, pt := range postTypes {
+		inParts[i] = "%s"
+		args = append(args, pt)
+	}
+	args = append(args, like, like)
+	q, prepArgs, err := c.DB.Prepare(
 		"SELECT COUNT(*) AS total FROM "+c.DB.Posts()+
-			" WHERE post_status = %s AND post_type IN (%s, %s) AND (post_title LIKE %s OR post_content LIKE %s)",
-		"publish", "post", "page", like, like,
+			" WHERE post_status = %s AND post_type IN ("+strings.Join(inParts, ", ")+
+			") AND (post_title LIKE %s OR post_content LIKE %s)",
+		args...,
 	)
 	if err != nil {
 		return 0, err
 	}
-	row, err := c.DB.GetRow(q, args...)
+	row, err := c.DB.GetRow(q, prepArgs...)
 	if err != nil {
 		return 0, err
 	}

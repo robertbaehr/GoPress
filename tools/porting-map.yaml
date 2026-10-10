@@ -730,6 +730,13 @@
   task: P4.49
   api: n/a
 
+# P4.67: REST /wp/v2/search subtype filter for post search (post|page).
+- prefix: wp-includes/rest-api/search/class-wp-rest-post-search-handler.php#subtype
+  go: internal/rest/search.go
+  status: partial
+  task: P4.67
+  api: n/a
+
 # P7.34: themes.php lists installed themes with name/author/version/description.
 - prefix: wp-admin/themes.php#details
   go: internal/admin/admin.go

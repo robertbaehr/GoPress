@@ -187,3 +187,53 @@ func TestSearchTypeInvalid(t *testing.T) {
 		t.Fatalf("body=%s", rec.Body.String())
 	}
 }
+
+func TestSearchSubtypePage(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/search?search=&subtype=page&per_page=20", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var results []rest.SearchResult
+	if err := json.Unmarshal(rec.Body.Bytes(), &results); err != nil {
+		t.Fatalf("json: %v", err)
+	}
+	if len(results) == 0 {
+		t.Fatal("expected page hits")
+	}
+	for _, r := range results {
+		if r.Subtype != "page" {
+			t.Fatalf("expected subtype=page, got %+v", r)
+		}
+	}
+}
+
+func TestSearchSubtypePost(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/search?search=hello&subtype=post", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var results []rest.SearchResult
+	if err := json.Unmarshal(rec.Body.Bytes(), &results); err != nil {
+		t.Fatalf("json: %v", err)
+	}
+	if len(results) == 0 {
+		t.Fatal("expected post hits")
+	}
+	for _, r := range results {
+		if r.Subtype != "post" {
+			t.Fatalf("expected subtype=post, got %+v", r)
+		}
+	}
+}
