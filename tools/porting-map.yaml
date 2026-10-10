@@ -699,6 +699,12 @@
   task: P3.17
   api: n/a
 
+- prefix: wp-includes/feed-rdf.php
+  go: internal/server/front.go
+  status: partial
+  task: P3.33
+  api: n/a
+
 - prefix: wp-includes/embed.php
   go: internal/wp/oembed_discovery.go
   status: partial

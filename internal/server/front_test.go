@@ -327,6 +327,43 @@ func TestFrontFeedAtomPrettyPath(t *testing.T) {
 	}
 }
 
+func TestFrontFeedRDF(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?feed=rdf", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	ct := rec.Header().Get("Content-Type")
+	if !strings.Contains(ct, "rdf") && !strings.Contains(ct, "xml") {
+		t.Fatalf("content-type=%q", ct)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "<rdf:RDF") || !strings.Contains(body, `xmlns="http://purl.org/rss/1.0/"`) {
+		t.Fatalf("expected RDF feed, got %q", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, "<rdf:Seq>") || !strings.Contains(body, "<item rdf:about=") {
+		t.Fatalf("expected rdf:Seq and items, got %q", body[:min(800, len(body))])
+	}
+}
+
+func TestFrontFeedRDFPrettyPath(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/feed/rdf/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "<rdf:RDF") || !strings.Contains(body, "<channel rdf:about=") {
+		t.Fatalf("expected RDF via pretty path, got %q", body[:min(400, len(body))])
+	}
+}
+
 func TestFrontCommentsFeed(t *testing.T) {
 	c := testBoot(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
