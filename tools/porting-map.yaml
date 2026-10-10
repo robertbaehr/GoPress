@@ -609,6 +609,19 @@
   task: P2.43
   api: exported
 
+# P2.44: wp_list_sort / WP_List_Util::sort.
+- prefix: wp-includes/functions.php#wp_list_sort
+  go: internal/wp/list_sort.go
+  status: done
+  task: P2.44
+  api: exported
+
+- prefix: wp-includes/class-wp-list-util.php#sort
+  go: internal/wp/list_sort.go
+  status: done
+  task: P2.44
+  api: exported
+
 # P2.38: wp_array_slice_assoc.
 - prefix: wp-includes/functions.php#wp_array_slice_assoc
   go: internal/wp/array_slice_assoc.go
