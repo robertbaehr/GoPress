@@ -138,8 +138,14 @@ func TestAdminScreensLoggedIn(t *testing.T) {
 			if !strings.Contains(body, `id="wpadminbar"`) || !strings.Contains(body, `id="adminmenumain"`) || !strings.Contains(body, `id="wpfooter"`) {
 				t.Fatalf("%s missing shared admin chrome: %q", tc.path, body[:min(400, len(body))])
 			}
+			if !strings.Contains(body, "load-styles.php") || !strings.Contains(body, "colors.min.css") {
+				t.Fatalf("%s missing admin CSS links: %q", tc.path, body[:min(600, len(body))])
+			}
 			if ct := rec.Header().Get("Content-Type"); ct != "text/html; charset=UTF-8" {
 				t.Fatalf("%s Content-Type=%q", tc.path, ct)
+			}
+			if sc := rec.Header().Values("Set-Cookie"); len(sc) < 2 {
+				t.Fatalf("%s expected wp-settings Set-Cookie headers, got %#v", tc.path, sc)
 			}
 		}
 	}

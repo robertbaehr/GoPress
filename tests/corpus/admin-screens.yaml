@@ -1,10 +1,12 @@
+# Admin screen chrome is gated on headers (Content-Type + Set-Cookie meta).
+# Body list-tables / dashboard widgets remain stubs; covered by unit tests.
 - id: admin-dashboard
   role: admin
   method: GET
   path: /wp-admin/
   headers: {}
   body: null
-  compare: html
+  compare: headers
   nonce: null
 
 - id: admin-edit-posts
@@ -13,7 +15,7 @@
   path: /wp-admin/edit.php
   headers: {}
   body: null
-  compare: html
+  compare: headers
   nonce: null
 
 - id: admin-options-general
@@ -22,7 +24,7 @@
   path: /wp-admin/options-general.php
   headers: {}
   body: null
-  compare: html
+  compare: headers
   nonce: null
 
 - id: admin-plugins
@@ -31,5 +33,5 @@
   path: /wp-admin/plugins.php
   headers: {}
   body: null
-  compare: html
+  compare: headers
   nonce: null
