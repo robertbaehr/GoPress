@@ -1376,6 +1376,14 @@
   api: exported
   notes: "P4.100 — ?include= / ?exclude= for type=post and type=term"
 
+# P7.87: themes.php search box, theme-count, Add Theme link.
+- prefix: wp-admin/themes.php#search
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.87
+  api: n/a
+  notes: "P7.87 — ?s= filter over name/description/author/slug; theme-count; Add Theme → theme-install.php"
+
 # P7.34: themes.php lists installed themes with name/author/version/description.
 - prefix: wp-admin/themes.php#details
   go: internal/admin/admin.go

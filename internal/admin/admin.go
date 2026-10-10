@@ -2966,6 +2966,20 @@ func (h *Handler) serveThemes(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		}
 	}
 
+	// P7.87: Search installed themes (?s=) over name/description/author/slug.
+	search := strings.TrimSpace(r.URL.Query().Get("s"))
+	if search != "" {
+		q := strings.ToLower(search)
+		filtered := themes[:0]
+		for _, th := range themes {
+			hay := strings.ToLower(strings.Join([]string{th.Slug, th.Name, th.Author, th.Description}, " "))
+			if strings.Contains(hay, q) {
+				filtered = append(filtered, th)
+			}
+		}
+		themes = filtered
+	}
+
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>Themes &lsaquo; ")
@@ -2974,7 +2988,25 @@ func (h *Handler) serveThemes(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	b.WriteString("<body class=\"wp-admin wp-core-ui themes-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap\">\n")
-	b.WriteString("<h1>Themes</h1>\n")
+	b.WriteString("<h1 class=\"wp-heading-inline\">Themes <span class=\"title-count theme-count\">")
+	if search != "" {
+		b.WriteString("&hellip;")
+	} else {
+		b.WriteString(strconv.Itoa(len(themes)))
+	}
+	b.WriteString("</span></h1>\n")
+	if c != nil && c.CurrentUserCan("install_themes") {
+		b.WriteString("<a href=\"/wp-admin/theme-install.php\" class=\"page-title-action\">Add Theme</a>\n")
+	}
+	b.WriteString("<hr class=\"wp-header-end\">\n")
+	b.WriteString("<form class=\"search-form search-themes\" method=\"get\" action=\"/wp-admin/themes.php\">\n")
+	b.WriteString("<p class=\"search-box\">\n")
+	b.WriteString("<label class=\"screen-reader-text\" for=\"wp-filter-search-input\">Search installed themes</label>\n")
+	b.WriteString("<input type=\"search\" id=\"wp-filter-search-input\" class=\"wp-filter-search\" name=\"s\" value=\"")
+	b.WriteString(html.EscapeString(search))
+	b.WriteString("\" placeholder=\"Search installed themes\">\n")
+	b.WriteString("<input type=\"submit\" class=\"button\" value=\"Search Themes\">\n")
+	b.WriteString("</p>\n</form>\n")
 	if activated {
 		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p>New theme activated.</p></div>\n")
 	}
