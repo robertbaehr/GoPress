@@ -801,13 +801,16 @@ func (e *Env) renderSiteLogo(block Block) string {
 	return `<div class="` + classes + `">` + inner + `</div>`
 }
 
-// renderReadMore renders core/read-more as a permalink link (P5.47).
+// renderReadMore renders core/read-more as a permalink link (P5.47 / P5.92).
 func (e *Env) renderReadMore(block Block) string {
 	e = e.ensure()
 	if e.currentPost == nil {
 		return ""
 	}
 	link := strings.TrimSpace(e.currentPost.Link)
+	if link == "" && e.currentPost.ID > 0 {
+		link = fmt.Sprintf("/?p=%d", e.currentPost.ID)
+	}
 	if link == "" {
 		return ""
 	}
@@ -816,19 +819,26 @@ func (e *Env) renderReadMore(block Block) string {
 		title = fmt.Sprintf("untitled post %d", e.currentPost.ID)
 	}
 	moreText := "Read more"
-	if content, ok := block.Attrs["content"].(string); ok && strings.TrimSpace(content) != "" {
-		moreText = strings.TrimSpace(content)
+	if content := strings.TrimSpace(attrString(block.Attrs, "content")); content != "" {
+		moreText = content
 	}
 	target := "_self"
-	if t, ok := block.Attrs["linkTarget"].(string); ok && strings.TrimSpace(t) != "" {
-		target = strings.TrimSpace(t)
+	if t := strings.TrimSpace(attrString(block.Attrs, "linkTarget")); t != "" {
+		target = t
 	}
-	classes := "wp-block-read-more"
-	if justify, ok := block.Attrs["justifyContent"].(string); ok && strings.TrimSpace(justify) != "" {
-		classes += " is-justified-" + strings.TrimSpace(justify)
+	classes := []string{"wp-block-read-more"}
+	if justify := strings.TrimSpace(attrString(block.Attrs, "justifyContent")); justify != "" {
+		classes = append(classes, "is-justified-"+sanitizeClassToken(justify))
+	}
+	// P5.92: className + has-link-color like get_block_wrapper_attributes.
+	if hasLinkColorAttr(block.Attrs) {
+		classes = append(classes, "has-link-color")
+	}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		classes = append(classes, cn)
 	}
 	screenReader := ": " + title
-	return `<a class="` + html.EscapeString(classes) + `" href="` + html.EscapeString(link) +
+	return `<a class="` + html.EscapeString(strings.Join(classes, " ")) + `" href="` + html.EscapeString(link) +
 		`" target="` + html.EscapeString(target) + `">` + html.EscapeString(moreText) +
 		`<span class="screen-reader-text">` + html.EscapeString(screenReader) + `</span></a>`
 }
