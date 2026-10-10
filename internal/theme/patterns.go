@@ -36,7 +36,7 @@ var (
 	headerTemplateTypes = regexp.MustCompile(`(?mi)^\s*\*\s*Template Types:\s*(.+?)\s*$`)
 	headerViewportWidth = regexp.MustCompile(`(?mi)^\s*\*\s*Viewport Width:\s*(\d+)\s*$`)
 	headerInserter      = regexp.MustCompile(`(?mi)^\s*\*\s*Inserter:\s*(.+?)\s*$`)
-	phpTagStrip       = regexp.MustCompile(`(?s)<\?(?:php|=)?.*?\?>`)
+	phpTagStrip         = regexp.MustCompile(`(?s)<\?(?:php|=)?.*?\?>`)
 	// Common i18n echo forms in theme patterns (P5.16 / P3.16): keep the source string.
 	phpEscHTMLEre    = regexp.MustCompile(`<\?php\s+(?:echo\s+)?esc_html_e\s*\(\s*'([^']*)'\s*,\s*'[^']*'\s*\)\s*;\s*\?>`)
 	phpEscHTMLEchoRe = regexp.MustCompile(`<\?php\s+echo\s+esc_html__\s*\(\s*'([^']*)'\s*,\s*'[^']*'\s*\)\s*;\s*\?>`)
