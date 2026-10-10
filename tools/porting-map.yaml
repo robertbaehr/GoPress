@@ -702,6 +702,13 @@
   task: P2.34
   api: exported
 
+# P2.47: WP_Http::is_ip_address.
+- prefix: wp-includes/class-wp-http.php#is_ip_address
+  go: internal/wp/is_ip_address.go
+  status: partial
+  task: P2.47
+  api: exported
+
 # P3.28: legacy Windows Live Writer manifest stub.
 - prefix: wp-includes/wlwmanifest.xml
   go: internal/server/wlwmanifest.go
