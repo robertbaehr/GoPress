@@ -25,6 +25,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/edit.php":
 		h.requireLogin(w, r, c, h.serveEditPosts)
 		return true
+	case "/wp-admin/edit-tags.php":
+		h.requireLogin(w, r, c, h.serveEditTags)
+		return true
 	case "/wp-admin/post.php":
 		h.requireLogin(w, r, c, h.servePostEdit)
 		return true
@@ -234,6 +237,106 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	b.WriteString("</tbody>\n</table>\n")
 	_ = blogname
 	writeAdminPage(w, c, newAdminChrome(c, heading, "edit-php"), b.String())
+}
+
+// serveEditTags is the Categories / Tags list stub (P7.29 / edit-tags.php).
+func (h *Handler) serveEditTags(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	taxonomy := strings.TrimSpace(r.URL.Query().Get("taxonomy"))
+	if taxonomy == "" {
+		taxonomy = "category"
+	}
+	heading := "Categories"
+	screen := "edit-tags-php"
+	switch taxonomy {
+	case "post_tag", "tag":
+		taxonomy = "post_tag"
+		heading = "Tags"
+	case "category":
+		// ok
+	default:
+		taxonomy = "category"
+	}
+	terms, err := listAdminTerms(c, taxonomy, 50)
+	if err != nil {
+		http.Error(w, "terms: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	var b strings.Builder
+	b.WriteString("<h1 class=\"wp-heading-inline\">")
+	b.WriteString(html.EscapeString(heading))
+	b.WriteString("</h1>\n")
+	b.WriteString("<hr class=\"wp-header-end\">\n")
+	b.WriteString("<p class=\"description\">GoPress edit-tags stub — create/edit via REST for now.</p>\n")
+	b.WriteString("<table class=\"wp-list-table widefat fixed striped table-view-list tags\">\n")
+	b.WriteString("<thead><tr>")
+	b.WriteString("<th scope=\"col\" class=\"manage-column column-name column-primary\">Name</th>")
+	b.WriteString("<th scope=\"col\" class=\"manage-column column-description\">Description</th>")
+	b.WriteString("<th scope=\"col\" class=\"manage-column column-slug\">Slug</th>")
+	b.WriteString("<th scope=\"col\" class=\"manage-column column-posts\">Count</th>")
+	b.WriteString("</tr></thead>\n<tbody id=\"the-list\">\n")
+	if len(terms) == 0 {
+		b.WriteString("<tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"4\">No terms found.</td></tr>\n")
+	}
+	for _, t := range terms {
+		b.WriteString("<tr id=\"tag-")
+		b.WriteString(strconv.FormatInt(t.ID, 10))
+		b.WriteString("\">")
+		b.WriteString("<td class=\"name column-name has-row-actions column-primary\" data-colname=\"Name\"><strong>")
+		b.WriteString(html.EscapeString(t.Name))
+		b.WriteString("</strong></td>")
+		b.WriteString("<td class=\"description column-description\" data-colname=\"Description\">")
+		b.WriteString(html.EscapeString(t.Description))
+		b.WriteString("</td>")
+		b.WriteString("<td class=\"slug column-slug\" data-colname=\"Slug\">")
+		b.WriteString(html.EscapeString(t.Slug))
+		b.WriteString("</td>")
+		b.WriteString("<td class=\"posts column-posts\" data-colname=\"Count\">")
+		b.WriteString(strconv.FormatInt(t.Count, 10))
+		b.WriteString("</td></tr>\n")
+	}
+	b.WriteString("</tbody>\n</table>\n")
+	writeAdminPage(w, c, newAdminChrome(c, heading, screen), b.String())
+}
+
+type adminTerm struct {
+	ID          int64
+	Name        string
+	Slug        string
+	Description string
+	Count       int64
+}
+
+func listAdminTerms(c *wp.Context, taxonomy string, limit int) ([]adminTerm, error) {
+	if c == nil || c.DB == nil {
+		return nil, fmt.Errorf("nil DB")
+	}
+	if limit <= 0 {
+		limit = 50
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT t.term_id, t.name, t.slug, tt.description, tt.count FROM "+
+			c.DB.Terms()+" t INNER JOIN "+c.DB.TermTaxonomy()+
+			" tt ON t.term_id = tt.term_id WHERE tt.taxonomy = %s ORDER BY t.name ASC LIMIT %d",
+		taxonomy, limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := c.DB.GetResults(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]adminTerm, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, adminTerm{
+			ID:          asInt64(row["term_id"]),
+			Name:        asString(row["name"]),
+			Slug:        asString(row["slug"]),
+			Description: asString(row["description"]),
+			Count:       asInt64(row["count"]),
+		})
+	}
+	return out, nil
 }
 
 func displayPostStatus(status string) string {
