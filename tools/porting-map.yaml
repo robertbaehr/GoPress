@@ -1098,9 +1098,16 @@
 - prefix: wp-includes/load.php#wp_is_development_mode
   go: internal/wp/development_mode.go
   status: partial
-  task: P2.70
+  task: P2.71
   api: exported
-  notes: "P2.70 — IsDevelopmentMode; all covers every mode"
+  notes: "P2.71 — IsDevelopmentMode + wp_is_development_mode filter; ShouldCacheThemeData"
+
+- prefix: wp-includes/load.php#wp_is_development_mode#theme-cache
+  go: internal/wp/boot.go
+  status: partial
+  task: P2.71
+  api: n/a
+  notes: "P2.71 — theme development mode clears Theme.FileSHA256 on boot"
 
 - prefix: wp-includes/load.php#wp_get_development_mode#config
   go: internal/config/config.go
