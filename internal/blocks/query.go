@@ -550,18 +550,84 @@ func (e *Env) renderPostExcerpt(block Block) string {
 	if e.currentPost == nil {
 		return ""
 	}
-	_ = block
+	// P5.89: moreText / excerptLength / showMoreOnNewLine / textAlign / has-link-color.
 	ex := strings.TrimSpace(e.currentPost.Excerpt)
 	if ex == "" {
 		ex = strings.TrimSpace(stripTags(e.currentPost.Content))
-		if len([]rune(ex)) > 55 {
-			ex = string([]rune(ex)[:55]) + "…"
-		}
 	}
-	if ex == "" {
+	excerptLen := 55
+	if v, ok := attrInt(block.Attrs, "excerptLength"); ok {
+		excerptLen = v
+	}
+	if excerptLen > 0 && ex != "" {
+		ex = trimExcerptWords(ex, excerptLen)
+	}
+	moreText := strings.TrimSpace(attrString(block.Attrs, "moreText"))
+	moreHTML := ""
+	if moreText != "" && e.currentPost.Link != "" {
+		moreHTML = `<a class="wp-block-post-excerpt__more-link" href="` +
+			html.EscapeString(e.currentPost.Link) + `">` + html.EscapeString(moreText) + `</a>`
+	}
+	if ex == "" && moreHTML == "" {
 		return ""
 	}
-	return `<p class="wp-block-post-excerpt__excerpt">` + html.EscapeString(ex) + `</p>`
+
+	classes := []string{}
+	if ta := strings.TrimSpace(attrString(block.Attrs, "textAlign")); ta != "" {
+		classes = append(classes, "has-text-align-"+sanitizeClassToken(ta))
+	}
+	if hasLinkColorAttr(block.Attrs) {
+		classes = append(classes, "has-link-color")
+	}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		classes = append(classes, cn)
+	}
+	wrapperClass := "wp-block-post-excerpt"
+	if len(classes) > 0 {
+		wrapperClass += " " + strings.Join(classes, " ")
+	}
+
+	showMoreOnNewLine := true
+	if block.Attrs != nil {
+		if v, ok := block.Attrs["showMoreOnNewLine"]; ok {
+			switch t := v.(type) {
+			case bool:
+				showMoreOnNewLine = t
+			case string:
+				showMoreOnNewLine = t == "true" || t == "1"
+			}
+		}
+	}
+
+	var inner strings.Builder
+	inner.WriteString(`<p class="wp-block-post-excerpt__excerpt">`)
+	inner.WriteString(html.EscapeString(ex))
+	if moreHTML != "" && showMoreOnNewLine {
+		inner.WriteString(`</p><p class="wp-block-post-excerpt__more-text">`)
+		inner.WriteString(moreHTML)
+		inner.WriteString(`</p>`)
+	} else if moreHTML == "" {
+		inner.WriteString(`</p>`)
+	} else {
+		if ex != "" {
+			inner.WriteString(" ")
+		}
+		inner.WriteString(moreHTML)
+		inner.WriteString(`</p>`)
+	}
+	return `<div class="` + html.EscapeString(wrapperClass) + `">` + inner.String() + `</div>`
+}
+
+// trimExcerptWords mirrors wp_trim_words for core/post-excerpt (P5.89).
+func trimExcerptWords(text string, numWords int) string {
+	if numWords <= 0 {
+		return text
+	}
+	words := strings.Fields(text)
+	if len(words) <= numWords {
+		return strings.Join(words, " ")
+	}
+	return strings.Join(words[:numWords], " ") + "…"
 }
 
 func (e *Env) renderPostDate(block Block) string {

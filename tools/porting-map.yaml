@@ -3612,6 +3612,21 @@
   task: P5.43
   api: internal
 
+# P5.89: polish core/post-excerpt (moreText, excerptLength, showMoreOnNewLine, wrapper).
+- prefix: wp-includes/blocks/post-excerpt.php#p5.89
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.89
+  api: internal
+  notes: "P5.89 — moreText link, excerptLength via wp_trim_words, showMoreOnNewLine, textAlign/has-link-color/className wrapper"
+
+- prefix: internal/blocks/post_excerpt_polish_test.go
+  go: internal/blocks/post_excerpt_polish_test.go
+  status: partial
+  task: P5.89
+  api: n/a
+  notes: "P5.89 — unit coverage for post-excerpt polish"
+
 # P5.87: core/post-title + post-content polish (level/textAlign/link/tagName/reentrancy).
 - prefix: wp-includes/blocks/post-title.php#p5.87
   go: internal/blocks/query.go
