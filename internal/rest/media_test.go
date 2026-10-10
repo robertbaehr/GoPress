@@ -45,6 +45,15 @@ func TestMediaCollection(t *testing.T) {
 	if m.GUID.Rendered == "" {
 		t.Fatal("expected guid.rendered")
 	}
+	if m.Links == nil || m.Links["self"] == nil || m.Links["collection"] == nil {
+		t.Fatalf("expected _links: %+v", m.Links)
+	}
+	if m.MediaDetails == nil {
+		t.Fatal("expected media_details")
+	}
+	if m.MediaType != "image" && m.MediaType != "file" {
+		t.Fatalf("media_type=%q want image|file", m.MediaType)
+	}
 }
 
 func TestMediaSingle(t *testing.T) {
@@ -71,6 +80,17 @@ func TestMediaSingle(t *testing.T) {
 	}
 	if !strings.Contains(m.SourceURL, "sample-photo-a") {
 		t.Fatalf("source_url=%q", m.SourceURL)
+	}
+	details, ok := m.MediaDetails.(map[string]any)
+	if !ok || details["width"] == nil || details["sizes"] == nil {
+		t.Fatalf("media_details=%v", m.MediaDetails)
+	}
+	sizes, ok := details["sizes"].(map[string]any)
+	if !ok || sizes["full"] == nil {
+		t.Fatalf("sizes=%v", details["sizes"])
+	}
+	if m.Filename == "" || m.Links == nil {
+		t.Fatalf("filename=%q links=%v", m.Filename, m.Links)
 	}
 }
 
