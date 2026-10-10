@@ -115,6 +115,12 @@
   task: P1.8
   api: exported
 
+- prefix: wp-includes/class-wp-metadata-lazyloader.php
+  go: internal/wp/metadata_lazyloader.go
+  status: partial
+  task: P2.17
+  api: exported
+
 - prefix: wp-includes/kses.php
   go: internal/wp/kses.go
   status: done
