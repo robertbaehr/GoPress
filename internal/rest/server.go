@@ -102,6 +102,19 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 			return
 		}
 		s.serveCommentItem(w, r, c, id)
+	case path == "/wp/v2/media":
+		s.serveMedia(w, r, c)
+	case strings.HasPrefix(path, "/wp/v2/media/"):
+		id, ok := parseTrailingID(path, "/wp/v2/media/")
+		if !ok {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"code":    "rest_no_route",
+				"message": "No route was found matching the URL and request method.",
+				"data":    map[string]any{"status": 404},
+			})
+			return
+		}
+		s.serveMediaItem(w, r, c, id)
 	default:
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"code":    "rest_no_route",
@@ -253,6 +266,8 @@ func buildIndex(c *wp.Context) Index {
 		"/wp/v2/tags/(?P<id>[\\d]+)":       itemRoute("wp/v2"),
 		"/wp/v2/comments":                  collectionRoute("wp/v2"),
 		"/wp/v2/comments/(?P<id>[\\d]+)":   itemRoute("wp/v2"),
+		"/wp/v2/media":                     collectionRoute("wp/v2"),
+		"/wp/v2/media/(?P<id>[\\d]+)":      itemRoute("wp/v2"),
 	}
 
 	// When authenticated, advertise additional admin-oriented routes (best-effort).
@@ -357,7 +372,6 @@ func adminExtraRoutes() map[string]RouteIndex {
 			}},
 		},
 		"/wp/v2/users": collectionRoute("wp/v2"),
-		"/wp/v2/media": collectionRoute("wp/v2"),
 	}
 }
 
