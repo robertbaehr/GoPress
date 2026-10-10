@@ -113,6 +113,39 @@ func TestFrontSingular404(t *testing.T) {
 	}
 }
 
+func TestFrontAttachmentByQueryID(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?attachment_id=5", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "sample-photo-a") {
+		t.Fatalf("expected attachment title/url, got %q", body)
+	}
+	if !strings.Contains(body, "attachment") || !strings.Contains(body, "type-attachment") {
+		t.Fatalf("expected attachment body/class, got %q", body)
+	}
+}
+
+func TestFrontAttachmentByRewrite(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	// Fixture rewrite_rules include ".?.+?/attachment/([^/]+)/?$" → attachment=$matches[1].
+	req := httptest.NewRequest(http.MethodGet, "/files/attachment/sample-photo-a/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "sample-photo-a") {
+		t.Fatalf("expected attachment, got %q", rec.Body.String())
+	}
+}
+
 func TestFrontFeedQueryRSS2(t *testing.T) {
 	c := testBoot(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
