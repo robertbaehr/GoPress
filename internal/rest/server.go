@@ -810,16 +810,32 @@ func builtInIndexRoutes() map[string]RouteIndex {
 		},
 		"/wp/v2/posts/(?P<id>[\\d]+)/autosaves": {
 			Namespace: "wp/v2",
-			Methods:   []string{"GET", "POST"},
+			Methods:   []string{"GET", "POST", "HEAD", "OPTIONS"},
 			Endpoints: []RouteEndpoint{
-				{Methods: []string{"GET"}},
+				{Methods: []string{"GET", "HEAD"}, Args: map[string]any{
+					"context": map[string]any{
+						"default":  "view",
+						"required": false,
+						"enum":     []string{"view", "embed", "edit"},
+					},
+				}},
 				{Methods: []string{"POST"}},
+				{Methods: []string{"OPTIONS"}},
 			},
 		},
 		"/wp/v2/posts/(?P<parent>[\\d]+)/autosaves/(?P<id>[\\d]+)": {
 			Namespace: "wp/v2",
-			Methods:   []string{"GET"},
-			Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}},
+			Methods:   []string{"GET", "HEAD", "OPTIONS"},
+			Endpoints: []RouteEndpoint{{
+				Methods: []string{"GET", "HEAD"},
+				Args: map[string]any{
+					"context": map[string]any{
+						"default":  "view",
+						"required": false,
+						"enum":     []string{"view", "embed", "edit"},
+					},
+				},
+			}},
 		},
 		"/wp/v2/types": {
 			Namespace: "wp/v2",

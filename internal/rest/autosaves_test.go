@@ -155,6 +155,9 @@ func TestAutosavesListStub(t *testing.T) {
 	if a.Parent != 13 || a.ID <= 0 || !strings.Contains(a.Slug, "autosave") {
 		t.Fatalf("autosave=%+v", a)
 	}
+	if a.PreviewLink != "" {
+		t.Fatalf("view context should omit preview_link: %+v", a)
+	}
 
 	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts/13/autosaves/"+strconv.FormatInt(a.ID, 10), nil)
 	req.AddCookie(ck)
@@ -163,5 +166,67 @@ func TestAutosavesListStub(t *testing.T) {
 	(&rest.Server{}).Handle(rec, req, rc)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("item status=%d body=%s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestAutosavesOPTIONSContextHEAD(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	ck := &http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue}
+
+	req := httptest.NewRequest(http.MethodOptions, "/wp-json/wp/v2/posts/13/autosaves", nil)
+	rec := httptest.NewRecorder()
+	(&rest.Server{}).Handle(rec, req, c.ForRequest(rec, req))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("OPTIONS status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "preview_link") {
+		t.Fatalf("OPTIONS schema missing preview_link: %s", rec.Body.String())
+	}
+	if !strings.Contains(rec.Header().Get("Allow"), "OPTIONS") {
+		t.Fatalf("Allow=%q", rec.Header().Get("Allow"))
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts/13/autosaves?context=nope", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	(&rest.Server{}).Handle(rec, req, c.ForRequest(rec, req))
+	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "rest_invalid_param") {
+		t.Fatalf("invalid context: status=%d body=%s", rec.Code, rec.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodHead, "/wp-json/wp/v2/posts/13/autosaves", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	(&rest.Server{}).Handle(rec, req, c.ForRequest(rec, req))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("HEAD status=%d", rec.Code)
+	}
+	if rec.Body.Len() != 0 {
+		t.Fatalf("HEAD should be empty: %q", rec.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts/13/autosaves?context=edit", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	(&rest.Server{}).Handle(rec, req, c.ForRequest(rec, req))
+	if rec.Code != http.StatusOK {
+		t.Fatalf("edit status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var autos []rest.Autosave
+	if err := json.Unmarshal(rec.Body.Bytes(), &autos); err != nil {
+		t.Fatalf("json: %v", err)
+	}
+	if len(autos) < 1 || autos[0].PreviewLink == "" || !strings.Contains(autos[0].PreviewLink, "preview=true") {
+		t.Fatalf("edit context needs preview_link: %+v", autos)
 	}
 }
