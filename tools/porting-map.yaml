@@ -242,6 +242,13 @@
   task: P5.24
   api: exported
 
+# P3.21: /?s= front search uses search template hierarchy + QueryArgs.Search.
+- prefix: wp-includes/search.php
+  go: internal/server/front.go
+  status: partial
+  task: P3.21
+  api: n/a
+
 - prefix: wp-includes/feed-atom.php
   go: internal/server/front.go
   status: partial

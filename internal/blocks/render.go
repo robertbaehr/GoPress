@@ -98,6 +98,8 @@ func (e *Env) RenderBlock(block Block) string {
 		out = `<ul class="wp-block-page-list">` + items + `</ul>`
 	case "core/query":
 		out = e.renderQuery(block)
+	case "core/query-title":
+		out = e.renderQueryTitle(block)
 	case "core/post-template":
 		out = e.renderPostTemplate(block)
 	case "core/query-no-results":

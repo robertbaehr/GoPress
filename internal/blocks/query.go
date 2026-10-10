@@ -50,6 +50,33 @@ func (e *Env) renderQuery(block Block) string {
 	return `<div class="wp-block-query">` + inner + `</div>`
 }
 
+// renderQueryTitle renders core/query-title (search heading subset, P3.21).
+func (e *Env) renderQueryTitle(block Block) string {
+	e = e.ensure()
+	titleType, _ := block.Attrs["type"].(string)
+	if titleType == "" {
+		titleType = "search"
+	}
+	level := 1
+	if n, ok := block.Attrs["level"].(float64); ok && n >= 1 && n <= 6 {
+		level = int(n)
+	}
+	tag := fmt.Sprintf("h%d", level)
+	text := ""
+	switch titleType {
+	case "search":
+		term := strings.TrimSpace(e.SearchQuery)
+		if term == "" {
+			text = "Search results"
+		} else {
+			text = "Search results for: " + term
+		}
+	default:
+		return ""
+	}
+	return fmt.Sprintf(`<%s class="wp-block-query-title">%s</%s>`, tag, html.EscapeString(text), tag)
+}
+
 func (e *Env) renderPostTemplate(block Block) string {
 	e = e.ensure()
 	args := e.queryArgs

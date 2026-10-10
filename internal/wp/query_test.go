@@ -3,6 +3,7 @@ package wp_test
 import (
 	"context"
 	"os"
+	"strings"
 	"testing"
 
 	"github.com/robertbaehr/GoPress/internal/config"
@@ -76,5 +77,29 @@ func TestGetPostByPageName(t *testing.T) {
 	}
 	if got == nil || got.Name != slug || got.Type != "page" {
 		t.Fatalf("expected page %q, got %+v", slug, got)
+	}
+}
+
+func TestGetPostsSearch(t *testing.T) {
+	c := testBootQuery(t)
+	posts, err := wp.GetPosts(c, wp.QueryArgs{PostsPerPage: 10, Search: "Hello"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(posts) == 0 {
+		t.Fatal("expected search hits for Hello")
+	}
+	for _, p := range posts {
+		hay := strings.ToLower(p.Title + " " + p.Content + " " + p.Excerpt)
+		if !strings.Contains(hay, "hello") {
+			t.Fatalf("unexpected non-matching post: %q", p.Title)
+		}
+	}
+	miss, err := wp.GetPosts(c, wp.QueryArgs{PostsPerPage: 10, Search: "zzznomatchterm999"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(miss) != 0 {
+		t.Fatalf("expected no hits, got %d", len(miss))
 	}
 }

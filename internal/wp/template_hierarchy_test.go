@@ -17,6 +17,12 @@ func TestHomeTemplateSlugs(t *testing.T) {
 	}
 }
 
+func TestSearchTemplateSlugs(t *testing.T) {
+	if got := wp.SearchTemplateSlugs(); !reflect.DeepEqual(got, []string{"search", "index"}) {
+		t.Fatalf("search: %v", got)
+	}
+}
+
 func TestSingularTemplateSlugsPage(t *testing.T) {
 	got := wp.SingularTemplateSlugs("page", "sample-page", 2)
 	want := []string{"page-sample-page", "page-2", "page", "singular", "index"}
