@@ -826,6 +826,14 @@
   api: exported
   notes: "P2.51 — IsUUID any-version + version=4 regex; other versions false"
 
+# P2.54: wp_unique_filename (sanitize + numeric suffix + lowercase ext).
+- prefix: wp-includes/functions.php#wp_unique_filename
+  go: internal/wp/unique_filename.go
+  status: partial
+  task: P2.54
+  api: exported
+  notes: "P2.54 — UniqueFilename; sub-size suffix; case-insensitive ext collision"
+
 # P2.53: wp_get_image_mime via magic bytes (jpeg/png/gif/webp/avif/heic).
 - prefix: wp-includes/functions.php#wp_get_image_mime
   go: internal/wp/image_mime.go

@@ -44,7 +44,7 @@ func SaveUploadedMedia(c *Context, filename string, r io.Reader, size int64) (*U
 		return nil, err
 	}
 
-	destName := uniqueFilename(dir, filename)
+	destName := UniqueFilename(dir, filename)
 	abs := filepath.Join(dir, destName)
 	f, err := os.OpenFile(abs, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644)
 	if err != nil {
@@ -121,18 +121,6 @@ func insertAttachmentRow(c *Context, author int64, now, title, slug, mimeType, g
 
 func sanitizeUploadName(name string) string {
 	return SanitizeFileName(strings.TrimSpace(name))
-}
-
-func uniqueFilename(dir, name string) string {
-	candidate := name
-	ext := filepath.Ext(name)
-	base := strings.TrimSuffix(name, ext)
-	for i := 1; ; i++ {
-		if _, err := os.Stat(filepath.Join(dir, candidate)); os.IsNotExist(err) {
-			return candidate
-		}
-		candidate = fmt.Sprintf("%s-%d%s", base, i, ext)
-	}
 }
 
 func mimeFromFilename(name string) string {
