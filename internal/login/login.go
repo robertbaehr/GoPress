@@ -126,7 +126,7 @@ func (h *Handler) servePostPass(w http.ResponseWriter, r *http.Request, c *wp.Co
 	http.Redirect(w, r, redirectTo, http.StatusFound)
 }
 
-// serveConfirmAdminEmail handles wp-login.php?action=confirm_admin_email (P6.14).
+// serveConfirmAdminEmail handles wp-login.php?action=confirm_admin_email (P6.14 / P6.42).
 // Stub of the administration email verification screen: requires a logged-in
 // user with manage_options; confirm / remind-me-later update admin_email_lifespan.
 func (h *Handler) serveConfirmAdminEmail(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -145,26 +145,26 @@ func (h *Handler) serveConfirmAdminEmail(w http.ResponseWriter, r *http.Request,
 		_ = r.ParseForm()
 		redirectTo = r.FormValue("redirect_to")
 	}
-	if redirectTo == "" {
-		redirectTo = home + "/wp-admin/"
-		if home == "" {
-			redirectTo = "/wp-admin/"
-		}
-	}
+	// P6.42: sanitize like wp_safe_redirect / wp_validate_redirect.
+	redirectTo = sanitizeRedirect(redirectTo, home)
 	if !c.UserCan(c.CurrentUser, "manage_options") {
 		http.Redirect(w, r, redirectTo, http.StatusFound)
 		return
 	}
 
-	const remindInterval = 3 * 24 * 60 * 60     // 3 days
-	const checkInterval = 6 * 30 * 24 * 60 * 60 // ~6 months
+	remindInterval := int64(3 * 24 * 60 * 60)     // 3 days
+	checkInterval := int64(6 * 30 * 24 * 60 * 60) // ~6 months
+	if c.Hooks != nil {
+		remindInterval = filterIntervalSeconds(c.Hooks.ApplyFilters("admin_email_remind_interval", remindInterval), remindInterval)
+		checkInterval = filterIntervalSeconds(c.Hooks.ApplyFilters("admin_email_check_interval", checkInterval), checkInterval)
+	}
 
 	if remind := r.URL.Query().Get("remind_me_later"); remind != "" {
 		if c.VerifyNonce(remind, "remind_me_later_nonce") == 0 {
 			http.Redirect(w, r, loginURL, http.StatusFound)
 			return
 		}
-		if c.Options != nil {
+		if remindInterval > 0 && c.Options != nil {
 			_, _ = c.Options.UpdateOption("admin_email_lifespan", fmt.Sprintf("%d", time.Now().Unix()+remindInterval), "yes")
 		}
 		sep := "?"
@@ -183,12 +183,16 @@ func (h *Handler) serveConfirmAdminEmail(w http.ResponseWriter, r *http.Request,
 				http.Redirect(w, r, loginURL, http.StatusFound)
 				return
 			}
-			if c.Options != nil {
+			if checkInterval > 0 && c.Options != nil {
 				_, _ = c.Options.UpdateOption("admin_email_lifespan", fmt.Sprintf("%d", time.Now().Unix()+checkInterval), "yes")
 			}
 			http.Redirect(w, r, redirectTo, http.StatusFound)
 			return
 		}
+	}
+
+	if c.Hooks != nil {
+		c.Hooks.DoAction("admin_email_confirm", nil)
 	}
 
 	adminEmail := optionString(c, "admin_email", "")
@@ -209,6 +213,9 @@ func (h *Handler) serveConfirmAdminEmail(w http.ResponseWriter, r *http.Request,
 	b.WriteString("\t\t<form class=\"admin-email-confirm-form\" name=\"admin-email-confirm-form\" action=\"")
 	b.WriteString(html.EscapeString(loginURL + "?action=confirm_admin_email"))
 	b.WriteString("\" method=\"post\">\n")
+	if c.Hooks != nil {
+		c.Hooks.DoAction("admin_email_confirm_form")
+	}
 	b.WriteString("\t\t\t<input type=\"hidden\" id=\"confirm_admin_email_nonce\" name=\"confirm_admin_email_nonce\" value=\"")
 	b.WriteString(html.EscapeString(nonce))
 	b.WriteString("\" />\n")
@@ -220,7 +227,7 @@ func (h *Handler) serveConfirmAdminEmail(w http.ResponseWriter, r *http.Request,
 	b.WriteString("\" />\n")
 	b.WriteString("\t\t\t<h1 class=\"admin-email__heading\">Administration email verification</h1>\n")
 	b.WriteString("\t\t\t<p class=\"admin-email__details\">Please verify that the <strong>administration email</strong> for this website is still correct.</p>\n")
-	b.WriteString("\t\t\t<p class=\"admin-email__details\">Current administration email: <strong>")
+	b.WriteString("\t\t\t<p class=\"admin-email__details\">Current administration email: <strong class=\"admin-email__address\">")
 	b.WriteString(html.EscapeString(adminEmail))
 	b.WriteString("</strong></p>\n")
 	b.WriteString("\t\t\t<p class=\"admin-email__details\">This email may be different from your personal email address.</p>\n")
@@ -231,17 +238,38 @@ func (h *Handler) serveConfirmAdminEmail(w http.ResponseWriter, r *http.Request,
 	b.WriteString("\">Update</a>\n")
 	b.WriteString("\t\t\t\t\t<input type=\"submit\" name=\"correct-admin-email\" id=\"correct-admin-email\" class=\"button button-primary button-large\" value=\"The email is correct\" />\n")
 	b.WriteString("\t\t\t\t</div>\n")
-	b.WriteString("\t\t\t\t<div class=\"admin-email__actions-secondary\">\n")
-	b.WriteString("\t\t\t\t\t<a href=\"")
-	b.WriteString(html.EscapeString(remindLink))
-	b.WriteString("\">Remind me later</a>\n")
-	b.WriteString("\t\t\t\t</div>\n")
+	// P6.42: remind link omitted when admin_email_remind_interval filter returns 0.
+	if remindInterval > 0 {
+		b.WriteString("\t\t\t\t<div class=\"admin-email__actions-secondary\">\n")
+		b.WriteString("\t\t\t\t\t<a href=\"")
+		b.WriteString(html.EscapeString(remindLink))
+		b.WriteString("\">Remind me later</a>\n")
+		b.WriteString("\t\t\t\t</div>\n")
+	}
 	b.WriteString("\t\t\t</div>\n")
 	b.WriteString("\t\t</form>\n")
 	b.WriteString("\t\t</div>\n")
 	b.WriteString("\t</body>\n")
 	b.WriteString("\t</html>\n")
 	writeLoginHTML(w, r, b.String(), false, c)
+}
+
+// filterIntervalSeconds coerces ApplyFilters results for interval hooks (P6.42).
+func filterIntervalSeconds(v any, fallback int64) int64 {
+	switch t := v.(type) {
+	case int:
+		return int64(t)
+	case int64:
+		return t
+	case float64:
+		return int64(t)
+	case string:
+		var n int64
+		if _, err := fmt.Sscan(t, &n); err == nil {
+			return n
+		}
+	}
+	return fallback
 }
 
 // serveRegister handles wp-login.php?action=register (P6.9).
