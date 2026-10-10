@@ -136,6 +136,42 @@ func TestLoginPOSTBadPassword(t *testing.T) {
 	}
 }
 
+func TestLostPasswordPOSTGeneratesResetKey(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	if c.Mailer == nil {
+		c.Mailer = wp.NewMailer()
+	}
+	c.Mailer.Clear()
+
+	form := url.Values{}
+	form.Set("user_login", "admin")
+	form.Set("action", "lostpassword")
+	req := httptest.NewRequest(http.MethodPost, "/wp-login.php?action=lostpassword", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	loc := rec.Header().Get("Location")
+	if !strings.Contains(loc, "checkemail=confirm") {
+		t.Fatalf("Location=%q", loc)
+	}
+	if len(c.Mailer.Sent()) != 1 {
+		t.Fatalf("expected 1 mail, got %d", len(c.Mailer.Sent()))
+	}
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	if user.ActivationKey == "" || !strings.Contains(user.ActivationKey, "$generic$") {
+		t.Fatalf("activation key not set: %q", user.ActivationKey)
+	}
+}
+
 func TestLogoutClearsCookies(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()

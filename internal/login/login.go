@@ -34,13 +34,16 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 		case "logout":
 			h.serveLogout(w, r, c)
 		default:
+			if r.URL.Query().Get("checkemail") == "confirm" {
+				h.serveCheckEmailConfirm(w, r, c)
+				return
+			}
 			h.serveForm(w, r, c, "")
 		}
 	case http.MethodPost:
 		switch action {
 		case "lostpassword", "retrievepassword":
-			// Stub: redisplay form (mail reset lands later).
-			h.serveLostPassword(w, r, c, "")
+			h.serveLostPasswordPost(w, r, c)
 		case "logout":
 			h.serveLogout(w, r, c)
 		default:
@@ -152,6 +155,55 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	b.WriteString("\t")
 
 	writeLoginHTML(w, b.String(), reauth, c)
+}
+
+func (h *Handler) serveLostPasswordPost(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if err := r.ParseForm(); err != nil {
+		h.serveLostPassword(w, r, c, "Invalid form submission.")
+		return
+	}
+	userLogin := strings.TrimSpace(r.FormValue("user_login"))
+	if err := wp.RetrievePassword(c, userLogin); err != nil {
+		msg := "There is no account with that username or email address."
+		switch err.Error() {
+		case "empty_username":
+			msg = "Please enter a username or email address."
+		case "retrieve_password_email_failure":
+			msg = "The email could not be sent."
+		}
+		h.serveLostPassword(w, r, c, msg)
+		return
+	}
+	redirectTo := r.FormValue("redirect_to")
+	if redirectTo == "" {
+		home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+		redirectTo = home + "/wp-login.php?checkemail=confirm"
+		if home == "" {
+			redirectTo = "/wp-login.php?checkemail=confirm"
+		}
+	}
+	http.Redirect(w, r, redirectTo, http.StatusFound)
+}
+
+func (h *Handler) serveCheckEmailConfirm(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "/")), "/")
+	blogname := optionString(c, "blogname", "GoPress")
+	loginURL := home + "/wp-login.php"
+	var b strings.Builder
+	writeLoginHead(&b, home, blogname, "Log In", "login")
+	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Log In</h1>\n")
+	b.WriteString("\t\t\t<div id=\"login\">\n")
+	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
+	b.WriteString("<p class=\"message\">Check your email for the confirmation link, then visit the login page.</p>\n")
+	b.WriteString("\t\t<p id=\"nav\">\n")
+	b.WriteString("\t\t\t<a class=\"wp-login-log-in\" href=\"")
+	b.WriteString(html.EscapeString(loginURL))
+	b.WriteString("\">Log in</a>\n")
+	b.WriteString("\t\t\t\t\t</p>\n")
+	b.WriteString("\t\t\t</div>\n")
+	b.WriteString("\t</body>\n")
+	b.WriteString("\t</html>\n")
+	writeLoginHTML(w, b.String(), false, c)
 }
 
 func (h *Handler) serveLostPassword(w http.ResponseWriter, r *http.Request, c *wp.Context, errMsg string) {
