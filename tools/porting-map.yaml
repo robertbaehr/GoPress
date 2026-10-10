@@ -5681,3 +5681,12 @@
   task: P10.90
   api: n/a
   notes: "P10.90 — comments/core block-types; REST per_page; front/login headers; 220/220"
+
+# P10.91: STATUS/PORTING refresh after P5.90–P10.90.
+- prefix: docs/STATUS.md#p10.91
+  go: docs/STATUS.md
+  status: partial
+  task: P10.91
+  api: n/a
+  notes: "P10.91 — STATUS/PORTING refresh after P5.90–P10.90 (220/220 corpus)"
+
