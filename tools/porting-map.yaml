@@ -245,6 +245,21 @@
   api: n/a
   notes: "P6.23 — HttpOnly wp_lang session cookie from query; switcher reads cookie"
 
+# P6.30: language switcher preserves POST/REQUEST fields after failed login.
+- prefix: wp-login.php#language-switcher-post
+  go: internal/login/login.go
+  status: partial
+  task: P6.30
+  api: n/a
+  notes: "P6.30 — redirect_to/action/interim-login/wp_lang from POST body"
+
+- prefix: wp-login.php#language-switcher-interim
+  go: internal/login/login.go
+  status: partial
+  task: P6.30
+  api: n/a
+  notes: "P6.30 — emit interim-login hidden on language switcher when set"
+
 # P6.24: Remember Me longer-lived auth cookies (14d + MaxAge) + keep checked on error.
 - prefix: wp-includes/pluggable.php#wp_set_auth_cookie_remember
   go: internal/wp/auth_cookie.go

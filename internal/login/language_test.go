@@ -3,6 +3,7 @@ package login
 import (
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -51,6 +52,31 @@ func TestWriteLanguageSwitcherPrefersCookie(t *testing.T) {
 	out := b.String()
 	if !strings.Contains(out, `value="de_DE" selected="selected"`) {
 		t.Fatalf("expected de_DE selected from cookie: %q", out)
+	}
+}
+
+func TestWriteLanguageSwitcherPreservesPOSTFields(t *testing.T) {
+	var b strings.Builder
+	form := url.Values{}
+	form.Set("redirect_to", "/wp-admin/")
+	form.Set("action", "login")
+	form.Set("interim-login", "1")
+	form.Set("wp_lang", "fr_FR")
+	req := httptest.NewRequest(http.MethodPost, "/wp-login.php", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	writeLanguageSwitcher(&b, req, nil, []string{"de_DE", "fr_FR"})
+	out := b.String()
+	if !strings.Contains(out, `value="fr_FR" selected="selected"`) {
+		t.Fatalf("expected fr_FR from POST: %q", out)
+	}
+	if !strings.Contains(out, `name="redirect_to"`) || !strings.Contains(out, `/wp-admin/`) {
+		t.Fatalf("expected redirect_to from POST: %q", out)
+	}
+	if !strings.Contains(out, `name="action"`) || !strings.Contains(out, `value="login"`) {
+		t.Fatalf("expected action from POST: %q", out)
+	}
+	if !strings.Contains(out, `name="interim-login"`) || !strings.Contains(out, `value="1"`) {
+		t.Fatalf("expected interim-login from POST: %q", out)
 	}
 }
 

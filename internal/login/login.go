@@ -1248,6 +1248,7 @@ func sanitizeRedirect(raw, home string) string {
 
 // writeLanguageSwitcher emits the login language dropdown when languages exist (P6.11).
 // Mirrors wp-login.php: only rendered when get_available_languages() is non-empty.
+// P6.30: preserve redirect_to/action/interim-login from query or POST body.
 func writeLanguageSwitcher(b *strings.Builder, r *http.Request, c *wp.Context, languages []string) {
 	if len(languages) == 0 {
 		return
@@ -1258,9 +1259,16 @@ func writeLanguageSwitcher(b *strings.Builder, r *http.Request, c *wp.Context, l
 			selected = v
 		}
 	}
-	// P6.23: prefer ?wp_lang=, then wp_lang cookie (determine_locale login path).
+	// P6.23 / P6.30: prefer ?wp_lang=, then POST body wp_lang, then cookie.
+	_ = r.ParseForm()
 	if q := r.URL.Query().Get("wp_lang"); q != "" {
 		selected = q
+	} else if r.Method == http.MethodPost {
+		if v := r.PostForm.Get("wp_lang"); v != "" {
+			selected = v
+		} else if ck, err := r.Cookie("wp_lang"); err == nil && ck != nil && ck.Value != "" {
+			selected = ck.Value
+		}
 	} else if ck, err := r.Cookie("wp_lang"); err == nil && ck != nil && ck.Value != "" {
 		selected = ck.Value
 	}
@@ -1291,15 +1299,27 @@ func writeLanguageSwitcher(b *strings.Builder, r *http.Request, c *wp.Context, l
 		b.WriteString("</option>\n")
 	}
 	b.WriteString("\t\t\t\t\t</select>\n")
-	if rt := r.URL.Query().Get("redirect_to"); rt != "" {
+	// P6.30: $_REQUEST-shaped — query first, then POST form fields.
+	rt := r.URL.Query().Get("redirect_to")
+	if rt == "" {
+		rt = r.FormValue("redirect_to")
+	}
+	if rt != "" {
 		b.WriteString("\t\t\t\t\t\t<input type=\"hidden\" name=\"redirect_to\" value=\"")
 		b.WriteString(html.EscapeString(rt))
 		b.WriteString("\" />\n")
 	}
-	if action := r.URL.Query().Get("action"); action != "" {
+	action := r.URL.Query().Get("action")
+	if action == "" {
+		action = r.FormValue("action")
+	}
+	if action != "" {
 		b.WriteString("\t\t\t\t\t\t<input type=\"hidden\" name=\"action\" value=\"")
 		b.WriteString(html.EscapeString(action))
 		b.WriteString("\" />\n")
+	}
+	if isInterimLogin(r) {
+		b.WriteString("\t\t\t\t\t\t<input type=\"hidden\" name=\"interim-login\" value=\"1\" />\n")
 	}
 	b.WriteString("\t\t\t\t\t\t<input type=\"submit\" class=\"button\" value=\"Change\">\n")
 	b.WriteString("\t\t\t\t\t</form>\n")
