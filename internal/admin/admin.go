@@ -472,7 +472,7 @@ func (h *Handler) serveOptionsGeneral(w http.ResponseWriter, r *http.Request, c 
 	writeAdminPage(w, c, newAdminChrome(c, "General Settings", "options-general-php"), b.String())
 }
 
-// serveOptionsPHP handles /wp-admin/options.php saves (P7.48 writing / P7.49 reading).
+// serveOptionsPHP handles /wp-admin/options.php saves (P7.48 writing / P7.49 reading / P7.50 discussion).
 func (h *Handler) serveOptionsPHP(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/wp-admin/options-general.php", http.StatusFound)
@@ -524,8 +524,50 @@ func (h *Handler) serveOptionsPHP(w http.ResponseWriter, r *http.Request, c *wp.
 		}
 		http.Redirect(w, r, "/wp-admin/options-reading.php?settings-updated=true", http.StatusFound)
 		return
+	case "discussion":
+		if c.Options != nil {
+			saveDiscussionOptions(c, r)
+		}
+		http.Redirect(w, r, "/wp-admin/options-discussion.php?settings-updated=true", http.StatusFound)
+		return
 	default:
 		http.Error(w, "Unrecognized settings group.\n", http.StatusBadRequest)
+	}
+}
+
+// saveDiscussionOptions persists Settings → Discussion checkboxes/fields (P7.50).
+func saveDiscussionOptions(c *wp.Context, r *http.Request) {
+	if c == nil || c.Options == nil || r == nil {
+		return
+	}
+	// open/closed checkboxes: present → open, absent → closed.
+	for _, key := range []string{"default_ping_status", "default_comment_status"} {
+		v := "closed"
+		if _, ok := r.Form[key]; ok {
+			v = "open"
+		}
+		_, _ = c.Options.UpdateOption(key, v, "yes")
+	}
+	// 0/1 checkboxes: present → 1, absent → 0.
+	for _, key := range []string{
+		"require_name_email", "comment_registration", "close_comments_for_old_posts",
+		"thread_comments", "page_comments", "comments_notify", "moderation_notify",
+		"comment_moderation", "comment_previously_approved", "show_avatars",
+	} {
+		v := "0"
+		if _, ok := r.Form[key]; ok {
+			v = "1"
+		}
+		_, _ = c.Options.UpdateOption(key, v, "yes")
+	}
+	if v := strings.TrimSpace(r.Form.Get("close_comments_days_old")); v != "" {
+		_, _ = c.Options.UpdateOption("close_comments_days_old", v, "yes")
+	}
+	if v := strings.TrimSpace(r.Form.Get("thread_comments_depth")); v != "" {
+		_, _ = c.Options.UpdateOption("thread_comments_depth", v, "yes")
+	}
+	if v := strings.TrimSpace(r.Form.Get("comments_per_page")); v != "" {
+		_, _ = c.Options.UpdateOption("comments_per_page", v, "yes")
 	}
 }
 
@@ -647,8 +689,12 @@ func (h *Handler) serveOptionsDiscussion(w http.ResponseWriter, r *http.Request,
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1>Discussion Settings</h1>\n")
-	b.WriteString("<p class=\"description\">GoPress discussion settings stub — save lands with options.php.</p>\n")
+	if r.URL.Query().Get("settings-updated") == "true" {
+		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p><strong>Settings saved.</strong></p></div>\n")
+	}
+	b.WriteString("<p class=\"description\">GoPress discussion settings — POST saves via options.php.</p>\n")
 	b.WriteString("<form method=\"post\" action=\"options.php\">\n")
+	b.WriteString("<input type=\"hidden\" name=\"option_page\" value=\"discussion\" />\n")
 	b.WriteString("<table class=\"form-table indent-children\" role=\"presentation\">\n")
 
 	b.WriteString("<tr>\n<th scope=\"row\">Default post settings</th>\n<td><fieldset>\n")
