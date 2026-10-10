@@ -4478,6 +4478,21 @@
   api: n/a
   notes: "P7.61 — list checkboxes + Delete permanently; force-delete attachment + meta"
 
+# P7.86: plugins.php status views + search box.
+- prefix: wp-admin/plugins.php#views
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.86
+  api: n/a
+  notes: "P7.86 — All/Active/Inactive subsubsub counts + ?plugin_status= filter"
+
+- prefix: wp-admin/plugins.php#search
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.86
+  api: n/a
+  notes: "P7.86 — Search installed plugins box (?s=) over name/description/author/file"
+
 # P7.85: media bulk delete nonce + action2 + mode preserve.
 - prefix: wp-admin/upload.php#bulk-delete-p7.85
   go: internal/admin/media_bulk.go

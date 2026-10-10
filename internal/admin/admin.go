@@ -1781,6 +1781,50 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 		notice = "uninstall"
 	}
 
+	installed, err := plugins.ListInstalledPlugins(c)
+	if err != nil {
+		http.Error(w, "plugins: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	// P7.86: plugin_status views + search box (WP_Plugins_List_Table subset).
+	pluginStatus := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("plugin_status")))
+	switch pluginStatus {
+	case "active", "inactive", "all", "":
+		if pluginStatus == "all" {
+			pluginStatus = ""
+		}
+	default:
+		pluginStatus = ""
+	}
+	search := strings.TrimSpace(r.URL.Query().Get("s"))
+	allCount, activeCount, inactiveCount := 0, 0, 0
+	for _, p := range installed {
+		allCount++
+		if plugins.IsPluginActive(c, p.File) {
+			activeCount++
+		} else {
+			inactiveCount++
+		}
+	}
+	filtered := make([]plugins.PluginData, 0, len(installed))
+	for _, p := range installed {
+		active := plugins.IsPluginActive(c, p.File)
+		switch pluginStatus {
+		case "active":
+			if !active {
+				continue
+			}
+		case "inactive":
+			if active {
+				continue
+			}
+		}
+		if search != "" && !pluginMatchesSearch(p, search) {
+			continue
+		}
+		filtered = append(filtered, p)
+	}
+
 	var b strings.Builder
 	b.WriteString("<h1>Plugins</h1>\n")
 	b.WriteString(pluginsBulkNoticeHTML(notice, bulk))
@@ -1792,29 +1836,49 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString(plugins.AutoUpdateGoneNotice + "\n")
 	// P9.17: Plugin Updates via update.php are N/A in GoPress.
 	b.WriteString(plugins.PluginUpdateGoneNotice + "\n")
+	writePluginsStatusViews(&b, pluginStatus, allCount, activeCount, inactiveCount)
 	bulkNonce := ""
 	if c != nil {
 		bulkNonce = c.CreateNonce("bulk-plugins")
 	}
+	b.WriteString(`<form method="get" action="/wp-admin/plugins.php" class="search-form search-plugins">` + "\n")
+	b.WriteString(`<p class="search-box">` + "\n")
+	b.WriteString(`<label class="screen-reader-text" for="plugin-search-input">Search installed plugins:</label>` + "\n")
+	b.WriteString(`<input type="search" id="plugin-search-input" name="s" value="`)
+	b.WriteString(html.EscapeString(search))
+	b.WriteString(`" />` + "\n")
+	if pluginStatus != "" {
+		b.WriteString(`<input type="hidden" name="plugin_status" value="`)
+		b.WriteString(html.EscapeString(pluginStatus))
+		b.WriteString(`" />` + "\n")
+	}
+	b.WriteString(`<input type="submit" id="search-submit" class="button" value="Search installed plugins" />` + "\n")
+	b.WriteString(`</p>` + "\n")
+	b.WriteString(`</form>` + "\n")
 	b.WriteString(`<form method="post" id="bulk-action-form" action="/wp-admin/plugins.php">` + "\n")
 	b.WriteString(`<input type="hidden" name="_wpnonce" value="`)
 	b.WriteString(html.EscapeString(bulkNonce))
 	b.WriteString(`" />` + "\n")
+	if pluginStatus != "" {
+		b.WriteString(`<input type="hidden" name="plugin_status" value="`)
+		b.WriteString(html.EscapeString(pluginStatus))
+		b.WriteString(`" />` + "\n")
+	}
+	if search != "" {
+		b.WriteString(`<input type="hidden" name="s" value="`)
+		b.WriteString(html.EscapeString(search))
+		b.WriteString(`" />` + "\n")
+	}
 	writePluginsBulkNav(&b, "top")
 	b.WriteString("<table class=\"wp-list-table widefat plugins\">\n")
 	b.WriteString("<thead><tr><td id=\"cb\" class=\"manage-column column-cb check-column\"><input id=\"cb-select-all-1\" type=\"checkbox\"></td>")
 	b.WriteString("<th scope=\"col\">Plugin</th><th scope=\"col\">Description</th></tr></thead>\n")
 	b.WriteString("<tbody id=\"the-list\">\n")
-	installed, err := plugins.ListInstalledPlugins(c)
-	if err != nil {
-		http.Error(w, "plugins: "+err.Error()+"\n", http.StatusInternalServerError)
-		return
+	if len(filtered) == 0 {
+		b.WriteString("<tr class=\"inactive\"><th scope=\"row\" class=\"check-column\"></th><td class=\"plugin-title\"><strong>No plugins found</strong></td>")
+		b.WriteString("<td class=\"column-description desc\"><p>GoPress plugin management stub (P7.86).</p></td></tr>\n")
 	}
-	if len(installed) == 0 {
-		b.WriteString("<tr class=\"inactive\"><th scope=\"row\" class=\"check-column\"></th><td class=\"plugin-title\"><strong>No plugins installed</strong></td>")
-		b.WriteString("<td class=\"column-description desc\"><p>GoPress plugin management stub (P7.1).</p></td></tr>\n")
-	}
-	for _, p := range installed {
+	for _, p := range filtered {
 		active := plugins.IsPluginActive(c, p.File)
 		rowClass := "inactive"
 		if active {
@@ -1869,6 +1933,47 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 	writePluginsBulkNav(&b, "bottom")
 	b.WriteString("</form>\n")
 	writeAdminPage(w, c, newAdminChrome(c, "Plugins", "plugins-php"), b.String())
+}
+
+// writePluginsStatusViews emits WP_Plugins_List_Table::get_views subset (P7.86).
+func writePluginsStatusViews(b *strings.Builder, current string, all, active, inactive int) {
+	if b == nil {
+		return
+	}
+	link := func(status, label string, n int, isCurrent bool) string {
+		href := "/wp-admin/plugins.php"
+		if status != "" {
+			href += "?plugin_status=" + url.QueryEscape(status)
+		}
+		cls := ""
+		if isCurrent {
+			cls = ` class="current"`
+		}
+		return fmt.Sprintf(`<a href="%s"%s>%s <span class="count">(%d)</span></a>`,
+			html.EscapeString(href), cls, label, n)
+	}
+	b.WriteString(`<ul class="subsubsub">` + "\n")
+	b.WriteString(`<li class="all">`)
+	b.WriteString(link("", "All", all, current == ""))
+	b.WriteString(` |</li>` + "\n")
+	b.WriteString(`<li class="active">`)
+	b.WriteString(link("active", "Active", active, current == "active"))
+	b.WriteString(` |</li>` + "\n")
+	b.WriteString(`<li class="inactive">`)
+	b.WriteString(link("inactive", "Inactive", inactive, current == "inactive"))
+	b.WriteString(`</li>` + "\n")
+	b.WriteString(`</ul>` + "\n")
+}
+
+func pluginMatchesSearch(p plugins.PluginData, q string) bool {
+	q = strings.ToLower(strings.TrimSpace(q))
+	if q == "" {
+		return true
+	}
+	hay := strings.ToLower(strings.Join([]string{
+		p.Name, p.Description, p.Author, p.AuthorName, p.File, p.Title,
+	}, " "))
+	return strings.Contains(hay, q)
 }
 
 // handlePluginAction activates/deactivates a plugin via GET or POST (P9.4).
