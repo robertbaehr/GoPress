@@ -3804,6 +3804,21 @@
   task: P4.54
   api: exported
 
+# P4.102: widgets REST permission parity (edit_theme_options → empty; else cannot_manage).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-widgets-controller.php#permissions
+  go: internal/rest/widgets.go
+  status: out-of-scope
+  task: P4.102
+  api: exported
+  notes: "P4.102 — anon/unauthorized → rest_cannot_manage_widgets; authorized GET collections → []"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-sidebars-controller.php#permissions
+  go: internal/rest/widgets.go
+  status: out-of-scope
+  task: P4.102
+  api: exported
+  notes: "P4.102 — edit_theme_options gate before empty/disabled responses"
+
 - prefix: wp-includes/IXR/
   go: Tier 2
   status: out-of-scope
