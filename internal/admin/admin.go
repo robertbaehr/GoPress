@@ -1194,6 +1194,17 @@ func (h *Handler) serveOptionsPHP(w http.ResponseWriter, r *http.Request, c *wp.
 				show = "posts"
 			}
 			_, _ = c.Options.UpdateOption("show_on_front", show, "yes")
+			// P3.80: static front page + posts page IDs.
+			pageOnFront := strings.TrimSpace(r.Form.Get("page_on_front"))
+			if pageOnFront == "" {
+				pageOnFront = "0"
+			}
+			_, _ = c.Options.UpdateOption("page_on_front", pageOnFront, "yes")
+			pageForPosts := strings.TrimSpace(r.Form.Get("page_for_posts"))
+			if pageForPosts == "" {
+				pageForPosts = "0"
+			}
+			_, _ = c.Options.UpdateOption("page_for_posts", pageForPosts, "yes")
 			ppp := strings.TrimSpace(r.Form.Get("posts_per_page"))
 			if ppp == "" {
 				ppp = "10"
@@ -1324,12 +1335,15 @@ func (h *Handler) serveOptionsWriting(w http.ResponseWriter, r *http.Request, c 
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveOptionsReading is the Settings → Reading screen stub (P7.14 / P7.49).
+// serveOptionsReading is the Settings → Reading screen stub (P7.14 / P7.49 / P3.80).
 func (h *Handler) serveOptionsReading(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
 	showOnFront := optionString(c, "show_on_front", "posts")
+	pageOnFront := optionString(c, "page_on_front", "0")
+	pageForPosts := optionString(c, "page_for_posts", "0")
 	postsPerPage := optionString(c, "posts_per_page", "10")
 	blogPublic := optionString(c, "blog_public", "1")
+	pages, _ := wp.ListPublishedPages(c, 100)
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>Reading Settings &lsaquo; ")
@@ -1356,7 +1370,37 @@ func (h *Handler) serveOptionsReading(w http.ResponseWriter, r *http.Request, c 
 	if showOnFront == "page" {
 		b.WriteString(" checked=\"checked\"")
 	}
-	b.WriteString("> A static page</label>\n")
+	b.WriteString("> A static page (select below)</label>\n")
+	b.WriteString("<ul>\n<li><label for=\"page_on_front\">Homepage: </label>")
+	b.WriteString("<select name=\"page_on_front\" id=\"page_on_front\">\n")
+	b.WriteString("<option value=\"0\">— Select —</option>\n")
+	for _, p := range pages {
+		b.WriteString("<option value=\"")
+		b.WriteString(strconv.FormatInt(p.ID, 10))
+		b.WriteString("\"")
+		if pageOnFront == strconv.FormatInt(p.ID, 10) {
+			b.WriteString(" selected=\"selected\"")
+		}
+		b.WriteString(">")
+		b.WriteString(html.EscapeString(p.Title))
+		b.WriteString("</option>\n")
+	}
+	b.WriteString("</select></li>\n")
+	b.WriteString("<li><label for=\"page_for_posts\">Posts page: </label>")
+	b.WriteString("<select name=\"page_for_posts\" id=\"page_for_posts\">\n")
+	b.WriteString("<option value=\"0\">— Select —</option>\n")
+	for _, p := range pages {
+		b.WriteString("<option value=\"")
+		b.WriteString(strconv.FormatInt(p.ID, 10))
+		b.WriteString("\"")
+		if pageForPosts == strconv.FormatInt(p.ID, 10) {
+			b.WriteString(" selected=\"selected\"")
+		}
+		b.WriteString(">")
+		b.WriteString(html.EscapeString(p.Title))
+		b.WriteString("</option>\n")
+	}
+	b.WriteString("</select></li>\n</ul>\n")
 	b.WriteString("</fieldset></td>\n</tr>\n")
 	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"posts_per_page\">Blog pages show at most</label></th>\n")
 	b.WriteString("<td><input name=\"posts_per_page\" type=\"number\" step=\"1\" min=\"1\" id=\"posts_per_page\" value=\"")

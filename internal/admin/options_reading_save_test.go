@@ -24,17 +24,23 @@ func TestOptionsReadingSaveViaOptionsPHP(t *testing.T) {
 	}
 
 	origShow := c.Options.GetOption("show_on_front", "posts")
+	origFront := c.Options.GetOption("page_on_front", "0")
+	origPosts := c.Options.GetOption("page_for_posts", "0")
 	origPPP := c.Options.GetOption("posts_per_page", "10")
 	origPublic := c.Options.GetOption("blog_public", "1")
 	defer func() {
 		_, _ = c.Options.UpdateOption("show_on_front", origShow, "yes")
+		_, _ = c.Options.UpdateOption("page_on_front", origFront, "yes")
+		_, _ = c.Options.UpdateOption("page_for_posts", origPosts, "yes")
 		_, _ = c.Options.UpdateOption("posts_per_page", origPPP, "yes")
 		_, _ = c.Options.UpdateOption("blog_public", origPublic, "yes")
 	}()
 
 	form := url.Values{}
 	form.Set("option_page", "reading")
-	form.Set("show_on_front", "posts")
+	form.Set("show_on_front", "page")
+	form.Set("page_on_front", "2")
+	form.Set("page_for_posts", "0")
 	form.Set("posts_per_page", "7")
 	form.Set("blog_public", "0")
 	form.Set("submit", "Save Changes")
@@ -54,6 +60,12 @@ func TestOptionsReadingSaveViaOptionsPHP(t *testing.T) {
 	loc := rec.Header().Get("Location")
 	if !strings.Contains(loc, "options-reading.php") || !strings.Contains(loc, "settings-updated=true") {
 		t.Fatalf("Location=%q", loc)
+	}
+	if got := strings.TrimSpace(fmt.Sprint(c.Options.GetOption("show_on_front", ""))); got != "page" {
+		t.Fatalf("show_on_front=%v", got)
+	}
+	if got := strings.TrimSpace(fmt.Sprint(c.Options.GetOption("page_on_front", ""))); got != "2" {
+		t.Fatalf("page_on_front=%v", got)
 	}
 	if got := strings.TrimSpace(fmt.Sprint(c.Options.GetOption("posts_per_page", ""))); got != "7" {
 		t.Fatalf("posts_per_page=%v", got)
