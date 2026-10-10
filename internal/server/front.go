@@ -596,6 +596,7 @@ func (f *Front) renderSearchBlockTemplate(w http.ResponseWriter, c *wp.Context, 
 		extraHref = home + "/search/" + pathEscapeSearch(term) + "/feed/rss2/"
 	}
 	writeFrontHeadLinks(&b, home, blogname, "", "", "", extraTitle, extraHref, "")
+	writeArchiveRelLinks(&b, c, home)
 	b.WriteString(wp.EmojiHeadHTML())
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
@@ -704,6 +705,7 @@ func (f *Front) renderDateArchiveBlockTemplate(w http.ResponseWriter, c *wp.Cont
 	b.WriteString(pageTitle)
 	b.WriteString("</title>\n")
 	writeFrontHeadLinks(&b, home, blogname, "", "", "", "", "", "")
+	writeArchiveRelLinks(&b, c, home)
 	b.WriteString(wp.EmojiHeadHTML())
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
@@ -829,6 +831,7 @@ func (f *Front) renderAuthorArchiveBlockTemplate(w http.ResponseWriter, c *wp.Co
 		restPath = "/wp/v2/users/" + strconv.FormatInt(user.ID, 10)
 	}
 	writeFrontHeadLinks(&b, home, blogname, "", restPath, "", extraTitle, extraHref, "")
+	writeArchiveRelLinks(&b, c, home)
 	b.WriteString(wp.EmojiHeadHTML())
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
@@ -933,6 +936,7 @@ func (f *Front) renderCategoryArchiveBlockTemplate(w http.ResponseWriter, c *wp.
 	b.WriteString(pageTitle)
 	b.WriteString("</title>\n")
 	writeFrontHeadLinks(&b, home, blogname, "", "", "", "", "", "")
+	writeArchiveRelLinks(&b, c, home)
 	b.WriteString(wp.EmojiHeadHTML())
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
@@ -1068,6 +1072,7 @@ func (f *Front) renderTagArchiveBlockTemplate(w http.ResponseWriter, c *wp.Conte
 	b.WriteString(pageTitle)
 	b.WriteString("</title>\n")
 	writeFrontHeadLinks(&b, home, blogname, "", "", "", "", "", "")
+	writeArchiveRelLinks(&b, c, home)
 	b.WriteString(wp.EmojiHeadHTML())
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
@@ -2544,6 +2549,20 @@ func (f *Front) render404Shim(w http.ResponseWriter, c *wp.Context) {
 // pathEscapeSearch encodes a search term for /search/{term}/feed/ paths (P3.39).
 func pathEscapeSearch(term string) string {
 	return url.PathEscape(strings.TrimSpace(term))
+}
+
+// writeArchiveRelLinks emits <link rel="prev|next"> on paginated archives (P3.43).
+// Not used on the blog home (corpus front-home) — only is_archive()-style views.
+func writeArchiveRelLinks(b *strings.Builder, c *wp.Context, home string) {
+	if b == nil || c == nil || c.Scope == nil {
+		return
+	}
+	if !c.Scope.IsArchive && !c.Scope.IsSearch {
+		return
+	}
+	base := wp.ArchiveBaseFromRequest(c, home)
+	paged, maxPages := mainQueryPagination(c)
+	b.WriteString(wp.ArchiveRelPrevNextHTML(base, paged, maxPages))
 }
 
 // writeFrontHeadLinks emits wp_head discovery links (feeds, api.w.org, oEmbed, canonical).
