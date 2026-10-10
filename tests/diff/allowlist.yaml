@@ -2,14 +2,4 @@
 # Match by corpus id only (do not use path: "/" — prefix matching is too broad).
 # remove_by is YYYY-MM-DD.
 
-- id: front-home
-  reason: Block theme HTML not yet byte-parity with twentytwentyfive (inline styles / layout classes)
-  remove_by: "2027-06-01"
-
-- id: front-sample-page
-  reason: Block theme HTML not yet byte-parity
-  remove_by: "2027-06-01"
-
-- id: front-hello-world
-  reason: Singular theme HTML not yet byte-parity after canonical redirect
-  remove_by: "2027-06-01"
+[]
