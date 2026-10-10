@@ -2554,6 +2554,8 @@ func (h *Handler) serveOptionsPrivacy(w http.ResponseWriter, r *http.Request, c 
 			switch {
 			case id > 0:
 				note = "Privacy Policy page updated successfully."
+				// P8.14: seed suggested-text cache for the newly selected page.
+				wp.SeedSuggestedPolicyCache(c)
 			case prev > 0:
 				note = "Privacy Policy page removed."
 			default:
@@ -2574,6 +2576,9 @@ func (h *Handler) serveOptionsPrivacy(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
 	b.WriteString("<body class=\"wp-admin wp-core-ui privacy-settings\">\n")
 	b.WriteString(adminNoticesHTML(c))
+	// P8.14: warn when suggested privacy policy text has changed.
+	_ = wp.TextChangeCheck(c)
+	b.WriteString(wp.PrivacyPolicyUpdatedNoticeHTML(c))
 	b.WriteString("<div class=\"privacy-settings-header\">\n")
 	b.WriteString("<div class=\"privacy-settings-title-section\"><h1>Privacy</h1></div>\n")
 	b.WriteString("<nav class=\"privacy-settings-tabs-wrapper\" aria-label=\"Secondary menu\">\n")
@@ -2716,6 +2721,9 @@ func (h *Handler) servePrivacyPolicyGuide(w http.ResponseWriter, r *http.Request
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
 	b.WriteString("<body class=\"wp-admin wp-core-ui privacy-settings\">\n")
 	b.WriteString(adminNoticesHTML(c))
+	// P8.14: warn when suggested privacy policy text has changed.
+	_ = wp.TextChangeCheck(c)
+	b.WriteString(wp.PrivacyPolicyUpdatedNoticeHTML(c))
 	b.WriteString("<div class=\"privacy-settings-header\">\n")
 	b.WriteString("<div class=\"privacy-settings-title-section\"><h1>Privacy</h1></div>\n")
 	b.WriteString("<nav class=\"privacy-settings-tabs-wrapper\" aria-label=\"Secondary menu\">\n")
