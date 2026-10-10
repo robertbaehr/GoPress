@@ -349,21 +349,6 @@ func navigationSubmenuIconSVG() string {
 	return `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" focusable="false"><path d="M1.50002 4L6.00002 8L10.5 4" stroke-width="1.5"></path></svg>`
 }
 
-// navItemHTML is retained for callers that only need a minimal label/url item.
-func navItemHTML(label, url string) string {
-	var b strings.Builder
-	b.WriteString(`<li class="wp-block-navigation-item wp-block-navigation-link"><a class="wp-block-navigation-item__content"`)
-	if url != "" {
-		b.WriteString(` href="`)
-		b.WriteString(html.EscapeString(url))
-		b.WriteString(`"`)
-	}
-	b.WriteString(`><span class="wp-block-navigation-item__label">`)
-	b.WriteString(html.EscapeString(label))
-	b.WriteString(`</span></a></li>`)
-	return b.String()
-}
-
 func attrInt64(attrs map[string]any, key string) int64 {
 	if attrs == nil {
 		return 0
