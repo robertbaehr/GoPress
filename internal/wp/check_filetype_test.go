@@ -49,3 +49,45 @@ func TestGetAllowedMimeTypesUnsets(t *testing.T) {
 		t.Fatal("htm|html should be unset without unfiltered_html")
 	}
 }
+
+func TestGetMimeTypesFullParityKeys(t *testing.T) {
+	m := wp.GetMimeTypes(nil)
+	want := map[string]string{
+		"dfxp":                         "application/ttaf+xml",
+		"mdb":                          "application/vnd.ms-access",
+		"mpp":                          "application/vnd.ms-project",
+		"docm":                         "application/vnd.ms-word.document.macroEnabled.12",
+		"dotx":                         "application/vnd.openxmlformats-officedocument.wordprocessingml.template",
+		"xlsm":                         "application/vnd.ms-excel.sheet.macroEnabled.12",
+		"ppsx":                         "application/vnd.openxmlformats-officedocument.presentationml.slideshow",
+		"onetoc|onetoc2|onetmp|onepkg": "application/onenote",
+		"oxps":                         "application/oxps",
+		"xps":                          "application/vnd.ms-xpsdocument",
+		"odg":                          "application/vnd.oasis.opendocument.graphics",
+		"odc":                          "application/vnd.oasis.opendocument.chart",
+		"odb":                          "application/vnd.oasis.opendocument.database",
+		"odf":                          "application/vnd.oasis.opendocument.formula",
+	}
+	for k, v := range want {
+		if got := m[k]; got != v {
+			t.Fatalf("GetMimeTypes[%q]=%q want %q", k, got, v)
+		}
+	}
+	got := wp.CheckFiletype(nil, "notes.dfxp", m)
+	if got.Ext != "dfxp" || got.Type != "application/ttaf+xml" {
+		t.Fatalf("CheckFiletype dfxp=%+v", got)
+	}
+}
+
+func TestGetMimeTypesFilter(t *testing.T) {
+	c := &wp.Context{Hooks: wp.NewHooks()}
+	c.Hooks.AddFilter("mime_types", func(value any, _ ...any) any {
+		m := value.(map[string]string)
+		m["xyz"] = "application/x-xyz"
+		return m
+	}, 10, 1)
+	m := wp.GetMimeTypes(c)
+	if m["xyz"] != "application/x-xyz" {
+		t.Fatalf("mime_types filter not applied: %+v", m["xyz"])
+	}
+}
