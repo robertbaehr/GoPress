@@ -23,6 +23,9 @@ func serveRobotsTXT(w http.ResponseWriter, c *wp.Context) {
 		b.WriteString("/wp-sitemap.xml\n")
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	if home != "" {
+		w.Header().Set("Link", fmt.Sprintf(`<%s/wp-json/>; rel="https://api.w.org/"`, home))
+	}
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(b.String()))
 }
