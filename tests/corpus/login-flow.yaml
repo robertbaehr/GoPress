@@ -270,3 +270,40 @@
   compare: headers
   nonce: null
 
+# P10.102: login redirect_to edit.php header case.
+- id: login-redirect-edit-php
+  role: anon
+  method: GET
+  path: /wp-login.php?redirect_to=%2Fwp-admin%2Fedit.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-lostpassword-invalidemail
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword&error=invalidemail
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-interim-redirect-admin
+  role: anon
+  method: GET
+  path: /wp-login.php?interim-login=1&redirect_to=%2Fwp-admin%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-checkemail-confirm-redirect
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=confirm&redirect_to=%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
