@@ -31,6 +31,8 @@ type QueryArgs struct {
 	Tag string
 	// Category is the category slug for category archives (P3.25).
 	Category string
+	// CategoryIn is category term IDs (WP_Query category__in / REST ?categories=, P4.86).
+	CategoryIn []int64
 	// StickyFirst prepends sticky posts (home/blog inherit queries, P5.19).
 	StickyFirst bool
 	// IgnoreSticky excludes sticky posts from results (non-inherit query loops).
@@ -121,6 +123,36 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 			" INNER JOIN " + c.DB.Terms() + " t ON t.term_id = tt.term_id"
 		where = append(where, "tt.taxonomy = %s", "t.slug = %s")
 		vals = append(vals, "post_tag", tag)
+		whereSQL := strings.Join(where, " AND ")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_type", "p.post_type")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_status", "p.post_status")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_author", "p.post_author")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_title", "p.post_title")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_excerpt", "p.post_excerpt")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_content", "p.post_content")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_date", "p.post_date")
+		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
+		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
+		q := "SELECT COUNT(DISTINCT p.ID) AS total FROM " + from + " WHERE " + whereSQL
+		sqlStr, sqlArgs, err := c.DB.Prepare(q, vals...)
+		if err != nil {
+			return 0, err
+		}
+		v, err := c.DB.GetVar(sqlStr, sqlArgs...)
+		if err != nil {
+			return 0, err
+		}
+		return intFromAny(v), nil
+	}
+	if len(args.CategoryIn) > 0 {
+		from = c.DB.Posts() + " p INNER JOIN " + c.DB.TermRelationships() + " tr ON tr.object_id = p.ID" +
+			" INNER JOIN " + c.DB.TermTaxonomy() + " tt ON tt.term_taxonomy_id = tr.term_taxonomy_id" +
+			" INNER JOIN " + c.DB.Terms() + " t ON t.term_id = tt.term_id"
+		where = append(where, "tt.taxonomy = %s")
+		vals = append(vals, "category")
+		clause, cvals := postInNotInSQL("t.term_id", args.CategoryIn, nil)
+		where = append(where, clause)
+		vals = append(vals, cvals...)
 		whereSQL := strings.Join(where, " AND ")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_type", "p.post_type")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_status", "p.post_status")
@@ -279,6 +311,15 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 			" INNER JOIN " + c.DB.Terms() + " t ON t.term_id = tt.term_id"
 		where = append(where, "tt.taxonomy = %s", "t.slug = %s")
 		vals = append(vals, "post_tag", tag)
+	} else if len(args.CategoryIn) > 0 {
+		from += " INNER JOIN " + c.DB.TermRelationships() + " tr ON tr.object_id = p.ID" +
+			" INNER JOIN " + c.DB.TermTaxonomy() + " tt ON tt.term_taxonomy_id = tr.term_taxonomy_id" +
+			" INNER JOIN " + c.DB.Terms() + " t ON t.term_id = tt.term_id"
+		where = append(where, "tt.taxonomy = %s")
+		vals = append(vals, "category")
+		clause, cvals := postInNotInSQL("t.term_id", args.CategoryIn, nil)
+		where = append(where, clause)
+		vals = append(vals, cvals...)
 	} else if cat := strings.TrimSpace(args.Category); cat != "" {
 		cat = lastPathSegment(cat)
 		from += " INNER JOIN " + c.DB.TermRelationships() + " tr ON tr.object_id = p.ID" +
@@ -333,7 +374,7 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 	for _, row := range rows {
 		out = append(out, postFromRow(row))
 	}
-	if postType == "post" && (args.StickyFirst || args.IgnoreSticky) && args.P == 0 && args.Name == "" && args.PageName == "" && args.Tag == "" && args.Category == "" {
+	if postType == "post" && (args.StickyFirst || args.IgnoreSticky) && args.P == 0 && args.Name == "" && args.PageName == "" && args.Tag == "" && args.Category == "" && len(args.CategoryIn) == 0 {
 		out = applyStickyOrdering(c, out, args)
 	}
 	return out, nil

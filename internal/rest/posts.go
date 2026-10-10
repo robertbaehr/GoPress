@@ -196,7 +196,7 @@ func parsePage(r *http.Request) int {
 	return page
 }
 
-func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, author int64) ([]Post, error) {
+func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, author int64, categoryIn []int64) ([]Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -216,6 +216,7 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 		Order:        order,
 		Search:       search,
 		Author:       author,
+		CategoryIn:   categoryIn,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	rows, err := wp.GetPosts(c, args)
@@ -282,7 +283,44 @@ func parsePostsAuthor(r *http.Request) int64 {
 	return n
 }
 
-func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, author int64) (int, error) {
+// parsePostsCategories reads REST ?categories= (maps to tax_query category term_id IN, P4.86).
+// Accepts comma-separated IDs and/or repeated query values.
+func parsePostsCategories(r *http.Request) []int64 {
+	if r == nil {
+		return nil
+	}
+	seen := map[int64]bool{}
+	var out []int64
+	add := func(raw string) {
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			return
+		}
+		for _, part := range strings.Split(raw, ",") {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			n, err := strconv.ParseInt(part, 10, 64)
+			if err != nil || n <= 0 || seen[n] {
+				continue
+			}
+			seen[n] = true
+			out = append(out, n)
+		}
+	}
+	q := r.URL.Query()
+	if vals, ok := q["categories"]; ok {
+		for _, v := range vals {
+			add(v)
+		}
+	} else {
+		add(q.Get("categories"))
+	}
+	return out
+}
+
+func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, author int64, categoryIn []int64) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
@@ -294,6 +332,7 @@ func countPosts(c *wp.Context, postType string, stickyFilter *bool, search strin
 		PostStatus: "publish",
 		Search:     search,
 		Author:     author,
+		CategoryIn: categoryIn,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	return wp.CountPosts(c, args)
