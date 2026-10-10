@@ -1143,6 +1143,21 @@
   api: exported
   notes: "P2.61 — MkdirP; inherit parent mode; reject ..; used by SaveUploadedMedia"
 
+# P2.62: wp_tempnam + get_temp_dir.
+- prefix: wp-admin/includes/file.php#wp_tempnam
+  go: internal/wp/tempnam.go
+  status: partial
+  task: P2.62
+  api: exported
+  notes: "P2.62 — TempNam; basename+random+UniqueFilename; O_EXCL create; 252-char truncate"
+
+- prefix: wp-includes/functions.php#get_temp_dir
+  go: internal/wp/tempnam.go
+  status: partial
+  task: P2.62
+  api: exported
+  notes: "P2.62 — GetTempDir trailingslashit writable temp"
+
 # P2.59: get_allowed_mime_types($user) — optional user + upload_mimes user arg.
 - prefix: wp-includes/functions.php#get_allowed_mime_types
   go: internal/wp/check_filetype.go
