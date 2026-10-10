@@ -1405,6 +1405,21 @@
   api: exported
   notes: "P4.84 — listPostCollection honors ?search= for posts/pages"
 
+# P4.85: REST GET /wp/v2/posts?author= collection filter (WP_Query author).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#author
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.85
+  api: exported
+  notes: "P4.85 — ?author= → QueryArgs.Author (post_author)"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#author-list
+  go: internal/rest/posts_write.go
+  status: partial
+  task: P4.85
+  api: exported
+  notes: "P4.85 — listPostCollection honors ?author= for posts/pages"
+
 # P4.83: REST GET /wp/v2/posts?orderby=title|date|id|slug (+ order=asc|desc).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#orderby
   go: internal/rest/posts.go
