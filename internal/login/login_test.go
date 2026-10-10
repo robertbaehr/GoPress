@@ -136,6 +136,32 @@ func TestInterimLoginForm(t *testing.T) {
 	}
 }
 
+func TestInterimLoginMessagesFilter(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	if c.Hooks == nil {
+		c.Hooks = wp.NewHooks()
+	}
+	c.Hooks.AddFilter("login_messages", func(value any, _ ...any) any {
+		return "<p>Custom interim notice.</p>"
+	}, 10, 1)
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?interim-login=1", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `id="login-message"`) || !strings.Contains(body, "Custom interim notice.") {
+		t.Fatalf("expected filtered interim message: %q", body)
+	}
+	if strings.Contains(body, "Your session has expired") {
+		t.Fatalf("default message should be replaced by filter: %q", body)
+	}
+}
+
 func TestInterimLoginPostBodyOnly(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()

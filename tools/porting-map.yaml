@@ -821,6 +821,21 @@
   task: P6.18
   api: n/a
 
+# P6.31: interim-login session-expired message via login_messages filter.
+- prefix: wp-login.php#login_messages
+  go: internal/login/login.go
+  status: partial
+  task: P6.31
+  api: n/a
+  notes: "P6.31 — interim expired notice runs login_messages filter"
+
+- prefix: wp-login.php#login_messages#test
+  go: internal/login/login_test.go
+  status: partial
+  task: P6.31
+  api: n/a
+  notes: "P6.31 — unit coverage for filtered interim message"
+
 # P6.19: interim-login session-expired notice (login-message).
 - prefix: wp-login.php#interim-message
   go: internal/login/login.go
