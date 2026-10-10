@@ -944,6 +944,13 @@
   task: P3.42
   api: exported
 
+# P3.43: archive pagination <link rel="prev|next">.
+- prefix: wp-includes/link-template.php#get_pagenum_link
+  go: internal/wp/archive_rel.go
+  status: partial
+  task: P3.43
+  api: exported
+
 # P3.37 / P10.35: file-level link-template row (fragments above are docs-only).
 - prefix: wp-includes/link-template.php
   go: internal/wp/link_template.go
