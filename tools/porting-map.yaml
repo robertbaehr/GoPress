@@ -3606,6 +3606,21 @@
   api: internal
   notes: "P5.83 — expanded service icons/names"
 
+# P5.84: navigation-link / navigation-submenu polish.
+- prefix: wp-includes/blocks/navigation-link.php#p5.84
+  go: internal/blocks/navigation.go
+  status: partial
+  task: P5.84
+  api: internal
+  notes: "P5.84 — opensInNewTab, rel/nofollow, title, description, current-menu-item, nested submenu ul"
+
+- prefix: wp-includes/blocks/navigation-submenu.php#p5.84
+  go: internal/blocks/navigation.go
+  status: partial
+  task: P5.84
+  api: internal
+  notes: "P5.84 — has-child submenu container + chevron icon"
+
 - prefix: wp-includes/blocks/
   go: internal/blocks
   status: partial

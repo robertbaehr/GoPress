@@ -52,6 +52,7 @@ func knownBlockTypes() []BlockType {
 		{"core/template-part", "Template Part", "theme", "Edit the different global regions of your site, like the header, footer, sidebar, or create your own.", true},
 		{"core/navigation", "Navigation", "theme", "A collection of blocks that allow visitors to get around your site.", true},
 		{"core/navigation-link", "Custom Link", "design", "Add a page, link, or another item to your navigation.", false},
+		{"core/navigation-submenu", "Submenu", "design", "Add a submenu to your navigation.", true},
 		{"core/home-link", "Home Link", "design", "Create a link that always points to the homepage of the site. Usually not necessary if there is already a site title link present in the header.", true},
 		{"core/loginout", "Login/out", "theme", "Show login & logout links.", true},
 		{"core/page-list", "Page List", "widgets", "Display a list of all pages.", true},
