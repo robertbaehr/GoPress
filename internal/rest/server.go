@@ -68,7 +68,7 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	}
 	setAPILinkHeader(w, c)
 
-	path := restPath(r.URL.Path)
+	path := restPathFromRequest(r)
 	switch {
 	case path == "/" || path == "":
 		s.serveIndex(w, c)
@@ -457,6 +457,22 @@ func restPath(urlPath string) string {
 		p = "/" + p
 	}
 	return p
+}
+
+// restPathFromRequest prefers ?rest_route= when set (plain permalinks / index.php, P3.29).
+func restPathFromRequest(r *http.Request) string {
+	if r != nil && r.URL != nil {
+		if rr := strings.TrimSpace(r.URL.Query().Get("rest_route")); rr != "" {
+			if !strings.HasPrefix(rr, "/") {
+				rr = "/" + rr
+			}
+			return rr
+		}
+	}
+	if r == nil {
+		return "/"
+	}
+	return restPath(r.URL.Path)
 }
 
 func (s *Server) serveIndex(w http.ResponseWriter, c *wp.Context) {

@@ -356,6 +356,13 @@
   task: P2.31
   api: exported
 
+# P3.29: ?rest_route= query var dispatches REST API.
+- prefix: wp-includes/rest-api.php#rest_route
+  go: internal/server/server.go
+  status: partial
+  task: P3.29
+  api: n/a
+
 # P4.50: REST POST /wp/v2/block-renderer/{name} with attributes + post_id.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-renderer-controller.php
   go: internal/rest/block_types.go

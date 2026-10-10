@@ -113,6 +113,46 @@ func TestWPJSONIndex(t *testing.T) {
 	}
 }
 
+func TestRESTRouteQueryVar(t *testing.T) {
+	cfg := &config.Config{
+		DBName: "gopress_go", DBUser: "root", DBPassword: "root",
+		DBHost: "127.0.0.1:3306", DBCharset: "utf8mb4", TablePrefix: "wp_",
+		ABSPATH: "/workspace/",
+		AuthKey: "k", SecureAuthKey: "k", LoggedInKey: "k", NonceKey: "k",
+		AuthSalt: "s", SecureAuthSalt: "s", LoggedInSalt: "s", NonceSalt: "s",
+	}
+	c, err := wp.Boot(context.Background(), cfg)
+	if err != nil {
+		t.Skipf("Boot unavailable: %v", err)
+	}
+	defer c.DB.Close()
+
+	s := &server.Server{WP: c, AbsPath: cfg.ABSPATH, Front: &stubFront{}}
+	for _, path := range []string{
+		"/?rest_route=/",
+		"/index.php?rest_route=/",
+		"/?rest_route=/wp/v2/types",
+	} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		rec := httptest.NewRecorder()
+		s.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("%s status=%d body=%q", path, rec.Code, rec.Body.String())
+		}
+		if ct := rec.Header().Get("Content-Type"); !strings.Contains(ct, "json") {
+			t.Fatalf("%s content-type=%q", path, ct)
+		}
+		body := rec.Body.String()
+		if path == "/?rest_route=/wp/v2/types" {
+			if !strings.Contains(body, `"post"`) && !strings.Contains(body, `"slug"`) {
+				t.Fatalf("%s unexpected body: %s", path, body)
+			}
+		} else if !strings.Contains(body, `"namespaces"`) {
+			t.Fatalf("%s expected namespaces: %s", path, body)
+		}
+	}
+}
+
 type stubFront struct{ called bool }
 
 func (f *stubFront) ServeFront(w http.ResponseWriter, r *http.Request, c *wp.Context) {
