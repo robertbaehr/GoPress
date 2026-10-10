@@ -804,6 +804,21 @@
   api: exported
   notes: "P2.51 — IsUUID any-version + version=4 regex; other versions false"
 
+# P2.52: hex color validation (sanitize_hex_color family / wp_is_hex_color).
+- prefix: wp-includes/formatting.php#sanitize_hex_color
+  go: internal/wp/hex_color.go
+  status: partial
+  task: P2.52
+  api: exported
+  notes: "P2.52 — IsHexColor + SanitizeHexColor / NoHash / MaybeHashHexColor"
+
+- prefix: wp-includes/formatting.php#wp_is_hex_color
+  go: internal/wp/hex_color.go
+  status: partial
+  task: P2.52
+  api: exported
+  notes: "P2.52 — IsHexColor boolean for #RGB / #RRGGBB"
+
 # P2.48: wp_spaces_regexp (+ filter).
 - prefix: wp-includes/formatting.php#wp_spaces_regexp
   go: internal/wp/spaces_regexp.go
