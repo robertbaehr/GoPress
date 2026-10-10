@@ -31,8 +31,11 @@ func TestBootLoadsBlogname(t *testing.T) {
 	}
 	defer c.DB.Close()
 
-	if c.Hooks == nil || c.Cache == nil || c.Options == nil || c.Meta == nil || c.Locale == nil || c.Auth == nil || c.Users == nil {
-		t.Fatal("Hooks/Cache/Options/Meta/Locale/Auth/Users not wired")
+	if c.Hooks == nil || c.Cache == nil || c.Options == nil || c.Meta == nil || c.Locale == nil || c.Auth == nil || c.Users == nil || c.Roles == nil {
+		t.Fatal("Hooks/Cache/Options/Meta/Locale/Auth/Users/Roles not wired")
+	}
+	if c.Roles.Role("administrator") == nil {
+		t.Fatal("administrator role missing after Boot")
 	}
 	got := c.Options.GetOption("blogname", "")
 	s, _ := got.(string)

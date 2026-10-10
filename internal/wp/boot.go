@@ -31,10 +31,15 @@ func Boot(ctx context.Context, cfg *config.Config) (*Context, error) {
 	c.Locale = NewLocale("")
 	c.Auth = NewAuth(cfg)
 	c.Users = NewUsers(handle, c.Cache)
+	c.Roles = NewRoles(c.Options)
 
 	if err := c.Options.LoadAutoload(); err != nil {
 		_ = handle.Close()
 		return nil, fmt.Errorf("wp: Boot: load autoload options: %w", err)
+	}
+	if err := c.Roles.Load(); err != nil {
+		_ = handle.Close()
+		return nil, fmt.Errorf("wp: Boot: load roles: %w", err)
 	}
 	return c, nil
 }
