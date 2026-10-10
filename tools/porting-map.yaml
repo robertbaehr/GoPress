@@ -505,6 +505,28 @@ wp-login.php#language-switcher-post
   task: P2.26
   api: exported
 
+# P8.27: media_handle_sideload / wp_handle_sideload (local temp files; no remote download).
+- prefix: wp-admin/includes/media.php#media_handle_sideload
+  go: internal/wp/sideload.go
+  status: partial
+  task: P8.27
+  api: exported
+  notes: "P8.27 — MediaHandleSideload from local tmp; MediaSideloadImage blocks http(s)"
+
+- prefix: wp-admin/includes/file.php#wp_handle_sideload
+  go: internal/wp/sideload.go
+  status: partial
+  task: P8.27
+  api: exported
+  notes: "P8.27 — HandleSideload moves tmp into uploads/2024/06"
+
+- prefix: wp-admin/includes/media.php#media_sideload_image
+  go: internal/wp/sideload.go
+  status: partial
+  task: P8.27
+  api: exported
+  notes: "P8.27 — local path only; image_sideload_extensions filter; html|src|id"
+
 # P2.21: wp_check_password covers $wp$ / phpass; application passwords reuse it.
 # P4.110: introspect + AuthenticatedAppPasswordUUID + last_used recording.
 - prefix: wp-includes/class-wp-application-passwords.php
