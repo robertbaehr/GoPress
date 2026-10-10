@@ -321,6 +321,13 @@
   task: P5.33
   api: internal
 
+# P5.34: dimensions block support (minHeight/minWidth/height/width/aspectRatio).
+- prefix: wp-includes/block-supports/dimensions.php
+  go: internal/blocks/supports.go
+  status: partial
+  task: P5.34
+  api: internal
+
 # P4.49: REST /wp/v2/search type=post|term|post-format filters.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-search-controller.php#type
   go: internal/rest/search.go

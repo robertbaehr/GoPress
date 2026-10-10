@@ -10,8 +10,8 @@ import (
 // elementsSeq is the per-process counter for wp-elements-* class names (P5.32).
 var elementsSeq uint64
 
-// applySupports injects basic color/spacing/typography/layout/shadow/position/border/elements/background
-// classes and styles from block attributes onto the rendered root element (P5.10 / P5.19 / P5.27–P5.33).
+// applySupports injects basic color/spacing/typography/layout/shadow/position/border/elements/background/dimensions
+// classes and styles from block attributes onto the rendered root element (P5.10 / P5.19 / P5.27–P5.34).
 func applySupports(htmlFragment string, attrs map[string]any, blockName string) string {
 	if htmlFragment == "" {
 		return htmlFragment
@@ -100,6 +100,13 @@ func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string
 					classes = appendUnique(classes, "has-background")
 				}
 			}
+			// Dimensions support (P5.34 / wp_render_dimensions_support).
+			if dims, ok := style["dimensions"].(map[string]any); ok && dims != nil {
+				applyDimensionsAspectRatio(dims, attrs)
+				if isExplicitAspectRatio(dims["aspectRatio"]) {
+					classes = appendUnique(classes, "has-aspect-ratio")
+				}
+			}
 			styles = mergeCSSDecls(styles, CompileStyle(style))
 			if filterID, filterCSS := duotoneFromStyle(style); filterID != "" {
 				classes = appendUnique(classes, filterID)
@@ -114,6 +121,19 @@ func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string
 						classes = appendUnique(classes, "is-position-"+t)
 					}
 				}
+			}
+		}
+		// Top-level minHeight attribute (cover/group etc., P5.34).
+		// Skip when an explicit aspect-ratio is active (WP unsets min-height then).
+		if mh := borderScalar(attrs["minHeight"]); mh != "" {
+			skipMinH := false
+			if style, ok := attrs["style"].(map[string]any); ok {
+				if dims, ok := style["dimensions"].(map[string]any); ok {
+					skipMinH = isExplicitAspectRatio(dims["aspectRatio"])
+				}
+			}
+			if !skipMinH {
+				styles = mergeCSSDecls(styles, "min-height:"+cssValue(mh))
 			}
 		}
 		// Top-level shadow attribute (registered by wp_register_shadow_support).
@@ -162,6 +182,31 @@ func backgroundHasValue(bg map[string]any) bool {
 		return true
 	}
 	return borderScalar(bg["gradient"]) != ""
+}
+
+// applyDimensionsAspectRatio mirrors wp_render_dimensions_support conflict rules (P5.34).
+// Explicit aspect-ratio unsets minHeight/height; presence of minHeight unsets aspect-ratio.
+func applyDimensionsAspectRatio(dims map[string]any, attrs map[string]any) {
+	if dims == nil {
+		return
+	}
+	if isExplicitAspectRatio(dims["aspectRatio"]) {
+		dims["minHeight"] = "unset"
+		dims["height"] = "unset"
+		return
+	}
+	hasMinHeight := borderScalar(dims["minHeight"]) != ""
+	if !hasMinHeight && attrs != nil {
+		hasMinHeight = borderScalar(attrs["minHeight"]) != ""
+	}
+	if hasMinHeight {
+		dims["aspectRatio"] = "unset"
+	}
+}
+
+func isExplicitAspectRatio(v any) bool {
+	s := strings.ToLower(strings.TrimSpace(borderScalar(v)))
+	return s != "" && s != "auto" && s != "unset"
 }
 
 // elementsSupport mirrors wp-includes/block-supports/elements.php for link/button colors (P5.32).
