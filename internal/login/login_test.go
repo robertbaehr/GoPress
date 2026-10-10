@@ -58,6 +58,29 @@ func TestLoginFormGET(t *testing.T) {
 	if !foundTestCookie {
 		t.Fatal("expected wordpress_test_cookie Set-Cookie")
 	}
+	// P6.27: nocache_headers on login.
+	if got := rec.Header().Get("Expires"); got != "Wed, 11 Jan 1984 05:00:00 GMT" {
+		t.Fatalf("Expires=%q", got)
+	}
+	wantCC := "no-cache, must-revalidate, max-age=0, no-store, private"
+	if got := rec.Header().Get("Cache-Control"); got != wantCC {
+		t.Fatalf("Cache-Control=%q want %q", got, wantCC)
+	}
+}
+
+func TestLoginNoCacheHeaders(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?action=lostpassword", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	if got := rec.Header().Get("Cache-Control"); !strings.Contains(got, "no-store") {
+		t.Fatalf("Cache-Control=%q", got)
+	}
 }
 
 func TestInterimLoginForm(t *testing.T) {
