@@ -55,15 +55,33 @@ func synthesizePreformattedBlock(attrs map[string]any) string {
 	return `<pre class="` + class + `">` + content + `</pre>`
 }
 
-// renderVerse renders core/verse (P5.62).
-// Prefers saved markup; synthesizes <pre> from content; honors textAlign/className.
+// renderVerse renders core/verse (P5.62 / P5.100).
+// Prefers saved markup; synthesizes <pre> from content; honors textAlign/className/anchor.
+// Color/typography/spacing land via applySupports on the caller.
 func (e *Env) renderVerse(block Block) string {
 	e = e.ensure()
 	out := e.renderSaved(block)
 	if strings.TrimSpace(out) != "" && reVerseTag.MatchString(out) {
-		return out
+		return polishVerseMarkup(out, block.Attrs)
 	}
 	return synthesizeVerseBlock(block.Attrs)
+}
+
+// polishVerseMarkup ensures wp-block-verse + textAlign/className/anchor on saved HTML (P5.100).
+func polishVerseMarkup(out string, attrs map[string]any) string {
+	out = addRootClass(out, "wp-block-verse")
+	if ta := strings.TrimSpace(attrString(attrs, "textAlign")); ta != "" {
+		out = addRootClass(out, "has-text-align-"+sanitizeClassToken(ta))
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		for _, part := range strings.Fields(cn) {
+			out = addRootClass(out, part)
+		}
+	}
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
+		out = ensureRootAttribute(out, "id", anchor)
+	}
+	return out
 }
 
 func synthesizeVerseBlock(attrs map[string]any) string {
@@ -75,5 +93,17 @@ func synthesizeVerseBlock(attrs map[string]any) string {
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		class += " " + html.EscapeString(cn)
 	}
-	return `<pre class="` + class + `">` + content + `</pre>`
+	var b strings.Builder
+	b.WriteString(`<pre class="`)
+	b.WriteString(class)
+	b.WriteString(`"`)
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
+		b.WriteString(` id="`)
+		b.WriteString(html.EscapeString(anchor))
+		b.WriteString(`"`)
+	}
+	b.WriteString(`>`)
+	b.WriteString(content)
+	b.WriteString(`</pre>`)
+	return b.String()
 }

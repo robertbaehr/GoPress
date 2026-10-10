@@ -84,3 +84,31 @@ func TestRenderVersePrefersSavedMarkup(t *testing.T) {
 		t.Fatalf("lost saved verse: %q", out)
 	}
 }
+
+func TestRenderVersePolishAnchorTextAlignColors(t *testing.T) {
+	// P5.100: polish saved markup + applySupports colors.
+	src := `<!-- wp:verse {"textAlign":"right","anchor":"ode-1","className":"is-style-wide","textColor":"contrast","backgroundColor":"base"} -->
+<pre class="wp-block-verse">stanza</pre>
+<!-- /wp:verse -->`
+	out := blocks.Render(src)
+	for _, want := range []string{
+		`wp-block-verse`,
+		`has-text-align-right`,
+		`is-style-wide`,
+		`id="ode-1"`,
+		`has-contrast-color`,
+		`has-base-background-color`,
+		`stanza`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
+
+func TestRenderVerseSynthesizeAnchor(t *testing.T) {
+	out := blocks.Render(`<!-- wp:verse {"anchor":"lyric","content":"la la"} /-->`)
+	if !strings.Contains(out, `id="lyric"`) || !strings.Contains(out, `la la`) {
+		t.Fatalf("expected anchor synthesize: %q", out)
+	}
+}
