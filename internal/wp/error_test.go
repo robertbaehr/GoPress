@@ -90,3 +90,54 @@ func TestWPErrorImplementsError(t *testing.T) {
 		t.Fatalf("Error()=%q", err.Error())
 	}
 }
+
+func TestWPErrorGetAllErrorDataMergeExport(t *testing.T) {
+	e := wp.NewWPError("a", "one", "d1")
+	e.AddData("d2", "a")
+	all := e.GetAllErrorData("a")
+	if len(all) != 2 || all[0] != "d1" || all[1] != "d2" {
+		t.Fatalf("GetAllErrorData=%v", all)
+	}
+
+	dst := wp.NewWPError("", "", nil)
+	e.ExportTo(dst)
+	if dst.GetErrorCode() != "a" || dst.GetErrorMessage("a") != "one" {
+		t.Fatalf("ExportTo dst=%+v", dst)
+	}
+	if got := dst.GetAllErrorData("a"); len(got) != 2 {
+		t.Fatalf("exported data=%v", got)
+	}
+
+	other := wp.NewWPError("b", "two", map[string]any{"status": 400})
+	dst.MergeFrom(other)
+	codes := dst.GetErrorCodes()
+	if len(codes) != 2 || codes[0] != "a" || codes[1] != "b" {
+		t.Fatalf("codes after merge=%v", codes)
+	}
+}
+
+func TestWPErrorAddedAction(t *testing.T) {
+	h := wp.NewHooks()
+	var gotCode, gotMsg string
+	var gotData any
+	h.AddAction("wp_error_added", func(args ...any) {
+		if len(args) < 4 {
+			t.Fatalf("args=%v", args)
+		}
+		gotCode, _ = args[0].(string)
+		gotMsg, _ = args[1].(string)
+		gotData = args[2]
+		if !wp.IsWPError(args[3]) {
+			t.Fatalf("arg3=%T", args[3])
+		}
+	}, 10, 4)
+	e := wp.NewWPError("", "", nil)
+	e.AddWithHooks(h, "rest_forbidden", "Nope", map[string]any{"status": 403})
+	if gotCode != "rest_forbidden" || gotMsg != "Nope" {
+		t.Fatalf("code=%q msg=%q", gotCode, gotMsg)
+	}
+	data, _ := gotData.(map[string]any)
+	if data["status"] != 403 {
+		t.Fatalf("data=%v", gotData)
+	}
+}

@@ -24,6 +24,11 @@ func NewWPError(code, message string, data any) *WPError {
 
 // Add appends a message for code (WP_Error::add) and optional data.
 func (e *WPError) Add(code, message string, data any) {
+	e.AddWithHooks(nil, code, message, data)
+}
+
+// AddWithHooks is WP_Error::add and fires wp_error_added when hooks are set (P2.94).
+func (e *WPError) AddWithHooks(h *Hooks, code, message string, data any) {
 	if e == nil || code == "" {
 		return
 	}
@@ -36,6 +41,9 @@ func (e *WPError) Add(code, message string, data any) {
 	e.Errors[code] = append(e.Errors[code], message)
 	if data != nil && data != "" {
 		e.AddData(data, code)
+	}
+	if h != nil {
+		h.DoAction("wp_error_added", code, message, data, e)
 	}
 }
 
@@ -129,6 +137,55 @@ func (e *WPError) GetErrorData(code string) any {
 		code = e.GetErrorCode()
 	}
 	return e.ErrorData[code]
+}
+
+// GetAllErrorData returns all data for code in insertion order (WP_Error::get_all_error_data, P2.94).
+func (e *WPError) GetAllErrorData(code string) []any {
+	if e == nil {
+		return []any{}
+	}
+	if code == "" {
+		code = e.GetErrorCode()
+	}
+	if code == "" {
+		return []any{}
+	}
+	var data []any
+	if e.additionalData != nil {
+		if prev, ok := e.additionalData[code]; ok {
+			data = append(data, prev...)
+		}
+	}
+	if e.ErrorData != nil {
+		if latest, ok := e.ErrorData[code]; ok {
+			data = append(data, latest)
+		}
+	}
+	return data
+}
+
+// MergeFrom merges errors from other into e (WP_Error::merge_from, P2.94).
+func (e *WPError) MergeFrom(other *WPError) {
+	copyWPErrors(other, e)
+}
+
+// ExportTo exports errors from e into other (WP_Error::export_to, P2.94).
+func (e *WPError) ExportTo(other *WPError) {
+	copyWPErrors(e, other)
+}
+
+func copyWPErrors(from, to *WPError) {
+	if from == nil || to == nil || !from.HasErrors() {
+		return
+	}
+	for _, code := range from.GetErrorCodes() {
+		for _, msg := range from.GetErrorMessages(code) {
+			to.Add(code, msg, nil)
+		}
+		for _, data := range from.GetAllErrorData(code) {
+			to.AddData(data, code)
+		}
+	}
 }
 
 // Remove clears messages and data for code (WP_Error::remove).
