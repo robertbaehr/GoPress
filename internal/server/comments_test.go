@@ -97,6 +97,51 @@ func TestCommentsPostMethodNotAllowed(t *testing.T) {
 	}
 }
 
+func TestCommentReplyToForm(t *testing.T) {
+	// P3.97: ?replytocom= sets parent, reply title, and visible cancel link.
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?p=1&replytocom=1", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`Leave a Reply to A WordPress Commenter`,
+		`id="cancel-comment-reply-link"`,
+		`name="comment_parent"`,
+		`id="comment_parent" value="1"`,
+		`comment-reply-link`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in %q", want, body[:min(1200, len(body))])
+		}
+	}
+	if strings.Contains(body, `style="display:none;">Cancel reply`) {
+		t.Fatalf("expected visible cancel reply link")
+	}
+}
+
+func TestCommentReplyInvalidIgnored(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?p=1&replytocom=999999", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `Leave a Reply `) || strings.Contains(body, `Leave a Reply to`) {
+		t.Fatalf("invalid replytocom should fall back: %q", body[:min(800, len(body))])
+	}
+	if !strings.Contains(body, `id="comment_parent" value="0"`) {
+		t.Fatalf("expected parent 0: %q", body[:min(800, len(body))])
+	}
+}
+
 func TestCommentsPostLoggedInApproves(t *testing.T) {
 	c := testBoot(t)
 	user, err := c.GetUserBy("login", "admin")

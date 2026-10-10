@@ -3554,6 +3554,14 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P3.68 — feedCommentCount applies get_comments_number"
 
+# P3.97: front comment reply form (?replytocom=) + reply links.
+- prefix: wp-includes/comment-template.php#comment_form_reply
+  go: internal/server/front.go
+  status: partial
+  task: P3.97
+  api: internal
+  notes: "P3.97 — replytocom parent/title/cancel; comment-reply-link on shim list"
+
 - prefix: wp-includes/feed-rss2.php#slash_comments#test
   go: internal/server/feed_slash_comments_test.go
   status: partial
