@@ -877,6 +877,19 @@
   api: n/a
 
 # P3.22: year/month date archives on the front controller.
+# P3.39: feed_links + feed_links_extra (author/search alternates in head).
+- prefix: wp-includes/general-template.php#feed_links
+  go: internal/server/front.go
+  status: partial
+  task: P3.39
+  api: n/a
+
+- prefix: wp-includes/general-template.php#feed_links_extra
+  go: internal/server/front.go
+  status: partial
+  task: P3.39
+  api: n/a
+
 - prefix: wp-includes/general-template.php
   go: internal/server/front.go
   status: partial

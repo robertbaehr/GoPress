@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"html"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -588,7 +589,13 @@ func (f *Front) renderSearchBlockTemplate(w http.ResponseWriter, c *wp.Context, 
 	b.WriteString("<title>")
 	b.WriteString(title)
 	b.WriteString("</title>\n")
-	writeFrontHeadLinks(&b, home, blogname, "", "", "")
+	extraTitle, extraHref := "", ""
+	if term != "" {
+		// feed_links_extra search: "%1$s %2$s Search Results for &#8220;%3$s&#8221; Feed"
+		extraTitle = html.EscapeString(blogname) + " &raquo; Search Results for &#8220;" + html.EscapeString(term) + "&#8221; Feed"
+		extraHref = home + "/search/" + pathEscapeSearch(term) + "/feed/rss2/"
+	}
+	writeFrontHeadLinks(&b, home, blogname, "", "", "", extraTitle, extraHref)
 	b.WriteString(wp.EmojiHeadHTML())
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
@@ -696,7 +703,7 @@ func (f *Front) renderDateArchiveBlockTemplate(w http.ResponseWriter, c *wp.Cont
 	b.WriteString("<title>")
 	b.WriteString(pageTitle)
 	b.WriteString("</title>\n")
-	writeFrontHeadLinks(&b, home, blogname, "", "", "")
+	writeFrontHeadLinks(&b, home, blogname, "", "", "", "", "")
 	b.WriteString(wp.EmojiHeadHTML())
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
@@ -809,7 +816,19 @@ func (f *Front) renderAuthorArchiveBlockTemplate(w http.ResponseWriter, c *wp.Co
 	b.WriteString("<title>")
 	b.WriteString(pageTitle)
 	b.WriteString("</title>\n")
-	writeFrontHeadLinks(&b, home, blogname, "", "", "")
+	extraTitle, extraHref, restPath := "", "", ""
+	if user != nil {
+		display := user.DisplayName
+		if display == "" {
+			display = user.Login
+		}
+		slug := nicename
+		// feed_links_extra author: "%1$s %2$s Posts by %3$s Feed"
+		extraTitle = html.EscapeString(blogname) + " &raquo; Posts by " + html.EscapeString(display) + " Feed"
+		extraHref = home + "/author/" + slug + "/feed/"
+		restPath = "/wp/v2/users/" + strconv.FormatInt(user.ID, 10)
+	}
+	writeFrontHeadLinks(&b, home, blogname, "", restPath, "", extraTitle, extraHref)
 	b.WriteString(wp.EmojiHeadHTML())
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
@@ -913,7 +932,7 @@ func (f *Front) renderCategoryArchiveBlockTemplate(w http.ResponseWriter, c *wp.
 	b.WriteString("<title>")
 	b.WriteString(pageTitle)
 	b.WriteString("</title>\n")
-	writeFrontHeadLinks(&b, home, blogname, "", "", "")
+	writeFrontHeadLinks(&b, home, blogname, "", "", "", "", "")
 	b.WriteString(wp.EmojiHeadHTML())
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
@@ -1048,7 +1067,7 @@ func (f *Front) renderTagArchiveBlockTemplate(w http.ResponseWriter, c *wp.Conte
 	b.WriteString("<title>")
 	b.WriteString(pageTitle)
 	b.WriteString("</title>\n")
-	writeFrontHeadLinks(&b, home, blogname, "", "", "")
+	writeFrontHeadLinks(&b, home, blogname, "", "", "", "", "")
 	b.WriteString(wp.EmojiHeadHTML())
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
@@ -1284,7 +1303,7 @@ func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, templa
 		b.WriteString(strconv.Itoa(paged))
 	}
 	b.WriteString("</title>\n")
-	writeFrontHeadLinks(&b, home, blogname, "", "", "")
+	writeFrontHeadLinks(&b, home, blogname, "", "", "", "", "")
 	b.WriteString(wp.EmojiHeadHTML()) // P3.12: wpemoji print scripts skipped
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
@@ -1433,7 +1452,7 @@ func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context
 	if post.Type == "page" {
 		restPath = "/wp/v2/pages/" + strconv.FormatInt(post.ID, 10)
 	}
-	writeFrontHeadLinks(&b, home, blogname, perm, restPath, post.Title)
+	writeFrontHeadLinks(&b, home, blogname, perm, restPath, post.Title, "", "")
 	b.WriteString(wp.EmojiHeadHTML())
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
@@ -2480,7 +2499,7 @@ func (f *Front) render404BlockTemplate(w http.ResponseWriter, c *wp.Context, tem
 	b.WriteString("<title>Page not found &#8211; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString("</title>\n")
-	writeFrontHeadLinks(&b, home, blogname, "", "", "")
+	writeFrontHeadLinks(&b, home, blogname, "", "", "", "", "")
 	b.WriteString(wp.EmojiHeadHTML())
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
@@ -2518,10 +2537,16 @@ func (f *Front) render404Shim(w http.ResponseWriter, c *wp.Context) {
 	_, _ = w.Write([]byte(b.String()))
 }
 
+// pathEscapeSearch encodes a search term for /search/{term}/feed/ paths (P3.39).
+func pathEscapeSearch(term string) string {
+	return url.PathEscape(strings.TrimSpace(term))
+}
+
 // writeFrontHeadLinks emits wp_head discovery links (feeds, api.w.org, oEmbed, canonical).
 // Stylesheet <link> tags are omitted: the HTML normalizer strips them, and TT5 enqueues
 // styles as inline <style> which we also normalize away (P5.19).
-func writeFrontHeadLinks(b *strings.Builder, home, blogname, permalink, restPath, title string) {
+// extraFeedTitle/Href implement feed_links_extra for author/search archives (P3.39).
+func writeFrontHeadLinks(b *strings.Builder, home, blogname, permalink, restPath, title, extraFeedTitle, extraFeedHref string) {
 	if home == "" || b == nil {
 		return
 	}
@@ -2542,6 +2567,13 @@ func writeFrontHeadLinks(b *strings.Builder, home, blogname, permalink, restPath
 		b.WriteString(html.EscapeString(title))
 		b.WriteString(" Comments Feed\" href=\"")
 		b.WriteString(html.EscapeString(strings.TrimRight(permalink, "/") + "/feed/"))
+		b.WriteString("\" />\n")
+	}
+	if extraFeedTitle != "" && extraFeedHref != "" {
+		b.WriteString("<link rel=\"alternate\" type=\"application/rss+xml\" title=\"")
+		b.WriteString(extraFeedTitle) // may include &#8220; entities like WP
+		b.WriteString("\" href=\"")
+		b.WriteString(html.EscapeString(extraFeedHref))
 		b.WriteString("\" />\n")
 	}
 	// P3.20: wp_oembed_add_discovery_links — emit on singular permalinks.

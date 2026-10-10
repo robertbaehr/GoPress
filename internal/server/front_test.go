@@ -560,6 +560,12 @@ func TestFrontAuthorArchive(t *testing.T) {
 	if !strings.Contains(body, "Hello world") && !strings.Contains(body, "Hello World") {
 		t.Fatalf("expected post in author archive: %q", body)
 	}
+	if !strings.Contains(body, "Posts by") || !strings.Contains(body, "/author/admin/feed/") {
+		t.Fatalf("expected author feed_links_extra alternate: %q", body[:min(1200, len(body))])
+	}
+	if !strings.Contains(body, `/wp-json/wp/v2/users/1`) {
+		t.Fatalf("expected author JSON alternate: %q", body[:min(1200, len(body))])
+	}
 	if strings.Contains(body, "GoPress: front route not implemented") {
 		t.Fatal("author archive should not 501")
 	}
