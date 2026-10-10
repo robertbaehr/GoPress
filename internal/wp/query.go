@@ -27,6 +27,8 @@ type QueryArgs struct {
 	Day      int
 	// Author is the post_author user ID for author archives (P3.23).
 	Author int64
+	// Tag is the post_tag slug for tag archives (P3.24).
+	Tag string
 	// StickyFirst prepends sticky posts (home/blog inherit queries, P5.19).
 	StickyFirst bool
 	// IgnoreSticky excludes sticky posts from results (non-inherit query loops).
@@ -120,12 +122,38 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 		where = append(where, "post_author = %d")
 		vals = append(vals, args.Author)
 	}
+	from := c.DB.Posts() + " p"
+	idCol := "p.ID"
+	if tag := strings.TrimSpace(args.Tag); tag != "" {
+		from += " INNER JOIN " + c.DB.TermRelationships() + " tr ON tr.object_id = p.ID" +
+			" INNER JOIN " + c.DB.TermTaxonomy() + " tt ON tt.term_taxonomy_id = tr.term_taxonomy_id" +
+			" INNER JOIN " + c.DB.Terms() + " t ON t.term_id = tt.term_id"
+		where = append(where, "tt.taxonomy = %s", "t.slug = %s")
+		vals = append(vals, "post_tag", tag)
+	}
 
-	q := "SELECT ID, post_author, post_date, post_date_gmt, post_modified, post_modified_gmt, " +
-		"post_name, post_status, post_type, post_title, post_content, post_excerpt, " +
-		"guid, comment_status, ping_status, post_password, post_parent, menu_order FROM " +
-		c.DB.Posts() + " WHERE " + strings.Join(where, " AND ") +
-		" ORDER BY post_date DESC"
+	// Qualifying column names when joining taxonomies.
+	whereSQL := strings.Join(where, " AND ")
+	if strings.Contains(from, " tr ") {
+		whereSQL = strings.ReplaceAll(whereSQL, "post_type", "p.post_type")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_status", "p.post_status")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_author", "p.post_author")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_title", "p.post_title")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_excerpt", "p.post_excerpt")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_content", "p.post_content")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_name", "p.post_name")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_date", "p.post_date")
+		whereSQL = strings.ReplaceAll(whereSQL, "ID =", "p.ID =")
+	} else {
+		from = c.DB.Posts()
+		idCol = "ID"
+		_ = idCol
+	}
+
+	aliased := strings.Contains(from, " tr ")
+	q := "SELECT " + selectPostColumns(aliased) + " FROM " +
+		from + " WHERE " + whereSQL +
+		" ORDER BY " + orderByPostDate(aliased) + " DESC"
 	if limit >= 0 {
 		q += " LIMIT %d"
 		vals = append(vals, limit)
@@ -147,7 +175,7 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 	for _, row := range rows {
 		out = append(out, postFromRow(row))
 	}
-	if postType == "post" && (args.StickyFirst || args.IgnoreSticky) && args.P == 0 && args.Name == "" && args.PageName == "" {
+	if postType == "post" && (args.StickyFirst || args.IgnoreSticky) && args.P == 0 && args.Name == "" && args.PageName == "" && args.Tag == "" {
 		out = applyStickyOrdering(c, out, args)
 	}
 	return out, nil
@@ -242,6 +270,27 @@ func parsePHPIntArray(ser string) []int64 {
 		}
 	}
 	return out
+}
+
+func selectPostColumns(aliased bool) string {
+	cols := "ID, post_author, post_date, post_date_gmt, post_modified, post_modified_gmt, " +
+		"post_name, post_status, post_type, post_title, post_content, post_excerpt, " +
+		"guid, comment_status, ping_status, post_password, post_parent, menu_order"
+	if !aliased {
+		return cols
+	}
+	parts := strings.Split(cols, ", ")
+	for i, p := range parts {
+		parts[i] = "p." + p
+	}
+	return strings.Join(parts, ", ")
+}
+
+func orderByPostDate(aliased bool) string {
+	if aliased {
+		return "p.post_date"
+	}
+	return "post_date"
 }
 
 // GetPost returns the first post matching args, or nil if none.

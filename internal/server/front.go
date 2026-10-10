@@ -62,13 +62,14 @@ func (f *Front) ServeFront(w http.ResponseWriter, r *http.Request, c *wp.Context
 		return
 	}
 
-	// Category/tag archives: list posts in term (shim until full archive templates).
+	// Category archives: list posts in term (shim until full archive templates).
 	if cat := parsed.QueryVars["category_name"]; cat != "" {
 		f.renderTermArchive(w, c, "category", cat)
 		return
 	}
+	// Tag archives: /tag/{slug}/ (P3.24).
 	if tag := parsed.QueryVars["tag"]; tag != "" {
-		f.renderTermArchive(w, c, "post_tag", tag)
+		f.renderTagArchive(w, c, tag)
 		return
 	}
 
@@ -457,6 +458,179 @@ func (f *Front) renderAuthorArchiveBlockTemplate(w http.ResponseWriter, c *wp.Co
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(b.String()))
+}
+
+// renderTagArchive serves /tag/{slug}/ front archives (P3.24).
+func (f *Front) renderTagArchive(w http.ResponseWriter, c *wp.Context, slug string) {
+	slug = strings.TrimSpace(slug)
+	if slug == "" {
+		f.render404(w, c)
+		return
+	}
+	term, err := getTermBySlug(c, "post_tag", slug)
+	if err != nil {
+		http.Error(w, "archive: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	if term == nil {
+		if c != nil && c.Scope != nil {
+			c.Scope.Is404 = true
+		}
+		f.render404(w, c)
+		return
+	}
+	if c != nil && c.Scope != nil {
+		c.Scope.IsArchive = true
+		c.Scope.IsTag = true
+		c.Scope.TagSlug = term.Slug
+		c.Scope.TagID = term.ID
+		c.Scope.QueriedObjectID = term.ID
+	}
+	posts, err := wp.GetPosts(c, wp.QueryArgs{
+		PostType: "post", PostStatus: "publish", PostsPerPage: 1,
+		Tag: term.Slug,
+	})
+	if err != nil {
+		http.Error(w, "archive: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	if len(posts) == 0 {
+		if c != nil && c.Scope != nil {
+			c.Scope.Is404 = true
+		}
+		f.render404(w, c)
+		return
+	}
+	title := "Tag: " + term.Name
+	slugs := wp.TagTemplateSlugs(term.Slug, term.ID)
+	if tpl, ok := wp.ResolveBlockTemplate(c, slugs...); ok && strings.TrimSpace(tpl) != "" {
+		f.renderTagArchiveBlockTemplate(w, c, tpl, title, term)
+		return
+	}
+	f.renderTagArchiveShim(w, c, title, term.Slug)
+}
+
+func (f *Front) renderTagArchiveBlockTemplate(w http.ResponseWriter, c *wp.Context, template, archiveTitle string, term *termInfo) {
+	blogname := optionString(c, "blogname", "GoPress")
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	stylesheet := activeStylesheet(c)
+	env := blockRenderEnv(c)
+	env.ArchiveTitle = archiveTitle
+	body := blocks.RenderWith(env, template)
+	safe := wp.ProcessInteractivityHTML(wp.KsesPost(body))
+	safe = ensureMainSkipTarget(safe)
+
+	bodyClasses := "archive tag wp-embed-responsive"
+	if term != nil && term.Slug != "" {
+		bodyClasses += " tag-" + term.Slug
+	}
+	if term != nil && term.ID > 0 {
+		bodyClasses += " tag-" + strconv.FormatInt(term.ID, 10)
+	}
+	if stylesheet != "" {
+		bodyClasses += " wp-theme-" + stylesheet
+	}
+	bodyClasses = wp.BodyClassWithAdminBar(c, bodyClasses)
+
+	pageTitle := html.EscapeString(archiveTitle) + " &#8211; " + html.EscapeString(blogname)
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
+	b.WriteString("<meta charset=\"UTF-8\" />\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
+	b.WriteString("<meta name='robots' content='max-image-preview:large' />\n")
+	b.WriteString("<title>")
+	b.WriteString(pageTitle)
+	b.WriteString("</title>\n")
+	writeFrontHeadLinks(&b, home, blogname, "", "", "")
+	b.WriteString(wp.EmojiHeadHTML())
+	b.WriteString("</head>\n<body class=\"")
+	b.WriteString(html.EscapeString(bodyClasses))
+	b.WriteString("\">\n")
+	b.WriteString(wp.AdminBarHTML(c))
+	b.WriteString("<a class=\"skip-link screen-reader-text\" id=\"wp-skip-link\" href=\"#wp--skip-link--target\">Skip to content</a>")
+	b.WriteString("<div class=\"wp-site-blocks\">")
+	b.WriteString(safe)
+	b.WriteString("</div>\n")
+	b.WriteString("</body>\n</html>\n")
+
+	setFrontAPILink(w, c)
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(b.String()))
+}
+
+func (f *Front) renderTagArchiveShim(w http.ResponseWriter, c *wp.Context, title, tagSlug string) {
+	blogname := optionString(c, "blogname", "GoPress")
+	posts, err := wp.GetPosts(c, wp.QueryArgs{
+		PostType: "post", PostStatus: "publish", PostsPerPage: 10,
+		Tag: tagSlug,
+	})
+	if err != nil {
+		http.Error(w, "archive: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>")
+	b.WriteString(html.EscapeString(title))
+	b.WriteString(" &#8211; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString("</title>\n</head>\n<body class=\"")
+	b.WriteString(html.EscapeString(wp.BodyClassWithAdminBar(c, "archive tag")))
+	b.WriteString("\">\n")
+	b.WriteString(wp.AdminBarHTML(c))
+	b.WriteString("<h1 class=\"page-title\">")
+	b.WriteString(html.EscapeString(title))
+	b.WriteString("</h1>\n<ul class=\"posts\">\n")
+	for _, p := range posts {
+		b.WriteString("<li><a href=\"?p=")
+		b.WriteString(strconv.FormatInt(p.ID, 10))
+		b.WriteString("\">")
+		b.WriteString(html.EscapeString(p.Title))
+		b.WriteString("</a></li>\n")
+	}
+	b.WriteString("</ul>\n</body>\n</html>\n")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(b.String()))
+}
+
+type termInfo struct {
+	ID   int64
+	Name string
+	Slug string
+}
+
+func getTermBySlug(c *wp.Context, taxonomy, slug string) (*termInfo, error) {
+	if c == nil || c.DB == nil {
+		return nil, fmt.Errorf("nil DB")
+	}
+	slug = strings.TrimSpace(slug)
+	if slug == "" {
+		return nil, nil
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT t.term_id, t.name, t.slug FROM "+c.DB.Terms()+" t "+
+			"INNER JOIN "+c.DB.TermTaxonomy()+" tt ON t.term_id = tt.term_id "+
+			"WHERE tt.taxonomy = %s AND t.slug = %s LIMIT 1",
+		taxonomy, slug,
+	)
+	if err != nil {
+		return nil, err
+	}
+	row, err := c.DB.GetRow(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	if row == nil {
+		return nil, nil
+	}
+	id, _ := strconv.ParseInt(fmt.Sprint(row["term_id"]), 10, 64)
+	return &termInfo{
+		ID:   id,
+		Name: fmt.Sprint(row["name"]),
+		Slug: fmt.Sprint(row["slug"]),
+	}, nil
 }
 
 func (f *Front) renderAuthorArchiveShim(w http.ResponseWriter, c *wp.Context, title string, authorID int64) {
@@ -1958,6 +2132,11 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			if q.Inherit && c != nil && c.Scope != nil && c.Scope.IsAuthor {
 				authorID = c.Scope.AuthorID
 			}
+			tagSlug := ""
+			// Inherit tag archive filters (P3.24).
+			if q.Inherit && c != nil && c.Scope != nil && c.Scope.IsTag {
+				tagSlug = c.Scope.TagSlug
+			}
 			posts, err := wp.GetPosts(c, wp.QueryArgs{
 				PostType:     postType,
 				PostStatus:   "publish",
@@ -1968,8 +2147,9 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 				MonthNum:     month,
 				Day:          day,
 				Author:       authorID,
+				Tag:          tagSlug,
 				// Sticky posts are prepended for front query loops (inherit or not).
-				StickyFirst: postType == "post" && search == "" && year == 0 && authorID == 0,
+				StickyFirst: postType == "post" && search == "" && year == 0 && authorID == 0 && tagSlug == "",
 			})
 			if err != nil {
 				return nil

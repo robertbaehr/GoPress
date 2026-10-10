@@ -334,6 +334,13 @@
   task: P3.23
   api: n/a
 
+# P3.24: /tag/{slug}/ tag archives.
+- prefix: wp-includes/taxonomy.php#tag-archive
+  go: internal/server/front.go
+  status: partial
+  task: P3.24
+  api: n/a
+
 - prefix: wp-includes/feed-atom.php
   go: internal/server/front.go
   status: partial
