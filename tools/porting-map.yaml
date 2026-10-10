@@ -1057,6 +1057,21 @@
   api: n/a
   notes: "P2.67 — ServeCron sets Scope.IsCron (DOING_CRON)"
 
+# P2.68: is_login (wp-login.php request).
+- prefix: wp-includes/load.php#is_login
+  go: internal/wp/is_login.go
+  status: partial
+  task: P2.68
+  api: exported
+  notes: "P2.68 — IsLogin from Scope.IsLogin (wp-login.php)"
+
+- prefix: wp-login.php#is_login
+  go: internal/login/login.go
+  status: partial
+  task: P2.68
+  api: n/a
+  notes: "P2.68 — login.Handler sets Scope.IsLogin"
+
 - prefix: wp-includes/class-wp-list-util.php
   go: internal/wp/filter_object_list.go
   status: partial

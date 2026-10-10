@@ -222,6 +222,8 @@ type RequestScope struct {
 	IsAjax bool
 	// IsCron marks wp-cron.php requests (DOING_CRON / wp_doing_cron, P2.67).
 	IsCron bool
+	// IsLogin marks wp-login.php requests (is_login, P2.68).
+	IsLogin bool
 	// RESTDispatching counts nested rest.Server dispatches (is_dispatching).
 	RESTDispatching int
 	IsFeed          bool
@@ -316,6 +318,16 @@ func (s *RequestScope) SetCron(v bool) {
 	}
 	s.mu.Lock()
 	s.IsCron = v
+	s.mu.Unlock()
+}
+
+// SetLogin marks the request as a WordPress login screen request (P2.68).
+func (s *RequestScope) SetLogin(v bool) {
+	if s == nil {
+		return
+	}
+	s.mu.Lock()
+	s.IsLogin = v
 	s.mu.Unlock()
 }
 
