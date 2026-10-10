@@ -1308,6 +1308,21 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P2.95 — SelectDieHandler + ProcessDieInput + HTML/JSON/Ajax DieResult; WriteDie"
 
+# P2.96: wp_timezone_string / wp_timezone.
+- prefix: wp-includes/functions.php#wp_timezone_string
+  go: internal/wp/dates.go
+  status: partial
+  task: P2.96
+  api: exported
+  notes: "P2.96 — TimezoneString ±HH:MM from gmt_offset; Timezone Location; offset loadTZ"
+
+- prefix: wp-includes/functions.php#wp_timezone
+  go: internal/wp/dates.go
+  status: partial
+  task: P2.96
+  api: exported
+  notes: "P2.96 — Timezone wraps TimezoneString via loadTZ"
+
 # P2.46: array_key_first / array_key_last helpers.
 - prefix: wp-includes/compat.php#array_key_first
   go: internal/wp/array_key.go

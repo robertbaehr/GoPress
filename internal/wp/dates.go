@@ -97,11 +97,96 @@ func loadTZ(name string) (*time.Location, error) {
 	if name == "" || strings.EqualFold(name, "UTC") {
 		return time.UTC, nil
 	}
+	// P2.96: ±HH:MM offsets from wp_timezone_string when timezone_string is empty.
+	if loc, ok := parseUTCOffsetLocation(name); ok {
+		return loc, nil
+	}
 	loc, err := time.LoadLocation(name)
 	if err != nil {
 		return nil, fmt.Errorf("wp: timezone %q: %w", name, err)
 	}
 	return loc, nil
+}
+
+// TimezoneString returns the site timezone as a PHP timezone name or ±HH:MM
+// offset (wp_timezone_string, P2.96).
+func TimezoneString(c *Context) string {
+	if c != nil && c.Options != nil {
+		if tz := strings.TrimSpace(optionStringValue(c, "timezone_string", "")); tz != "" {
+			return tz
+		}
+	}
+	offset := 0.0
+	if c != nil && c.Options != nil {
+		raw := strings.TrimSpace(fmt.Sprint(c.Options.GetOption("gmt_offset", "0")))
+		if raw != "" && raw != "<nil>" {
+			if n, err := strconv.ParseFloat(raw, 64); err == nil {
+				offset = n
+			}
+		}
+	}
+	return formatGMTOffsetTimezone(offset)
+}
+
+// Timezone returns the site timezone as a *time.Location (wp_timezone, P2.96).
+func Timezone(c *Context) *time.Location {
+	loc, err := loadTZ(TimezoneString(c))
+	if err != nil {
+		return time.UTC
+	}
+	return loc
+}
+
+// formatGMTOffsetTimezone mirrors wp_timezone_string's UTC± fallback.
+func formatGMTOffsetTimezone(offset float64) string {
+	hours := int(offset) // PHP (int) truncates toward zero
+	minutes := offset - float64(hours)
+	sign := "+"
+	if offset < 0 {
+		sign = "-"
+	}
+	absHour := hours
+	if absHour < 0 {
+		absHour = -absHour
+	}
+	absMins := int(math.Abs(minutes * 60))
+	return fmt.Sprintf("%s%02d:%02d", sign, absHour, absMins)
+}
+
+// parseUTCOffsetLocation accepts ±HH:MM / ±HHMM forms used by wp_timezone_string.
+func parseUTCOffsetLocation(name string) (*time.Location, bool) {
+	if len(name) < 3 || (name[0] != '+' && name[0] != '-') {
+		return nil, false
+	}
+	sign := 1
+	if name[0] == '-' {
+		sign = -1
+	}
+	rest := name[1:]
+	var hh, mm int
+	switch {
+	case len(rest) == 5 && rest[2] == ':':
+		h, err1 := strconv.Atoi(rest[:2])
+		m, err2 := strconv.Atoi(rest[3:])
+		if err1 != nil || err2 != nil {
+			return nil, false
+		}
+		hh, mm = h, m
+	case len(rest) == 4:
+		h, err1 := strconv.Atoi(rest[:2])
+		m, err2 := strconv.Atoi(rest[2:])
+		if err1 != nil || err2 != nil {
+			return nil, false
+		}
+		hh, mm = h, m
+	default:
+		return nil, false
+	}
+	if hh > 14 || mm > 59 {
+		return nil, false
+	}
+	secs := sign * (hh*3600 + mm*60)
+	return time.FixedZone(name, secs), true
 }
 
 // formatPHPDate implements a small PHP date() format subset used by golden vectors.
