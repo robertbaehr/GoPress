@@ -216,12 +216,63 @@ func (f *Front) renderSingular(w http.ResponseWriter, c *wp.Context, vars map[st
 	b.WriteString("</h1>\n")
 	b.WriteString("<div class=\"entry-content\">\n")
 	b.WriteString(safeContent)
-	b.WriteString("\n</div>\n</article>\n</body>\n</html>\n")
+	b.WriteString("\n</div>\n</article>\n")
+	if post.Type == "post" || post.Type == "page" {
+		f.writeCommentsSection(&b, c, post)
+	}
+	b.WriteString("</body>\n</html>\n")
 
 	setFrontAPILink(w, c)
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(b.String()))
+}
+
+func (f *Front) writeCommentsSection(b *strings.Builder, c *wp.Context, post *singularPost) {
+	comments, err := wp.ListApprovedComments(c, post.ID)
+	if err != nil {
+		comments = nil
+	}
+	b.WriteString("<section id=\"comments\" class=\"comments-area\">\n")
+	b.WriteString("<h2 class=\"comments-title\">Comments</h2>\n")
+	if len(comments) == 0 {
+		b.WriteString("<p class=\"no-comments\">No comments yet.</p>\n")
+	} else {
+		b.WriteString("<ol class=\"comment-list\">\n")
+		for _, cm := range comments {
+			b.WriteString("<li id=\"comment-")
+			b.WriteString(strconv.FormatInt(cm.ID, 10))
+			b.WriteString("\" class=\"comment\">\n")
+			b.WriteString("<article class=\"comment-body\">\n")
+			b.WriteString("<footer class=\"comment-meta\"><b class=\"fn\">")
+			b.WriteString(html.EscapeString(cm.Author))
+			b.WriteString("</b></footer>\n")
+			b.WriteString("<div class=\"comment-content\">\n")
+			b.WriteString(wp.KsesData(cm.Content))
+			b.WriteString("\n</div>\n</article>\n</li>\n")
+		}
+		b.WriteString("</ol>\n")
+	}
+	// Comment form posts to wp-comments-post.php.
+	b.WriteString("<div id=\"respond\" class=\"comment-respond\">\n")
+	b.WriteString("<h3 id=\"reply-title\" class=\"comment-reply-title\">Leave a Reply</h3>\n")
+	b.WriteString("<form action=\"/wp-comments-post.php\" method=\"post\" id=\"commentform\" class=\"comment-form\">\n")
+	b.WriteString("<input type=\"hidden\" name=\"comment_post_ID\" value=\"")
+	b.WriteString(strconv.FormatInt(post.ID, 10))
+	b.WriteString("\" id=\"comment_post_ID\">\n")
+	b.WriteString("<input type=\"hidden\" name=\"comment_parent\" id=\"comment_parent\" value=\"0\">\n")
+	if c == nil || c.CurrentUser == nil {
+		b.WriteString("<p class=\"comment-form-author\"><label for=\"author\">Name</label> ")
+		b.WriteString("<input id=\"author\" name=\"author\" type=\"text\" required></p>\n")
+		b.WriteString("<p class=\"comment-form-email\"><label for=\"email\">Email</label> ")
+		b.WriteString("<input id=\"email\" name=\"email\" type=\"email\" required></p>\n")
+		b.WriteString("<p class=\"comment-form-url\"><label for=\"url\">Website</label> ")
+		b.WriteString("<input id=\"url\" name=\"url\" type=\"url\"></p>\n")
+	}
+	b.WriteString("<p class=\"comment-form-comment\"><label for=\"comment\">Comment</label> ")
+	b.WriteString("<textarea id=\"comment\" name=\"comment\" cols=\"45\" rows=\"8\" required></textarea></p>\n")
+	b.WriteString("<p class=\"form-submit\"><input name=\"submit\" type=\"submit\" id=\"submit\" class=\"submit\" value=\"Post Comment\"></p>\n")
+	b.WriteString("</form>\n</div>\n</section>\n")
 }
 
 func (f *Front) renderFeedRSS2(w http.ResponseWriter, c *wp.Context) {

@@ -81,6 +81,11 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		wp.ServeCron(w, r, c)
 		return
 	}
+	if path == "/wp-comments-post.php" {
+		c := s.requestContext(w, r)
+		s.serveCommentsPost(w, r, c)
+		return
+	}
 	if path == "/wp-login.php" {
 		c := s.requestContext(w, r)
 		h := s.Login
