@@ -50,6 +50,9 @@ type Context struct {
 	// Users is the user lookup API (P2.2).
 	Users *Users
 
+	// Roles holds wp_user_roles and UserCan helpers (P2.3).
+	Roles *Roles
+
 	// CurrentUser is the authenticated user for this request (P2.2+).
 	CurrentUser *User
 
