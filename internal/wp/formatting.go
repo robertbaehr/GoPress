@@ -24,9 +24,11 @@ const (
 )
 
 var (
-	reScriptOrStyleBlock = regexp.MustCompile(`(?is)<(script|style)[^>]*>.*?</\1>`)
-	reTags               = regexp.MustCompile(`(?s)<[^>]*>`)
-	reWhitespace         = regexp.MustCompile(`[\r\n\t ]+`)
+	// Separate patterns (Go RE2 has no backrefs); mirrors PHP's script|style + \\1 pair.
+	reScriptBlock = regexp.MustCompile(`(?is)<script[^>]*>.*?</script>`)
+	reStyleBlock  = regexp.MustCompile(`(?is)<style[^>]*>.*?</style>`)
+	reTags        = regexp.MustCompile(`(?s)<[^>]*>`)
+	reWhitespace  = regexp.MustCompile(`[\r\n\t ]+`)
 	reSpaces        = regexp.MustCompile(` +`)
 	rePercentOctet  = regexp.MustCompile(`(?i)%[a-f0-9]{2}`)
 	reSanitizeKey   = regexp.MustCompile(`[^a-z0-9_\-]`)
