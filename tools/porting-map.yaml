@@ -569,6 +569,19 @@
   task: P2.37
   api: exported
 
+# P2.43: wp_filter_object_list / wp_list_filter.
+- prefix: wp-includes/functions.php#wp_filter_object_list
+  go: internal/wp/filter_object_list.go
+  status: done
+  task: P2.43
+  api: exported
+
+- prefix: wp-includes/functions.php#wp_list_filter
+  go: internal/wp/filter_object_list.go
+  status: done
+  task: P2.43
+  api: exported
+
 # P2.38: wp_array_slice_assoc.
 - prefix: wp-includes/functions.php#wp_array_slice_assoc
   go: internal/wp/array_slice_assoc.go
@@ -603,9 +616,9 @@
   api: exported
 
 - prefix: wp-includes/class-wp-list-util.php
-  go: internal/wp/list_pluck.go
+  go: internal/wp/filter_object_list.go
   status: partial
-  task: P2.37
+  task: P2.43
   api: exported
 
 - prefix: wp-includes/functions.php#wp_validate_boolean
