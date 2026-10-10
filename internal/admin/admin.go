@@ -1436,22 +1436,9 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 		b.WriteString("\"><td class=\"plugin-title\"><strong>")
 		b.WriteString(html.EscapeString(p.Name))
 		b.WriteString("</strong>")
+		// P9.14: plugin_action_links (+ per-plugin) filters.
 		b.WriteString("<div class=\"row-actions visible\">")
-		if active {
-			nonce := c.CreateNonce("deactivate-plugin_" + p.File)
-			b.WriteString("<span class=\"deactivate\"><a href=\"/wp-admin/plugins.php?action=deactivate&amp;plugin=")
-			b.WriteString(html.EscapeString(url.QueryEscape(p.File)))
-			b.WriteString("&amp;_wpnonce=")
-			b.WriteString(html.EscapeString(nonce))
-			b.WriteString("\">Deactivate</a></span>")
-		} else {
-			nonce := c.CreateNonce("activate-plugin_" + p.File)
-			b.WriteString("<span class=\"activate\"><a href=\"/wp-admin/plugins.php?action=activate&amp;plugin=")
-			b.WriteString(html.EscapeString(url.QueryEscape(p.File)))
-			b.WriteString("&amp;_wpnonce=")
-			b.WriteString(html.EscapeString(nonce))
-			b.WriteString("\">Activate</a></span>")
-		}
+		b.WriteString(plugins.FormatActionLinksHTML(plugins.ActionLinks(c, p, rowClass)))
 		b.WriteString("</div>")
 		b.WriteString("</td><td class=\"column-description desc\"><div class=\"plugin-description\"><p>")
 		b.WriteString(html.EscapeString(p.Description))

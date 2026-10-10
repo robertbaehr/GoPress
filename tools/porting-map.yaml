@@ -1064,6 +1064,14 @@
   task: P3.26
   api: n/a
 
+# P9.14: plugin_action_links (+ per-file) filters on plugins.php row actions.
+- prefix: wp-admin/includes/class-wp-plugins-list-table.php#plugin_action_links
+  go: internal/plugins/action_links.go
+  status: partial
+  task: P9.14
+  api: exported
+  notes: "P9.14 — ActionLinks applies plugin_action_links / plugin_action_links_{$file}"
+
 # P9.5: show parsed plugin headers meta on plugins.php.
 - prefix: wp-admin/plugins.php#headers
   go: internal/admin/admin.go
