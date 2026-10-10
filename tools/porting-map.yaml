@@ -1058,6 +1058,14 @@
   task: P2.41
   api: exported
 
+# P2.81: deepen is_ssl (HTTPS CGI header + port 443).
+- prefix: wp-includes/load.php#is_ssl
+  go: internal/wp/is_ssl.go
+  status: partial
+  task: P2.81
+  api: exported
+  notes: "P2.81 — TLS, HTTPS=on|1, Host:443, X-Forwarded-Proto, URL.Scheme"
+
 # P2.80: deepen wp_normalize_path / wp_is_stream case + call sites.
 - prefix: wp-includes/functions.php#wp_normalize_path#p2.80
   go: internal/wp/normalize_path.go
