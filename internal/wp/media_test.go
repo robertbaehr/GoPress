@@ -47,10 +47,60 @@ func TestRegisteredImageSizesFromOptions(t *testing.T) {
 func TestAddImageSize(t *testing.T) {
 	c := mediaBoot(t)
 	wp.AddImageSize("gopress-test", 120, 80, true)
-	t.Cleanup(func() { wp.RemoveImageSize("gopress-test") })
+	t.Cleanup(func() { _ = wp.RemoveImageSize("gopress-test") })
 	s, ok := wp.GetImageSize(c, "gopress-test")
 	if !ok || s.Width != 120 || s.Height != 80 || !s.Crop {
 		t.Fatalf("got %+v ok=%v", s, ok)
+	}
+	if !wp.HasImageSize("gopress-test") {
+		t.Fatal("HasImageSize expected true for additional size")
+	}
+	if wp.HasImageSize("thumbnail") {
+		t.Fatal("HasImageSize is additional-only; thumbnail should be false")
+	}
+}
+
+func TestIntermediateImageSizesAndNamesChoose(t *testing.T) {
+	c := mediaBoot(t)
+	wp.AddImageSize("gopress-editor", 200, 100, false)
+	t.Cleanup(func() { _ = wp.RemoveImageSize("gopress-editor") })
+
+	names := wp.GetIntermediateImageSizes(c)
+	found := map[string]bool{}
+	for _, n := range names {
+		found[n] = true
+	}
+	for _, want := range []string{"thumbnail", "medium", "medium_large", "large", "gopress-editor"} {
+		if !found[want] {
+			t.Fatalf("missing intermediate size %q in %v", want, names)
+		}
+	}
+
+	c.Hooks.AddFilter("intermediate_image_sizes", func(value any, args ...any) any {
+		return []string{"thumbnail", "gopress-editor"}
+	}, 10, 1)
+	filtered := wp.GetIntermediateImageSizes(c)
+	if len(filtered) != 2 || filtered[0] != "thumbnail" || filtered[1] != "gopress-editor" {
+		t.Fatalf("filter not applied: %v", filtered)
+	}
+
+	labels := wp.ImageSizeNamesChoose(c)
+	if labels["thumbnail"] != "Thumbnail" || labels["full"] != "Full Size" {
+		t.Fatalf("labels=%v", labels)
+	}
+	c.Hooks.AddFilter("image_size_names_choose", func(value any, args ...any) any {
+		return map[string]string{"thumbnail": "Tiny", "full": "Full Size"}
+	}, 10, 1)
+	labels = wp.ImageSizeNamesChoose(c)
+	if labels["thumbnail"] != "Tiny" {
+		t.Fatalf("names_choose filter: %v", labels)
+	}
+
+	if !wp.RemoveImageSize("gopress-editor") {
+		t.Fatal("expected RemoveImageSize true")
+	}
+	if wp.RemoveImageSize("gopress-editor") {
+		t.Fatal("expected RemoveImageSize false when missing")
 	}
 }
 
