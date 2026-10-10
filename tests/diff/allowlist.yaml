@@ -2,24 +2,8 @@
 # Match by corpus id only (do not use path: "/" — prefix matching is too broad).
 # remove_by is YYYY-MM-DD.
 
-- id: admin-dashboard
-  reason: Admin dashboard body still stub despite shared chrome (P7.15)
-  remove_by: "2027-06-01"
-
-- id: admin-edit-posts
-  reason: Posts list table body still stub despite shared chrome (P7.15)
-  remove_by: "2027-06-01"
-
-- id: admin-options-general
-  reason: Settings form body still stub despite shared chrome (P7.15)
-  remove_by: "2027-06-01"
-
-- id: admin-plugins
-  reason: Plugins screen body still stub despite shared chrome (P7.15)
-  remove_by: "2027-06-01"
-
 - id: front-home
-  reason: Block theme HTML not yet byte-parity with twentytwentyfive
+  reason: Block theme HTML not yet byte-parity with twentytwentyfive (inline styles / layout classes)
   remove_by: "2027-06-01"
 
 - id: front-sample-page
@@ -28,12 +12,4 @@
 
 - id: front-hello-world
   reason: Singular theme HTML not yet byte-parity after canonical redirect
-  remove_by: "2027-06-01"
-
-- id: rest-index-anon
-  reason: Full WP index route arg catalogs (~200KB) intentionally incomplete; list/create args + route keys expanded (P4.33)
-  remove_by: "2027-06-01"
-
-- id: front-sitemap
-  reason: Sitemap index/child URL set still a stub vs full WP sitemap provider
   remove_by: "2027-06-01"
