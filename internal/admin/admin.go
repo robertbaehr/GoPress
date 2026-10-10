@@ -278,11 +278,14 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	}
 	// P7.69: list-table search box (?s=) filters titles/content.
 	search := strings.TrimSpace(r.URL.Query().Get("s"))
-	posts, err := recentPostsByType(c, postType, 20, search)
+	// P7.70: author dropdown filter (?author=).
+	authorID := parseEditAuthorFilter(r)
+	posts, err := recentPostsByType(c, postType, 20, search, authorID)
 	if err != nil {
 		http.Error(w, "posts: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
+	authors, _ := editPostAuthors(c, postType)
 	heading := "Posts"
 	searchLabel := "Search Posts"
 	if postType == "page" {
@@ -318,6 +321,25 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	b.WriteString(`<option value="trash">Move to Trash</option>` + "\n")
 	b.WriteString(`</select>` + "\n")
 	b.WriteString(`<input type="submit" id="doaction" class="button action" value="Apply" />` + "\n")
+	b.WriteString(`</div>` + "\n")
+	// P7.70: author filter dropdown (restrict_manage_posts-shaped).
+	b.WriteString(`<div class="alignleft actions">` + "\n")
+	b.WriteString(`<label for="filter-by-author" class="screen-reader-text">Filter by author</label>` + "\n")
+	b.WriteString(`<select name="author" id="filter-by-author">` + "\n")
+	b.WriteString(`<option value="">All authors</option>` + "\n")
+	for _, a := range authors {
+		b.WriteString(`<option value="`)
+		b.WriteString(strconv.FormatInt(a.ID, 10))
+		b.WriteString(`"`)
+		if a.ID == authorID {
+			b.WriteString(` selected="selected"`)
+		}
+		b.WriteString(`>`)
+		b.WriteString(html.EscapeString(a.Name))
+		b.WriteString(`</option>` + "\n")
+	}
+	b.WriteString(`</select>` + "\n")
+	b.WriteString(`<input type="submit" name="filter_action" id="post-query-submit" class="button" value="Filter" />` + "\n")
 	b.WriteString(`</div></div>` + "\n")
 	b.WriteString("<table class=\"wp-list-table widefat fixed striped table-view-list posts\">\n")
 	b.WriteString("<thead><tr>")
@@ -3963,7 +3985,7 @@ func countComments(c *wp.Context, approved string) int {
 	return int(asInt64(row["n"]))
 }
 
-func recentPostsByType(c *wp.Context, postType string, limit int, search ...string) ([]postRow, error) {
+func recentPostsByType(c *wp.Context, postType string, limit int, search string, authorID int64) ([]postRow, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
@@ -3973,14 +3995,15 @@ func recentPostsByType(c *wp.Context, postType string, limit int, search ...stri
 	if postType == "" {
 		postType = "post"
 	}
-	term := ""
-	if len(search) > 0 {
-		term = strings.TrimSpace(search[0])
-	}
+	term := strings.TrimSpace(search)
 	sql := "SELECT p.ID, p.post_title, p.post_date, p.post_status, p.post_author, u.display_name, u.user_login FROM " +
 		c.DB.Posts() + " p LEFT JOIN " + c.DB.Users() + " u ON p.post_author = u.ID " +
 		" WHERE p.post_type = %s AND p.post_status IN (%s, %s, %s, %s, %s) "
 	prepArgs := []any{postType, "publish", "draft", "pending", "private", "future"}
+	if authorID > 0 {
+		sql += "AND p.post_author = %d "
+		prepArgs = append(prepArgs, authorID)
+	}
 	if term != "" {
 		like := "%" + db.EscapeLike(term) + "%"
 		sql += "AND (p.post_title LIKE %s OR p.post_excerpt LIKE %s OR p.post_content LIKE %s) "
@@ -4016,6 +4039,63 @@ func recentPostsByType(c *wp.Context, postType string, limit int, search ...stri
 			Status: asString(row["post_status"]),
 			Author: author,
 		})
+	}
+	return out, nil
+}
+
+type editAuthorOpt struct {
+	ID   int64
+	Name string
+}
+
+// parseEditAuthorFilter reads ?author= from edit.php (P7.70).
+func parseEditAuthorFilter(r *http.Request) int64 {
+	if r == nil {
+		return 0
+	}
+	raw := strings.TrimSpace(r.URL.Query().Get("author"))
+	if raw == "" {
+		return 0
+	}
+	n, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || n <= 0 {
+		return 0
+	}
+	return n
+}
+
+// editPostAuthors returns users who authored posts of postType for the filter dropdown.
+func editPostAuthors(c *wp.Context, postType string) ([]editAuthorOpt, error) {
+	if c == nil || c.DB == nil {
+		return nil, fmt.Errorf("nil DB")
+	}
+	if postType == "" {
+		postType = "post"
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT DISTINCT u.ID, u.display_name, u.user_login FROM "+c.DB.Posts()+" p "+
+			"INNER JOIN "+c.DB.Users()+" u ON p.post_author = u.ID "+
+			"WHERE p.post_type = %s AND p.post_status IN (%s, %s, %s, %s, %s) "+
+			"ORDER BY u.display_name ASC, u.user_login ASC",
+		postType, "publish", "draft", "pending", "private", "future",
+	)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := c.DB.GetResults(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]editAuthorOpt, 0, len(rows))
+	for _, row := range rows {
+		name := asString(row["display_name"])
+		if name == "" {
+			name = asString(row["user_login"])
+		}
+		if name == "" {
+			name = "—"
+		}
+		out = append(out, editAuthorOpt{ID: asInt64(row["ID"]), Name: name})
 	}
 	return out, nil
 }
