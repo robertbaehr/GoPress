@@ -226,8 +226,54 @@ func TestLoginPOSTBadPassword(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status=%d", rec.Code)
 	}
-	if !strings.Contains(rec.Body.String(), "Error") {
-		t.Fatalf("expected error HTML, got %q", rec.Body.String())
+	body := rec.Body.String()
+	if !strings.Contains(body, `id="login_error"`) {
+		t.Fatalf("expected login_error: %q", body)
+	}
+	if !strings.Contains(body, "password you entered") || !strings.Contains(body, "<strong>admin</strong>") {
+		t.Fatalf("expected incorrect_password message: %q", body)
+	}
+	if !strings.Contains(body, "action=lostpassword") {
+		t.Fatalf("expected lost password link: %q", body)
+	}
+}
+
+func TestLoginPOSTInvalidUsername(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	form := url.Values{}
+	form.Set("log", "nosuchuser")
+	form.Set("pwd", "x")
+	req := httptest.NewRequest(http.MethodPost, "/wp-login.php", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	body := rec.Body.String()
+	if !strings.Contains(body, "not registered on this site") || !strings.Contains(body, "<strong>nosuchuser</strong>") {
+		t.Fatalf("expected invalid_username: %q", body)
+	}
+}
+
+func TestLoginPOSTEmptyFields(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	form := url.Values{}
+	form.Set("log", "")
+	form.Set("pwd", "")
+	req := httptest.NewRequest(http.MethodPost, "/wp-login.php", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	body := rec.Body.String()
+	if !strings.Contains(body, `login-error-list`) {
+		t.Fatalf("expected error list: %q", body)
+	}
+	if !strings.Contains(body, "username field is empty") || !strings.Contains(body, "password field is empty") {
+		t.Fatalf("expected both empty messages: %q", body)
 	}
 }
 

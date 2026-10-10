@@ -349,6 +349,13 @@
   task: P3.27
   api: n/a
 
+# P6.12: typed login error messages (invalid_username / incorrect_password / empty).
+- prefix: wp-login.php#errors
+  go: internal/login/login.go
+  status: partial
+  task: P6.12
+  api: n/a
+
 # P4.48: create post revision on REST post update.
 - prefix: wp-includes/revision.php#wp_save_post_revision
   go: internal/rest/posts_write.go

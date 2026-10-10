@@ -397,10 +397,37 @@ func (c *Context) VerifyNonce(nonce, action string) int {
 	return 0
 }
 
+// AuthError is a typed login failure (wp_authenticate error codes, P6.12).
+type AuthError struct {
+	Code    string
+	Login   string // submitted username/email when relevant
+	Message string // optional override
+}
+
+func (e *AuthError) Error() string {
+	if e == nil {
+		return "wp: auth error"
+	}
+	if e.Message != "" {
+		return e.Message
+	}
+	return "wp: Login: " + e.Code
+}
+
 // Login authenticates login/password, sets CurrentUser, and returns auth cookies.
 func (c *Context) Login(login, password string, remember, secure bool, now int64) (*AuthCookieSet, error) {
 	if c == nil || c.Users == nil {
 		return nil, fmt.Errorf("wp: Login: nil Context")
+	}
+	login = strings.TrimSpace(login)
+	if login == "" && password == "" {
+		return nil, &AuthError{Code: "empty_username"}
+	}
+	if login == "" {
+		return nil, &AuthError{Code: "empty_username"}
+	}
+	if password == "" {
+		return nil, &AuthError{Code: "empty_password", Login: login}
 	}
 	user, err := c.GetUserBy("login", login)
 	if err != nil {
@@ -413,8 +440,11 @@ func (c *Context) Login(login, password string, remember, secure bool, now int64
 			return nil, err
 		}
 	}
-	if user == nil || !user.CheckPassword(password) {
-		return nil, fmt.Errorf("wp: Login: invalid credentials")
+	if user == nil {
+		return nil, &AuthError{Code: "invalid_username", Login: login}
+	}
+	if !user.CheckPassword(password) {
+		return nil, &AuthError{Code: "incorrect_password", Login: login}
 	}
 	set, err := c.SetAuthCookie(user, remember, secure, now, "")
 	if err != nil {
