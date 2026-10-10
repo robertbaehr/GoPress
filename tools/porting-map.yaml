@@ -160,7 +160,14 @@
 - prefix: wp-includes/pluggable.php
   go: internal/wp/auth.go
   status: partial
-  task: P2.20
+  task: P2.21
+  api: exported
+
+# P2.21: wp_check_password covers $wp$ / phpass; application passwords reuse it.
+- prefix: wp-includes/class-wp-application-passwords.php
+  go: internal/wp/application_passwords.go
+  status: partial
+  task: P2.21
   api: exported
 
 - prefix: wp-includes/user.php
