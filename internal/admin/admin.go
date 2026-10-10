@@ -2337,32 +2337,6 @@ func (h *Handler) serveImport(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveExport is the Tools → Export screen stub (P7.10).
-func (h *Handler) serveExport(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	blogname := optionString(c, "blogname", "GoPress")
-	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
-	b.WriteString("<title>Export &lsaquo; ")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
-	b.WriteString(adminNoticesHTML(c))
-	b.WriteString("<div class=\"wrap\">\n")
-	b.WriteString("<h1>Export</h1>\n")
-	b.WriteString("<p>When you click the button below WordPress will create an XML file of your site content.</p>\n")
-	b.WriteString("<p class=\"description\">GoPress export stub — WXR download lands later.</p>\n")
-	b.WriteString("<form method=\"get\" id=\"export-filters\">\n")
-	b.WriteString("<fieldset><legend class=\"screen-reader-text\">Content to export</legend>\n")
-	b.WriteString("<p><label><input type=\"radio\" name=\"content\" value=\"all\" checked=\"checked\"> All content</label></p>\n")
-	b.WriteString("<p><label><input type=\"radio\" name=\"content\" value=\"posts\"> Posts</label></p>\n")
-	b.WriteString("<p><label><input type=\"radio\" name=\"content\" value=\"pages\"> Pages</label></p>\n")
-	b.WriteString("<p><label><input type=\"radio\" name=\"content\" value=\"attachment\"> Media</label></p>\n")
-	b.WriteString("</fieldset>\n")
-	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Download Export File\" disabled=\"disabled\"></p>\n")
-	b.WriteString("</form>\n</div>\n</body>\n</html>\n")
-	writeHTML(w, http.StatusOK, b.String())
-}
-
 // serveExportPersonalData is a privacy tools stub (P8.2) with file generation (P8.4),
 // download wiring (P8.6), and UI polish (P7.39).
 func (h *Handler) serveExportPersonalData(w http.ResponseWriter, r *http.Request, c *wp.Context) {
