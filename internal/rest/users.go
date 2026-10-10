@@ -45,68 +45,6 @@ func (s *Server) serveUsersMe(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	writeJSON(w, http.StatusOK, buildCurrentUser(c))
 }
 
-// serveUsers handles GET /wp/v2/users (P4.46).
-// Users with list_users see the full collection; others only authors with published posts.
-func (s *Server) serveUsers(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	if r.Method != http.MethodGet {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
-			"code":    "rest_no_route",
-			"message": "No route was found matching the URL and request method.",
-			"data":    map[string]any{"status": 405},
-		})
-		return
-	}
-	w.Header().Set("Allow", "GET")
-	canList := c != nil && c.CurrentUser != nil && c.UserCan(c.CurrentUser, "list_users")
-	context := strings.TrimSpace(r.URL.Query().Get("context"))
-	if context == "" {
-		context = "view"
-	}
-	if context == "edit" && !canList {
-		status := http.StatusUnauthorized
-		if c != nil && c.CurrentUser != nil {
-			status = http.StatusForbidden
-		}
-		writeJSON(w, status, map[string]any{
-			"code":    "rest_forbidden_context",
-			"message": "Sorry, you are not allowed to edit users.",
-			"data":    map[string]any{"status": status},
-		})
-		return
-	}
-
-	perPage := parsePerPage(r, 10)
-	page := parsePage(r)
-	total, err := countUsers(c, !canList)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]any{
-			"code":    "rest_user_query",
-			"message": err.Error(),
-			"data":    map[string]any{"status": 500},
-		})
-		return
-	}
-	users, err := listUsersPaged(c, perPage, page, !canList)
-	if err != nil {
-		writeJSON(w, http.StatusInternalServerError, map[string]any{
-			"code":    "rest_user_query",
-			"message": err.Error(),
-			"data":    map[string]any{"status": 500},
-		})
-		return
-	}
-	out := make([]User, 0, len(users))
-	for _, u := range users {
-		out = append(out, buildListedUser(c, u, canList, context))
-	}
-	totalPages := 0
-	if perPage > 0 {
-		totalPages = (total + perPage - 1) / perPage
-	}
-	setCollectionHeaders(w, r, c, total, totalPages, page)
-	writeJSON(w, http.StatusOK, out)
-}
-
 func buildCurrentUser(c *wp.Context) User {
 	u := c.CurrentUser
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")

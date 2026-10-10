@@ -1136,6 +1136,13 @@
   task: P5.45
   api: internal
 
+# P4.62: REST POST/PUT /wp/v2/users for create_users / edit_user.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-users-controller.php
+  go: internal/rest/users_write.go
+  status: partial
+  task: P4.62
+  api: exported
+
 # P5.46: core/avatar, post-author-name, post-author-biography.
 - prefix: wp-includes/blocks/avatar.php
   go: internal/blocks/query.go

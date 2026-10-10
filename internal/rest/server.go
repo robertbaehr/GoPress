@@ -167,6 +167,17 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 		s.serveUsers(w, r, c)
 	case path == "/wp/v2/users/me":
 		s.serveUsersMe(w, r, c)
+	case strings.HasPrefix(path, "/wp/v2/users/") && !strings.Contains(path, "/application-passwords"):
+		id, ok := parseTrailingID(path, "/wp/v2/users/")
+		if !ok {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"code":    "rest_no_route",
+				"message": "No route was found matching the URL and request method.",
+				"data":    map[string]any{"status": 404},
+			})
+			return
+		}
+		s.serveUserItem(w, r, c, id)
 	case strings.Contains(path, "/application-passwords"):
 		userKey, uuid, ok := parseApplicationPasswordsPath(path)
 		if !ok {
