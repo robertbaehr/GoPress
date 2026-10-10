@@ -19,16 +19,18 @@ type Taxonomy struct {
 	RestNamespace string   `json:"rest_namespace"`
 }
 
-// Term is a minimal wp/v2 category or tag object.
+// Term is a wp/v2 category or tag object (view context).
 type Term struct {
-	ID          int64  `json:"id"`
-	Count       int64  `json:"count"`
-	Description string `json:"description"`
-	Link        string `json:"link"`
-	Name        string `json:"name"`
-	Slug        string `json:"slug"`
-	Taxonomy    string `json:"taxonomy"`
-	Parent      *int64 `json:"parent,omitempty"`
+	ID          int64          `json:"id"`
+	Count       int64          `json:"count"`
+	Description string         `json:"description"`
+	Link        string         `json:"link"`
+	Name        string         `json:"name"`
+	Slug        string         `json:"slug"`
+	Taxonomy    string         `json:"taxonomy"`
+	Parent      *int64         `json:"parent,omitempty"`
+	Meta        any            `json:"meta"`
+	Links       map[string]any `json:"_links"`
 }
 
 func (s *Server) serveTaxonomies(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -175,7 +177,7 @@ func listTermsPaged(c *wp.Context, taxonomy string, limit, page int) ([]Term, er
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	out := make([]Term, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, termFromRow(row, home))
+		out = append(out, termFromRow(c, row, home))
 	}
 	return out, nil
 }
@@ -225,11 +227,11 @@ func getTermByID(c *wp.Context, taxonomy string, id int64) (*Term, error) {
 		return nil, nil
 	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
-	t := termFromRow(row, home)
+	t := termFromRow(c, row, home)
 	return &t, nil
 }
 
-func termFromRow(row map[string]any, home string) Term {
+func termFromRow(c *wp.Context, row map[string]any, home string) Term {
 	id := asInt64(row["term_id"])
 	slug := asString(row["slug"])
 	taxonomy := asString(row["taxonomy"])
@@ -238,10 +240,12 @@ func termFromRow(row map[string]any, home string) Term {
 		ID:          id,
 		Count:       asInt64(row["count"]),
 		Description: asString(row["description"]),
-		Link:        termPermalink(home, taxonomy, slug),
+		Link:        termPermalink(c, home, taxonomy, id, slug, parent),
 		Name:        asString(row["name"]),
 		Slug:        slug,
 		Taxonomy:    taxonomy,
+		Meta:        []any{},
+		Links:       buildTermLinks(home, taxonomy, id, parent),
 	}
 	if taxonomy == "category" {
 		p := parent
@@ -250,16 +254,84 @@ func termFromRow(row map[string]any, home string) Term {
 	return t
 }
 
-func termPermalink(home, taxonomy, slug string) string {
+func buildTermLinks(home, taxonomy string, id, parent int64) map[string]any {
+	restRoot := strings.TrimRight(home, "/") + "/wp-json/wp/v2"
+	restBase := "tags"
+	queryKey := "tags"
+	if taxonomy == "category" {
+		restBase = "categories"
+		queryKey = "categories"
+	}
+	links := map[string]any{
+		"self": []map[string]any{{
+			"href":        fmt.Sprintf("%s/%s/%d", restRoot, restBase, id),
+			"targetHints": map[string]any{"allow": []string{"GET"}},
+		}},
+		"collection": []map[string]any{{"href": restRoot + "/" + restBase}},
+		"about":      []map[string]any{{"href": restRoot + "/taxonomies/" + taxonomy}},
+		"wp:post_type": []map[string]any{{
+			"href": fmt.Sprintf("%s/posts?%s=%d", restRoot, queryKey, id),
+		}},
+		"curies": []map[string]any{{
+			"name":      "wp",
+			"href":      "https://api.w.org/{rel}",
+			"templated": true,
+		}},
+	}
+	if taxonomy == "category" && parent > 0 {
+		links["up"] = []map[string]any{{
+			"embeddable": true,
+			"href":       fmt.Sprintf("%s/categories/%d", restRoot, parent),
+		}}
+	}
+	return links
+}
+
+func termPermalink(c *wp.Context, home, taxonomy string, id int64, slug string, parent int64) string {
 	if slug == "" {
 		return home + "/"
 	}
 	switch taxonomy {
 	case "category":
-		return fmt.Sprintf("%s/category/%s/", home, slug)
+		path := categoryPath(c, id, slug, parent)
+		return fmt.Sprintf("%s/category/%s/", home, path)
 	case "post_tag":
 		return fmt.Sprintf("%s/tag/%s/", home, slug)
 	default:
 		return fmt.Sprintf("%s/?taxonomy=%s&term=%s", home, taxonomy, slug)
 	}
+}
+
+// categoryPath walks parents to build fixture-root/fixture-mid/fixture-leaf style paths.
+func categoryPath(c *wp.Context, id int64, slug string, parent int64) string {
+	parts := []string{slug}
+	seen := map[int64]bool{id: true}
+	for parent > 0 && !seen[parent] {
+		seen[parent] = true
+		row, err := loadTermRow(c, "category", parent)
+		if err != nil || row == nil {
+			break
+		}
+		pslug := asString(row["slug"])
+		if pslug != "" {
+			parts = append([]string{pslug}, parts...)
+		}
+		parent = asInt64(row["parent"])
+	}
+	return strings.Join(parts, "/")
+}
+
+func loadTermRow(c *wp.Context, taxonomy string, id int64) (map[string]any, error) {
+	if c == nil || c.DB == nil || id <= 0 {
+		return nil, nil
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT t.term_id, t.slug, tt.parent FROM "+c.DB.Terms()+" t INNER JOIN "+c.DB.TermTaxonomy()+
+			" tt ON t.term_id = tt.term_id WHERE t.term_id = %d AND tt.taxonomy = %s LIMIT 1",
+		id, taxonomy,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return c.DB.GetRow(q, args...)
 }

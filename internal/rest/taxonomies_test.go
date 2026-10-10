@@ -5,6 +5,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/robertbaehr/GoPress/internal/rest"
@@ -74,6 +75,12 @@ func TestCategoriesCollection(t *testing.T) {
 	if terms[0].Link == "" {
 		t.Fatal("expected link")
 	}
+	if terms[0].Links == nil || terms[0].Links["self"] == nil || terms[0].Links["wp:post_type"] == nil {
+		t.Fatalf("expected _links: %+v", terms[0].Links)
+	}
+	if terms[0].Meta == nil {
+		t.Fatal("expected meta")
+	}
 }
 
 func TestCategorySingle(t *testing.T) {
@@ -94,6 +101,24 @@ func TestCategorySingle(t *testing.T) {
 	}
 	if term.ID != 1 || term.Slug != "uncategorized" || term.Taxonomy != "category" {
 		t.Fatalf("unexpected term: %+v", term)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/categories/4", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("leaf status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var leaf rest.Term
+	if err := json.Unmarshal(rec.Body.Bytes(), &leaf); err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(leaf.Link, "/category/fixture-root/fixture-mid/fixture-leaf/") {
+		t.Fatalf("expected hierarchical category link, got %q", leaf.Link)
+	}
+	if leaf.Links["up"] == nil {
+		t.Fatal("expected up link for child category")
 	}
 }
 
@@ -136,6 +161,9 @@ func TestTagsCollectionAndSingle(t *testing.T) {
 	}
 	if one.ID != id || one.Taxonomy != "post_tag" {
 		t.Fatalf("unexpected: %+v", one)
+	}
+	if one.Links == nil || one.Links["collection"] == nil || one.Links["wp:post_type"] == nil {
+		t.Fatalf("expected tag _links: %+v", one.Links)
 	}
 }
 
