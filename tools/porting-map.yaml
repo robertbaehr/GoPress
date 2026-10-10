@@ -4768,3 +4768,18 @@
   task: P3.74
   api: n/a
   notes: "P3.74 — <description> CDATA runs the_excerpt_rss"
+
+# P6.34: default login redirect to admin_url + login_redirect + profile for no edit_posts.
+- prefix: wp-login.php#login_redirect
+  go: internal/login/login.go
+  status: partial
+  task: P6.34
+  api: n/a
+  notes: "P6.34 — login_redirect filter after successful signon"
+
+- prefix: wp-login.php#default-admin-redirect
+  go: internal/login/login.go
+  status: partial
+  task: P6.34
+  api: n/a
+  notes: "P6.34 — default redirect_to=admin_url; no edit_posts → profile.php"

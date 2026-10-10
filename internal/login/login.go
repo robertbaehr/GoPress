@@ -314,7 +314,8 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	blogname := optionString(c, "blogname", "GoPress")
 	redirectTo := r.URL.Query().Get("redirect_to")
 	if redirectTo == "" {
-		redirectTo = home + "/wp-admin/"
+		// P6.34: default redirect_to is admin_url().
+		redirectTo = defaultLoginAdminRedirect(c, home)
 	}
 	loginURL := home + "/wp-login.php"
 	reauth := r.URL.Query().Get("reauth") == "1"
@@ -322,6 +323,7 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 
 	// Logged-in users skip the form unless reauth=1 forces re-authentication (P6.18).
 	if c != nil && c.CurrentUser != nil && !reauth && !interim && errMsg == "" {
+		redirectTo = adjustDefaultAdminLoginRedirect(c, redirectTo, home, c.CurrentUser)
 		http.Redirect(w, r, sanitizeRedirect(redirectTo, home), http.StatusFound)
 		return
 	}
@@ -982,11 +984,16 @@ func (h *Handler) servePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	login := strings.TrimSpace(r.FormValue("log"))
 	password := r.FormValue("pwd")
 	remember := r.FormValue("rememberme") != ""
-	redirectTo := r.FormValue("redirect_to")
-	if redirectTo == "" {
-		redirectTo = r.URL.Query().Get("redirect_to")
+	requestedRedirect := strings.TrimSpace(r.FormValue("redirect_to"))
+	if requestedRedirect == "" {
+		requestedRedirect = strings.TrimSpace(r.URL.Query().Get("redirect_to"))
 	}
 	homeForRedirect := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	// P6.34: omitted redirect_to → admin_url(); then sanitize.
+	redirectTo := requestedRedirect
+	if redirectTo == "" {
+		redirectTo = defaultLoginAdminRedirect(c, homeForRedirect)
+	}
 	redirectTo = sanitizeRedirect(redirectTo, homeForRedirect)
 	interim := isInterimLogin(r)
 
@@ -1021,6 +1028,11 @@ func (h *Handler) servePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		h.serveInterimLoginSuccess(w, r, c)
 		return
 	}
+	// P6.34: login_redirect filter + subscribers without edit_posts → profile.
+	user := c.CurrentUser
+	redirectTo = applyLoginRedirectFilter(c, redirectTo, requestedRedirect, user)
+	redirectTo = adjustDefaultAdminLoginRedirect(c, redirectTo, homeForRedirect, user)
+	redirectTo = sanitizeRedirect(redirectTo, homeForRedirect)
 	http.Redirect(w, r, redirectTo, http.StatusFound)
 }
 
@@ -1221,6 +1233,71 @@ func writeInterimLoginBlankTargetScript(b *strings.Builder) {
 	b.WriteString("\t} catch( er ) {}\n")
 	b.WriteString("}());\n")
 	b.WriteString("</script>\n")
+}
+
+// defaultLoginAdminRedirect returns admin_url() for post-login defaults (P6.34).
+func defaultLoginAdminRedirect(c *wp.Context, home string) string {
+	if c != nil {
+		if u := strings.TrimSpace(wp.AdminURL(c, "")); u != "" {
+			return u
+		}
+	}
+	if home != "" {
+		return strings.TrimRight(home, "/") + "/wp-admin/"
+	}
+	return "/wp-admin/"
+}
+
+// applyLoginRedirectFilter runs the login_redirect filter (P6.34).
+func applyLoginRedirectFilter(c *wp.Context, redirectTo, requested string, user *wp.User) string {
+	if c == nil || c.Hooks == nil {
+		return redirectTo
+	}
+	if v := c.Hooks.ApplyFilters("login_redirect", redirectTo, requested, user); v != nil {
+		if s, ok := v.(string); ok {
+			return s
+		}
+		s := strings.TrimSpace(fmt.Sprint(v))
+		if s != "" && s != "<nil>" {
+			return s
+		}
+	}
+	return redirectTo
+}
+
+// adjustDefaultAdminLoginRedirect sends users without edit_posts to profile.php
+// when the redirect target is the default admin URL (P6.34 / wp-login.php).
+func adjustDefaultAdminLoginRedirect(c *wp.Context, redirectTo, home string, user *wp.User) string {
+	admin := defaultLoginAdminRedirect(c, home)
+	candidates := map[string]bool{
+		"":         true,
+		"wp-admin/": true,
+		"/wp-admin": true,
+		"/wp-admin/": true,
+	}
+	if home != "" {
+		h := strings.TrimRight(home, "/")
+		candidates[h+"/wp-admin"] = true
+		candidates[h+"/wp-admin/"] = true
+	}
+	candidates[admin] = true
+	candidates[strings.TrimRight(admin, "/")] = true
+	if !candidates[strings.TrimSpace(redirectTo)] {
+		return redirectTo
+	}
+	if user == nil || c == nil {
+		return "/wp-admin/"
+	}
+	if !c.UserCan(user, "edit_posts") {
+		if c.UserCan(user, "read") {
+			return wp.AdminURL(c, "profile.php")
+		}
+		if home != "" {
+			return home + "/"
+		}
+		return "/"
+	}
+	return "/wp-admin/"
 }
 
 // sanitizeRedirect validates redirect_to like wp_validate_redirect (P6.20).
