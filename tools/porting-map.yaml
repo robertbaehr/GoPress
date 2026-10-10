@@ -355,6 +355,12 @@
   task: P7.20
   api: n/a
 
+- prefix: wp-admin/includes/privacy-tools.php
+  go: internal/wp/privacy_export.go
+  status: partial
+  task: P8.4
+  api: exported
+
 - prefix: wp-admin/includes/schema.php
   go: internal/db
   status: partial

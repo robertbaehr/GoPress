@@ -680,11 +680,49 @@ func (h *Handler) serveExport(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveExportPersonalData is a privacy tools stub (P8.2).
+// serveExportPersonalData is a privacy tools stub (P8.2) with file generation (P8.4).
 func (h *Handler) serveExportPersonalData(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	h.servePrivacyStub(w, c, "Export Personal Data",
-		"Manage requests for an export of personal data.",
-		"GoPress privacy export stub — full request workflow lands later.")
+	note := "GoPress privacy export stub — full request workflow lands later."
+	if r.Method == http.MethodPost {
+		_ = r.ParseForm()
+		email := strings.TrimSpace(r.Form.Get("username"))
+		if email == "" {
+			email = strings.TrimSpace(r.Form.Get("email"))
+		}
+		if res, err := wp.GeneratePersonalDataExportFile(c, email); err != nil {
+			note = "Export generation failed: " + err.Error()
+		} else {
+			note = "Export file generated: " + res.JSONURL
+		}
+	}
+	h.servePrivacyExportPage(w, c, note)
+}
+
+func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, c *wp.Context, note string) {
+	blogname := optionString(c, "blogname", "GoPress")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Export Personal Data &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui privacy-settings\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap\" id=\"privacy-settings\">\n")
+	b.WriteString("<h1>Export Personal Data</h1>\n")
+	b.WriteString("<p>Manage requests for an export of personal data.</p>\n")
+	b.WriteString("<p class=\"description\">")
+	b.WriteString(html.EscapeString(note))
+	b.WriteString("</p>\n")
+	b.WriteString("<form method=\"post\" action=\"/wp-admin/export-personal-data.php\" class=\"wp-privacy-request-form\">\n")
+	b.WriteString("<p><label for=\"username\">Username or email address</label><br>\n")
+	b.WriteString("<input name=\"username\" type=\"text\" id=\"username\" class=\"regular-text\" required></p>\n")
+	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Send Request\"></p>\n")
+	b.WriteString("</form>\n")
+	b.WriteString("<table class=\"wp-list-table widefat fixed striped privacy-requests\">\n")
+	b.WriteString("<thead><tr><th scope=\"col\">Requester</th><th scope=\"col\">Status</th></tr></thead>\n")
+	b.WriteString("<tbody><tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"2\">No requests found.</td></tr></tbody>\n")
+	b.WriteString("</table>\n</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
 }
 
 // serveErasePersonalData is a privacy tools stub (P8.2).
