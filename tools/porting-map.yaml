@@ -216,10 +216,11 @@
   api: n/a
 
 - prefix: xmlrpc.php
-  go: Tier 2
+  go: internal/server/xmlrpc.go
   status: out-of-scope
-  task: ""
+  task: P3.94
   api: n/a
+  notes: "P3.94 — 403; POST XML-RPC fault; Allow/X-Robots-Tag; HEAD; ?rsd stays 403"
 
 # P3.41: never send X-Pingback (XML-RPC/pingbacks gone).
 - prefix: wp-includes/class-wp.php#X-Pingback
