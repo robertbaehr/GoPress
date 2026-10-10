@@ -2128,6 +2128,12 @@ func (h *Handler) servePrivacyStub(w http.ResponseWriter, c *wp.Context, title, 
 	b.WriteString("<p class=\"description\">")
 	b.WriteString(html.EscapeString(note))
 	b.WriteString("</p>\n")
+	// P8.9: link the configured Privacy Policy page (edit screen).
+	if withTabs {
+		b.WriteString("<p class=\"privacy-policy-page-link\">")
+		b.WriteString(wp.PrivacyPolicyAdminSummary(c))
+		b.WriteString("</p>\n")
+	}
 	b.WriteString("<table class=\"wp-list-table widefat fixed striped privacy-requests\">\n")
 	b.WriteString("<thead><tr><th scope=\"col\">Requester</th><th scope=\"col\">Status</th></tr></thead>\n")
 	b.WriteString("<tbody><tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"2\">No requests found.</td></tr></tbody>\n")
