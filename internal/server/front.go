@@ -113,7 +113,7 @@ func (f *Front) renderHome(w http.ResponseWriter, c *wp.Context) {
 // renderBlockTemplate parses and renders a block theme template document.
 func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, template string) {
 	blogname := optionString(c, "blogname", "GoPress")
-	body := blocks.Render(template)
+	body := blocks.RenderWith(blockRenderEnv(c), template)
 	safe := wp.KsesPost(body)
 
 	var b strings.Builder
@@ -503,5 +503,14 @@ func optionString(c *wp.Context, name, fallback string) string {
 			return fallback
 		}
 		return s
+	}
+}
+
+// blockRenderEnv wires dynamic block resolvers (template parts, later navigation).
+func blockRenderEnv(c *wp.Context) *blocks.Env {
+	return &blocks.Env{
+		LoadTemplatePart: func(slug string) (string, bool) {
+			return wp.ResolveTemplatePart(c, slug)
+		},
 	}
 }

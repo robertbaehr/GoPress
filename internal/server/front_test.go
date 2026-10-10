@@ -49,6 +49,14 @@ func TestFrontHomeRendersBlogname(t *testing.T) {
 	if !strings.Contains(body, "wp-block-group") {
 		t.Fatalf("expected rendered block template markup, got %q", body)
 	}
+	// P5.6: home.html includes <!-- wp:template-part {"slug":"header"} /-->;
+	// fixture customizes that part in the DB.
+	if !strings.Contains(body, "Customized header part") {
+		t.Fatalf("expected rendered template part, got %q", body)
+	}
+	if !strings.Contains(body, `class="wp-block-template-part"`) {
+		t.Fatalf("expected template-part wrapper, got %q", body)
+	}
 	if strings.Contains(body, "<!-- wp:") {
 		t.Fatalf("block comments should be rendered away, got %q", body)
 	}
