@@ -1153,6 +1153,14 @@
   task: P10.43
   api: n/a
 
+# P10.45: e2e WXR export download + STATUS/PORTING refresh after P5.53–P6.21.
+- prefix: tests/e2e/wxr-export.spec.js
+  go: tests/e2e/wxr-export.spec.js
+  status: partial
+  task: P10.45
+  api: n/a
+  notes: "P10.45 — Playwright coverage for export.php WXR download (P7.53)"
+
 # P10.44: e2e external redirect_to rejection + STATUS/PORTING refresh after P5.52–P8.13.
 - prefix: docs/STATUS.md#p10-44
   go: docs/STATUS.md
