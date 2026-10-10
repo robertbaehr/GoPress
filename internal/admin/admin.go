@@ -1525,23 +1525,9 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 		b.WriteString("</td><td class=\"column-description desc\"><div class=\"plugin-description\"><p>")
 		b.WriteString(html.EscapeString(p.Description))
 		b.WriteString("</p></div>")
-		// Plugin header meta line (P9.5): Version | By Author | Visit plugin site.
+		// Plugin header meta line (P9.5) + plugin_row_meta filter (P9.15).
 		b.WriteString("<div class=\"plugin-version-author-uri\">")
-		var metaParts []string
-		if p.Version != "" {
-			metaParts = append(metaParts, "Version "+html.EscapeString(p.Version))
-		}
-		if p.Author != "" {
-			author := html.EscapeString(p.Author)
-			if p.AuthorURI != "" {
-				author = `<a href="` + html.EscapeString(p.AuthorURI) + `">` + author + `</a>`
-			}
-			metaParts = append(metaParts, "By "+author)
-		}
-		if p.PluginURI != "" {
-			metaParts = append(metaParts, `<a href="`+html.EscapeString(p.PluginURI)+`" target="_blank">Visit plugin site</a>`)
-		}
-		b.WriteString(strings.Join(metaParts, " | "))
+		b.WriteString(plugins.FormatRowMetaHTML(plugins.RowMeta(c, p, rowClass)))
 		b.WriteString("</div>")
 		if p.Network {
 			b.WriteString(plugins.NetworkOnlyRowNote)
