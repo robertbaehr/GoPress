@@ -1067,6 +1067,21 @@
   api: exported
   notes: "P2.58 — GetMimeTypes default map matches WP wp_get_mime_types; mime_types filter"
 
+# P2.60: wp_get_upload_dir / wp_upload_dir(null, false) path/url/subdir fields.
+- prefix: wp-includes/functions.php#wp_get_upload_dir
+  go: internal/wp/media.go
+  status: partial
+  task: P2.60
+  api: exported
+  notes: "P2.60 — GetUploadDir/GetUploadDirAt; Path/URL/Subdir/Basedir/Baseurl; yearmonth folders"
+
+- prefix: wp-includes/functions.php#_wp_upload_dir
+  go: internal/wp/media.go
+  status: partial
+  task: P2.60
+  api: exported
+  notes: "P2.60 — upload_path/upload_url_path + uploads_use_yearmonth_folders subdir"
+
 # P2.59: get_allowed_mime_types($user) — optional user + upload_mimes user arg.
 - prefix: wp-includes/functions.php#get_allowed_mime_types
   go: internal/wp/check_filetype.go
