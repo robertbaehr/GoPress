@@ -31,6 +31,29 @@ func TestRobotsTXT(t *testing.T) {
 	}
 }
 
+func TestRobotsTXTDisallowAllWhenNotPublic(t *testing.T) {
+	c := testBoot(t)
+	orig := c.Options.GetOption("blog_public", "1")
+	t.Cleanup(func() { _, _ = c.Options.UpdateOption("blog_public", orig, "yes") })
+	if _, err := c.Options.UpdateOption("blog_public", "0", "yes"); err != nil {
+		t.Fatalf("UpdateOption: %v", err)
+	}
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/robots.txt", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "Disallow: /\n") {
+		t.Fatalf("expected Disallow: / got %q", body)
+	}
+	if strings.Contains(body, "Sitemap:") {
+		t.Fatalf("unexpected Sitemap when private: %q", body)
+	}
+}
+
 func TestSitemapIndexAndPosts(t *testing.T) {
 	c := testBoot(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
