@@ -2257,6 +2257,14 @@
   api: n/a
   notes: "P5.68 — Classic freeform: content attr, else saved/inner HTML"
 
+# P5.69: polish core/missing (originalContent / originalUndelimitedContent fallbacks).
+- prefix: wp-includes/blocks/missing
+  go: internal/blocks/missing.go
+  status: done
+  task: P5.69
+  api: n/a
+  notes: "P5.69 — originalContent, then originalUndelimitedContent, then saved/inner HTML"
+
 - prefix: wp-includes/blocks/footnotes.php
   go: internal/blocks/footnotes.go
   status: partial

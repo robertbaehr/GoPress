@@ -344,17 +344,6 @@ func blockName(b Block) string {
 	return *b.BlockName
 }
 
-// renderMissing outputs the originalContent attribute (unsupported block placeholder).
-func (e *Env) renderMissing(block Block) string {
-	if oc, ok := block.Attrs["originalContent"].(string); ok && oc != "" {
-		return oc
-	}
-	if block.InnerHTML != "" {
-		return block.InnerHTML
-	}
-	return e.renderSaved(block)
-}
-
 // addRootClass injects className onto the first HTML opening tag if absent.
 func addRootClass(htmlFragment, className string) string {
 	if htmlFragment == "" || className == "" {
