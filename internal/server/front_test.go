@@ -242,6 +242,44 @@ func TestEnsure404TemplateParts(t *testing.T) {
 	}
 }
 
+func TestFront404SetsScopeAndSearch(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?p=999999999", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	// Scope is request-local via ForRequest; re-check body markers instead.
+	body := rec.Body.String()
+	if !strings.Contains(body, "wp-block-search") {
+		t.Fatalf("expected search on 404: %q", body[:min(500, len(body))])
+	}
+	if !strings.Contains(body, "Page not found &#8211;") {
+		t.Fatalf("expected document title en-dash: %q", body[:min(400, len(body))])
+	}
+}
+
+func TestFront404DocumentTitlePartsFilter(t *testing.T) {
+	c := testBoot(t)
+	c.Hooks.AddFilter("document_title_parts", func(value any, _ ...any) any {
+		m, _ := value.(map[string]string)
+		if m == nil {
+			m = map[string]string{}
+		}
+		m["title"] = "Missing page"
+		return m
+	}, 10, 1)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?p=999999998", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if !strings.Contains(rec.Body.String(), "<title>Missing page &#8211;") {
+		t.Fatalf("expected filtered title: %q", rec.Body.String()[:min(300, rec.Body.Len())])
+	}
+}
+
 func TestFrontAttachmentByQueryID(t *testing.T) {
 	c := testBoot(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
