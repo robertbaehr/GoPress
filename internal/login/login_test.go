@@ -891,6 +891,62 @@ func TestConfirmAdminEmailCorrectRedirect(t *testing.T) {
 	}
 }
 
+func TestConfirmAdminEmailSanitizesExternalRedirect(t *testing.T) {
+	// P6.42: external redirect_to falls back to /wp-admin/.
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?action=confirm_admin_email&redirect_to=https://evil.example/phish", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if strings.Contains(body, "evil.example") {
+		t.Fatalf("external redirect leaked: %q", body)
+	}
+	if !strings.Contains(body, `name="redirect_to" value="/wp-admin/"`) {
+		t.Fatalf("expected sanitized redirect_to: %q", body)
+	}
+}
+
+func TestConfirmAdminEmailRemindIntervalZeroHidesLink(t *testing.T) {
+	// P6.42: admin_email_remind_interval=0 hides Remind me later.
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	c.Hooks.AddFilter("admin_email_remind_interval", func(v any, _ ...any) any { return 0 }, 10, 1)
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?action=confirm_admin_email&redirect_to=/wp-admin/", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	body := rec.Body.String()
+	if strings.Contains(body, "Remind me later") {
+		t.Fatalf("remind link should be hidden: %q", body)
+	}
+	if !strings.Contains(body, "admin-email__address") {
+		t.Fatalf("expected admin-email__address class: %q", body)
+	}
+}
+
 func TestPostPassSetsCookieAndRedirects(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
