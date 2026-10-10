@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -37,6 +38,11 @@ func (h *Handler) handleUsersBulk(w http.ResponseWriter, r *http.Request, c *wp.
 	// Confirmation form posts action=dodelete.
 	if action == "" {
 		action = strings.TrimSpace(r.FormValue("action"))
+	}
+
+	// P7.84: Change role button posts changeit / changeit2 → promote.
+	if r.FormValue("changeit") != "" || r.FormValue("changeit2") != "" {
+		action = "promote"
 	}
 
 	switch action {
@@ -81,9 +87,85 @@ func (h *Handler) handleUsersBulk(w http.ResponseWriter, r *http.Request, c *wp.
 		http.Redirect(w, r, loc, http.StatusFound)
 		return
 
+	case "promote":
+		h.handleUsersPromote(w, r, c)
+		return
+
 	default:
 		http.Redirect(w, r, "/wp-admin/users.php", http.StatusFound)
 	}
+}
+
+func (h *Handler) handleUsersPromote(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "promote_users") {
+		http.Error(w, "Sorry, you are not allowed to edit this user.\n", http.StatusForbidden)
+		return
+	}
+	role := strings.TrimSpace(r.FormValue("new_role"))
+	if role == "" {
+		role = strings.TrimSpace(r.FormValue("new_role2"))
+	}
+	if role == "" {
+		http.Redirect(w, r, "/wp-admin/users.php", http.StatusFound)
+		return
+	}
+	if role != "none" && (c.Roles == nil || c.Roles.Role(role) == nil) {
+		http.Error(w, "Sorry, you are not allowed to give users that role.\n", http.StatusForbidden)
+		return
+	}
+	ids := collectUserIDs(r)
+	if len(ids) == 0 {
+		http.Redirect(w, r, "/wp-admin/users.php", http.StatusFound)
+		return
+	}
+	update := "promote"
+	changed := 0
+	for _, id := range ids {
+		if id == c.CurrentUser.ID {
+			if role == "none" {
+				http.Error(w, "Sorry, you cannot remove your own role.\n", http.StatusForbidden)
+				return
+			}
+			roleObj := c.Roles.Role(role)
+			if roleObj == nil || !roleObj.Capabilities["promote_users"] {
+				update = "err_admin_role"
+				continue
+			}
+			// WP skips applying a self-role that still has promote_users.
+			continue
+		}
+		applyRole := role
+		if applyRole == "none" {
+			applyRole = ""
+		}
+		if err := setAdminUserRole(c, id, applyRole); err == nil {
+			changed++
+		}
+	}
+	loc := "/wp-admin/users.php?update=" + update
+	if changed > 0 && update == "err_admin_role" {
+		loc += "&delete_count=" + strconv.Itoa(changed) // WP reuses count for "other roles changed"
+	}
+	http.Redirect(w, r, loc, http.StatusFound)
+}
+
+func setAdminUserRole(c *wp.Context, id int64, role string) error {
+	if c == nil || id <= 0 {
+		return fmt.Errorf("invalid user")
+	}
+	if role == "" {
+		// Clear capabilities (no role).
+		if c.Meta == nil {
+			return fmt.Errorf("no meta")
+		}
+		empty, err := wp.SerializePHP(map[any]any{})
+		if err != nil {
+			return err
+		}
+		_, _, _, err = c.Meta.UpdateMetadata(wp.MetaUser, id, "wp_capabilities", empty, "")
+		return err
+	}
+	return c.SetUserRole(id, role)
 }
 
 func (h *Handler) serveUsersDeleteConfirm(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -158,6 +240,10 @@ func (h *Handler) serveUsersList(w http.ResponseWriter, r *http.Request, c *wp.C
 		b.WriteString(`</p></div>` + "\n")
 	} else if update == "err_admin_del" {
 		b.WriteString(`<div id="message" class="error notice is-dismissible"><p>You cannot delete the current user.</p></div>` + "\n")
+	} else if update == "promote" {
+		b.WriteString(`<div id="message" class="updated notice is-dismissible"><p>Changed roles.</p></div>` + "\n")
+	} else if update == "err_admin_role" {
+		b.WriteString(`<div id="message" class="error notice is-dismissible"><p>You cannot change your own role to one that does not allow managing other users. Your role was not changed.</p></div>` + "\n")
 	}
 
 	b.WriteString(`<form method="post" action="/wp-admin/users.php" id="users-filter">` + "\n")
@@ -168,7 +254,9 @@ func (h *Handler) serveUsersList(w http.ResponseWriter, r *http.Request, c *wp.C
 	b.WriteString(`<option value="delete">Delete</option>`)
 	b.WriteString(`</select> `)
 	b.WriteString(`<input type="submit" id="doaction" class="button action" value="Apply" />`)
-	b.WriteString(`</div></div>` + "\n")
+	b.WriteString(`</div>`)
+	b.WriteString(usersRoleChangeControls(c, "top"))
+	b.WriteString(`</div>` + "\n")
 
 	b.WriteString("<table class=\"wp-list-table widefat fixed striped table-view-list users\">\n")
 	b.WriteString("<thead><tr>")
@@ -225,9 +313,64 @@ func (h *Handler) serveUsersList(w http.ResponseWriter, r *http.Request, c *wp.C
 	b.WriteString(`<option value="delete">Delete</option>`)
 	b.WriteString(`</select> `)
 	b.WriteString(`<input type="submit" id="doaction2" class="button action" value="Apply" />`)
-	b.WriteString(`</div></div>` + "\n")
+	b.WriteString(`</div>`)
+	b.WriteString(usersRoleChangeControls(c, "bottom"))
+	b.WriteString(`</div>` + "\n")
 	b.WriteString("</form>\n")
 	writeAdminPage(w, c, newAdminChrome(c, "Users", "users-php"), b.String())
+}
+
+// usersRoleChangeControls emits the Change role to… select + Change button (P7.84).
+func usersRoleChangeControls(c *wp.Context, which string) string {
+	if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "promote_users") {
+		return ""
+	}
+	id := "new_role"
+	btn := "changeit"
+	if which == "bottom" {
+		id = "new_role2"
+		btn = "changeit2"
+	}
+	var b strings.Builder
+	b.WriteString(`<div class="alignleft actions">`)
+	b.WriteString(`<label class="screen-reader-text" for="`)
+	b.WriteString(id)
+	b.WriteString(`">Change role to…</label>`)
+	b.WriteString(`<select name="`)
+	b.WriteString(id)
+	b.WriteString(`" id="`)
+	b.WriteString(id)
+	b.WriteString(`">`)
+	b.WriteString(`<option value="">Change role to…</option>`)
+	if c.Roles != nil {
+		// Stable-ish order: administrator first when present, then others alpha by slug.
+		roles := c.Roles.All()
+		slugs := make([]string, 0, len(roles))
+		for slug := range roles {
+			slugs = append(slugs, slug)
+		}
+		sort.Strings(slugs)
+		for _, slug := range slugs {
+			role := roles[slug]
+			if role == nil {
+				continue
+			}
+			b.WriteString(`<option value="`)
+			b.WriteString(html.EscapeString(slug))
+			b.WriteString(`">`)
+			b.WriteString(html.EscapeString(role.Name))
+			b.WriteString(`</option>`)
+		}
+	}
+	b.WriteString(`<option value="none">— No role for this site —</option>`)
+	b.WriteString(`</select> `)
+	b.WriteString(`<input type="submit" name="`)
+	b.WriteString(btn)
+	b.WriteString(`" id="`)
+	b.WriteString(btn)
+	b.WriteString(`" class="button" value="Change" />`)
+	b.WriteString(`</div>`)
+	return b.String()
 }
 
 func collectUserIDs(r *http.Request) []int64 {

@@ -124,6 +124,101 @@ func TestUsersBulkDeleteStub(t *testing.T) {
 	}
 }
 
+func TestUsersBulkPromoteRole(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+
+	adminUser, err := c.GetUserBy("login", "admin")
+	if err != nil || adminUser == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(adminUser, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	ck := &http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue}
+
+	login := fmt.Sprintf("bulkrole_%d", time.Now().UnixNano()%1_000_000)
+	email := login + "@example.com"
+	now := time.Now().UTC().Format("2006-01-02 15:04:05")
+	q, args, err := c.DB.Prepare(
+		"INSERT INTO "+c.DB.Users()+
+			" (user_login, user_pass, user_nicename, user_email, user_url, user_registered, user_activation_key, user_status, display_name) VALUES "+
+			"(%s, %s, %s, %s, %s, %s, %s, %d, %s)",
+		login, "x", login, email, "", now, "", 0, login,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := c.DB.Exec(q, args...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	uid, err := res.LastInsertId()
+	if err != nil || uid <= 0 {
+		t.Fatalf("insert: %v", err)
+	}
+	t.Cleanup(func() {
+		dq, dargs, _ := c.DB.Prepare("DELETE FROM "+c.DB.Users()+" WHERE ID = %d", uid)
+		_, _ = c.DB.Exec(dq, dargs...)
+		dq, dargs, _ = c.DB.Prepare("DELETE FROM "+c.DB.UserMeta()+" WHERE user_id = %d", uid)
+		_, _ = c.DB.Exec(dq, dargs...)
+	})
+	if err := c.SetUserRole(uid, "subscriber"); err != nil {
+		t.Fatalf("set role: %v", err)
+	}
+
+	// List shows Change role controls.
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/users.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/users.php") {
+		t.Fatal("expected handle")
+	}
+	body := rec.Body.String()
+	for _, want := range []string{`id="new_role"`, `name="changeit"`, `value="Change"`, `subscriber`} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in users list", want)
+		}
+	}
+
+	form := url.Values{}
+	form.Set("new_role", "editor")
+	form.Set("changeit", "Change")
+	form.Add("users[]", fmt.Sprintf("%d", uid))
+	req = httptest.NewRequest(http.MethodPost, "/wp-admin/users.php", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	rc = c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/users.php") {
+		t.Fatal("expected handle")
+	}
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Header().Get("Location"), "update=promote") {
+		t.Fatalf("location=%q", rec.Header().Get("Location"))
+	}
+	u, err := c.GetUserBy("id", uid)
+	if err != nil || u == nil {
+		t.Fatalf("reload: %v", err)
+	}
+	if c.Roles != nil {
+		_ = c.Roles.InitUser(u, c.Meta)
+	}
+	found := false
+	for _, r := range u.Roles {
+		if r == "editor" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected editor role, got %v", u.Roles)
+	}
+}
+
 func TestUsersBulkDeleteSkipsSelf(t *testing.T) {
 	c := bootOrSkip(t)
 	t.Cleanup(func() { _ = c.DB.Close() })

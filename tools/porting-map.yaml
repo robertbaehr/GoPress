@@ -22,6 +22,14 @@
   api: n/a
   notes: "P7.60 — bulkactions Delete → confirm → dodelete; skips current user; cache clear"
 
+# P7.84: users.php bulk Change role (promote).
+- prefix: wp-admin/users.php#promote
+  go: internal/admin/users_bulk.go
+  status: partial
+  task: P7.84
+  api: n/a
+  notes: "P7.84 — new_role + changeit → SetUserRole; err_admin_role for self demotion"
+
 # P7.65: comment.php reply form (action=replyto / replytocomment).
 - prefix: wp-admin/comment.php#replyto
   go: internal/admin/admin.go
