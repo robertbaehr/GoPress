@@ -11,6 +11,7 @@ import (
 	"strings"
 
 	"github.com/robertbaehr/GoPress/internal/plugins"
+	"github.com/robertbaehr/GoPress/internal/theme"
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
@@ -1313,26 +1314,102 @@ func (h *Handler) serveThemes(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	blogname := optionString(c, "blogname", "GoPress")
 	stylesheet := optionString(c, "stylesheet", "twentytwentytwo")
 	template := optionString(c, "template", stylesheet)
+	absPath := ""
+	if c != nil && c.Config != nil {
+		absPath = c.Config.ABSPATH
+	}
+	themes, err := theme.ListInstalledThemes(absPath)
+	if err != nil {
+		http.Error(w, "themes: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	// Ensure the active theme appears even if style.css parse failed.
+	hasActive := false
+	for _, th := range themes {
+		if th.Slug == stylesheet {
+			hasActive = true
+			break
+		}
+	}
+	if !hasActive && stylesheet != "" {
+		themes = append([]theme.ThemeData{{
+			Slug:     stylesheet,
+			Name:     stylesheet,
+			Template: template,
+		}}, themes...)
+	}
+	// Active theme first (WP themes.php order).
+	for i, th := range themes {
+		if th.Slug == stylesheet {
+			themes = append(append([]theme.ThemeData{th}, themes[:i]...), themes[i+1:]...)
+			break
+		}
+	}
+
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>Themes &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin\">\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui themes-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1>Themes</h1>\n")
 	b.WriteString("<div class=\"theme-browser\">\n")
-	b.WriteString("<div class=\"theme active\" data-slug=\"")
-	b.WriteString(html.EscapeString(stylesheet))
-	b.WriteString("\">\n")
-	b.WriteString("<h2 class=\"theme-name\">")
-	b.WriteString(html.EscapeString(stylesheet))
-	b.WriteString(" <span>Active</span></h2>\n")
-	b.WriteString("<p class=\"theme-template\">Template: ")
-	b.WriteString(html.EscapeString(template))
-	b.WriteString("</p>\n")
-	b.WriteString("<p>GoPress themes stub (P7.4).</p>\n")
-	b.WriteString("</div>\n</div>\n</body>\n</html>\n")
+	for _, th := range themes {
+		active := th.Slug == stylesheet
+		b.WriteString("<div class=\"theme")
+		if active {
+			b.WriteString(" active")
+		}
+		b.WriteString("\" data-slug=\"")
+		b.WriteString(html.EscapeString(th.Slug))
+		b.WriteString("\">\n")
+		b.WriteString("<div class=\"theme-id-container\">\n")
+		b.WriteString("<h2 class=\"theme-name\" id=\"")
+		b.WriteString(html.EscapeString(th.Slug))
+		b.WriteString("-name\">")
+		if active {
+			b.WriteString("<span>Active:</span> ")
+		}
+		name := th.Name
+		if name == "" {
+			name = th.Slug
+		}
+		b.WriteString(html.EscapeString(name))
+		b.WriteString("</h2>\n")
+		if th.Author != "" {
+			b.WriteString("<div class=\"theme-author\">By ")
+			b.WriteString(html.EscapeString(th.Author))
+			b.WriteString("</div>\n")
+		}
+		if th.Version != "" {
+			b.WriteString("<p class=\"theme-version\">Version: ")
+			b.WriteString(html.EscapeString(th.Version))
+			b.WriteString("</p>\n")
+		}
+		if th.Description != "" {
+			b.WriteString("<p class=\"theme-description\">")
+			b.WriteString(html.EscapeString(th.Description))
+			b.WriteString("</p>\n")
+		}
+		tpl := th.Template
+		if active && template != "" {
+			tpl = template
+		}
+		if tpl != "" {
+			b.WriteString("<p class=\"theme-template\">Template: ")
+			b.WriteString(html.EscapeString(tpl))
+			b.WriteString("</p>\n")
+		}
+		b.WriteString("<button type=\"button\" class=\"button button-secondary theme-detail\" aria-label=\"View Theme Details for ")
+		b.WriteString(html.EscapeString(name))
+		b.WriteString("\">Theme Details</button>\n")
+		b.WriteString("</div>\n</div>\n")
+	}
+	b.WriteString("</div>\n")
+	b.WriteString("<div class=\"theme-overlay theme-overlay-initial\" tabindex=\"0\" role=\"dialog\" aria-label=\"Theme Details\"></div>\n")
+	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
 

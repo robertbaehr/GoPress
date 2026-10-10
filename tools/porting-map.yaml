@@ -328,6 +328,13 @@
   task: P4.49
   api: n/a
 
+# P7.34: themes.php lists installed themes with name/author/version/description.
+- prefix: wp-admin/themes.php#details
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.34
+  api: n/a
+
 # P4.48: create post revision on REST post update.
 - prefix: wp-includes/revision.php#wp_save_post_revision
   go: internal/rest/posts_write.go
