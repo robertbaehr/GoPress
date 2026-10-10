@@ -2,6 +2,7 @@ package rest_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -104,5 +105,38 @@ func TestMediaMissing(t *testing.T) {
 	(&rest.Server{}).Handle(rec, req, c)
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+}
+
+func TestMediaDescriptionCaptionParity(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	cases := []struct {
+		id      int64
+		needles []string
+	}{
+		{12, []string{`class="wp-video"`, `wp-video-shortcode`, `id="video-12-1"`, `controls="controls"`}},
+		{11, []string{`wp-audio-shortcode`, `id="audio-11-1"`, `preload="none"`}},
+		{10, []string{`class="attachment"`, `sample-doc.pdf`, `sample-doc-pdf-300x144.jpg`}},
+		{9, []string{`srcset=`, `sizes="auto, (max-width: 300px) 100vw, 300px"`}},
+	}
+	for _, tc := range cases {
+		req := httptest.NewRequest(http.MethodGet, fmt.Sprintf("/wp-json/wp/v2/media/%d", tc.id), nil)
+		rec := httptest.NewRecorder()
+		rc := c.ForRequest(rec, req)
+		(&rest.Server{}).Handle(rec, req, rc)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("id=%d status=%d body=%s", tc.id, rec.Code, rec.Body.String())
+		}
+		var m rest.Media
+		if err := json.Unmarshal(rec.Body.Bytes(), &m); err != nil {
+			t.Fatalf("id=%d json: %v", tc.id, err)
+		}
+		for _, n := range tc.needles {
+			if !strings.Contains(m.Description.Rendered, n) {
+				t.Fatalf("id=%d missing %q in description %q", tc.id, n, m.Description.Rendered)
+			}
+		}
 	}
 }

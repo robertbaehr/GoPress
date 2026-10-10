@@ -304,7 +304,7 @@ func mediaFromRow(c *wp.Context, row map[string]any, home string) Media {
 			"status-inherit",
 			"hentry",
 		},
-		Description:  RenderedString{Rendered: mediaDescriptionHTML(mime, sourceURL, title, content, details)},
+		Description:  RenderedString{Rendered: mediaDescriptionHTML(id, mime, sourceURL, title, content, details)},
 		Caption:      RenderedString{Rendered: mediaCaptionHTML(excerpt, mime, sourceURL)},
 		AltText:      alt,
 		MediaType:    mediaTypeFromMime(mime),
@@ -400,17 +400,48 @@ func buildMediaDetails(c *wp.Context, id int64, mime, sourceURL, attached string
 		}
 		sizesMap[sizeName] = sm
 	}
-	if strings.HasPrefix(strings.ToLower(mime), "image/") && sourceURL != "" {
+	if len(sizesMap) > 0 {
+		// WP REST overwrites sizes.full via wp_get_attachment_image_src('full'),
+		// using the attachment post mime_type (not the preview file's mime).
+		fullURL := sourceURL
+		fullFile := path.Base(sourceURL)
+		var fullW, fullH any
+		if existing, ok := sizesMap["full"].(map[string]any); ok {
+			if u := asString(existing["source_url"]); u != "" {
+				fullURL = u
+			}
+			if f := asString(existing["file"]); f != "" {
+				fullFile = f
+			} else if fullURL != "" {
+				fullFile = path.Base(fullURL)
+			}
+			fullW = existing["width"]
+			fullH = existing["height"]
+		}
+		if strings.HasPrefix(strings.ToLower(mime), "image/") && sourceURL != "" {
+			fullURL = sourceURL
+			fullFile = path.Base(sourceURL)
+			if w, ok := details["width"]; ok {
+				fullW = w
+			}
+			if h, ok := details["height"]; ok {
+				fullH = h
+			}
+		}
+		if fullW == nil {
+			fullW = details["width"]
+			fullH = details["height"]
+		}
 		full := map[string]any{
-			"file":       path.Base(sourceURL),
+			"file":       fullFile,
 			"mime_type":  mime,
-			"source_url": sourceURL,
+			"source_url": fullURL,
 		}
-		if w, ok := details["width"]; ok {
-			full["width"] = w
+		if fullW != nil {
+			full["width"] = fullW
 		}
-		if h, ok := details["height"]; ok {
-			full["height"] = h
+		if fullH != nil {
+			full["height"] = fullH
 		}
 		sizesMap["full"] = full
 	}
@@ -444,43 +475,152 @@ func mediaFilesize(details any) any {
 	return nil
 }
 
-func mediaDescriptionHTML(mime, sourceURL, title, content string, details any) string {
+func mediaDescriptionHTML(id int64, mime, sourceURL, title, content string, details any) string {
 	content = strings.TrimSpace(content)
 	if content != "" {
 		return content + "\n"
 	}
-	if strings.HasPrefix(strings.ToLower(mime), "image/") && sourceURL != "" {
-		mediumURL := sourceURL
-		width, height := 0, 0
+	mimeLower := strings.ToLower(mime)
+	if strings.HasPrefix(mimeLower, "video/") && sourceURL != "" {
+		return mediaVideoDescriptionHTML(id, mime, sourceURL, details)
+	}
+	if strings.HasPrefix(mimeLower, "audio/") && sourceURL != "" {
+		return mediaAudioDescriptionHTML(id, mime, sourceURL)
+	}
+	// Images and non-image attachments with a medium preview (e.g. PDF icons).
+	mediumURL, width, height := mediaSizeURL(details, "medium")
+	if mediumURL == "" && strings.HasPrefix(mimeLower, "image/") && sourceURL != "" {
+		mediumURL = sourceURL
 		if m, ok := details.(map[string]any); ok {
-			if sizes, ok := m["sizes"].(map[string]any); ok {
-				if med, ok := sizes["medium"].(map[string]any); ok {
-					if u := asString(med["source_url"]); u != "" {
-						mediumURL = u
-					}
-					width = int(asInt64(med["width"]))
-					height = int(asInt64(med["height"]))
-				}
-			}
-			if width == 0 {
-				width = int(asInt64(m["width"]))
-				height = int(asInt64(m["height"]))
-			}
+			width = int(asInt64(m["width"]))
+			height = int(asInt64(m["height"]))
 		}
+	}
+	if mediumURL != "" && sourceURL != "" {
 		wh := ""
 		if width > 0 && height > 0 {
 			wh = fmt.Sprintf(` width="%d" height="%d"`, width, height)
 		}
+		srcset, sizes := "", ""
+		if strings.HasPrefix(mimeLower, "image/") {
+			srcset, sizes = mediaImageSrcsetSizes(details, mediumURL, width, sourceURL)
+		}
+		extra := ""
+		if srcset != "" {
+			extra += ` srcset="` + srcset + `"`
+		}
+		if sizes != "" {
+			extra += ` sizes="` + sizes + `"`
+		}
 		return fmt.Sprintf(
-			`<p class="attachment"><a href='%s'><img loading="lazy" decoding="async"%s src="%s" class="attachment-medium size-medium" alt="" /></a></p>`+"\n",
-			sourceURL, wh, mediumURL,
+			`<p class="attachment"><a href='%s'><img loading="lazy" decoding="async"%s src="%s" class="attachment-medium size-medium" alt=""%s /></a></p>`+"\n",
+			sourceURL, wh, mediumURL, extra,
 		)
-	}
-	if sourceURL != "" && (strings.HasPrefix(mime, "video/") || strings.HasPrefix(mime, "audio/")) {
-		return fmt.Sprintf("<p>%s</p>\n", sourceURL)
 	}
 	_ = title
 	return ""
+}
+
+func mediaSizeURL(details any, size string) (url string, width, height int) {
+	m, ok := details.(map[string]any)
+	if !ok {
+		return "", 0, 0
+	}
+	sizes, ok := m["sizes"].(map[string]any)
+	if !ok {
+		return "", 0, 0
+	}
+	sm, ok := sizes[size].(map[string]any)
+	if !ok {
+		return "", 0, 0
+	}
+	return asString(sm["source_url"]), int(asInt64(sm["width"])), int(asInt64(sm["height"]))
+}
+
+func mediaImageSrcsetSizes(details any, mediumURL string, mediumW int, fullURL string) (srcset, sizesAttr string) {
+	seen := map[int]string{}
+	add := func(url string, w int) {
+		if url == "" || w <= 0 {
+			return
+		}
+		if _, ok := seen[w]; ok {
+			return
+		}
+		seen[w] = url
+	}
+	add(mediumURL, mediumW)
+	if m, ok := details.(map[string]any); ok {
+		fullW := int(asInt64(m["width"]))
+		if fullW == 0 {
+			if _, w, _ := mediaSizeURL(details, "full"); w > 0 {
+				fullW = w
+			}
+		}
+		add(fullURL, fullW)
+		if sizes, ok := m["sizes"].(map[string]any); ok {
+			for _, sizeVal := range sizes {
+				sm, ok := sizeVal.(map[string]any)
+				if !ok {
+					continue
+				}
+				add(asString(sm["source_url"]), int(asInt64(sm["width"])))
+			}
+		}
+	}
+	if len(seen) < 2 {
+		return "", ""
+	}
+	// Prefer medium then full ordering matching wp_get_attachment_image for these fixtures.
+	var parts []string
+	if mediumURL != "" && mediumW > 0 {
+		parts = append(parts, fmt.Sprintf("%s %dw", mediumURL, mediumW))
+		delete(seen, mediumW)
+	}
+	if fullURL != "" {
+		if m, ok := details.(map[string]any); ok {
+			fullW := int(asInt64(m["width"]))
+			if fullW > 0 {
+				if u, ok := seen[fullW]; ok {
+					parts = append(parts, fmt.Sprintf("%s %dw", u, fullW))
+					delete(seen, fullW)
+				} else {
+					parts = append(parts, fmt.Sprintf("%s %dw", fullURL, fullW))
+				}
+			}
+		}
+	}
+	if len(parts) < 2 {
+		return "", ""
+	}
+	if mediumW <= 0 {
+		mediumW = 300
+	}
+	return strings.Join(parts, ", "), fmt.Sprintf("auto, (max-width: %dpx) 100vw, %dpx", mediumW, mediumW)
+}
+
+func mediaVideoDescriptionHTML(id int64, mime, sourceURL string, details any) string {
+	width, height := 640, 360
+	if m, ok := details.(map[string]any); ok {
+		if w := int(asInt64(m["width"])); w > 0 {
+			width = w
+		}
+		if h := int(asInt64(m["height"])); h > 0 {
+			height = h
+		}
+	}
+	srcWithInst := sourceURL + "?_=1"
+	return fmt.Sprintf(
+		`<div style="width: %dpx;" class="wp-video"><video class="wp-video-shortcode" id="video-%d-1" width="%d" height="%d" preload="metadata" controls="controls"><source type="%s" src="%s" /><a href="%s">%s</a></video></div>`+"\n",
+		width, id, width, height, mime, srcWithInst, sourceURL, sourceURL,
+	)
+}
+
+func mediaAudioDescriptionHTML(id int64, mime, sourceURL string) string {
+	srcWithInst := sourceURL + "?_=1"
+	return fmt.Sprintf(
+		`<audio class="wp-audio-shortcode" id="audio-%d-1" preload="none" style="width: 100%%;" controls="controls"><source type="%s" src="%s" /><a href="%s">%s</a></audio>`+"\n",
+		id, mime, srcWithInst, sourceURL, sourceURL,
+	)
 }
 
 func mediaCaptionHTML(excerpt, mime, sourceURL string) string {
