@@ -1252,27 +1252,35 @@ func (h *Handler) serveOptionsPHP(w http.ResponseWriter, r *http.Request, c *wp.
 	}
 }
 
-// saveMediaOptions persists Settings → Media size/embed fields (P7.51).
+// saveMediaOptions persists Settings → Media size/embed/upload fields (P7.51 / P7.101).
 func saveMediaOptions(c *wp.Context, r *http.Request) {
 	if c == nil || c.Options == nil || r == nil {
 		return
 	}
+	// P7.101: size fields may be 0 or empty (WP options-media.php parity).
 	for _, key := range []string{
 		"thumbnail_size_w", "thumbnail_size_h",
 		"medium_size_w", "medium_size_h",
 		"large_size_w", "large_size_h",
 	} {
-		if v := strings.TrimSpace(r.Form.Get(key)); v != "" {
-			_, _ = c.Options.UpdateOption(key, v, "yes")
+		if _, ok := r.Form[key]; ok {
+			_, _ = c.Options.UpdateOption(key, strings.TrimSpace(r.Form.Get(key)), "yes")
 		}
 	}
 	// Checkboxes: present → 1, absent → 0.
-	for _, key := range []string{"thumbnail_crop", "embed_autourls"} {
+	for _, key := range []string{"thumbnail_crop", "embed_autourls", "uploads_use_yearmonth_folders"} {
 		v := "0"
 		if _, ok := r.Form[key]; ok {
 			v = "1"
 		}
 		_, _ = c.Options.UpdateOption(key, v, "yes")
+	}
+	// Optional custom upload paths (shown when non-default).
+	if _, ok := r.Form["upload_path"]; ok {
+		_, _ = c.Options.UpdateOption("upload_path", strings.TrimSpace(r.Form.Get("upload_path")), "yes")
+	}
+	if _, ok := r.Form["upload_url_path"]; ok {
+		_, _ = c.Options.UpdateOption("upload_url_path", strings.TrimSpace(r.Form.Get("upload_url_path")), "yes")
 	}
 }
 
@@ -1667,8 +1675,13 @@ func (h *Handler) serveOptionsDiscussion(w http.ResponseWriter, r *http.Request,
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveOptionsMedia is the Settings → Media screen stub (P7.23).
+// serveOptionsMedia is the Settings → Media screen stub (P7.23 / P7.101).
 func (h *Handler) serveOptionsMedia(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	// P7.101: manage_options gate (mirrors options-media.php wp_die).
+	if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "manage_options") {
+		http.Error(w, "Sorry, you are not allowed to manage options for this site.\n", http.StatusForbidden)
+		return
+	}
 	blogname := optionString(c, "blogname", "GoPress")
 	thumbW := optionString(c, "thumbnail_size_w", "150")
 	thumbH := optionString(c, "thumbnail_size_h", "150")
@@ -1678,6 +1691,10 @@ func (h *Handler) serveOptionsMedia(w http.ResponseWriter, r *http.Request, c *w
 	largeW := optionString(c, "large_size_w", "1024")
 	largeH := optionString(c, "large_size_h", "1024")
 	embeds := optionString(c, "embed_autourls", "1")
+	yearMonth := optionString(c, "uploads_use_yearmonth_folders", "1")
+	uploadPath := optionString(c, "upload_path", "")
+	uploadURLPath := optionString(c, "upload_url_path", "")
+	showUploadPaths := uploadURLPath != "" || (uploadPath != "" && uploadPath != "wp-content/uploads")
 
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
@@ -1748,6 +1765,31 @@ func (h *Handler) serveOptionsMedia(w http.ResponseWriter, r *http.Request, c *w
 	b.WriteString(" /> Items linked to should be embedded automatically</label>\n")
 	b.WriteString("</td>\n</tr>\n")
 	b.WriteString("</table>\n")
+
+	// P7.101: Uploading Files — year/month folders (+ optional path fields).
+	b.WriteString("<h2 id=\"wp-settings-section-uploading-files\" class=\"title\">Uploading Files</h2>\n")
+	b.WriteString("<table class=\"form-table\" role=\"presentation\">\n")
+	if showUploadPaths {
+		b.WriteString("<tr>\n<th scope=\"row\"><label for=\"upload_path\">Store uploads in this folder</label></th>\n<td>")
+		b.WriteString("<input name=\"upload_path\" type=\"text\" id=\"upload_path\" value=\"")
+		b.WriteString(html.EscapeString(uploadPath))
+		b.WriteString("\" class=\"regular-text code\" />\n")
+		b.WriteString("<p class=\"description\">Default is <code>wp-content/uploads</code></p>\n</td>\n</tr>\n")
+		b.WriteString("<tr>\n<th scope=\"row\"><label for=\"upload_url_path\">Full URL path to files</label></th>\n<td>")
+		b.WriteString("<input name=\"upload_url_path\" type=\"text\" id=\"upload_url_path\" value=\"")
+		b.WriteString(html.EscapeString(uploadURLPath))
+		b.WriteString("\" class=\"regular-text code\" />\n")
+		b.WriteString("<p class=\"description\">Configuring this is optional. By default, it should be blank.</p>\n</td>\n</tr>\n")
+	}
+	b.WriteString("<tr>\n<td class=\"td-full\">\n")
+	b.WriteString("<label for=\"uploads_use_yearmonth_folders\"><input name=\"uploads_use_yearmonth_folders\" type=\"checkbox\" id=\"uploads_use_yearmonth_folders\" value=\"1\"")
+	if yearMonth == "1" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString(" /> Organize my uploads into month- and year-based folders</label>\n")
+	b.WriteString("</td>\n</tr>\n")
+	b.WriteString("</table>\n")
+
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Save Changes\"></p>\n")
 	b.WriteString("</form>\n</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
