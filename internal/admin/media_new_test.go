@@ -42,6 +42,13 @@ func TestMediaNewFormStub(t *testing.T) {
 	if !strings.Contains(body, `name="_wpnonce"`) {
 		t.Fatalf("missing nonce: %q", body)
 	}
+	// P8.29: plupload UI + _wpPluploadSettings bootstrap.
+	if !strings.Contains(body, `id="plupload-upload-ui"`) || !strings.Contains(body, "var _wpPluploadSettings") {
+		t.Fatalf("missing plupload settings: %q", body)
+	}
+	if !strings.Contains(body, `"file_data_name":"async-upload"`) || !strings.Contains(body, "async-upload.php") {
+		t.Fatalf("plupload defaults incomplete: %q", body)
+	}
 }
 
 func TestMediaNewUploadRedirects(t *testing.T) {

@@ -572,6 +572,21 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P8.27 — local path only; image_sideload_extensions filter; html|src|id"
 
+# P8.29: wp_plupload_default_settings + max upload size helpers.
+- prefix: wp-includes/media.php#wp_plupload_default_settings
+  go: internal/wp/plupload.go
+  status: partial
+  task: P8.29
+  api: exported
+  notes: "P8.29 — MaxUploadSize/ConvertHrToBytes + PluploadDefaultSettings; media-new.php emits _wpPluploadSettings"
+
+- prefix: wp-includes/media.php#wp_max_upload_size
+  go: internal/wp/plupload.go
+  status: partial
+  task: P8.29
+  api: exported
+  notes: "P8.29 — min(upload_max_filesize, post_max_size) + upload_size_limit filter"
+
 # P8.28: image edit path + backup sizes bookkeeping stub.
 - prefix: wp-admin/includes/image.php#_load_image_to_edit_path
   go: internal/wp/image_edit.go

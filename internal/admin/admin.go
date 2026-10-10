@@ -2,6 +2,7 @@
 package admin
 
 import (
+	"encoding/json"
 	"fmt"
 	"html"
 	"net/http"
@@ -2407,10 +2408,21 @@ func (h *Handler) serveMediaNew(w http.ResponseWriter, r *http.Request, c *wp.Co
 	b.WriteString(html.EscapeString(nonce))
 	b.WriteString("\" />\n")
 	b.WriteString("<input type=\"hidden\" name=\"post_id\" id=\"post_id\" value=\"0\" />\n")
+	b.WriteString("<div id=\"plupload-upload-ui\" class=\"hide-if-no-js\">\n")
+	b.WriteString("<div id=\"drag-drop-area\"><div class=\"drag-drop-inside\">\n")
+	b.WriteString("<p class=\"drag-drop-info\">Drop files to upload</p>\n")
+	b.WriteString("<p><button type=\"button\" id=\"plupload-browse-button\" class=\"browser button\">Select Files</button></p>\n")
+	b.WriteString("</div></div>\n</div>\n")
 	b.WriteString("<p><label for=\"async-upload\">Choose a file</label>\n")
 	b.WriteString("<input type=\"file\" id=\"async-upload\" name=\"async-upload\" /></p>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"html-upload\" id=\"html-upload\" class=\"button\" value=\"Upload\" /></p>\n")
 	b.WriteString("</form>\n")
+	// P8.29: emit _wpPluploadSettings like wp_plupload_default_settings().
+	if raw, err := json.Marshal(wp.PluploadDefaultSettings(c)); err == nil {
+		b.WriteString("<script type=\"text/javascript\">/* <![CDATA[ */\nvar _wpPluploadSettings = ")
+		b.Write(raw)
+		b.WriteString(";\n/* ]]> */</script>\n")
+	}
 	b.WriteString("<p><a href=\"/wp-admin/upload.php\">&larr; Back to Media Library</a></p>\n")
 	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
