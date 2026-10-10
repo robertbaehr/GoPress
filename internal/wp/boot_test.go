@@ -43,6 +43,9 @@ func TestBootLoadsBlogname(t *testing.T) {
 	if s == "" {
 		t.Fatalf("blogname empty after Boot; got %#v", got)
 	}
+	if c.Theme == nil || c.Theme.Settings == nil {
+		t.Fatal("Theme / theme.json settings not loaded after Boot")
+	}
 }
 
 func TestBootNilConfig(t *testing.T) {
