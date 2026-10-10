@@ -3835,6 +3835,14 @@
   task: P5.47
   api: internal
 
+# P5.92: polish core/read-more (className, has-link-color, /?p= fallback).
+- prefix: wp-includes/blocks/read-more.php#polish
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.92
+  api: internal
+  notes: "P5.92 — className + has-link-color + /?p={id} when Link empty"
+
 # P5.48: core/gallery + core/image server render improvements.
 - prefix: wp-includes/blocks/gallery.php
   go: internal/blocks/gallery_image.go
