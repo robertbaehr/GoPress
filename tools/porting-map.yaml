@@ -732,6 +732,43 @@
   task: P7.41
   api: n/a
 
+# P3.37: home_url / site_url / set_url_scheme / admin_url helpers.
+- prefix: wp-includes/link-template.php#home_url
+  go: internal/wp/link_template.go
+  status: done
+  task: P3.37
+  api: exported
+
+- prefix: wp-includes/link-template.php#get_home_url
+  go: internal/wp/link_template.go
+  status: done
+  task: P3.37
+  api: exported
+
+- prefix: wp-includes/link-template.php#site_url
+  go: internal/wp/link_template.go
+  status: done
+  task: P3.37
+  api: exported
+
+- prefix: wp-includes/link-template.php#get_site_url
+  go: internal/wp/link_template.go
+  status: done
+  task: P3.37
+  api: exported
+
+- prefix: wp-includes/link-template.php#set_url_scheme
+  go: internal/wp/link_template.go
+  status: done
+  task: P3.37
+  api: exported
+
+- prefix: wp-includes/link-template.php#admin_url
+  go: internal/wp/link_template.go
+  status: done
+  task: P3.37
+  api: exported
+
 # P8.9: privacy policy page link helpers + admin/login wiring.
 - prefix: wp-includes/link-template.php#get_the_privacy_policy_link
   go: internal/wp/privacy_policy.go
