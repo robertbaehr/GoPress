@@ -1183,6 +1183,25 @@
   task: P5.46
   api: internal
 
+# P5.47: core/read-more, core/more, core/nextpage.
+- prefix: wp-includes/blocks/read-more.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.47
+  api: internal
+
+- prefix: wp-includes/blocks/more
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.47
+  api: internal
+
+- prefix: wp-includes/blocks/nextpage
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.47
+  api: internal
+
 - prefix: wp-includes/blocks/
   go: internal/blocks
   status: partial

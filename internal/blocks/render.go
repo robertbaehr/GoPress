@@ -164,6 +164,12 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderLatestComments(block)
 	case "core/tag-cloud":
 		out = e.renderTagCloud(block)
+	case "core/read-more":
+		out = e.renderReadMore(block)
+	case "core/more":
+		return e.renderMore(block)
+	case "core/nextpage":
+		return e.renderNextPage(block)
 	default:
 		// Unknown blocks: prefer saved markup with nested reconstruction.
 		if len(block.InnerBlocks) > 0 || len(block.InnerContent) > 0 {
