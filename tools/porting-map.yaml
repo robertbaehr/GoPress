@@ -6624,7 +6624,7 @@ wp-login.php#language-switcher-post
   status: partial
   task: P10.118
   api: n/a
-  notes: "P10.118 — categories filters, list/quote block-types, heartbeat media/options, login/front; grow after P5.104–P8.31"
+  notes: "P10.118 — categories filters, list/quote block-types, heartbeat media/options, login/front; grow after P5.104–P8.31; 526 cases"
 
 # P10.117: STATUS/PORTING refresh after P5.103–P10.116.
 - prefix: docs/STATUS.md#p10-117
