@@ -167,6 +167,9 @@ type RequestScope struct {
 	// QueriedObjectID is set by the rewrite/query layer (P3.x).
 	QueriedObjectID int64
 
+	// SearchQuery is the `s` query var when IsSearch (P3.21).
+	SearchQuery string
+
 	// Is* flags mirror WP_Query conditionals (filled by query parse).
 	IsHome       bool
 	IsSingular   bool

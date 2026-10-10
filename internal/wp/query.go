@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/robertbaehr/GoPress/internal/db"
 )
 
 // QueryArgs is a minimal subset of WP_Query / get_posts arguments.
@@ -17,6 +19,8 @@ type QueryArgs struct {
 	P            int64  // post ID (query var "p")
 	Name         string // post slug (query var "name")
 	PageName     string // page slug (query var "pagename"); implies post_type=page when PostType unset
+	// Search is the `s` query var (title/content LIKE, P3.21).
+	Search string
 	// StickyFirst prepends sticky posts (home/blog inherit queries, P5.19).
 	StickyFirst bool
 	// IgnoreSticky excludes sticky posts from results (non-inherit query loops).
@@ -88,6 +92,11 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 		slug = lastPathSegment(slug)
 		where = append(where, "post_name = %s")
 		vals = append(vals, slug)
+	}
+	if term := strings.TrimSpace(args.Search); term != "" {
+		like := "%" + db.EscapeLike(term) + "%"
+		where = append(where, "(post_title LIKE %s OR post_excerpt LIKE %s OR post_content LIKE %s)")
+		vals = append(vals, like, like, like)
 	}
 
 	q := "SELECT ID, post_author, post_date, post_date_gmt, post_modified, post_modified_gmt, " +

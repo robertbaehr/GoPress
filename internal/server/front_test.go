@@ -356,3 +356,27 @@ func TestFrontTrailingSlashCanonicalPreservesQuery(t *testing.T) {
 		t.Fatalf("Location=%q", loc)
 	}
 }
+
+func TestFrontSearchResults(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?s=Hello", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "search") {
+		t.Fatalf("expected search body class, got %q", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, "Search results") && !strings.Contains(body, "Search Results") {
+		t.Fatalf("expected search heading, got %q", body[:min(600, len(body))])
+	}
+	if !strings.Contains(body, "Hello world") && !strings.Contains(body, "Hello World") {
+		t.Fatalf("expected matching post title, got %q", body)
+	}
+	if strings.Contains(body, "GoPress: front route not implemented") {
+		t.Fatal("search should not 501")
+	}
+}

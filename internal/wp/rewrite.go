@@ -240,6 +240,7 @@ func (c *Context) ParseRequest(rules RewriteRules) *ParseResult {
 		c.Scope.IsArchive = hasAny(res.QueryVars, "year", "monthnum", "day", "category_name", "tag", "author_name")
 		c.Scope.IsFeed = hasAny(res.QueryVars, "feed")
 		c.Scope.IsSearch = hasAny(res.QueryVars, "s")
+		c.Scope.SearchQuery = res.QueryVars["s"]
 		c.Scope.IsREST = hasAny(res.QueryVars, "rest_route")
 		if p := res.QueryVars["p"]; p != "" {
 			if id, err := strconv.ParseInt(p, 10, 64); err == nil {

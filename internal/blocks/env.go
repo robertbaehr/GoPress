@@ -52,6 +52,9 @@ type Env struct {
 	// Populated from core/block content|overrides attrs (providesContext pattern/overrides).
 	PatternOverrides map[string]map[string]string
 
+	// SearchQuery is the front `s` term for core/query-title type=search (P3.21).
+	SearchQuery string
+
 	// seenPart tracks template-part slugs currently being rendered (cycle guard).
 	seenPart map[string]bool
 

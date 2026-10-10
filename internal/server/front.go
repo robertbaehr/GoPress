@@ -42,6 +42,12 @@ func (f *Front) ServeFront(w http.ResponseWriter, r *http.Request, c *wp.Context
 		return
 	}
 
+	// Front search results for /?s=term (P3.21).
+	if term := strings.TrimSpace(parsed.QueryVars["s"]); term != "" || (c.Scope != nil && c.Scope.IsSearch) {
+		f.renderSearch(w, c, term)
+		return
+	}
+
 	if parsed.IsHome {
 		f.renderHome(w, c)
 		return
@@ -136,6 +142,116 @@ func (f *Front) renderHome(w http.ResponseWriter, c *wp.Context) {
 		return
 	}
 	f.renderHomeShim(w, c)
+}
+
+// renderSearch serves /?s= front search results (P3.21).
+func (f *Front) renderSearch(w http.ResponseWriter, c *wp.Context, term string) {
+	if c != nil && c.Scope != nil {
+		c.Scope.IsSearch = true
+		if term == "" {
+			term = c.Scope.SearchQuery
+		} else {
+			c.Scope.SearchQuery = term
+		}
+	}
+	slugs := wp.SearchTemplateSlugs()
+	if tpl, ok := wp.ResolveBlockTemplate(c, slugs...); ok && strings.TrimSpace(tpl) != "" {
+		f.renderSearchBlockTemplate(w, c, tpl, term)
+		return
+	}
+	f.renderSearchShim(w, c, term)
+}
+
+func (f *Front) renderSearchBlockTemplate(w http.ResponseWriter, c *wp.Context, template, term string) {
+	blogname := optionString(c, "blogname", "GoPress")
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	stylesheet := activeStylesheet(c)
+	env := blockRenderEnv(c)
+	env.SearchQuery = term
+	body := blocks.RenderWith(env, template)
+	safe := wp.ProcessInteractivityHTML(wp.KsesPost(body))
+
+	bodyClasses := "search wp-embed-responsive"
+	if term != "" {
+		bodyClasses += " search-results"
+	} else {
+		bodyClasses += " search-no-results"
+	}
+	if stylesheet != "" {
+		bodyClasses += " wp-theme-" + stylesheet
+	}
+	bodyClasses = wp.BodyClassWithAdminBar(c, bodyClasses)
+	safe = ensureMainSkipTarget(safe)
+
+	title := blogname
+	if term != "" {
+		title = "Search Results for &#8220;" + html.EscapeString(term) + "&#8221; &#8211; " + html.EscapeString(blogname)
+	} else {
+		title = "Search &#8211; " + html.EscapeString(blogname)
+	}
+
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
+	b.WriteString("<meta charset=\"UTF-8\" />\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
+	b.WriteString("<meta name='robots' content='max-image-preview:large' />\n")
+	b.WriteString("<title>")
+	b.WriteString(title)
+	b.WriteString("</title>\n")
+	writeFrontHeadLinks(&b, home, blogname, "", "", "")
+	b.WriteString(wp.EmojiHeadHTML())
+	b.WriteString("</head>\n<body class=\"")
+	b.WriteString(html.EscapeString(bodyClasses))
+	b.WriteString("\">\n")
+	b.WriteString(wp.AdminBarHTML(c))
+	b.WriteString("<a class=\"skip-link screen-reader-text\" id=\"wp-skip-link\" href=\"#wp--skip-link--target\">Skip to content</a>")
+	b.WriteString("<div class=\"wp-site-blocks\">")
+	b.WriteString(safe)
+	b.WriteString("</div>\n")
+	b.WriteString("</body>\n</html>\n")
+
+	setFrontAPILink(w, c)
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(b.String()))
+}
+
+func (f *Front) renderSearchShim(w http.ResponseWriter, c *wp.Context, term string) {
+	blogname := optionString(c, "blogname", "GoPress")
+	posts, err := wp.GetPosts(c, wp.QueryArgs{
+		PostType: "post", PostStatus: "publish", PostsPerPage: 10, Search: term,
+	})
+	if err != nil {
+		http.Error(w, "search: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Search Results for &#8220;")
+	b.WriteString(html.EscapeString(term))
+	b.WriteString("&#8221; &#8211; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString("</title>\n</head>\n<body class=\"")
+	b.WriteString(html.EscapeString(wp.BodyClassWithAdminBar(c, "search search-results")))
+	b.WriteString("\">\n")
+	b.WriteString(wp.AdminBarHTML(c))
+	b.WriteString("<h1 class=\"page-title\">Search results for: ")
+	b.WriteString(html.EscapeString(term))
+	b.WriteString("</h1>\n<ul class=\"posts\">\n")
+	if len(posts) == 0 {
+		b.WriteString("<li class=\"no-results\">No results found.</li>\n")
+	}
+	for _, p := range posts {
+		b.WriteString("<li><a href=\"?p=")
+		b.WriteString(strconv.FormatInt(p.ID, 10))
+		b.WriteString("\">")
+		b.WriteString(html.EscapeString(p.Title))
+		b.WriteString("</a></li>\n")
+	}
+	b.WriteString("</ul>\n</body>\n</html>\n")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(b.String()))
 }
 
 // renderBlockTemplate parses and renders a block theme template document.
@@ -1510,13 +1626,19 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			if postType == "" {
 				postType = "post"
 			}
+			search := ""
+			// Inherit search results on /?s= (P3.21).
+			if q.Inherit && c != nil && c.Scope != nil && c.Scope.IsSearch {
+				search = c.Scope.SearchQuery
+			}
 			posts, err := wp.GetPosts(c, wp.QueryArgs{
 				PostType:     postType,
 				PostStatus:   "publish",
 				PostsPerPage: limit,
 				Offset:       q.Offset,
+				Search:       search,
 				// Sticky posts are prepended for front query loops (inherit or not).
-				StickyFirst: postType == "post",
+				StickyFirst: postType == "post" && search == "",
 			})
 			if err != nil {
 				return nil

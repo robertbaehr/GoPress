@@ -17,6 +17,11 @@ func HomeTemplateSlugs(isFrontPage bool) []string {
 	return []string{"home", "index"}
 }
 
+// SearchTemplateSlugs returns the search hierarchy for block themes (P3.21).
+func SearchTemplateSlugs() []string {
+	return []string{"search", "index"}
+}
+
 // SingularTemplateSlugs returns the singular hierarchy for a post or page.
 // Pages: page-{slug}, page-{id}, page, singular, index.
 // Posts/CPTs: single-{type}-{slug}, single-{type}, single, singular, index.
