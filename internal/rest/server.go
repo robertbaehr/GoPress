@@ -290,6 +290,24 @@ func buildIndex(c *wp.Context) Index {
 				},
 			}},
 		},
+		// Auth-gated handlers are still advertised on the public index (WP parity).
+		"/wp/v2/settings": {
+			Namespace: "wp/v2",
+			Methods:   []string{"GET", "POST", "PUT", "PATCH"},
+			Endpoints: []RouteEndpoint{{
+				Methods: []string{"GET"},
+			}},
+		},
+		"/wp/v2/users/me": {
+			Namespace: "wp/v2",
+			Methods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
+			Endpoints: []RouteEndpoint{{
+				Methods: []string{"GET"},
+				Args: map[string]any{
+					"context": map[string]any{"default": "view", "required": false},
+				},
+			}},
+		},
 	}
 
 	// When authenticated, advertise additional admin-oriented routes (best-effort).
@@ -362,23 +380,6 @@ func itemRoute(ns string) RouteIndex {
 
 func adminExtraRoutes() map[string]RouteIndex {
 	return map[string]RouteIndex{
-		"/wp/v2/users/me": {
-			Namespace: "wp/v2",
-			Methods:   []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
-			Endpoints: []RouteEndpoint{{
-				Methods: []string{"GET"},
-				Args: map[string]any{
-					"context": map[string]any{"default": "view", "required": false},
-				},
-			}},
-		},
-		"/wp/v2/settings": {
-			Namespace: "wp/v2",
-			Methods:   []string{"GET", "POST", "PUT", "PATCH"},
-			Endpoints: []RouteEndpoint{{
-				Methods: []string{"GET"},
-			}},
-		},
 		"/wp/v2/plugins": {
 			Namespace: "wp/v2",
 			Methods:   []string{"GET", "POST"},
