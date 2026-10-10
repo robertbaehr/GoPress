@@ -534,6 +534,19 @@
   task: P2.38
   api: exported
 
+# P2.39: wp_unique_id / wp_unique_prefixed_id.
+- prefix: wp-includes/functions.php#wp_unique_id
+  go: internal/wp/unique_id.go
+  status: done
+  task: P2.39
+  api: exported
+
+- prefix: wp-includes/functions.php#wp_unique_prefixed_id
+  go: internal/wp/unique_id.go
+  status: done
+  task: P2.39
+  api: exported
+
 - prefix: wp-includes/class-wp-list-util.php
   go: internal/wp/list_pluck.go
   status: partial
