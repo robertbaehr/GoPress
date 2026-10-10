@@ -41,6 +41,14 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	case path == "/wp/v2/posts":
 		s.servePosts(w, r, c)
 	case strings.HasPrefix(path, "/wp/v2/posts/"):
+		if parentID, autoID, ok := parsePostAutosavePath(path); ok {
+			if autoID > 0 {
+				s.servePostAutosaveItem(w, r, c, parentID, autoID)
+			} else {
+				s.servePostAutosaves(w, r, c, parentID)
+			}
+			return
+		}
 		if parentID, revID, ok := parsePostRevisionPath(path); ok {
 			if revID > 0 {
 				s.servePostRevisionItem(w, r, c, parentID, revID)
@@ -263,10 +271,19 @@ func parseTrailingID(path, prefix string) (int64, bool) {
 
 // parsePostRevisionPath matches /wp/v2/posts/{parent}/revisions[/id].
 func parsePostRevisionPath(path string) (parentID, revID int64, ok bool) {
+	return parsePostChildPath(path, "revisions")
+}
+
+// parsePostAutosavePath matches /wp/v2/posts/{parent}/autosaves[/id].
+func parsePostAutosavePath(path string) (parentID, autoID int64, ok bool) {
+	return parsePostChildPath(path, "autosaves")
+}
+
+func parsePostChildPath(path, child string) (parentID, childID int64, ok bool) {
 	rest := strings.TrimPrefix(path, "/wp/v2/posts/")
 	rest = strings.Trim(rest, "/")
 	parts := strings.Split(rest, "/")
-	if len(parts) < 2 || parts[1] != "revisions" {
+	if len(parts) < 2 || parts[1] != child {
 		return 0, 0, false
 	}
 	parentID, err := strconv.ParseInt(parts[0], 10, 64)
@@ -279,11 +296,11 @@ func parsePostRevisionPath(path string) (parentID, revID int64, ok bool) {
 	if len(parts) != 3 {
 		return 0, 0, false
 	}
-	revID, err = strconv.ParseInt(parts[2], 10, 64)
-	if err != nil || revID <= 0 {
+	childID, err = strconv.ParseInt(parts[2], 10, 64)
+	if err != nil || childID <= 0 {
 		return 0, 0, false
 	}
-	return parentID, revID, true
+	return parentID, childID, true
 }
 
 func restPath(urlPath string) string {
@@ -421,6 +438,17 @@ func buildIndex(c *wp.Context) Index {
 			Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}},
 		},
 		"/wp/v2/posts/(?P<parent>[\\d]+)/revisions/(?P<id>[\\d]+)": {
+			Namespace: "wp/v2",
+			Methods:   []string{"GET"},
+			Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}},
+		},
+		// WP registers the autosaves collection under (?P<id>) (not parent).
+		"/wp/v2/posts/(?P<id>[\\d]+)/autosaves": {
+			Namespace: "wp/v2",
+			Methods:   []string{"GET"},
+			Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}},
+		},
+		"/wp/v2/posts/(?P<parent>[\\d]+)/autosaves/(?P<id>[\\d]+)": {
 			Namespace: "wp/v2",
 			Methods:   []string{"GET"},
 			Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}},
