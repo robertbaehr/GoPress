@@ -2063,10 +2063,11 @@
   api: exported
 
 - prefix: wp-includes/blocks/details.php
-  go: internal/blocks
+  go: internal/blocks/details.go
   status: partial
-  task: P5.15
+  task: P5.67
   api: internal
+  notes: "P5.67 polish — showContent/open, name, align/className, synthesize, fetchpriority=low when collapsed"
 
 - prefix: wp-includes/blocks/footnotes.php
   go: internal/blocks/footnotes.go
