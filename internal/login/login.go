@@ -365,7 +365,14 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	b.WriteString("\t\t\t\t</div>\n")
 	b.WriteString("\t\t\t</div>\n")
 	b.WriteString("\t\t\t\t\t\t\t\t\t<p class=\"forgetmenot\">\n")
-	b.WriteString("\t\t\t\t<input name=\"rememberme\" type=\"checkbox\" id=\"rememberme\" value=\"forever\"  />\n")
+	// P6.24: keep Remember Me checked after failed login (WP checked( $rememberme )).
+	rememberChecked := ""
+	if r.Method == http.MethodPost && r.FormValue("rememberme") != "" {
+		rememberChecked = " checked=\"checked\""
+	}
+	b.WriteString("\t\t\t\t<input name=\"rememberme\" type=\"checkbox\" id=\"rememberme\" value=\"forever\"")
+	b.WriteString(rememberChecked)
+	b.WriteString("  />\n")
 	b.WriteString("\t\t\t\t<label for=\"rememberme\">Remember Me</label>\n")
 	b.WriteString("\t\t\t\t<span class=\"wp-tooltip wp-is-toggletip\">\n")
 	b.WriteString("\t\t\t\t<button aria-haspopup=\"dialog\" aria-label=\"Help\" class=\"wp-tooltip__toggle\" popovertarget=\"rememberme-help-toggletip\" type=\"button\"><span aria-hidden=\"true\" class=\"dashicons dashicons-editor-help\"></span></button>\n")

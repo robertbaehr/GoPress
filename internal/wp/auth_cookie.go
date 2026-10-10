@@ -188,6 +188,8 @@ func (c *Context) SetAuthCookie(user *User, remember, secure bool, now int64, to
 }
 
 // WriteAuthCookies writes SetAuthCookie values onto w (HttpOnly).
+// When Remember Me was checked, Expire is non-zero and MaxAge is set so the
+// browser keeps the longer-lived cookie (P6.24).
 func (set *AuthCookieSet) WriteAuthCookies(w http.ResponseWriter, path string) {
 	if set == nil || w == nil {
 		return
@@ -204,6 +206,12 @@ func (set *AuthCookieSet) WriteAuthCookies(w http.ResponseWriter, path string) {
 		}
 		if expire > 0 {
 			c.Expires = time.Unix(expire, 0)
+			// P6.24: MaxAge makes rememberme cookies persist beyond the session.
+			maxAge := int(expire - time.Now().Unix())
+			if maxAge < 1 {
+				maxAge = 1
+			}
+			c.MaxAge = maxAge
 		}
 		http.SetCookie(w, c)
 	}

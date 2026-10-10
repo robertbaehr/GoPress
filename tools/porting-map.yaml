@@ -169,6 +169,21 @@
   api: n/a
   notes: "P6.23 — HttpOnly wp_lang session cookie from query; switcher reads cookie"
 
+# P6.24: Remember Me longer-lived auth cookies (14d + MaxAge) + keep checked on error.
+- prefix: wp-includes/pluggable.php#wp_set_auth_cookie_remember
+  go: internal/wp/auth_cookie.go
+  status: partial
+  task: P6.24
+  api: exported
+  notes: "P6.24 — remember → 14d expiration; WriteAuthCookies sets MaxAge; login form keeps checked"
+
+- prefix: wp-login.php#rememberme
+  go: internal/login/login.go
+  status: partial
+  task: P6.24
+  api: n/a
+  notes: "P6.24 — checked(rememberme) on failed POST; forever checkbox"
+
 # P6.21: testcookie / wordpress_test_cookie handling on login POST.
 - prefix: wp-login.php#testcookie
   go: internal/login/login.go
