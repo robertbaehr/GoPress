@@ -12,7 +12,7 @@ Short overview of what is implemented versus remaining. Detail lives in `PORTING
 | Blocks / themes | Parser/render, core block subset, supports (typography/border/layout/shadow/position/elements/background/dimensions/CSS filter+duotone), style engine, theme.json, patterns + pattern categories, template hierarchy/parts, bindings, block styles/variations registries |
 | REST (`/wp-json`) | Index, posts/pages/media/comments/taxonomies/users/settings/search, revisions/autosaves, menus/navigation, templates/global styles (incl. write), block-renderer, block-patterns patterns/categories, batch, site-health stubs; widgets/sidebars disabled; remote directory proxies blocked |
 | Admin | Dashboard + list tables, options screens (general/writing/reading/discussion/media/permalink), media library + `media-new.php` + async upload, plugins/themes/users stubs, nav menus, site editor shell, tools/import/export/privacy (export UI + confirm step), admin-ajax heartbeat |
-| Plugins | MU-plugin scan, header parse, Hello Dolly shim, activate/deactivate, uninstall hook stub; PHP drop-ins detected as unsupported |
+| Plugins | MU-plugin scan, header parse, Hello Dolly shim, activate/deactivate, uninstall hook stub; PHP drop-ins detected as unsupported; Akismet not bundled (P9.8) |
 
 ## Explicitly out of scope / gone
 
@@ -20,6 +20,7 @@ Short overview of what is implemented versus remaining. Detail lives in `PORTING
 - Theme/plugin install from wordpress.org, core updates, widgets REST
 - Remote block/pattern directory fetches (`api.wordpress.org`)
 - PHP drop-ins (`advanced-cache.php`, `object-cache.php`, `db.php`, …) — detected, never loaded
+- Akismet (not shipped; activation rejected if files are dropped in)
 
 ## Remaining (high level)
 

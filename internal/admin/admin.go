@@ -887,6 +887,8 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 	case "deactivate":
 		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p>Plugin <strong>deactivated</strong>.</p></div>\n")
 	}
+	// P9.8: Akismet is not part of the GoPress distribution.
+	b.WriteString(`<div class="notice notice-info" id="gopress-akismet-gone"><p>Akismet is <strong>not bundled</strong> with GoPress and is out of scope.</p></div>` + "\n")
 	b.WriteString("<table class=\"wp-list-table widefat plugins\">\n")
 	b.WriteString("<thead><tr><th scope=\"col\">Plugin</th><th scope=\"col\">Description</th></tr></thead>\n")
 	b.WriteString("<tbody id=\"the-list\">\n")

@@ -45,6 +45,8 @@ func LoadActive(c *wp.Context) error {
 	if err := CheckDropIns(c); err != nil {
 		return err
 	}
+	// P9.8: Akismet is not bundled; register admin notice / refuse activation.
+	CheckAkismetGone(c)
 	if c == nil || c.Options == nil {
 		return nil
 	}
@@ -212,6 +214,9 @@ func ActivatePlugin(c *wp.Context, pluginFile string) error {
 	pluginFile = strings.TrimSpace(pluginFile)
 	if pluginFile == "" {
 		return fmt.Errorf("plugins: empty plugin file")
+	}
+	if IsAkismetPlugin(pluginFile) {
+		return fmt.Errorf("plugins: Akismet is not bundled with GoPress and cannot be activated")
 	}
 	if IsPluginActive(c, pluginFile) {
 		return nil
