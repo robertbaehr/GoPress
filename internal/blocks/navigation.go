@@ -99,8 +99,7 @@ func (e *Env) renderNavigationItems(items []Block) string {
 		case "core/page-list":
 			b.WriteString(e.renderPageList(item))
 		case "core/navigation-submenu":
-			// Basic: render as a link plus nested list if present.
-			b.WriteString(e.renderNavigationLink(item))
+			b.WriteString(e.renderNavigationSubmenu(item))
 		case "":
 			// ignore freeform
 		default:
@@ -179,27 +178,175 @@ func opensInNewTab(attrs map[string]any) bool {
 	}
 }
 
+// renderNavigationLink renders core/navigation-link (P5.84).
+// Honors opensInNewTab, rel/nofollow, title, description, and current-menu-item.
 func (e *Env) renderNavigationLink(block Block) string {
+	e = e.ensure()
 	label, _ := block.Attrs["label"].(string)
-	url, _ := block.Attrs["url"].(string)
 	if strings.TrimSpace(label) == "" {
 		return ""
 	}
-	return navItemHTML(label, url)
-}
+	url, _ := block.Attrs["url"].(string)
+	inner := ""
+	if len(block.InnerBlocks) > 0 {
+		inner = e.renderNavigationItems(block.InnerBlocks)
+	}
+	hasSubmenu := strings.TrimSpace(inner) != ""
+	isActive := e.navigationItemIsActive(block.Attrs)
 
-func navItemHTML(label, url string) string {
+	liClass := "wp-block-navigation-item wp-block-navigation-link"
+	if hasSubmenu {
+		liClass += " has-child"
+	}
+	if isActive {
+		liClass += " current-menu-item"
+	}
+
 	var b strings.Builder
-	b.WriteString(`<li class="wp-block-navigation-item wp-block-navigation-link"><a class="wp-block-navigation-item__content"`)
-	if url != "" {
-		b.WriteString(`  href="`)
+	b.WriteString(`<li class="`)
+	b.WriteString(html.EscapeString(liClass))
+	b.WriteString(`"><a class="wp-block-navigation-item__content"`)
+	if strings.TrimSpace(url) != "" {
+		b.WriteString(` href="`)
 		b.WriteString(html.EscapeString(url))
 		b.WriteString(`"`)
 	}
+	if isActive {
+		b.WriteString(` aria-current="page"`)
+	}
+	writeNavigationLinkAttrs(&b, block.Attrs)
 	b.WriteString(`><span class="wp-block-navigation-item__label">`)
 	b.WriteString(html.EscapeString(label))
-	b.WriteString(`</span></a></li>`)
+	b.WriteString(`</span>`)
+	if desc, _ := block.Attrs["description"].(string); strings.TrimSpace(desc) != "" {
+		b.WriteString(`<span class="wp-block-navigation-item__description">`)
+		b.WriteString(html.EscapeString(desc))
+		b.WriteString(`</span>`)
+	}
+	b.WriteString(`</a>`)
+	if hasSubmenu {
+		b.WriteString(`<ul class="wp-block-navigation__submenu-container">`)
+		b.WriteString(inner)
+		b.WriteString(`</ul>`)
+	}
+	b.WriteString(`</li>`)
 	return b.String()
+}
+
+// renderNavigationSubmenu renders core/navigation-submenu (P5.84).
+// Nested children become a submenu list; open-on-click is not modeled yet.
+func (e *Env) renderNavigationSubmenu(block Block) string {
+	e = e.ensure()
+	label, _ := block.Attrs["label"].(string)
+	if strings.TrimSpace(label) == "" {
+		return ""
+	}
+	url, _ := block.Attrs["url"].(string)
+	inner := ""
+	if len(block.InnerBlocks) > 0 {
+		inner = e.renderNavigationItems(block.InnerBlocks)
+	}
+	hasSubmenu := strings.TrimSpace(inner) != ""
+	isActive := e.navigationItemIsActive(block.Attrs)
+
+	liClass := "wp-block-navigation-item"
+	if hasSubmenu {
+		liClass += " has-child"
+	}
+	if isActive {
+		liClass += " current-menu-item"
+	}
+
+	var b strings.Builder
+	b.WriteString(`<li class="`)
+	b.WriteString(html.EscapeString(liClass))
+	b.WriteString(`"><a class="wp-block-navigation-item__content"`)
+	if strings.TrimSpace(url) != "" {
+		b.WriteString(` href="`)
+		b.WriteString(html.EscapeString(url))
+		b.WriteString(`"`)
+	}
+	if isActive {
+		b.WriteString(` aria-current="page"`)
+	}
+	writeNavigationLinkAttrs(&b, block.Attrs)
+	b.WriteString(`><span class="wp-block-navigation-item__label">`)
+	b.WriteString(html.EscapeString(label))
+	b.WriteString(`</span>`)
+	if desc, _ := block.Attrs["description"].(string); strings.TrimSpace(desc) != "" {
+		b.WriteString(`<span class="wp-block-navigation-item__description">`)
+		b.WriteString(html.EscapeString(desc))
+		b.WriteString(`</span>`)
+	}
+	b.WriteString(`</a>`)
+	if hasSubmenu {
+		b.WriteString(`<span class="wp-block-navigation__submenu-icon">`)
+		b.WriteString(navigationSubmenuIconSVG())
+		b.WriteString(`</span>`)
+		b.WriteString(`<ul class="wp-block-navigation__submenu-container">`)
+		b.WriteString(inner)
+		b.WriteString(`</ul>`)
+	}
+	b.WriteString(`</li>`)
+	return b.String()
+}
+
+func writeNavigationLinkAttrs(b *strings.Builder, attrs map[string]any) {
+	if opensInNewTab(attrs) {
+		b.WriteString(` target="_blank"`)
+	}
+	rel, _ := attrs["rel"].(string)
+	rel = strings.TrimSpace(rel)
+	if rel == "" && attrTruthy(attrs, "nofollow") {
+		rel = "nofollow"
+	}
+	if rel != "" {
+		b.WriteString(` rel="`)
+		b.WriteString(html.EscapeString(rel))
+		b.WriteString(`"`)
+	}
+	if title, _ := attrs["title"].(string); strings.TrimSpace(title) != "" {
+		b.WriteString(` title="`)
+		b.WriteString(html.EscapeString(title))
+		b.WriteString(`"`)
+	}
+}
+
+func (e *Env) navigationItemIsActive(attrs map[string]any) bool {
+	e = e.ensure()
+	id := attrInt64(attrs, "id")
+	if id <= 0 {
+		return false
+	}
+	if e.CurrentPageID > 0 && id == e.CurrentPageID {
+		return true
+	}
+	if e.currentPost != nil && e.currentPost.ID == id {
+		return true
+	}
+	return false
+}
+
+func attrTruthy(attrs map[string]any, key string) bool {
+	if attrs == nil {
+		return false
+	}
+	v, ok := attrs[key]
+	if !ok || v == nil {
+		return false
+	}
+	switch t := v.(type) {
+	case bool:
+		return t
+	case string:
+		return t == "true" || t == "1"
+	default:
+		return false
+	}
+}
+
+func navigationSubmenuIconSVG() string {
+	return `<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true" focusable="false"><path d="M1.50002 4L6.00002 8L10.5 4" stroke-width="1.5"></path></svg>`
 }
 
 func attrInt64(attrs map[string]any, key string) int64 {
