@@ -1238,6 +1238,19 @@
   task: P5.47
   api: internal
 
+# P5.48: core/gallery + core/image server render improvements.
+- prefix: wp-includes/blocks/gallery.php
+  go: internal/blocks/gallery_image.go
+  status: partial
+  task: P5.48
+  api: internal
+
+- prefix: wp-includes/blocks/image.php
+  go: internal/blocks/gallery_image.go
+  status: partial
+  task: P5.48
+  api: internal
+
 - prefix: wp-includes/blocks/
   go: internal/blocks
   status: partial

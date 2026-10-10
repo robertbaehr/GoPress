@@ -33,6 +33,9 @@ type Env struct {
 	SiteLogoURL func() string // custom logo / site_logo attachment URL
 	HomeURL     func() string
 	IsFrontPage func() bool
+
+	// GetAttachmentURL resolves attachment IDs for core/image and core/gallery (P5.48).
+	GetAttachmentURL func(id int64) string
 	// AdjacentPost returns prev/next post for post-navigation-link (type previous|next).
 	AdjacentPost func(postID int64, previous bool) *QueryPost
 
