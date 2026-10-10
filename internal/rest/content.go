@@ -82,7 +82,9 @@ func buildExcerpt(rawExcerpt, renderedContent string, protected bool) ProtectedR
 		}
 		return ProtectedRendered{Rendered: ex, Protected: false}
 	}
-	text := stripTagsToText(renderedContent)
+	// excerpt_remove_blocks subset: drop media-like markup before stripping tags.
+	src := removeExcerptExcludedHTML(renderedContent)
+	text := stripTagsToText(src)
 	text = strings.TrimSpace(reMultiSpace.ReplaceAllString(text, " "))
 	if text == "" {
 		return ProtectedRendered{Rendered: "", Protected: false}
@@ -102,14 +104,27 @@ func buildExcerpt(rawExcerpt, renderedContent string, protected bool) ProtectedR
 	return ProtectedRendered{Rendered: "<p>" + body + "</p>\n", Protected: false}
 }
 
+var (
+	reFigureBlock = regexp.MustCompile(`(?is)<figure\b[^>]*>.*?</figure>`)
+	reVideoAudio  = regexp.MustCompile(`(?is)<(video|audio)\b[^>]*>.*?</(video|audio)>`)
+	reFigcaption  = regexp.MustCompile(`(?is)<figcaption\b[^>]*>.*?</figcaption>`)
+)
+
+func removeExcerptExcludedHTML(html string) string {
+	s := reFigureBlock.ReplaceAllString(html, "")
+	s = reVideoAudio.ReplaceAllString(s, "")
+	s = reFigcaption.ReplaceAllString(s, "")
+	return s
+}
+
 func stripTagsToText(html string) string {
 	if html == "" {
 		return ""
 	}
-	// Turn breaks into spaces before stripping.
-	s := strings.ReplaceAll(html, "<br>", " ")
-	s = strings.ReplaceAll(s, "<br/>", " ")
-	s = strings.ReplaceAll(s, "<br />", " ")
+	// <br> joins without a space (WP excerpt for verse fixtures).
+	s := strings.ReplaceAll(html, "<br>", "")
+	s = strings.ReplaceAll(s, "<br/>", "")
+	s = strings.ReplaceAll(s, "<br />", "")
 	s = strings.ReplaceAll(s, "</p>", " ")
 	s = strings.ReplaceAll(s, "</div>", " ")
 	s = reTags.ReplaceAllString(s, "")

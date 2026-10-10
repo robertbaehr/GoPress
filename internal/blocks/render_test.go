@@ -43,7 +43,7 @@ func TestRenderListNested(t *testing.T) {
 func TestRenderQuoteNested(t *testing.T) {
 	doc := readSerialized(t, "core__quote__style-1")
 	out := blocks.Render(doc)
-	if !strings.Contains(out, `<blockquote class="wp-block-quote">`) {
+	if !strings.Contains(out, `class="wp-block-quote`) {
 		t.Fatalf("missing quote: %q", out)
 	}
 	if !strings.Contains(out, `<p class="wp-block-paragraph">The editor will endeavour`) {

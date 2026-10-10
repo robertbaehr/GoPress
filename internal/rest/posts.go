@@ -12,16 +12,18 @@ import (
 )
 
 // RenderedString is a WordPress REST rendered field ({"rendered": "..."}).
+// Raw is a pointer so edit-context can emit "" while view omits the key.
 type RenderedString struct {
-	Raw      string `json:"raw,omitempty"`
-	Rendered string `json:"rendered"`
+	Raw      *string `json:"raw,omitempty"`
+	Rendered string  `json:"rendered"`
 }
 
 // ProtectedRendered is content/excerpt with a protected flag.
 type ProtectedRendered struct {
-	Raw       string `json:"raw,omitempty"`
-	Rendered  string `json:"rendered"`
-	Protected bool   `json:"protected"`
+	Raw          *string `json:"raw,omitempty"`
+	Rendered     string  `json:"rendered"`
+	Protected    bool    `json:"protected"`
+	BlockVersion *int    `json:"block_version,omitempty"`
 }
 
 // Post is a wp/v2 post/page object for collection and item responses.
@@ -53,10 +55,10 @@ type Post struct {
 	MenuOrder     int               `json:"menu_order"`
 	ClassList     []string          `json:"class_list"`
 	Links         map[string]any    `json:"_links"`
-	// Edit-context fields (empty/absent in view).
-	Password          string `json:"password,omitempty"`
-	PermalinkTemplate string `json:"permalink_template,omitempty"`
-	GeneratedSlug     string `json:"generated_slug,omitempty"`
+	// Edit-context fields (nil/absent in view; pointer so "" is emitted when set).
+	Password          *string `json:"password,omitempty"`
+	PermalinkTemplate string  `json:"permalink_template,omitempty"`
+	GeneratedSlug     string  `json:"generated_slug,omitempty"`
 }
 
 // MarshalJSON omits post-only fields on pages and page-only fields on posts.
@@ -86,9 +88,9 @@ func (p Post) MarshalJSON() ([]byte, error) {
 			Meta          map[string]any    `json:"meta"`
 			ClassList     []string          `json:"class_list"`
 			Links         map[string]any    `json:"_links"`
-			Password      string            `json:"password,omitempty"`
-			PermalinkTemplate string        `json:"permalink_template,omitempty"`
-			GeneratedSlug string            `json:"generated_slug,omitempty"`
+			Password          *string `json:"password,omitempty"`
+			PermalinkTemplate string  `json:"permalink_template,omitempty"`
+			GeneratedSlug     string  `json:"generated_slug,omitempty"`
 		}
 		return json.Marshal(pageOut{
 			ID: p.ID, Date: p.Date, DateGMT: p.DateGMT, GUID: p.GUID,
@@ -128,9 +130,9 @@ func (p Post) MarshalJSON() ([]byte, error) {
 		Tags          []int64           `json:"tags"`
 		ClassList     []string          `json:"class_list"`
 		Links         map[string]any    `json:"_links"`
-		Password      string            `json:"password,omitempty"`
-		PermalinkTemplate string        `json:"permalink_template,omitempty"`
-		GeneratedSlug string            `json:"generated_slug,omitempty"`
+		Password          *string `json:"password,omitempty"`
+		PermalinkTemplate string  `json:"permalink_template,omitempty"`
+		GeneratedSlug     string  `json:"generated_slug,omitempty"`
 	}
 	return json.Marshal(postOut{
 		ID: p.ID, Date: p.Date, DateGMT: p.DateGMT, GUID: p.GUID,
@@ -279,13 +281,13 @@ func postFromWP(c *wp.Context, row wp.Post, home string, edit bool, sticky map[i
 		Slug:        row.Name,
 		Status:      row.Status,
 		Type:        row.Type,
-		Link:        itemPermalink(home, row.Type, row.Date, row.Name, row.ID),
+		Link:        itemPermalink(c, home, row),
 		Title:       RenderedString{Rendered: row.Title},
 		Content: ProtectedRendered{
 			Rendered:  rendered,
 			Protected: protected,
 		},
-		Excerpt:       buildExcerpt(row.Excerpt, rendered, protected),
+		Excerpt: buildExcerpt(row.Excerpt, rendered, protected),
 		Author:        row.Author,
 		FeaturedMedia: featuredMediaID(c, row.ID),
 		CommentStatus: row.CommentStatus,
@@ -302,13 +304,20 @@ func postFromWP(c *wp.Context, row wp.Post, home string, edit bool, sticky map[i
 		Links:         buildPostLinks(home, row, edit),
 	}
 	if edit {
-		p.Title.Raw = row.Title
-		p.Content.Raw = row.Content
-		p.Excerpt.Raw = row.Excerpt
-		p.GUID.Raw = row.GUID
-		p.Password = row.Password
-		p.GeneratedSlug = row.Name
+		titleRaw, contentRaw, excerptRaw, guidRaw := row.Title, row.Content, row.Excerpt, row.GUID
+		pass := row.Password
+		p.Title.Raw = &titleRaw
+		p.Content.Raw = &contentRaw
+		p.Excerpt.Raw = &excerptRaw
+		p.GUID.Raw = &guidRaw
+		p.Password = &pass
+		p.GeneratedSlug = wp.SanitizeTitle(row.Title)
 		p.PermalinkTemplate = permalinkTemplate(home, row.Type, row.Date)
+		bv := 0
+		if strings.Contains(row.Content, "<!-- wp:") {
+			bv = 1
+		}
+		p.Content.BlockVersion = &bv
 	}
 	return p
 }
@@ -382,6 +391,31 @@ func buildPostLinks(home string, row wp.Post, edit bool) map[string]any {
 				"embeddable": true,
 				"href":       fmt.Sprintf("%s/tags?post=%d", restRoot, row.ID),
 			},
+		}
+	}
+	if row.Type == "page" && row.Parent > 0 {
+		links["up"] = []map[string]any{{
+			"embeddable": true,
+			"href":       fmt.Sprintf("%s/pages/%d", restRoot, row.Parent),
+		}}
+	}
+	if edit {
+		selfHref := fmt.Sprintf("%s/%s/%d", restRoot, base, row.ID)
+		for _, action := range []string{
+			"wp:action-publish",
+			"wp:action-unfiltered-html",
+			"wp:action-sticky",
+			"wp:action-assign-author",
+			"wp:action-create-categories",
+			"wp:action-assign-categories",
+			"wp:action-create-tags",
+			"wp:action-assign-tags",
+		} {
+			if row.Type == "page" && (action == "wp:action-sticky" ||
+				strings.Contains(action, "categories") || strings.Contains(action, "tags")) {
+				continue
+			}
+			links[action] = []map[string]any{{"href": selfHref}}
 		}
 	}
 	return links
@@ -522,18 +556,32 @@ func postTermSlugs(c *wp.Context, postID int64, taxonomy string) []string {
 	return out
 }
 
-func itemPermalink(home, postType, mysqlDate, slug string, id int64) string {
-	if postType == "page" {
-		return pagePermalink(home, slug, id)
+func itemPermalink(c *wp.Context, home string, row wp.Post) string {
+	if row.Type == "page" {
+		return pagePermalink(c, home, row)
 	}
-	return postPermalink(home, mysqlDate, slug, id)
+	return postPermalink(home, row.Date, row.Name, row.ID)
 }
 
-func pagePermalink(home, slug string, id int64) string {
-	if slug == "" {
-		return fmt.Sprintf("%s/?page_id=%d", home, id)
+func pagePermalink(c *wp.Context, home string, row wp.Post) string {
+	if row.Name == "" {
+		return fmt.Sprintf("%s/?page_id=%d", home, row.ID)
 	}
-	return fmt.Sprintf("%s/%s/", home, slug)
+	parts := []string{row.Name}
+	parent := row.Parent
+	seen := map[int64]bool{row.ID: true}
+	for parent > 0 && !seen[parent] {
+		seen[parent] = true
+		p, err := wp.GetPost(c, wp.QueryArgs{P: parent, PostType: "page", PostStatus: "publish"})
+		if err != nil || p == nil {
+			break
+		}
+		if p.Name != "" {
+			parts = append([]string{p.Name}, parts...)
+		}
+		parent = p.Parent
+	}
+	return fmt.Sprintf("%s/%s/", home, strings.Join(parts, "/"))
 }
 
 func postPermalink(home, mysqlDate, slug string, id int64) string {

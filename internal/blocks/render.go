@@ -45,8 +45,12 @@ func (e *Env) RenderBlock(block Block) string {
 		return block.InnerHTML
 	case "core/paragraph":
 		return addRootClass(e.renderSaved(block), "wp-block-paragraph")
+	case "core/quote":
+		html := e.renderSaved(block)
+		html = addRootClass(html, "is-layout-flow")
+		return addRootClass(html, "wp-block-quote-is-layout-flow")
 	case "core/heading", "core/list", "core/list-item",
-		"core/image", "core/quote", "core/code", "core/html",
+		"core/image", "core/code", "core/html",
 		"core/group", "core/columns", "core/column", "core/buttons", "core/button",
 		"core/pullquote", "core/preformatted", "core/verse", "core/table",
 		"core/file", "core/audio", "core/video", "core/cover", "core/media-text":

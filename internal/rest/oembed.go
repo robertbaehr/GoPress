@@ -91,7 +91,7 @@ func (s *Server) serveOEmbed(w http.ResponseWriter, r *http.Request, c *wp.Conte
 	if height < 200 {
 		height = 200
 	}
-	permalink := itemPermalink(home, post.Type, post.Date, post.Name, post.ID)
+	permalink := itemPermalink(c, home, *post)
 	html := `<blockquote class="wp-embedded-content"><a href="` + permalink + `">` +
 		htmlEscapeMinimal(post.Title) + `</a></blockquote>`
 

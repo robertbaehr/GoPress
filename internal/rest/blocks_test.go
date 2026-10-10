@@ -54,7 +54,7 @@ func TestBlocksListReusable(t *testing.T) {
 		}
 		if b.Slug == "fixture-synced-pattern" {
 			found = true
-			if b.Content.Raw == "" {
+			if b.Content.Raw == nil || *b.Content.Raw == "" {
 				t.Fatal("expected raw content")
 			}
 			if b.Content.Rendered != "" {

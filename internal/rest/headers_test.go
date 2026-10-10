@@ -115,10 +115,10 @@ func TestPostEditContextRawFields(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &post); err != nil {
 		t.Fatal(err)
 	}
-	if post.Title.Raw == "" || post.Title.Rendered == "" {
+	if post.Title.Raw == nil || *post.Title.Raw == "" || post.Title.Rendered == "" {
 		t.Fatalf("title raw/rendered missing: %+v", post.Title)
 	}
-	if post.Content.Raw == "" {
+	if post.Content.Raw == nil || *post.Content.Raw == "" {
 		t.Fatalf("content.raw empty: %+v", post.Content)
 	}
 }
@@ -138,7 +138,7 @@ func TestPostEditContextAnonNoRaw(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &post); err != nil {
 		t.Fatal(err)
 	}
-	if post.Title.Raw != "" || post.Content.Raw != "" {
+	if post.Title.Raw != nil || post.Content.Raw != nil {
 		t.Fatalf("anon should not see raw fields: title=%+v content=%+v", post.Title, post.Content)
 	}
 }

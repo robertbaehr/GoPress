@@ -69,7 +69,7 @@ func listSearchPaged(c *wp.Context, term string, limit, page int) ([]SearchResul
 	offset := (page - 1) * limit
 	like := "%" + db.EscapeLike(term) + "%"
 	q, args, err := c.DB.Prepare(
-		"SELECT ID, post_date, post_name, post_title, post_type FROM "+c.DB.Posts()+
+		"SELECT ID, post_date, post_name, post_title, post_type, post_parent FROM "+c.DB.Posts()+
 			" WHERE post_status = %s AND post_type IN (%s, %s) AND (post_title LIKE %s OR post_content LIKE %s) "+
 			"ORDER BY post_date DESC LIMIT %d OFFSET %d",
 		"publish", "post", "page", like, like, limit, offset,
@@ -84,7 +84,7 @@ func listSearchPaged(c *wp.Context, term string, limit, page int) ([]SearchResul
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	out := make([]SearchResult, 0, len(rows))
 	for _, row := range rows {
-		out = append(out, searchFromRow(row, home))
+		out = append(out, searchFromRow(c, row, home))
 	}
 	return out, nil
 }
@@ -112,15 +112,19 @@ func countSearch(c *wp.Context, term string) (int, error) {
 	return int(asInt64(row["total"])), nil
 }
 
-func searchFromRow(row map[string]any, home string) SearchResult {
+func searchFromRow(c *wp.Context, row map[string]any, home string) SearchResult {
 	id := asInt64(row["ID"])
 	postType := asString(row["post_type"])
 	slug := asString(row["post_name"])
 	dateStr := asString(row["post_date"])
+	p := wp.Post{
+		ID: id, Type: postType, Name: slug, Date: dateStr,
+		Parent: asInt64(row["post_parent"]),
+	}
 	return SearchResult{
 		ID:      id,
 		Title:   asString(row["post_title"]),
-		URL:     itemPermalink(home, postType, dateStr, slug, id),
+		URL:     itemPermalink(c, home, p),
 		Type:    "post",
 		Subtype: postType,
 	}

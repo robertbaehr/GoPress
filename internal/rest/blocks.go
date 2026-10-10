@@ -128,6 +128,7 @@ func reusableFromWP(row wp.Post, home string) ReusableBlock {
 	if home != "" {
 		link = home + "/?p=" + strconv.FormatInt(row.ID, 10)
 	}
+	titleRaw, contentRaw := row.Title, row.Content
 	return ReusableBlock{
 		ID:     row.ID,
 		Date:   mysqlDateToREST(row.Date),
@@ -136,10 +137,10 @@ func reusableFromWP(row wp.Post, home string) ReusableBlock {
 		Type:   "wp_block",
 		Link:   link,
 		Title: RenderedString{
-			Raw: row.Title,
+			Raw: &titleRaw,
 		},
 		Content: ProtectedRendered{
-			Raw:       row.Content,
+			Raw:       &contentRaw,
 			Protected: row.Password != "",
 		},
 	}
