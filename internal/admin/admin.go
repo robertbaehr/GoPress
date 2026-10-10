@@ -1156,23 +1156,75 @@ func displayPostDateLabel(status string) string {
 	}
 }
 
+// saveGeneralOptions persists Settings → General fields (P7.105).
+func saveGeneralOptions(c *wp.Context, r *http.Request) {
+	if c == nil || c.Options == nil || r == nil {
+		return
+	}
+	for _, key := range []string{"blogname", "blogdescription", "admin_email", "date_format", "time_format", "start_of_week", "timezone_string"} {
+		if _, ok := r.Form[key]; ok {
+			_, _ = c.Options.UpdateOption(key, strings.TrimSpace(r.Form.Get(key)), "yes")
+		}
+	}
+}
+
+// serveOptionsGeneral is the Settings → General screen stub (P7 / P7.105).
 func (h *Handler) serveOptionsGeneral(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	// P7.105: manage_options gate (mirrors options-general.php wp_die).
+	if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "manage_options") {
+		http.Error(w, "Sorry, you are not allowed to manage options for this site.\n", http.StatusForbidden)
+		return
+	}
 	blogname := optionString(c, "blogname", "GoPress")
+	blogdescription := optionString(c, "blogdescription", "")
+	adminEmail := optionString(c, "admin_email", "")
+	dateFormat := optionString(c, "date_format", "F j, Y")
+	timeFormat := optionString(c, "time_format", "g:i a")
+	startOfWeek := optionString(c, "start_of_week", "1")
+	timezoneString := optionString(c, "timezone_string", "")
 	var b strings.Builder
 	b.WriteString("<h1>General Settings</h1>\n")
+	if r.URL.Query().Get("settings-updated") == "true" {
+		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p><strong>Settings saved.</strong></p></div>\n")
+	}
 	b.WriteString("<form method=\"post\" action=\"options.php\">\n")
+	b.WriteString("<input type=\"hidden\" name=\"option_page\" value=\"general\" />\n")
 	b.WriteString("<table class=\"form-table\" role=\"presentation\">\n")
 	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"blogname\">Site Title</label></th>\n")
 	b.WriteString("<td><input name=\"blogname\" type=\"text\" id=\"blogname\" value=\"")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString("\" class=\"regular-text\"></td>\n</tr>\n")
+	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"blogdescription\">Tagline</label></th>\n")
+	b.WriteString("<td><input name=\"blogdescription\" type=\"text\" id=\"blogdescription\" value=\"")
+	b.WriteString(html.EscapeString(blogdescription))
+	b.WriteString("\" class=\"regular-text\"></td>\n</tr>\n")
+	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"admin_email\">Administration Email Address</label></th>\n")
+	b.WriteString("<td><input name=\"admin_email\" type=\"email\" id=\"admin_email\" value=\"")
+	b.WriteString(html.EscapeString(adminEmail))
+	b.WriteString("\" class=\"regular-text ltr\"></td>\n</tr>\n")
+	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"timezone_string\">Timezone</label></th>\n")
+	b.WriteString("<td><input name=\"timezone_string\" type=\"text\" id=\"timezone_string\" value=\"")
+	b.WriteString(html.EscapeString(timezoneString))
+	b.WriteString("\" class=\"regular-text\"></td>\n</tr>\n")
+	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"date_format\">Date Format</label></th>\n")
+	b.WriteString("<td><input name=\"date_format\" type=\"text\" id=\"date_format\" value=\"")
+	b.WriteString(html.EscapeString(dateFormat))
+	b.WriteString("\" class=\"regular-text\"></td>\n</tr>\n")
+	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"time_format\">Time Format</label></th>\n")
+	b.WriteString("<td><input name=\"time_format\" type=\"text\" id=\"time_format\" value=\"")
+	b.WriteString(html.EscapeString(timeFormat))
+	b.WriteString("\" class=\"regular-text\"></td>\n</tr>\n")
+	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"start_of_week\">Week Starts On</label></th>\n")
+	b.WriteString("<td><input name=\"start_of_week\" type=\"number\" min=\"0\" max=\"6\" id=\"start_of_week\" value=\"")
+	b.WriteString(html.EscapeString(startOfWeek))
+	b.WriteString("\" class=\"small-text\"></td>\n</tr>\n")
 	b.WriteString("</table>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Save Changes\"></p>\n")
 	b.WriteString("</form>\n")
 	writeAdminPage(w, c, newAdminChrome(c, "General Settings", "options-general-php"), b.String())
 }
 
-// serveOptionsPHP handles /wp-admin/options.php saves (P7.48 writing / P7.49 reading / P7.50 discussion / P7.51 media).
+// serveOptionsPHP handles /wp-admin/options.php saves (P7.48 writing / P7.49 reading / P7.50 discussion / P7.51 media / P7.105 general).
 func (h *Handler) serveOptionsPHP(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	if r.Method != http.MethodPost {
 		http.Redirect(w, r, "/wp-admin/options-general.php", http.StatusFound)
@@ -1188,6 +1240,10 @@ func (h *Handler) serveOptionsPHP(w http.ResponseWriter, r *http.Request, c *wp.
 		return
 	}
 	switch optionPage {
+	case "general":
+		saveGeneralOptions(c, r)
+		http.Redirect(w, r, "/wp-admin/options-general.php?settings-updated=true", http.StatusFound)
+		return
 	case "writing":
 		saveWritingOptions(c, r)
 		http.Redirect(w, r, "/wp-admin/options-writing.php?settings-updated=true", http.StatusFound)
