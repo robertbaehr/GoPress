@@ -181,6 +181,12 @@
   task: P1.12
   api: internal
 
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-site-health-controller.php
+  go: internal/rest/site_health.go
+  status: partial
+  task: P4.39
+  api: exported
+
 - prefix: wp-includes/rest-api/
   go: internal/rest
   status: partial
