@@ -735,9 +735,10 @@ func extraIndexRoutes() map[string]RouteIndex {
 		}
 	}
 	return map[string]RouteIndex{
-		"/batch/v1":          batchRouteIndex(),
-		"/oembed/1.0/proxy":  getOnly("oembed/1.0"),
-		"/wp-site-health/v1": getOnly("wp-site-health/v1"),
+		"/batch/v1":                                     batchRouteIndex(),
+		"/oembed/1.0/proxy":                             getOnly("oembed/1.0"),
+		"/wp-site-health/v1":                            getOnly("wp-site-health/v1"),
+		"/wp-site-health/v1/tests":                      getOnly("wp-site-health/v1"),
 		"/wp-site-health/v1/tests/background-updates":   getOnly("wp-site-health/v1"),
 		"/wp-site-health/v1/tests/loopback-requests":    getOnly("wp-site-health/v1"),
 		"/wp-site-health/v1/tests/https-status":         getOnly("wp-site-health/v1"),
