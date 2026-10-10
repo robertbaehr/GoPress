@@ -1099,6 +1099,12 @@
   task: P10.42
   api: n/a
 
+# P10.43: STATUS / PORTING refresh after P5.51–P6.20 stack.
+- prefix: docs/STATUS.md#p10-43
+  go: docs/STATUS.md
+  status: done
+  task: P10.43
+  api: n/a
 
 # P10.22: E2E author archive /author/admin/.
 - prefix: tests/e2e/author.spec.js
