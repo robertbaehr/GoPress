@@ -1209,6 +1209,15 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			}
 			return asMetaString(c.Meta.GetMetadata(wp.MetaPost, postID, "footnotes", true))
 		},
+		GetPostMeta: func(postID int64, key string) string {
+			if c == nil || c.Meta == nil || postID <= 0 || key == "" {
+				return ""
+			}
+			if strings.HasPrefix(key, "_") {
+				return ""
+			}
+			return asMetaString(c.Meta.GetMetadata(wp.MetaPost, postID, key, true))
+		},
 		RenderCommentForm: func(postID int64) string {
 			if postID <= 0 {
 				return ""
