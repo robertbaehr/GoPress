@@ -47,7 +47,25 @@ func (f *Front) ServeFront(w http.ResponseWriter, r *http.Request, c *wp.Context
 		return
 	}
 
-	// Later tasks: archive via rewrite.
+	// Category/tag archives: list posts in term (shim until full archive templates).
+	if cat := parsed.QueryVars["category_name"]; cat != "" {
+		f.renderTermArchive(w, c, "category", cat)
+		return
+	}
+	if tag := parsed.QueryVars["tag"]; tag != "" {
+		f.renderTermArchive(w, c, "post_tag", tag)
+		return
+	}
+
+	// redirect_canonical lite: unmatched pretty paths whose last segment is a
+	// published post slug (e.g. /blog/uncategorized/hello-world/ → date permalink).
+	if parsed.Request != "" {
+		if f.tryCanonicalPostRedirect(w, r, c, parsed.Request) {
+			return
+		}
+	}
+
+	// Later tasks: date/author archives.
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusNotImplemented)
 	fmt.Fprintf(w, "GoPress: front route not implemented (request=%q rule=%q)\n",
@@ -248,6 +266,67 @@ func latestFeedPosts(c *wp.Context, limit int) ([]feedPost, error) {
 		out = append(out, feedPost{ID: p.ID, Title: p.Title, Content: p.Content, Date: p.Date})
 	}
 	return out, nil
+}
+
+// tryCanonicalPostRedirect issues a 301 to the post's pretty permalink when the
+// last path segment matches a published post name (WP redirect_canonical subset).
+func (f *Front) tryCanonicalPostRedirect(w http.ResponseWriter, r *http.Request, c *wp.Context, request string) bool {
+	parts := strings.Split(strings.Trim(request, "/"), "/")
+	if len(parts) == 0 {
+		return false
+	}
+	slug := parts[len(parts)-1]
+	if slug == "" {
+		return false
+	}
+	post, err := wp.GetPost(c, wp.QueryArgs{Name: slug, PostType: "post", PostStatus: "publish"})
+	if err != nil || post == nil {
+		return false
+	}
+	// Prefer date permalink when post_date is available.
+	target := ""
+	if post.Date != "" {
+		if t, err := time.Parse("2006-01-02 15:04:05", post.Date); err == nil {
+			target = fmt.Sprintf("/%04d/%02d/%02d/%s/", t.Year(), int(t.Month()), t.Day(), post.Name)
+		}
+	}
+	if target == "" {
+		target = "/?p=" + strconv.FormatInt(post.ID, 10)
+	}
+	http.Redirect(w, r, target, http.StatusMovedPermanently)
+	return true
+}
+
+func (f *Front) renderTermArchive(w http.ResponseWriter, c *wp.Context, taxonomy, slug string) {
+	blogname := optionString(c, "blogname", "GoPress")
+	posts, err := latestPosts(c, 10)
+	if err != nil {
+		http.Error(w, "archive: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>")
+	b.WriteString(html.EscapeString(slug))
+	b.WriteString(" &#8212; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString("</title>\n</head>\n<body class=\"archive\">\n")
+	b.WriteString("<h1>")
+	b.WriteString(html.EscapeString(taxonomy))
+	b.WriteString(": ")
+	b.WriteString(html.EscapeString(slug))
+	b.WriteString("</h1>\n<ul class=\"posts\">\n")
+	for _, p := range posts {
+		b.WriteString("<li><a href=\"?p=")
+		b.WriteString(strconv.FormatInt(p.ID, 10))
+		b.WriteString("\">")
+		b.WriteString(html.EscapeString(p.Title))
+		b.WriteString("</a></li>\n")
+	}
+	b.WriteString("</ul>\n</body>\n</html>\n")
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(b.String()))
 }
 
 func (f *Front) render404(w http.ResponseWriter, c *wp.Context) {
