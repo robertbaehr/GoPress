@@ -109,3 +109,39 @@ func TestFrontSingular404(t *testing.T) {
 		t.Fatalf("expected 404 page, got %q", rec.Body.String())
 	}
 }
+
+func TestFrontFeedQueryRSS2(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?feed=rss2", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	ct := rec.Header().Get("Content-Type")
+	if !strings.Contains(ct, "rss") && !strings.Contains(ct, "xml") {
+		t.Fatalf("content-type=%q", ct)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `<rss version="2.0">`) || !strings.Contains(body, "<channel>") {
+		t.Fatalf("expected RSS2 channel, got %q", body)
+	}
+	if !strings.Contains(body, "<item>") {
+		t.Fatalf("expected feed items, got %q", body)
+	}
+}
+
+func TestFrontFeedPrettyPath(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/feed/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), `<rss version="2.0">`) {
+		t.Fatalf("expected RSS2, got %q", rec.Body.String())
+	}
+}

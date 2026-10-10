@@ -1,11 +1,13 @@
 package server
 
 import (
+	"encoding/xml"
 	"fmt"
 	"html"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
@@ -29,6 +31,11 @@ func (f *Front) ServeFront(w http.ResponseWriter, r *http.Request, c *wp.Context
 	}
 	parsed := c.ParseRequest(rules)
 
+	if isFeedVars(parsed.QueryVars) {
+		f.renderFeedRSS2(w, c)
+		return
+	}
+
 	if parsed.IsHome {
 		f.renderHome(w, c)
 		return
@@ -39,11 +46,28 @@ func (f *Front) ServeFront(w http.ResponseWriter, r *http.Request, c *wp.Context
 		return
 	}
 
-	// Later tasks: archive / feed / REST via rewrite.
+	// Later tasks: archive via rewrite.
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	w.WriteHeader(http.StatusNotImplemented)
 	fmt.Fprintf(w, "GoPress: front route not implemented (request=%q rule=%q)\n",
 		parsed.Request, parsed.MatchedRule)
+}
+
+func isFeedVars(vars map[string]string) bool {
+	if vars == nil {
+		return false
+	}
+	feed := vars["feed"]
+	if feed == "" {
+		return false
+	}
+	// WP default feed is rss2; "feed" is the permalink alias for the default.
+	switch strings.ToLower(feed) {
+	case "feed", "rss", "rss2":
+		return true
+	default:
+		return false
+	}
 }
 
 func isSingularVars(vars map[string]string) bool {
@@ -130,6 +154,108 @@ func (f *Front) renderSingular(w http.ResponseWriter, c *wp.Context, vars map[st
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(b.String()))
+}
+
+func (f *Front) renderFeedRSS2(w http.ResponseWriter, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	desc := optionString(c, "blogdescription", "")
+	posts, err := latestFeedPosts(c, 10)
+	if err != nil {
+		http.Error(w, "feed: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+
+	var b strings.Builder
+	b.WriteString(xml.Header)
+	b.WriteString(`<rss version="2.0">` + "\n")
+	b.WriteString("<channel>\n")
+	b.WriteString("<title>")
+	b.WriteString(xmlEscape(blogname))
+	b.WriteString("</title>\n")
+	b.WriteString("<link>")
+	b.WriteString(xmlEscape(home + "/"))
+	b.WriteString("</link>\n")
+	b.WriteString("<description>")
+	b.WriteString(xmlEscape(desc))
+	b.WriteString("</description>\n")
+	b.WriteString("<lastBuildDate>")
+	b.WriteString(time.Now().UTC().Format(time.RFC1123Z))
+	b.WriteString("</lastBuildDate>\n")
+	b.WriteString("<language>en-US</language>\n")
+	for _, p := range posts {
+		link := fmt.Sprintf("%s/?p=%d", home, p.ID)
+		b.WriteString("<item>\n")
+		b.WriteString("<title>")
+		b.WriteString(xmlEscape(p.Title))
+		b.WriteString("</title>\n")
+		b.WriteString("<link>")
+		b.WriteString(xmlEscape(link))
+		b.WriteString("</link>\n")
+		b.WriteString("<guid isPermaLink=\"false\">")
+		b.WriteString(xmlEscape(link))
+		b.WriteString("</guid>\n")
+		if p.Date != "" {
+			if t, err := time.Parse("2006-01-02 15:04:05", p.Date); err == nil {
+				b.WriteString("<pubDate>")
+				b.WriteString(t.Format(time.RFC1123Z))
+				b.WriteString("</pubDate>\n")
+			}
+		}
+		b.WriteString("<description><![CDATA[")
+		b.WriteString(wp.KsesPost(p.Content))
+		b.WriteString("]]></description>\n")
+		b.WriteString("</item>\n")
+	}
+	b.WriteString("</channel>\n</rss>\n")
+
+	w.Header().Set("Content-Type", "application/rss+xml; charset=UTF-8")
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(b.String()))
+}
+
+func xmlEscape(s string) string {
+	var b strings.Builder
+	_ = xml.EscapeText(&b, []byte(s))
+	return b.String()
+}
+
+type feedPost struct {
+	ID      int64
+	Title   string
+	Content string
+	Date    string
+}
+
+func latestFeedPosts(c *wp.Context, limit int) ([]feedPost, error) {
+	if c == nil || c.DB == nil {
+		return nil, fmt.Errorf("nil DB")
+	}
+	if limit <= 0 {
+		limit = 10
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT ID, post_title, post_content, post_date FROM "+c.DB.Posts()+
+			" WHERE post_type = %s AND post_status = %s ORDER BY post_date DESC LIMIT %d",
+		"post", "publish", limit,
+	)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := c.DB.GetResults(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]feedPost, 0, len(rows))
+	for _, row := range rows {
+		out = append(out, feedPost{
+			ID:      asInt64(row["ID"]),
+			Title:   asString(row["post_title"]),
+			Content: asString(row["post_content"]),
+			Date:    asString(row["post_date"]),
+		})
+	}
+	return out, nil
 }
 
 func (f *Front) render404(w http.ResponseWriter, c *wp.Context) {
