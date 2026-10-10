@@ -5497,4 +5497,12 @@
   status: partial
   task: P10.86
   api: n/a
-  notes: "P10.86 — widget-types/search anon; rest_route; empty/miss search; date archives; reauth=true"
+  notes: "P10.86 — widget-types/search anon; rest_route; empty/miss search; date archives; reauth=true; 165/165"
+
+# P10.87: STATUS/PORTING refresh after P5.88–P10.86.
+- prefix: docs/STATUS.md#p10.87
+  go: docs/STATUS.md
+  status: partial
+  task: P10.87
+  api: n/a
+  notes: "P10.87 — STATUS/PORTING refresh after P5.88–P10.86 (165/165 corpus)"
