@@ -40,6 +40,35 @@ func TestExportStubScreen(t *testing.T) {
 	if !strings.Contains(body, `name="download" value="true"`) {
 		t.Fatalf("expected download=true hidden: %q", body)
 	}
+	if !strings.Contains(body, "export-php") {
+		t.Fatalf("expected export-php body class: %q", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, "Choose what to export") || !strings.Contains(body, "post-filters") {
+		t.Fatalf("expected deepened export filters: %q", body[:min(800, len(body))])
+	}
+}
+
+func TestExportRequiresCapability(t *testing.T) {
+	c := bootOrSkip(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	// Strip export cap for this request context.
+	user.AllCaps = map[string]bool{"read": true}
+	c.CurrentUser = user
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/export.php", nil)
+	rec := httptest.NewRecorder()
+	if !(&admin.Handler{}).Handle(rec, req, c, "/wp-admin/export.php") {
+		t.Fatal("export.php not handled")
+	}
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status=%d want 403 body=%s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "not allowed to export") {
+		t.Fatalf("expected export denial: %q", rec.Body.String())
+	}
 }
 
 func TestExportWXRDownload(t *testing.T) {
