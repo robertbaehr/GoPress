@@ -24,11 +24,12 @@ func TestOptionsDiscussionSaveViaOptionsPHP(t *testing.T) {
 	}
 
 	keys := []string{
-		"default_comment_status", "default_ping_status", "require_name_email",
-		"comment_registration", "close_comments_for_old_posts", "close_comments_days_old",
-		"thread_comments", "thread_comments_depth", "page_comments", "comments_per_page",
-		"comments_notify", "moderation_notify", "comment_moderation",
-		"comment_previously_approved", "show_avatars",
+		"default_comment_status", "default_ping_status", "default_pingback_flag",
+		"require_name_email", "comment_registration", "close_comments_for_old_posts",
+		"close_comments_days_old", "thread_comments", "thread_comments_depth",
+		"page_comments", "comments_per_page", "comments_notify", "moderation_notify",
+		"comment_moderation", "comment_previously_approved", "comment_max_links",
+		"moderation_keys", "disallowed_keys", "show_avatars", "avatar_rating", "avatar_default",
 	}
 	orig := map[string]any{}
 	for _, k := range keys {
@@ -48,7 +49,13 @@ func TestOptionsDiscussionSaveViaOptionsPHP(t *testing.T) {
 	form.Set("thread_comments", "1")
 	form.Set("thread_comments_depth", "3")
 	form.Set("comments_per_page", "25")
+	form.Set("default_pingback_flag", "1")
+	form.Set("comment_max_links", "3")
+	form.Set("moderation_keys", "spamword\nbadip")
+	form.Set("disallowed_keys", "blocked")
 	form.Set("show_avatars", "1")
+	form.Set("avatar_rating", "PG")
+	form.Set("avatar_default", "identicon")
 	form.Set("submit", "Save Changes")
 
 	h := &admin.Handler{}
@@ -79,6 +86,18 @@ func TestOptionsDiscussionSaveViaOptionsPHP(t *testing.T) {
 	if got := strings.TrimSpace(fmt.Sprint(c.Options.GetOption("comments_per_page", ""))); got != "25" {
 		t.Fatalf("comments_per_page=%v", got)
 	}
+	if got := strings.TrimSpace(fmt.Sprint(c.Options.GetOption("comment_max_links", ""))); got != "3" {
+		t.Fatalf("comment_max_links=%v", got)
+	}
+	if got := fmt.Sprint(c.Options.GetOption("moderation_keys", "")); !strings.Contains(got, "spamword") {
+		t.Fatalf("moderation_keys=%v", got)
+	}
+	if got := strings.TrimSpace(fmt.Sprint(c.Options.GetOption("avatar_rating", ""))); got != "PG" {
+		t.Fatalf("avatar_rating=%v", got)
+	}
+	if got := strings.TrimSpace(fmt.Sprint(c.Options.GetOption("avatar_default", ""))); got != "identicon" {
+		t.Fatalf("avatar_default=%v", got)
+	}
 
 	req = httptest.NewRequest(http.MethodGet, "/wp-admin/options-discussion.php?settings-updated=true", nil)
 	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
@@ -93,5 +112,17 @@ func TestOptionsDiscussionSaveViaOptionsPHP(t *testing.T) {
 	}
 	if !strings.Contains(body, `name="option_page"`) || !strings.Contains(body, `value="discussion"`) {
 		t.Fatalf("expected option_page=discussion: %q", body)
+	}
+	for _, want := range []string{
+		`name="default_pingback_flag"`,
+		`name="moderation_keys"`,
+		`name="disallowed_keys"`,
+		`name="avatar_rating"`,
+		`name="avatar_default"`,
+		`value="identicon"`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in discussion form", want)
+		}
 	}
 }

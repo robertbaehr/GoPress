@@ -1275,7 +1275,7 @@ func saveMediaOptions(c *wp.Context, r *http.Request) {
 	}
 }
 
-// saveDiscussionOptions persists Settings → Discussion checkboxes/fields (P7.50).
+// saveDiscussionOptions persists Settings → Discussion checkboxes/fields (P7.50 / P7.100).
 func saveDiscussionOptions(c *wp.Context, r *http.Request) {
 	if c == nil || c.Options == nil || r == nil {
 		return
@@ -1290,9 +1290,10 @@ func saveDiscussionOptions(c *wp.Context, r *http.Request) {
 	}
 	// 0/1 checkboxes: present → 1, absent → 0.
 	for _, key := range []string{
-		"require_name_email", "comment_registration", "close_comments_for_old_posts",
-		"thread_comments", "page_comments", "comments_notify", "moderation_notify",
-		"comment_moderation", "comment_previously_approved", "show_avatars",
+		"default_pingback_flag", "require_name_email", "comment_registration",
+		"close_comments_for_old_posts", "thread_comments", "page_comments",
+		"comments_notify", "moderation_notify", "comment_moderation",
+		"comment_previously_approved", "show_avatars",
 	} {
 		v := "0"
 		if _, ok := r.Form[key]; ok {
@@ -1308,6 +1309,22 @@ func saveDiscussionOptions(c *wp.Context, r *http.Request) {
 	}
 	if v := strings.TrimSpace(r.Form.Get("comments_per_page")); v != "" {
 		_, _ = c.Options.UpdateOption("comments_per_page", v, "yes")
+	}
+	// P7.100: moderation keys / link threshold / avatar picks.
+	if _, ok := r.Form["comment_max_links"]; ok {
+		_, _ = c.Options.UpdateOption("comment_max_links", strings.TrimSpace(r.Form.Get("comment_max_links")), "yes")
+	}
+	if _, ok := r.Form["moderation_keys"]; ok {
+		_, _ = c.Options.UpdateOption("moderation_keys", r.Form.Get("moderation_keys"), "yes")
+	}
+	if _, ok := r.Form["disallowed_keys"]; ok {
+		_, _ = c.Options.UpdateOption("disallowed_keys", r.Form.Get("disallowed_keys"), "yes")
+	}
+	if v := strings.TrimSpace(r.Form.Get("avatar_rating")); v != "" {
+		_, _ = c.Options.UpdateOption("avatar_rating", v, "yes")
+	}
+	if v := strings.TrimSpace(r.Form.Get("avatar_default")); v != "" {
+		_, _ = c.Options.UpdateOption("avatar_default", v, "yes")
 	}
 }
 
@@ -1434,9 +1451,15 @@ func (h *Handler) serveOptionsReading(w http.ResponseWriter, r *http.Request, c 
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveOptionsDiscussion is the Settings → Discussion screen stub (P7.22).
+// serveOptionsDiscussion is the Settings → Discussion screen stub (P7.22 / P7.100).
 func (h *Handler) serveOptionsDiscussion(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	// P7.100: manage_options gate (mirrors options-discussion.php wp_die).
+	if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "manage_options") {
+		http.Error(w, "Sorry, you are not allowed to manage options for this site.\n", http.StatusForbidden)
+		return
+	}
 	blogname := optionString(c, "blogname", "GoPress")
+	defaultPingbackFlag := optionString(c, "default_pingback_flag", "1")
 	defaultCommentStatus := optionString(c, "default_comment_status", "open")
 	defaultPingStatus := optionString(c, "default_ping_status", "open")
 	requireNameEmail := optionString(c, "require_name_email", "1")
@@ -1451,7 +1474,12 @@ func (h *Handler) serveOptionsDiscussion(w http.ResponseWriter, r *http.Request,
 	moderationNotify := optionString(c, "moderation_notify", "1")
 	commentModeration := optionString(c, "comment_moderation", "0")
 	previouslyApproved := optionString(c, "comment_previously_approved", "1")
+	commentMaxLinks := optionString(c, "comment_max_links", "2")
+	moderationKeys := optionString(c, "moderation_keys", "")
+	disallowedKeys := optionString(c, "disallowed_keys", "")
 	showAvatars := optionString(c, "show_avatars", "1")
+	avatarRating := optionString(c, "avatar_rating", "G")
+	avatarDefault := optionString(c, "avatar_default", "mystery")
 
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
@@ -1471,6 +1499,11 @@ func (h *Handler) serveOptionsDiscussion(w http.ResponseWriter, r *http.Request,
 	b.WriteString("<table class=\"form-table indent-children\" role=\"presentation\">\n")
 
 	b.WriteString("<tr>\n<th scope=\"row\">Default post settings</th>\n<td><fieldset>\n")
+	b.WriteString("<label for=\"default_pingback_flag\"><input name=\"default_pingback_flag\" type=\"checkbox\" id=\"default_pingback_flag\" value=\"1\"")
+	if defaultPingbackFlag == "1" {
+		b.WriteString(" checked=\"checked\"")
+	}
+	b.WriteString("> Attempt to notify any blogs linked to from the post</label><br>\n")
 	b.WriteString("<label for=\"default_ping_status\"><input name=\"default_ping_status\" type=\"checkbox\" id=\"default_ping_status\" value=\"open\"")
 	if defaultPingStatus == "open" {
 		b.WriteString(" checked=\"checked\"")
@@ -1559,12 +1592,72 @@ func (h *Handler) serveOptionsDiscussion(w http.ResponseWriter, r *http.Request,
 	b.WriteString("> Comment author must have a previously approved comment</label>\n")
 	b.WriteString("</fieldset></td>\n</tr>\n")
 
+	// P7.100: comment moderation keys / disallowed keys / max links.
+	b.WriteString("<tr>\n<th scope=\"row\">Comment Moderation</th>\n<td>\n")
+	b.WriteString("<p><label for=\"comment_max_links\">Number of links to allow in a comment before holding for moderation:</label> ")
+	b.WriteString("<input name=\"comment_max_links\" type=\"number\" step=\"1\" min=\"0\" id=\"comment_max_links\" value=\"")
+	b.WriteString(html.EscapeString(commentMaxLinks))
+	b.WriteString("\" class=\"small-text\" /></p>\n")
+	b.WriteString("<p><label for=\"moderation_keys\">Moderation keys</label></p>\n")
+	b.WriteString("<textarea name=\"moderation_keys\" rows=\"6\" cols=\"50\" id=\"moderation_keys\" class=\"large-text code\">")
+	b.WriteString(html.EscapeString(moderationKeys))
+	b.WriteString("</textarea>\n")
+	b.WriteString("<p><label for=\"disallowed_keys\">Disallowed keys</label></p>\n")
+	b.WriteString("<textarea name=\"disallowed_keys\" rows=\"6\" cols=\"50\" id=\"disallowed_keys\" class=\"large-text code\">")
+	b.WriteString(html.EscapeString(disallowedKeys))
+	b.WriteString("</textarea>\n")
+	b.WriteString("</td>\n</tr>\n")
+
 	b.WriteString("<tr>\n<th scope=\"row\">Avatars</th>\n<td>\n")
 	b.WriteString("<label for=\"show_avatars\"><input name=\"show_avatars\" type=\"checkbox\" id=\"show_avatars\" value=\"1\"")
 	if showAvatars == "1" {
 		b.WriteString(" checked=\"checked\"")
 	}
 	b.WriteString("> Show Avatars</label>\n")
+	b.WriteString("<fieldset><legend>Maximum Rating</legend>\n")
+	for _, rating := range []struct{ key, label string }{
+		{"G", "G — Suitable for all audiences"},
+		{"PG", "PG — Possibly offensive, usually for audiences 13 and above"},
+		{"R", "R — Intended for adult audiences above 17"},
+		{"X", "X — Even more mature than above"},
+	} {
+		b.WriteString("<label><input type=\"radio\" name=\"avatar_rating\" value=\"")
+		b.WriteString(rating.key)
+		b.WriteString("\"")
+		if avatarRating == rating.key {
+			b.WriteString(" checked=\"checked\"")
+		}
+		b.WriteString("/> ")
+		b.WriteString(html.EscapeString(rating.label))
+		b.WriteString("</label><br />\n")
+	}
+	b.WriteString("</fieldset>\n")
+	b.WriteString("<fieldset><legend>Default Avatar</legend>\n")
+	for _, def := range []struct{ key, label string }{
+		{"mystery", "Mystery Person"},
+		{"blank", "Blank"},
+		{"gravatar_default", "Gravatar Logo"},
+		{"identicon", "Identicon (Generated)"},
+		{"wavatar", "Wavatar (Generated)"},
+		{"monsterid", "MonsterID (Generated)"},
+		{"retro", "Retro (Generated)"},
+		{"robohash", "RoboHash (Generated)"},
+		{"initials", "Initials (Generated)"},
+		{"color", "Color (Generated)"},
+	} {
+		b.WriteString("<label><input type=\"radio\" name=\"avatar_default\" id=\"avatar_")
+		b.WriteString(def.key)
+		b.WriteString("\" value=\"")
+		b.WriteString(def.key)
+		b.WriteString("\"")
+		if avatarDefault == def.key {
+			b.WriteString(" checked=\"checked\"")
+		}
+		b.WriteString("/> ")
+		b.WriteString(html.EscapeString(def.label))
+		b.WriteString("</label><br />\n")
+	}
+	b.WriteString("</fieldset>\n")
 	b.WriteString("</td>\n</tr>\n")
 
 	b.WriteString("</table>\n")

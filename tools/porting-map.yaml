@@ -4855,12 +4855,13 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P7.64 — form + POST create (extends P7.21 stub)"
 
-# P7.50: POST save discussion options via options.php.
+# P7.50 / P7.100: discussion settings form + save via options.php.
 - prefix: wp-admin/options-discussion.php
   go: internal/admin/admin.go
   status: partial
-  task: P7.50
+  task: P7.100
   api: n/a
+  notes: "P7.100 — manage_options gate; pingback flag; moderation/disallowed keys; avatar rating/default; P7.50 save"
 
 # P7.51: POST save media options via options.php (sizes + embeds).
 - prefix: wp-admin/options-media.php
