@@ -59,6 +59,11 @@ type QueryArgs struct {
 	// ModifiedAfter / ModifiedBefore filter post_modified (REST ?modified_after=/?modified_before=, P4.91).
 	ModifiedAfter  string
 	ModifiedBefore string
+	// ParentIn is post_parent__in (REST ?parent= for hierarchical types, P4.93).
+	// Includes 0 for top-level pages.
+	ParentIn []int64
+	// ParentNotIn is post_parent__not_in (REST ?parent_exclude=, P4.93).
+	ParentNotIn []int64
 }
 
 // Post is a row from wp_posts used by front and REST helpers.
@@ -135,6 +140,10 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		where = append(where, clause)
 		vals = append(vals, cvals...)
 	}
+	if clause, cvals := postParentInNotInSQL(args.ParentIn, args.ParentNotIn); clause != "" {
+		where = append(where, clause)
+		vals = append(vals, cvals...)
+	}
 	from := c.DB.Posts()
 	if tag := strings.TrimSpace(args.Tag); tag != "" {
 		from = c.DB.Posts() + " p INNER JOIN " + c.DB.TermRelationships() + " tr ON tr.object_id = p.ID" +
@@ -154,6 +163,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "post_modified", "p.post_modified")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_parent", "p.post_parent")
 		q := "SELECT COUNT(DISTINCT p.ID) AS total FROM " + from + " WHERE " + whereSQL
 		sqlStr, sqlArgs, err := c.DB.Prepare(q, vals...)
 		if err != nil {
@@ -186,6 +196,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "post_modified", "p.post_modified")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_parent", "p.post_parent")
 		q := "SELECT COUNT(DISTINCT p.ID) AS total FROM " + from + " WHERE " + whereSQL
 		sqlStr, sqlArgs, err := c.DB.Prepare(q, vals...)
 		if err != nil {
@@ -218,6 +229,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "post_modified", "p.post_modified")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_parent", "p.post_parent")
 		q := "SELECT COUNT(DISTINCT p.ID) AS total FROM " + from + " WHERE " + whereSQL
 		sqlStr, sqlArgs, err := c.DB.Prepare(q, vals...)
 		if err != nil {
@@ -248,6 +260,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "post_modified", "p.post_modified")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_parent", "p.post_parent")
 		q := "SELECT COUNT(DISTINCT p.ID) AS total FROM " + from + " WHERE " + whereSQL
 		sqlStr, sqlArgs, err := c.DB.Prepare(q, vals...)
 		if err != nil {
@@ -354,6 +367,10 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 		where = append(where, clause)
 		vals = append(vals, cvals...)
 	}
+	if clause, cvals := postParentInNotInSQL(args.ParentIn, args.ParentNotIn); clause != "" {
+		where = append(where, clause)
+		vals = append(vals, cvals...)
+	}
 	from := c.DB.Posts() + " p"
 	idCol := "p.ID"
 	if tag := strings.TrimSpace(args.Tag); tag != "" {
@@ -404,6 +421,7 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "ID =", "p.ID =")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
+		whereSQL = strings.ReplaceAll(whereSQL, "post_parent", "p.post_parent")
 	} else {
 		from = c.DB.Posts()
 		idCol = "ID"
@@ -699,6 +717,38 @@ func postInNotInSQL(col string, in, notIn []int64) (string, []any) {
 		vals[i] = id
 	}
 	return col + " NOT IN (" + strings.Join(ph, ",") + ")", vals
+}
+
+// postParentInNotInSQL builds post_parent__in / post_parent__not_in (P4.93).
+// Unlike post__in, parent ID 0 (top-level) is a valid include value.
+func postParentInNotInSQL(in, notIn []int64) (string, []any) {
+	var parts []string
+	var vals []any
+	if in != nil {
+		if len(in) == 0 {
+			parts = append(parts, "post_parent IN (%d)")
+			vals = append(vals, int64(-1))
+		} else {
+			ph := make([]string, len(in))
+			for i, id := range in {
+				ph[i] = "%d"
+				vals = append(vals, id)
+			}
+			parts = append(parts, "post_parent IN ("+strings.Join(ph, ",")+")")
+		}
+	}
+	if len(notIn) > 0 {
+		ph := make([]string, len(notIn))
+		for i, id := range notIn {
+			ph[i] = "%d"
+			vals = append(vals, id)
+		}
+		parts = append(parts, "post_parent NOT IN ("+strings.Join(ph, ",")+")")
+	}
+	if len(parts) == 0 {
+		return "", nil
+	}
+	return strings.Join(parts, " AND "), vals
 }
 
 // GetPost returns the first post matching args, or nil if none.

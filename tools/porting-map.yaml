@@ -4401,3 +4401,25 @@
   task: P5.77
   api: internal
   notes: "P5.77 — legacy-widget block.json registered via empty render"
+
+# P4.93: REST pages ?parent= / ?parent_exclude= (post_parent__in / __not_in).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#parent
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.93
+  api: n/a
+  notes: "P4.93 — parsePostsParent / ParentIn for hierarchical pages; parent=0 top-level"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#parent_exclude
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.93
+  api: n/a
+  notes: "P4.93 — parent_exclude → ParentNotIn"
+
+- prefix: wp-includes/class-wp-query.php#post_parent__in
+  go: internal/wp/query.go
+  status: partial
+  task: P4.93
+  api: internal
+  notes: "P4.93 — QueryArgs.ParentIn / ParentNotIn"
