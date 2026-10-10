@@ -13,13 +13,21 @@ func TestSwitchThemeUpdatesOptions(t *testing.T) {
 	if os.Getenv("GOPRESS_SKIP_DB") != "" {
 		t.Skip("GOPRESS_SKIP_DB set")
 	}
-	c, err := wp.Boot(context.Background(), testBootConfig())
+	// Use gopress_go so oracle (gopress_ref) fixture theme stays intact for Boot/diff.
+	cfg := testBootConfig()
+	cfg.DBName = "gopress_go"
+	cfg.ABSPATH = "/workspace/"
+	c, err := wp.Boot(context.Background(), cfg)
 	if err != nil {
 		t.Skipf("Boot unavailable: %v", err)
 	}
-	defer c.DB.Close()
+	t.Cleanup(func() { _ = c.DB.Close() })
 
 	prev := optionString(c.Options.GetOption("stylesheet", ""))
+	if prev == "" {
+		prev = "twentytwentyfive"
+	}
+	// Restore before Close (Cleanup LIFO — register restore after Close registration).
 	t.Cleanup(func() {
 		_ = wp.SwitchTheme(c, "/workspace/", prev)
 	})
@@ -30,7 +38,7 @@ func TestSwitchThemeUpdatesOptions(t *testing.T) {
 	}
 	target := ""
 	for _, th := range themes {
-		if th.Slug != prev {
+		if th.Slug != prev && th.Slug != "" {
 			target = th.Slug
 			break
 		}

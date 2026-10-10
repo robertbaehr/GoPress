@@ -262,6 +262,9 @@ func TestThemesActivate(t *testing.T) {
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
 
 	prevSS, _ := c.Options.GetOption("stylesheet", "").(string)
+	if prevSS == "" {
+		prevSS = "twentytwentyfive"
+	}
 	t.Cleanup(func() {
 		_ = wp.SwitchTheme(c, "/workspace/", prevSS)
 	})
