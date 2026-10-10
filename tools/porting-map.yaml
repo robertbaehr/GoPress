@@ -45,6 +45,12 @@
   task: ""
   api: n/a
 
+- prefix: wp-login.php#confirm_admin_email
+  go: internal/login/login.go
+  status: partial
+  task: P6.14
+  api: n/a
+
 - prefix: wp-login.php#resetpass
   go: internal/login/login.go
   status: partial
@@ -54,7 +60,7 @@
 - prefix: wp-login.php
   go: internal/login
   status: partial
-  task: P6.13
+  task: P6.14
   api: n/a
 
 - prefix: wp-cron.php

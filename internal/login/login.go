@@ -38,6 +38,8 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 			h.serveLogout(w, r, c)
 		case "register":
 			h.serveRegister(w, r, c)
+		case "confirm_admin_email":
+			h.serveConfirmAdminEmail(w, r, c)
 		default:
 			if r.URL.Query().Get("checkemail") == "confirm" {
 				h.serveCheckEmailConfirm(w, r, c)
@@ -59,6 +61,8 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 			h.serveLogout(w, r, c)
 		case "register":
 			h.serveRegister(w, r, c)
+		case "confirm_admin_email":
+			h.serveConfirmAdminEmail(w, r, c)
 		default:
 			h.servePost(w, r, c)
 		}
@@ -66,6 +70,124 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 		w.Header().Set("Allow", "GET, HEAD, POST")
 		http.Error(w, "Method Not Allowed\n", http.StatusMethodNotAllowed)
 	}
+}
+
+// serveConfirmAdminEmail handles wp-login.php?action=confirm_admin_email (P6.14).
+// Stub of the administration email verification screen: requires a logged-in
+// user with manage_options; confirm / remind-me-later update admin_email_lifespan.
+func (h *Handler) serveConfirmAdminEmail(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	c.AuthenticateRequest()
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	loginURL := home + "/wp-login.php"
+	if home == "" {
+		loginURL = "/wp-login.php"
+	}
+	if c.CurrentUser == nil {
+		http.Redirect(w, r, loginURL, http.StatusFound)
+		return
+	}
+	redirectTo := r.URL.Query().Get("redirect_to")
+	if redirectTo == "" {
+		_ = r.ParseForm()
+		redirectTo = r.FormValue("redirect_to")
+	}
+	if redirectTo == "" {
+		redirectTo = home + "/wp-admin/"
+		if home == "" {
+			redirectTo = "/wp-admin/"
+		}
+	}
+	if !c.UserCan(c.CurrentUser, "manage_options") {
+		http.Redirect(w, r, redirectTo, http.StatusFound)
+		return
+	}
+
+	const remindInterval = 3 * 24 * 60 * 60     // 3 days
+	const checkInterval = 6 * 30 * 24 * 60 * 60 // ~6 months
+
+	if remind := r.URL.Query().Get("remind_me_later"); remind != "" {
+		if c.VerifyNonce(remind, "remind_me_later_nonce") == 0 {
+			http.Redirect(w, r, loginURL, http.StatusFound)
+			return
+		}
+		if c.Options != nil {
+			_, _ = c.Options.UpdateOption("admin_email_lifespan", fmt.Sprintf("%d", time.Now().Unix()+remindInterval), "yes")
+		}
+		sep := "?"
+		if strings.Contains(redirectTo, "?") {
+			sep = "&"
+		}
+		http.Redirect(w, r, redirectTo+sep+"admin_email_remind_later=1", http.StatusFound)
+		return
+	}
+
+	if r.Method == http.MethodPost {
+		_ = r.ParseForm()
+		if r.FormValue("correct-admin-email") != "" {
+			nonce := r.FormValue("confirm_admin_email_nonce")
+			if c.VerifyNonce(nonce, "confirm_admin_email") == 0 {
+				http.Redirect(w, r, loginURL, http.StatusFound)
+				return
+			}
+			if c.Options != nil {
+				_, _ = c.Options.UpdateOption("admin_email_lifespan", fmt.Sprintf("%d", time.Now().Unix()+checkInterval), "yes")
+			}
+			http.Redirect(w, r, redirectTo, http.StatusFound)
+			return
+		}
+	}
+
+	adminEmail := optionString(c, "admin_email", "")
+	blogname := optionString(c, "blogname", "GoPress")
+	nonce := c.CreateNonce("confirm_admin_email")
+	remindNonce := c.CreateNonce("remind_me_later_nonce")
+	changeLink := home + "/wp-admin/options-general.php?highlight=confirm_admin_email"
+	if home == "" {
+		changeLink = "/wp-admin/options-general.php?highlight=confirm_admin_email"
+	}
+	remindLink := loginURL + "?action=confirm_admin_email&redirect_to=" + url.QueryEscape(redirectTo) +
+		"&remind_me_later=" + url.QueryEscape(remindNonce)
+
+	var b strings.Builder
+	writeLoginHead(&b, home, blogname, "Confirm your administration email", "confirm_admin_email")
+	b.WriteString("\t\t\t<div id=\"login\">\n")
+	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
+	b.WriteString("\t\t<form class=\"admin-email-confirm-form\" name=\"admin-email-confirm-form\" action=\"")
+	b.WriteString(html.EscapeString(loginURL + "?action=confirm_admin_email"))
+	b.WriteString("\" method=\"post\">\n")
+	b.WriteString("\t\t\t<input type=\"hidden\" id=\"confirm_admin_email_nonce\" name=\"confirm_admin_email_nonce\" value=\"")
+	b.WriteString(html.EscapeString(nonce))
+	b.WriteString("\" />\n")
+	b.WriteString("\t\t\t<input type=\"hidden\" name=\"_wp_http_referer\" value=\"")
+	b.WriteString(html.EscapeString("/wp-login.php?action=confirm_admin_email"))
+	b.WriteString("\" />\n")
+	b.WriteString("\t\t\t<input type=\"hidden\" name=\"redirect_to\" value=\"")
+	b.WriteString(html.EscapeString(redirectTo))
+	b.WriteString("\" />\n")
+	b.WriteString("\t\t\t<h1 class=\"admin-email__heading\">Administration email verification</h1>\n")
+	b.WriteString("\t\t\t<p class=\"admin-email__details\">Please verify that the <strong>administration email</strong> for this website is still correct.</p>\n")
+	b.WriteString("\t\t\t<p class=\"admin-email__details\">Current administration email: <strong>")
+	b.WriteString(html.EscapeString(adminEmail))
+	b.WriteString("</strong></p>\n")
+	b.WriteString("\t\t\t<p class=\"admin-email__details\">This email may be different from your personal email address.</p>\n")
+	b.WriteString("\t\t\t<div class=\"admin-email__actions\">\n")
+	b.WriteString("\t\t\t\t<div class=\"admin-email__actions-primary\">\n")
+	b.WriteString("\t\t\t\t\t<a class=\"button button-large\" href=\"")
+	b.WriteString(html.EscapeString(changeLink))
+	b.WriteString("\">Update</a>\n")
+	b.WriteString("\t\t\t\t\t<input type=\"submit\" name=\"correct-admin-email\" id=\"correct-admin-email\" class=\"button button-primary button-large\" value=\"The email is correct\" />\n")
+	b.WriteString("\t\t\t\t</div>\n")
+	b.WriteString("\t\t\t\t<div class=\"admin-email__actions-secondary\">\n")
+	b.WriteString("\t\t\t\t\t<a href=\"")
+	b.WriteString(html.EscapeString(remindLink))
+	b.WriteString("\">Remind me later</a>\n")
+	b.WriteString("\t\t\t\t</div>\n")
+	b.WriteString("\t\t\t</div>\n")
+	b.WriteString("\t\t</form>\n")
+	b.WriteString("\t\t</div>\n")
+	b.WriteString("\t</body>\n")
+	b.WriteString("\t</html>\n")
+	writeLoginHTML(w, b.String(), false, c)
 }
 
 // serveRegister handles wp-login.php?action=register (P6.9).
