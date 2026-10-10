@@ -125,6 +125,10 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		serveXMLRPCGone(w, r)
 		return
 	}
+	if path == "/wp-trackback.php" {
+		serveTrackbackGone(w, r)
+		return
+	}
 	if path == "/wp-comments-post.php" {
 		c := s.requestContext(w, r)
 		s.serveCommentsPost(w, r, c)

@@ -596,9 +596,9 @@
   api: n/a
 
 - prefix: wp-trackback.php
-  go: internal/frontend
-  status: todo
-  task: P5.8
+  go: internal/server/trackback.go
+  status: out-of-scope
+  task: P3.19
   api: n/a
 
 - prefix: wp-links-opml.php
