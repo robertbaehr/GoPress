@@ -189,6 +189,11 @@ type RequestScope struct {
 	TagID   int64
 	IsTag   bool
 
+	// Category archive query vars (P3.25).
+	CategorySlug string
+	CategoryID   int64
+	IsCategory   bool
+
 	// Is* flags mirror WP_Query conditionals (filled by query parse).
 	IsHome       bool
 	IsSingular   bool

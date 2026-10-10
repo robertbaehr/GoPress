@@ -29,6 +29,8 @@ type QueryArgs struct {
 	Author int64
 	// Tag is the post_tag slug for tag archives (P3.24).
 	Tag string
+	// Category is the category slug for category archives (P3.25).
+	Category string
 	// StickyFirst prepends sticky posts (home/blog inherit queries, P5.19).
 	StickyFirst bool
 	// IgnoreSticky excludes sticky posts from results (non-inherit query loops).
@@ -130,6 +132,13 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 			" INNER JOIN " + c.DB.Terms() + " t ON t.term_id = tt.term_id"
 		where = append(where, "tt.taxonomy = %s", "t.slug = %s")
 		vals = append(vals, "post_tag", tag)
+	} else if cat := strings.TrimSpace(args.Category); cat != "" {
+		cat = lastPathSegment(cat)
+		from += " INNER JOIN " + c.DB.TermRelationships() + " tr ON tr.object_id = p.ID" +
+			" INNER JOIN " + c.DB.TermTaxonomy() + " tt ON tt.term_taxonomy_id = tr.term_taxonomy_id" +
+			" INNER JOIN " + c.DB.Terms() + " t ON t.term_id = tt.term_id"
+		where = append(where, "tt.taxonomy = %s", "t.slug = %s")
+		vals = append(vals, "category", cat)
 	}
 
 	// Qualifying column names when joining taxonomies.
@@ -175,7 +184,7 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 	for _, row := range rows {
 		out = append(out, postFromRow(row))
 	}
-	if postType == "post" && (args.StickyFirst || args.IgnoreSticky) && args.P == 0 && args.Name == "" && args.PageName == "" && args.Tag == "" {
+	if postType == "post" && (args.StickyFirst || args.IgnoreSticky) && args.P == 0 && args.Name == "" && args.PageName == "" && args.Tag == "" && args.Category == "" {
 		out = applyStickyOrdering(c, out, args)
 	}
 	return out, nil
