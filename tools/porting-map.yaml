@@ -349,6 +349,13 @@
   task: P7.36
   api: n/a
 
+# P2.31: wp_strip_all_tags.
+- prefix: wp-includes/formatting.php#wp_strip_all_tags
+  go: internal/wp/strip_all_tags.go
+  status: partial
+  task: P2.31
+  api: exported
+
 # P4.50: REST POST /wp/v2/block-renderer/{name} with attributes + post_id.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-renderer-controller.php
   go: internal/rest/block_types.go
