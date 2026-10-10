@@ -298,8 +298,10 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	monthFilter := parseEditDateFilter(r)
 	// P7.73: status view links (?post_status=publish|draft|trash).
 	postStatus := parseEditPostStatus(r)
+	// P7.82: sticky view filter (?show_sticky=1).
+	showSticky := parseEditShowSticky(r) && postType == "post"
 	perPage := wp.EditPostsPerPage(c, postType)
-	posts, err := recentPostsByType(c, postType, perPage, search, authorID, catID, tagID, formatSlug, postStatus, monthFilter)
+	posts, err := recentPostsByType(c, postType, perPage, search, authorID, catID, tagID, formatSlug, postStatus, monthFilter, showSticky)
 	if err != nil {
 		http.Error(w, "posts: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
@@ -329,7 +331,7 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	b.WriteString(html.EscapeString(heading))
 	b.WriteString("</h1>\n")
 	writeEditTrashNotices(&b, r)
-	writeEditStatusViews(&b, postType, postStatus, counts)
+	writeEditStatusViews(&b, postType, postStatus, counts, showSticky)
 	// P7.68: bulk actions form wrapping the posts list table.
 	b.WriteString(`<form id="posts-filter" method="get">` + "\n")
 	b.WriteString(`<input type="hidden" name="post_type" value="`)
@@ -339,6 +341,9 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		b.WriteString(`<input type="hidden" name="post_status" value="`)
 		b.WriteString(html.EscapeString(postStatus))
 		b.WriteString(`" />` + "\n")
+	}
+	if showSticky {
+		b.WriteString(`<input type="hidden" name="show_sticky" value="1" />` + "\n")
 	}
 	// P7.69: WP_List_Table::search_box (input_id=post → post-search-input).
 	b.WriteString(`<p class="search-box">` + "\n")
@@ -4301,7 +4306,7 @@ func countComments(c *wp.Context, approved string) int {
 	return int(asInt64(row["n"]))
 }
 
-func recentPostsByType(c *wp.Context, postType string, limit int, search string, authorID, catID, tagID int64, formatSlug, postStatus string, monthFilter int) ([]postRow, error) {
+func recentPostsByType(c *wp.Context, postType string, limit int, search string, authorID, catID, tagID int64, formatSlug, postStatus string, monthFilter int, showSticky bool) ([]postRow, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
@@ -4341,6 +4346,20 @@ func recentPostsByType(c *wp.Context, postType string, limit int, search string,
 	default:
 		sql += "AND p.post_status IN (%s, %s, %s, %s, %s) "
 		prepArgs = append(prepArgs, "publish", "draft", "pending", "private", "future")
+	}
+	// P7.82: show_sticky=1 → post__in sticky IDs (empty sticky set → no rows).
+	if showSticky && postType == "post" {
+		ids := stickyIDsForEdit(c)
+		if len(ids) == 0 {
+			sql += "AND 1=0 "
+		} else {
+			ph := make([]string, len(ids))
+			for i, id := range ids {
+				ph[i] = "%d"
+				prepArgs = append(prepArgs, id)
+			}
+			sql += "AND p.ID IN (" + strings.Join(ph, ",") + ") "
+		}
 	}
 	if catID > 0 {
 		sql += "AND tt.taxonomy = %s AND t.term_id = %d "
@@ -4896,6 +4915,7 @@ type editStatusCounts struct {
 	Publish int
 	Draft   int
 	Trash   int
+	Sticky  int // P7.82: non-trash sticky posts (posts only)
 }
 
 func countPostsByStatus(c *wp.Context, postType string) editStatusCounts {
@@ -4933,7 +4953,52 @@ func countPostsByStatus(c *wp.Context, postType string) editStatusCounts {
 			out.Trash = n
 		}
 	}
+	if postType == "post" {
+		out.Sticky = countStickyPosts(c)
+	}
 	return out
+}
+
+// countStickyPosts counts sticky IDs that are not trash/auto-draft (P7.82).
+func countStickyPosts(c *wp.Context) int {
+	ids := stickyIDsForEdit(c)
+	if c == nil || c.DB == nil || len(ids) == 0 {
+		return 0
+	}
+	ph := make([]string, len(ids))
+	args := make([]any, 0, len(ids)+1)
+	args = append(args, "post")
+	for i, id := range ids {
+		ph[i] = "%d"
+		args = append(args, id)
+	}
+	q, qargs, err := c.DB.Prepare(
+		"SELECT COUNT(*) AS n FROM "+c.DB.Posts()+
+			" WHERE post_type = %s AND post_status NOT IN ('trash','auto-draft') AND ID IN ("+
+			strings.Join(ph, ",")+")",
+		args...,
+	)
+	if err != nil {
+		return 0
+	}
+	row, err := c.DB.GetRow(q, qargs...)
+	if err != nil || row == nil {
+		return 0
+	}
+	return int(asInt64(row["n"]))
+}
+
+func stickyIDsForEdit(c *wp.Context) []int64 {
+	return wp.StickyPostIDs(c)
+}
+
+// parseEditShowSticky reads ?show_sticky= from edit.php (P7.82).
+func parseEditShowSticky(r *http.Request) bool {
+	if r == nil {
+		return false
+	}
+	raw := strings.TrimSpace(r.URL.Query().Get("show_sticky"))
+	return raw != "" && raw != "0" && !strings.EqualFold(raw, "false")
 }
 
 // handleEditScreenOptions saves edit_{post_type}_per_page + column prefs (P7.77 / P7.80).
@@ -5060,8 +5125,8 @@ func writeEditScreenOptions(b *strings.Builder, c *wp.Context, postType string, 
 	b.WriteString(`</div>` + "\n")
 }
 
-// writeEditStatusViews emits WP_Posts_List_Table::get_views subset (P7.73).
-func writeEditStatusViews(b *strings.Builder, postType, current string, counts editStatusCounts) {
+// writeEditStatusViews emits WP_Posts_List_Table::get_views subset (P7.73 / P7.82).
+func writeEditStatusViews(b *strings.Builder, postType, current string, counts editStatusCounts, showSticky bool) {
 	if b == nil {
 		return
 	}
@@ -5087,16 +5152,28 @@ func writeEditStatusViews(b *strings.Builder, postType, current string, counts e
 	}
 	b.WriteString(`<ul class="subsubsub">` + "\n")
 	b.WriteString(`<li class="all">`)
-	b.WriteString(link("", "All", counts.All, current == ""))
+	b.WriteString(link("", "All", counts.All, current == "" && !showSticky))
 	b.WriteString(` |</li>` + "\n")
 	b.WriteString(`<li class="publish">`)
-	b.WriteString(link("publish", "Published", counts.Publish, current == "publish"))
+	b.WriteString(link("publish", "Published", counts.Publish, current == "publish" && !showSticky))
 	b.WriteString(` |</li>` + "\n")
+	// P7.82: Sticky view after Published when any sticky posts exist.
+	if postType == "post" && counts.Sticky > 0 {
+		href := "edit.php?show_sticky=1"
+		cls := ""
+		if showSticky {
+			cls = ` class="current"`
+		}
+		b.WriteString(`<li class="sticky">`)
+		b.WriteString(fmt.Sprintf(`<a href="%s"%s>Sticky <span class="count">(%d)</span></a>`,
+			html.EscapeString(href), cls, counts.Sticky))
+		b.WriteString(` |</li>` + "\n")
+	}
 	b.WriteString(`<li class="draft">`)
-	b.WriteString(link("draft", "Drafts", counts.Draft, current == "draft"))
+	b.WriteString(link("draft", "Drafts", counts.Draft, current == "draft" && !showSticky))
 	b.WriteString(` |</li>` + "\n")
 	b.WriteString(`<li class="trash">`)
-	b.WriteString(link("trash", "Trash", counts.Trash, current == "trash"))
+	b.WriteString(link("trash", "Trash", counts.Trash, current == "trash" && !showSticky))
 	b.WriteString(`</li>` + "\n")
 	b.WriteString(`</ul>` + "\n")
 }

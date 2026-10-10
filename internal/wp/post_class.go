@@ -50,6 +50,11 @@ func IsSticky(c *Context, postID int64) bool {
 	return false
 }
 
+// StickyPostIDs returns sticky_posts option IDs (P4.97 / P7.82).
+func StickyPostIDs(c *Context) []int64 {
+	return stickyPostIDs(c)
+}
+
 // StickPost adds postID to sticky_posts (stick_post, P4.97).
 func StickPost(c *Context, postID int64) error {
 	if c == nil || c.Options == nil || postID <= 0 {

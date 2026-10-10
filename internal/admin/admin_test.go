@@ -1258,6 +1258,66 @@ func TestEditPostsBulkEditStub(t *testing.T) {
 	}
 }
 
+func TestEditPostsStickyFilter(t *testing.T) {
+	c := bootOrSkip(t)
+	prev, _ := c.Options.GetOption("sticky_posts", "").(string)
+	if _, err := c.Options.UpdateOption("sticky_posts", "a:1:{i:0;i:13;}", "yes"); err != nil {
+		t.Fatalf("set sticky_posts: %v", err)
+	}
+	t.Cleanup(func() {
+		if prev != "" {
+			_, _ = c.Options.UpdateOption("sticky_posts", prev, "yes")
+		} else {
+			_, _ = c.Options.UpdateOption("sticky_posts", "a:0:{}", "yes")
+		}
+	})
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`class="sticky"`,
+		`show_sticky=1`,
+		`Sticky <span class="count">`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected sticky view %q in edit.php", want)
+		}
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?show_sticky=1", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("show_sticky status=%d", rec.Code)
+	}
+	body = rec.Body.String()
+	if !strings.Contains(body, `name="show_sticky"`) || !strings.Contains(body, `value="1"`) {
+		t.Fatalf("expected show_sticky hidden: %q", body[:min(800, len(body))])
+	}
+	if !strings.Contains(body, `class="sticky"`) || !strings.Contains(body, `class="current"`) {
+		t.Fatalf("expected sticky current view: %q", body[:min(800, len(body))])
+	}
+	// Fixture sticky is post 13 = Fixture Post 01.
+	if !strings.Contains(body, "Fixture Post 01") && !strings.Contains(body, "fixture-post-01") {
+		// Title may be "Fixture Post 01".
+		if !strings.Contains(body, "Fixture Post") {
+			t.Fatalf("expected sticky fixture post in list: %q", body[:min(1200, len(body))])
+		}
+	}
+	if strings.Contains(body, "Hello world!") {
+		t.Fatalf("show_sticky should not list non-sticky Hello world")
+	}
+}
+
 func TestEditPostsStickyToggle(t *testing.T) {
 	c := bootOrSkip(t)
 	// Stick hello-world (id=1) so it appears in the first page of edit.php.
