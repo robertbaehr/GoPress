@@ -820,6 +820,30 @@
   task: P4.36
   api: exported
 
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-font-collections-controller.php
+  go: internal/rest/font_collections.go
+  status: partial
+  task: P4.55
+  api: exported
+
+- prefix: wp-includes/fonts/class-wp-font-collection.php
+  go: internal/wp/font_collections.go
+  status: partial
+  task: P4.55
+  api: exported
+
+- prefix: wp-includes/fonts/class-wp-font-library.php
+  go: internal/wp/font_collections.go
+  status: partial
+  task: P4.55
+  api: exported
+
+- prefix: wp-includes/fonts.php
+  go: internal/wp/font_collections.go
+  status: partial
+  task: P4.55
+  api: exported
+
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-pattern-directory-controller.php
   go: internal/rest/pattern_directory.go
   status: partial

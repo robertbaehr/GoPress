@@ -74,6 +74,10 @@ func Boot(ctx context.Context, cfg *config.Config) (*Context, error) {
 	c.BlockBindings = NewBlockBindingsRegistry()
 	RegisterDefaultBlockBindingsSources(c.BlockBindings, stylesheet)
 
+	// Font collections library (P4.55) — metadata only; remote families skipped.
+	c.FontLibrary = NewFontLibrary()
+	RegisterDefaultFontCollections(c.FontLibrary)
+
 	// Shortcodes: gallery, caption, embed (P2.11).
 	c.Shortcodes = NewShortcodes()
 	RegisterDefaultShortcodes(c.Shortcodes)
