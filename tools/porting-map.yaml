@@ -599,3 +599,16 @@
   status: todo
   task: P5.8
   api: n/a
+
+# P4.41: REST write for menu-locations + theme_mod nav_menu_locations.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-menu-locations-controller.php
+  go: internal/rest/menus.go
+  status: partial
+  task: P4.41
+  api: exported
+
+- prefix: wp-includes/nav-menu.php
+  go: internal/wp/nav_menus.go
+  status: partial
+  task: P4.41
+  api: partial

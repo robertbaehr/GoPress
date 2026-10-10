@@ -248,6 +248,17 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 		s.serveMenuItemByID(w, r, c, id)
 	case path == "/wp/v2/menu-locations":
 		s.serveMenuLocations(w, r, c)
+	case strings.HasPrefix(path, "/wp/v2/menu-locations/"):
+		loc := strings.Trim(strings.TrimPrefix(path, "/wp/v2/menu-locations/"), "/")
+		if loc == "" || strings.Contains(loc, "/") {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"code":    "rest_no_route",
+				"message": "No route was found matching the URL and request method.",
+				"data":    map[string]any{"status": 404},
+			})
+			return
+		}
+		s.serveMenuLocationItem(w, r, c, loc)
 	case path == "/wp/v2/widgets":
 		s.serveWidgets(w, r, c)
 	case strings.HasPrefix(path, "/wp/v2/widgets/"):
@@ -778,7 +789,11 @@ func extraIndexRoutes() map[string]RouteIndex {
 		"/wp/v2/menu-items/(?P<id>[\\d]+)":        itemRoute(ns),
 		"/wp/v2/menus":                            collectionRoute(ns),
 		"/wp/v2/menus/(?P<id>[\\d]+)":             itemRoute(ns),
-		"/wp/v2/menu-locations":                   getOnly(ns),
+		"/wp/v2/menu-locations": {
+			Namespace: ns,
+			Methods:   []string{"GET"},
+			Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}},
+		},
 		"/wp/v2/templates":                        collectionRoute(ns),
 		"/wp/v2/templates/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)": itemRoute(ns),
 		"/wp/v2/template-parts": collectionRoute(ns),
@@ -821,7 +836,20 @@ func extraIndexRoutes() map[string]RouteIndex {
 		"/wp/v2/blocks/(?P<parent>[\\d]+)/autosaves/(?P<id>[\\d]+)":                 getOnly(ns),
 		"/wp/v2/media/(?P<id>[\\d]+)/edit":                                          getOnly(ns),
 		"/wp/v2/media/(?P<id>[\\d]+)/post-process":                                  getOnly(ns),
-		"/wp/v2/menu-locations/(?P<location>[\\w-]+)":                               getOnly(ns),
+		"/wp/v2/menu-locations/(?P<location>[\\w-]+)": {
+			Namespace: ns,
+			Methods:   []string{"GET", "POST", "PUT", "PATCH"},
+			Endpoints: []RouteEndpoint{
+				{Methods: []string{"GET"}},
+				{Methods: []string{"POST", "PUT", "PATCH"}, Args: map[string]any{
+					"menu": map[string]any{
+						"description": "The ID of the assigned menu.",
+						"type":        "integer",
+						"required":    false,
+					},
+				}},
+			},
+		},
 		"/wp/v2/plugins/(?P<plugin>[^.\\/]+(?:\\/[^.\\/]+)?)":                       itemRoute(ns),
 		"/wp/v2/global-styles/(?P<parent>[\\d]+)/revisions":                         getOnly(ns),
 		"/wp/v2/global-styles/(?P<parent>[\\d]+)/revisions/(?P<id>[\\d]+)":          getOnly(ns),
