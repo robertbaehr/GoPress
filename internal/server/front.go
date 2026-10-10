@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"github.com/robertbaehr/GoPress/internal/blocks"
+	"github.com/robertbaehr/GoPress/internal/rest"
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
@@ -31,6 +32,14 @@ func (f *Front) ServeFront(w http.ResponseWriter, r *http.Request, c *wp.Context
 		return
 	}
 	parsed := c.ParseRequest(rules)
+
+	// Plain-permalink REST: ?rest_route=/wp/v2/… (P3.29). Prefer server-level
+	// dispatch; this is a safety net when front is reached with the query var.
+	if rr := strings.TrimSpace(parsed.QueryVars["rest_route"]); rr != "" {
+		rs := &rest.Server{}
+		rs.Handle(w, r, c)
+		return
+	}
 
 	// redirect_canonical: enforce trailing slash on pretty permalinks (P3.15).
 	if f.tryTrailingSlashRedirect(w, r, c, parsed) {

@@ -159,7 +159,7 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.NotFound(w, r)
 		return
 	}
-	if path == "/wp-json" || strings.HasPrefix(path, "/wp-json/") {
+	if path == "/wp-json" || strings.HasPrefix(path, "/wp-json/") || hasRESTRouteQuery(r) {
 		c := s.requestContext(w, r)
 		rs := s.REST
 		if rs == nil {
@@ -214,6 +214,14 @@ func (s *Server) serveStatic(w http.ResponseWriter, r *http.Request, path string
 		return
 	}
 	http.ServeFile(w, r, full)
+}
+
+// hasRESTRouteQuery reports ?rest_route=… (WP plain-permalink REST front door, P3.29).
+func hasRESTRouteQuery(r *http.Request) bool {
+	if r == nil || r.URL == nil {
+		return false
+	}
+	return strings.TrimSpace(r.URL.Query().Get("rest_route")) != ""
 }
 
 func pathUnderRoot(full, root string) bool {
