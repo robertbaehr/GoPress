@@ -47,9 +47,7 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/paragraph":
 		out = addRootClass(e.renderSaved(block), "wp-block-paragraph")
 	case "core/quote":
-		html := e.renderSaved(block)
-		html = addRootClass(html, "is-layout-flow")
-		out = addRootClass(html, "wp-block-quote-is-layout-flow")
+		out = e.renderQuote(block)
 	case "core/terms-query":
 		// WP layout support defaults to flow for terms-query (P10.8 / feed parity).
 		html := e.renderSaved(block)
@@ -74,9 +72,11 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderGroup(block)
 	case "core/heading", "core/list", "core/list-item",
 		"core/code", "core/html",
-		"core/pullquote", "core/preformatted", "core/verse", "core/table",
+		"core/preformatted", "core/verse", "core/table",
 		"core/details":
 		out = e.renderSaved(block)
+	case "core/pullquote":
+		out = e.renderPullquote(block)
 	case "core/buttons":
 		out = e.renderButtons(block)
 	case "core/button":
