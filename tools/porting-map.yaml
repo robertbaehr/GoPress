@@ -1112,6 +1112,14 @@
   api: exported
   notes: "P2.60 — upload_path/upload_url_path + uploads_use_yearmonth_folders subdir"
 
+# P2.61: wp_mkdir_p recursive directory create with traversal guard.
+- prefix: wp-includes/functions.php#wp_mkdir_p
+  go: internal/wp/mkdir_p.go
+  status: partial
+  task: P2.61
+  api: exported
+  notes: "P2.61 — MkdirP; inherit parent mode; reject ..; used by SaveUploadedMedia"
+
 # P2.59: get_allowed_mime_types($user) — optional user + upload_mimes user arg.
 - prefix: wp-includes/functions.php#get_allowed_mime_types
   go: internal/wp/check_filetype.go

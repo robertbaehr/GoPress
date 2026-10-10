@@ -40,8 +40,8 @@ func SaveUploadedMedia(c *Context, filename string, r io.Reader, size int64) (*U
 		return nil, fmt.Errorf("wp: SaveUploadedMedia: empty upload dir")
 	}
 	dir := filepath.Join(uploads.Basedir, filepath.FromSlash(UploadFixedSubdir))
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return nil, err
+	if !MkdirP(dir) {
+		return nil, fmt.Errorf("wp: SaveUploadedMedia: mkdir %s", dir)
 	}
 
 	destName := UniqueFilename(dir, filename)
