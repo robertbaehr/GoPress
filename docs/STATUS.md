@@ -6,12 +6,12 @@ Short overview of what is implemented versus remaining. Detail lives in `PORTING
 
 | Area | Coverage |
 |---|---|
-| Runtime core | Boot, config, DB, hooks, object cache, options/meta, i18n stub, KSES, formatting (`wp_strip_all_tags`, …), shortcodes, transients, cron stub |
-| Auth / users | Password hashes (phpass / `$wp$`), roles/caps, auth cookies, usermeta `session_tokens`, nonces, login/logout/lost-password, application passwords |
-| Front | Home + singular + attachment HTML, rewrite, feeds (RSS/Atom + comments feed), robots/sitemap, comments, oEmbed discovery + endpoint, 404/embed/search/date/author/tag/category archives, pagination, admin bar; `?rest_route=` REST front door |
-| Blocks / themes | Parser/render, core block subset, supports (typography/border/layout/shadow/position/elements/background/dimensions/CSS filter+duotone), style engine, theme.json, patterns, template hierarchy/parts, bindings, block styles registry |
-| REST (`/wp-json`) | Index, posts/pages/media/comments/taxonomies/users/settings/search, revisions/autosaves, menus/navigation, templates/global styles (incl. write), block-renderer, batch, site-health stubs; remote directory proxies blocked |
-| Admin | Dashboard + list tables, options screens (general/writing/reading/discussion/media/permalink), media library + `media-new.php` + async upload, plugins/themes/users stubs, nav menus, site editor shell, tools/import/export/privacy, admin-ajax heartbeat |
+| Runtime core | Boot, config, DB, hooks, object cache, options/meta, i18n stub, KSES, formatting (`wp_strip_all_tags`, `wp_validate_boolean`, `wp_slash`, …), shortcodes, transients, cron stub |
+| Auth / users | Password hashes (phpass / `$wp$`), roles/caps, auth cookies, usermeta `session_tokens`, nonces, login/logout/lost-password/resetpass, `confirm_admin_email` stub, application passwords |
+| Front | Home + singular + attachment HTML, rewrite, feeds (RSS/Atom + comments feed), robots/sitemap, comments, oEmbed discovery + endpoint, 404/embed/search/date/author/tag/category archives, pagination, admin bar; `?rest_route=` REST front door; `/favicon.ico`; `/rsd.xml` stub (`xmlrpc.php?rsd` stays 403) |
+| Blocks / themes | Parser/render, core block subset, supports (typography/border/layout/shadow/position/elements/background/dimensions/CSS filter+duotone), style engine, theme.json, patterns + pattern categories, template hierarchy/parts, bindings, block styles/variations registries |
+| REST (`/wp-json`) | Index, posts/pages/media/comments/taxonomies/users/settings/search, revisions/autosaves, menus/navigation, templates/global styles (incl. write), block-renderer, block-patterns patterns/categories, batch, site-health stubs; widgets/sidebars disabled; remote directory proxies blocked |
+| Admin | Dashboard + list tables, options screens (general/writing/reading/discussion/media/permalink), media library + `media-new.php` + async upload, plugins/themes/users stubs, nav menus, site editor shell, tools/import/export/privacy (export UI + confirm step), admin-ajax heartbeat |
 | Plugins | MU-plugin scan, header parse, Hello Dolly shim, activate/deactivate, uninstall hook stub; PHP drop-ins detected as unsupported |
 
 ## Explicitly out of scope / gone
@@ -42,12 +42,12 @@ make check
 - `make diff` / `gopress-tools diff` reloads `tests/fixtures/site.sql` into `gopress_ref` and `gopress_go` unless `--skip-db`.
 - After e2e uploads or other writes, restart `gopress serve` (or omit `--skip-db`) so object-cache/options match the reloaded fixture. Stale process memory can make a green corpus look red.
 
-## Recent stack (through P10.27)
+## Recent stack (through P10.30)
 
-- P5.35 CSS filter functions + duotone compose
-- P4.51 REST global-styles write
-- P7.36 options-permalink structure stub
-- P2.31 `wp_strip_all_tags`
-- P3.29 `rest_route` query var
-- P9.6 plugin uninstall stub
-- P10.27 status / PORTING refresh
+- P5.38 Block pattern categories registry + REST
+- P4.54 Sidebars/widgets REST stay disabled
+- P7.39 Export personal data UI polish
+- P2.34 `wp_validate_boolean`
+- P3.32 `/rsd.xml` stub (`xmlrpc.php?rsd` 403)
+- P6.14 Login `confirm_admin_email` stub
+- P10.30 Status / PORTING refresh
