@@ -1562,6 +1562,28 @@
   api: exported
   notes: "P4.87 — QueryArgs.TagIn joins term relationships by post_tag term_id"
 
+# P4.90: REST GET /wp/v2/posts?include=&exclude= (post__in / post__not_in).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#include
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.90
+  api: exported
+  notes: "P4.90 — ?include= → QueryArgs.PostIn; ?exclude= → PostNotIn"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#include-list
+  go: internal/rest/posts_write.go
+  status: partial
+  task: P4.90
+  api: exported
+  notes: "P4.90 — listPostCollection honors ?include=/?exclude="
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#sticky-intersect
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.90
+  api: exported
+  notes: "P4.90 — sticky=true intersects include; sticky=false merges exclude"
+
 # P4.89: REST GET /wp/v2/posts?slug= filter (post_name__in).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#slug
   go: internal/rest/posts.go

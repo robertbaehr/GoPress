@@ -45,7 +45,7 @@ func (s *Server) serveBlocks(w http.ResponseWriter, r *http.Request, c *wp.Conte
 	_ = wp.EnsurePatterns(c)
 	perPage := parsePerPage(r, 10)
 	page := parsePage(r)
-	total, err := countPosts(c, "wp_block", nil, "", 0, nil, nil, nil, nil)
+	total, err := countPosts(c, "wp_block", nil, "", 0, nil, nil, nil, nil, nil, nil)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",
