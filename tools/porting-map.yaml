@@ -4386,3 +4386,18 @@
 # P10.16: e2e update blogname via REST settings — tests/e2e/rest-settings.spec.js
 # P10.19: e2e front search /?s= — tests/e2e/search.spec.js
 # P10.20: e2e front date archives /YYYY/ /YYYY/MM/ — tests/e2e/archive.spec.js
+
+# P5.77: core/legacy-widget renders empty (widgets out of scope).
+- prefix: wp-includes/blocks/legacy-widget.php
+  go: internal/blocks/legacy_widget.go
+  status: partial
+  task: P5.77
+  api: internal
+  notes: "P5.77 — renderLegacyWidget returns empty; no WP_Widget_Factory"
+
+- prefix: wp-includes/blocks/legacy-widget
+  go: internal/blocks/legacy_widget.go
+  status: partial
+  task: P5.77
+  api: internal
+  notes: "P5.77 — legacy-widget block.json registered via empty render"
