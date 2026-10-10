@@ -6540,3 +6540,11 @@ wp-login.php#language-switcher-post
   task: P10.115
   api: n/a
   notes: "P10.115 — regenerate porting-status after stacked P5.102–P10.114"
+
+# P10.116: expand diff corpus after P5.103–P6.43.
+- prefix: tests/corpus/#p10-116
+  go: tests/corpus/
+  status: partial
+  task: P10.116
+  api: n/a
+  notes: "P10.116 — taxonomies single/invalid, register/checkemail, replytocom, archives; grow after P5.103–P6.43; 501 cases"
