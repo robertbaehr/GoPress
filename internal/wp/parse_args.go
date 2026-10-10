@@ -3,16 +3,18 @@ package wp
 import (
 	"fmt"
 	"net/url"
+	"reflect"
 	"strings"
 )
 
-// ParseArgs merges args into defaults (wp_parse_args, P2.30).
+// ParseArgs merges args into defaults (wp_parse_args, P2.30 / P2.86).
 //
 // args may be:
-//   - map[string]any / map[string]string
+//   - map[string]any / map[string]string / map[any]any
 //   - url.Values
+//   - a struct / *struct (exported fields; json tag name preferred)
 //   - a query string (a=1&b=2), including PHP-style foo[bar]=baz keys as flat keys
-//   - nil / other → treated as empty
+//   - nil / other → treated as empty (scalars stringify via wp_parse_str path)
 //
 // Defaults are shallow-copied; args keys overwrite. Returns a new map.
 func ParseArgs(args any, defaults map[string]any) map[string]any {
@@ -55,6 +57,15 @@ func coerceParseArgs(args any) map[string]any {
 			out[k] = v
 		}
 		return out
+	case map[any]any:
+		if t == nil {
+			return nil
+		}
+		out := make(map[string]any, len(t))
+		for k, v := range t {
+			out[fmt.Sprint(k)] = v
+		}
+		return out
 	case url.Values:
 		return valuesToAnyMap(t)
 	case string:
@@ -62,10 +73,49 @@ func coerceParseArgs(args any) map[string]any {
 	case []byte:
 		return parseArgsQuery(string(t))
 	default:
-		// Best-effort: fmt.Sprint for scalars is not useful; return empty.
+		// P2.86: objects → get_object_vars equivalent via exported struct fields.
+		if m := structToAnyMap(args); m != nil {
+			return m
+		}
+		// Unknown scalars: leave empty (callers pass maps/strings/structs).
 		_ = fmt.Sprintf("%T", t)
 		return nil
 	}
+}
+
+func structToAnyMap(args any) map[string]any {
+	v := reflect.ValueOf(args)
+	if !v.IsValid() {
+		return nil
+	}
+	for v.Kind() == reflect.Pointer {
+		if v.IsNil() {
+			return map[string]any{}
+		}
+		v = v.Elem()
+	}
+	if v.Kind() != reflect.Struct {
+		return nil
+	}
+	t := v.Type()
+	out := make(map[string]any, t.NumField())
+	for i := 0; i < t.NumField(); i++ {
+		f := t.Field(i)
+		if f.PkgPath != "" { // unexported
+			continue
+		}
+		name := f.Name
+		if tag := f.Tag.Get("json"); tag != "" && tag != "-" {
+			if comma := strings.IndexByte(tag, ','); comma >= 0 {
+				tag = tag[:comma]
+			}
+			if tag != "" {
+				name = tag
+			}
+		}
+		out[name] = v.Field(i).Interface()
+	}
+	return out
 }
 
 func parseArgsQuery(raw string) map[string]any {

@@ -837,6 +837,14 @@
   task: P2.30
   api: exported
 
+# P2.86: deepen wp_parse_args object/map[any]any coercion.
+- prefix: wp-includes/functions.php#wp_parse_args_p286
+  go: internal/wp/parse_args.go
+  status: partial
+  task: P2.86
+  api: exported
+  notes: "P2.86 — struct/get_object_vars, map[any]any, empty query → defaults"
+
 # P6.17: interim login success honors redirect_to (Continue + top-level JS).
 - prefix: wp-login.php#interim-redirect
   go: internal/login/login.go

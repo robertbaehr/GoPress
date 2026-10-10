@@ -54,3 +54,50 @@ func TestParseArgsDoesNotMutateDefaults(t *testing.T) {
 		t.Fatalf("defaults mutated: %v", defaults)
 	}
 }
+
+func TestParseArgsStructObject(t *testing.T) {
+	type opts struct {
+		PerPage int    `json:"per_page"`
+		Order   string `json:"order"`
+		hidden  string
+	}
+	got := wp.ParseArgs(opts{PerPage: 5, Order: "asc", hidden: "x"}, map[string]any{
+		"per_page": 10,
+		"order":    "desc",
+		"status":   "publish",
+	})
+	if got["per_page"] != 5 || got["order"] != "asc" || got["status"] != "publish" {
+		t.Fatalf("got=%v", got)
+	}
+	if _, ok := got["hidden"]; ok {
+		t.Fatalf("unexported field leaked: %v", got)
+	}
+}
+
+func TestParseArgsStructPointer(t *testing.T) {
+	type opts struct {
+		Name string `json:"name"`
+	}
+	got := wp.ParseArgs(&opts{Name: "Ada"}, map[string]any{"name": ""})
+	if got["name"] != "Ada" {
+		t.Fatalf("got=%v", got)
+	}
+	gotNil := wp.ParseArgs((*opts)(nil), map[string]any{"name": "default"})
+	if gotNil["name"] != "default" {
+		t.Fatalf("nil pointer should use defaults: %v", gotNil)
+	}
+}
+
+func TestParseArgsMapAnyAny(t *testing.T) {
+	got := wp.ParseArgs(map[any]any{"a": 1, 2: "two"}, map[string]any{"a": 0, "b": true})
+	if got["a"] != 1 || got["2"] != "two" || got["b"] != true {
+		t.Fatalf("got=%v", got)
+	}
+}
+
+func TestParseArgsEmptyQueryUsesDefaults(t *testing.T) {
+	got := wp.ParseArgs("", map[string]any{"x": 1})
+	if got["x"] != 1 || len(got) != 1 {
+		t.Fatalf("got=%v", got)
+	}
+}
