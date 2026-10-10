@@ -1936,6 +1936,21 @@
   api: n/a
   notes: "P7.71 — wp_dropdown_categories-shaped filter on edit.php"
 
+# P7.72: edit.php tag filter dropdown (?tag_id=).
+- prefix: wp-admin/edit.php#tag-filter
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.72
+  api: n/a
+  notes: "P7.72 — tag_id select + Filter; filters list by post_tag term_id"
+
+- prefix: wp-includes/class-wp-query.php#tag_id
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.72
+  api: n/a
+  notes: "P7.72 — honor ?tag_id= on edit.php posts list"
+
 # P10.62: e2e edit.php search + STATUS/PORTING refresh after P5.70–P6.29.
 - prefix: tests/e2e/edit-search.spec.js
   go: tests/e2e/edit-search.spec.js
