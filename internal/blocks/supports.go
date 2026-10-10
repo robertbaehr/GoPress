@@ -25,9 +25,7 @@ func applySupports(htmlFragment string, attrs map[string]any) string {
 
 func supportsFromAttrs(attrs map[string]any) (classes []string, styles string) {
 	if cn, ok := attrs["className"].(string); ok && cn != "" {
-		for _, part := range strings.Fields(cn) {
-			classes = append(classes, part)
-		}
+		classes = append(classes, strings.Fields(cn)...)
 	}
 	if bg, ok := attrs["backgroundColor"].(string); ok && bg != "" {
 		classes = append(classes, "has-background", "has-"+slugifySupport(bg)+"-background-color")
