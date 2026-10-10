@@ -24,6 +24,10 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 		return
 	}
 	c.AuthenticateRequest()
+	// P8.1: fall back to Application Password Basic auth when no cookie session.
+	if c.CurrentUser == nil {
+		c.AuthenticateApplicationPassword()
+	}
 	setAPILinkHeader(w, c)
 
 	path := restPath(r.URL.Path)
