@@ -178,6 +178,63 @@ func TestDateI18nUTCSubset(t *testing.T) {
 	}
 }
 
+func TestDateFormatTimeFormatOptions(t *testing.T) {
+	// P2.97: date_format / time_format option helpers + expanded tokens.
+	c := bootAppPass(t)
+	prevDate := c.Options.GetOption("date_format", "F j, Y")
+	prevTime := c.Options.GetOption("time_format", "g:i a")
+	prevTZ := c.Options.GetOption("timezone_string", "")
+	t.Cleanup(func() {
+		_, _ = c.Options.UpdateOption("date_format", prevDate, "yes")
+		_, _ = c.Options.UpdateOption("time_format", prevTime, "yes")
+		_, _ = c.Options.UpdateOption("timezone_string", prevTZ, "yes")
+	})
+
+	_, _ = c.Options.UpdateOption("timezone_string", "UTC", "yes")
+	_, _ = c.Options.UpdateOption("date_format", "Y-m-d", "yes")
+	_, _ = c.Options.UpdateOption("time_format", "g:i a", "yes")
+	if got := wp.DateFormat(c); got != "Y-m-d" {
+		t.Fatalf("DateFormat=%q", got)
+	}
+	if got := wp.TimeFormat(c); got != "g:i a" {
+		t.Fatalf("TimeFormat=%q", got)
+	}
+
+	// 2020-06-15 14:05:00 UTC
+	ts := time.Date(2020, 6, 15, 14, 5, 0, 0, time.UTC).Unix()
+	if got := wp.WPDateOption(c, ts); got != "2020-06-15" {
+		t.Fatalf("WPDateOption=%q", got)
+	}
+	if got := wp.WPTimeOption(c, ts); got != "2:05 pm" {
+		t.Fatalf("WPTimeOption=%q", got)
+	}
+
+	_, _ = c.Options.UpdateOption("date_format", "F jS, Y", "yes")
+	if got := wp.WPDateOption(c, ts); got != "June 15th, 2020" {
+		t.Fatalf("ordinal date=%q", got)
+	}
+
+	// Common WP presets.
+	for _, tc := range []struct {
+		format string
+		want   string
+	}{
+		{"m/d/Y", "06/15/2020"},
+		{"d/m/Y", "15/06/2020"},
+		{"n/j/Y", "6/15/2020"},
+		{"M j, Y", "Jun 15, 2020"},
+		{"D, M j", "Mon, Jun 15"},
+		{"g:i A", "2:05 PM"},
+		{"H:i", "14:05"},
+		{"G:i", "14:05"},
+	} {
+		got := wp.WPDate(tc.format, ts, time.UTC)
+		if got != tc.want {
+			t.Fatalf("format %q = %q want %q", tc.format, got, tc.want)
+		}
+	}
+}
+
 func TestTimezoneStringOffsetFallback(t *testing.T) {
 	// P2.96: empty timezone_string → ±HH:MM from gmt_offset.
 	c := bootAppPass(t)
