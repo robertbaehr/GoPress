@@ -81,6 +81,13 @@ func TestInterimLoginForm(t *testing.T) {
 	if strings.Contains(body, `id="nav"`) || strings.Contains(body, `id="backtoblog"`) {
 		t.Fatalf("interim login should omit nav/backtoblog: %q", body)
 	}
+	if !strings.Contains(body, `id="login-message"`) ||
+		!strings.Contains(body, "Your session has expired. Please log in to continue where you left off.") {
+		t.Fatalf("expected interim session-expired message: %q", body)
+	}
+	if strings.Contains(body, `id="login_error"`) {
+		t.Fatalf("interim info message should not use login_error: %q", body)
+	}
 }
 
 func TestInterimLoginSuccess(t *testing.T) {
