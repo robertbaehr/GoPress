@@ -146,6 +146,81 @@ func TestUpdateCommentRequiresAuth(t *testing.T) {
 	}
 }
 
+func TestUpdateCommentAuthorIPDateParentZero(t *testing.T) {
+	// P4.117: author_ip + date_gmt + parent=0 omit-safe.
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	ck := &http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue}
+
+	createBody := `{"post":1,"content":"GoPress comment ip/date","parent":1}`
+	req := httptest.NewRequest(http.MethodPost, "/wp-json/wp/v2/comments", bytes.NewBufferString(createBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusCreated {
+		t.Fatalf("create status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var cm rest.Comment
+	if err := json.Unmarshal(rec.Body.Bytes(), &cm); err != nil {
+		t.Fatal(err)
+	}
+	commentID := cm.ID
+	t.Cleanup(func() {
+		q, args, err := c.DB.Prepare("DELETE FROM "+c.DB.Comments()+" WHERE comment_ID = %d", commentID)
+		if err == nil {
+			_, _ = c.DB.Exec(q, args...)
+		}
+	})
+	if cm.Parent != 1 {
+		t.Fatalf("create parent=%d want 1", cm.Parent)
+	}
+
+	patchBody := `{"author_ip":"203.0.113.9","date_gmt":"2020-06-15T12:30:00","parent":0,"author_name":"Patched Author"}`
+	req = httptest.NewRequest(http.MethodPatch, fmt.Sprintf("/wp-json/wp/v2/comments/%d", commentID), bytes.NewBufferString(patchBody))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	rc = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("patch status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var updated rest.Comment
+	if err := json.Unmarshal(rec.Body.Bytes(), &updated); err != nil {
+		t.Fatal(err)
+	}
+	if updated.Parent != 0 {
+		t.Fatalf("parent=%d want 0", updated.Parent)
+	}
+	if updated.AuthorName != "Patched Author" {
+		t.Fatalf("author_name=%q", updated.AuthorName)
+	}
+	if !strings.HasPrefix(updated.DateGMT, "2020-06-15T12:30:00") {
+		t.Fatalf("date_gmt=%q", updated.DateGMT)
+	}
+	q, args, err := c.DB.Prepare("SELECT comment_author_IP FROM "+c.DB.Comments()+" WHERE comment_ID = %d", commentID)
+	if err != nil {
+		t.Fatal(err)
+	}
+	row, err := c.DB.GetRow(q, args...)
+	if err != nil || row == nil {
+		t.Fatalf("row: %v", err)
+	}
+	if got := strings.TrimSpace(fmt.Sprint(row["comment_author_IP"])); got != "203.0.113.9" {
+		t.Fatalf("author_ip=%q", got)
+	}
+}
+
 func TestCreateCommentRequiresPost(t *testing.T) {
 	c := bootOrSkip(t)
 	t.Cleanup(func() { _ = c.DB.Close() })

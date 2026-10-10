@@ -637,12 +637,13 @@ wp-login.php#language-switcher-post
   api: exported
 
 # P4.45: POST /wp/v2/comments when logged in.
-# P4.64: PUT/PATCH /wp/v2/comments/{id} for moderators.
+# P4.64 / P4.117: PUT/PATCH /wp/v2/comments/{id} for moderators.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-comments-controller.php#update_item
   go: internal/rest/comments_write.go
   status: partial
-  task: P4.64
+  task: P4.117
   api: exported
+  notes: "P4.117 — omit-safe parent/post/author_*; author_ip; date/date_gmt; P4.64 base"
 
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-comments-controller.php
   go: internal/rest/comments_write.go
