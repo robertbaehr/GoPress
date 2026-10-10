@@ -89,6 +89,8 @@ func (e *Env) renderNavigationItems(items []Block) string {
 		switch blockName(item) {
 		case "core/navigation-link":
 			b.WriteString(e.renderNavigationLink(item))
+		case "core/home-link":
+			b.WriteString(e.renderHomeLink(item))
 		case "core/page-list":
 			b.WriteString(e.renderPageList(item))
 		case "core/navigation-submenu":
@@ -104,6 +106,72 @@ func (e *Env) renderNavigationItems(items []Block) string {
 		}
 	}
 	return b.String()
+}
+
+// renderHomeLink renders core/home-link (P5.73) — a nav item that always
+// points at home_url(), with current-menu-item when on the front page.
+func (e *Env) renderHomeLink(block Block) string {
+	e = e.ensure()
+	label, _ := block.Attrs["label"].(string)
+	label = strings.TrimSpace(label)
+	if label == "" {
+		label = "Home"
+	}
+	home := ""
+	if e.HomeURL != nil {
+		home = strings.TrimRight(strings.TrimSpace(e.HomeURL()), "/")
+		if home == "" {
+			home = "/"
+		}
+	} else {
+		home = "/"
+	}
+	isCurrent := e.IsFrontPage != nil && e.IsFrontPage()
+
+	liClass := "wp-block-home-link wp-block-navigation-item"
+	if isCurrent {
+		liClass += " current-menu-item"
+	}
+
+	var b strings.Builder
+	b.WriteString(`<li class="`)
+	b.WriteString(html.EscapeString(liClass))
+	b.WriteString(`"><a class="wp-block-home-link__content wp-block-navigation-item__content" href="`)
+	b.WriteString(html.EscapeString(home))
+	b.WriteString(`" rel="home"`)
+	if opensInNewTab(block.Attrs) {
+		b.WriteString(` target="_blank"`)
+	}
+	if isCurrent {
+		b.WriteString(` aria-current="page"`)
+	}
+	b.WriteString(`>`)
+	b.WriteString(html.EscapeString(label))
+	if desc, _ := block.Attrs["description"].(string); strings.TrimSpace(desc) != "" {
+		b.WriteString(`<span class="wp-block-navigation-item__description">`)
+		b.WriteString(html.EscapeString(desc))
+		b.WriteString(`</span>`)
+	}
+	b.WriteString(`</a></li>`)
+	return b.String()
+}
+
+func opensInNewTab(attrs map[string]any) bool {
+	if attrs == nil {
+		return false
+	}
+	v, ok := attrs["opensInNewTab"]
+	if !ok || v == nil {
+		return false
+	}
+	switch t := v.(type) {
+	case bool:
+		return t
+	case string:
+		return t == "true" || t == "1"
+	default:
+		return false
+	}
 }
 
 func (e *Env) renderNavigationLink(block Block) string {

@@ -2654,6 +2654,21 @@
   api: n/a
   notes: "P5.72 — unit coverage for post-navigation-link polish attrs"
 
+# P5.73: render core/home-link (nav item → home_url).
+- prefix: wp-includes/blocks/home-link.php
+  go: internal/blocks/navigation.go
+  status: partial
+  task: P5.73
+  api: internal
+  notes: "P5.73 — label/opensInNewTab/description; current-menu-item + aria-current on front"
+
+- prefix: wp-includes/blocks/home-link
+  go: internal/blocks/home_link_test.go
+  status: partial
+  task: P5.73
+  api: n/a
+  notes: "P5.73 — unit coverage for home-link; REST block-types metadata"
+
 # P5.70: register more core block type metadata on GET /wp/v2/block-types.
 - prefix: wp-includes/blocks
   go: internal/rest/block_types.go
