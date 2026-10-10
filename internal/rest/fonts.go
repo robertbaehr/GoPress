@@ -146,7 +146,13 @@ func (s *Server) serveFontFamilyItem(w http.ResponseWriter, r *http.Request, c *
 }
 
 func (s *Server) serveFontFaces(w http.ResponseWriter, r *http.Request, c *wp.Context, familyID int64) {
-	if r.Method != http.MethodGet {
+	switch r.Method {
+	case http.MethodGet:
+		// continue
+	case http.MethodPost:
+		s.createFontFace(w, r, c, familyID)
+		return
+	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
@@ -185,12 +191,18 @@ func (s *Server) serveFontFaces(w http.ResponseWriter, r *http.Request, c *wp.Co
 	}
 	total := len(out)
 	setCollectionHeaders(w, r, c, total, 1, 1)
-	w.Header().Set("Allow", "GET")
+	w.Header().Set("Allow", "GET, POST")
 	writeJSON(w, http.StatusOK, out)
 }
 
 func (s *Server) serveFontFaceItem(w http.ResponseWriter, r *http.Request, c *wp.Context, familyID, id int64) {
-	if r.Method != http.MethodGet {
+	switch r.Method {
+	case http.MethodGet:
+		// continue
+	case http.MethodDelete:
+		s.deleteFontFace(w, r, c, familyID, id)
+		return
+	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
@@ -227,7 +239,7 @@ func (s *Server) serveFontFaceItem(w http.ResponseWriter, r *http.Request, c *wp
 		})
 		return
 	}
-	w.Header().Set("Allow", "GET")
+	w.Header().Set("Allow", "GET, DELETE")
 	writeJSON(w, http.StatusOK, face)
 }
 

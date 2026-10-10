@@ -1998,6 +1998,15 @@
   status: partial
   task: P4.36
   api: exported
+  notes: "P4.36 — nested under font-families; GET collection/item"
+
+# P4.76: REST POST/DELETE for font-faces (force delete; URL src stub).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-font-faces-controller.php#write
+  go: internal/rest/fonts_write.go
+  status: partial
+  task: P4.76
+  api: exported
+  notes: "P4.76 — POST create (URL src) + DELETE force=true; duplicate face slug 400"
 
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-font-collections-controller.php
   go: internal/rest/font_collections.go
