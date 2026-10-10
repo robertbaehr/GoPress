@@ -1665,6 +1665,14 @@
   api: internal
   notes: "P5.59 — prefer saved markup; default height 100px; normalize unitless lengths; className"
 
+# P5.60: polish core/separator (opacity classes, tagName, align, className).
+- prefix: wp-includes/blocks/separator
+  go: internal/blocks/separator.go
+  status: partial
+  task: P5.60
+  api: internal
+  notes: "P5.60 — prefer saved markup; has-css-opacity / has-alpha-channel-opacity; tagName hr|div; align; className"
+
 # P5.57: polish core/columns + core/column (synthesize, stack, width, v-align).
 - prefix: wp-includes/blocks/columns
   go: internal/blocks/columns.go

@@ -84,7 +84,7 @@ func TestRenderUnknownUsesInnerHTML(t *testing.T) {
 
 func TestRenderVoidSeparator(t *testing.T) {
 	out := blocks.Render(`<!-- wp:separator {"className":"is-style-wide"} /-->`)
-	if !strings.Contains(out, `class="wp-block-separator is-style-wide"`) {
+	if !strings.Contains(out, `wp-block-separator`) || !strings.Contains(out, `is-style-wide`) || !strings.Contains(out, `has-alpha-channel-opacity`) {
 		t.Fatalf("got %q", out)
 	}
 }
