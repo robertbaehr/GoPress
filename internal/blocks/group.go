@@ -9,17 +9,28 @@ var reGroupTag = regexp.MustCompile(`(?i)wp-block-group\b`)
 
 // renderGroup renders core/group (P5.58).
 // Prefers saved markup; synthesizes a layout wrapper from inner blocks when
-// missing; honors tagName; ensures default flow layout classes on synthesize.
+// missing; honors tagName; applies layout/align polish only on synthesized output
+// so saved markup class order stays WP-parity for the front HTML corpus.
 func (e *Env) renderGroup(block Block) string {
 	e = e.ensure()
 	out := e.renderSaved(block)
+	synthesized := false
 	if strings.TrimSpace(out) == "" || !reGroupTag.MatchString(out) {
 		out = synthesizeGroupBlock(e, block)
+		synthesized = true
 	}
 	if strings.TrimSpace(out) == "" {
 		return ""
 	}
-	return applyGroupAttrs(out, block.Attrs)
+	if synthesized {
+		return applyGroupAttrs(out, block.Attrs)
+	}
+	// Saved markup: only retag when tagName requests a non-div element.
+	tag := groupTagName(block.Attrs)
+	if tag != "div" {
+		out = retagRootElement(out, tag)
+	}
+	return out
 }
 
 func synthesizeGroupBlock(e *Env, block Block) string {
