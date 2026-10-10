@@ -587,6 +587,14 @@
   task: P4.62
   api: exported
 
+# P4.99: /wp/v2/users/me richer fields + self-update.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-users-controller.php#me
+  go: internal/rest/users.go
+  status: partial
+  task: P4.99
+  api: exported
+  notes: "P4.99 — avatar_urls, capabilities, _links, registered_date, POST/PUT/PATCH self-update"
+
 - prefix: wp-includes/style-engine/
   go: internal/blocks/style_engine.go
   status: partial

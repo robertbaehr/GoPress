@@ -10,30 +10,30 @@ import (
 
 // User is a minimal wp/v2 user object (users/me + collection).
 type User struct {
-	ID          int64          `json:"id"`
-	Name        string         `json:"name"`
-	URL         string         `json:"url"`
-	Description string         `json:"description"`
-	Link        string         `json:"link"`
-	Slug        string         `json:"slug"`
-	Username    string         `json:"username,omitempty"`
-	Email       string         `json:"email,omitempty"`
-	Roles       []string       `json:"roles,omitempty"`
-	Meta        []any          `json:"meta,omitempty"`
-	Links       map[string]any `json:"_links,omitempty"`
+	ID                int64             `json:"id"`
+	Name              string            `json:"name"`
+	URL               string            `json:"url"`
+	Description       string            `json:"description"`
+	Link              string            `json:"link"`
+	Slug              string            `json:"slug"`
+	Username          string            `json:"username,omitempty"`
+	Email             string            `json:"email,omitempty"`
+	FirstName         string            `json:"first_name,omitempty"`
+	LastName          string            `json:"last_name,omitempty"`
+	Nickname          string            `json:"nickname,omitempty"`
+	Locale            string            `json:"locale,omitempty"`
+	RegisteredDate    string            `json:"registered_date,omitempty"`
+	Roles             []string          `json:"roles,omitempty"`
+	Capabilities      map[string]bool   `json:"capabilities,omitempty"`
+	ExtraCapabilities map[string]bool   `json:"extra_capabilities,omitempty"`
+	AvatarURLs        map[string]string `json:"avatar_urls,omitempty"`
+	Meta              []any             `json:"meta,omitempty"`
+	Links             map[string]any    `json:"_links,omitempty"`
 }
 
 func (s *Server) serveUsersMe(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	if r.Method != http.MethodGet {
-		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
-			"code":    "rest_no_route",
-			"message": "No route was found matching the URL and request method.",
-			"data":    map[string]any{"status": 405},
-		})
-		return
-	}
-	// WP advertises Allow even on rest_not_logged_in (P10.15 corpus).
-	w.Header().Set("Allow", "GET")
+	// P4.99: WP advertises GET + write methods on /users/me.
+	w.Header().Set("Allow", "GET, POST, PUT, PATCH")
 	if c == nil || c.CurrentUser == nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]any{
 			"code":    "rest_not_logged_in",
@@ -42,31 +42,167 @@ func (s *Server) serveUsersMe(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		})
 		return
 	}
-	writeJSON(w, http.StatusOK, buildCurrentUser(c))
+	switch r.Method {
+	case http.MethodGet:
+		writeJSON(w, http.StatusOK, buildCurrentUser(c))
+	case http.MethodPost, http.MethodPut, http.MethodPatch:
+		s.updateCurrentUser(w, r, c)
+	default:
+		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
+			"code":    "rest_no_route",
+			"message": "No route was found matching the URL and request method.",
+			"data":    map[string]any{"status": 405},
+		})
+	}
 }
 
 func buildCurrentUser(c *wp.Context) User {
 	u := c.CurrentUser
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	slug := u.Nicename
+	if slug == "" {
+		slug = u.Login
+	}
 	desc := ""
+	firstName, lastName, nickname, locale := "", "", "", ""
 	if c.Meta != nil {
 		desc = asString(c.Meta.GetMetadata(wp.MetaUser, u.ID, "description", true))
+		firstName = asString(c.Meta.GetMetadata(wp.MetaUser, u.ID, "first_name", true))
+		lastName = asString(c.Meta.GetMetadata(wp.MetaUser, u.ID, "last_name", true))
+		nickname = asString(c.Meta.GetMetadata(wp.MetaUser, u.ID, "nickname", true))
+		locale = asString(c.Meta.GetMetadata(wp.MetaUser, u.ID, "locale", true))
 	}
 	out := User{
-		ID:          u.ID,
-		Name:        u.DisplayName,
-		URL:         u.URL,
-		Description: desc,
-		Link:        fmt.Sprintf("%s/author/%s/", home, u.Nicename),
-		Slug:        u.Nicename,
-		Username:    u.Login,
-		Email:       u.Email,
-		Meta:        []any{},
+		ID:                u.ID,
+		Name:              u.DisplayName,
+		URL:               u.URL,
+		Description:       desc,
+		Link:              fmt.Sprintf("%s/author/%s/", home, slug),
+		Slug:              slug,
+		Username:          u.Login,
+		Email:             u.Email,
+		FirstName:         firstName,
+		LastName:          lastName,
+		Nickname:          nickname,
+		Locale:            locale,
+		RegisteredDate:    registeredDateISO(u.Registered),
+		AvatarURLs:        gravatarAvatarURLs(u.Email),
+		Capabilities:      copyBoolMap(u.AllCaps),
+		ExtraCapabilities: copyBoolMap(u.Caps),
+		Meta:              []any{},
+		Links:             buildUserMeLinks(home, u.ID),
 	}
 	if len(u.Roles) > 0 {
 		out.Roles = append([]string{}, u.Roles...)
 	}
 	return out
+}
+
+func buildUserMeLinks(home string, id int64) map[string]any {
+	restRoot := strings.TrimRight(home, "/") + "/wp-json/wp/v2"
+	return map[string]any{
+		"self": []map[string]any{{
+			"href":        fmt.Sprintf("%s/users/%d", restRoot, id),
+			"targetHints": map[string]any{"allow": []string{"GET", "POST", "PUT", "PATCH", "DELETE"}},
+		}},
+		"collection": []map[string]any{{
+			"href": restRoot + "/users",
+		}},
+	}
+}
+
+func copyBoolMap(in map[string]bool) map[string]bool {
+	if len(in) == 0 {
+		return map[string]bool{}
+	}
+	out := make(map[string]bool, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
+}
+
+func registeredDateISO(mysql string) string {
+	mysql = strings.TrimSpace(mysql)
+	if mysql == "" {
+		return ""
+	}
+	// wp_users.user_registered is "YYYY-MM-DD HH:MM:SS" UTC → RFC3339-ish.
+	if len(mysql) >= 19 && mysql[10] == ' ' {
+		return mysql[:10] + "T" + mysql[11:19] + "+00:00"
+	}
+	return mysql
+}
+
+// updateCurrentUser handles POST/PUT/PATCH /wp/v2/users/me (P4.99).
+func (s *Server) updateCurrentUser(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	id := c.CurrentUser.ID
+	fields, err := decodeUserWriteFields(r)
+	if err != nil {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_invalid_json",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 400},
+		})
+		return
+	}
+	upd := wp.UserUpdate{ID: id}
+	if v, ok := fields["email"].(string); ok {
+		upd.Email = &v
+	}
+	if v, ok := fields["url"].(string); ok {
+		upd.URL = &v
+	}
+	if v, ok := fields["name"].(string); ok {
+		upd.DisplayName = &v
+	}
+	if v, ok := fields["slug"].(string); ok {
+		upd.Nicename = &v
+	}
+	if v, ok := fields["password"].(string); ok {
+		upd.Pass = &v
+	}
+	if v, ok := fields["description"].(string); ok {
+		upd.Description = &v
+	}
+	if err := c.UpdateUser(upd); err != nil {
+		code := "rest_user_update"
+		status := http.StatusInternalServerError
+		msg := err.Error()
+		if strings.Contains(msg, "email exists") {
+			code, status, msg = "rest_user_invalid_email", http.StatusBadRequest, "Sorry, that email address is already used!"
+		}
+		writeJSON(w, status, map[string]any{
+			"code":    code,
+			"message": msg,
+			"data":    map[string]any{"status": status},
+		})
+		return
+	}
+	// Refresh usermeta fields that UpdateUser may have written.
+	if first, ok := fields["first_name"].(string); ok && c.Meta != nil {
+		_, _, _, _ = c.Meta.UpdateMetadata(wp.MetaUser, id, "first_name", first, "")
+	}
+	if last, ok := fields["last_name"].(string); ok && c.Meta != nil {
+		_, _, _, _ = c.Meta.UpdateMetadata(wp.MetaUser, id, "last_name", last, "")
+	}
+	if nick, ok := fields["nickname"].(string); ok && c.Meta != nil {
+		_, _, _, _ = c.Meta.UpdateMetadata(wp.MetaUser, id, "nickname", nick, "")
+	}
+	u, err := c.GetUserBy("id", id)
+	if err != nil || u == nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_user_update",
+			"message": "updated but reload failed",
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	if c.Roles != nil {
+		_ = c.Roles.InitUser(u, c.Meta)
+	}
+	c.CurrentUser = u
+	writeJSON(w, http.StatusOK, buildCurrentUser(c))
 }
 
 func buildListedUser(c *wp.Context, u *wp.User, canList bool, context string) User {

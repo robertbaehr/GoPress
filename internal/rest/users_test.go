@@ -4,9 +4,11 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/robertbaehr/GoPress/internal/rest"
+	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
 func TestUsersMeRequiresAuth(t *testing.T) {
@@ -50,6 +52,9 @@ func TestUsersMeAdmin(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
 	}
+	if !strings.Contains(rec.Header().Get("Allow"), "POST") {
+		t.Fatalf("Allow=%q", rec.Header().Get("Allow"))
+	}
 	var me rest.User
 	if err := json.Unmarshal(rec.Body.Bytes(), &me); err != nil {
 		t.Fatal(err)
@@ -62,6 +67,55 @@ func TestUsersMeAdmin(t *testing.T) {
 	}
 	if me.Link == "" {
 		t.Fatal("expected link")
+	}
+	if me.Links == nil || me.AvatarURLs == nil || me.AvatarURLs["96"] == "" {
+		t.Fatalf("expected _links/avatar_urls: %+v", me)
+	}
+	if len(me.Capabilities) == 0 || !me.Capabilities["manage_options"] {
+		t.Fatalf("expected capabilities: %+v", me.Capabilities)
+	}
+	if me.RegisteredDate == "" {
+		t.Fatal("expected registered_date")
+	}
+}
+
+func TestUsersMeUpdate(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Skipf("admin unavailable: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("SetAuthCookie: %v", err)
+	}
+	body := `{"name":"Admin Me Updated","description":"me-desc","first_name":"Ada"}`
+	req := httptest.NewRequest(http.MethodPost, "/wp-json/wp/v2/users/me", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var me rest.User
+	if err := json.Unmarshal(rec.Body.Bytes(), &me); err != nil {
+		t.Fatal(err)
+	}
+	if me.Name != "Admin Me Updated" || me.Description != "me-desc" {
+		t.Fatalf("update not reflected: %+v", me)
+	}
+	if me.FirstName != "Ada" {
+		t.Fatalf("first_name=%q", me.FirstName)
+	}
+	// Restore fixture user fields before package teardown (shared MySQL).
+	n, d := "Admin User", ""
+	_ = c.UpdateUser(wp.UserUpdate{ID: user.ID, DisplayName: &n, Description: &d})
+	if c.Meta != nil {
+		_, _, _, _ = c.Meta.UpdateMetadata(wp.MetaUser, user.ID, "first_name", "", "")
 	}
 }
 
