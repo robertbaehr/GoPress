@@ -2290,6 +2290,14 @@
   task: P7.9
   api: n/a
 
+# P7.59: edit-tags.php delete term (row action + action=delete).
+- prefix: wp-admin/edit-tags.php#delete
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.59
+  api: n/a
+  notes: "P7.59 — Delete row action + nonce-checked wp_delete_term"
+
 # P7.58: edit-tags.php add category/tag form + POST add-tag.
 - prefix: wp-admin/edit-tags.php#add-tag
   go: internal/admin/admin.go
@@ -2302,9 +2310,9 @@
 - prefix: wp-admin/edit-tags.php
   go: internal/admin/admin.go
   status: partial
-  task: P7.58
+  task: P7.59
   api: n/a
-  notes: "P7.58 — list + add form (extends P7.29 stub)"
+  notes: "P7.59 — list + add + delete (extends P7.58)"
 
 - prefix: wp-admin/
   go: internal/admin

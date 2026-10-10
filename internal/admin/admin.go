@@ -330,11 +330,11 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	writeAdminPage(w, c, newAdminChrome(c, heading, "edit-php"), b.String())
 }
 
-// serveEditTags is Categories / Tags list + add form (P7.29 / P7.58 / edit-tags.php).
+// serveEditTags is Categories / Tags list + add/delete (P7.29 / P7.58 / P7.59 / edit-tags.php).
 func (h *Handler) serveEditTags(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	_ = r.ParseForm()
 	taxonomy := strings.TrimSpace(r.URL.Query().Get("taxonomy"))
-	if taxonomy == "" && r.Method == http.MethodPost {
-		_ = r.ParseForm()
+	if taxonomy == "" {
 		taxonomy = strings.TrimSpace(r.FormValue("taxonomy"))
 	}
 	if taxonomy == "" {
@@ -356,52 +356,82 @@ func (h *Handler) serveEditTags(w http.ResponseWriter, r *http.Request, c *wp.Co
 		taxonomy = "category"
 	}
 
+	action := strings.TrimSpace(r.FormValue("action"))
+	if action == "" {
+		action = strings.TrimSpace(r.URL.Query().Get("action"))
+	}
 	message := strings.TrimSpace(r.URL.Query().Get("message"))
-	if r.Method == http.MethodPost {
-		_ = r.ParseForm()
-		if r.FormValue("action") == "add-tag" {
-			if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "manage_categories") {
-				http.Error(w, "Forbidden\n", http.StatusForbidden)
-				return
-			}
-			if c.VerifyNonce(r.FormValue("_wpnonce_add-tag"), "add-tag") == 0 {
-				http.Error(w, "Invalid nonce\n", http.StatusForbidden)
-				return
-			}
-			name := strings.TrimSpace(r.FormValue("tag-name"))
-			slug := strings.TrimSpace(r.FormValue("slug"))
-			desc := strings.TrimSpace(r.FormValue("description"))
-			var parent int64
-			if taxonomy == "category" {
-				if p, err := strconv.ParseInt(strings.TrimSpace(r.FormValue("parent")), 10, 64); err == nil && p > 0 {
-					parent = p
-				}
-			}
-			loc := "/wp-admin/edit-tags.php?taxonomy=" + url.QueryEscape(taxonomy)
-			if name == "" {
-				http.Redirect(w, r, loc+"&error=1&message=4", http.StatusFound)
-				return
-			}
-			if slug == "" {
-				slug = wp.SanitizeTitle(name)
-			} else {
-				slug = wp.SanitizeTitle(slug)
-			}
-			if slug == "" {
-				slug = "term"
-			}
-			slug, err := uniqueAdminTermSlug(c, slug)
-			if err != nil {
-				http.Error(w, "terms: "+err.Error()+"\n", http.StatusInternalServerError)
-				return
-			}
-			if _, err := insertAdminTerm(c, taxonomy, name, slug, desc, parent); err != nil {
-				http.Redirect(w, r, loc+"&error=1&message=4", http.StatusFound)
-				return
-			}
-			http.Redirect(w, r, loc+"&message=1", http.StatusFound)
+	locBase := "/wp-admin/edit-tags.php?taxonomy=" + url.QueryEscape(taxonomy)
+
+	// P7.59: delete a single term (action=delete&tag_ID=…).
+	if action == "delete" {
+		if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "manage_categories") {
+			http.Error(w, "Forbidden\n", http.StatusForbidden)
 			return
 		}
+		tagID, _ := strconv.ParseInt(strings.TrimSpace(firstNonEmpty(r.FormValue("tag_ID"), r.URL.Query().Get("tag_ID"))), 10, 64)
+		if tagID <= 0 {
+			http.Redirect(w, r, locBase, http.StatusFound)
+			return
+		}
+		nonce := firstNonEmpty(r.FormValue("_wpnonce"), r.URL.Query().Get("_wpnonce"))
+		if c.VerifyNonce(nonce, "delete-tag_"+strconv.FormatInt(tagID, 10)) == 0 {
+			http.Error(w, "Invalid nonce\n", http.StatusForbidden)
+			return
+		}
+		if taxonomy == "category" && isDefaultAdminCategory(c, tagID) {
+			http.Error(w, "You cannot delete the default category.\n", http.StatusForbidden)
+			return
+		}
+		if err := deleteAdminTerm(c, taxonomy, tagID); err != nil {
+			http.Error(w, "terms: "+err.Error()+"\n", http.StatusInternalServerError)
+			return
+		}
+		http.Redirect(w, r, locBase+"&message=2", http.StatusFound)
+		return
+	}
+
+	if r.Method == http.MethodPost && action == "add-tag" {
+		if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "manage_categories") {
+			http.Error(w, "Forbidden\n", http.StatusForbidden)
+			return
+		}
+		if c.VerifyNonce(r.FormValue("_wpnonce_add-tag"), "add-tag") == 0 {
+			http.Error(w, "Invalid nonce\n", http.StatusForbidden)
+			return
+		}
+		name := strings.TrimSpace(r.FormValue("tag-name"))
+		slug := strings.TrimSpace(r.FormValue("slug"))
+		desc := strings.TrimSpace(r.FormValue("description"))
+		var parent int64
+		if taxonomy == "category" {
+			if p, err := strconv.ParseInt(strings.TrimSpace(r.FormValue("parent")), 10, 64); err == nil && p > 0 {
+				parent = p
+			}
+		}
+		if name == "" {
+			http.Redirect(w, r, locBase+"&error=1&message=4", http.StatusFound)
+			return
+		}
+		if slug == "" {
+			slug = wp.SanitizeTitle(name)
+		} else {
+			slug = wp.SanitizeTitle(slug)
+		}
+		if slug == "" {
+			slug = "term"
+		}
+		slug, err := uniqueAdminTermSlug(c, slug)
+		if err != nil {
+			http.Error(w, "terms: "+err.Error()+"\n", http.StatusInternalServerError)
+			return
+		}
+		if _, err := insertAdminTerm(c, taxonomy, name, slug, desc, parent); err != nil {
+			http.Redirect(w, r, locBase+"&error=1&message=4", http.StatusFound)
+			return
+		}
+		http.Redirect(w, r, locBase+"&message=1", http.StatusFound)
+		return
 	}
 
 	terms, err := listAdminTerms(c, taxonomy, 50)
@@ -425,6 +455,14 @@ func (h *Handler) serveEditTags(w http.ResponseWriter, r *http.Request, c *wp.Co
 			b.WriteString("Tag added.")
 		} else {
 			b.WriteString("Category added.")
+		}
+		b.WriteString("</p></div>\n")
+	} else if message == "2" {
+		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p>")
+		if taxonomy == "post_tag" {
+			b.WriteString("Tag deleted.")
+		} else {
+			b.WriteString("Category deleted.")
 		}
 		b.WriteString("</p></div>\n")
 	} else if r.URL.Query().Get("error") != "" {
@@ -490,13 +528,25 @@ func (h *Handler) serveEditTags(w http.ResponseWriter, r *http.Request, c *wp.Co
 	if len(terms) == 0 {
 		b.WriteString("<tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"4\">No terms found.</td></tr>\n")
 	}
+	canDelete := c != nil && c.CurrentUser != nil && c.UserCan(c.CurrentUser, "manage_categories")
 	for _, t := range terms {
 		b.WriteString("<tr id=\"tag-")
 		b.WriteString(strconv.FormatInt(t.ID, 10))
 		b.WriteString("\">")
 		b.WriteString("<td class=\"name column-name has-row-actions column-primary\" data-colname=\"Name\"><strong>")
 		b.WriteString(html.EscapeString(t.Name))
-		b.WriteString("</strong></td>")
+		b.WriteString("</strong>")
+		if canDelete && !(taxonomy == "category" && isDefaultAdminCategory(c, t.ID)) {
+			delNonce := ""
+			if c != nil {
+				delNonce = c.CreateNonce("delete-tag_" + strconv.FormatInt(t.ID, 10))
+			}
+			delURL := locBase + "&action=delete&tag_ID=" + strconv.FormatInt(t.ID, 10) + "&_wpnonce=" + url.QueryEscape(delNonce)
+			b.WriteString("<div class=\"row-actions\"><span class=\"delete\"><a href=\"")
+			b.WriteString(html.EscapeString(delURL))
+			b.WriteString("\" class=\"delete-tag aria-button-if-js\">Delete</a></span></div>")
+		}
+		b.WriteString("</td>")
 		b.WriteString("<td class=\"description column-description\" data-colname=\"Description\">")
 		b.WriteString(html.EscapeString(t.Description))
 		b.WriteString("</td>")
@@ -551,6 +601,76 @@ func insertAdminTerm(c *wp.Context, taxonomy, name, slug, description string, pa
 		return 0, err
 	}
 	return termID, nil
+}
+
+func deleteAdminTerm(c *wp.Context, taxonomy string, id int64) error {
+	if c == nil || c.DB == nil {
+		return fmt.Errorf("nil DB")
+	}
+	tq, targs, err := c.DB.Prepare(
+		"SELECT term_taxonomy_id FROM "+c.DB.TermTaxonomy()+" WHERE term_id = %d AND taxonomy = %s LIMIT 1",
+		id, taxonomy,
+	)
+	if err != nil {
+		return err
+	}
+	row, err := c.DB.GetRow(tq, targs...)
+	if err != nil {
+		return err
+	}
+	if row == nil {
+		return fmt.Errorf("term taxonomy missing")
+	}
+	ttID := asInt64(row["term_taxonomy_id"])
+	if ttID > 0 {
+		dq, dargs, err := c.DB.Prepare(
+			"DELETE FROM "+c.DB.TermRelationships()+" WHERE term_taxonomy_id = %d",
+			ttID,
+		)
+		if err != nil {
+			return err
+		}
+		if _, err := c.DB.Exec(dq, dargs...); err != nil {
+			return err
+		}
+	}
+	dq, dargs, err := c.DB.Prepare(
+		"DELETE FROM "+c.DB.TermTaxonomy()+" WHERE term_id = %d AND taxonomy = %s",
+		id, taxonomy,
+	)
+	if err != nil {
+		return err
+	}
+	if _, err := c.DB.Exec(dq, dargs...); err != nil {
+		return err
+	}
+	dq, dargs, err = c.DB.Prepare(
+		"DELETE FROM "+c.DB.Terms()+" WHERE term_id = %d",
+		id,
+	)
+	if err != nil {
+		return err
+	}
+	_, err = c.DB.Exec(dq, dargs...)
+	return err
+}
+
+func isDefaultAdminCategory(c *wp.Context, id int64) bool {
+	if c == nil || c.Options == nil || id <= 0 {
+		return false
+	}
+	raw := strings.TrimSpace(fmt.Sprint(c.Options.GetOption("default_category", "1")))
+	defID, _ := strconv.ParseInt(raw, 10, 64)
+	return defID == id
+}
+
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if strings.TrimSpace(v) != "" {
+			return v
+		}
+	}
+	return ""
 }
 
 func uniqueAdminTermSlug(c *wp.Context, base string) (string, error) {
