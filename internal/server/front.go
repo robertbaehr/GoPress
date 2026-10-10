@@ -1400,20 +1400,33 @@ func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context
 
 func (f *Front) renderSingularShim(w http.ResponseWriter, c *wp.Context, post *singularPost) {
 	blogname := optionString(c, "blogname", "GoPress")
-	content := post.Content
-	if post.Type == "attachment" && content == "" {
-		if url := wp.GetAttachmentURL(c, post.ID); url != "" {
-			content = `<p class="attachment"><a href="` + html.EscapeString(url) + `">` +
-				html.EscapeString(post.Title) + `</a></p>`
+	wpPost := &wp.Post{ID: post.ID, Title: post.Title, Content: post.Content, Type: post.Type, Name: post.Name, Password: post.Password}
+	passwordRequired := wp.PostPasswordRequired(c, c.Req, wpPost)
+
+	var safeContent string
+	if passwordRequired {
+		safeContent = wp.GetThePasswordForm(c, wpPost, "")
+	} else {
+		content := post.Content
+		if post.Type == "attachment" && content == "" {
+			if url := wp.GetAttachmentURL(c, post.ID); url != "" {
+				content = `<p class="attachment"><a href="` + html.EscapeString(url) + `">` +
+					html.EscapeString(post.Title) + `</a></p>`
+			}
 		}
+		// the_content: blocks → shortcodes → texturize (P5.11).
+		content = wp.TheContent(c, content)
+		safeContent = wp.ProcessInteractivityHTML(wp.KsesPost(content))
 	}
-	// the_content: blocks → shortcodes → texturize (P5.11).
-	content = wp.TheContent(c, content)
-	safeContent := wp.ProcessInteractivityHTML(wp.KsesPost(content))
 
 	bodyClass := "singular"
 	if post.Type == "attachment" {
 		bodyClass = "singular attachment"
+	}
+	if passwordRequired {
+		bodyClass += " post-password-required"
+	} else if strings.TrimSpace(post.Password) != "" {
+		bodyClass += " post-password-protected"
 	}
 
 	var b strings.Builder
@@ -1434,7 +1447,7 @@ func (f *Front) renderSingularShim(w http.ResponseWriter, c *wp.Context, post *s
 	b.WriteString("<h1 class=\"entry-title\">")
 	b.WriteString(html.EscapeString(post.Title))
 	b.WriteString("</h1>\n")
-	if post.FeaturedImageURL != "" {
+	if !passwordRequired && post.FeaturedImageURL != "" {
 		b.WriteString("<figure class=\"post-thumbnail\">\n")
 		b.WriteString(`<img src="`)
 		b.WriteString(html.EscapeString(post.FeaturedImageURL))
@@ -1446,7 +1459,7 @@ func (f *Front) renderSingularShim(w http.ResponseWriter, c *wp.Context, post *s
 	b.WriteString("<div class=\"entry-content\">\n")
 	b.WriteString(safeContent)
 	b.WriteString("\n</div>\n</article>\n")
-	if post.Type == "post" || post.Type == "page" {
+	if !passwordRequired && (post.Type == "post" || post.Type == "page") {
 		f.writeCommentsSection(&b, c, post)
 	}
 	b.WriteString("</body>\n</html>\n")
@@ -2490,6 +2503,7 @@ type singularPost struct {
 	Name             string
 	Status           string
 	Date             string
+	Password         string
 	FeaturedImageURL string
 	FeaturedImageAlt string
 }
@@ -2552,6 +2566,7 @@ func singularFromQuery(c *wp.Context, args wp.QueryArgs) (*singularPost, error) 
 		Name:             p.Name,
 		Status:           p.Status,
 		Date:             p.Date,
+		Password:         p.Password,
 		FeaturedImageURL: thumbURL,
 		FeaturedImageAlt: alt,
 	}, nil

@@ -581,3 +581,62 @@ func TestConfirmAdminEmailCorrectRedirect(t *testing.T) {
 		t.Fatalf("Location=%q", loc)
 	}
 }
+
+func TestPostPassSetsCookieAndRedirects(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	form := url.Values{}
+	form.Set("post_password", "secret")
+	form.Set("redirect_to", "http://127.0.0.1:8081/?p=1")
+	req := httptest.NewRequest(http.MethodPost, "/wp-login.php?action=postpass", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	if loc := rec.Header().Get("Location"); loc != "http://127.0.0.1:8081/?p=1" {
+		t.Fatalf("Location=%q", loc)
+	}
+	wantName := "wp-postpass_" + c.CookieHash()
+	found := false
+	for _, ck := range rec.Result().Cookies() {
+		if ck.Name == wantName {
+			found = true
+			if !strings.HasPrefix(ck.Value, "$P$") {
+				t.Fatalf("cookie value=%q", ck.Value)
+			}
+			if ck.Path != "/" {
+				t.Fatalf("path=%q", ck.Path)
+			}
+		}
+	}
+	if !found {
+		t.Fatalf("missing %s cookie in %#v", wantName, rec.Result().Cookies())
+	}
+}
+
+func TestPostPassMissingPasswordStillRedirects(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	form := url.Values{}
+	form.Set("redirect_to", "/sample-page/")
+	req := httptest.NewRequest(http.MethodPost, "/wp-login.php?action=postpass", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	if len(rec.Result().Cookies()) != 0 {
+		for _, ck := range rec.Result().Cookies() {
+			if strings.HasPrefix(ck.Name, "wp-postpass_") {
+				t.Fatalf("should not set postpass cookie: %#v", ck)
+			}
+		}
+	}
+}
