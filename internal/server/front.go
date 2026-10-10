@@ -4014,16 +4014,23 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			}
 			return out
 		},
-		ListTagCloud: func() []blocks.TagCloudItem {
+		ListTagCloud: func(taxonomy string, number int) []blocks.TagCloudItem {
 			if c == nil || c.DB == nil {
 				return nil
+			}
+			taxonomy = strings.TrimSpace(taxonomy)
+			if taxonomy == "" {
+				taxonomy = "post_tag"
+			}
+			if number <= 0 {
+				number = 45
 			}
 			home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 			q, args, err := c.DB.Prepare(
 				"SELECT t.name, t.slug, tt.count FROM "+c.DB.Terms()+" t "+
 					"INNER JOIN "+c.DB.TermTaxonomy()+" tt ON t.term_id = tt.term_id "+
 					"WHERE tt.taxonomy = %s AND tt.count > 0 ORDER BY tt.count DESC, t.name ASC LIMIT %d",
-				"post_tag", 45,
+				taxonomy, number,
 			)
 			if err != nil {
 				return nil
@@ -4032,12 +4039,16 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			if err != nil {
 				return nil
 			}
+			basePath := "/tag/"
+			if taxonomy == "category" {
+				basePath = "/category/"
+			}
 			out := make([]blocks.TagCloudItem, 0, len(rows))
 			for _, row := range rows {
 				slug := rowStringDB(row["slug"])
 				out = append(out, blocks.TagCloudItem{
 					Name:  rowStringDB(row["name"]),
-					URL:   home + "/tag/" + slug + "/",
+					URL:   home + basePath + slug + "/",
 					Count: int(rowInt64DB(row["count"])),
 				})
 			}

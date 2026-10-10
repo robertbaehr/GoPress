@@ -102,7 +102,10 @@ func TestRenderLatestCommentsBlock(t *testing.T) {
 
 func TestRenderTagCloudBlock(t *testing.T) {
 	env := &blocks.Env{
-		ListTagCloud: func() []blocks.TagCloudItem {
+		ListTagCloud: func(taxonomy string, number int) []blocks.TagCloudItem {
+			if taxonomy != "post_tag" {
+				t.Fatalf("taxonomy=%q", taxonomy)
+			}
 			return []blocks.TagCloudItem{{Name: "fixture-tag", URL: "/tag/fixture-tag/", Count: 2}}
 		},
 	}
@@ -112,5 +115,30 @@ func TestRenderTagCloudBlock(t *testing.T) {
 	}
 	if !strings.Contains(out, `fixture-tag`) || !strings.Contains(out, `(2)`) {
 		t.Fatalf("missing tag: %q", out)
+	}
+}
+
+func TestRenderTagCloudNumberAndTaxonomy(t *testing.T) {
+	var gotTax string
+	var gotNum int
+	env := &blocks.Env{
+		ListTagCloud: func(taxonomy string, number int) []blocks.TagCloudItem {
+			gotTax, gotNum = taxonomy, number
+			return []blocks.TagCloudItem{
+				{Name: "a", URL: "/category/a/", Count: 3},
+				{Name: "b", URL: "/category/b/", Count: 2},
+				{Name: "c", URL: "/category/c/", Count: 1},
+			}
+		},
+	}
+	out := blocks.RenderWith(env, `<!-- wp:tag-cloud {"taxonomy":"category","numberOfTags":2,"showTagCounts":true} /-->`)
+	if gotTax != "category" || gotNum != 2 {
+		t.Fatalf("ListTagCloud args taxonomy=%q number=%d", gotTax, gotNum)
+	}
+	if strings.Contains(out, "category/c") || strings.Contains(out, ">c ") {
+		t.Fatalf("expected numberOfTags=2 to truncate: %q", out)
+	}
+	if !strings.Contains(out, `>a (3)<`) || !strings.Contains(out, `>b (2)<`) {
+		t.Fatalf("expected first two terms: %q", out)
 	}
 }

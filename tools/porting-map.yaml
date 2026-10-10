@@ -4889,3 +4889,18 @@
   task: P10.73
   api: n/a
   notes: "P10.73 — STATUS refresh after categories, sticky write/filter, safe_redirect, title_rss, erase request"
+
+# P5.82: core/tag-cloud numberOfTags + taxonomy.
+- prefix: wp-includes/blocks/tag-cloud.php
+  go: internal/blocks/widget_blocks.go
+  status: partial
+  task: P5.82
+  api: internal
+  notes: "P5.82 — showTagCounts + numberOfTags + taxonomy (post_tag/category URLs)"
+
+- prefix: wp-includes/blocks/tag-cloud.php#numberOfTags
+  go: internal/server/front.go
+  status: partial
+  task: P5.82
+  api: n/a
+  notes: "P5.82 — ListTagCloud(taxonomy, number) query LIMIT"
