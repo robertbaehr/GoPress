@@ -113,26 +113,68 @@ func (f *Front) renderHome(w http.ResponseWriter, c *wp.Context) {
 // renderBlockTemplate parses and renders a block theme template document.
 func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, template string) {
 	blogname := optionString(c, "blogname", "GoPress")
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	stylesheet := activeStylesheet(c)
 	body := blocks.RenderWith(blockRenderEnv(c), template)
 	safe := wp.KsesPost(body)
 
+	bodyClasses := "home blog wp-embed-responsive"
+	if stylesheet != "" {
+		bodyClasses += " wp-theme-" + stylesheet
+	}
+	bodyClasses = wp.BodyClassWithAdminBar(c, bodyClasses)
+
 	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
+	b.WriteString("<meta charset=\"UTF-8\" />\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
+	b.WriteString("<meta name='robots' content='max-image-preview:large' />\n")
 	b.WriteString("<title>")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString("</title>\n")
+	if home != "" {
+		b.WriteString("<link rel=\"alternate\" type=\"application/rss+xml\" title=\"")
+		b.WriteString(html.EscapeString(blogname))
+		b.WriteString(" &raquo; Feed\" href=\"")
+		b.WriteString(html.EscapeString(home + "/feed/"))
+		b.WriteString("\" />\n")
+		b.WriteString("<link rel=\"alternate\" type=\"application/rss+xml\" title=\"")
+		b.WriteString(html.EscapeString(blogname))
+		b.WriteString(" &raquo; Comments Feed\" href=\"")
+		b.WriteString(html.EscapeString(home + "/comments/feed/"))
+		b.WriteString("\" />\n")
+		b.WriteString("<link rel=\"https://api.w.org/\" href=\"")
+		b.WriteString(html.EscapeString(home + "/wp-json/"))
+		b.WriteString("\" />\n")
+		b.WriteString("<link rel=\"stylesheet\" id=\"wp-block-library-css\" href=\"")
+		b.WriteString(html.EscapeString(home + "/wp-includes/css/dist/block-library/style.min.css"))
+		b.WriteString("\" media=\"all\" />\n")
+		b.WriteString("<link rel=\"stylesheet\" id=\"global-styles-inline-css\" href=\"")
+		b.WriteString(html.EscapeString(home + "/wp-includes/css/dist/block-library/theme.min.css"))
+		b.WriteString("\" media=\"all\" />\n")
+	}
 	b.WriteString(wp.EmojiHeadHTML()) // P3.12: wpemoji print scripts skipped
 	b.WriteString("</head>\n<body class=\"")
-	b.WriteString(html.EscapeString(wp.BodyClassWithAdminBar(c, "wp-template")))
+	b.WriteString(html.EscapeString(bodyClasses))
 	b.WriteString("\">\n")
 	b.WriteString(wp.AdminBarHTML(c))
+	b.WriteString("<a class=\"skip-link screen-reader-text\" href=\"#wp--skip-link--target\">Skip to content</a>")
+	b.WriteString("<div class=\"wp-site-blocks\">")
 	b.WriteString(safe)
-	b.WriteString("\n</body>\n</html>\n")
+	b.WriteString("</div>\n")
+	b.WriteString("</body>\n</html>\n")
 
 	setFrontAPILink(w, c)
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(b.String()))
+}
+
+func activeStylesheet(c *wp.Context) string {
+	if c != nil && c.Theme != nil && c.Theme.Theme != "" {
+		return c.Theme.Theme
+	}
+	return optionString(c, "stylesheet", optionString(c, "template", "twentytwentyfive"))
 }
 
 func (f *Front) renderHomeShim(w http.ResponseWriter, c *wp.Context) {

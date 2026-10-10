@@ -28,6 +28,9 @@ var (
 	headerBlockTypes  = regexp.MustCompile(`(?mi)^\s*\*\s*Block Types:\s*(.+?)\s*$`)
 	headerInserter    = regexp.MustCompile(`(?mi)^\s*\*\s*Inserter:\s*(.+?)\s*$`)
 	phpTagStrip       = regexp.MustCompile(`(?s)<\?(?:php|=)?.*?\?>`)
+	// Common i18n echo forms in theme patterns (P5.16): keep the source string.
+	phpEscHTMLEre    = regexp.MustCompile(`<\?php\s+(?:echo\s+)?esc_html_e\s*\(\s*'([^']*)'\s*,\s*'[^']*'\s*\)\s*;\s*\?>`)
+	phpEscHTMLEchoRe = regexp.MustCompile(`<\?php\s+echo\s+esc_html__\s*\(\s*'([^']*)'\s*,\s*'[^']*'\s*\)\s*;\s*\?>`)
 )
 
 // LoadThemePatterns scans wp-content/themes/{stylesheet}/patterns/*.php.
@@ -100,6 +103,10 @@ func extractPatternContent(raw string) string {
 	if idx >= 0 {
 		body = raw[idx+2:]
 	}
+	// Expand common esc_html_e / esc_html__ calls to their English source strings
+	// so TT5 headings like "Blog" survive without a PHP runtime (P5.16).
+	body = phpEscHTMLEre.ReplaceAllString(body, "$1")
+	body = phpEscHTMLEchoRe.ReplaceAllString(body, "$1")
 	// Strip remaining inline PHP (theme patterns often echo URLs/strings).
 	body = phpTagStrip.ReplaceAllString(body, "")
 	return strings.TrimSpace(body)
