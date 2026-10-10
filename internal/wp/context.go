@@ -61,6 +61,9 @@ type Context struct {
 	// Patterns is the block pattern registry (P5.9).
 	Patterns *PatternRegistry
 
+	// Shortcodes is the shortcode tag registry (P2.11).
+	Shortcodes *Shortcodes
+
 	// Mailer records wp_mail sends (P3.9).
 	Mailer *Mailer
 
@@ -117,8 +120,9 @@ func (c *Context) ForRequest(w http.ResponseWriter, r *http.Request) *Context {
 		Users:    c.Users,
 		Roles:    c.Roles,
 		Theme:    c.Theme,
-		Patterns: c.Patterns,
-		Mailer:   c.Mailer,
+		Patterns:   c.Patterns,
+		Shortcodes: c.Shortcodes,
+		Mailer:     c.Mailer,
 		Req:      r,
 		Res:      w,
 		Scope:    NewRequestScope(),

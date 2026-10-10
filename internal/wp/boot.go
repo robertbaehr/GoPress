@@ -57,5 +57,9 @@ func Boot(ctx context.Context, cfg *config.Config) (*Context, error) {
 	c.Patterns = NewPatternRegistry()
 	_ = LoadPatterns(c)
 
+	// Shortcodes: gallery, caption, embed (P2.11).
+	c.Shortcodes = NewShortcodes()
+	RegisterDefaultShortcodes(c.Shortcodes)
+
 	return c, nil
 }
