@@ -581,6 +581,19 @@
   task: P3.34
   api: n/a
 
+# P3.35: 404 block template always includes header/footer template parts.
+- prefix: wp-content/themes/twentytwentyfive/templates/404.html
+  go: internal/server/front.go
+  status: partial
+  task: P3.35
+  api: n/a
+
+- prefix: wp-includes/template-loader.php#404
+  go: internal/server/front.go
+  status: partial
+  task: P3.35
+  api: n/a
+
 # P6.12: typed login error messages (invalid_username / incorrect_password / empty).
 - prefix: wp-login.php#errors
   go: internal/login/login.go

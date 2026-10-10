@@ -2323,11 +2323,61 @@ func (f *Front) tryCanonicalPostRedirect(w http.ResponseWriter, r *http.Request,
 
 func (f *Front) render404(w http.ResponseWriter, c *wp.Context) {
 	// P3.16: prefer block theme templates/404.html when present.
+	// P3.35: ensure header/footer template parts wrap the 404 content.
 	if tpl, ok := wp.ResolveBlockTemplate(c, "404"); ok && strings.TrimSpace(tpl) != "" {
-		f.render404BlockTemplate(w, c, tpl)
+		f.render404BlockTemplate(w, c, Ensure404TemplateParts(tpl))
+		return
+	}
+	// Fall back: still wrap shim content with theme header/footer parts when available.
+	if wrapped, ok := wrap404ShimWithParts(c); ok {
+		f.render404BlockTemplate(w, c, wrapped)
 		return
 	}
 	f.render404Shim(w, c)
+}
+
+// Ensure404TemplateParts prepends/appends core/template-part header and footer
+// blocks when the resolved 404 template omits them (P3.35).
+func Ensure404TemplateParts(template string) string {
+	tpl := strings.TrimSpace(template)
+	if tpl == "" {
+		return `<!-- wp:template-part {"slug":"header"} /-->` + "\n\n" +
+			`<!-- wp:paragraph --><p>Page not found</p><!-- /wp:paragraph -->` + "\n\n" +
+			`<!-- wp:template-part {"slug":"footer"} /-->`
+	}
+	hasHeader := strings.Contains(tpl, `"slug":"header"`) || strings.Contains(tpl, `"slug": "header"`)
+	hasFooter := strings.Contains(tpl, `"slug":"footer"`) || strings.Contains(tpl, `"slug": "footer"`)
+	if hasHeader && hasFooter {
+		return tpl
+	}
+	var b strings.Builder
+	if !hasHeader {
+		b.WriteString(`<!-- wp:template-part {"slug":"header"} /-->`)
+		b.WriteString("\n\n")
+	}
+	b.WriteString(tpl)
+	if !hasFooter {
+		b.WriteString("\n\n")
+		b.WriteString(`<!-- wp:template-part {"slug":"footer"} /-->`)
+	}
+	return b.String()
+}
+
+// wrap404ShimWithParts builds a minimal 404 block document using theme parts.
+func wrap404ShimWithParts(c *wp.Context) (string, bool) {
+	if c == nil {
+		return "", false
+	}
+	_, hasHeader := wp.ResolveTemplatePart(c, "header")
+	_, hasFooter := wp.ResolveTemplatePart(c, "footer")
+	if !hasHeader && !hasFooter {
+		return "", false
+	}
+	return Ensure404TemplateParts(
+		`<!-- wp:group {"tagName":"main","layout":{"type":"constrained"}} -->` +
+			`<main class="wp-block-group"><!-- wp:heading {"level":1} --><h1 class="wp-block-heading">Page not found</h1><!-- /wp:heading -->` +
+			`<!-- wp:paragraph --><p>The requested content could not be found.</p><!-- /wp:paragraph --></main><!-- /wp:group -->`,
+	), true
 }
 
 func (f *Front) render404BlockTemplate(w http.ResponseWriter, c *wp.Context, template string) {

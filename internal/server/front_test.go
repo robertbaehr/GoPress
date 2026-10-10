@@ -174,6 +174,28 @@ func TestFrontSingular404(t *testing.T) {
 	if !strings.Contains(body, "wp-site-blocks") {
 		t.Fatalf("expected block theme 404 wrapper: %q", body)
 	}
+	// P3.35: 404 must include header and footer template parts.
+	if !strings.Contains(body, `<header class="wp-block-template-part"`) {
+		t.Fatalf("expected header template-part on 404: %q", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, `<footer class="wp-block-template-part"`) {
+		t.Fatalf("expected footer template-part on 404: %q", body[:min(600, len(body))])
+	}
+}
+
+func TestEnsure404TemplateParts(t *testing.T) {
+	bare := `<!-- wp:paragraph --><p>oops</p><!-- /wp:paragraph -->`
+	got := server.Ensure404TemplateParts(bare)
+	if !strings.Contains(got, `"slug":"header"`) || !strings.Contains(got, `"slug":"footer"`) {
+		t.Fatalf("expected header/footer injection: %q", got)
+	}
+	if !strings.Contains(got, "oops") {
+		t.Fatalf("expected original content preserved: %q", got)
+	}
+	full := `<!-- wp:template-part {"slug":"header"} /--><!-- wp:paragraph --><p>x</p><!-- /wp:paragraph --><!-- wp:template-part {"slug":"footer"} /-->`
+	if server.Ensure404TemplateParts(full) != full {
+		t.Fatalf("should leave complete template alone")
+	}
 }
 
 func TestFrontAttachmentByQueryID(t *testing.T) {
