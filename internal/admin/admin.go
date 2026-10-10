@@ -73,12 +73,12 @@ func (h *Handler) serveDashboard(w http.ResponseWriter, r *http.Request, c *wp.C
 <script>var heartbeatSettings = {"nonce":"%s"};</script>
 </head>
 <body class="wp-admin">
-<h1>Dashboard</h1>
+%s<h1>Dashboard</h1>
 <p>%s</p>
 <p>GoPress admin stub (P6.2) — full screens land in P7.</p>
 </body>
 </html>
-`, html.EscapeString(blogname), html.EscapeString(restNonce), html.EscapeString(hbNonce), html.EscapeString(blogname)))
+`, html.EscapeString(blogname), html.EscapeString(restNonce), html.EscapeString(hbNonce), adminNoticesHTML(c), html.EscapeString(blogname)))
 }
 
 func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -224,6 +224,13 @@ func writeHTML(w http.ResponseWriter, status int, body string) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(status)
 	_, _ = w.Write([]byte(body))
+}
+
+func adminNoticesHTML(c *wp.Context) string {
+	if c == nil {
+		return ""
+	}
+	return c.CaptureAdminNotices()
 }
 
 func optionString(c *wp.Context, name, fallback string) string {

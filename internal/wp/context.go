@@ -7,6 +7,7 @@ package wp
 import (
 	"context"
 	"net/http"
+	"strings"
 	"sync"
 
 	"github.com/robertbaehr/GoPress/internal/config"
@@ -239,3 +240,23 @@ type scopeError string
 func (e scopeError) Error() string { return string(e) }
 
 const errNilScope = scopeError("wp: nil RequestScope")
+
+// AdminNotice appends HTML emitted during admin_notices (into Hooks capture).
+func (c *Context) AdminNotice(html string) {
+	if c == nil || c.Hooks == nil {
+		return
+	}
+	c.Hooks.WriteNotice(html)
+}
+
+// CaptureAdminNotices runs the admin_notices action and returns buffered HTML.
+func (c *Context) CaptureAdminNotices() string {
+	if c == nil || c.Hooks == nil {
+		return ""
+	}
+	var buf strings.Builder
+	c.Hooks.BeginNoticeCapture(&buf)
+	defer c.Hooks.EndNoticeCapture()
+	c.Hooks.DoAction("admin_notices")
+	return buf.String()
+}
