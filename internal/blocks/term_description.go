@@ -5,8 +5,10 @@ import (
 	"strings"
 )
 
-// renderTermDescription renders core/term-description (P5.76).
+// renderTermDescription renders core/term-description (P5.76 / P5.95).
 // Uses TermContext when set (term archives / bindings); otherwise empty.
+// P5.95: className, textColor/backgroundColor, custom style colors like
+// get_block_wrapper_attributes.
 func (e *Env) renderTermDescription(block Block) string {
 	e = e.ensure()
 	desc := ""
@@ -26,6 +28,21 @@ func (e *Env) renderTermDescription(block Block) string {
 	}
 	if hasLinkColorAttr(block.Attrs) {
 		classes = append(classes, "has-link-color")
+	}
+	if tc := strings.TrimSpace(attrString(block.Attrs, "textColor")); tc != "" {
+		classes = append(classes, "has-text-color", "has-"+tc+"-color")
+	}
+	if bg := strings.TrimSpace(attrString(block.Attrs, "backgroundColor")); bg != "" {
+		classes = append(classes, "has-background", "has-"+bg+"-background-color")
+	}
+	if hasCustomTextColor(block.Attrs) {
+		classes = append(classes, "has-text-color")
+	}
+	if hasCustomBackgroundColor(block.Attrs) {
+		classes = append(classes, "has-background")
+	}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		classes = append(classes, cn)
 	}
 
 	return `<div class="` + html.EscapeString(strings.Join(classes, " ")) + `">` + desc + `</div>`
@@ -52,5 +69,31 @@ func hasLinkColorAttr(attrs map[string]any) bool {
 		return false
 	}
 	_, ok := color["text"]
+	return ok
+}
+
+func hasCustomTextColor(attrs map[string]any) bool {
+	style, _ := attrs["style"].(map[string]any)
+	if style == nil {
+		return false
+	}
+	color, _ := style["color"].(map[string]any)
+	if color == nil {
+		return false
+	}
+	_, ok := color["text"]
+	return ok
+}
+
+func hasCustomBackgroundColor(attrs map[string]any) bool {
+	style, _ := attrs["style"].(map[string]any)
+	if style == nil {
+		return false
+	}
+	color, _ := style["color"].(map[string]any)
+	if color == nil {
+		return false
+	}
+	_, ok := color["background"]
 	return ok
 }

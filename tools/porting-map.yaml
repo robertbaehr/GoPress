@@ -3429,19 +3429,20 @@ wp-login.php#language-switcher-post
   notes: "P5.72 — unit coverage for post-navigation-link polish attrs"
 
 # P5.76: render core/term-description on term archives.
+# P5.95: deepen wrapper className / textColor / backgroundColor / custom colors.
 - prefix: wp-includes/blocks/term-description.php
   go: internal/blocks/term_description.go
   status: partial
-  task: P5.76
+  task: P5.95
   api: internal
-  notes: "P5.76 — TermContext description; textAlign/align/has-link-color"
+  notes: "P5.95 — TermContext description; textAlign/align/has-link-color; className/colors"
 
 - prefix: wp-includes/blocks/term-description
   go: internal/blocks/term_description_test.go
   status: partial
-  task: P5.76
+  task: P5.95
   api: n/a
-  notes: "P5.76 — unit coverage for term-description; REST block-types metadata"
+  notes: "P5.95 — unit coverage for term-description wrapper className/colors"
 
 - prefix: wp-includes/blocks/term-description.php#archive-context
   go: internal/server/front.go
