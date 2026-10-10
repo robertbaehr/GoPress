@@ -60,6 +60,33 @@ func TestRenderPreformattedPrefersSavedMarkup(t *testing.T) {
 	}
 }
 
+func TestRenderPreformattedPolishAnchorClassNameColors(t *testing.T) {
+	// P5.101: polish saved markup + applySupports colors.
+	src := `<!-- wp:preformatted {"anchor":"pre-1","className":"is-style-wide","textColor":"contrast","backgroundColor":"base"} -->
+<pre class="wp-block-preformatted">kept</pre>
+<!-- /wp:preformatted -->`
+	out := blocks.Render(src)
+	for _, want := range []string{
+		`wp-block-preformatted`,
+		`is-style-wide`,
+		`id="pre-1"`,
+		`has-contrast-color`,
+		`has-base-background-color`,
+		`kept`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
+
+func TestRenderPreformattedSynthesizeAnchor(t *testing.T) {
+	out := blocks.Render(`<!-- wp:preformatted {"anchor":"snippet","content":"tab\there"} /-->`)
+	if !strings.Contains(out, `id="snippet"`) || !strings.Contains(out, `tab`) {
+		t.Fatalf("expected anchor synthesize: %q", out)
+	}
+}
+
 func TestRenderVerseSynthesizeTextAlign(t *testing.T) {
 	out := blocks.Render(`<!-- wp:verse {"textAlign":"center","className":"poem","content":"Roses are red"} /-->`)
 	for _, want := range []string{

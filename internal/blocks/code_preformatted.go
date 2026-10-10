@@ -35,15 +35,30 @@ func synthesizeCodeBlock(attrs map[string]any) string {
 	return `<pre class="` + class + `"><code>` + content + `</code></pre>`
 }
 
-// renderPreformatted renders core/preformatted (P5.62).
-// Prefers saved markup; synthesizes <pre> from content; honors className.
+// renderPreformatted renders core/preformatted (P5.62 / P5.101).
+// Prefers saved markup; synthesizes <pre> from content; honors className/anchor.
+// Color/typography/spacing land via applySupports on the caller.
 func (e *Env) renderPreformatted(block Block) string {
 	e = e.ensure()
 	out := e.renderSaved(block)
 	if strings.TrimSpace(out) != "" && rePreformattedTag.MatchString(out) {
-		return out
+		return polishPreformattedMarkup(out, block.Attrs)
 	}
 	return synthesizePreformattedBlock(block.Attrs)
+}
+
+// polishPreformattedMarkup ensures wp-block-preformatted + className/anchor on saved HTML (P5.101).
+func polishPreformattedMarkup(out string, attrs map[string]any) string {
+	out = addRootClass(out, "wp-block-preformatted")
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		for _, part := range strings.Fields(cn) {
+			out = addRootClass(out, part)
+		}
+	}
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
+		out = ensureRootAttribute(out, "id", anchor)
+	}
+	return out
 }
 
 func synthesizePreformattedBlock(attrs map[string]any) string {
@@ -52,7 +67,19 @@ func synthesizePreformattedBlock(attrs map[string]any) string {
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		class += " " + html.EscapeString(cn)
 	}
-	return `<pre class="` + class + `">` + content + `</pre>`
+	var b strings.Builder
+	b.WriteString(`<pre class="`)
+	b.WriteString(class)
+	b.WriteString(`"`)
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
+		b.WriteString(` id="`)
+		b.WriteString(html.EscapeString(anchor))
+		b.WriteString(`"`)
+	}
+	b.WriteString(`>`)
+	b.WriteString(content)
+	b.WriteString(`</pre>`)
+	return b.String()
 }
 
 // renderVerse renders core/verse (P5.62 / P5.100).
