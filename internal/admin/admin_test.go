@@ -290,6 +290,26 @@ func TestThemeEditorOutOfScope(t *testing.T) {
 	}
 }
 
+func TestPluginEditorOutOfScope(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/plugin-editor.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "out of scope") {
+		t.Fatalf("expected out-of-scope message, got %q", body)
+	}
+	if !strings.Contains(body, "plugins.php") {
+		t.Fatalf("expected plugins link, got %q", body)
+	}
+}
+
 func TestUpdateCoreOutOfScope(t *testing.T) {
 	c := bootOrSkip(t)
 	ck := loginCookie(t, c)
