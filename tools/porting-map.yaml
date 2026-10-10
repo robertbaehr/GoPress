@@ -716,6 +716,13 @@
   task: P2.47
   api: exported
 
+# P2.48: wp_spaces_regexp (+ filter).
+- prefix: wp-includes/formatting.php#wp_spaces_regexp
+  go: internal/wp/spaces_regexp.go
+  status: partial
+  task: P2.48
+  api: exported
+
 # P3.28: legacy Windows Live Writer manifest stub.
 - prefix: wp-includes/wlwmanifest.xml
   go: internal/server/wlwmanifest.go
