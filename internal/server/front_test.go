@@ -819,6 +819,44 @@ func TestEnsureSearchTemplateParts(t *testing.T) {
 	}
 }
 
+func TestFrontSearchDocumentTitlePartsFilter(t *testing.T) {
+	c := testBoot(t)
+	c.Hooks.AddFilter("document_title_parts", func(value any, _ ...any) any {
+		m, _ := value.(map[string]string)
+		if m == nil {
+			m = map[string]string{}
+		}
+		m["title"] = "Looking for Hello"
+		return m
+	}, 10, 1)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?s=Hello", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "<title>Looking for Hello &#8211;") {
+		t.Fatalf("expected filtered title: %q", rec.Body.String()[:min(400, rec.Body.Len())])
+	}
+}
+
+func TestFrontSearchTemplateContentFilter(t *testing.T) {
+	c := testBoot(t)
+	c.Hooks.AddFilter("search_template_content", func(value any, _ ...any) any {
+		return `<!-- wp:template-part {"slug":"header"} /-->` +
+			`<!-- wp:paragraph --><p class="search-filter-marker">Custom search shell</p><!-- /wp:paragraph -->` +
+			`<!-- wp:template-part {"slug":"footer"} /-->`
+	}, 10, 1)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?s=Hello", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if !strings.Contains(rec.Body.String(), "search-filter-marker") {
+		t.Fatalf("expected search_template_content filter: %q", rec.Body.String()[:min(800, rec.Body.Len())])
+	}
+}
+
 func TestFrontAuthorArchive(t *testing.T) {
 	c := testBoot(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
