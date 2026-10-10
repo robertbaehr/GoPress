@@ -10,13 +10,17 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// termListArgs holds REST collection filters for categories/tags (P4.120).
+// termListArgs holds REST collection filters for categories/tags (P4.120 / P4.121).
 type termListArgs struct {
 	Search    string
 	Slugs     []string
 	Parent    *int64 // set when parent= is present (hierarchical only)
 	HideEmpty bool
 	PostID    int64 // 0 = unset; <0 = invalid
+	Include   []int64
+	Exclude   []int64
+	OrderBy   string // name|id|slug|count|include (default name)
+	Order     string // asc|desc (default asc)
 }
 
 // TaxonomyVisibility is the edit-context visibility object (P4.119).
@@ -234,7 +238,7 @@ func countTerms(c *wp.Context, taxonomy string) (int, error) {
 	return countTermsFiltered(c, taxonomy, termListArgs{})
 }
 
-// parseTermListArgs reads REST term collection query args (P4.120).
+// parseTermListArgs reads REST term collection query args (P4.120 / P4.121).
 func parseTermListArgs(r *http.Request, taxonomy string) termListArgs {
 	var args termListArgs
 	if r == nil {
@@ -268,7 +272,39 @@ func parseTermListArgs(r *http.Request, taxonomy string) termListArgs {
 			args.PostID = n
 		}
 	}
+	args.Include = parsePostsTermIDs(r, "include")
+	args.Exclude = parsePostsTermIDs(r, "exclude")
+	args.OrderBy = parseTermOrderBy(r)
+	args.Order = parseTermOrder(r)
 	return args
+}
+
+func parseTermOrderBy(r *http.Request) string {
+	if r == nil {
+		return "name"
+	}
+	switch strings.ToLower(strings.TrimSpace(r.URL.Query().Get("orderby"))) {
+	case "id":
+		return "id"
+	case "slug":
+		return "slug"
+	case "count":
+		return "count"
+	case "include":
+		return "include"
+	default:
+		return "name"
+	}
+}
+
+func parseTermOrder(r *http.Request) string {
+	if r == nil {
+		return "asc"
+	}
+	if strings.EqualFold(strings.TrimSpace(r.URL.Query().Get("order")), "desc") {
+		return "desc"
+	}
+	return "asc"
 }
 
 func listTermsPagedFiltered(c *wp.Context, taxonomy string, limit, page int, filt termListArgs) ([]Term, error) {
@@ -283,10 +319,12 @@ func listTermsPagedFiltered(c *wp.Context, taxonomy string, limit, page int, fil
 	}
 	offset := (page - 1) * limit
 	from, where, prepArgs := termFilterSQL(c, taxonomy, filt)
+	orderSQL, orderArgs := termOrderSQL(filt)
+	prepArgs = append(prepArgs, orderArgs...)
 	prepArgs = append(prepArgs, limit, offset)
 	q, args, err := c.DB.Prepare(
 		"SELECT t.term_id, t.name, t.slug, tt.description, tt.parent, tt.count, tt.taxonomy FROM "+
-			from+" WHERE "+where+" ORDER BY t.name ASC LIMIT %d OFFSET %d",
+			from+" WHERE "+where+" ORDER BY "+orderSQL+" LIMIT %d OFFSET %d",
 		prepArgs...,
 	)
 	if err != nil {
@@ -302,6 +340,35 @@ func listTermsPagedFiltered(c *wp.Context, taxonomy string, limit, page int, fil
 		out = append(out, termFromRow(c, row, home))
 	}
 	return out, nil
+}
+
+// termOrderSQL builds ORDER BY for term collections (P4.121).
+func termOrderSQL(filt termListArgs) (string, []any) {
+	dir := "ASC"
+	if filt.Order == "desc" {
+		dir = "DESC"
+	}
+	switch filt.OrderBy {
+	case "id":
+		return "t.term_id " + dir, nil
+	case "slug":
+		return "t.slug " + dir, nil
+	case "count":
+		return "tt.count " + dir + ", t.name ASC", nil
+	case "include":
+		if len(filt.Include) == 0 {
+			return "t.name ASC", nil
+		}
+		parts := make([]string, len(filt.Include))
+		args := make([]any, len(filt.Include))
+		for i, id := range filt.Include {
+			parts[i] = "%d"
+			args[i] = id
+		}
+		return "FIELD(t.term_id, " + strings.Join(parts, ", ") + ")", args
+	default:
+		return "t.name " + dir, nil
+	}
 }
 
 func countTermsFiltered(c *wp.Context, taxonomy string, filt termListArgs) (int, error) {
@@ -326,7 +393,7 @@ func countTermsFiltered(c *wp.Context, taxonomy string, filt termListArgs) (int,
 	return int(asInt64(row["total"])), nil
 }
 
-// termFilterSQL builds FROM/WHERE fragments for term collection filters (P4.120).
+// termFilterSQL builds FROM/WHERE fragments for term collection filters (P4.120 / P4.121).
 func termFilterSQL(c *wp.Context, taxonomy string, filt termListArgs) (from, where string, args []any) {
 	from = c.DB.Terms() + " t INNER JOIN " + c.DB.TermTaxonomy() + " tt ON t.term_id = tt.term_id"
 	where = "tt.taxonomy = %s"
@@ -348,6 +415,22 @@ func termFilterSQL(c *wp.Context, taxonomy string, filt termListArgs) (from, whe
 			args = append(args, s)
 		}
 		where += " AND t.slug IN (" + strings.Join(parts, ", ") + ")"
+	}
+	if len(filt.Include) > 0 {
+		parts := make([]string, len(filt.Include))
+		for i, id := range filt.Include {
+			parts[i] = "%d"
+			args = append(args, id)
+		}
+		where += " AND t.term_id IN (" + strings.Join(parts, ", ") + ")"
+	}
+	if len(filt.Exclude) > 0 {
+		parts := make([]string, len(filt.Exclude))
+		for i, id := range filt.Exclude {
+			parts[i] = "%d"
+			args = append(args, id)
+		}
+		where += " AND t.term_id NOT IN (" + strings.Join(parts, ", ") + ")"
 	}
 	if filt.Parent != nil {
 		where += " AND tt.parent = %d"
