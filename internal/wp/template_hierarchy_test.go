@@ -45,6 +45,14 @@ func TestTagTemplateSlugs(t *testing.T) {
 	}
 }
 
+func TestCategoryTemplateSlugs(t *testing.T) {
+	got := wp.CategoryTemplateSlugs("uncategorized", 1)
+	want := []string{"category-uncategorized", "category-1", "category", "archive", "index"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("got %v want %v", got, want)
+	}
+}
+
 func TestSingularTemplateSlugsPage(t *testing.T) {
 	got := wp.SingularTemplateSlugs("page", "sample-page", 2)
 	want := []string{"page-sample-page", "page-2", "page", "singular", "index"}

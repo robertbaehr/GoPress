@@ -376,6 +376,13 @@
   task: P3.24
   api: n/a
 
+# P3.25: /category/{slug}/ category archives.
+- prefix: wp-includes/taxonomy.php#category-archive
+  go: internal/server/front.go
+  status: partial
+  task: P3.25
+  api: n/a
+
 - prefix: wp-includes/feed-atom.php
   go: internal/server/front.go
   status: partial

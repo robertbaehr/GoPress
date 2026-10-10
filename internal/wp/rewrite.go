@@ -51,8 +51,8 @@ func (c *Context) LoadRewriteRules() (RewriteRules, error) {
 			return nil, err
 		}
 		if len(rules) > 0 {
-			// Fixture rewrite_rules may omit taxonomy archives; ensure /tag/ works (P3.24).
-			return ensureTagRewriteRules(rules), nil
+			// Fixture rewrite_rules may omit taxonomy archives; ensure /tag/ and /category/ work.
+			return ensureCategoryRewriteRules(ensureTagRewriteRules(rules)), nil
 		}
 	}
 	structure := optionValueString(c.Options.GetOption("permalink_structure", ""))
@@ -78,6 +78,29 @@ func ensureTagRewriteRules(rules RewriteRules) RewriteRules {
 	}
 	if !inserted {
 		out = append(out, tagRule)
+	}
+	return out
+}
+
+// ensureCategoryRewriteRules inserts /category/{path}/ when missing from DB rules (P3.25).
+func ensureCategoryRewriteRules(rules RewriteRules) RewriteRules {
+	for _, r := range rules {
+		if strings.HasPrefix(r.Match, "category/") && strings.Contains(r.Query, "category_name=") {
+			return rules
+		}
+	}
+	catRule := RewriteRule{Match: `category/(.+?)/?$`, Query: `index.php?category_name=$matches[1]`}
+	out := make(RewriteRules, 0, len(rules)+1)
+	inserted := false
+	for _, r := range rules {
+		if !inserted && (strings.HasPrefix(r.Match, "tag/") || strings.HasPrefix(r.Match, "author/")) {
+			out = append(out, catRule)
+			inserted = true
+		}
+		out = append(out, r)
+	}
+	if !inserted {
+		out = append(out, catRule)
 	}
 	return out
 }
@@ -288,6 +311,11 @@ func (c *Context) ParseRequest(rules RewriteRules) *ParseResult {
 		if !c.Scope.IsSingular && hasAny(res.QueryVars, "tag") {
 			c.Scope.IsTag = true
 			c.Scope.TagSlug = res.QueryVars["tag"]
+		}
+		// Category archives (P3.25).
+		if !c.Scope.IsSingular && hasAny(res.QueryVars, "category_name") {
+			c.Scope.IsCategory = true
+			c.Scope.CategorySlug = lastPathSegment(res.QueryVars["category_name"])
 		}
 		if p := res.QueryVars["p"]; p != "" {
 			if id, err := strconv.ParseInt(p, 10, 64); err == nil {

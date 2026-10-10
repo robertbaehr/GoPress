@@ -56,6 +56,20 @@ func TagTemplateSlugs(slug string, id int64) []string {
 	return slugs
 }
 
+// CategoryTemplateSlugs returns the category archive hierarchy for block themes (P3.25).
+// WP: category-{slug}, category-{id}, category, archive, index.
+func CategoryTemplateSlugs(slug string, id int64) []string {
+	var slugs []string
+	if slug = strings.TrimSpace(slug); slug != "" {
+		slugs = append(slugs, "category-"+slug)
+	}
+	if id > 0 {
+		slugs = append(slugs, "category-"+strconv.FormatInt(id, 10))
+	}
+	slugs = append(slugs, "category", "archive", "index")
+	return slugs
+}
+
 // SingularTemplateSlugs returns the singular hierarchy for a post or page.
 // Pages: page-{slug}, page-{id}, page, singular, index.
 // Posts/CPTs: single-{type}-{slug}, single-{type}, single, singular, index.

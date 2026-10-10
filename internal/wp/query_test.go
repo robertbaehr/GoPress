@@ -173,3 +173,21 @@ func TestGetPostsTagArchive(t *testing.T) {
 		t.Fatalf("expected no posts for missing tag, got %d", len(empty))
 	}
 }
+
+func TestGetPostsCategoryArchive(t *testing.T) {
+	c := testBootQuery(t)
+	posts, err := wp.GetPosts(c, wp.QueryArgs{PostsPerPage: 5, Category: "uncategorized"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(posts) == 0 {
+		t.Fatal("expected posts for uncategorized")
+	}
+	empty, err := wp.GetPosts(c, wp.QueryArgs{PostsPerPage: 5, Category: "zzznomatch-cat"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(empty) != 0 {
+		t.Fatalf("expected no posts for missing category, got %d", len(empty))
+	}
+}

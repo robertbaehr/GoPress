@@ -445,6 +445,35 @@ func TestFrontTagArchive(t *testing.T) {
 	}
 }
 
+func TestFrontCategoryArchive(t *testing.T) {
+	c := testBoot(t)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+
+	req := httptest.NewRequest(http.MethodGet, "/category/uncategorized/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "archive") || !strings.Contains(body, "category") {
+		t.Fatalf("expected archive category body class: %q", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, "Category:") {
+		t.Fatalf("expected Category heading: %q", body[:min(800, len(body))])
+	}
+	if strings.Contains(body, "GoPress: front route not implemented") {
+		t.Fatal("category archive should not 501")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/category/nobody-here-cat/", nil)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusNotFound {
+		t.Fatalf("missing category want 404, got %d", rec.Code)
+	}
+}
+
 func TestFrontDateArchiveYearMonth(t *testing.T) {
 	c := testBoot(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
