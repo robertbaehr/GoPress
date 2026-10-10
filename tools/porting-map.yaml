@@ -5825,6 +5825,14 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P10.71 — STATUS refresh after rss block, modified_*, columns, referer, content_feed, export expire"
 
+# P9.22: deepen Shortcode API — shortcode_atts + strip_shortcodes.
+- prefix: wp-includes/shortcodes.php
+  go: internal/wp/shortcodes.go
+  status: partial
+  task: P9.22
+  api: exported
+  notes: "P9.22 — ShortcodeAtts/ShortcodeAttsFiltered; StripShortcodes + strip_shortcodes_tagnames; P2.11 base"
+
 # P5.80: core/shortcode — wpautop on shortcode text; expand via DoShortcode.
 - prefix: wp-includes/blocks/shortcode.php
   go: internal/blocks/shortcode.go
