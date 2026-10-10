@@ -1177,6 +1177,14 @@
   task: P10.43
   api: n/a
 
+# P10.46: e2e WXR import upload stub + STATUS/PORTING refresh after P5.54–P9.12.
+- prefix: tests/e2e/wxr-import.spec.js
+  go: tests/e2e/wxr-import.spec.js
+  status: partial
+  task: P10.46
+  api: n/a
+  notes: "P10.46 — Playwright coverage for import.php WXR upload (P7.54)"
+
 # P10.45: e2e WXR export download + STATUS/PORTING refresh after P5.53–P6.21.
 - prefix: tests/e2e/wxr-export.spec.js
   go: tests/e2e/wxr-export.spec.js
