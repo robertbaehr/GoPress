@@ -1476,6 +1476,21 @@
   api: n/a
   notes: "P10.53 — summarize quote/pullquote, plugins REST write, themes activate, check_filetype, lastBuildDate, action links, e2e"
 
+# P10.54: e2e themes REST activate + STATUS/PORTING refresh after P5.62–P6.25.
+- prefix: tests/e2e/theme-activate.spec.js
+  go: tests/e2e/theme-activate.spec.js
+  status: partial
+  task: P10.54
+  api: n/a
+  notes: "P10.54 — Playwright coverage for POST /wp/v2/themes/{stylesheet} status active (P4.78)"
+
+- prefix: docs/STATUS.md#P10.54
+  go: docs/STATUS.md
+  status: partial
+  task: P10.54
+  api: n/a
+  notes: "P10.54 — summarize code/preformatted/verse, themes REST activate, plugins bulk, mime types, RDF generator, interim success, e2e"
+
 # P10.52: e2e menu-locations DELETE unset + STATUS/PORTING refresh after P5.60–P6.24.
 - prefix: tests/e2e/menu-location-delete.spec.js
   go: tests/e2e/menu-location-delete.spec.js
