@@ -2209,6 +2209,15 @@
   task: P3.42
   api: exported
 
+
+# P3.87: paginate_links subset for archive/query pagination.
+- prefix: wp-includes/general-template.php#paginate_links
+  go: internal/wp/paginate_links.go
+  status: partial
+  task: P3.87
+  api: exported
+  notes: "P3.87 — prev/next, end/mid window, dots, plain/list types; PaginateLinksPlain helper"
+
 # P3.43: archive pagination <link rel="prev|next">.
 - prefix: wp-includes/link-template.php#get_pagenum_link
   go: internal/wp/archive_rel.go
