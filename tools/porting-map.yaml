@@ -919,6 +919,49 @@
   task: P5.42
   api: internal
 
+# P5.43: post-terms / post-date / post-author / post-title / post-excerpt / post-content.
+- prefix: wp-includes/blocks/post-terms.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.43
+  api: internal
+
+- prefix: wp-includes/blocks/post-date.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.43
+  api: internal
+
+- prefix: wp-includes/blocks/post-author.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.43
+  api: internal
+
+- prefix: wp-includes/blocks/post-author-name.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.43
+  api: internal
+
+- prefix: wp-includes/blocks/post-title.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.43
+  api: internal
+
+- prefix: wp-includes/blocks/post-excerpt.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.43
+  api: internal
+
+- prefix: wp-includes/blocks/post-content.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.43
+  api: internal
+
 - prefix: wp-includes/blocks/
   go: internal/blocks
   status: partial

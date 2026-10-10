@@ -585,6 +585,42 @@ func (e *Env) renderPostAuthorName(block Block) string {
 	return `<div class="wp-block-post-author-name">` + inner + `</div>`
 }
 
+// renderPostAuthor renders core/post-author (P5.43).
+func (e *Env) renderPostAuthor(block Block) string {
+	e = e.ensure()
+	if e.currentPost == nil || e.AuthorName == nil {
+		return ""
+	}
+	name := strings.TrimSpace(e.AuthorName(e.currentPost.ID))
+	if name == "" {
+		return ""
+	}
+	nameHTML := html.EscapeString(name)
+	if isLinkAttr(block.Attrs) && e.HomeURL != nil {
+		home := strings.TrimRight(e.HomeURL(), "/")
+		target := "_self"
+		if t, ok := block.Attrs["linkTarget"].(string); ok && strings.TrimSpace(t) != "" {
+			target = strings.TrimSpace(t)
+		}
+		nameHTML = `<a href="` + html.EscapeString(home+"/author/admin/") + `" target="` + html.EscapeString(target) + `">` + nameHTML + `</a>`
+	}
+	var content strings.Builder
+	content.WriteString(`<div class="wp-block-post-author__content">`)
+	if byline, ok := block.Attrs["byline"].(string); ok && strings.TrimSpace(byline) != "" {
+		content.WriteString(`<p class="wp-block-post-author__byline">`)
+		content.WriteString(html.EscapeString(byline))
+		content.WriteString(`</p>`)
+	}
+	content.WriteString(`<p class="wp-block-post-author__name">`)
+	content.WriteString(nameHTML)
+	content.WriteString(`</p></div>`)
+	classes := "wp-block-post-author"
+	if align, ok := block.Attrs["textAlign"].(string); ok && align != "" {
+		classes += " has-text-align-" + align
+	}
+	return `<div class="` + html.EscapeString(classes) + `">` + content.String() + `</div>`
+}
+
 func (e *Env) renderPostTerms(block Block) string {
 	e = e.ensure()
 	if e.currentPost == nil || e.PostTerms == nil {

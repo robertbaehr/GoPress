@@ -136,6 +136,8 @@ func (e *Env) RenderBlock(block Block) string {
 		return ""
 	case "core/query-pagination-numbers":
 		return e.renderQueryPaginationNumbers(block)
+	case "core/post-author":
+		out = e.renderPostAuthor(block)
 	case "core/post-author-name":
 		out = e.renderPostAuthorName(block)
 	case "core/post-terms":
