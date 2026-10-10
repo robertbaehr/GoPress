@@ -302,6 +302,29 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 			return
 		}
 		s.serveGlobalStylesItem(w, r, c, id)
+	case path == "/wp/v2/font-families" || strings.HasPrefix(path, "/wp/v2/font-families/"):
+		familyID, faceID, facesCollection, ok := parseFontFamiliesPath(path)
+		if !ok {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"code":    "rest_no_route",
+				"message": "No route was found matching the URL and request method.",
+				"data":    map[string]any{"status": 404},
+			})
+			return
+		}
+		if familyID == 0 {
+			s.serveFontFamilies(w, r, c)
+			return
+		}
+		if facesCollection {
+			if faceID > 0 {
+				s.serveFontFaceItem(w, r, c, familyID, faceID)
+				return
+			}
+			s.serveFontFaces(w, r, c, familyID)
+			return
+		}
+		s.serveFontFamilyItem(w, r, c, familyID)
 	case path == "/wp/v2/templates":
 		s.serveTemplates(w, r, c)
 	case strings.HasPrefix(path, "/wp/v2/templates/"):

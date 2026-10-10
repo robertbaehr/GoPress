@@ -241,6 +241,18 @@
   task: P3.12
   api: n/a
 
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-font-families-controller.php
+  go: internal/rest/fonts.go
+  status: partial
+  task: P4.36
+  api: exported
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-font-faces-controller.php
+  go: internal/rest/fonts.go
+  status: partial
+  task: P4.36
+  api: exported
+
 - prefix: wp-includes/block-bindings.php
   go: internal/blocks/bindings.go
   status: partial
