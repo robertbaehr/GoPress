@@ -115,8 +115,13 @@ func HashPassword(password string) (string, error) {
 	return "$wp" + string(hashed), nil
 }
 
-// CheckPassword verifies a plaintext password against a stored hash (wp_check_password subset).
-// Supports $wp$2y$ (WP 6.8+), bare $2y$ bcrypt, and phpass portable $P$ / $H$.
+// CheckPassword verifies a plaintext password against a stored hash (wp_check_password).
+// Formats covered (P2.21):
+//   - $wp$2y$… WordPress 6.8+ (HMAC-SHA384 prehash + bcrypt)
+//   - bare $2y$ / $2a$ / $2b$ bcrypt
+//   - phpass portable $P$ / $H$
+//
+// Application passwords reuse this for non-$generic$ hashes via VerifyApplicationPasswordHash.
 func CheckPassword(password, hash string) bool {
 	password = strings.TrimSpace(password)
 	if hash == "" || password == "" {
@@ -141,6 +146,11 @@ func CheckPassword(password, hash string) bool {
 		return phpassCheck(password, hash)
 	}
 	return false
+}
+
+// WPCheckPassword is the wp_check_password alias for CheckPassword (P2.21).
+func WPCheckPassword(password, hash string) bool {
+	return CheckPassword(password, hash)
 }
 
 // GenerateAuthCookie builds an auth cookie string (wp_generate_auth_cookie).
