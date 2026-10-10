@@ -504,6 +504,60 @@ func TestEditPostsSearchBox(t *testing.T) {
 	}
 }
 
+func TestEditPostsAuthorFilter(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`id="filter-by-author"`,
+		`name="author"`,
+		`id="post-query-submit"`,
+		`name="filter_action"`,
+		"All authors",
+		"Admin User",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected author filter %q in edit.php", want)
+		}
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?author=1", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("author=1 status=%d", rec.Code)
+	}
+	body = rec.Body.String()
+	if !strings.Contains(body, `selected="selected"`) || !strings.Contains(body, `value="1"`) {
+		t.Fatalf("expected author=1 selected: %q", body[:min(800, len(body))])
+	}
+	if !strings.Contains(body, "Hello world!") {
+		t.Fatalf("expected Hello world for author=1")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?author=99999", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("author miss status=%d", rec.Code)
+	}
+	body = rec.Body.String()
+	if strings.Contains(body, "Hello world!") {
+		t.Fatalf("unknown author should not list Hello world")
+	}
+}
+
 func TestEditPostsBulkEditStub(t *testing.T) {
 	c := bootOrSkip(t)
 	ck := loginCookie(t, c)
