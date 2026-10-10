@@ -1,26 +1,39 @@
 package server
 
 import (
+	"io"
 	"net/http"
+	"regexp"
 	"strconv"
 	"strings"
 )
 
-// serveXMLRPCGone rejects XML-RPC as out of scope (P3.10 / P3.94).
+var reXMLRPCMethodName = regexp.MustCompile(`(?is)<methodName>\s*([^<\s]+)\s*</methodName>`)
+
+// serveXMLRPCGone rejects XML-RPC as out of scope (P3.10 / P3.94 / P3.98).
 // POST returns an XML-RPC fault payload; GET/HEAD keep a plain disabled notice.
+// pingback.ping POSTs get a pingback-specific fault string (P3.98).
 // xmlrpc.php?rsd stays 403 (RSD lives at /rsd.xml, P3.32).
 func serveXMLRPCGone(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Robots-Tag", "noindex")
 	w.Header().Set("Allow", "GET, POST")
+	// P3.98 / P3.41: never advertise X-Pingback from the XML-RPC endpoint.
+	w.Header().Del("X-Pingback")
 	method := http.MethodGet
 	if r != nil {
 		method = r.Method
 	}
 	switch method {
 	case http.MethodPost:
-		// P3.94: methodResponse fault shape for disabled XML-RPC.
 		w.Header().Set("Content-Type", "text/xml; charset=UTF-8")
-		body := xmlrpcFaultResponse(405, "XML-RPC services are disabled on this site.")
+		faultCode := 405
+		faultMsg := "XML-RPC services are disabled on this site."
+		if name := xmlrpcMethodName(r); strings.EqualFold(name, "pingback.ping") {
+			// P3.98: pingbacks ride XML-RPC; reject with an explicit pingback fault.
+			faultCode = 405
+			faultMsg = "Pingbacks are disabled on this site."
+		}
+		body := xmlrpcFaultResponse(faultCode, faultMsg)
 		w.WriteHeader(http.StatusForbidden)
 		_, _ = w.Write([]byte(body))
 	case http.MethodHead:
@@ -31,6 +44,24 @@ func serveXMLRPCGone(w http.ResponseWriter, r *http.Request) {
 		w.WriteHeader(http.StatusForbidden)
 		_, _ = w.Write([]byte("XML-RPC services are disabled on this site.\n"))
 	}
+}
+
+// xmlrpcMethodName extracts <methodName> from a limited POST body (P3.98).
+func xmlrpcMethodName(r *http.Request) string {
+	if r == nil || r.Body == nil {
+		return ""
+	}
+	// Bound read: methodName appears near the top of typical methodCall payloads.
+	limited := io.LimitReader(r.Body, 4096)
+	raw, err := io.ReadAll(limited)
+	if err != nil || len(raw) == 0 {
+		return ""
+	}
+	m := reXMLRPCMethodName.FindSubmatch(raw)
+	if len(m) < 2 {
+		return ""
+	}
+	return strings.TrimSpace(string(m[1]))
 }
 
 // xmlrpcFaultResponse builds a minimal XML-RPC methodResponse fault (P3.94).

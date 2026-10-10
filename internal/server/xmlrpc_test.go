@@ -67,3 +67,31 @@ func TestXMLRPCGoneHead(t *testing.T) {
 		t.Fatalf("HEAD body should be empty: %q", rec.Body.String())
 	}
 }
+
+func TestXMLRPCPingbackPingFault(t *testing.T) {
+	// P3.98: pingback.ping POSTs get an explicit pingback-disabled fault.
+	s := &server.Server{}
+	payload := `<?xml version="1.0"?><methodCall><methodName>pingback.ping</methodName><params><param><value><string>http://example.com/</string></value></param></params></methodCall>`
+	req := httptest.NewRequest(http.MethodPost, "/xmlrpc.php", strings.NewReader(payload))
+	rec := httptest.NewRecorder()
+	s.ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	if got := rec.Header().Get("X-Pingback"); got != "" {
+		t.Fatalf("X-Pingback must be absent, got %q", got)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		"<methodResponse>",
+		"<fault>",
+		"Pingbacks are disabled",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in %q", want, body)
+		}
+	}
+	if strings.Contains(body, "XML-RPC services are disabled") {
+		t.Fatalf("expected pingback-specific fault, got generic: %q", body)
+	}
+}
