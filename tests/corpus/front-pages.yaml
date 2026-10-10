@@ -320,3 +320,49 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.86: empty/miss search, date archives, missing tag.
+- id: front-search-empty
+  role: anon
+  method: GET
+  path: /?s=
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-search-nomatch
+  role: anon
+  method: GET
+  path: /?s=zzzzznomatch
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-date-2024-02
+  role: anon
+  method: GET
+  path: /2024/02/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-date-2024-02-01
+  role: anon
+  method: GET
+  path: /2024/02/01/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-tag-missing-404
+  role: anon
+  method: GET
+  path: /tag/does-not-exist/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

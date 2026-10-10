@@ -127,3 +127,13 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.86: reauth truthy value headers (P6.37).
+- id: login-reauth-true
+  role: anon
+  method: GET
+  path: /wp-login.php?reauth=true
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
