@@ -35,6 +35,33 @@ func TestRenderCodePrefersSavedMarkup(t *testing.T) {
 	}
 }
 
+func TestRenderCodePolishAnchorClassNameColors(t *testing.T) {
+	// P5.102: polish saved markup + applySupports colors.
+	src := `<!-- wp:code {"anchor":"snip-1","className":"is-style-dark","textColor":"contrast","backgroundColor":"base"} -->
+<pre class="wp-block-code"><code>saved();</code></pre>
+<!-- /wp:code -->`
+	out := blocks.Render(src)
+	for _, want := range []string{
+		`wp-block-code`,
+		`is-style-dark`,
+		`id="snip-1"`,
+		`has-contrast-color`,
+		`has-base-background-color`,
+		`saved();`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
+
+func TestRenderCodeSynthesizeAnchor(t *testing.T) {
+	out := blocks.Render(`<!-- wp:code {"anchor":"cli","content":"echo hi;"} /-->`)
+	if !strings.Contains(out, `id="cli"`) || !strings.Contains(out, `echo hi;`) {
+		t.Fatalf("expected anchor synthesize: %q", out)
+	}
+}
+
 func TestRenderPreformattedSynthesize(t *testing.T) {
 	out := blocks.Render(`<!-- wp:preformatted {"className":"custom-pre","content":"line1\nline2"} /-->`)
 	for _, want := range []string{
