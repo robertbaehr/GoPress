@@ -3652,6 +3652,28 @@
   api: internal
   notes: "P5.84 — has-child submenu container + chevron icon"
 
+# P5.85: core/query + post-template polish (tagName/align, query args, layout classes).
+- prefix: wp-includes/blocks/query.php#p5.85
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.85
+  api: internal
+  notes: "P5.85 — tagName/align wrapper; query order/orderBy/search/author/sticky/exclude/format/parents"
+
+- prefix: wp-includes/blocks/post-template.php#p5.85
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.85
+  api: internal
+  notes: "P5.85 — layout grid columns, legacy flex displayLayout, has-link-color"
+
+- prefix: wp-includes/blocks.php#build_query_vars_from_query_block
+  go: internal/server/front.go
+  status: partial
+  task: P5.85
+  api: internal
+  notes: "P5.85 — ListPosts wires non-inherit query args + sticky only/exclude/ignore"
+
 - prefix: wp-includes/blocks/
   go: internal/blocks
   status: partial

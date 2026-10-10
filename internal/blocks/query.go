@@ -39,12 +39,30 @@ type TermBindingContext struct {
 	Count       int64
 }
 
-// QueryLoopArgs selects posts for a query block.
+// QueryLoopArgs selects posts for a query block (P5.13 / P5.85).
 type QueryLoopArgs struct {
 	PerPage  int
 	PostType string
 	Offset   int
 	Inherit  bool
+	// Order / OrderBy mirror query.order / query.orderBy (P5.85).
+	Order   string
+	OrderBy string
+	// Search is query.search when inherit is false (P5.85).
+	Search string
+	// Author is a single author ID from query.author (P5.85).
+	Author int64
+	// Sticky is "", "ignore", "exclude", or "only" (P5.85).
+	Sticky string
+	// Exclude is query.exclude post IDs (P5.85).
+	Exclude []int64
+	// Format is query.format post_format slugs, including "standard" (P5.85).
+	Format []string
+	// Parents is query.parents for hierarchical post types (P5.85).
+	Parents []int64
+	// CategoryIn / TagIn are legacy categoryIds / tagIds (P5.85).
+	CategoryIn []int64
+	TagIn      []int64
 }
 
 func (e *Env) renderQuery(block Block) string {
@@ -60,9 +78,61 @@ func (e *Env) renderQuery(block Block) string {
 
 	inner := e.renderSaved(block)
 	if strings.Contains(inner, "wp-block-query") {
-		return inner
+		return polishQueryWrapper(inner, block.Attrs)
 	}
-	return `<div class="wp-block-query">` + inner + `</div>`
+	tag := queryTagName(block.Attrs)
+	classes := "wp-block-query"
+	if align, ok := block.Attrs["align"].(string); ok && strings.TrimSpace(align) != "" {
+		classes += " align" + strings.TrimSpace(align)
+	}
+	return `<` + tag + ` class="` + html.EscapeString(classes) + `">` + inner + `</` + tag + `>`
+}
+
+// queryTagName returns the core/query tagName attribute (default div, P5.85).
+func queryTagName(attrs map[string]any) string {
+	tag := "div"
+	if attrs == nil {
+		return tag
+	}
+	if t, ok := attrs["tagName"].(string); ok {
+		t = strings.ToLower(strings.TrimSpace(t))
+		switch t {
+		case "div", "main", "section", "aside":
+			return t
+		}
+	}
+	return tag
+}
+
+// polishQueryWrapper ensures align/tagName on saved markup that already has wp-block-query (P5.85).
+func polishQueryWrapper(inner string, attrs map[string]any) string {
+	tag := queryTagName(attrs)
+	if tag != "div" {
+		// Replace the outermost <div class="…wp-block-query…"> with the requested tag.
+		lower := strings.ToLower(inner)
+		start := strings.Index(lower, `<div`)
+		endOpen := strings.Index(inner[start:], ">")
+		if start >= 0 && endOpen > 0 {
+			openEnd := start + endOpen
+			close := strings.LastIndex(lower, `</div>`)
+			if close > openEnd {
+				open := inner[start : openEnd+1]
+				open = strings.Replace(open, "<div", "<"+tag, 1)
+				open = strings.Replace(open, "<Div", "<"+tag, 1)
+				inner = inner[:start] + open + inner[openEnd+1:close] + "</" + tag + ">" + inner[close+len("</div>"):]
+			}
+		}
+	}
+	if attrs != nil {
+		if align, ok := attrs["align"].(string); ok && strings.TrimSpace(align) != "" {
+			want := "align" + strings.TrimSpace(align)
+			if !strings.Contains(inner, want) {
+				inner = strings.Replace(inner, `class="wp-block-query"`, `class="wp-block-query `+want+`"`, 1)
+				inner = strings.Replace(inner, `class="wp-block-query `, `class="wp-block-query `+want+` `, 1)
+			}
+		}
+	}
+	return inner
 }
 
 // renderQueryTitle renders core/query-title (search/archive/post-type, P3.21 / P5.71).
@@ -170,11 +240,8 @@ func (e *Env) renderPostTemplate(block Block) string {
 	e.queryHasPosts = true
 
 	var b strings.Builder
-	b.WriteString(`<ul class="wp-block-post-template`)
-	if align, ok := block.Attrs["align"].(string); ok && align != "" {
-		b.WriteString(` align`)
-		b.WriteString(html.EscapeString(align))
-	}
+	b.WriteString(`<ul class="`)
+	b.WriteString(html.EscapeString(postTemplateClass(block)))
 	b.WriteString(`">`)
 	for _, post := range posts {
 		prev := e.currentPost
@@ -191,6 +258,49 @@ func (e *Env) renderPostTemplate(block Block) string {
 	}
 	b.WriteString(`</ul>`)
 	return b.String()
+}
+
+// postTemplateClass builds core/post-template wrapper classes (P5.85).
+// Honors align, legacy displayLayout flex columns, layout.grid columnCount,
+// and has-link-color from style.elements.link.color.text.
+func postTemplateClass(block Block) string {
+	parts := []string{"wp-block-post-template"}
+	if align, ok := block.Attrs["align"].(string); ok && strings.TrimSpace(align) != "" {
+		parts = append(parts, "align"+strings.TrimSpace(align))
+	}
+	// Legacy displayLayout on the parent query is passed via block attrs when nested
+	// attrs include displayLayout (editor sometimes copies it onto post-template).
+	if dl, ok := block.Attrs["displayLayout"].(map[string]any); ok {
+		if typ, _ := dl["type"].(string); typ == "flex" {
+			cols := 3
+			if c, ok := dl["columns"].(float64); ok && c > 0 {
+				cols = int(c)
+			}
+			parts = append(parts, "is-flex-container", "columns-"+strconv.Itoa(cols))
+		}
+	}
+	if layout, ok := block.Attrs["layout"].(map[string]any); ok {
+		if typ, _ := layout["type"].(string); typ == "grid" {
+			if c, ok := layout["columnCount"].(float64); ok && c > 0 {
+				parts = append(parts, "columns-"+strconv.Itoa(int(c)))
+				if _, ok := layout["minimumColumnWidth"]; ok {
+					parts = append(parts, "has-native-responsive-grid")
+				}
+			}
+		}
+	}
+	if style, ok := block.Attrs["style"].(map[string]any); ok {
+		if els, ok := style["elements"].(map[string]any); ok {
+			if link, ok := els["link"].(map[string]any); ok {
+				if color, ok := link["color"].(map[string]any); ok {
+					if text, ok := color["text"]; ok && text != nil && fmt.Sprint(text) != "" {
+						parts = append(parts, "has-link-color")
+					}
+				}
+			}
+		}
+	}
+	return strings.Join(parts, " ")
 }
 
 func postLIClass(post QueryPost) string {
@@ -679,7 +789,7 @@ func (e *Env) renderPostFeaturedImage(block Block) string {
 }
 
 func queryArgsFromAttrs(attrs map[string]any) QueryLoopArgs {
-	args := QueryLoopArgs{PerPage: 10, PostType: "post"}
+	args := QueryLoopArgs{PerPage: 10, PostType: "post", Order: "desc", OrderBy: "date"}
 	if attrs == nil {
 		return args
 	}
@@ -699,7 +809,77 @@ func queryArgsFromAttrs(attrs map[string]any) QueryLoopArgs {
 	if inh, ok := q["inherit"].(bool); ok {
 		args.Inherit = inh
 	}
+	// P5.85: order / orderBy / search / author / sticky / exclude / format / parents.
+	if o, ok := q["order"].(string); ok && strings.TrimSpace(o) != "" {
+		args.Order = strings.ToLower(strings.TrimSpace(o))
+	}
+	if ob, ok := q["orderBy"].(string); ok && strings.TrimSpace(ob) != "" {
+		args.OrderBy = strings.TrimSpace(ob)
+	}
+	if s, ok := q["search"].(string); ok {
+		args.Search = strings.TrimSpace(s)
+	}
+	if a, ok := q["author"]; ok {
+		args.Author = firstAuthorID(a)
+	}
+	if st, ok := q["sticky"].(string); ok {
+		args.Sticky = strings.ToLower(strings.TrimSpace(st))
+	}
+	args.Exclude = int64SliceFromAny(q["exclude"])
+	args.Parents = int64SliceFromAny(q["parents"])
+	args.CategoryIn = int64SliceFromAny(q["categoryIds"])
+	args.TagIn = int64SliceFromAny(q["tagIds"])
+	if formats, ok := q["format"].([]any); ok {
+		for _, f := range formats {
+			s := strings.TrimSpace(fmt.Sprint(f))
+			if s != "" && s != "<nil>" {
+				args.Format = append(args.Format, s)
+			}
+		}
+	}
 	return args
+}
+
+func firstAuthorID(v any) int64 {
+	switch t := v.(type) {
+	case float64:
+		if t > 0 {
+			return int64(t)
+		}
+	case string:
+		parts := strings.Split(t, ",")
+		if len(parts) > 0 {
+			n, _ := strconv.ParseInt(strings.TrimSpace(parts[0]), 10, 64)
+			if n > 0 {
+				return n
+			}
+		}
+	case []any:
+		for _, item := range t {
+			if n := firstAuthorID(item); n > 0 {
+				return n
+			}
+		}
+	}
+	return 0
+}
+
+func int64SliceFromAny(v any) []int64 {
+	arr, ok := v.([]any)
+	if !ok || len(arr) == 0 {
+		return nil
+	}
+	out := make([]int64, 0, len(arr))
+	for _, item := range arr {
+		n := attrInt64(map[string]any{"v": item}, "v")
+		if n > 0 {
+			out = append(out, n)
+		}
+	}
+	if len(out) == 0 {
+		return nil
+	}
+	return out
 }
 
 func (e *Env) renderPostCommentsForm(block Block) string {
