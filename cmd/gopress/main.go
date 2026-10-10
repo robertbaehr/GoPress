@@ -69,6 +69,7 @@ func serveCmd(args []string) {
 	srv := &server.Server{
 		WP:      wpCtx,
 		AbsPath: cfg.ABSPATH,
+		Front:   &server.Front{},
 	}
 
 	fmt.Fprintf(os.Stderr, "gopress serve listening on %s (root=%s)\n", *addr, *root)
