@@ -212,10 +212,10 @@
   api: internal
 
 - prefix: wp-includes/template.php
-  go: internal/server/front.go
+  go: internal/wp/template_hierarchy.go
   status: partial
-  task: P3.16
-  api: n/a
+  task: P5.24
+  api: exported
 
 - prefix: wp-includes/feed-atom.php
   go: internal/server/front.go

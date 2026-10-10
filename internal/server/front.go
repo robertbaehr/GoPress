@@ -117,8 +117,10 @@ func isSingularVars(vars map[string]string) bool {
 }
 
 func (f *Front) renderHome(w http.ResponseWriter, c *wp.Context) {
-	// P5.5: prefer block theme home/index template (DB or theme HTML) over shim.
-	if tpl, ok := wp.ResolveBlockTemplate(c, "home", "index"); ok && strings.TrimSpace(tpl) != "" {
+	// P5.5/P5.24: prefer block theme front-page/home/index hierarchy over shim.
+	isFront := c != nil && c.Scope.IsFrontPage
+	slugs := wp.HomeTemplateSlugs(isFront || (c != nil && c.Scope.IsHome))
+	if tpl, ok := wp.ResolveBlockTemplate(c, slugs...); ok && strings.TrimSpace(tpl) != "" {
 		f.renderBlockTemplate(w, c, tpl)
 		return
 	}
@@ -232,14 +234,9 @@ func (f *Front) renderSingular(w http.ResponseWriter, c *wp.Context, vars map[st
 		return
 	}
 
-	// P5.17: prefer block theme single/page templates when available.
-	if post.Type == "page" || post.Type == "post" {
-		var slugs []string
-		if post.Type == "page" {
-			slugs = []string{"page", "single"}
-		} else {
-			slugs = []string{"single"}
-		}
+	// P5.17/P5.24: prefer block theme singular hierarchy when available.
+	if post.Type == "page" || post.Type == "post" || post.Type == "attachment" {
+		slugs := wp.SingularTemplateSlugs(post.Type, post.Name, post.ID)
 		if tpl, ok := wp.ResolveBlockTemplate(c, slugs...); ok && strings.TrimSpace(tpl) != "" {
 			f.renderSingularBlockTemplate(w, c, post, tpl)
 			return
