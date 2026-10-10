@@ -759,6 +759,13 @@
   task: P8.7
   api: n/a
 
+# P8.11: WP_Privacy_Policy_Content::get_default_content for the policy guide.
+- prefix: wp-admin/includes/class-wp-privacy-policy-content.php
+  go: internal/wp/privacy_policy_content.go
+  status: partial
+  task: P8.11
+  api: exported
+
 # P7.41: save wp_page_for_privacy_policy on options-privacy.php.
 - prefix: wp-admin/options-privacy.php
   go: internal/admin/admin.go
