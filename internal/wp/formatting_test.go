@@ -189,6 +189,37 @@ func TestSanitizeTitleExtraGolden(t *testing.T) {
 	t.Logf("sanitize_title extra golden: %d/%d match", len(corpus.Vectors)-fails, len(corpus.Vectors))
 }
 
+func TestSizeFormatGolden(t *testing.T) {
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller failed")
+	}
+	root := filepath.Clean(filepath.Join(filepath.Dir(file), "..", ".."))
+	path := filepath.Join(root, "tests", "golden", "formatting", "vectors.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read golden: %v", err)
+	}
+	var corpus struct {
+		SizeFormat []struct {
+			Bytes  float64 `json:"bytes"`
+			Result string  `json:"result"`
+		} `json:"size_format"`
+	}
+	if err := json.Unmarshal(data, &corpus); err != nil {
+		t.Fatalf("json: %v", err)
+	}
+	if len(corpus.SizeFormat) == 0 {
+		t.Fatal("no size_format vectors")
+	}
+	for _, v := range corpus.SizeFormat {
+		got := wp.SizeFormat(v.Bytes, 2)
+		if got != v.Result {
+			t.Fatalf("SizeFormat(%v,2)=%q want %q", v.Bytes, got, v.Result)
+		}
+	}
+}
+
 func TestEscHTMLBasic(t *testing.T) {
 	if got := wp.EscHTML(`O'Reilly & Sons`); got != `O&#039;Reilly &amp; Sons` {
 		t.Fatalf("got %q", got)
