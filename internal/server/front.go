@@ -1747,6 +1747,8 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString("\txmlns:atom=\"http://www.w3.org/2005/Atom\"\n")
 	b.WriteString("\txmlns:sy=\"http://purl.org/rss/1.0/modules/syndication/\"\n")
 	b.WriteString("\txmlns:slash=\"http://purl.org/rss/1.0/modules/slash/\"\n")
+	// P3.69: Media RSS namespace for item <media:content>.
+	b.WriteString("\txmlns:media=\"http://search.yahoo.com/mrss/\"\n")
 	b.WriteString("\t>\n\n")
 	b.WriteString("<channel>\n")
 	b.WriteString("\t<title>")
@@ -1846,6 +1848,10 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 		for _, enc := range p.Enclosures {
 			b.WriteString(rssEnclosureTag(c, enc))
 		}
+		// P3.69: Media RSS <media:content> from featured image + enclosures.
+		for _, mc := range feedMediaContentForPost(c, p) {
+			b.WriteString(rssMediaContentTag(mc))
+		}
 		// P3.64: optional RSS 2.0 <source> when post meta provides attribution.
 		if tag := rssItemSourceTag(c, p.ID); tag != "" {
 			b.WriteString(tag)
@@ -1883,6 +1889,8 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString(xmlEscape(wp.BlogInfoLanguage(c)))
 	b.WriteString("\"\n")
 	b.WriteString("\txmlns:thr=\"http://purl.org/syndication/thread/1.0\"\n")
+	// P3.69: Media RSS namespace for entry <media:content>.
+	b.WriteString("\txmlns:media=\"http://search.yahoo.com/mrss/\"\n")
 	b.WriteString("\t>\n")
 	b.WriteString("\t<title type=\"text\">")
 	b.WriteString(feedChannelTitle(c, blogname, authorID))
@@ -1985,6 +1993,10 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 		}
 		for _, enc := range p.Enclosures {
 			b.WriteString(atomEnclosureTag(c, enc))
+		}
+		// P3.69: Media RSS media:content on Atom entries too.
+		for _, mc := range feedMediaContentForPost(c, p) {
+			b.WriteString(rssMediaContentTag(mc))
 		}
 		b.WriteString("\t\t\t</entry>\n")
 	}
@@ -2128,6 +2140,14 @@ type feedEnclosure struct {
 	URL    string
 	Length string
 	Type   string
+}
+
+// feedMediaContent is a Media RSS media:content descriptor (P3.69).
+type feedMediaContent struct {
+	URL    string
+	Type   string
+	Medium string
+	Length string
 }
 
 type feedPost struct {
@@ -2289,6 +2309,103 @@ func feedEnclosuresForPost(c *wp.Context, postID int64) []feedEnclosure {
 		out = append(out, feedEnclosure{URL: url, Length: length, Type: mime[0]})
 	}
 	return out
+}
+
+// feedMediaContentForPost builds Media RSS media:content entries from the
+// featured image and enclosure meta (P3.69).
+func feedMediaContentForPost(c *wp.Context, p feedPost) []feedMediaContent {
+	var out []feedMediaContent
+	seen := map[string]bool{}
+	if thumb := strings.TrimSpace(wp.GetPostThumbnailURL(c, p.ID)); thumb != "" {
+		mime := attachmentMimeType(c, wp.GetPostThumbnailID(c, p.ID))
+		medium := mediaMediumFromType(mime)
+		if medium == "" {
+			medium = "image"
+		}
+		out = append(out, feedMediaContent{URL: thumb, Type: mime, Medium: medium})
+		seen[thumb] = true
+	}
+	for _, enc := range p.Enclosures {
+		url := strings.TrimSpace(enc.URL)
+		if url == "" || seen[url] {
+			continue
+		}
+		seen[url] = true
+		mime := strings.TrimSpace(enc.Type)
+		out = append(out, feedMediaContent{
+			URL:    url,
+			Type:   mime,
+			Medium: mediaMediumFromType(mime),
+			Length: enc.Length,
+		})
+	}
+	return out
+}
+
+func attachmentMimeType(c *wp.Context, attachmentID int64) string {
+	if c == nil || c.DB == nil || attachmentID <= 0 {
+		return ""
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT post_mime_type FROM "+c.DB.Posts()+" WHERE ID = %d",
+		attachmentID,
+	)
+	if err != nil {
+		return ""
+	}
+	v, err := c.DB.GetVar(q, args...)
+	if err != nil || v == nil {
+		return ""
+	}
+	switch t := v.(type) {
+	case string:
+		return strings.TrimSpace(t)
+	case []byte:
+		return strings.TrimSpace(string(t))
+	default:
+		return strings.TrimSpace(fmt.Sprint(t))
+	}
+}
+
+func mediaMediumFromType(mime string) string {
+	mime = strings.ToLower(strings.TrimSpace(mime))
+	switch {
+	case strings.HasPrefix(mime, "image/"):
+		return "image"
+	case strings.HasPrefix(mime, "audio/"):
+		return "audio"
+	case strings.HasPrefix(mime, "video/"):
+		return "video"
+	default:
+		return ""
+	}
+}
+
+func rssMediaContentTag(mc feedMediaContent) string {
+	if strings.TrimSpace(mc.URL) == "" {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString(`<media:content url="`)
+	b.WriteString(xmlEscape(mc.URL))
+	b.WriteString(`"`)
+	if mc.Type != "" {
+		b.WriteString(` type="`)
+		b.WriteString(xmlEscape(mc.Type))
+		b.WriteString(`"`)
+	}
+	if mc.Medium != "" {
+		b.WriteString(` medium="`)
+		b.WriteString(xmlEscape(mc.Medium))
+		b.WriteString(`"`)
+	}
+	if mc.Length != "" && mc.Length != "0" {
+		b.WriteString(` fileSize="`)
+		b.WriteString(xmlEscape(mc.Length))
+		b.WriteString(`"`)
+	}
+	b.WriteString(` />` + "\n")
+	return b.String()
 }
 
 func rssEnclosureTag(c *wp.Context, enc feedEnclosure) string {

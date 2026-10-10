@@ -2769,6 +2769,21 @@
   api: n/a
   notes: "P3.67 — feedParseUTC + Atom date share TZ conversion"
 
+# P3.69: feed item Media RSS media:content (featured image + enclosures).
+- prefix: wp-includes/feed-rss2.php#media-content
+  go: internal/server/front.go
+  status: partial
+  task: P3.69
+  api: n/a
+  notes: "P3.69 — xmlns:media + media:content from thumbnail/enclosures"
+
+- prefix: wp-includes/feed.php#media-content
+  go: internal/server/feed_media_content_test.go
+  status: partial
+  task: P3.69
+  api: n/a
+  notes: "P3.69 — unit coverage for media:content image+audio"
+
 # P3.68: feed item slash:comments via get_comments_number filter.
 - prefix: wp-includes/feed-rss2.php#slash_comments
   go: internal/server/front.go
