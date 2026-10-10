@@ -3821,6 +3821,21 @@
   api: exported
   notes: "P8.23 — ImageSizeNamesChoose + image_size_names_choose filter"
 
+# P8.24: wp_check_filetype_and_ext + upload_mimes on SaveUploadedMedia.
+- prefix: wp-includes/functions.php#wp_check_filetype_and_ext
+  go: internal/wp/check_filetype.go
+  status: partial
+  task: P8.24
+  api: exported
+  notes: "P8.24 — CheckFiletypeAndExt; image mime correction; upload_mimes allow-list"
+
+- prefix: wp-includes/functions.php#upload_mimes#p8.24
+  go: internal/wp/upload.go
+  status: partial
+  task: P8.24
+  api: exported
+  notes: "P8.24 — SaveUploadedMedia rejects types outside GetAllowedMimeTypes/upload_mimes"
+
 # P8.22: wp_get_attachment_metadata read path + filter.
 - prefix: wp-includes/post.php#wp_get_attachment_metadata
   go: internal/wp/media.go
