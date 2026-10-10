@@ -48,6 +48,36 @@ func TestWPCheckPasswordCoversPhpassAndWPPrefix(t *testing.T) {
 	}
 }
 
+func TestPasswordNeedsRehash(t *testing.T) {
+	// P2.101: wp_password_needs_rehash subset.
+	plain := "password"
+	wpHash, err := wp.HashPassword(plain)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if wp.PasswordNeedsRehash(wpHash) {
+		t.Fatalf("fresh $wp$ hash should not need rehash: %q", wpHash)
+	}
+	if wp.WPPasswordNeedsRehash(wpHash) {
+		t.Fatal("alias should match")
+	}
+	portable := wp.HashPasswordPortable(plain, 8)
+	if !wp.PasswordNeedsRehash(portable) {
+		t.Fatal("phpass should need rehash")
+	}
+	if !wp.PasswordNeedsRehash("$2y$10$abcdefghijklmnopqrstuuABCDEFGHIJKLMNOPQRSTUVWXYZ012") {
+		// Invalid bare bcrypt still needs upgrade to $wp$ prefix.
+		t.Fatal("bare bcrypt prefix should need rehash")
+	}
+	if !wp.PasswordNeedsRehash("") {
+		t.Fatal("empty hash should need rehash")
+	}
+	fixture := "$wp$2y$10$6w0zN/qvwp7cHDgzOIfBPuqucz7bjufoiKA/CAk0RUJ3C3XA3YE/y"
+	if wp.PasswordNeedsRehash(fixture) {
+		t.Fatal("fixture $wp$ cost-10 hash should not need rehash")
+	}
+}
+
 func TestApplicationPasswordUsesCheckPasswordFormats(t *testing.T) {
 	c := testBootQuery(t)
 	user, err := c.GetUserBy("login", "admin")

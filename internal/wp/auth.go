@@ -1,6 +1,7 @@
-// Auth salts, hashes, nonces, and password helpers (P2.1).
+// Auth salts, hashes, nonces, and password helpers (P2.1 / P2.101).
 // Ports wp_salt / wp_hash / wp_create_nonce formula / wp_fast_hash /
-// wp_hash_password (bcrypt+$wp) / wp_generate_auth_cookie from pluggable.php.
+// wp_hash_password (bcrypt+$wp) / wp_password_needs_rehash /
+// wp_generate_auth_cookie from pluggable.php.
 package wp
 
 import (
@@ -160,11 +161,7 @@ func CheckPassword(password, hash string) bool {
 	}
 	if strings.HasPrefix(hash, "$2y$") || strings.HasPrefix(hash, "$2a$") || strings.HasPrefix(hash, "$2b$") {
 		// Go's bcrypt accepts $2a$; map $2y$ → $2a$ for comparison.
-		goHash := hash
-		if strings.HasPrefix(hash, "$2y$") {
-			goHash = "$2a$" + hash[4:]
-		}
-		return bcrypt.CompareHashAndPassword([]byte(goHash), []byte(password)) == nil
+		return bcrypt.CompareHashAndPassword([]byte(normalizeBcryptHash(hash)), []byte(password)) == nil
 	}
 	if strings.HasPrefix(hash, "$P$") || strings.HasPrefix(hash, "$H$") {
 		return phpassCheck(password, hash)
@@ -175,6 +172,37 @@ func CheckPassword(password, hash string) bool {
 // WPCheckPassword is the wp_check_password alias for CheckPassword (P2.21).
 func WPCheckPassword(password, hash string) bool {
 	return CheckPassword(password, hash)
+}
+
+// PasswordNeedsRehash reports whether hash should be upgraded to current $wp$+bcrypt
+// (wp_password_needs_rehash subset, P2.101). Phpass and bare bcrypt need rehash;
+// $wp$-prefixed bcrypt needs rehash when cost differs from DefaultCost.
+func PasswordNeedsRehash(hash string) bool {
+	if hash == "" {
+		return true
+	}
+	if strings.HasPrefix(hash, "$wp") {
+		inner := hash[3:]
+		cost, err := bcrypt.Cost([]byte(normalizeBcryptHash(inner)))
+		if err != nil {
+			return true
+		}
+		return cost != bcrypt.DefaultCost
+	}
+	// Legacy phpass / bare bcrypt / unknown → rehash to $wp$+bcrypt.
+	return true
+}
+
+// WPPasswordNeedsRehash is the wp_password_needs_rehash alias (P2.101).
+func WPPasswordNeedsRehash(hash string) bool {
+	return PasswordNeedsRehash(hash)
+}
+
+func normalizeBcryptHash(hash string) string {
+	if strings.HasPrefix(hash, "$2y$") {
+		return "$2a$" + hash[4:]
+	}
+	return hash
 }
 
 // GenerateAuthCookie builds an auth cookie string (wp_generate_auth_cookie).
