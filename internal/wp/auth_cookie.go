@@ -271,15 +271,28 @@ func (c *Context) AuthenticateRequest() {
 	}
 }
 
+// DefaultNonceLife is DAY_IN_SECONDS — half-life window for wp_nonce_tick.
+const DefaultNonceLife int64 = 86400
+
 // NonceTick returns the WordPress nonce tick (ceil(time / (nonce_life/2))).
-// Default nonce_life is one day (86400).
+// Default nonce_life is one day (86400). action is reserved for nonce_life filters.
 func NonceTick(now int64, action string) int64 {
+	return NonceTickLife(now, action, DefaultNonceLife)
+}
+
+// NonceTickLife is NonceTick with an explicit nonce_life (seconds).
+func NonceTickLife(now int64, action string, nonceLife int64) int64 {
 	_ = action
 	if now <= 0 {
 		now = time.Now().Unix()
 	}
-	const nonceLife = 86400
-	half := int64(nonceLife / 2)
+	if nonceLife <= 0 {
+		nonceLife = DefaultNonceLife
+	}
+	half := nonceLife / 2
+	if half <= 0 {
+		half = 1
+	}
 	// PHP ceil(time / half)
 	return (now + half - 1) / half
 }
@@ -297,6 +310,28 @@ func (c *Context) CreateNonce(action string) string {
 	}
 	tick := NonceTick(0, action)
 	return c.Auth.CreateNonce(tick, action, uid, token)
+}
+
+// VerifyNonce implements wp_verify_nonce.
+// Returns 1 for the current tick, 2 for the previous tick, and 0 when invalid.
+func (c *Context) VerifyNonce(nonce, action string) int {
+	if c == nil || c.Auth == nil || nonce == "" {
+		return 0
+	}
+	uid := 0
+	token := ""
+	if c.CurrentUser != nil {
+		uid = int(c.CurrentUser.ID)
+		token = c.SessionToken
+	}
+	tick := NonceTick(0, action)
+	if c.Auth.CreateNonce(tick, action, uid, token) == nonce {
+		return 1
+	}
+	if c.Auth.CreateNonce(tick-1, action, uid, token) == nonce {
+		return 2
+	}
+	return 0
 }
 
 // Login authenticates login/password, sets CurrentUser, and returns auth cookies.

@@ -160,7 +160,7 @@
 - prefix: wp-includes/pluggable.php
   go: internal/wp/auth.go
   status: partial
-  task: P2.1
+  task: P2.20
   api: exported
 
 - prefix: wp-includes/user.php
