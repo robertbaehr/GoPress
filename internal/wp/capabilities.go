@@ -171,6 +171,10 @@ func (r *Roles) MapMetaCap(cap string, userID int64, _ ...int64) []string {
 	case "manage_privacy_options":
 		// P7.93: single-site WP maps manage_privacy_options → manage_options.
 		return []string{"manage_options"}
+	case "erase_others_personal_data":
+		// P7.97: erase-personal-data.php requires erase_others_personal_data;
+		// GoPress maps it to manage_options (admin privacy tools).
+		return []string{"manage_options"}
 	default:
 		return []string{cap}
 	}

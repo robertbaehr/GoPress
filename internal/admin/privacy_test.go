@@ -315,6 +315,7 @@ func TestPrivacyEraseUIPolish(t *testing.T) {
 		"nosubsub",
 		"erase-personal-data-php",
 		"wp-privacy-request-form-field",
+		"subsubsub",
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("missing %q in %q", want, body)

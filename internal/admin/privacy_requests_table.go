@@ -9,8 +9,9 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// PrivacyRequest is one row in the privacy requests list table (P8.10).
+// PrivacyRequest is one row in the privacy requests list table (P8.10 / P7.97).
 type PrivacyRequest struct {
+	ID        int64
 	Email     string
 	Status    string // request-pending | request-confirmed | request-failed | request-completed
 	Requested time.Time
@@ -38,9 +39,15 @@ func (t PrivacyRequestsTable) Columns() map[string]string {
 
 // RenderHTML emits the wp-list-table for privacy requests.
 func (t PrivacyRequestsTable) RenderHTML() string {
+	return t.RenderHTMLWithFilter("")
+}
+
+// RenderHTMLWithFilter emits views + table; filterStatus is filter-status query (P7.97).
+func (t PrivacyRequestsTable) RenderHTMLWithFilter(filterStatus string) string {
 	cols := t.Columns()
 	order := []string{"cb", "email", "status", "created_timestamp", "next_steps"}
 	var b strings.Builder
+	b.WriteString(t.renderViewsHTML(filterStatus))
 	b.WriteString(`<table class="wp-list-table widefat fixed striped table-view-list privacy-requests requests-table">` + "\n")
 	b.WriteString("<thead><tr>\n")
 	for _, key := range order {
@@ -57,16 +64,21 @@ func (t PrivacyRequestsTable) RenderHTML() string {
 		b.WriteString("</th>\n")
 	}
 	b.WriteString("</tr></thead>\n<tbody id=\"the-list\">\n")
-	if len(t.Rows) == 0 {
+	rows := t.filteredRows(filterStatus)
+	if len(rows) == 0 {
 		b.WriteString(`<tr class="no-items"><td class="colspanchange" colspan="5">No requests found.</td></tr>` + "\n")
 	}
-	for i, row := range t.Rows {
+	for i, row := range rows {
 		statusClass := privacyStatusClass(row.Status)
 		b.WriteString(`<tr class="`)
 		b.WriteString(html.EscapeString(statusClass))
 		b.WriteString(`">`)
 		b.WriteString(`<th scope="row" class="check-column"><input type="checkbox" name="request_id[]" value="`)
-		b.WriteString(strconv.Itoa(i + 1))
+		idVal := row.ID
+		if idVal <= 0 {
+			idVal = int64(i + 1)
+		}
+		b.WriteString(strconv.FormatInt(idVal, 10))
 		b.WriteString(`"></th>`)
 		b.WriteString(`<td class="email column-email" data-colname="Requester">`)
 		b.WriteString(html.EscapeString(row.Email))
@@ -96,6 +108,98 @@ func (t PrivacyRequestsTable) RenderHTML() string {
 	}
 	b.WriteString("</tbody>\n</table>\n")
 	return b.String()
+}
+
+// renderViewsHTML emits WP_Privacy_Requests_Table::get_views links (P7.97).
+func (t PrivacyRequestsTable) renderViewsHTML(current string) string {
+	current = strings.TrimSpace(current)
+	counts := map[string]int{}
+	for _, row := range t.Rows {
+		counts[normalizePrivacyFilterStatus(row.Status)]++
+	}
+	total := len(t.Rows)
+	adminURL := t.AdminURL
+	if adminURL == "" {
+		adminURL = "/wp-admin/erase-personal-data.php"
+	}
+	type view struct {
+		key, label string
+		count      int
+		href       string
+	}
+	views := []view{
+		{key: "", label: "All", count: total, href: adminURL},
+	}
+	for _, st := range []string{"request-pending", "request-confirmed", "request-failed", "request-completed"} {
+		n := counts[st]
+		if n == 0 {
+			continue
+		}
+		views = append(views, view{
+			key:   st,
+			label: privacyStatusLabel(st),
+			count: n,
+			href:  adminURL + "?filter-status=" + st,
+		})
+	}
+	var b strings.Builder
+	b.WriteString(`<ul class="subsubsub">` + "\n")
+	for i, v := range views {
+		cls := ""
+		if v.key == current || (current == "" && v.key == "") {
+			cls = ` class="current"`
+		}
+		b.WriteString("<li class=\"")
+		if v.key == "" {
+			b.WriteString("all")
+		} else {
+			b.WriteString(html.EscapeString(v.key))
+		}
+		b.WriteString(`"><a href="`)
+		b.WriteString(html.EscapeString(v.href))
+		b.WriteString(`"`)
+		b.WriteString(cls)
+		b.WriteString(">")
+		b.WriteString(html.EscapeString(v.label))
+		b.WriteString(` <span class="count">(`)
+		b.WriteString(strconv.Itoa(v.count))
+		b.WriteString(`)</span></a>`)
+		if i < len(views)-1 {
+			b.WriteString(" |")
+		}
+		b.WriteString("</li>\n")
+	}
+	b.WriteString("</ul>\n")
+	return b.String()
+}
+
+func (t PrivacyRequestsTable) filteredRows(filterStatus string) []PrivacyRequest {
+	filterStatus = normalizePrivacyFilterStatus(filterStatus)
+	if filterStatus == "" {
+		return t.Rows
+	}
+	out := make([]PrivacyRequest, 0, len(t.Rows))
+	for _, row := range t.Rows {
+		if normalizePrivacyFilterStatus(row.Status) == filterStatus {
+			out = append(out, row)
+		}
+	}
+	return out
+}
+
+func normalizePrivacyFilterStatus(status string) string {
+	switch strings.TrimSpace(status) {
+	case "request-pending", "pending":
+		return "request-pending"
+	case "request-confirmed", "confirmed":
+		return "request-confirmed"
+	case "request-failed", "failed":
+		return "request-failed"
+	case "request-completed", "complete", "completed":
+		return "request-completed"
+	default:
+		return strings.TrimSpace(status)
+	}
 }
 
 func privacyStatusClass(status string) string {
@@ -157,8 +261,9 @@ func renderExportPrivacyRequestsTable(c *wp.Context, pendingEmail string) string
 	return table.RenderHTML()
 }
 
-// renderErasePrivacyRequestsTable lists stored user_request rows (P8.10 / P8.21).
-func renderErasePrivacyRequestsTable(c *wp.Context, pendingEmail string) string {
+// renderErasePrivacyRequestsTable lists stored user_request rows (P8.10 / P8.21 / P7.97).
+// filterStatus is the filter-status query arg (request-pending, …).
+func renderErasePrivacyRequestsTable(c *wp.Context, pendingEmail, filterStatus string) string {
 	table := PrivacyRequestsTable{
 		RequestType: "remove_personal_data",
 		AdminURL:    "/wp-admin/erase-personal-data.php",
@@ -177,6 +282,7 @@ func renderErasePrivacyRequestsTable(c *wp.Context, pendingEmail string) string 
 					next = "Complete"
 				}
 				table.Rows = append(table.Rows, PrivacyRequest{
+					ID:        r.ID,
 					Email:     r.Email,
 					Status:    r.Status,
 					Requested: r.Requested,
@@ -194,5 +300,5 @@ func renderErasePrivacyRequestsTable(c *wp.Context, pendingEmail string) string 
 			NextSteps: "Waiting for confirmation",
 		})
 	}
-	return table.RenderHTML()
+	return table.RenderHTMLWithFilter(filterStatus)
 }
