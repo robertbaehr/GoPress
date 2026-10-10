@@ -114,11 +114,47 @@ func TestLoadMUPluginsActivatesRegistered(t *testing.T) {
 	c.Config.ABSPATH = root + string(os.PathSeparator)
 	hit := false
 	plugins.Register(muStub{file: "mu-test.php", hit: &hit})
+	loaded := false
+	c.Hooks.AddAction("muplugins_loaded", func(args ...any) { loaded = true }, 10, 0)
 	if err := plugins.LoadMUPlugins(c); err != nil {
 		t.Fatal(err)
 	}
 	if !hit {
 		t.Fatal("expected mu-test.php shim to Activate")
+	}
+	if !loaded {
+		t.Fatal("expected muplugins_loaded action")
+	}
+}
+
+func TestListMUPluginsGetMUPluginsFilter(t *testing.T) {
+	c := bootOrSkip(t)
+	root := t.TempDir()
+	mu := filepath.Join(root, "wp-content", "mu-plugins")
+	if err := os.MkdirAll(mu, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	body := "<?php\n/**\n * Plugin Name: Filter Me\n */\n"
+	if err := os.WriteFile(filepath.Join(mu, "filter-me.php"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	c.Config.ABSPATH = root + string(os.PathSeparator)
+	c.Hooks.AddFilter("get_mu_plugins", func(value any, args ...any) any {
+		list, _ := value.([]plugins.PluginData)
+		return append(list, plugins.PluginData{File: "injected.php", Name: "Injected"})
+	}, 10, 1)
+	list, err := plugins.ListMUPlugins(c)
+	if err != nil {
+		t.Fatal(err)
+	}
+	found := false
+	for _, p := range list {
+		if p.File == "injected.php" {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected get_mu_plugins filter injection: %+v", list)
 	}
 }
 

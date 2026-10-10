@@ -68,23 +68,34 @@ func LoadActive(c *wp.Context) error {
 
 // LoadMUPlugins scans wp-content/mu-plugins for .php drop-ins and activates
 // any matching registered Go shims (WordPress must-use plugin loader subset).
+// After activation it fires the muplugins_loaded action (P9.19).
 func LoadMUPlugins(c *wp.Context) error {
 	if c == nil {
 		return nil
 	}
 	dir := MUPluginDir(c)
 	if dir == "" {
+		if c.Hooks != nil {
+			c.Hooks.DoAction("muplugins_loaded")
+		}
 		return nil
 	}
 	files, err := ScanMUPluginFiles(dir)
 	if err != nil {
 		if os.IsNotExist(err) {
+			if c.Hooks != nil {
+				c.Hooks.DoAction("muplugins_loaded")
+			}
 			return nil
 		}
 		return err
 	}
 	for _, file := range files {
 		activateRegistered(c, file)
+	}
+	// P9.19: WP fires muplugins_loaded after must-use plugins are loaded.
+	if c.Hooks != nil {
+		c.Hooks.DoAction("muplugins_loaded")
 	}
 	return nil
 }

@@ -52,6 +52,7 @@ var pluginHeaderMap = []struct {
 // ListMUPlugins returns must-use plugin headers like get_mu_plugins() (P9.10).
 // Only top-level *.php files under wp-content/mu-plugins are included; when a
 // file has no Plugin Name header, Name defaults to the basename.
+// Applies the get_mu_plugins filter (P9.19).
 func ListMUPlugins(c *wp.Context) ([]PluginData, error) {
 	dir := MUPluginDir(c)
 	if dir == "" {
@@ -84,6 +85,13 @@ func ListMUPlugins(c *wp.Context) ([]PluginData, error) {
 		}
 		data.File = name
 		out = append(out, data)
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("get_mu_plugins", out); v != nil {
+			if filtered, ok := v.([]PluginData); ok {
+				out = filtered
+			}
+		}
 	}
 	return out, nil
 }
