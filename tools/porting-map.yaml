@@ -1064,6 +1064,13 @@
   task: P10.40
   api: n/a
 
+# P10.42: e2e rel=canonical + trailing-slash Location.
+- prefix: tests/e2e/canonical.spec.js
+  go: tests/e2e/canonical.spec.js
+  status: done
+  task: P10.42
+  api: n/a
+
 
 # P10.22: E2E author archive /author/admin/.
 - prefix: tests/e2e/author.spec.js
