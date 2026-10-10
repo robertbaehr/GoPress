@@ -2,6 +2,11 @@ package plugins_test
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
+	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -12,9 +17,6 @@ import (
 	"github.com/robertbaehr/GoPress/internal/server"
 	"github.com/robertbaehr/GoPress/internal/wp"
 	"github.com/robertbaehr/GoPress/plugins/hellodolly"
-	"net/http"
-	"net/http/httptest"
-	"net/url"
 )
 
 func bootOrSkip(t *testing.T) *wp.Context {
@@ -51,6 +53,68 @@ func TestHelloDollyActivateHooksAdminNotices(t *testing.T) {
 	lyric := hellodolly.RandomLyric()
 	if lyric == "" {
 		t.Fatal("empty lyric")
+	}
+}
+
+func TestScanMUPluginFiles(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "alpha.php"), []byte("<?php"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(filepath.Join(dir, "beta"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "beta", "beta.php"), []byte("<?php"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "readme.txt"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	files, err := plugins.ScanMUPluginFiles(dir)
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := map[string]bool{"alpha.php": true, "beta/beta.php": true}
+	if len(files) != 2 {
+		t.Fatalf("files=%v", files)
+	}
+	for _, f := range files {
+		if !want[f] {
+			t.Fatalf("unexpected %q in %v", f, files)
+		}
+	}
+}
+
+type muStub struct {
+	file string
+	hit  *bool
+}
+
+func (m muStub) File() string { return m.file }
+func (m muStub) Activate(c *wp.Context) {
+	if m.hit != nil {
+		*m.hit = true
+	}
+}
+
+func TestLoadMUPluginsActivatesRegistered(t *testing.T) {
+	c := bootOrSkip(t)
+	root := t.TempDir()
+	mu := filepath.Join(root, "wp-content", "mu-plugins")
+	if err := os.MkdirAll(mu, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(mu, "mu-test.php"), []byte("<?php"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	c.Config.ABSPATH = root + string(os.PathSeparator)
+	hit := false
+	plugins.Register(muStub{file: "mu-test.php", hit: &hit})
+	if err := plugins.LoadMUPlugins(c); err != nil {
+		t.Fatal(err)
+	}
+	if !hit {
+		t.Fatal("expected mu-test.php shim to Activate")
 	}
 }
 
