@@ -5229,6 +5229,14 @@
   api: n/a
   notes: "P10.80 — block-directory/menus/font-collections JSON; posts slug/sticky/include headers; ?p=/?page_id= + trailing-slash redirect"
 
+# P10.81: STATUS/PORTING refresh after P5.85–P10.80.
+- prefix: docs/STATUS.md#p10.81
+  go: docs/STATUS.md
+  status: done
+  task: P10.81
+  api: n/a
+  notes: "P10.81 — STATUS refresh after query polish, block-directory term, plugins views, is_ssl, trailing-slash, image sizes, corpus 87/87"
+
 # P10.79: STATUS/PORTING refresh after P5.84–P10.78.
 - prefix: docs/STATUS.md#p10.79
   go: docs/STATUS.md
