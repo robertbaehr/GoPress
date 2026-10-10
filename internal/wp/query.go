@@ -36,6 +36,8 @@ type Post struct {
 	CommentStatus string
 	PingStatus    string
 	Password      string
+	Parent        int64
+	MenuOrder     int
 }
 
 // GetPosts runs a WP_Query-like SELECT against wp_posts.
@@ -85,7 +87,7 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 
 	q := "SELECT ID, post_author, post_date, post_date_gmt, post_modified, post_modified_gmt, " +
 		"post_name, post_status, post_type, post_title, post_content, post_excerpt, " +
-		"guid, comment_status, ping_status, post_password FROM " +
+		"guid, comment_status, ping_status, post_password, post_parent, menu_order FROM " +
 		c.DB.Posts() + " WHERE " + strings.Join(where, " AND ") +
 		" ORDER BY post_date DESC"
 	if limit >= 0 {
@@ -145,6 +147,8 @@ func postFromRow(row map[string]any) Post {
 		CommentStatus: rowString(row["comment_status"]),
 		PingStatus:    rowString(row["ping_status"]),
 		Password:      rowString(row["post_password"]),
+		Parent:        rowInt64(row["post_parent"]),
+		MenuOrder:     int(rowInt64(row["menu_order"])),
 	}
 }
 

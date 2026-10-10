@@ -21,7 +21,7 @@ func TestRenderTemplatePart(t *testing.T) {
 	if !strings.Contains(out, `<header class="wp-block-template-part">`) {
 		t.Fatalf("missing wrapper: %q", out)
 	}
-	if !strings.Contains(out, `<p>Customized header part</p>`) {
+	if !strings.Contains(out, `<p class="wp-block-paragraph">Customized header part</p>`) {
 		t.Fatalf("missing inner: %q", out)
 	}
 	if strings.Contains(out, "<!-- wp:") {
@@ -46,7 +46,7 @@ func TestRenderTemplatePartCycleGuard(t *testing.T) {
 		return `<!-- wp:template-part {"slug":"loop"} /--><!-- wp:paragraph --><p>X</p><!-- /wp:paragraph -->`, true
 	}
 	out := blocks.RenderWith(env, `<!-- wp:template-part {"slug":"loop","tagName":"div"} /-->`)
-	if strings.Count(out, `<p>X</p>`) != 1 {
+	if strings.Count(out, `<p class="wp-block-paragraph">X</p>`) != 1 {
 		t.Fatalf("cycle not guarded: %q", out)
 	}
 }

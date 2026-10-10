@@ -485,7 +485,7 @@ func loadPostRow(c *wp.Context, postType string, id int64) (*wp.Post, error) {
 	q, args, err := c.DB.Prepare(
 		"SELECT ID, post_author, post_date, post_date_gmt, post_modified, post_modified_gmt, "+
 			"post_name, post_status, post_type, post_title, post_content, post_excerpt, "+
-			"guid, comment_status, ping_status, post_password FROM "+c.DB.Posts()+
+			"guid, comment_status, ping_status, post_password, post_parent, menu_order FROM "+c.DB.Posts()+
 			" WHERE ID = %d AND post_type = %s LIMIT 1",
 		id, postType,
 	)
@@ -516,6 +516,8 @@ func loadPostRow(c *wp.Context, postType string, id int64) (*wp.Post, error) {
 		CommentStatus: asString(row["comment_status"]),
 		PingStatus:    asString(row["ping_status"]),
 		Password:      asString(row["post_password"]),
+		Parent:        asInt64(row["post_parent"]),
+		MenuOrder:     int(asInt64(row["menu_order"])),
 	}
 	return &p, nil
 }

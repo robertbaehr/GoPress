@@ -211,9 +211,18 @@ type Index struct {
 	Description    string                `json:"description"`
 	URL            string                `json:"url"`
 	Home           string                `json:"home"`
+	GMTOffset      float64               `json:"gmt_offset"`
+	TimezoneString string                `json:"timezone_string"`
 	Namespaces     []string              `json:"namespaces"`
 	Authentication map[string]any        `json:"authentication"`
 	Routes         map[string]RouteIndex `json:"routes"`
+	SiteLogo       int64                 `json:"site_logo"`
+	SiteIcon       int64                 `json:"site_icon"`
+	SiteIconURL    string                `json:"site_icon_url"`
+	PageForPosts   int64                 `json:"page_for_posts"`
+	PageOnFront    int64                 `json:"page_on_front"`
+	ShowOnFront    string                `json:"show_on_front"`
+	Links          map[string]any        `json:"_links"`
 }
 
 // RouteIndex describes one registered route in the index.
@@ -407,14 +416,135 @@ func buildIndex(c *wp.Context) Index {
 		}
 	}
 
+	// Advertise additional public route keys present in WP (handlers may 404 until ported).
+	for k, v := range extraIndexRoutes() {
+		if _, ok := routes[k]; !ok {
+			routes[k] = v
+		}
+	}
+
 	return Index{
 		Name:           name,
 		Description:    desc,
 		URL:            siteURL,
 		Home:           home,
+		GMTOffset:      optionFloat(c, "gmt_offset", 0),
+		TimezoneString: optionString(c, "timezone_string", ""),
 		Namespaces:     namespaces,
 		Authentication: auth,
 		Routes:         routes,
+		SiteLogo:       optionInt64(c, "site_logo", 0),
+		SiteIcon:       optionInt64(c, "site_icon", 0),
+		SiteIconURL:    "",
+		PageForPosts:   optionInt64(c, "page_for_posts", 0),
+		PageOnFront:    optionInt64(c, "page_on_front", 0),
+		ShowOnFront:    optionString(c, "show_on_front", "posts"),
+		Links: map[string]any{
+			"help": []map[string]any{{"href": "https://developer.wordpress.org/rest-api/"}},
+		},
+	}
+}
+
+func optionFloat(c *wp.Context, name string, fallback float64) float64 {
+	if c == nil || c.Options == nil {
+		return fallback
+	}
+	v := c.Options.GetOption(name, fallback)
+	switch t := v.(type) {
+	case float64:
+		return t
+	case int:
+		return float64(t)
+	case int64:
+		return float64(t)
+	case string:
+		f, err := strconv.ParseFloat(t, 64)
+		if err == nil {
+			return f
+		}
+	}
+	return fallback
+}
+
+func optionInt64(c *wp.Context, name string, fallback int64) int64 {
+	if c == nil || c.Options == nil {
+		return fallback
+	}
+	v := c.Options.GetOption(name, fallback)
+	switch t := v.(type) {
+	case int64:
+		return t
+	case int:
+		return int64(t)
+	case float64:
+		return int64(t)
+	case string:
+		n, err := strconv.ParseInt(t, 10, 64)
+		if err == nil {
+			return n
+		}
+	}
+	return fallback
+}
+
+func extraIndexRoutes() map[string]RouteIndex {
+	// Middle-path index expansion: register more WP route keys with lean args.
+	ns := "wp/v2"
+	getOnly := func(namespace string) RouteIndex {
+		return RouteIndex{
+			Namespace: namespace,
+			Methods:   []string{"GET"},
+			Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}},
+		}
+	}
+	return map[string]RouteIndex{
+		"/batch/v1":          getOnly("batch/v1"),
+		"/oembed/1.0/proxy":  getOnly("oembed/1.0"),
+		"/wp-site-health/v1": getOnly("wp-site-health/v1"),
+		"/wp-site-health/v1/tests/background-updates":   getOnly("wp-site-health/v1"),
+		"/wp-site-health/v1/tests/loopback-requests":    getOnly("wp-site-health/v1"),
+		"/wp-site-health/v1/tests/https-status":         getOnly("wp-site-health/v1"),
+		"/wp-site-health/v1/tests/dotorg-communication": getOnly("wp-site-health/v1"),
+		"/wp-site-health/v1/tests/authorization-header": getOnly("wp-site-health/v1"),
+		"/wp-site-health/v1/directory-sizes":            getOnly("wp-site-health/v1"),
+		"/wp-site-health/v1/tests/page-cache":           getOnly("wp-site-health/v1"),
+		"/wp-block-editor/v1":                           getOnly("wp-block-editor/v1"),
+		"/wp-block-editor/v1/export":                    getOnly("wp-block-editor/v1"),
+		"/wp-block-editor/v1/url-details":               getOnly("wp-block-editor/v1"),
+		"/wp-block-editor/v1/navigation-fallback":       getOnly("wp-block-editor/v1"),
+		"/wp-abilities/v1":                              getOnly("wp-abilities/v1"),
+		"/wp-abilities/v1/abilities":                    getOnly("wp-abilities/v1"),
+		"/wp-abilities/v1/categories":                   getOnly("wp-abilities/v1"),
+		"/wp/v2/users":                                  collectionRoute(ns),
+		"/wp/v2/users/(?P<id>[\\d]+)":                   itemRoute(ns),
+		"/wp/v2/themes":                                 getOnly(ns),
+		"/wp/v2/plugins":                                collectionRoute(ns),
+		"/wp/v2/menu-items":                             collectionRoute(ns),
+		"/wp/v2/menu-items/(?P<id>[\\d]+)":              itemRoute(ns),
+		"/wp/v2/menus":                                  collectionRoute(ns),
+		"/wp/v2/menus/(?P<id>[\\d]+)":                   itemRoute(ns),
+		"/wp/v2/menu-locations":                         getOnly(ns),
+		"/wp/v2/templates":                              collectionRoute(ns),
+		"/wp/v2/templates/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)": itemRoute(ns),
+		"/wp/v2/template-parts": collectionRoute(ns),
+		"/wp/v2/template-parts/(?P<id>([^\\/:<>\\*\\?\"\\|]+(?:\\/[^\\/:<>\\*\\?\"\\|]+)?)[\\/\\w%-]+)": itemRoute(ns),
+		"/wp/v2/navigation":                          collectionRoute(ns),
+		"/wp/v2/navigation/(?P<id>[\\d]+)":           itemRoute(ns),
+		"/wp/v2/global-styles/(?P<id>[\\/\\d+]+)":    getOnly(ns),
+		"/wp/v2/block-patterns/patterns":             getOnly(ns),
+		"/wp/v2/block-patterns/categories":           getOnly(ns),
+		"/wp/v2/font-families":                       collectionRoute(ns),
+		"/wp/v2/font-families/(?P<id>[\\d]+)":        itemRoute(ns),
+		"/wp/v2/types/(?P<type>[\\w-]+)":             getOnly(ns),
+		"/wp/v2/statuses":                            getOnly(ns),
+		"/wp/v2/statuses/(?P<status>[\\w-]+)":        getOnly(ns),
+		"/wp/v2/taxonomies/(?P<taxonomy>[\\w-]+)":    getOnly(ns),
+		"/wp/v2/sidebars":                            getOnly(ns),
+		"/wp/v2/sidebars/(?P<id>[\\w-]+)":            getOnly(ns),
+		"/wp/v2/widgets":                             getOnly(ns),
+		"/wp/v2/widgets/(?P<id>[\\w\\-]+)":           getOnly(ns),
+		"/wp/v2/widget-types":                        getOnly(ns),
+		"/wp/v2/widget-types/(?P<id>[a-zA-Z0-9_-]+)": getOnly(ns),
 	}
 }
 
