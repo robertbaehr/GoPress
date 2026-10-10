@@ -1729,3 +1729,95 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.96: more matching REST header cases after P5.93–P6.39.
+- id: rest-block-types-block-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/block
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-block-types-pattern-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/pattern
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-block-types-query-no-results-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/query-no-results
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-block-types-template-part-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/template-part
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-block-types-terms-query-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/terms-query
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-menu-locations-primary-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/menu-locations/primary
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-menu-locations
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/menu-locations
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-block-types-home-link
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/home-link
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-block-types-site-title
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/site-title
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-route-block-types-site-tagline
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/site-tagline
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
