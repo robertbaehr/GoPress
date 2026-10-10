@@ -30,6 +30,8 @@ func (s *Server) serveUsersMe(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		})
 		return
 	}
+	// WP advertises Allow even on rest_not_logged_in (P10.15 corpus).
+	w.Header().Set("Allow", "GET")
 	if c == nil || c.CurrentUser == nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]any{
 			"code":    "rest_not_logged_in",
