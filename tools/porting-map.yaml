@@ -3018,8 +3018,9 @@ wp-login.php#language-switcher-post
 - prefix: wp-includes/feed-rdf.php
   go: internal/server/front.go
   status: partial
-  task: P3.33
+  task: P3.89
   api: n/a
+  notes: "P3.89 — rss_update_period/frequency; rss_tag_pre/rdf_ns/rdf_header/rdf_item; wp_feed_namespaces"
 
 # P10.32: e2e coverage in tests/e2e/rdf.spec.js.
 - prefix: tests/e2e/rdf.spec.js
