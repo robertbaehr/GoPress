@@ -122,6 +122,20 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 		s.serveMediaItem(w, r, c, id)
 	case path == "/wp/v2/search":
 		s.serveSearch(w, r, c)
+	case path == "/wp/v2/block-types":
+		s.serveBlockTypes(w, r, c)
+	case strings.HasPrefix(path, "/wp/v2/block-renderer/"):
+		name := strings.TrimPrefix(path, "/wp/v2/block-renderer/")
+		name = strings.Trim(name, "/")
+		if name == "" || strings.Count(name, "/") != 1 {
+			writeJSON(w, http.StatusNotFound, map[string]any{
+				"code":    "rest_no_route",
+				"message": "No route was found matching the URL and request method.",
+				"data":    map[string]any{"status": 404},
+			})
+			return
+		}
+		s.serveBlockRenderer(w, r, c, name)
 	default:
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"code":    "rest_no_route",
@@ -291,6 +305,29 @@ func buildIndex(c *wp.Context) Index {
 					"search":   map[string]any{"required": false},
 					"type":     map[string]any{"required": false},
 					"subtype":  map[string]any{"required": false},
+				},
+			}},
+		},
+		"/wp/v2/block-types": {
+			Namespace: "wp/v2",
+			Methods:   []string{"GET"},
+			Endpoints: []RouteEndpoint{{
+				Methods: []string{"GET"},
+				Args: map[string]any{
+					"context":   map[string]any{"default": "view", "required": false},
+					"namespace": map[string]any{"required": false},
+				},
+			}},
+		},
+		"/wp/v2/block-renderer/(?P<name>[a-z0-9-]+/[a-z0-9-]+)": {
+			Namespace: "wp/v2",
+			Methods:   []string{"GET", "POST"},
+			Endpoints: []RouteEndpoint{{
+				Methods: []string{"GET", "POST"},
+				Args: map[string]any{
+					"name":       map[string]any{"required": false},
+					"attributes": map[string]any{"required": false},
+					"post_id":    map[string]any{"required": false},
 				},
 			}},
 		},

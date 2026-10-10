@@ -12,7 +12,7 @@ import (
 
 func TestUsersMeViaApplicationPassword(t *testing.T) {
 	c := bootOrSkip(t)
-	defer c.DB.Close()
+	t.Cleanup(func() { _ = c.DB.Close() })
 
 	user, err := c.GetUserBy("login", "admin")
 	if err != nil || user == nil {
@@ -47,7 +47,7 @@ func TestUsersMeViaApplicationPassword(t *testing.T) {
 
 func TestUsersMeRejectsBadApplicationPassword(t *testing.T) {
 	c := bootOrSkip(t)
-	defer c.DB.Close()
+	t.Cleanup(func() { _ = c.DB.Close() })
 
 	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/users/me", nil)
 	req.SetBasicAuth("admin", "not-a-valid-application-password")

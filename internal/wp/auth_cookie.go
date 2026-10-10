@@ -341,6 +341,11 @@ func (c *Context) VerifySessionToken(userID int64, token string, now int64) (boo
 }
 
 func (c *Context) loadSessionTokens(userID int64) (map[string]any, error) {
+	// Bypass per-Context object cache so concurrent packages sharing the same
+	// DB (go test ./...) see each other's session_tokens writes.
+	if c.Meta != nil {
+		c.Meta.invalidate(MetaUser, userID)
+	}
 	raw := c.Meta.GetMetadata(MetaUser, userID, "session_tokens", true)
 	s, _ := raw.(string)
 	if s == "" {
