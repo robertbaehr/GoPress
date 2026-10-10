@@ -2858,6 +2858,21 @@
   api: n/a
   notes: "P3.67 — feedParseUTC + Atom date share TZ conversion"
 
+# P3.70: feed item Media RSS media:thumbnail (featured image).
+- prefix: wp-includes/feed-rss2.php#media-thumbnail
+  go: internal/server/front.go
+  status: partial
+  task: P3.70
+  api: n/a
+  notes: "P3.70 — media:thumbnail from post featured image (RSS + Atom)"
+
+- prefix: wp-includes/feed.php#media-thumbnail
+  go: internal/server/feed_media_content_test.go
+  status: partial
+  task: P3.70
+  api: n/a
+  notes: "P3.70 — unit coverage for media:thumbnail on RSS2/Atom"
+
 # P3.69: feed item Media RSS media:content (featured image + enclosures).
 - prefix: wp-includes/feed-rss2.php#media-content
   go: internal/server/front.go

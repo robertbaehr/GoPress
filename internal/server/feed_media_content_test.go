@@ -56,6 +56,45 @@ func TestFrontFeedRSS2MediaContent(t *testing.T) {
 	if !strings.Contains(body, `medium="audio"`) || !strings.Contains(body, `fileSize="8612"`) {
 		t.Fatalf("expected enclosure media:content: %s", truncateFeed(body, 500))
 	}
+	// P3.70: featured image also emits media:thumbnail.
+	if !strings.Contains(body, `<media:thumbnail url=`) {
+		t.Fatalf("missing media:thumbnail: %s", truncateFeed(body, 500))
+	}
+}
+
+func TestFrontFeedAtomMediaThumbnail(t *testing.T) {
+	c := testBoot(t)
+
+	postID := int64(1)
+	prev := fmt.Sprint(c.Meta.GetMetadata(wp.MetaPost, postID, "_thumbnail_id", true))
+	_, _ = c.Meta.DeleteMetadata(wp.MetaPost, postID, "_thumbnail_id", "")
+	if _, _, err := c.Meta.AddMetadata(wp.MetaPost, postID, "_thumbnail_id", "5", true); err != nil {
+		t.Fatalf("set thumbnail: %v", err)
+	}
+	t.Cleanup(func() {
+		_, _ = c.Meta.DeleteMetadata(wp.MetaPost, postID, "_thumbnail_id", "")
+		if prev != "" && prev != "<nil>" {
+			_, _, _ = c.Meta.AddMetadata(wp.MetaPost, postID, "_thumbnail_id", prev, true)
+		}
+	})
+
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?feed=atom", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `xmlns:media="http://search.yahoo.com/mrss/"`) {
+		t.Fatalf("missing media xmlns: %s", truncateFeed(body, 300))
+	}
+	if !strings.Contains(body, `<media:thumbnail url=`) {
+		t.Fatalf("missing media:thumbnail: %s", truncateFeed(body, 500))
+	}
+	if !strings.Contains(body, `<media:content url=`) {
+		t.Fatalf("missing media:content alongside thumbnail: %s", truncateFeed(body, 500))
+	}
 }
 
 func TestFrontFeedRSS2OmitsMediaNSWithoutContent(t *testing.T) {
@@ -73,5 +112,8 @@ func TestFrontFeedRSS2OmitsMediaNSWithoutContent(t *testing.T) {
 	}
 	if strings.Contains(body, `<media:content`) {
 		t.Fatalf("fixture feed should omit media:content: %s", truncateFeed(body, 400))
+	}
+	if strings.Contains(body, `<media:thumbnail`) {
+		t.Fatalf("fixture feed should omit media:thumbnail: %s", truncateFeed(body, 400))
 	}
 }
