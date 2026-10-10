@@ -194,6 +194,8 @@ func (h *Handler) renderDashboard(w http.ResponseWriter, r *http.Request, c *wp.
 	// Secondary dashboard widgets (P7.40): Activity, Quick Draft, Events and News
 	// (primary + secondary / "Other WordPress News" stub — no remote RSS fetch).
 	// P7.55: optional noticeHTML for Quick Draft save feedback.
+	// P7.56: Activity widget lists recent comments from the DB.
+	recentCommentsHTML := activityRecentCommentsHTML(c, 5)
 	inner := fmt.Sprintf(`%s%s<h1>Dashboard</h1>
 <p>%s</p>
 <div id="dashboard-widgets-wrap">
@@ -216,9 +218,7 @@ func (h *Handler) renderDashboard(w http.ResponseWriter, r *http.Request, c *wp.
 <div id="published-posts" class="activity-block"><h3>Recently Published</h3>
 <p>Recent posts appear here when available.</p>
 </div>
-<div id="latest-comments" class="activity-block"><h3>Recent Comments</h3>
-<p>No comments yet. <a href="/wp-admin/edit-comments.php">View all</a></p>
-</div>
+%s
 </div>
 </div>
 </div>
@@ -259,7 +259,7 @@ func (h *Handler) renderDashboard(w http.ResponseWriter, r *http.Request, c *wp.
 </div>
 </div>
 </div>
-`, adminNoticesHTML(c), noticeHTML, html.EscapeString(blogname), posts, pages, comments)
+`, adminNoticesHTML(c), noticeHTML, html.EscapeString(blogname), posts, pages, comments, recentCommentsHTML)
 	writeAdminPage(w, c, ch, inner)
 }
 
