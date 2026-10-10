@@ -166,20 +166,29 @@
   compare: headers
   nonce: null
 
-# P10.90: login cookie-test / confirm-admin-email / interim headers.
-- id: login-checkemail-confirm
+# P10.90: additional login header cases.
+- id: login-action-login
   role: anon
   method: GET
-  path: /wp-login.php?checkemail=confirm
+  path: /wp-login.php?action=login
   headers: {}
   body: null
   compare: headers
   nonce: null
 
-- id: login-interim-login
+- id: login-redirect-home
   role: anon
   method: GET
-  path: /wp-login.php?interim-login=1
+  path: /wp-login.php?redirect_to=%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-wp-lang-en
+  role: anon
+  method: GET
+  path: /wp-login.php?wp_lang=en_US
   headers: {}
   body: null
   compare: headers

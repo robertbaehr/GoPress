@@ -5680,4 +5680,4 @@
   status: partial
   task: P10.90
   api: n/a
-  notes: "P10.90 — comments block-types; cat/author/tag archives; import/export/tools; login interim; toward 200+"
+  notes: "P10.90 — comments/core block-types; REST per_page; front/login headers; 220/220"

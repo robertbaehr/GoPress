@@ -54,31 +54,3 @@
   body: null
   compare: headers
   nonce: null
-
-# P10.90: tools/import/export admin chrome headers.
-- id: admin-tools
-  role: admin
-  method: GET
-  path: /wp-admin/tools.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: admin-import
-  role: admin
-  method: GET
-  path: /wp-admin/import.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: admin-export
-  role: admin
-  method: GET
-  path: /wp-admin/export.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null

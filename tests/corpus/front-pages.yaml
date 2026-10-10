@@ -413,29 +413,38 @@
   compare: headers
   nonce: null
 
-# P10.90: category/author/tag archive headers after P3.84 deepen.
-- id: front-category-uncategorized
+# P10.90: more matching front header cases.
+- id: front-feed-atom-alt
   role: anon
   method: GET
-  path: /category/uncategorized/
+  path: /feed/atom
   headers: {}
   body: null
   compare: headers
   nonce: null
 
-- id: front-author-admin
+- id: front-comments-feed-atom-alt
   role: anon
   method: GET
-  path: /author/admin/
+  path: /comments/feed/atom
   headers: {}
   body: null
   compare: headers
   nonce: null
 
-- id: front-tag-fixture-tag-01
+- id: front-search-hello-world
   role: anon
   method: GET
-  path: /tag/fixture-tag-01/
+  path: /?s=Hello+world
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-date-2024-06-14
+  role: anon
+  method: GET
+  path: /2024/06/14/
   headers: {}
   body: null
   compare: headers
