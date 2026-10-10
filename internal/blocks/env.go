@@ -116,6 +116,8 @@ type Env struct {
 
 	// renderingNavigation is true while rendering a core/navigation tree (P5.75).
 	renderingNavigation bool
+	// pageListNav carries Navigation attrs for page-list children (P5.94).
+	pageListNav pageListNavCtx
 
 	// seenBlock tracks wp_block refs currently being rendered (cycle guard, P5.25).
 	seenBlock map[int64]bool
