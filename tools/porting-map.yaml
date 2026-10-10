@@ -1405,6 +1405,19 @@
   task: P9.4
   api: n/a
 
+# P9.9: activate/deactivate action hooks + active_plugins filter.
+- prefix: wp-admin/includes/plugin.php#activate_plugin
+  go: internal/plugins/plugin.go
+  status: partial
+  task: P9.9
+  api: exported
+
+- prefix: wp-admin/includes/plugin.php#deactivate_plugins
+  go: internal/plugins/plugin.go
+  status: partial
+  task: P9.9
+  api: exported
+
 - prefix: wp-includes/load.php
   go: internal/plugins/dropins.go
   status: partial

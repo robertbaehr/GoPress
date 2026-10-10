@@ -142,7 +142,22 @@ func activateRegistered(c *wp.Context, file string) {
 }
 
 // ActivePluginFiles returns the plugin file paths listed in active_plugins.
+// Applies the active_plugins filter (P9.9).
 func ActivePluginFiles(c *wp.Context) ([]string, error) {
+	out, err := activePluginFilesRaw(c)
+	if err != nil || c == nil || c.Hooks == nil {
+		return out, err
+	}
+	if v := c.Hooks.ApplyFilters("active_plugins", out); v != nil {
+		if filtered, ok := v.([]string); ok {
+			return append([]string(nil), filtered...), nil
+		}
+	}
+	return out, nil
+}
+
+// activePluginFilesRaw reads active_plugins without the active_plugins filter.
+func activePluginFilesRaw(c *wp.Context) ([]string, error) {
 	if c == nil || c.Options == nil {
 		return nil, nil
 	}
@@ -197,7 +212,7 @@ func IsPluginActive(c *wp.Context, pluginFile string) bool {
 	if pluginFile == "" {
 		return false
 	}
-	files, err := ActivePluginFiles(c)
+	files, err := activePluginFilesRaw(c)
 	if err != nil {
 		return false
 	}
@@ -210,6 +225,8 @@ func IsPluginActive(c *wp.Context, pluginFile string) bool {
 }
 
 // ActivatePlugin adds pluginFile to active_plugins and runs its Go shim (P9.4).
+// Fires activate_plugin / activate_{plugin} before the option write and
+// activated_plugin afterward (P9.9).
 func ActivatePlugin(c *wp.Context, pluginFile string) error {
 	pluginFile = strings.TrimSpace(pluginFile)
 	if pluginFile == "" {
@@ -221,27 +238,45 @@ func ActivatePlugin(c *wp.Context, pluginFile string) error {
 	if IsPluginActive(c, pluginFile) {
 		return nil
 	}
-	files, err := ActivePluginFiles(c)
+	files, err := activePluginFilesRaw(c)
 	if err != nil {
 		return err
+	}
+	networkWide := false
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("activate_plugin", pluginFile, networkWide)
+		c.Hooks.DoAction("activate_"+pluginFile, networkWide)
 	}
 	files = append(files, pluginFile)
 	if err := saveActivePlugins(c, files); err != nil {
 		return err
 	}
 	activateRegistered(c, pluginFile)
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("activated_plugin", pluginFile, networkWide)
+	}
 	return nil
 }
 
 // DeactivatePlugin removes pluginFile from active_plugins (P9.4).
+// Fires deactivate_plugin / deactivate_{plugin} before the option write and
+// deactivated_plugin afterward (P9.9).
 func DeactivatePlugin(c *wp.Context, pluginFile string) error {
 	pluginFile = strings.TrimSpace(pluginFile)
 	if pluginFile == "" {
 		return fmt.Errorf("plugins: empty plugin file")
 	}
-	files, err := ActivePluginFiles(c)
+	if !IsPluginActive(c, pluginFile) {
+		return nil
+	}
+	files, err := activePluginFilesRaw(c)
 	if err != nil {
 		return err
+	}
+	networkDeactivating := false
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("deactivate_plugin", pluginFile, networkDeactivating)
+		c.Hooks.DoAction("deactivate_"+pluginFile, networkDeactivating)
 	}
 	out := make([]string, 0, len(files))
 	for _, f := range files {
@@ -249,7 +284,13 @@ func DeactivatePlugin(c *wp.Context, pluginFile string) error {
 			out = append(out, f)
 		}
 	}
-	return saveActivePlugins(c, out)
+	if err := saveActivePlugins(c, out); err != nil {
+		return err
+	}
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("deactivated_plugin", pluginFile, networkDeactivating)
+	}
+	return nil
 }
 
 func saveActivePlugins(c *wp.Context, files []string) error {
