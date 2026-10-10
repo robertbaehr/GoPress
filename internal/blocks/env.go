@@ -103,6 +103,9 @@ type Env struct {
 	Paged int
 	// MaxPages is max_num_pages for inherit query pagination (P5.44).
 	MaxPages int
+
+	// socialCtx is context from an enclosing core/social-links block (P5.50).
+	socialCtx socialLinksCtx
 }
 
 // NavLink is a simple navigation item (label + URL).
