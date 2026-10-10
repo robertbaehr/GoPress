@@ -904,9 +904,14 @@ func (h *Handler) serveUpload(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	for _, m := range items {
 		b.WriteString("<tr id=\"post-")
 		b.WriteString(strconv.FormatInt(m.ID, 10))
-		b.WriteString("\"><td class=\"title column-title\"><strong>")
+		b.WriteString("\"><td class=\"title column-title\"><strong><a class=\"row-title\" href=\"/wp-admin/post.php?post=")
+		b.WriteString(strconv.FormatInt(m.ID, 10))
+		b.WriteString("&amp;action=edit\">")
 		b.WriteString(html.EscapeString(m.Title))
-		b.WriteString("</strong></td><td class=\"column-mime\">")
+		b.WriteString("</a></strong>")
+		b.WriteString("<div class=\"row-actions\"><span class=\"edit\"><a href=\"/wp-admin/post.php?post=")
+		b.WriteString(strconv.FormatInt(m.ID, 10))
+		b.WriteString("&amp;action=edit\">Edit</a></span></div></td><td class=\"column-mime\">")
 		b.WriteString(html.EscapeString(m.Mime))
 		b.WriteString("</td></tr>\n")
 	}
@@ -1792,13 +1797,13 @@ func (h *Handler) serveUsers(w http.ResponseWriter, r *http.Request, c *wp.Conte
 	writeAdminPage(w, c, newAdminChrome(c, "Users", "users-php"), b.String())
 }
 
-// servePostEdit renders the classic post.php?action=edit stub shell (P7.24).
+// servePostEdit renders the classic post.php?action=edit stub shell (P7.24 / P7.32).
 func (h *Handler) servePostEdit(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	action := r.URL.Query().Get("action")
 	if action == "" {
 		action = "edit"
 	}
-	if action != "edit" {
+	if action != "edit" && action != "editattachment" {
 		http.Error(w, "GoPress: post.php action not implemented\n", http.StatusNotImplemented)
 		return
 	}
@@ -1814,6 +1819,10 @@ func (h *Handler) servePostEdit(w http.ResponseWriter, r *http.Request, c *wp.Co
 	}
 	if post == nil {
 		http.Error(w, "You attempted to edit an item that does not exist. Perhaps it was deleted?\n", http.StatusNotFound)
+		return
+	}
+	if post.Type == "attachment" {
+		h.serveAttachmentEdit(w, r, c, post)
 		return
 	}
 	blogname := optionString(c, "blogname", "GoPress")
@@ -1878,6 +1887,78 @@ func (h *Handler) servePostEdit(w http.ResponseWriter, r *http.Request, c *wp.Co
 	b.WriteString("<div id=\"publishing-action\"><input type=\"submit\" name=\"publish\" id=\"publish\" class=\"button button-primary button-large\" value=\"Update\" /></div>\n")
 	b.WriteString("<div class=\"clear\"></div>\n</div>\n</div>\n</div>\n</div>\n</div>\n")
 	b.WriteString("</div>\n</div>\n</div>\n</form>\n</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
+// serveAttachmentEdit is the attachment / media edit screen stub (P7.32).
+func (h *Handler) serveAttachmentEdit(w http.ResponseWriter, r *http.Request, c *wp.Context, post *wp.Post) {
+	if post == nil {
+		http.Error(w, "Invalid post ID.\n", http.StatusBadRequest)
+		return
+	}
+	alt := ""
+	if c != nil && c.Meta != nil {
+		alt = asString(c.Meta.GetMetadata(wp.MetaPost, post.ID, "_wp_attachment_image_alt", true))
+	}
+	url := wp.GetAttachmentURL(c, post.ID)
+	blogname := optionString(c, "blogname", "GoPress")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Edit Media &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui post-php post-type-attachment\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap\">\n")
+	b.WriteString("<h1 class=\"wp-heading-inline\">Edit Media</h1>\n")
+	b.WriteString("<a href=\"/wp-admin/upload.php\" class=\"page-title-action\">Media Library</a>\n")
+	b.WriteString("<form name=\"post\" action=\"/wp-admin/post.php?post=")
+	b.WriteString(strconv.FormatInt(post.ID, 10))
+	b.WriteString("&amp;action=edit\" method=\"post\" id=\"post\">\n")
+	b.WriteString("<input type=\"hidden\" id=\"post_ID\" name=\"post_ID\" value=\"")
+	b.WriteString(strconv.FormatInt(post.ID, 10))
+	b.WriteString("\" />\n")
+	b.WriteString("<input type=\"hidden\" id=\"post_type\" name=\"post_type\" value=\"attachment\" />\n")
+	b.WriteString("<input type=\"hidden\" name=\"action\" value=\"editattachment\" />\n")
+	b.WriteString("<div id=\"poststuff\">\n<div id=\"post-body\" class=\"metabox-holder columns-2\">\n")
+	b.WriteString("<div id=\"post-body-content\">\n")
+	if url != "" {
+		b.WriteString("<div class=\"wp_attachment_holder\"><p class=\"attachment-url\"><a href=\"")
+		b.WriteString(html.EscapeString(url))
+		b.WriteString("\">")
+		b.WriteString(html.EscapeString(url))
+		b.WriteString("</a></p></div>\n")
+	}
+	b.WriteString("<div id=\"titlediv\"><div id=\"titlewrap\">\n")
+	b.WriteString("<label class=\"screen-reader-text\" for=\"title\">Title</label>\n")
+	b.WriteString("<input type=\"text\" name=\"post_title\" size=\"30\" value=\"")
+	b.WriteString(html.EscapeString(post.Title))
+	b.WriteString("\" id=\"title\" spellcheck=\"true\" autocomplete=\"off\" />\n")
+	b.WriteString("</div></div>\n")
+	b.WriteString("<div class=\"attachment-alt\">\n")
+	b.WriteString("<p><label for=\"_wp_attachment_image_alt\">Alternative Text</label><br />\n")
+	b.WriteString("<input type=\"text\" name=\"_wp_attachment_image_alt\" id=\"_wp_attachment_image_alt\" value=\"")
+	b.WriteString(html.EscapeString(alt))
+	b.WriteString("\" class=\"widefat\" /></p>\n")
+	b.WriteString("<p><label for=\"attachment_caption\">Caption</label><br />\n")
+	b.WriteString("<textarea name=\"excerpt\" id=\"attachment_caption\" rows=\"3\" cols=\"40\">")
+	b.WriteString(html.EscapeString(post.Excerpt))
+	b.WriteString("</textarea></p>\n")
+	b.WriteString("<p><label for=\"attachment_content\">Description</label><br />\n")
+	b.WriteString("<textarea name=\"content\" id=\"content\" rows=\"5\" cols=\"40\">")
+	b.WriteString(html.EscapeString(post.Content))
+	b.WriteString("</textarea></p>\n")
+	b.WriteString("</div>\n")
+	b.WriteString("<p class=\"description\">GoPress attachment editor stub (P7.32).</p>\n")
+	b.WriteString("</div>\n")
+	b.WriteString("<div id=\"postbox-container-1\" class=\"postbox-container\">\n")
+	b.WriteString("<div id=\"submitdiv\" class=\"postbox\">\n")
+	b.WriteString("<div class=\"postbox-header\"><h2 class=\"hndle\">Save</h2></div>\n")
+	b.WriteString("<div class=\"inside\"><div class=\"submitbox\" id=\"submitpost\">\n")
+	b.WriteString("<div id=\"major-publishing-actions\">\n")
+	b.WriteString("<div id=\"publishing-action\"><input type=\"submit\" name=\"save\" id=\"publish\" class=\"button button-primary button-large\" value=\"Update\" /></div>\n")
+	b.WriteString("<div class=\"clear\"></div>\n</div></div></div></div></div>\n")
+	b.WriteString("</div></div></form>\n</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
 
