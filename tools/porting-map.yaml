@@ -6277,3 +6277,11 @@ wp-login.php#language-switcher-post
   task: P10.104
   api: n/a
   notes: "P10.104 — +font-collections item/routes, orderby variants, templates, login postpass/interim; 376/376"
+
+# P10.106: expand diff corpus after P5.98–P6.41.
+- prefix: tests/corpus#p10.106
+  go: tests/corpus
+  status: done
+  task: P10.106
+  api: n/a
+  notes: "P10.106 — autosaves HEAD; pages/posts orderby; tax/users/media orderby; templates; font-collections page; resetpass; author; 396/396"
