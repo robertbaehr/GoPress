@@ -134,6 +134,9 @@ func pluginsBulkNoticeHTML(notice string, bulk bool) string {
 			return `<div id="message" class="updated notice is-dismissible"><p>Selected plugins <strong>deactivated</strong>.</p></div>` + "\n"
 		}
 		return `<div id="message" class="updated notice is-dismissible"><p>Plugin <strong>deactivated</strong>.</p></div>` + "\n"
+	case "uninstall":
+		// P9.18: uninstall hooks stub completed (files not deleted).
+		return `<div id="message" class="updated notice is-dismissible"><p>Plugin <strong>uninstalled</strong> (hooks stub; plugin files were not deleted).</p></div>` + "\n"
 	default:
 		return ""
 	}

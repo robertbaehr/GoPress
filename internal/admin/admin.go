@@ -1718,6 +1718,9 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 	if r.URL.Query().Get("deactivate") == "true" {
 		notice = "deactivate"
 	}
+	if r.URL.Query().Get("uninstall") == "true" {
+		notice = "uninstall"
+	}
 
 	var b strings.Builder
 	b.WriteString("<h1>Plugins</h1>\n")
@@ -1758,6 +1761,10 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 		if active {
 			rowClass = "active"
 		}
+		// P9.18: is-uninstallable class when uninstall hooks are registered.
+		if plugins.IsUninstallablePlugin(c, p.File) {
+			rowClass += " is-uninstallable"
+		}
 		b.WriteString("<tr class=\"")
 		b.WriteString(rowClass)
 		b.WriteString("\" data-plugin=\"")
@@ -1767,7 +1774,7 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 		b.WriteString("\"></th><td class=\"plugin-title\"><strong>")
 		b.WriteString(html.EscapeString(p.Name))
 		b.WriteString("</strong>")
-		// P9.14: plugin_action_links (+ per-plugin) filters.
+		// P9.14 / P9.18: plugin_action_links (+ Uninstall when uninstallable).
 		b.WriteString("<div class=\"row-actions visible\">")
 		b.WriteString(plugins.FormatActionLinksHTML(plugins.ActionLinks(c, p, rowClass)))
 		b.WriteString("</div>")
@@ -1851,6 +1858,18 @@ func handlePluginAction(r *http.Request, c *wp.Context) (string, error) {
 			return "", err
 		}
 		return "deactivate=true", nil
+	case "uninstall":
+		// P9.18: run uninstall hooks stub (no filesystem delete).
+		if c.VerifyNonce(nonce, "uninstall-plugin_"+pluginFile) == 0 {
+			return "", fmt.Errorf("invalid nonce")
+		}
+		if !plugins.IsUninstallablePlugin(c, pluginFile) {
+			return "", fmt.Errorf("plugin is not uninstallable")
+		}
+		if err := plugins.UninstallPlugin(c, pluginFile); err != nil {
+			return "", err
+		}
+		return "uninstall=true", nil
 	default:
 		return "", nil
 	}

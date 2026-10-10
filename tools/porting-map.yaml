@@ -4474,3 +4474,18 @@
   task: P3.71
   api: n/a
   notes: "P3.71 — oracle the_category_rss filter matches Go domain attrs"
+
+# P9.18: Uninstall button on plugins.php for uninstallable inactive plugins.
+- prefix: wp-admin/includes/class-wp-plugins-list-table.php#uninstall
+  go: internal/plugins/action_links.go
+  status: partial
+  task: P9.18
+  api: exported
+  notes: "P9.18 — ActionLinks uninstall + is-uninstallable; UninstallPlugin stub"
+
+- prefix: wp-admin/plugins.php#uninstall
+  go: internal/admin/admin.go
+  status: partial
+  task: P9.18
+  api: n/a
+  notes: "P9.18 — action=uninstall nonce + notice"

@@ -25,6 +25,13 @@ func ActionLinks(c *wp.Context, p PluginData, context string) map[string]string 
 		nonce := c.CreateNonce("activate-plugin_" + p.File)
 		href := "/wp-admin/plugins.php?action=activate&plugin=" + url.QueryEscape(p.File) + "&_wpnonce=" + url.QueryEscape(nonce)
 		actions["activate"] = `<a href="` + html.EscapeString(href) + `">Activate</a>`
+		// P9.18: Uninstall button for inactive uninstallable plugins (hooks stub;
+		// delete_plugins / filesystem delete remains out of scope).
+		if IsUninstallablePlugin(c, p.File) {
+			unNonce := c.CreateNonce("uninstall-plugin_" + p.File)
+			unHref := "/wp-admin/plugins.php?action=uninstall&plugin=" + url.QueryEscape(p.File) + "&_wpnonce=" + url.QueryEscape(unNonce)
+			actions["uninstall"] = `<a href="` + html.EscapeString(unHref) + `" class="delete" aria-label="Uninstall ` + html.EscapeString(p.Name) + `">Uninstall</a>`
+		}
 	}
 	if context == "" {
 		context = "all"
@@ -60,7 +67,7 @@ func FormatActionLinksHTML(actions map[string]string) string {
 	if len(actions) == 0 {
 		return ""
 	}
-	order := []string{"activate", "deactivate", "edit", "delete"}
+	order := []string{"activate", "deactivate", "edit", "delete", "uninstall"}
 	seen := map[string]bool{}
 	var parts []string
 	for _, key := range order {
