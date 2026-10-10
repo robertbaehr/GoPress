@@ -80,6 +80,36 @@ func TestSyncedPatternAppliesContentOverrides(t *testing.T) {
 	}
 }
 
+func TestPostDataBindingLink(t *testing.T) {
+	in := `<!-- wp:paragraph {"metadata":{"bindings":{"content":{"source":"core/post-data","args":{"field":"link"}}}}} -->
+<p>Fallback</p>
+<!-- /wp:paragraph -->`
+	env := &blocks.Env{}
+	env.SetCurrentPost(&blocks.QueryPost{ID: 3, Link: "http://example.test/hello/"})
+	out := blocks.RenderWith(env, in)
+	if !strings.Contains(out, "http://example.test/hello/") {
+		t.Fatalf("expected post-data link, got %q", out)
+	}
+}
+
+func TestTermDataBindingName(t *testing.T) {
+	in := `<!-- wp:paragraph {"metadata":{"bindings":{"content":{"source":"core/term-data","args":{"field":"name"}}}}} -->
+<p>Fallback</p>
+<!-- /wp:paragraph -->`
+	env := &blocks.Env{
+		TermContext: &blocks.TermBindingContext{
+			ID:       5,
+			Taxonomy: "category",
+			Name:     "News",
+			Slug:     "news",
+		},
+	}
+	out := blocks.RenderWith(env, in)
+	if !strings.Contains(out, "News") {
+		t.Fatalf("expected term name, got %q", out)
+	}
+}
+
 func TestSyncedPatternLegacyOverridesAttr(t *testing.T) {
 	pattern := `<!-- wp:heading {"metadata":{"name":"title","bindings":{"__default":{"source":"core/pattern-overrides"}}}} -->
 <h2>Old</h2>

@@ -70,6 +70,10 @@ func Boot(ctx context.Context, cfg *config.Config) (*Context, error) {
 	c.BlockVariations = NewBlockVariationRegistry()
 	RegisterDefaultBlockVariations(c.BlockVariations)
 
+	// Block bindings sources registry (P5.39).
+	c.BlockBindings = NewBlockBindingsRegistry()
+	RegisterDefaultBlockBindingsSources(c.BlockBindings, stylesheet)
+
 	// Shortcodes: gallery, caption, embed (P2.11).
 	c.Shortcodes = NewShortcodes()
 	RegisterDefaultShortcodes(c.Shortcodes)

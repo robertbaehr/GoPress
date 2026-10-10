@@ -52,6 +52,12 @@ type Env struct {
 	// Populated from core/block content|overrides attrs (providesContext pattern/overrides).
 	PatternOverrides map[string]map[string]string
 
+	// TermContext powers core/term-data block bindings (P5.39).
+	TermContext *TermBindingContext
+
+	// PostFormat returns the current post format slug for theme bindings (P5.39).
+	PostFormat func(postID int64) string
+
 	// SearchQuery is the front `s` term for core/query-title type=search (P3.21).
 	SearchQuery string
 

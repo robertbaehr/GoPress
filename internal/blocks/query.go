@@ -17,11 +17,24 @@ type QueryPost struct {
 	Content          string
 	Excerpt          string
 	Date             string
+	Modified         string // ISO / display modified date for core/post-data (P5.39).
 	Link             string
 	FeaturedImageURL string
 	FeaturedImageAlt string
 	// ClassList is the get_post_class() list for the post (P5.19).
 	ClassList []string
+}
+
+// TermBindingContext holds term fields for core/term-data bindings (P5.39).
+type TermBindingContext struct {
+	ID          int64
+	Taxonomy    string
+	Name        string
+	Slug        string
+	Link        string
+	Description string
+	Parent      int64
+	Count       int64
 }
 
 // QueryLoopArgs selects posts for a query block.

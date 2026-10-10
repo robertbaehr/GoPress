@@ -3,16 +3,20 @@ package blocks
 import (
 	"html"
 	"regexp"
+	"strconv"
 	"strings"
 )
 
-// Supported block-binding attributes (wp-includes/block-bindings.php subset, P5.20).
+// Supported block-binding attributes (wp-includes/block-bindings.php subset, P5.20/P5.39).
 var bindingsSupportedAttrs = map[string][]string{
-	"core/paragraph": {"content"},
-	"core/heading":   {"content"},
-	"core/list-item": {"content"},
-	"core/button":    {"text", "url"},
-	"core/image":     {"url", "alt", "title", "caption"},
+	"core/paragraph":          {"content"},
+	"core/heading":            {"content"},
+	"core/list-item":          {"content"},
+	"core/button":             {"text", "url", "linkTarget", "rel"},
+	"core/image":              {"id", "url", "alt", "title", "caption"},
+	"core/post-date":          {"datetime"},
+	"core/navigation-link":    {"url"},
+	"core/navigation-submenu": {"url"},
 }
 
 // applyBindings resolves metadata.bindings sources and patches attrs / InnerHTML.
@@ -90,6 +94,19 @@ func (e *Env) resolveBinding(source string, args map[string]any, attr string, bl
 			return "", false
 		}
 		return v, true
+	case "core/post-data":
+		return e.resolvePostDataBinding(args)
+	case "core/term-data":
+		return e.resolveTermDataBinding(args)
+	case "twentytwentyfive/format":
+		if e.PostFormat == nil || e.currentPost == nil {
+			return "", false
+		}
+		slug := strings.TrimSpace(e.PostFormat(e.currentPost.ID))
+		if slug == "" || slug == "standard" {
+			return "", false
+		}
+		return slug, true
 	case "core/pattern-overrides":
 		if e.PatternOverrides == nil {
 			return "", false
@@ -112,6 +129,67 @@ func (e *Env) resolveBinding(source string, args map[string]any, attr string, bl
 			return "", false
 		}
 		return v, true
+	default:
+		return "", false
+	}
+}
+
+func (e *Env) resolvePostDataBinding(args map[string]any) (string, bool) {
+	field, _ := args["field"].(string)
+	if strings.TrimSpace(field) == "" {
+		field, _ = args["key"].(string)
+	}
+	field = strings.TrimSpace(field)
+	if field == "" || e.currentPost == nil {
+		return "", false
+	}
+	switch field {
+	case "date":
+		if e.currentPost.Date == "" {
+			return "", false
+		}
+		return e.currentPost.Date, true
+	case "modified":
+		mod := e.currentPost.Modified
+		if mod == "" {
+			return "", true // WP returns empty string when not later than publish.
+		}
+		return mod, true
+	case "link":
+		if e.currentPost.Link == "" {
+			return "", false
+		}
+		return e.currentPost.Link, true
+	default:
+		return "", false
+	}
+}
+
+func (e *Env) resolveTermDataBinding(args map[string]any) (string, bool) {
+	field, _ := args["field"].(string)
+	field = strings.TrimSpace(field)
+	if field == "" || e.TermContext == nil || e.TermContext.ID == 0 || e.TermContext.Taxonomy == "" {
+		return "", false
+	}
+	t := e.TermContext
+	switch field {
+	case "id":
+		return strconv.FormatInt(t.ID, 10), true
+	case "name":
+		return t.Name, true
+	case "link":
+		if t.Link == "" {
+			return "", false
+		}
+		return t.Link, true
+	case "slug":
+		return t.Slug, true
+	case "description":
+		return t.Description, true
+	case "parent":
+		return strconv.FormatInt(t.Parent, 10), true
+	case "count":
+		return strconv.FormatInt(t.Count, 10), true
 	default:
 		return "", false
 	}

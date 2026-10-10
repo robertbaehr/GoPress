@@ -70,6 +70,9 @@ type Context struct {
 	// BlockVariations is the block variations registry (P5.37).
 	BlockVariations *BlockVariationRegistry
 
+	// BlockBindings is the block bindings sources registry (P5.39).
+	BlockBindings *BlockBindingsRegistry
+
 	// Shortcodes is the shortcode tag registry (P2.11).
 	Shortcodes *Shortcodes
 
@@ -133,6 +136,7 @@ func (c *Context) ForRequest(w http.ResponseWriter, r *http.Request) *Context {
 		PatternCategories: c.PatternCategories,
 		BlockStyles:       c.BlockStyles,
 		BlockVariations:   c.BlockVariations,
+		BlockBindings:     c.BlockBindings,
 		Shortcodes:        c.Shortcodes,
 		Mailer:            c.Mailer,
 		Req:               r,
