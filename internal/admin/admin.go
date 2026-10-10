@@ -27,6 +27,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/options-general.php":
 		h.requireLogin(w, r, c, h.serveOptionsGeneral)
 		return true
+	case "/wp-admin/options-writing.php":
+		h.requireLogin(w, r, c, h.serveOptionsWriting)
+		return true
 	case "/wp-admin/plugins.php":
 		h.requireLogin(w, r, c, h.servePlugins)
 		return true

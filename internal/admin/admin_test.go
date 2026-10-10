@@ -67,6 +67,7 @@ func TestAdminRedirectsAnonymous(t *testing.T) {
 	for _, path := range []string{
 		"/wp-admin/edit.php",
 		"/wp-admin/options-general.php",
+		"/wp-admin/options-writing.php",
 		"/wp-admin/plugins.php",
 		"/wp-admin/profile.php",
 		"/wp-admin/upload.php",
