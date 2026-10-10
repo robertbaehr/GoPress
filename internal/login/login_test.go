@@ -287,6 +287,13 @@ func TestInterimLoginSuccess(t *testing.T) {
 	if loc := rec.Header().Get("Location"); loc != "" {
 		t.Fatalf("interim success should not redirect, Location=%q", loc)
 	}
+	// P6.33: login_header( '' ) still emits " &lsaquo; {blog} &#8212; WordPress".
+	if !strings.Contains(body, "<title> &lsaquo; ") || !strings.Contains(body, " &#8212; WordPress</title>") {
+		t.Fatalf("expected empty-title interim success <title>: %q", body[:min(400, len(body))])
+	}
+	if strings.Contains(body, "<title>Log In") {
+		t.Fatalf("interim success title should not be Log In: %q", body[:min(400, len(body))])
+	}
 }
 
 func TestInterimLoginSuccessRedirectTo(t *testing.T) {

@@ -776,11 +776,11 @@ func writeLoginHead(b *strings.Builder, home, blogname, title, action string, ex
 	b.WriteString("\t<html lang=\"en-US\">\n")
 	b.WriteString("\t<head>\n")
 	b.WriteString("\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n")
+	// WP login_header: sprintf( '%1$s &lsaquo; %2$s &#8212; WordPress', $title, $blogname ).
+	// Empty $title (interim success, P6.33) still keeps the &lsaquo; separator.
 	b.WriteString("\t<title>")
-	if title != "" {
-		b.WriteString(html.EscapeString(title))
-		b.WriteString(" &lsaquo; ")
-	}
+	b.WriteString(html.EscapeString(title))
+	b.WriteString(" &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n")
 	b.WriteString("\t<meta name='robots' content='max-image-preview:large, noindex, noarchive' />\n")

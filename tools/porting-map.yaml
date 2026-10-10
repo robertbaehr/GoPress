@@ -4477,6 +4477,21 @@
   api: internal
   notes: "P3.72 — postCommentsFeedLink pretty-permalink /feed/ and /feed/{type}/"
 
+# P6.33: interim-login success <title> keeps &lsaquo; with empty login_header title.
+- prefix: wp-login.php#interim-login-title
+  go: internal/login/login.go
+  status: partial
+  task: P6.33
+  api: n/a
+  notes: "P6.33 — writeLoginHead always emits title &lsaquo; blogname — WordPress"
+
+- prefix: wp-login.php#login_header-title
+  go: internal/login/login.go
+  status: partial
+  task: P6.33
+  api: n/a
+  notes: "P6.33 — empty title interim success matches sprintf shape"
+
 # P4.93: REST pages ?parent= / ?parent_exclude= (post_parent__in / __not_in).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#parent
   go: internal/rest/posts.go
