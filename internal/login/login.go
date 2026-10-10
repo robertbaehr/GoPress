@@ -392,6 +392,10 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	b.WriteString("wp_attempt_focus();\n")
 	b.WriteString("if ( typeof wpOnload === 'function' ) { wpOnload() }\n")
 	b.WriteString("</script>\n")
+	if interim {
+		// P6.22: interim login opens outbound links in a new tab (wp-login.php).
+		writeInterimLoginBlankTargetScript(&b)
+	}
 	if !interim {
 		b.WriteString("\t\t<p id=\"backtoblog\">\n")
 		b.WriteString("\t\t\t<a href=\"")
@@ -1072,12 +1076,36 @@ func isInterimLogin(r *http.Request) bool {
 			return true
 		}
 	}
+	// P6.22: honor interim-login from POST body (wp-login.php uses $_REQUEST).
+	if r.PostForm != nil {
+		v := r.PostForm.Get("interim-login")
+		if v == "1" || strings.EqualFold(v, "true") {
+			return true
+		}
+	}
 	if r.Form != nil {
 		v := r.FormValue("interim-login")
 		return v == "1" || strings.EqualFold(v, "true")
 	}
 	// Form may not be parsed yet for GET.
 	return false
+}
+
+// writeInterimLoginBlankTargetScript emits WP's interim-login footer script that
+// forces anchors to target=_blank so the modal iframe is not navigated away.
+func writeInterimLoginBlankTargetScript(b *strings.Builder) {
+	b.WriteString("\t\t\t<script>\n")
+	b.WriteString("( function() {\n")
+	b.WriteString("\ttry {\n")
+	b.WriteString("\t\tvar i, links = document.getElementsByTagName( 'a' );\n")
+	b.WriteString("\t\tfor ( i in links ) {\n")
+	b.WriteString("\t\t\tif ( links[i].href ) {\n")
+	b.WriteString("\t\t\t\tlinks[i].target = '_blank';\n")
+	b.WriteString("\t\t\t}\n")
+	b.WriteString("\t\t}\n")
+	b.WriteString("\t} catch( er ) {}\n")
+	b.WriteString("}());\n")
+	b.WriteString("</script>\n")
 }
 
 // sanitizeRedirect validates redirect_to like wp_validate_redirect (P6.20).
