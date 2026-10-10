@@ -373,6 +373,14 @@
   task: P4
   api: exported
 
+# P4.70: batch/v1 207 Multi-Status + header envelopes + require-all-validate.
+- prefix: wp-includes/rest-api/class-wp-rest-server.php#serve_batch_request_v1
+  go: internal/rest/batch.go
+  status: partial
+  task: P4.70
+  api: exported
+  notes: "P4.70 — 207 responses, Allow/Link envelopes, validation=require-all-validate"
+
 # P4.46 / P4.62: GET collection + POST/PUT users write (create_users / edit_user).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-users-controller.php
   go: internal/rest/users_write.go
