@@ -316,10 +316,11 @@
   task: P4.39
   api: exported
 
+# P4.40 / P4.63: REST settings GET/write with richer WP field schema.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-settings-controller.php
   go: internal/rest/settings.go
   status: partial
-  task: P4.40
+  task: P4.63
   api: exported
 
 - prefix: wp-includes/rest-api/
