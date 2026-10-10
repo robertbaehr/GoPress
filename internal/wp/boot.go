@@ -27,6 +27,7 @@ func Boot(ctx context.Context, cfg *config.Config) (*Context, error) {
 
 	c.Hooks = NewHooks()
 	c.Cache = NewObjectCache()
+	registerDefaultCacheGroups(c.Cache)
 	c.Options = NewOptions(handle, c.Cache)
 	c.Meta = NewMeta(handle, c.Cache)
 	c.Locale = NewLocale("")

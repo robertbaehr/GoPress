@@ -8,20 +8,87 @@ package wp
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"sync"
 )
 
 // ObjectCache is a thread-safe in-memory object cache keyed by (group, key).
 type ObjectCache struct {
-	mu     sync.RWMutex
-	groups map[string]map[string]any
+	mu                sync.RWMutex
+	groups            map[string]map[string]any
+	globalGroups      map[string]bool
+	nonPersistentGrps map[string]bool
 }
 
 // NewObjectCache returns an empty cache.
 func NewObjectCache() *ObjectCache {
 	return &ObjectCache{
-		groups: make(map[string]map[string]any),
+		groups:            make(map[string]map[string]any),
+		globalGroups:      make(map[string]bool),
+		nonPersistentGrps: make(map[string]bool),
 	}
+}
+
+// AddGlobalGroups marks groups as global (wp_cache_add_global_groups, P2.18).
+// On multisite these skip the blog ID key prefix; GoPress tracks membership for API parity.
+func (c *ObjectCache) AddGlobalGroups(groups ...string) {
+	if c == nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.globalGroups == nil {
+		c.globalGroups = make(map[string]bool)
+	}
+	for _, g := range groups {
+		g = strings.TrimSpace(g)
+		if g == "" {
+			continue
+		}
+		c.globalGroups[g] = true
+	}
+}
+
+// AddNonPersistentGroups marks groups as non-persistent (P2.18).
+// Default in-memory cache does not persist, so this only records membership.
+func (c *ObjectCache) AddNonPersistentGroups(groups ...string) {
+	if c == nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.nonPersistentGrps == nil {
+		c.nonPersistentGrps = make(map[string]bool)
+	}
+	for _, g := range groups {
+		g = strings.TrimSpace(g)
+		if g == "" {
+			continue
+		}
+		c.nonPersistentGrps[g] = true
+	}
+}
+
+// IsGlobalGroup reports whether group was registered via AddGlobalGroups.
+func (c *ObjectCache) IsGlobalGroup(group string) bool {
+	if c == nil {
+		return false
+	}
+	group = normGroup(group)
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.globalGroups[group]
+}
+
+// IsNonPersistentGroup reports whether group was registered via AddNonPersistentGroups.
+func (c *ObjectCache) IsNonPersistentGroup(group string) bool {
+	if c == nil {
+		return false
+	}
+	group = normGroup(group)
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.nonPersistentGrps[group]
 }
 
 func normGroup(group string) string {
