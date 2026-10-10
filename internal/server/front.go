@@ -973,12 +973,15 @@ func (f *Front) renderAuthorArchiveBlockTemplate(w http.ResponseWriter, c *wp.Co
 	_, _ = w.Write([]byte(b.String()))
 }
 
-// renderCategoryArchive serves /category/{slug}/ front archives (P3.25).
+// renderCategoryArchive serves /category/{slug}/ front archives (P3.25 / P3.84).
 func (f *Front) renderCategoryArchive(w http.ResponseWriter, c *wp.Context, slug string) {
 	slug = strings.TrimSpace(slug)
 	if slug == "" {
 		f.render404(w, c)
 		return
+	}
+	if c != nil && c.Scope == nil {
+		c.Scope = &wp.RequestScope{}
 	}
 	// Nested category paths use the leaf slug for term lookup.
 	leaf := slug
@@ -1022,10 +1025,51 @@ func (f *Front) renderCategoryArchive(w http.ResponseWriter, c *wp.Context, slug
 	title := "Category: " + term.Name
 	slugs := wp.CategoryTemplateSlugs(term.Slug, term.ID)
 	if tpl, ok := wp.ResolveBlockTemplate(c, slugs...); ok && strings.TrimSpace(tpl) != "" {
+		tpl = applyCategoryTemplateContentFilter(c, tpl)
 		f.renderCategoryArchiveBlockTemplate(w, c, tpl, title, term)
 		return
 	}
-	f.renderCategoryArchiveShim(w, c, title, term.Slug)
+	f.renderCategoryArchiveShim(w, c, title, term)
+}
+
+// applyCategoryTemplateContentFilter lets hooks adjust resolved category block markup (P3.84).
+func applyCategoryTemplateContentFilter(c *wp.Context, tpl string) string {
+	if c == nil || c.Hooks == nil {
+		return tpl
+	}
+	if v := c.Hooks.ApplyFilters("category_template_content", tpl); v != nil {
+		if s, ok := v.(string); ok {
+			return s
+		}
+	}
+	return tpl
+}
+
+// frontCategoryDocumentTitle builds the category archive <title> and honors document_title_parts (P3.84).
+func frontCategoryDocumentTitle(c *wp.Context, blogname, archiveTitle string) string {
+	parts := map[string]string{
+		"title":   archiveTitle,
+		"page":    "",
+		"tagline": "",
+		"site":    blogname,
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("document_title_parts", parts); v != nil {
+			if m, ok := v.(map[string]string); ok {
+				parts = m
+			}
+		}
+	}
+	title := strings.TrimSpace(parts["title"])
+	if title == "" {
+		title = "Category"
+	}
+	site := strings.TrimSpace(parts["site"])
+	out := html.EscapeString(title)
+	if site != "" {
+		out += " &#8211; " + html.EscapeString(site)
+	}
+	return out
 }
 
 func (f *Front) renderCategoryArchiveBlockTemplate(w http.ResponseWriter, c *wp.Context, template, archiveTitle string, term *termInfo) {
@@ -1052,14 +1096,13 @@ func (f *Front) renderCategoryArchiveBlockTemplate(w http.ResponseWriter, c *wp.
 	}
 	bodyClasses = wp.BodyClassWithAdminBar(c, bodyClasses)
 
-	pageTitle := html.EscapeString(archiveTitle) + " &#8211; " + html.EscapeString(blogname)
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
 	b.WriteString(frontRobotsMetaTag(c))
 	b.WriteString("<title>")
-	b.WriteString(pageTitle)
+	b.WriteString(frontCategoryDocumentTitle(c, blogname, archiveTitle))
 	b.WriteString("</title>\n")
 	writeFrontHeadLinks(&b, home, blogname, "", "", "", "", "", "")
 	writeArchiveRelLinks(&b, c, home)
@@ -1080,8 +1123,12 @@ func (f *Front) renderCategoryArchiveBlockTemplate(w http.ResponseWriter, c *wp.
 	_, _ = w.Write([]byte(b.String()))
 }
 
-func (f *Front) renderCategoryArchiveShim(w http.ResponseWriter, c *wp.Context, title, catSlug string) {
+func (f *Front) renderCategoryArchiveShim(w http.ResponseWriter, c *wp.Context, title string, term *termInfo) {
 	blogname := optionString(c, "blogname", "GoPress")
+	catSlug := ""
+	if term != nil {
+		catSlug = term.Slug
+	}
 	posts, err := wp.GetPosts(c, wp.QueryArgs{
 		PostType: "post", PostStatus: "publish", PostsPerPage: 10,
 		Category: catSlug,
@@ -1090,27 +1137,53 @@ func (f *Front) renderCategoryArchiveShim(w http.ResponseWriter, c *wp.Context, 
 		http.Error(w, "archive: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
+	bodyClass := "archive category"
+	if term != nil {
+		if term.Slug != "" {
+			bodyClass += " category-" + term.Slug
+		}
+		if term.ID > 0 {
+			bodyClass += " category-" + strconv.FormatInt(term.ID, 10)
+		}
+	}
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>")
-	b.WriteString(html.EscapeString(title))
-	b.WriteString(" &#8211; ")
-	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(frontCategoryDocumentTitle(c, blogname, title))
 	b.WriteString("</title>\n</head>\n<body class=\"")
-	b.WriteString(html.EscapeString(wp.BodyClassWithAdminBar(c, "archive category")))
+	b.WriteString(html.EscapeString(wp.BodyClassWithAdminBar(c, bodyClass)))
 	b.WriteString("\">\n")
 	b.WriteString(wp.AdminBarHTML(c))
+	b.WriteString("<main id=\"wp--skip-link--target\">\n")
 	b.WriteString("<h1 class=\"page-title\">")
 	b.WriteString(html.EscapeString(title))
 	b.WriteString("</h1>\n<ul class=\"posts\">\n")
+	if len(posts) == 0 {
+		b.WriteString("<li class=\"no-results\">No posts found in this category.</li>\n")
+	}
 	for _, p := range posts {
 		b.WriteString("<li><a href=\"?p=")
 		b.WriteString(strconv.FormatInt(p.ID, 10))
 		b.WriteString("\">")
 		b.WriteString(html.EscapeString(p.Title))
-		b.WriteString("</a></li>\n")
+		b.WriteString("</a>")
+		// P3.84: classic shim shows excerpt/content tease when available.
+		ex := strings.TrimSpace(p.Excerpt)
+		if ex == "" {
+			ex = strings.TrimSpace(stripTagsSimple(p.Content))
+			words := strings.Fields(ex)
+			if len(words) > 40 {
+				ex = strings.Join(words[:40], " ") + "…"
+			}
+		}
+		if ex != "" {
+			b.WriteString("<p class=\"entry-summary\">")
+			b.WriteString(html.EscapeString(ex))
+			b.WriteString("</p>")
+		}
+		b.WriteString("</li>\n")
 	}
-	b.WriteString("</ul>\n</body>\n</html>\n")
+	b.WriteString("</ul>\n</main>\n</body>\n</html>\n")
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(b.String()))

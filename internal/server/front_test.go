@@ -971,12 +971,39 @@ func TestFrontCategoryArchive(t *testing.T) {
 	if strings.Contains(body, "GoPress: front route not implemented") {
 		t.Fatal("category archive should not 501")
 	}
+	if !strings.Contains(body, "category-uncategorized") && !strings.Contains(body, "category-1") {
+		t.Fatalf("expected category slug/id body class: %q", body[:min(500, len(body))])
+	}
 
 	req = httptest.NewRequest(http.MethodGet, "/category/nobody-here-cat/", nil)
 	rec = httptest.NewRecorder()
 	srv.ServeHTTP(rec, req)
 	if rec.Code != http.StatusNotFound {
 		t.Fatalf("missing category want 404, got %d", rec.Code)
+	}
+}
+
+func TestFrontCategoryArchiveDocumentTitleFilter(t *testing.T) {
+	c := testBoot(t)
+	c.Hooks.AddFilter("document_title_parts", func(value any, _ ...any) any {
+		parts, _ := value.(map[string]string)
+		if parts == nil {
+			parts = map[string]string{}
+		}
+		parts["title"] = "Cats Only"
+		parts["site"] = "GoPress Test"
+		return parts
+	}, 10, 1)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/category/uncategorized/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "Cats Only") || !strings.Contains(body, "GoPress Test") {
+		t.Fatalf("document_title_parts not applied: %q", body[:min(600, len(body))])
 	}
 }
 
