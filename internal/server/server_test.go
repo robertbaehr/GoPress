@@ -115,7 +115,7 @@ func TestWPJSONIndex(t *testing.T) {
 
 func TestRESTRouteQueryVar(t *testing.T) {
 	cfg := &config.Config{
-		DBName: "gopress_go", DBUser: "root", DBPassword: "root",
+		DBName: "gopress_go", DBUser: "gopress", DBPassword: "gopress",
 		DBHost: "127.0.0.1:3306", DBCharset: "utf8mb4", TablePrefix: "wp_",
 		ABSPATH: "/workspace/",
 		AuthKey: "k", SecureAuthKey: "k", LoggedInKey: "k", NonceKey: "k",
