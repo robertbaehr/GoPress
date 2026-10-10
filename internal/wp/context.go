@@ -77,6 +77,37 @@ func NewContext(parent context.Context) *Context {
 	}
 }
 
+// ForRequest returns a per-request Context sharing process-wide services
+// (Config, DB, Hooks, Cache, Options, …) with a fresh Scope and no CurrentUser.
+func (c *Context) ForRequest(w http.ResponseWriter, r *http.Request) *Context {
+	if c == nil {
+		out := NewContext(context.Background())
+		out.Req = r
+		out.Res = w
+		return out
+	}
+	parent := c.Parent
+	if r != nil {
+		parent = r.Context()
+	}
+	return &Context{
+		Parent:  parent,
+		Config:  c.Config,
+		DB:      c.DB,
+		Hooks:   c.Hooks,
+		Cache:   c.Cache,
+		Options: c.Options,
+		Meta:    c.Meta,
+		Locale:  c.Locale,
+		Auth:    c.Auth,
+		Users:   c.Users,
+		Roles:   c.Roles,
+		Req:     r,
+		Res:     w,
+		Scope:   NewRequestScope(),
+	}
+}
+
 // WithContext stores c in parent and returns the derived context.Context.
 func WithContext(parent context.Context, c *Context) context.Context {
 	if parent == nil {
