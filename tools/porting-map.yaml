@@ -106,6 +106,13 @@
   task: P6.16
   api: n/a
 
+# P6.20: reject external redirect_to (wp_validate_redirect subset).
+- prefix: wp-includes/pluggable.php#wp_validate_redirect
+  go: internal/login/login.go
+  status: partial
+  task: P6.20
+  api: n/a
+
 - prefix: wp-includes/post-template.php#get_the_password_form
   go: internal/wp/post_password.go
   status: partial

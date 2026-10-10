@@ -295,7 +295,7 @@ func (h *Handler) serveLogout(w http.ResponseWriter, r *http.Request, c *wp.Cont
 			redirectTo = "/wp-login.php?loggedout=true"
 		}
 	} else {
-		redirectTo = sanitizeRedirect(requested)
+		redirectTo = sanitizeRedirect(requested, home)
 	}
 	http.Redirect(w, r, redirectTo, http.StatusFound)
 }
@@ -316,7 +316,7 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 
 	// Logged-in users skip the form unless reauth=1 forces re-authentication (P6.18).
 	if c != nil && c.CurrentUser != nil && !reauth && !interim && errMsg == "" {
-		http.Redirect(w, r, sanitizeRedirect(redirectTo), http.StatusFound)
+		http.Redirect(w, r, sanitizeRedirect(redirectTo, home), http.StatusFound)
 		return
 	}
 
@@ -910,7 +910,8 @@ func (h *Handler) servePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	if redirectTo == "" {
 		redirectTo = r.URL.Query().Get("redirect_to")
 	}
-	redirectTo = sanitizeRedirect(redirectTo)
+	homeForRedirect := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	redirectTo = sanitizeRedirect(redirectTo, homeForRedirect)
 	interim := isInterimLogin(r)
 
 	secure := r.TLS != nil || strings.EqualFold(r.Header.Get("X-Forwarded-Proto"), "https")
@@ -995,7 +996,7 @@ func (h *Handler) serveInterimLoginSuccess(w http.ResponseWriter, r *http.Reques
 		}
 	}
 	if redirectTo != "" {
-		redirectTo = sanitizeRedirect(redirectTo)
+		redirectTo = sanitizeRedirect(redirectTo, home)
 	}
 	var b strings.Builder
 	writeLoginHead(&b, home, blogname, "Log In", "login", "interim-login", "interim-login-success")
@@ -1059,31 +1060,51 @@ func isInterimLogin(r *http.Request) bool {
 	return false
 }
 
-func sanitizeRedirect(raw string) string {
+// sanitizeRedirect validates redirect_to like wp_validate_redirect (P6.20).
+// Relative same-origin paths are kept; absolute URLs must match home's host.
+// External hosts (and protocol-relative //evil…) fall back to /wp-admin/.
+func sanitizeRedirect(raw, home string) string {
+	const fallback = "/wp-admin/"
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		return "/wp-admin/"
+		return fallback
 	}
-	// Allow relative paths.
+	// Browsers treat //host as scheme-relative; force http: like core before parse.
+	if strings.HasPrefix(raw, "//") {
+		raw = "http:" + raw
+	}
+	// Allow relative paths (not protocol-relative).
 	if strings.HasPrefix(raw, "/") && !strings.HasPrefix(raw, "//") {
 		return raw
 	}
 	u, err := url.Parse(raw)
-	if err != nil || u.Host == "" {
-		return "/wp-admin/"
+	if err != nil {
+		return fallback
 	}
-	// Absolute URLs only if same-ish path; for fixture simplicity accept any http(s) to local hosts.
+	// Reject scheme-only / malformed hosts (https:evil.com).
+	if u.Host == "" {
+		if u.Scheme != "" || u.User != nil || u.Opaque != "" {
+			return fallback
+		}
+		return fallback
+	}
 	if u.Scheme != "http" && u.Scheme != "https" {
-		return "/wp-admin/"
+		return fallback
 	}
 	host := strings.ToLower(u.Hostname())
-	if host == "127.0.0.1" || host == "localhost" || host == "" {
-		if u.Path == "" {
-			return "/"
+	allowed := map[string]bool{"127.0.0.1": true, "localhost": true}
+	if home != "" {
+		if hu, err := url.Parse(home); err == nil && hu.Hostname() != "" {
+			allowed[strings.ToLower(hu.Hostname())] = true
 		}
-		return u.RequestURI()
 	}
-	return "/wp-admin/"
+	if !allowed[host] {
+		return fallback
+	}
+	if u.Path == "" {
+		return "/"
+	}
+	return u.RequestURI()
 }
 
 // writeLanguageSwitcher emits the login language dropdown when languages exist (P6.11).
