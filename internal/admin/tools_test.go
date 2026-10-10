@@ -19,6 +19,9 @@ func TestToolsStubScreen(t *testing.T) {
 	if err != nil {
 		t.Fatalf("cookie: %v", err)
 	}
+	c.Hooks.AddAction("tool_box", func(_ ...any) {
+		c.Hooks.WriteNotice(`<div class="card tool-box-extra"><h2>Extra tool</h2></div>`)
+	}, 10, 0)
 	req := httptest.NewRequest(http.MethodGet, "/wp-admin/tools.php", nil)
 	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
 	rec := httptest.NewRecorder()
@@ -35,6 +38,40 @@ func TestToolsStubScreen(t *testing.T) {
 	}
 	if !strings.Contains(body, "import.php") || !strings.Contains(body, "export.php") {
 		t.Fatalf("expected import/export links: %q", body)
+	}
+	if !strings.Contains(body, "tools-php") {
+		t.Fatalf("expected tools-php body class: %q", body)
+	}
+	if !strings.Contains(body, "Categories and Tags Converter") {
+		t.Fatalf("admin should see converter card: %q", body)
+	}
+	if !strings.Contains(body, "tool-box-extra") {
+		t.Fatalf("expected tool_box action HTML: %q", body)
+	}
+}
+
+func TestToolsPrivacyPolicyGuideRedirect(t *testing.T) {
+	c := bootOrSkip(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/tools.php?wp-privacy-policy-guide=1", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/tools.php") {
+		t.Fatal("tools.php not handled")
+	}
+	if rec.Code != http.StatusMovedPermanently {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	if loc := rec.Header().Get("Location"); loc != "/wp-admin/options-privacy.php?tab=policyguide" {
+		t.Fatalf("Location=%q", loc)
 	}
 }
 

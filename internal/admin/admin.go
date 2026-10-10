@@ -3455,8 +3455,13 @@ func siteHealthTabsHTML(active string) string {
 		`</nav>` + "\n"
 }
 
-// serveTools is the Tools screen stub (P7.26).
+// serveTools is the Tools screen stub (P7.26 / P7.89).
 func (h *Handler) serveTools(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	// P7.89: privacy policy guide used to live here; WP 5.3+ redirects.
+	if _, ok := r.URL.Query()["wp-privacy-policy-guide"]; ok {
+		http.Redirect(w, r, "/wp-admin/options-privacy.php?tab=policyguide", http.StatusMovedPermanently)
+		return
+	}
 	// Legacy privacy redirects from tools.php?page=… (WP 5.3+).
 	if page := r.URL.Query().Get("page"); page != "" {
 		switch page {
@@ -3469,28 +3474,47 @@ func (h *Handler) serveTools(w http.ResponseWriter, r *http.Request, c *wp.Conte
 		}
 	}
 	blogname := optionString(c, "blogname", "GoPress")
+	canImport := c != nil && c.CurrentUser != nil && c.UserCan(c.CurrentUser, "import")
+	canManageTerms := c != nil && c.CurrentUser != nil &&
+		(c.UserCan(c.CurrentUser, "manage_categories") || c.UserCan(c.CurrentUser, "manage_terms"))
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n")
 	b.WriteString("<title>Tools &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui tools-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1>Tools</h1>\n")
-	b.WriteString("<p>Press This, Categories and Tags Converter, and other tools live here.</p>\n")
-	b.WriteString("<p class=\"description\">GoPress tools stub — converter plugins land later.</p>\n")
-	b.WriteString("<div class=\"card\">\n")
-	b.WriteString("<h2 class=\"title\">Categories and Tags Converter</h2>\n")
-	b.WriteString("<p>If you want to convert your categories to tags (or vice versa), use the ")
-	b.WriteString("<a href=\"import.php\">Categories and Tags Converter</a> available from the Import screen.</p>\n")
-	b.WriteString("</div>\n")
+	// P7.89: converter card only when import + term manage caps (tools.php).
+	if canImport && canManageTerms {
+		b.WriteString("<div class=\"card\">\n")
+		b.WriteString("<h2 class=\"title\">Categories and Tags Converter</h2>\n")
+		b.WriteString("<p>If you want to convert your categories to tags (or vice versa), use the ")
+		b.WriteString("<a href=\"import.php\">Categories and Tags Converter</a> available from the Import screen.</p>\n")
+		b.WriteString("</div>\n")
+	}
 	b.WriteString("<p><a href=\"export.php\">Export</a> · <a href=\"import.php\">Import</a> · ")
 	b.WriteString("<a href=\"site-health.php\">Site Health</a> · ")
 	b.WriteString("<a href=\"export-personal-data.php\">Export Personal Data</a> · ")
 	b.WriteString("<a href=\"erase-personal-data.php\">Erase Personal Data</a></p>\n")
+	// P7.89: fire tool_box so plugins can append cards (do_action('tool_box')).
+	b.WriteString(captureToolBoxHTML(c))
 	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
+}
+
+// captureToolBoxHTML runs the tool_box action and returns buffered HTML (P7.89).
+func captureToolBoxHTML(c *wp.Context) string {
+	if c == nil || c.Hooks == nil {
+		return ""
+	}
+	var buf strings.Builder
+	c.Hooks.BeginNoticeCapture(&buf)
+	defer c.Hooks.EndNoticeCapture()
+	c.Hooks.DoAction("tool_box")
+	return buf.String()
 }
 
 // serveImport lives in import_wxr.go (P7.11 screen + P7.54 WXR upload stub).
