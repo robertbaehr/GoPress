@@ -45,6 +45,10 @@ func TestLoginFormGET(t *testing.T) {
 	if !strings.Contains(body, `load-styles.php`) || !strings.Contains(body, `name='robots'`) {
 		t.Fatalf("expected WP login head assets: %q", body)
 	}
+	// Fixture has no installed language packs — WP omits the switcher (P6.11).
+	if strings.Contains(body, "language-switcher") {
+		t.Fatalf("unexpected language-switcher without installed languages: %q", body)
+	}
 	foundTestCookie := false
 	for _, ck := range rec.Result().Cookies() {
 		if ck.Name == "wordpress_test_cookie" {

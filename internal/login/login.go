@@ -6,6 +6,7 @@ import (
 	"html"
 	"net/http"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -206,6 +207,7 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		b.WriteString("\">&larr; Go to ")
 		b.WriteString(html.EscapeString(blogname))
 		b.WriteString("</a>\t\t</p>\n")
+		writeLanguageSwitcher(&b, r, c, availableLanguages(c))
 	}
 	b.WriteString("\t\t\t</div>\n")
 	b.WriteString("\t\t\n")
@@ -593,6 +595,99 @@ func sanitizeRedirect(raw string) string {
 		return u.RequestURI()
 	}
 	return "/wp-admin/"
+}
+
+// writeLanguageSwitcher emits the login language dropdown when languages exist (P6.11).
+// Mirrors wp-login.php: only rendered when get_available_languages() is non-empty.
+func writeLanguageSwitcher(b *strings.Builder, r *http.Request, c *wp.Context, languages []string) {
+	if len(languages) == 0 {
+		return
+	}
+	selected := "en_US"
+	if c != nil && c.Options != nil {
+		if v := optionString(c, "WPLANG", ""); v != "" {
+			selected = v
+		}
+	}
+	if q := r.URL.Query().Get("wp_lang"); q != "" {
+		selected = q
+	}
+	b.WriteString("\t\t\t<div class=\"language-switcher\">\n")
+	b.WriteString("\t\t\t\t<form id=\"language-switcher\" method=\"get\">\n")
+	b.WriteString("\t\t\t\t\t<label for=\"language-switcher-locales\">\n")
+	b.WriteString("\t\t\t\t\t\tLanguage<span class=\"dashicons dashicons-translation\" aria-hidden=\"true\"></span>\n")
+	b.WriteString("\t\t\t\t\t</label>\n")
+	b.WriteString("\t\t\t\t\t<select name=\"wp_lang\" id=\"language-switcher-locales\">\n")
+	b.WriteString("\t\t\t\t\t\t<option value=\"en_US\"")
+	if selected == "en_US" || selected == "" {
+		b.WriteString(" selected=\"selected\"")
+	}
+	b.WriteString(">English (United States)</option>\n")
+	for _, loc := range languages {
+		loc = strings.TrimSpace(loc)
+		if loc == "" || loc == "en_US" {
+			continue
+		}
+		b.WriteString("\t\t\t\t\t\t<option value=\"")
+		b.WriteString(html.EscapeString(loc))
+		b.WriteString("\"")
+		if loc == selected {
+			b.WriteString(" selected=\"selected\"")
+		}
+		b.WriteString(">")
+		b.WriteString(html.EscapeString(loc))
+		b.WriteString("</option>\n")
+	}
+	b.WriteString("\t\t\t\t\t</select>\n")
+	if rt := r.URL.Query().Get("redirect_to"); rt != "" {
+		b.WriteString("\t\t\t\t\t\t<input type=\"hidden\" name=\"redirect_to\" value=\"")
+		b.WriteString(html.EscapeString(rt))
+		b.WriteString("\" />\n")
+	}
+	if action := r.URL.Query().Get("action"); action != "" {
+		b.WriteString("\t\t\t\t\t\t<input type=\"hidden\" name=\"action\" value=\"")
+		b.WriteString(html.EscapeString(action))
+		b.WriteString("\" />\n")
+	}
+	b.WriteString("\t\t\t\t\t\t<input type=\"submit\" class=\"button\" value=\"Change\">\n")
+	b.WriteString("\t\t\t\t\t</form>\n")
+	b.WriteString("\t\t\t\t</div>\n")
+}
+
+// availableLanguages mirrors get_available_languages() — installed .mo packs under
+// wp-content/languages (excluding continents-cities / admin- / ms- prefixed files).
+func availableLanguages(c *wp.Context) []string {
+	root := "/workspace"
+	if c != nil && c.Config != nil && c.Config.ABSPATH != "" {
+		root = strings.TrimRight(c.Config.ABSPATH, "/")
+	}
+	dir := root + "/wp-content/languages"
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	var out []string
+	seen := map[string]bool{}
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		name := e.Name()
+		if !strings.HasSuffix(name, ".mo") {
+			continue
+		}
+		base := strings.TrimSuffix(name, ".mo")
+		if strings.HasPrefix(base, "admin-") || strings.HasPrefix(base, "admin-network-") ||
+			strings.HasPrefix(base, "continents-cities") || strings.HasPrefix(base, "ms-") {
+			continue
+		}
+		if seen[base] {
+			continue
+		}
+		seen[base] = true
+		out = append(out, base)
+	}
+	return out
 }
 
 func optionString(c *wp.Context, name, fallback string) string {
