@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/robertbaehr/GoPress/internal/wp"
@@ -187,6 +188,8 @@ func (s *Server) serveUserItem(w http.ResponseWriter, r *http.Request, c *wp.Con
 		s.getUser(w, r, c, id)
 	case http.MethodPut, http.MethodPost, http.MethodPatch:
 		s.updateUser(w, r, c, id)
+	case http.MethodDelete:
+		s.deleteUser(w, r, c, id)
 	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
@@ -194,6 +197,95 @@ func (s *Server) serveUserItem(w http.ResponseWriter, r *http.Request, c *wp.Con
 			"data":    map[string]any{"status": 405},
 		})
 	}
+}
+
+// deleteUser handles DELETE /wp/v2/users/{id}?force=true[&reassign=N] (P4.79).
+func (s *Server) deleteUser(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
+	if c == nil || c.CurrentUser == nil {
+		writeJSON(w, http.StatusUnauthorized, map[string]any{
+			"code":    "rest_user_cannot_delete",
+			"message": "Sorry, you are not allowed to delete this user.",
+			"data":    map[string]any{"status": 401},
+		})
+		return
+	}
+	if !c.CurrentUserCan("delete_user", id) {
+		writeJSON(w, http.StatusForbidden, map[string]any{
+			"code":    "rest_user_cannot_delete",
+			"message": "Sorry, you are not allowed to delete this user.",
+			"data":    map[string]any{"status": 403},
+		})
+		return
+	}
+	u, err := c.GetUserBy("id", id)
+	if err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_user_query",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	if u == nil {
+		writeJSON(w, http.StatusNotFound, map[string]any{
+			"code":    "rest_user_invalid_id",
+			"message": "Invalid user ID.",
+			"data":    map[string]any{"status": 404},
+		})
+		return
+	}
+	force := r.URL.Query().Get("force") == "true"
+	if !force {
+		writeJSON(w, http.StatusNotImplemented, map[string]any{
+			"code":    "rest_trash_not_supported",
+			"message": "Users do not support trashing. Set 'force=true' to delete.",
+			"data":    map[string]any{"status": 501},
+		})
+		return
+	}
+	var reassignPtr *int64
+	if raw := strings.TrimSpace(r.URL.Query().Get("reassign")); raw != "" {
+		rid, err := strconv.ParseInt(raw, 10, 64)
+		if err != nil || rid <= 0 || rid == id {
+			writeJSON(w, http.StatusBadRequest, map[string]any{
+				"code":    "rest_user_invalid_reassign",
+				"message": "Invalid user ID for reassignment.",
+				"data":    map[string]any{"status": 400},
+			})
+			return
+		}
+		target, err := c.GetUserBy("id", rid)
+		if err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{
+				"code":    "rest_user_query",
+				"message": err.Error(),
+				"data":    map[string]any{"status": 500},
+			})
+			return
+		}
+		if target == nil {
+			writeJSON(w, http.StatusBadRequest, map[string]any{
+				"code":    "rest_user_invalid_reassign",
+				"message": "Invalid user ID for reassignment.",
+				"data":    map[string]any{"status": 400},
+			})
+			return
+		}
+		reassignPtr = &rid
+	}
+	previous := buildListedUser(c, u, true, "edit")
+	if err := c.DeleteUser(id, reassignPtr); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_cannot_delete",
+			"message": "The user cannot be deleted.",
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"deleted":  true,
+		"previous": previous,
+	})
 }
 
 func (s *Server) getUser(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {
