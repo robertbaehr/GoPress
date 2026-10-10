@@ -118,6 +118,40 @@ func TestFormattingGoldenVectors(t *testing.T) {
 	}
 }
 
+func TestSanitizeTitleExtraGolden(t *testing.T) {
+	_, file, _, ok := runtime.Caller(0)
+	if !ok {
+		t.Fatal("runtime.Caller failed")
+	}
+	root := filepath.Clean(filepath.Join(filepath.Dir(file), "..", ".."))
+	path := filepath.Join(root, "tests", "golden", "formatting", "sanitize_title.json")
+	data, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatalf("read golden: %v", err)
+	}
+	var corpus struct {
+		Vectors []struct {
+			Input         string `json:"input"`
+			SanitizeTitle string `json:"sanitize_title"`
+		} `json:"vectors"`
+	}
+	if err := json.Unmarshal(data, &corpus); err != nil {
+		t.Fatalf("json: %v", err)
+	}
+	if len(corpus.Vectors) < 20 {
+		t.Fatalf("expected ≥20 sanitize_title vectors, got %d", len(corpus.Vectors))
+	}
+	var fails int
+	for i, v := range corpus.Vectors {
+		got := wp.SanitizeTitle(v.Input)
+		if got != v.SanitizeTitle {
+			fails++
+			t.Errorf("i=%d input=%q\n  want %q\n  got  %q", i, v.Input, v.SanitizeTitle, got)
+		}
+	}
+	t.Logf("sanitize_title extra golden: %d/%d match", len(corpus.Vectors)-fails, len(corpus.Vectors))
+}
+
 func TestEscHTMLBasic(t *testing.T) {
 	if got := wp.EscHTML(`O'Reilly & Sons`); got != `O&#039;Reilly &amp; Sons` {
 		t.Fatalf("got %q", got)
