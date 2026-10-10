@@ -2861,6 +2861,28 @@
   api: n/a
   notes: "P5.72 — unit coverage for post-navigation-link polish attrs"
 
+# P5.75: polish core/page-list (parentPageID, nesting, WP item classes).
+- prefix: wp-includes/blocks/page-list.php
+  go: internal/blocks/page_list.go
+  status: partial
+  task: P5.75
+  api: internal
+  notes: "P5.75 — parentPageID; nested ul; pages-list__item classes; current/home"
+
+- prefix: wp-includes/blocks/page-list
+  go: internal/blocks/page_list_test.go
+  status: partial
+  task: P5.75
+  api: n/a
+  notes: "P5.75 — unit coverage for page-list polish attrs + nav nesting"
+
+- prefix: wp-includes/blocks/page-list.php#list-pages
+  go: internal/wp/navigation.go
+  status: partial
+  task: P5.75
+  api: exported
+  notes: "P5.75 — ListPublishedPages includes Parent; menu_order,title sort"
+
 # P5.74: render core/loginout (login/logout link or form).
 - prefix: wp-includes/blocks/loginout.php
   go: internal/blocks/loginout.go

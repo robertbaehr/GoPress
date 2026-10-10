@@ -3314,12 +3314,26 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			out := make([]blocks.NavLink, 0, len(pages))
 			for _, p := range pages {
 				out = append(out, blocks.NavLink{
-					Label: p.Title,
-					URL:   wp.PagePermalink(c, p),
+					Label:  p.Title,
+					URL:    wp.PagePermalink(c, p),
+					ID:     p.ID,
+					Parent: p.Parent,
 				})
 			}
 			return out
 		},
+		CurrentPageID: func() int64 {
+			// Queried page ID when rendering a singular page (P5.75).
+			if c.Scope != nil && c.Scope.IsPage && c.Scope.QueriedObjectID > 0 {
+				return c.Scope.QueriedObjectID
+			}
+			return 0
+		}(),
+		FrontPageID: func() int64 {
+			v := optionString(c, "page_on_front", "0")
+			n, _ := strconv.ParseInt(strings.TrimSpace(v), 10, 64)
+			return n
+		}(),
 		ListPosts: func(q blocks.QueryLoopArgs) []blocks.QueryPost {
 			limit := q.PerPage
 			if limit <= 0 {
