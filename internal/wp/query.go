@@ -20,14 +20,22 @@ type QueryArgs struct {
 
 // Post is a row from wp_posts used by front and REST helpers.
 type Post struct {
-	ID      int64
-	Title   string
-	Content string
-	Excerpt string
-	Name    string
-	Status  string
-	Type    string
-	Date    string
+	ID            int64
+	Author        int64
+	Title         string
+	Content       string
+	Excerpt       string
+	Name          string
+	Status        string
+	Type          string
+	Date          string
+	DateGMT       string
+	Modified      string
+	ModifiedGMT   string
+	GUID          string
+	CommentStatus string
+	PingStatus    string
+	Password      string
 }
 
 // GetPosts runs a WP_Query-like SELECT against wp_posts.
@@ -75,7 +83,9 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 		vals = append(vals, slug)
 	}
 
-	q := "SELECT ID, post_date, post_name, post_status, post_type, post_title, post_content, post_excerpt FROM " +
+	q := "SELECT ID, post_author, post_date, post_date_gmt, post_modified, post_modified_gmt, " +
+		"post_name, post_status, post_type, post_title, post_content, post_excerpt, " +
+		"guid, comment_status, ping_status, post_password FROM " +
 		c.DB.Posts() + " WHERE " + strings.Join(where, " AND ") +
 		" ORDER BY post_date DESC"
 	if limit >= 0 {
@@ -119,14 +129,22 @@ func GetPost(c *Context, args QueryArgs) (*Post, error) {
 
 func postFromRow(row map[string]any) Post {
 	return Post{
-		ID:      rowInt64(row["ID"]),
-		Date:    rowString(row["post_date"]),
-		Name:    rowString(row["post_name"]),
-		Status:  rowString(row["post_status"]),
-		Type:    rowString(row["post_type"]),
-		Title:   rowString(row["post_title"]),
-		Content: rowString(row["post_content"]),
-		Excerpt: rowString(row["post_excerpt"]),
+		ID:            rowInt64(row["ID"]),
+		Author:        rowInt64(row["post_author"]),
+		Date:          rowString(row["post_date"]),
+		DateGMT:       rowString(row["post_date_gmt"]),
+		Modified:      rowString(row["post_modified"]),
+		ModifiedGMT:   rowString(row["post_modified_gmt"]),
+		Name:          rowString(row["post_name"]),
+		Status:        rowString(row["post_status"]),
+		Type:          rowString(row["post_type"]),
+		Title:         rowString(row["post_title"]),
+		Content:       rowString(row["post_content"]),
+		Excerpt:       rowString(row["post_excerpt"]),
+		GUID:          rowString(row["guid"]),
+		CommentStatus: rowString(row["comment_status"]),
+		PingStatus:    rowString(row["ping_status"]),
+		Password:      rowString(row["post_password"]),
 	}
 }
 
