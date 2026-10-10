@@ -260,6 +260,14 @@
   api: n/a
   notes: "P3.51 — Atom feed omits hub discovery links"
 
+# P3.32 / P3.100: /rsd.xml discovery (xmlrpc.php?rsd stays 403).
+- prefix: xmlrpc.php#rsd-discovery
+  go: internal/server/rsd.go
+  status: partial
+  task: P3.100
+  api: n/a
+  notes: "P3.100 — /rsd.xml homePageLink + WP-API apiLink + api.w.org Link; xmlrpc.php?rsd 403"
+
 # P3.32: /rsd.xml stub (xmlrpc.php?rsd stays 403).
 # P10.31: e2e coverage in tests/e2e/rsd.spec.js.
 - prefix: rsd.xml
