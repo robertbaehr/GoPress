@@ -107,3 +107,38 @@ func TestBlockSupportsShadowTopLevelAttr(t *testing.T) {
 		t.Fatalf("missing top-level shadow style: %q", out)
 	}
 }
+
+func TestBlockSupportsPositionSticky(t *testing.T) {
+	in := `<!-- wp:group {"style":{"position":{"type":"sticky","top":"0px"}}} -->
+<div class="wp-block-group">X</div>
+<!-- /wp:group -->`
+	out := blocks.Render(in)
+	if !strings.Contains(out, "is-position-sticky") {
+		t.Fatalf("missing position class: %q", out)
+	}
+	if !strings.Contains(out, "position:sticky") {
+		t.Fatalf("missing position style: %q", out)
+	}
+	if !strings.Contains(out, "z-index:10") {
+		t.Fatalf("missing z-index: %q", out)
+	}
+	if !strings.Contains(out, "top:calc(0px + var(--wp-admin--admin-bar--position-offset, 0px))") {
+		t.Fatalf("missing sticky top calc: %q", out)
+	}
+}
+
+func TestBlockSupportsPositionFixed(t *testing.T) {
+	in := `<!-- wp:group {"style":{"position":{"type":"fixed","top":"2rem","right":"1rem"}}} -->
+<div class="wp-block-group">X</div>
+<!-- /wp:group -->`
+	out := blocks.Render(in)
+	if !strings.Contains(out, "is-position-fixed") {
+		t.Fatalf("missing fixed class: %q", out)
+	}
+	if !strings.Contains(out, "position:fixed") {
+		t.Fatalf("missing fixed style: %q", out)
+	}
+	if !strings.Contains(out, "right:1rem") {
+		t.Fatalf("missing right style: %q", out)
+	}
+}

@@ -6,8 +6,8 @@ import (
 	"strings"
 )
 
-// applySupports injects basic color/spacing/fontSize/layout/shadow classes and styles
-// from block attributes onto the rendered root element (P5.10 / P5.19 / P5.27).
+// applySupports injects basic color/spacing/fontSize/layout/shadow/position classes and styles
+// from block attributes onto the rendered root element (P5.10 / P5.19 / P5.27 / P5.28).
 func applySupports(htmlFragment string, attrs map[string]any, blockName string) string {
 	if htmlFragment == "" {
 		return htmlFragment
@@ -61,6 +61,14 @@ func supportsFromAttrs(attrs map[string]any, blockName string) (classes []string
 				classes = appendUnique(classes, filterID)
 				if filterCSS != "" {
 					styles = mergeCSSDecls(styles, filterCSS)
+				}
+			}
+			if pos, ok := style["position"].(map[string]any); ok {
+				if t, ok := pos["type"].(string); ok {
+					t = strings.TrimSpace(t)
+					if t == "sticky" || t == "fixed" {
+						classes = appendUnique(classes, "is-position-"+t)
+					}
 				}
 			}
 		}
