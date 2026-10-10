@@ -4881,3 +4881,11 @@
   task: P8.21
   api: n/a
   notes: "P8.21 — erase form creates user_request pending/confirmed rows; table lists them"
+
+# P10.73: STATUS/PORTING refresh after P5.81–P8.21.
+- prefix: docs/STATUS.md
+  go: docs/STATUS.md
+  status: partial
+  task: P10.73
+  api: n/a
+  notes: "P10.73 — STATUS refresh after categories, sticky write/filter, safe_redirect, title_rss, erase request"
