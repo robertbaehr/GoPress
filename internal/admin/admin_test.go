@@ -1425,6 +1425,60 @@ func TestPluginsActivateDeactivateHelloDolly(t *testing.T) {
 	}
 }
 
+func TestPluginsUninstallButton(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() {
+		_, _ = c.Options.UpdateOption("active_plugins", `a:0:{}`, "yes")
+		_, _ = c.Options.UpdateOption("uninstall_plugins", `a:0:{}`, "yes")
+	})
+	_, _ = c.Options.UpdateOption("active_plugins", `a:0:{}`, "yes")
+	if err := plugins.RegisterUninstallHook(c, "hello.php", nil); err != nil {
+		t.Fatalf("RegisterUninstallHook: %v", err)
+	}
+
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/plugins.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "is-uninstallable") {
+		t.Fatalf("expected is-uninstallable row class: %q", body[:min(800, len(body))])
+	}
+	uninstallHref := extractHref(body, "action=uninstall")
+	if uninstallHref == "" {
+		t.Fatalf("missing uninstall href in %q", body[:min(1200, len(body))])
+	}
+
+	req = httptest.NewRequest(http.MethodGet, uninstallHref, nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("uninstall status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	loc := rec.Header().Get("Location")
+	if !strings.Contains(loc, "uninstall=true") {
+		t.Fatalf("Location=%q", loc)
+	}
+	if plugins.IsUninstallablePlugin(c, "hello.php") {
+		t.Fatal("expected not uninstallable after Uninstall")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, loc, nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	body = rec.Body.String()
+	if !strings.Contains(body, "uninstalled") {
+		t.Fatalf("expected uninstall notice: %q", body[:min(800, len(body))])
+	}
+}
+
 func extractHref(body, needle string) string {
 	idx := strings.Index(body, needle)
 	if idx < 0 {
