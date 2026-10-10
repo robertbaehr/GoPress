@@ -364,6 +364,12 @@
   task: P4.37
   api: exported
 
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-directory-controller.php
+  go: internal/rest/block_directory.go
+  status: partial
+  task: P4.42
+  api: exported
+
 # P4.38: POST /wp/v2/navigation handled in internal/rest/navigation_write.go
 # (wp_navigation CPT uses WP_REST_Posts_Controller upstream).
 
