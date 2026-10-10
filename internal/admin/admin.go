@@ -113,6 +113,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/privacy-policy-guide.php":
 		h.requireLogin(w, r, c, h.servePrivacyPolicyGuide)
 		return true
+	case "/wp-admin/revision.php":
+		h.requireLogin(w, r, c, h.serveRevisionCompare)
+		return true
 	case "/wp-admin/export.php":
 		h.requireLogin(w, r, c, h.serveExport)
 		return true
@@ -1654,6 +1657,60 @@ func (h *Handler) serveOptionsPrivacy(w http.ResponseWriter, r *http.Request, c 
 		"Privacy settings and policy page.",
 		"GoPress privacy settings stub.",
 		true)
+}
+
+// serveRevisionCompare is the wp-admin/revision.php compare screen stub (P7.33).
+func (h *Handler) serveRevisionCompare(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	revisionID := strings.TrimSpace(r.URL.Query().Get("revision"))
+	from := strings.TrimSpace(r.URL.Query().Get("from"))
+	to := strings.TrimSpace(r.URL.Query().Get("to"))
+	action := strings.TrimSpace(r.URL.Query().Get("action"))
+	if action == "" {
+		action = "view"
+	}
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Revisions &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui revisions-php\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap\">\n")
+	b.WriteString("<h1>Compare Revisions</h1>\n")
+	b.WriteString("<div id=\"revisions\" class=\"revisions\">\n")
+	b.WriteString("<div class=\"revisions-control-frame\">\n")
+	b.WriteString("<div class=\"revisions-controls\">\n")
+	b.WriteString("<div class=\"revisions-buttons\">\n")
+	b.WriteString("<div class=\"revisions-previous\"><input class=\"button\" type=\"button\" value=\"Previous\" disabled=\"disabled\" /></div>\n")
+	b.WriteString("<div class=\"revisions-next\"><input class=\"button\" type=\"button\" value=\"Next\" disabled=\"disabled\" /></div>\n")
+	b.WriteString("</div>\n</div>\n</div>\n")
+	b.WriteString("<div class=\"revisions-diff-frame\">\n")
+	b.WriteString("<div class=\"revisions-diff\">\n")
+	b.WriteString("<table class=\"diff\">\n")
+	b.WriteString("<col class=\"content diffsplit left\" /><col class=\"content diffsplit middle\" /><col class=\"content diffsplit right\" />\n")
+	b.WriteString("<tbody><tr><td colspan=\"3\"><p class=\"description\">GoPress revision compare stub (P7.33) — restore lands later.</p></td></tr></tbody>\n")
+	b.WriteString("</table>\n</div>\n</div>\n")
+	if revisionID != "" || from != "" || to != "" {
+		b.WriteString("<p class=\"revisions-meta\">")
+		b.WriteString("action=")
+		b.WriteString(html.EscapeString(action))
+		if revisionID != "" {
+			b.WriteString(" revision=")
+			b.WriteString(html.EscapeString(revisionID))
+		}
+		if from != "" {
+			b.WriteString(" from=")
+			b.WriteString(html.EscapeString(from))
+		}
+		if to != "" {
+			b.WriteString(" to=")
+			b.WriteString(html.EscapeString(to))
+		}
+		b.WriteString("</p>\n")
+	}
+	b.WriteString("</div>\n</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
 }
 
 // servePrivacyPolicyGuide is the Privacy Policy Guide screen stub (P8.7).
