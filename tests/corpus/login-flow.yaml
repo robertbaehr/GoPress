@@ -25,6 +25,24 @@
   compare: html
   nonce: null
 
+- id: login-lostpassword-invalidkey
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword&error=invalidkey
+  headers: {}
+  body: null
+  compare: html
+  nonce: null
+
+- id: login-resetpass-no-key
+  role: anon
+  method: GET
+  path: /wp-login.php?action=rp
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
 - id: login-admin-profile-headers
   role: admin
   method: GET
