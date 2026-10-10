@@ -609,3 +609,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.118: front headers after pingback/list stack.
+- id: front-p10118-feed-rss2
+  role: anon
+  method: GET
+  path: /feed/rss2/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10118-comments-feed-atom
+  role: anon
+  method: GET
+  path: /comments/feed/atom/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10118-sitemap-posts
+  role: anon
+  method: GET
+  path: /wp-sitemap-posts-post-1.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
