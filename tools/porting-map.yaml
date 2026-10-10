@@ -724,6 +724,14 @@
   task: P2.47
   api: exported
 
+# P2.49: wp_html_split (tag/comment/CDATA delimiter capture).
+- prefix: wp-includes/formatting.php#wp_html_split
+  go: internal/wp/html_split.go
+  status: partial
+  task: P2.49
+  api: exported
+  notes: "P2.49 — WPHTMLSplit RE2-friendly tag/comment/CDATA splitter"
+
 # P2.48: wp_spaces_regexp (+ filter).
 - prefix: wp-includes/formatting.php#wp_spaces_regexp
   go: internal/wp/spaces_regexp.go
