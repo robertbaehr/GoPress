@@ -1809,6 +1809,21 @@
   api: n/a
   notes: "P10.54 — summarize code/preformatted/verse, themes REST activate, plugins bulk, mime types, RDF generator, interim success, e2e"
 
+# P10.60: e2e edit.php Bulk Edit + search box + STATUS/PORTING refresh after P5.68–P6.28.
+- prefix: tests/e2e/bulk-edit.spec.js
+  go: tests/e2e/bulk-edit.spec.js
+  status: partial
+  task: P10.60
+  api: n/a
+  notes: "P10.60 — Playwright coverage for edit.php Bulk Edit stub + search box"
+
+- prefix: docs/STATUS.md#P10.60
+  go: docs/STATUS.md
+  status: partial
+  task: P10.60
+  api: n/a
+  notes: "P10.60 — summarize html/freeform, posts search, edit search, json request, guid, login shake, e2e"
+
 # P10.59: STATUS/PORTING refresh after P5.67–P8.17.
 - prefix: docs/STATUS.md#P10.59
   go: docs/STATUS.md
