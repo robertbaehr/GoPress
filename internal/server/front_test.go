@@ -509,6 +509,10 @@ func TestFrontFeedAtom(t *testing.T) {
 	if !strings.Contains(body, `type="application/atom+xml"`) {
 		t.Fatalf("expected self atom link, got %q", body[:min(600, len(body))])
 	}
+	// P3.58: Atom rel=self mirrors request URI (/?feed=atom).
+	if !strings.Contains(body, `rel="self"`) || !strings.Contains(body, "/?feed=atom") {
+		t.Fatalf("expected self link with request URI, got %q", body[:min(600, len(body))])
+	}
 }
 
 func TestFrontFeedAtomPrettyPath(t *testing.T) {
@@ -523,6 +527,9 @@ func TestFrontFeedAtomPrettyPath(t *testing.T) {
 	body := rec.Body.String()
 	if !strings.Contains(body, `xmlns="http://www.w3.org/2005/Atom"`) || !strings.Contains(body, "<entry>") {
 		t.Fatalf("expected Atom feed via pretty path, got %q", body[:min(400, len(body))])
+	}
+	if !strings.Contains(body, `rel="self"`) || !strings.Contains(body, "/feed/atom/") {
+		t.Fatalf("expected self link for /feed/atom/, got %q", body[:min(500, len(body))])
 	}
 }
 
@@ -622,6 +629,10 @@ func TestFrontCommentsFeedAtom(t *testing.T) {
 	}
 	if !strings.Contains(body, "/comments/feed/atom/") {
 		t.Fatalf("expected self atom link: %q", body[:min(500, len(body))])
+	}
+	// P3.58: comments Atom self uses feedSelfLink (request URI).
+	if !strings.Contains(body, `rel="self"`) || !strings.Contains(body, `href="`) {
+		t.Fatalf("expected rel=self href: %q", body[:min(500, len(body))])
 	}
 	if !strings.Contains(body, "<entry>") || !strings.Contains(body, "thr:in-reply-to") {
 		t.Fatalf("expected comment entries: %q", body[:min(800, len(body))])

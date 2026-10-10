@@ -175,17 +175,8 @@ func (f *Front) renderCommentsFeedRSS2(w http.ResponseWriter, r *http.Request, c
 		return
 	}
 
-	self := home + "/comments/feed/"
-	if r != nil && r.URL != nil {
-		path := r.URL.Path
-		if path == "" {
-			path = "/comments/feed/"
-		}
-		if !strings.HasSuffix(path, "/") {
-			path += "/"
-		}
-		self = home + path
-	}
+	// P3.58: self via feedSelfLink (request URI), same as RSS2/Atom posts feeds.
+	self := feedSelfLink(r, c)
 
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8"?><rss version="2.0"` + "\n")
@@ -299,17 +290,8 @@ func (f *Front) renderCommentsFeedAtom(w http.ResponseWriter, r *http.Request, c
 		return
 	}
 
-	self := home + "/comments/feed/atom/"
-	if r != nil && r.URL != nil {
-		path := r.URL.Path
-		if path == "" {
-			path = "/comments/feed/atom/"
-		}
-		if !strings.HasSuffix(path, "/") {
-			path += "/"
-		}
-		self = home + path
-	}
+	// P3.58: Atom comments self/id from request URI (get_self_link parity).
+	self := feedSelfLink(r, c)
 
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8"?><feed` + "\n")

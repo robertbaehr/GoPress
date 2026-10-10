@@ -1714,6 +1714,21 @@
   api: exported
   notes: "P3.54 — FeedCopyright; RSS2 <copyright> / Atom <rights> when rss_copyright set (auto|custom)"
 
+# P3.58: Atom (+ comments) feed rel=self via feedSelfLink / get_self_link.
+- prefix: wp-includes/feed-atom.php#self
+  go: internal/server/front.go
+  status: partial
+  task: P3.58
+  api: n/a
+  notes: "P3.58 — Atom link rel=self from RequestURI; comments Atom/RSS self via feedSelfLink"
+
+- prefix: wp-includes/feed-atom-comments.php#self
+  go: internal/server/front.go
+  status: partial
+  task: P3.58
+  api: n/a
+  notes: "P3.58 — comments Atom self/id from feedSelfLink"
+
 # P3.57: optional RSS2 channel <ttl> from rss_ttl option (minutes).
 - prefix: wp-includes/feed-rss2.php#ttl
   go: internal/wp/feed_ttl.go
