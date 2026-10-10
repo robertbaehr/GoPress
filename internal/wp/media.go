@@ -195,7 +195,8 @@ func AttachmentPermalink(c *Context, attachmentID int64, slug string) string {
 
 // ResizeImage is a stub for intermediate-size generation. GoPress registers sizes
 // but does not resize files yet (no imaging/libvips dependency).
-func ResizeImage(_ srcPath string, _ ImageSize) (destPath string, err error) {
+func ResizeImage(srcPath string, size ImageSize) (string, error) {
+	_, _ = srcPath, size
 	return "", fmt.Errorf("wp: ResizeImage: not implemented (sizes registered only)")
 }
 
