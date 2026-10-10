@@ -11,6 +11,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/robertbaehr/GoPress/internal/db"
 	"github.com/robertbaehr/GoPress/internal/plugins"
@@ -2940,7 +2941,9 @@ func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *w
 
 	blogname := optionString(c, "blogname", "GoPress")
 	commentStatus := parseEditCommentStatus(r)
-	items, err := recentComments(c, 50, commentStatus)
+	// P7.107: list-table search box (?s=) filters author/content/post title.
+	search := strings.TrimSpace(r.URL.Query().Get("s"))
+	items, err := recentComments(c, 50, commentStatus, search)
 	if err != nil {
 		http.Error(w, "comments: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
@@ -2984,6 +2987,20 @@ func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *w
 		b.WriteString(` comment(s) unapproved.</p></div>` + "\n")
 	}
 	writeEditCommentStatusViews(&b, commentStatus, statusCounts)
+	// P7.107: GET search form (WP_List_Table::search_box).
+	b.WriteString(`<form method="get" action="/wp-admin/edit-comments.php" class="search-form wp-clearfix">` + "\n")
+	if commentStatus != "" && commentStatus != "all" {
+		b.WriteString(`<input type="hidden" name="comment_status" value="`)
+		b.WriteString(html.EscapeString(commentStatus))
+		b.WriteString(`" />` + "\n")
+	}
+	b.WriteString(`<p class="search-box">` + "\n")
+	b.WriteString(`<label class="screen-reader-text" for="comment-search-input">Search Comments:</label>` + "\n")
+	b.WriteString(`<input type="search" id="comment-search-input" name="s" value="`)
+	b.WriteString(html.EscapeString(search))
+	b.WriteString(`" />` + "\n")
+	b.WriteString(`<input type="submit" id="search-submit" class="button" value="Search Comments" />` + "\n")
+	b.WriteString(`</p></form>` + "\n")
 	b.WriteString(`<form method="post" action="/wp-admin/edit-comments.php`)
 	if commentStatus != "" && commentStatus != "all" {
 		b.WriteString(`?comment_status=`)
@@ -3007,10 +3024,13 @@ func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *w
 	b.WriteString(`<td id="cb" class="manage-column column-cb check-column"><input id="cb-select-all-1" type="checkbox" /></td>`)
 	b.WriteString("<th scope=\"col\" class=\"column-author\">Author</th>")
 	b.WriteString("<th scope=\"col\" class=\"column-comment\">Comment</th>")
+	// P7.107: In response to + Submitted on columns (WP_Comments_List_Table).
+	b.WriteString("<th scope=\"col\" class=\"column-response\">In response to</th>")
+	b.WriteString("<th scope=\"col\" class=\"column-date\">Submitted on</th>")
 	b.WriteString("</tr></thead>\n")
 	b.WriteString("<tbody id=\"the-comment-list\">\n")
 	if len(items) == 0 {
-		b.WriteString("<tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"3\">No comments found.</td></tr>\n")
+		b.WriteString("<tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"5\">No comments found.</td></tr>\n")
 	}
 	for _, item := range items {
 		b.WriteString("<tr id=\"comment-")
@@ -3027,7 +3047,25 @@ func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *w
 		b.WriteString(strconv.FormatInt(item.ID, 10))
 		b.WriteString(`">Edit</a> | </span><span class="reply"><a href="/wp-admin/comment.php?action=replyto&amp;c=`)
 		b.WriteString(strconv.FormatInt(item.ID, 10))
-		b.WriteString(`">Reply</a></span></div></td></tr>` + "\n")
+		b.WriteString(`">Reply</a></span></div></td>`)
+		b.WriteString(`<td class="response column-response">`)
+		if item.PostID > 0 {
+			postTitle := item.PostTitle
+			if strings.TrimSpace(postTitle) == "" {
+				postTitle = "(no title)"
+			}
+			b.WriteString(`<a href="/wp-admin/post.php?post=`)
+			b.WriteString(strconv.FormatInt(item.PostID, 10))
+			b.WriteString(`&amp;action=edit" class="comments-view-item-link">`)
+			b.WriteString(html.EscapeString(postTitle))
+			b.WriteString(`</a>`)
+		}
+		b.WriteString(`</td>`)
+		b.WriteString(`<td class="date column-date" data-colname="Submitted on">`)
+		b.WriteString(`<div class="submitted-on">`)
+		b.WriteString(html.EscapeString(formatCommentSubmittedOn(item.Date)))
+		b.WriteString(`</div></td>`)
+		b.WriteString(`</tr>` + "\n")
 	}
 	b.WriteString("</tbody>\n</table>\n")
 	b.WriteString(`<div class="tablenav bottom"><div class="alignleft actions bulkactions">`)
@@ -6311,9 +6349,12 @@ type mediaRow struct {
 }
 
 type commentRow struct {
-	ID      int64
-	Author  string
-	Content string
+	ID        int64
+	Author    string
+	Content   string
+	PostID    int64  // comment_post_ID (P7.107)
+	PostTitle string // post title for "In response to" (P7.107)
+	Date      string // comment_date (P7.107)
 }
 
 type userRow struct {
@@ -6355,7 +6396,7 @@ func recentMedia(c *wp.Context, limit int) ([]mediaRow, error) {
 	return out, nil
 }
 
-func recentComments(c *wp.Context, limit int, commentStatus string) ([]commentRow, error) {
+func recentComments(c *wp.Context, limit int, commentStatus, search string) ([]commentRow, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
@@ -6365,25 +6406,44 @@ func recentComments(c *wp.Context, limit int, commentStatus string) ([]commentRo
 	if commentStatus == "" {
 		commentStatus = "all"
 	}
+	search = strings.TrimSpace(search)
 	var (
 		q    string
 		args []any
 		err  error
 	)
-	base := "SELECT comment_ID, comment_author, comment_content FROM " + c.DB.Comments()
+	base := "SELECT c.comment_ID, c.comment_author, c.comment_content, c.comment_post_ID, c.comment_date, p.post_title FROM " +
+		c.DB.Comments() + " c LEFT JOIN " + c.DB.Posts() + " p ON c.comment_post_ID = p.ID"
+	searchSQL := ""
+	var searchArgs []any
+	if search != "" {
+		like := "%" + db.EscapeLike(search) + "%"
+		searchSQL = " AND (c.comment_author LIKE %s OR c.comment_content LIKE %s OR p.post_title LIKE %s)"
+		searchArgs = []any{like, like, like}
+	}
 	switch commentStatus {
 	case "moderated":
-		q, args, err = c.DB.Prepare(base+" WHERE comment_approved = %s ORDER BY comment_date DESC LIMIT %d", "0", limit)
+		prep := append([]any{"0"}, searchArgs...)
+		prep = append(prep, limit)
+		q, args, err = c.DB.Prepare(base+" WHERE c.comment_approved = %s"+searchSQL+" ORDER BY c.comment_date DESC LIMIT %d", prep...)
 	case "approved":
-		q, args, err = c.DB.Prepare(base+" WHERE comment_approved = %s ORDER BY comment_date DESC LIMIT %d", "1", limit)
+		prep := append([]any{"1"}, searchArgs...)
+		prep = append(prep, limit)
+		q, args, err = c.DB.Prepare(base+" WHERE c.comment_approved = %s"+searchSQL+" ORDER BY c.comment_date DESC LIMIT %d", prep...)
 	case "spam":
-		q, args, err = c.DB.Prepare(base+" WHERE comment_approved = %s ORDER BY comment_date DESC LIMIT %d", "spam", limit)
+		prep := append([]any{"spam"}, searchArgs...)
+		prep = append(prep, limit)
+		q, args, err = c.DB.Prepare(base+" WHERE c.comment_approved = %s"+searchSQL+" ORDER BY c.comment_date DESC LIMIT %d", prep...)
 	case "trash":
-		q, args, err = c.DB.Prepare(base+" WHERE comment_approved = %s ORDER BY comment_date DESC LIMIT %d", "trash", limit)
+		prep := append([]any{"trash"}, searchArgs...)
+		prep = append(prep, limit)
+		q, args, err = c.DB.Prepare(base+" WHERE c.comment_approved = %s"+searchSQL+" ORDER BY c.comment_date DESC LIMIT %d", prep...)
 	default: // all — exclude spam/trash like WP
+		prep := append([]any{"0", "1"}, searchArgs...)
+		prep = append(prep, limit)
 		q, args, err = c.DB.Prepare(
-			base+" WHERE comment_approved IN (%s, %s) ORDER BY comment_date DESC LIMIT %d",
-			"0", "1", limit,
+			base+" WHERE c.comment_approved IN (%s, %s)"+searchSQL+" ORDER BY c.comment_date DESC LIMIT %d",
+			prep...,
 		)
 	}
 	if err != nil {
@@ -6396,12 +6456,50 @@ func recentComments(c *wp.Context, limit int, commentStatus string) ([]commentRo
 	out := make([]commentRow, 0, len(rows))
 	for _, row := range rows {
 		out = append(out, commentRow{
-			ID:      asInt64(row["comment_ID"]),
-			Author:  asString(row["comment_author"]),
-			Content: asString(row["comment_content"]),
+			ID:        asInt64(row["comment_ID"]),
+			Author:    asString(row["comment_author"]),
+			Content:   asString(row["comment_content"]),
+			PostID:    asInt64(row["comment_post_ID"]),
+			PostTitle: asString(row["post_title"]),
+			Date:      asString(row["comment_date"]),
 		})
 	}
 	return out, nil
+}
+
+// formatCommentSubmittedOn formats comment_date like WP_Comments_List_Table::column_date
+// ("Y/m/d \a\t g:i a" subset → "2000/01/02 at 3:04 am").
+func formatCommentSubmittedOn(dateStr string) string {
+	dateStr = strings.TrimSpace(dateStr)
+	if dateStr == "" {
+		return ""
+	}
+	layouts := []string{
+		"2006-01-02 15:04:05",
+		time.RFC3339,
+		"2006-01-02T15:04:05Z",
+	}
+	var t time.Time
+	var err error
+	for _, layout := range layouts {
+		t, err = time.ParseInLocation(layout, dateStr, time.Local)
+		if err == nil {
+			break
+		}
+	}
+	if err != nil {
+		return dateStr
+	}
+	ampm := "am"
+	hour := t.Hour()
+	h12 := hour % 12
+	if h12 == 0 {
+		h12 = 12
+	}
+	if hour >= 12 {
+		ampm = "pm"
+	}
+	return fmt.Sprintf("%04d/%02d/%02d at %d:%02d %s", t.Year(), int(t.Month()), t.Day(), h12, t.Minute(), ampm)
 }
 
 func listUsers(c *wp.Context, limit int) ([]userRow, error) {
