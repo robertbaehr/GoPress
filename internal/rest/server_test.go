@@ -38,6 +38,7 @@ func TestIndexAnonShape(t *testing.T) {
 	}
 	wantRoutes := []string{
 		"/", "/wp/v2",
+		"/oembed/1.0", "/oembed/1.0/embed",
 		"/wp/v2/posts", "/wp/v2/posts/(?P<id>[\\d]+)",
 		"/wp/v2/pages", "/wp/v2/pages/(?P<id>[\\d]+)",
 		"/wp/v2/types",
