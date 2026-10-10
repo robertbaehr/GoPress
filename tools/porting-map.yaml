@@ -4047,9 +4047,23 @@
 - prefix: wp-admin/includes/image.php#wp_generate_attachment_metadata
   go: internal/wp/image_meta.go
   status: partial
-  task: P8.25
+  task: P8.26
   api: exported
-  notes: "P8.25 — GenerateAttachmentMetadata width/height/file/sizes/image_meta; Store on upload"
+  notes: "P8.26 — filesize + create/update context; width/height/file/sizes/image_meta"
+
+- prefix: wp-includes/functions.php#wp_filesize
+  go: internal/wp/image_meta.go
+  status: partial
+  task: P8.26
+  api: exported
+  notes: "P8.26 — Filesize via os.Stat"
+
+# P8.26: generate attachment metadata filesize deepen.
+- prefix: wp-admin/includes/image.php#wp_generate_attachment_metadata.p8.26
+  go: internal/wp/image_meta.go
+  status: partial
+  task: P8.26
+  api: exported
 
 - prefix: wp-includes/ID3/
   go: internal/wp/media.go

@@ -1,8 +1,9 @@
-// wp_read_image_metadata / attachment image_meta (P8.25).
+// wp_read_image_metadata / attachment image_meta (P8.25 / P8.26).
 package wp
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 )
