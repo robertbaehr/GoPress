@@ -558,6 +558,59 @@ func TestEditPostsAuthorFilter(t *testing.T) {
 	}
 }
 
+func TestEditPostsCategoryFilter(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`id="cat"`,
+		`name="cat"`,
+		`class="postform"`,
+		"All Categories",
+		"Uncategorized",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("expected category filter %q in edit.php", want)
+		}
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?cat=1", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("cat=1 status=%d", rec.Code)
+	}
+	body = rec.Body.String()
+	if !strings.Contains(body, `selected="selected"`) || !strings.Contains(body, `value="1"`) {
+		t.Fatalf("expected cat=1 selected: %q", body[:min(800, len(body))])
+	}
+	if !strings.Contains(body, "Hello world!") {
+		t.Fatalf("expected Hello world for cat=1")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/edit.php?cat=99999", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("cat miss status=%d", rec.Code)
+	}
+	body = rec.Body.String()
+	if strings.Contains(body, "Hello world!") {
+		t.Fatalf("unknown category should not list Hello world")
+	}
+}
+
 func TestEditPostsBulkEditStub(t *testing.T) {
 	c := bootOrSkip(t)
 	ck := loginCookie(t, c)

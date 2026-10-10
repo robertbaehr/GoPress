@@ -1876,6 +1876,21 @@
   api: n/a
   notes: "P7.70 — restrict_manage_posts-shaped author dropdown on edit.php"
 
+# P7.71: edit.php category filter dropdown (?cat=).
+- prefix: wp-admin/edit.php#category-filter
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.71
+  api: n/a
+  notes: "P7.71 — cat select (id=cat) + Filter; filters list by category term_id"
+
+- prefix: wp-admin/includes/class-wp-posts-list-table.php#categories_dropdown
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.71
+  api: n/a
+  notes: "P7.71 — wp_dropdown_categories-shaped filter on edit.php"
+
 # P10.61: STATUS/PORTING refresh after P5.69–P9.16.
 - prefix: docs/STATUS.md#P10.61
   go: docs/STATUS.md

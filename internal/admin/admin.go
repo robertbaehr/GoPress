@@ -280,12 +280,18 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	search := strings.TrimSpace(r.URL.Query().Get("s"))
 	// P7.70: author dropdown filter (?author=).
 	authorID := parseEditAuthorFilter(r)
-	posts, err := recentPostsByType(c, postType, 20, search, authorID)
+	// P7.71: category dropdown filter (?cat=).
+	catID := parseEditCategoryFilter(r)
+	posts, err := recentPostsByType(c, postType, 20, search, authorID, catID)
 	if err != nil {
 		http.Error(w, "posts: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
 	authors, _ := editPostAuthors(c, postType)
+	var categories []editCategoryOpt
+	if postType == "post" {
+		categories, _ = editPostCategories(c)
+	}
 	heading := "Posts"
 	searchLabel := "Search Posts"
 	if postType == "page" {
@@ -322,7 +328,7 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	b.WriteString(`</select>` + "\n")
 	b.WriteString(`<input type="submit" id="doaction" class="button action" value="Apply" />` + "\n")
 	b.WriteString(`</div>` + "\n")
-	// P7.70: author filter dropdown (restrict_manage_posts-shaped).
+	// P7.70 / P7.71: author + category filters (restrict_manage_posts-shaped).
 	b.WriteString(`<div class="alignleft actions">` + "\n")
 	b.WriteString(`<label for="filter-by-author" class="screen-reader-text">Filter by author</label>` + "\n")
 	b.WriteString(`<select name="author" id="filter-by-author">` + "\n")
@@ -339,6 +345,24 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 		b.WriteString(`</option>` + "\n")
 	}
 	b.WriteString(`</select>` + "\n")
+	// P7.71: wp_dropdown_categories-shaped filter (name=cat, id=cat).
+	if postType == "post" {
+		b.WriteString(`<label class="screen-reader-text" for="cat">Filter by category</label>` + "\n")
+		b.WriteString(`<select name="cat" id="cat" class="postform">` + "\n")
+		b.WriteString(`<option value="0">All Categories</option>` + "\n")
+		for _, cat := range categories {
+			b.WriteString(`<option value="`)
+			b.WriteString(strconv.FormatInt(cat.ID, 10))
+			b.WriteString(`"`)
+			if cat.ID == catID {
+				b.WriteString(` selected="selected"`)
+			}
+			b.WriteString(`>`)
+			b.WriteString(html.EscapeString(cat.Name))
+			b.WriteString(`</option>` + "\n")
+		}
+		b.WriteString(`</select>` + "\n")
+	}
 	b.WriteString(`<input type="submit" name="filter_action" id="post-query-submit" class="button" value="Filter" />` + "\n")
 	b.WriteString(`</div></div>` + "\n")
 	b.WriteString("<table class=\"wp-list-table widefat fixed striped table-view-list posts\">\n")
@@ -3992,7 +4016,7 @@ func countComments(c *wp.Context, approved string) int {
 	return int(asInt64(row["n"]))
 }
 
-func recentPostsByType(c *wp.Context, postType string, limit int, search string, authorID int64) ([]postRow, error) {
+func recentPostsByType(c *wp.Context, postType string, limit int, search string, authorID, catID int64) ([]postRow, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
@@ -4003,10 +4027,19 @@ func recentPostsByType(c *wp.Context, postType string, limit int, search string,
 		postType = "post"
 	}
 	term := strings.TrimSpace(search)
-	sql := "SELECT p.ID, p.post_title, p.post_date, p.post_status, p.post_author, u.display_name, u.user_login FROM " +
-		c.DB.Posts() + " p LEFT JOIN " + c.DB.Users() + " u ON p.post_author = u.ID " +
-		" WHERE p.post_type = %s AND p.post_status IN (%s, %s, %s, %s, %s) "
+	sql := "SELECT DISTINCT p.ID, p.post_title, p.post_date, p.post_status, p.post_author, u.display_name, u.user_login FROM " +
+		c.DB.Posts() + " p LEFT JOIN " + c.DB.Users() + " u ON p.post_author = u.ID "
+	if catID > 0 {
+		sql += "INNER JOIN " + c.DB.TermRelationships() + " tr ON tr.object_id = p.ID " +
+			"INNER JOIN " + c.DB.TermTaxonomy() + " tt ON tt.term_taxonomy_id = tr.term_taxonomy_id " +
+			"INNER JOIN " + c.DB.Terms() + " t ON t.term_id = tt.term_id "
+	}
+	sql += " WHERE p.post_type = %s AND p.post_status IN (%s, %s, %s, %s, %s) "
 	prepArgs := []any{postType, "publish", "draft", "pending", "private", "future"}
+	if catID > 0 {
+		sql += "AND tt.taxonomy = %s AND t.term_id = %d "
+		prepArgs = append(prepArgs, "category", catID)
+	}
 	if authorID > 0 {
 		sql += "AND p.post_author = %d "
 		prepArgs = append(prepArgs, authorID)
@@ -4069,6 +4102,56 @@ func parseEditAuthorFilter(r *http.Request) int64 {
 		return 0
 	}
 	return n
+}
+
+type editCategoryOpt struct {
+	ID   int64
+	Name string
+}
+
+// parseEditCategoryFilter reads ?cat= from edit.php (P7.71).
+func parseEditCategoryFilter(r *http.Request) int64 {
+	if r == nil {
+		return 0
+	}
+	raw := strings.TrimSpace(r.URL.Query().Get("cat"))
+	if raw == "" {
+		return 0
+	}
+	n, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || n <= 0 {
+		return 0
+	}
+	return n
+}
+
+// editPostCategories returns categories for the edit.php filter dropdown (P7.71).
+func editPostCategories(c *wp.Context) ([]editCategoryOpt, error) {
+	if c == nil || c.DB == nil {
+		return nil, fmt.Errorf("nil DB")
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT t.term_id, t.name FROM "+c.DB.Terms()+" t "+
+			"INNER JOIN "+c.DB.TermTaxonomy()+" tt ON tt.term_id = t.term_id "+
+			"WHERE tt.taxonomy = %s ORDER BY t.name ASC",
+		"category",
+	)
+	if err != nil {
+		return nil, err
+	}
+	rows, err := c.DB.GetResults(q, args...)
+	if err != nil {
+		return nil, err
+	}
+	out := make([]editCategoryOpt, 0, len(rows))
+	for _, row := range rows {
+		name := asString(row["name"])
+		if name == "" {
+			name = "—"
+		}
+		out = append(out, editCategoryOpt{ID: asInt64(row["term_id"]), Name: name})
+	}
+	return out, nil
 }
 
 // editPostAuthors returns users who authored posts of postType for the filter dropdown.
