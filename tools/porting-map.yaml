@@ -2599,6 +2599,21 @@
   api: n/a
   notes: "P3.65 — RSS+Atom coverage for two enclosure meta rows"
 
+# P3.67: feed item pubDate / Atom dates use GMT (+0000) with TZ-aware local fallback.
+- prefix: wp-includes/feed-rss2.php#pubDate
+  go: internal/server/front.go
+  status: partial
+  task: P3.67
+  api: n/a
+  notes: "P3.67 — feedRFC822 prefers post_date_gmt UTC; local via timezone_string/gmt_offset"
+
+- prefix: wp-includes/feed.php#mysql2date
+  go: internal/server/front.go
+  status: partial
+  task: P3.67
+  api: n/a
+  notes: "P3.67 — feedParseUTC + Atom date share TZ conversion"
+
 # P3.66: feed item dc:creator / Atom author via the_author filter.
 - prefix: wp-includes/feed-rss2.php#dc-creator
   go: internal/server/front.go
