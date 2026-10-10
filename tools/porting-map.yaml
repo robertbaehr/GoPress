@@ -982,6 +982,14 @@
   api: exported
   notes: "P4.78 — POST/PUT/PATCH status active → SwitchTheme; inactive rejected"
 
+# P7.63: plugins.php bulk activate-selected / deactivate-selected.
+- prefix: wp-admin/plugins.php#bulk
+  go: internal/admin/plugins_bulk.go
+  status: partial
+  task: P7.63
+  api: n/a
+  notes: "P7.63 — bulk-action-form + checked[]; activate-selected/deactivate-selected; bulk-plugins nonce"
+
 # P2.29: sanitize_file_name.
 - prefix: wp-includes/formatting.php#sanitize_file_name
   go: internal/wp/formatting.go

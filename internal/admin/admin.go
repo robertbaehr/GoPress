@@ -1380,7 +1380,20 @@ func savePermalinkOptions(c *wp.Context, r *http.Request) {
 
 func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	notice := ""
+	bulk := r.URL.Query().Get("bulk") == "1"
 	if r.Method == http.MethodPost || r.URL.Query().Get("action") != "" {
+		// P7.63: bulk activate/deactivate before single-plugin actions.
+		if r.Method == http.MethodPost {
+			msg, err := handlePluginsBulk(r, c)
+			if err != nil {
+				http.Error(w, "plugins: "+err.Error()+"\n", http.StatusForbidden)
+				return
+			}
+			if msg != "" {
+				http.Redirect(w, r, "/wp-admin/plugins.php?"+msg, http.StatusFound)
+				return
+			}
+		}
 		msg, err := handlePluginAction(r, c)
 		if err != nil {
 			http.Error(w, "plugins: "+err.Error()+"\n", http.StatusForbidden)
@@ -1401,18 +1414,23 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 
 	var b strings.Builder
 	b.WriteString("<h1>Plugins</h1>\n")
-	switch notice {
-	case "activate":
-		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p>Plugin <strong>activated</strong>.</p></div>\n")
-	case "deactivate":
-		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p>Plugin <strong>deactivated</strong>.</p></div>\n")
-	}
+	b.WriteString(pluginsBulkNoticeHTML(notice, bulk))
 	// P9.8: Akismet is not part of the GoPress distribution.
 	b.WriteString(`<div class="notice notice-info" id="gopress-akismet-gone"><p>Akismet is <strong>not bundled</strong> with GoPress and is out of scope.</p></div>` + "\n")
 	// P9.11: Network Activate is N/A on single-site GoPress.
 	b.WriteString(plugins.NetworkActivateGoneNotice + "\n")
+	bulkNonce := ""
+	if c != nil {
+		bulkNonce = c.CreateNonce("bulk-plugins")
+	}
+	b.WriteString(`<form method="post" id="bulk-action-form" action="/wp-admin/plugins.php">` + "\n")
+	b.WriteString(`<input type="hidden" name="_wpnonce" value="`)
+	b.WriteString(html.EscapeString(bulkNonce))
+	b.WriteString(`" />` + "\n")
+	writePluginsBulkNav(&b, "top")
 	b.WriteString("<table class=\"wp-list-table widefat plugins\">\n")
-	b.WriteString("<thead><tr><th scope=\"col\">Plugin</th><th scope=\"col\">Description</th></tr></thead>\n")
+	b.WriteString("<thead><tr><td id=\"cb\" class=\"manage-column column-cb check-column\"><input id=\"cb-select-all-1\" type=\"checkbox\"></td>")
+	b.WriteString("<th scope=\"col\">Plugin</th><th scope=\"col\">Description</th></tr></thead>\n")
 	b.WriteString("<tbody id=\"the-list\">\n")
 	installed, err := plugins.ListInstalledPlugins(c)
 	if err != nil {
@@ -1420,7 +1438,7 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 		return
 	}
 	if len(installed) == 0 {
-		b.WriteString("<tr class=\"inactive\"><td class=\"plugin-title\"><strong>No plugins installed</strong></td>")
+		b.WriteString("<tr class=\"inactive\"><th scope=\"row\" class=\"check-column\"></th><td class=\"plugin-title\"><strong>No plugins installed</strong></td>")
 		b.WriteString("<td class=\"column-description desc\"><p>GoPress plugin management stub (P7.1).</p></td></tr>\n")
 	}
 	for _, p := range installed {
@@ -1433,7 +1451,9 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 		b.WriteString(rowClass)
 		b.WriteString("\" data-plugin=\"")
 		b.WriteString(html.EscapeString(p.File))
-		b.WriteString("\"><td class=\"plugin-title\"><strong>")
+		b.WriteString("\"><th scope=\"row\" class=\"check-column\"><input type=\"checkbox\" name=\"checked[]\" value=\"")
+		b.WriteString(html.EscapeString(p.File))
+		b.WriteString("\"></th><td class=\"plugin-title\"><strong>")
 		b.WriteString(html.EscapeString(p.Name))
 		b.WriteString("</strong>")
 		// P9.14: plugin_action_links (+ per-plugin) filters.
@@ -1479,6 +1499,8 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 		b.WriteString("</td></tr>\n")
 	}
 	b.WriteString("</tbody>\n</table>\n")
+	writePluginsBulkNav(&b, "bottom")
+	b.WriteString("</form>\n")
 	writeAdminPage(w, c, newAdminChrome(c, "Plugins", "plugins-php"), b.String())
 }
 
