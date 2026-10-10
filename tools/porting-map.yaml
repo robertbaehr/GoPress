@@ -5977,6 +5977,14 @@ wp-login.php#language-switcher-post
   notes: "P10.91 — STATUS/PORTING refresh after P5.90–P10.90 (220/220 corpus)"
 
 
+# P10.99: STATUS/PORTING refresh after P5.94–P10.98.
+- prefix: docs/STATUS.md#p10.99
+  go: docs/STATUS.md
+  status: partial
+  task: P10.99
+  api: n/a
+  notes: "P10.99 — STATUS/PORTING refresh after P5.94–P10.98 (315/315 corpus)"
+
 # P10.98: expand diff corpus after P5.94–P8.27.
 - prefix: tests/corpus#p10.98
   go: tests/corpus
