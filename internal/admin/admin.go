@@ -45,6 +45,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/users.php":
 		h.requireLogin(w, r, c, h.serveUsers)
 		return true
+	case "/wp-admin/site-editor.php":
+		h.requireLogin(w, r, c, h.serveSiteEditor)
+		return true
 	case "/wp-admin/admin-ajax.php":
 		h.serveAdminAjax(w, r, c)
 		return true
@@ -288,6 +291,29 @@ func (h *Handler) serveThemes(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	b.WriteString("</p>\n")
 	b.WriteString("<p>GoPress themes stub (P7.4).</p>\n")
 	b.WriteString("</div>\n</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
+func (h *Handler) serveSiteEditor(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	blogname := optionString(c, "blogname", "GoPress")
+	stylesheet := optionString(c, "stylesheet", "twentytwentytwo")
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>Editor &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n")
+	b.WriteString("<script>var wpApiSettings = {\"root\":\"/wp-json/\",\"nonce\":\"")
+	b.WriteString(html.EscapeString(c.CreateNonce("wp_rest")))
+	b.WriteString("\"};</script>\n</head>\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui block-editor-page site-editor\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div id=\"site-editor\" class=\"edit-site\">\n")
+	b.WriteString("<h1>Site Editor</h1>\n")
+	b.WriteString("<p>Editing theme: ")
+	b.WriteString(html.EscapeString(stylesheet))
+	b.WriteString("</p>\n")
+	b.WriteString("<p>GoPress site editor stub (P7.5) — full block canvas lands later.</p>\n")
+	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
 
