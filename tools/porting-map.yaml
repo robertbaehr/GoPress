@@ -292,6 +292,13 @@
   task: P3.21
   api: n/a
 
+# P10.21: corpus case front-search-hello (/?s=hello) — headers compare.
+- prefix: tests/corpus/front-pages.yaml#front-search-hello
+  go: tests/corpus/front-pages.yaml
+  status: partial
+  task: P10.21
+  api: n/a
+
 # P3.22: year/month date archives on the front controller.
 - prefix: wp-includes/general-template.php
   go: internal/server/front.go
