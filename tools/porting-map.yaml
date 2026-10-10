@@ -4851,3 +4851,18 @@
   task: P2.77
   api: exported
   notes: "P2.77 — Redirect sets Location + X-Redirect-By; wp_redirect/x_redirect_by filters"
+
+# P3.75: the_title_rss filter on feed item titles.
+- prefix: wp-includes/feed.php#the_title_rss
+  go: internal/server/front.go
+  status: partial
+  task: P3.75
+  api: n/a
+  notes: "P3.75 — applyTheTitleRSS on RSS/Atom/RDF item titles"
+
+- prefix: wp-includes/feed-rss2.php#title#the_title_rss
+  go: internal/server/front.go
+  status: partial
+  task: P3.75
+  api: n/a
+  notes: "P3.75 — <title> runs the_title_rss"

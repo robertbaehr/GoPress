@@ -77,6 +77,43 @@ func TestRSSContentEncodedBodyHelpers(t *testing.T) {
 	}
 }
 
+func TestTheTitleRSSFilterOnItemTitle(t *testing.T) {
+	c := testBootFeedCats(t)
+	c.Hooks.AddFilter("the_title_rss", func(value any, args ...any) any {
+		s, _ := value.(string)
+		return s + " [title-rss]"
+	}, 10, 1)
+
+	got := applyTheTitleRSS(c, "Hello]]>World")
+	if !strings.Contains(got, "]]&gt;") {
+		t.Fatalf("expected CDATA escape, got %q", got)
+	}
+	if !strings.Contains(got, "[title-rss]") {
+		t.Fatalf("expected the_title_rss marker, got %q", got)
+	}
+
+	srv := &Server{WP: c, AbsPath: "/workspace/", Front: &Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/feed/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "[title-rss]") {
+		t.Fatal("expected the_title_rss applied in /feed/ item title")
+	}
+	// Channel title must not get the item filter.
+	chIdx := strings.Index(body, "<channel>")
+	itemIdx := strings.Index(body, "<item>")
+	if chIdx < 0 || itemIdx < 0 || itemIdx < chIdx {
+		t.Fatal("expected channel then item")
+	}
+	if strings.Contains(body[chIdx:itemIdx], "[title-rss]") {
+		t.Fatal("the_title_rss should not alter channel title")
+	}
+}
+
 func TestTheExcerptRSSFilterOnDescription(t *testing.T) {
 	c := testBootFeedCats(t)
 	c.Hooks.AddFilter("the_excerpt_rss", func(value any, args ...any) any {

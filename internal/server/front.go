@@ -1836,7 +1836,8 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 			b.WriteString("\t\t<item>\n")
 		}
 		b.WriteString("\t\t<title>")
-		b.WriteString(xmlEscape(p.Title))
+		// P3.75: the_title_rss filter on item title.
+		b.WriteString(xmlEscape(applyTheTitleRSS(c, p.Title)))
 		b.WriteString("</title>\n")
 		b.WriteString("\t\t<link>")
 		b.WriteString(xmlEscape(link))
@@ -1997,7 +1998,8 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 		}
 		b.WriteString("</author>\n\n")
 		b.WriteString("\t\t<title type=\"html\"><![CDATA[")
-		b.WriteString(p.Title)
+		// P3.75: the_title_rss filter on Atom entry title.
+		b.WriteString(applyTheTitleRSS(c, p.Title))
 		b.WriteString("]]></title>\n")
 		b.WriteString("\t\t<link rel=\"alternate\" type=\"text/html\" href=\"")
 		b.WriteString(xmlEscape(link))
@@ -2137,7 +2139,8 @@ func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		b.WriteString(xmlEscape(link))
 		b.WriteString("\">\n")
 		b.WriteString("\t<title>")
-		b.WriteString(xmlEscape(p.Title))
+		// P3.75: the_title_rss filter on RDF item title.
+		b.WriteString(xmlEscape(applyTheTitleRSS(c, p.Title)))
 		b.WriteString("</title>\n")
 		b.WriteString("\t<link>")
 		b.WriteString(xmlEscape(link))
@@ -2299,6 +2302,24 @@ func applyTheExcerptRSS(c *wp.Context, excerpt string) string {
 		}
 	}
 	return excerpt
+}
+
+// applyTheTitleRSS mirrors get_the_title_rss() (P3.75): apply the_title_rss
+// then escape CDATA terminators for Atom HTML titles.
+func applyTheTitleRSS(c *wp.Context, title string) string {
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("the_title_rss", title); v != nil {
+			if s, ok := v.(string); ok {
+				title = s
+			} else {
+				s := strings.TrimSpace(fmt.Sprint(v))
+				if s != "" && s != "<nil>" {
+					title = s
+				}
+			}
+		}
+	}
+	return strings.ReplaceAll(title, "]]>", "]]&gt;")
 }
 
 // rssUseExcerpt reports get_option('rss_use_excerpt') (P3.63).
