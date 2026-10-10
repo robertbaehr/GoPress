@@ -585,6 +585,13 @@
   task: P8.7
   api: n/a
 
+# P8.9: privacy policy page link helpers + admin/login wiring.
+- prefix: wp-includes/link-template.php#get_the_privacy_policy_link
+  go: internal/wp/privacy_policy.go
+  status: partial
+  task: P8.9
+  api: exported
+
 - prefix: wp-includes/template.php
   go: internal/wp/template_hierarchy.go
   status: partial

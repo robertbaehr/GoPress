@@ -211,6 +211,11 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		b.WriteString("\">&larr; Go to ")
 		b.WriteString(html.EscapeString(blogname))
 		b.WriteString("</a>\t\t</p>\n")
+		if link := wp.PrivacyPolicyPageLinkHTML(c); link != "" {
+			b.WriteString("\t\t")
+			b.WriteString(link)
+			b.WriteString("\n")
+		}
 		writeLanguageSwitcher(&b, r, c, availableLanguages(c))
 	}
 	b.WriteString("\t\t\t</div>\n")
@@ -500,6 +505,11 @@ func (h *Handler) serveLostPassword(w http.ResponseWriter, r *http.Request, c *w
 	b.WriteString("\">&larr; Go to ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString("</a>\t\t</p>\n")
+	if link := wp.PrivacyPolicyPageLinkHTML(c); link != "" {
+		b.WriteString("\t\t")
+		b.WriteString(link)
+		b.WriteString("\n")
+	}
 	b.WriteString("\t\t\t</div>\n")
 	b.WriteString("\t\t\n")
 	b.WriteString("\t<script>\n")

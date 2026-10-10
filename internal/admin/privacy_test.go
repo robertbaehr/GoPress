@@ -50,6 +50,32 @@ func TestPrivacyStubScreens(t *testing.T) {
 	}
 }
 
+func TestOptionsPrivacyLinksPolicyPage(t *testing.T) {
+	c := bootOrSkip(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/options-privacy.php", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/options-privacy.php") {
+		t.Fatal("options-privacy.php not handled")
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "privacy-policy-page-link") {
+		t.Fatalf("expected privacy policy page link, got %q", body)
+	}
+	if !strings.Contains(body, "post.php?post=3") {
+		t.Fatalf("expected edit link for policy page, got %q", body)
+	}
+}
+
 func TestPrivacyPolicyGuideSections(t *testing.T) {
 	c := bootOrSkip(t)
 	user, err := c.GetUserBy("login", "admin")
