@@ -264,11 +264,12 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 	return out, nil
 }
 
-// parsePostsOrderby accepts REST orderby=title|date|id|slug (P4.83). Default date.
+// parsePostsOrderby accepts REST orderby=title|date|id|slug|menu_order (P4.83 / P4.94).
+// Default date.
 func parsePostsOrderby(r *http.Request) string {
 	v := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("orderby")))
 	switch v {
-	case "title", "date", "id", "slug":
+	case "title", "date", "id", "slug", "menu_order":
 		return v
 	case "":
 		return "date"

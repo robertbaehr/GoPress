@@ -48,7 +48,7 @@ type QueryArgs struct {
 	PostIn []int64
 	// PostNotIn excludes these IDs (post__not_in; REST sticky=false, P4.82).
 	PostNotIn []int64
-	// OrderBy is a WP_Query orderby alias: date (default), title, id, slug (P4.83).
+	// OrderBy is a WP_Query orderby alias: date (default), title, id, slug, menu_order (P4.83/P4.94).
 	OrderBy string
 	// Order is ASC or DESC (default DESC) (P4.83).
 	Order string
@@ -593,8 +593,9 @@ func appendDateQueryFilters(where []string, vals []any, args QueryArgs) ([]strin
 	return where, vals
 }
 
-// orderByClause maps QueryArgs.OrderBy/Order onto SQL (P4.83).
-// Supported orderby: date (default), title, id, slug. Order: ASC|DESC (default DESC).
+// orderByClause maps QueryArgs.OrderBy/Order onto SQL (P4.83 / P4.94).
+// Supported orderby: date (default), title, id, slug, menu_order.
+// Order: ASC|DESC (default DESC).
 func orderByClause(orderby, order string, aliased bool) string {
 	col := orderByPostDate(aliased)
 	switch strings.ToLower(strings.TrimSpace(orderby)) {
@@ -615,6 +616,13 @@ func orderByClause(orderby, order string, aliased bool) string {
 			col = "p.post_name"
 		} else {
 			col = "post_name"
+		}
+	case "menu_order":
+		// P4.94: REST pages orderby=menu_order (page-attributes).
+		if aliased {
+			col = "p.menu_order"
+		} else {
+			col = "menu_order"
 		}
 	case "date", "post_date", "":
 		// default

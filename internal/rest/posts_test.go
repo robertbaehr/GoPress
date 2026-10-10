@@ -2,8 +2,10 @@ package rest_test
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -815,6 +817,82 @@ func TestPagesParentQueryParam(t *testing.T) {
 			t.Fatalf("parent_exclude=436 still returned page %d", p.ID)
 		}
 	}
+}
+
+func TestPagesOrderbyMenuOrder(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	// Temporarily distinct menu_order on fixture pages so ASC/DESC are observable.
+	type ord struct {
+		id, want int64
+	}
+	set := []ord{{436, 30}, {437, 10}, {438, 20}}
+	prev := map[int64]int64{}
+	for _, s := range set {
+		q, args, err := c.DB.Prepare("SELECT menu_order AS n FROM "+c.DB.Posts()+" WHERE ID = %d", s.id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		row, err := c.DB.GetRow(q, args...)
+		if err != nil || row == nil {
+			t.Fatalf("load menu_order for %d: %v", s.id, err)
+		}
+		prev[s.id] = asInt64Test(row["n"])
+		uq, uargs, err := c.DB.Prepare("UPDATE "+c.DB.Posts()+" SET menu_order = %d WHERE ID = %d", s.want, s.id)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if _, err := c.DB.Exec(uq, uargs...); err != nil {
+			t.Fatal(err)
+		}
+	}
+	t.Cleanup(func() {
+		for id, mo := range prev {
+			uq, uargs, _ := c.DB.Prepare("UPDATE "+c.DB.Posts()+" SET menu_order = %d WHERE ID = %d", mo, id)
+			_, _ = c.DB.Exec(uq, uargs...)
+		}
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/pages?orderby=menu_order&order=asc&include=436,437,438&per_page=10", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var pages []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &pages); err != nil {
+		t.Fatal(err)
+	}
+	if len(pages) != 3 {
+		t.Fatalf("want 3 pages, got %d", len(pages))
+	}
+	wantIDs := []int64{437, 438, 436} // menu_order 10, 20, 30
+	for i, id := range wantIDs {
+		if pages[i].ID != id {
+			t.Fatalf("asc[%d]=%d want %d (menu_order sort)", i, pages[i].ID, id)
+		}
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/pages?orderby=menu_order&order=desc&include=436,437,438&per_page=10", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if err := json.Unmarshal(rec.Body.Bytes(), &pages); err != nil {
+		t.Fatal(err)
+	}
+	wantIDs = []int64{436, 438, 437}
+	for i, id := range wantIDs {
+		if pages[i].ID != id {
+			t.Fatalf("desc[%d]=%d want %d", i, pages[i].ID, id)
+		}
+	}
+}
+
+func asInt64Test(v any) int64 {
+	n, _ := strconv.ParseInt(strings.TrimSpace(fmt.Sprint(v)), 10, 64)
+	return n
 }
 
 func TestPostsOffset(t *testing.T) {
