@@ -56,6 +56,45 @@ func TestLoginFormGET(t *testing.T) {
 	}
 }
 
+func TestRegisterDisabledRedirect(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?action=register", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	loc := rec.Header().Get("Location")
+	if !strings.Contains(loc, "registration=disabled") {
+		t.Fatalf("Location=%q", loc)
+	}
+}
+
+func TestRegistrationDisabledMessage(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?registration=disabled", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "User registration is currently not allowed.") {
+		t.Fatalf("expected disabled message: %q", body)
+	}
+	if !strings.Contains(body, `id="login_error"`) {
+		t.Fatalf("expected login_error: %q", body)
+	}
+}
+
 func TestLostPasswordFormGET(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()

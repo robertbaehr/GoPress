@@ -33,12 +33,18 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 			h.serveLostPassword(w, r, c, "")
 		case "logout":
 			h.serveLogout(w, r, c)
+		case "register":
+			h.serveRegister(w, r, c)
 		default:
 			if r.URL.Query().Get("checkemail") == "confirm" {
 				h.serveCheckEmailConfirm(w, r, c)
 				return
 			}
-			h.serveForm(w, r, c, "")
+			errMsg := ""
+			if r.URL.Query().Get("registration") == "disabled" {
+				errMsg = "User registration is currently not allowed."
+			}
+			h.serveForm(w, r, c, errMsg)
 		}
 	case http.MethodPost:
 		switch action {
@@ -46,12 +52,50 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 			h.serveLostPasswordPost(w, r, c)
 		case "logout":
 			h.serveLogout(w, r, c)
+		case "register":
+			h.serveRegister(w, r, c)
 		default:
 			h.servePost(w, r, c)
 		}
 	default:
 		w.Header().Set("Allow", "GET, HEAD, POST")
 		http.Error(w, "Method Not Allowed\n", http.StatusMethodNotAllowed)
+	}
+}
+
+// serveRegister handles wp-login.php?action=register (P6.9).
+// Non-multisite sites with users_can_register disabled redirect to
+// ?registration=disabled and show an error on the login form (WP parity).
+func (h *Handler) serveRegister(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if usersCanRegister(c) {
+		// Full registration form is out of scope; still refuse until implemented.
+		h.serveForm(w, r, c, "User registration is currently not allowed.")
+		return
+	}
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	target := home + "/wp-login.php?registration=disabled"
+	if home == "" {
+		target = "/wp-login.php?registration=disabled"
+	}
+	http.Redirect(w, r, target, http.StatusFound)
+}
+
+func usersCanRegister(c *wp.Context) bool {
+	if c == nil || c.Options == nil {
+		return false
+	}
+	v := c.Options.GetOption("users_can_register", 0)
+	switch t := v.(type) {
+	case int:
+		return t == 1
+	case int64:
+		return t == 1
+	case string:
+		return t == "1"
+	case bool:
+		return t
+	default:
+		return false
 	}
 }
 
