@@ -33,7 +33,7 @@ test('import.php screen offers WXR uploader', async ({ page, baseURL }) => {
   await expect(page.locator('#wordpress-importer')).toBeVisible();
   await expect(page.locator('input[name="import_file"]')).toBeVisible();
   await expect(page.locator('#submit')).toBeEnabled();
-  await expect(page.locator('text=WordPress')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'Import WordPress' })).toBeVisible();
 });
 
 test('import.php rejects non-WXR upload', async ({ page, baseURL }) => {
