@@ -3949,13 +3949,13 @@ wp-login.php#language-switcher-post
   api: internal
   notes: "P5.63 — prefer saved markup; synthesize li from content"
 
-# P5.62: polish core/code + core/preformatted + core/verse (synthesize content, align/textAlign).
+# P5.62 / P5.102: polish core/code (+ preformatted/verse siblings below).
 - prefix: wp-includes/blocks/code
   go: internal/blocks/code_preformatted.go
   status: partial
-  task: P5.62
+  task: P5.102
   api: internal
-  notes: "P5.62 — prefer saved markup; synthesize pre>code from content; align; className"
+  notes: "P5.102 — polish saved className/anchor; synthesize anchor; colors via applySupports; P5.62 base"
 
 - prefix: wp-includes/blocks/preformatted
   go: internal/blocks/code_preformatted.go

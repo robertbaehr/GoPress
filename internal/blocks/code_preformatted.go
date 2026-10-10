@@ -12,15 +12,30 @@ var (
 	reVerseTag        = regexp.MustCompile(`(?i)wp-block-verse\b`)
 )
 
-// renderCode renders core/code (P5.62).
-// Prefers saved markup; synthesizes <pre><code> from content; honors align/className.
+// renderCode renders core/code (P5.62 / P5.102).
+// Prefers saved markup; synthesizes <pre><code> from content; honors align/className/anchor.
+// Color/typography/spacing land via applySupports on the caller.
 func (e *Env) renderCode(block Block) string {
 	e = e.ensure()
 	out := e.renderSaved(block)
 	if strings.TrimSpace(out) != "" && reCodeTag.MatchString(out) {
-		return out
+		return polishCodeMarkup(out, block.Attrs)
 	}
 	return synthesizeCodeBlock(block.Attrs)
+}
+
+// polishCodeMarkup ensures wp-block-code + className/anchor on saved HTML (P5.102).
+func polishCodeMarkup(out string, attrs map[string]any) string {
+	out = addRootClass(out, "wp-block-code")
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		for _, part := range strings.Fields(cn) {
+			out = addRootClass(out, part)
+		}
+	}
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
+		out = ensureRootAttribute(out, "id", anchor)
+	}
+	return out
 }
 
 func synthesizeCodeBlock(attrs map[string]any) string {
@@ -32,7 +47,19 @@ func synthesizeCodeBlock(attrs map[string]any) string {
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		class += " " + html.EscapeString(cn)
 	}
-	return `<pre class="` + class + `"><code>` + content + `</code></pre>`
+	var b strings.Builder
+	b.WriteString(`<pre class="`)
+	b.WriteString(class)
+	b.WriteString(`"`)
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
+		b.WriteString(` id="`)
+		b.WriteString(html.EscapeString(anchor))
+		b.WriteString(`"`)
+	}
+	b.WriteString(`><code>`)
+	b.WriteString(content)
+	b.WriteString(`</code></pre>`)
+	return b.String()
 }
 
 // renderPreformatted renders core/preformatted (P5.62 / P5.101).
