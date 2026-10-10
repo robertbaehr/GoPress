@@ -1,7 +1,4 @@
-// Media helpers (P2.10) — image sizes, attachment URLs, resize stub.
-//
-// Actual image resizing is deferred (no libvips/imaging dependency); sizes are
-// registered from options so callers can discover dimensions.
+// Media helpers (P2.10 / P8.30) — image sizes, attachment URLs, resize via ImageEditor.
 package wp
 
 import (
@@ -439,13 +436,6 @@ func AttachmentPermalink(c *Context, attachmentID int64, slug string) string {
 		return fmt.Sprintf("%s/?attachment_id=%d", home, attachmentID)
 	}
 	return fmt.Sprintf("%s/%s/", home, slug)
-}
-
-// ResizeImage is a stub for intermediate-size generation. GoPress registers sizes
-// but does not resize files yet (no imaging/libvips dependency).
-func ResizeImage(srcPath string, size ImageSize) (string, error) {
-	_, _ = srcPath, size
-	return "", fmt.Errorf("wp: ResizeImage: not implemented (sizes registered only)")
 }
 
 func optionInt(c *Context, name string, fallback int) int {

@@ -606,6 +606,21 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P8.28 — RecordImageEditBackupSizes full-orig; GetAttachmentBackupSizes"
 
+# P8.30: WP_Image_Editor-style resize/crop via stdlib.
+- prefix: wp-includes/class-wp-image-editor.php
+  go: internal/wp/image_editor.go
+  status: partial
+  task: P8.30
+  api: exported
+  notes: "P8.30 — GetImageEditor + Resize/crop/Save; MakeIntermediateSize; ResizeImage"
+
+- prefix: wp-includes/media.php#image_make_intermediate_size
+  go: internal/wp/image_editor.go
+  status: partial
+  task: P8.30
+  api: exported
+  notes: "P8.30 — MakeIntermediateSize file/width/height/mime-type bag"
+
 # P2.21: wp_check_password covers $wp$ / phpass; application passwords reuse it.
 # P4.110: introspect + AuthenticatedAppPasswordUUID + last_used recording.
 - prefix: wp-includes/class-wp-application-passwords.php

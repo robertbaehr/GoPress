@@ -155,7 +155,7 @@ func TestPostThumbnailHelpers(t *testing.T) {
 func TestResizeImageStub(t *testing.T) {
 	_, err := wp.ResizeImage("/tmp/x.jpg", wp.ImageSize{Name: "thumbnail", Width: 150, Height: 150})
 	if err == nil {
-		t.Fatal("expected not-implemented error")
+		t.Fatal("expected error for missing file")
 	}
 }
 
