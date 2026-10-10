@@ -40,6 +40,10 @@ type QueryArgs struct {
 	CategoryIn []int64
 	// TagIn is post_tag term IDs (WP_Query tag__in / REST ?tags=, P4.87).
 	TagIn []int64
+	// PostFormatIn is post_format term slugs with post-format- prefix (REST ?format=, P4.96).
+	PostFormatIn []string
+	// PostFormatStandard includes posts with no post_format term (format=standard, P4.96).
+	PostFormatStandard bool
 	// StickyFirst prepends sticky posts (home/blog inherit queries, P5.19).
 	StickyFirst bool
 	// IgnoreSticky excludes sticky posts from results (non-inherit query loops).
@@ -151,6 +155,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 			" INNER JOIN " + c.DB.Terms() + " t ON t.term_id = tt.term_id"
 		where = append(where, "tt.taxonomy = %s", "t.slug = %s")
 		vals = append(vals, "post_tag", tag)
+		where, vals = appendPostFormatFilter(c, where, vals, args, "p.ID")
 		whereSQL := strings.Join(where, " AND ")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_type", "p.post_type")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_status", "p.post_status")
@@ -184,6 +189,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		clause, cvals := postInNotInSQL("t.term_id", args.TagIn, nil)
 		where = append(where, clause)
 		vals = append(vals, cvals...)
+		where, vals = appendPostFormatFilter(c, where, vals, args, "p.ID")
 		whereSQL := strings.Join(where, " AND ")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_type", "p.post_type")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_status", "p.post_status")
@@ -217,6 +223,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		clause, cvals := postInNotInSQL("t.term_id", args.CategoryIn, nil)
 		where = append(where, clause)
 		vals = append(vals, cvals...)
+		where, vals = appendPostFormatFilter(c, where, vals, args, "p.ID")
 		whereSQL := strings.Join(where, " AND ")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_type", "p.post_type")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_status", "p.post_status")
@@ -248,6 +255,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 			" INNER JOIN " + c.DB.Terms() + " t ON t.term_id = tt.term_id"
 		where = append(where, "tt.taxonomy = %s", "t.slug = %s")
 		vals = append(vals, "category", cat)
+		where, vals = appendPostFormatFilter(c, where, vals, args, "p.ID")
 		whereSQL := strings.Join(where, " AND ")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_type", "p.post_type")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_status", "p.post_status")
@@ -272,6 +280,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		}
 		return intFromAny(v), nil
 	}
+	where, vals = appendPostFormatFilter(c, where, vals, args, "ID")
 	q := "SELECT COUNT(*) AS total FROM " + from + " WHERE " + strings.Join(where, " AND ")
 	sqlStr, sqlArgs, err := c.DB.Prepare(q, vals...)
 	if err != nil {
@@ -372,7 +381,6 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 		vals = append(vals, cvals...)
 	}
 	from := c.DB.Posts() + " p"
-	idCol := "p.ID"
 	if tag := strings.TrimSpace(args.Tag); tag != "" {
 		from += " INNER JOIN " + c.DB.TermRelationships() + " tr ON tr.object_id = p.ID" +
 			" INNER JOIN " + c.DB.TermTaxonomy() + " tt ON tt.term_taxonomy_id = tr.term_taxonomy_id" +
@@ -407,8 +415,17 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 	}
 
 	// Qualifying column names when joining taxonomies.
+	aliased := strings.Contains(from, " tr ")
+	idCol := "ID"
+	if aliased {
+		idCol = "p.ID"
+	} else {
+		from = c.DB.Posts()
+	}
+	// P4.96: format= via EXISTS / NOT EXISTS (works with or without tax joins).
+	where, vals = appendPostFormatFilter(c, where, vals, args, idCol)
 	whereSQL := strings.Join(where, " AND ")
-	if strings.Contains(from, " tr ") {
+	if aliased {
 		whereSQL = strings.ReplaceAll(whereSQL, "post_type", "p.post_type")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_status", "p.post_status")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_author", "p.post_author")
@@ -422,13 +439,8 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_parent", "p.post_parent")
-	} else {
-		from = c.DB.Posts()
-		idCol = "ID"
-		_ = idCol
 	}
 
-	aliased := strings.Contains(from, " tr ")
 	q := "SELECT " + selectPostColumns(aliased) + " FROM " +
 		from + " WHERE " + whereSQL +
 		" ORDER BY " + orderByClause(args.OrderBy, args.Order, aliased)
@@ -453,7 +465,7 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 	for _, row := range rows {
 		out = append(out, postFromRow(row))
 	}
-	if postType == "post" && (args.StickyFirst || args.IgnoreSticky) && args.P == 0 && args.Name == "" && args.PageName == "" && len(args.NameIn) == 0 && args.Tag == "" && args.Category == "" && len(args.CategoryIn) == 0 && len(args.TagIn) == 0 {
+	if postType == "post" && (args.StickyFirst || args.IgnoreSticky) && args.P == 0 && args.Name == "" && args.PageName == "" && len(args.NameIn) == 0 && args.Tag == "" && args.Category == "" && len(args.CategoryIn) == 0 && len(args.TagIn) == 0 && len(args.PostFormatIn) == 0 && !args.PostFormatStandard {
 		out = applyStickyOrdering(c, out, args)
 	}
 	return out, nil
@@ -697,6 +709,46 @@ func postNameFilterSQL(name, pageName string, nameIn []string) (string, []any) {
 		return "", nil
 	}
 	return "post_name = %s", []any{lastPathSegment(slug)}
+}
+
+
+// appendPostFormatFilter adds REST ?format= tax_query (P4.96).
+// idCol is "ID" or "p.ID" depending on whether posts are aliased.
+func appendPostFormatFilter(c *Context, where []string, vals []any, args QueryArgs, idCol string) ([]string, []any) {
+	if c == nil || c.DB == nil {
+		return where, vals
+	}
+	if len(args.PostFormatIn) == 0 && !args.PostFormatStandard {
+		return where, vals
+	}
+	if idCol == "" {
+		idCol = "ID"
+	}
+	tr := c.DB.TermRelationships()
+	tt := c.DB.TermTaxonomy()
+	terms := c.DB.Terms()
+	var orParts []string
+	var orVals []any
+	if args.PostFormatStandard {
+		orParts = append(orParts,
+			"NOT EXISTS (SELECT 1 FROM "+tr+" tr_pf INNER JOIN "+tt+" tt_pf ON tt_pf.term_taxonomy_id = tr_pf.term_taxonomy_id WHERE tr_pf.object_id = "+idCol+" AND tt_pf.taxonomy = %s)")
+		orVals = append(orVals, "post_format")
+	}
+	if len(args.PostFormatIn) > 0 {
+		ph := make([]string, len(args.PostFormatIn))
+		for i := range args.PostFormatIn {
+			ph[i] = "%s"
+		}
+		orParts = append(orParts,
+			"EXISTS (SELECT 1 FROM "+tr+" tr_pf INNER JOIN "+tt+" tt_pf ON tt_pf.term_taxonomy_id = tr_pf.term_taxonomy_id INNER JOIN "+terms+" t_pf ON t_pf.term_id = tt_pf.term_id WHERE tr_pf.object_id = "+idCol+" AND tt_pf.taxonomy = %s AND t_pf.slug IN ("+strings.Join(ph, ",")+"))")
+		orVals = append(orVals, "post_format")
+		for _, s := range args.PostFormatIn {
+			orVals = append(orVals, s)
+		}
+	}
+	where = append(where, "("+strings.Join(orParts, " OR ")+")")
+	vals = append(vals, orVals...)
+	return where, vals
 }
 
 func postInNotInSQL(col string, in, notIn []int64) (string, []any) {

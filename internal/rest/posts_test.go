@@ -392,6 +392,80 @@ func TestPostsCategoriesQueryParam(t *testing.T) {
 	}
 }
 
+func TestPostsFormatQueryParam(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	// Fixture Post 15 (ID 27) has post-format-status.
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?format=status&per_page=10", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("format=status status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var hits []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &hits); err != nil {
+		t.Fatal(err)
+	}
+	if len(hits) == 0 {
+		t.Fatal("expected posts for format=status")
+	}
+	found := false
+	for _, p := range hits {
+		if p.Format != "status" {
+			t.Fatalf("post %d format=%q want status", p.ID, p.Format)
+		}
+		if p.Slug == "fixture-post-15" || strings.Contains(p.Title.Rendered, "Fixture Post 15") {
+			found = true
+		}
+	}
+	if !found {
+		t.Fatalf("expected Fixture Post 15 among format=status hits")
+	}
+	if rec.Header().Get("X-WP-Total") == "" || rec.Header().Get("X-WP-Total") == "0" {
+		t.Fatalf("expected X-WP-Total > 0, got %q", rec.Header().Get("X-WP-Total"))
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?format=standard&per_page=5", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("format=standard status=%d", rec.Code)
+	}
+	var std []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &std); err != nil {
+		t.Fatal(err)
+	}
+	if len(std) == 0 {
+		t.Fatal("expected standard-format posts")
+	}
+	for _, p := range std {
+		if p.Format != "standard" {
+			t.Fatalf("post %d format=%q want standard", p.ID, p.Format)
+		}
+		if p.ID == 27 {
+			t.Fatal("status-format post should be excluded by format=standard")
+		}
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?format=video&per_page=10", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("format=video miss status=%d", rec.Code)
+	}
+	var miss []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &miss); err != nil {
+		t.Fatal(err)
+	}
+	if len(miss) != 0 {
+		t.Fatalf("expected empty for unused format=video, got %+v", miss)
+	}
+}
+
 func TestPostsSlugQueryParam(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
