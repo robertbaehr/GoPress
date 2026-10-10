@@ -383,40 +383,136 @@ func (e *Env) renderPostDate(block Block) string {
 
 func (e *Env) renderSiteTitle(block Block) string {
 	e = e.ensure()
-	name := "Site"
+	name := ""
 	if e.SiteName != nil {
-		if n := strings.TrimSpace(e.SiteName()); n != "" {
-			name = n
+		name = strings.TrimSpace(e.SiteName())
+	}
+	if name == "" {
+		return ""
+	}
+	tag := "h1" // block.json default level=1
+	if block.Attrs != nil {
+		if _, ok := block.Attrs["level"]; ok {
+			level := attrInt64(block.Attrs, "level")
+			if level >= 1 && level <= 6 {
+				tag = "h" + strconv.FormatInt(level, 10)
+			} else if level == 0 {
+				// WP site-title level 0 → paragraph.
+				tag = "p"
+			}
 		}
 	}
-	level := attrInt64(block.Attrs, "level")
-	tag := "h1"
-	if level >= 1 && level <= 6 {
-		tag = "h" + strconv.FormatInt(level, 10)
-	} else if level == 0 {
-		// WP site-title level 0 → paragraph.
-		tag = "p"
-	}
-	home := ""
-	if e.HomeURL != nil {
-		home = strings.TrimRight(e.HomeURL(), "/")
+	classes := "wp-block-site-title"
+	if align, ok := block.Attrs["textAlign"].(string); ok && strings.TrimSpace(align) != "" {
+		classes += " has-text-align-" + strings.TrimSpace(align)
 	}
 	inner := html.EscapeString(name)
-	if home != "" {
-		aria := ""
-		if e.IsFrontPage != nil && e.IsFrontPage() {
-			aria = ` aria-current="page"`
+	// isLink defaults to true (block.json).
+	if isLinkAttrDefaultTrue(block.Attrs) && e.HomeURL != nil {
+		home := strings.TrimRight(e.HomeURL(), "/")
+		if home != "" {
+			target := "_self"
+			if t, ok := block.Attrs["linkTarget"].(string); ok && strings.TrimSpace(t) != "" {
+				target = strings.TrimSpace(t)
+			}
+			aria := ""
+			if e.IsFrontPage != nil && e.IsFrontPage() {
+				aria = ` aria-current="page"`
+			}
+			inner = `<a` + aria + ` href="` + html.EscapeString(home) + `" target="` + html.EscapeString(target) + `" rel="home">` + inner + `</a>`
 		}
-		inner = `<a` + aria + ` href="` + html.EscapeString(home) + `" target="_self" rel="home">` + inner + `</a>`
 	}
-	return `<` + tag + ` class="wp-block-site-title">` + inner + `</` + tag + `>`
+	return `<` + tag + ` class="` + classes + `">` + inner + `</` + tag + `>`
 }
 
 func (e *Env) renderSiteTagline(block Block) string {
-	_ = e.ensure()
-	_ = block
-	// Empty tagline is common on fixture sites; omit markup when unset.
-	return ""
+	e = e.ensure()
+	tagline := ""
+	if e.SiteTagline != nil {
+		tagline = strings.TrimSpace(e.SiteTagline())
+	}
+	if tagline == "" {
+		// Empty tagline is common on fixture sites; omit markup when unset.
+		return ""
+	}
+	level := attrInt64(block.Attrs, "level")
+	tag := "p"
+	if level >= 1 && level <= 6 {
+		tag = "h" + strconv.FormatInt(level, 10)
+	}
+	classes := "wp-block-site-tagline"
+	if align, ok := block.Attrs["textAlign"].(string); ok && strings.TrimSpace(align) != "" {
+		classes += " has-text-align-" + strings.TrimSpace(align)
+	}
+	return `<` + tag + ` class="` + classes + `">` + html.EscapeString(tagline) + `</` + tag + `>`
+}
+
+// renderSiteLogo renders core/site-logo from the site_logo / custom logo URL (P5.45).
+func (e *Env) renderSiteLogo(block Block) string {
+	e = e.ensure()
+	if e.SiteLogoURL == nil {
+		return ""
+	}
+	src := strings.TrimSpace(e.SiteLogoURL())
+	if src == "" {
+		return ""
+	}
+	width := attrInt64(block.Attrs, "width")
+	var imgB strings.Builder
+	imgB.WriteString(`<img`)
+	if width > 0 {
+		imgB.WriteString(` width="`)
+		imgB.WriteString(strconv.FormatInt(width, 10))
+		imgB.WriteString(`"`)
+	}
+	imgB.WriteString(` src="`)
+	imgB.WriteString(html.EscapeString(src))
+	imgB.WriteString(`" class="custom-logo" alt="" decoding="async"`)
+	if width > 0 {
+		imgB.WriteString(` style="height:auto;max-width:100%"`)
+	}
+	imgB.WriteString(` />`)
+	img := imgB.String()
+
+	inner := img
+	if isLinkAttrDefaultTrue(block.Attrs) && e.HomeURL != nil {
+		home := strings.TrimRight(e.HomeURL(), "/")
+		if home != "" {
+			target := "_self"
+			if t, ok := block.Attrs["linkTarget"].(string); ok && strings.TrimSpace(t) != "" {
+				target = strings.TrimSpace(t)
+			}
+			aria := ""
+			if target == "_blank" {
+				aria = ` aria-label="(Home link, opens in a new tab)"`
+			}
+			inner = `<a href="` + html.EscapeString(home) + `" class="custom-logo-link" rel="home"` + aria + ` target="` + html.EscapeString(target) + `">` + img + `</a>`
+		}
+	}
+	classes := "wp-block-site-logo"
+	if width <= 0 {
+		classes += " is-default-size"
+	}
+	return `<div class="` + classes + `">` + inner + `</div>`
+}
+
+// isLinkAttrDefaultTrue mirrors block.json isLink default:true when the attr is omitted.
+func isLinkAttrDefaultTrue(attrs map[string]any) bool {
+	if attrs == nil {
+		return true
+	}
+	v, ok := attrs["isLink"]
+	if !ok {
+		return true
+	}
+	switch t := v.(type) {
+	case bool:
+		return t
+	case string:
+		return t == "true" || t == "1"
+	default:
+		return false
+	}
 }
 
 func formatPostDateDisplay(mysql string) string {

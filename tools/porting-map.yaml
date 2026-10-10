@@ -1070,6 +1070,25 @@
   task: P5.44
   api: internal
 
+# P5.45: core/site-logo, site-title, site-tagline dynamic renderers.
+- prefix: wp-includes/blocks/site-logo.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.45
+  api: internal
+
+- prefix: wp-includes/blocks/site-title.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.45
+  api: internal
+
+- prefix: wp-includes/blocks/site-tagline.php
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.45
+  api: internal
+
 - prefix: wp-includes/blocks/
   go: internal/blocks
   status: partial
