@@ -11,9 +11,13 @@ import (
 
 // serveRobotsTXT writes a WordPress-compatible robots.txt (do_robots subset).
 // When blog_public=0, emit Disallow: / (P3.44 search-engine visibility off).
+// P3.78: fires do_robotstxt and applies robots_txt filter.
 func serveRobotsTXT(w http.ResponseWriter, c *wp.Context) {
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	public := optionTruthy(c, "blog_public")
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("do_robotstxt")
+	}
 	var b strings.Builder
 	b.WriteString("User-agent: *\n")
 	if !public {
@@ -21,22 +25,58 @@ func serveRobotsTXT(w http.ResponseWriter, c *wp.Context) {
 	} else {
 		b.WriteString("Disallow: /wp-admin/\n")
 		b.WriteString("Allow: /wp-admin/admin-ajax.php\n")
-		if home != "" {
-			b.WriteString("\nSitemap: ")
-			b.WriteString(home)
-			b.WriteString("/wp-sitemap.xml\n")
+	}
+	output := b.String()
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("robots_txt", output, public); v != nil {
+			if s, ok := v.(string); ok {
+				output = s
+			}
 		}
+	}
+	// Default Sitemap line when public and filter left the stock body (P3.11 / WP_Sitemaps::add_robots).
+	if public && !strings.Contains(output, "Sitemap:") && home != "" {
+		output += "\nSitemap: " + home + "/wp-sitemap.xml\n"
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
 	if home != "" {
 		w.Header().Set("Link", fmt.Sprintf(`<%s/wp-json/>; rel="https://api.w.org/"`, home))
 	}
 	w.WriteHeader(http.StatusOK)
-	_, _ = w.Write([]byte(b.String()))
+	_, _ = w.Write([]byte(output))
+}
+
+// sitemapsEnabled reports whether XML sitemaps should be served (wp_sitemaps_enabled).
+// Off when blog_public=0 unless a filter forces them on (P3.78).
+func sitemapsEnabled(c *wp.Context) bool {
+	enabled := optionTruthy(c, "blog_public")
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("wp_sitemaps_enabled", enabled); v != nil {
+			switch t := v.(type) {
+			case bool:
+				return t
+			case string:
+				s := strings.TrimSpace(t)
+				return s != "" && s != "0" && !strings.EqualFold(s, "false")
+			}
+		}
+	}
+	return enabled
+}
+
+func serveSitemapDisabled(w http.ResponseWriter) {
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.Header().Set("Cache-Control", "no-cache, must-revalidate, max-age=0, no-store, private")
+	w.WriteHeader(http.StatusNotFound)
+	_, _ = w.Write([]byte("404 Not Found\n"))
 }
 
 // serveSitemapIndex writes /wp-sitemap.xml (WP sitemap index; P3.14).
 func serveSitemapIndex(w http.ResponseWriter, c *wp.Context) {
+	if !sitemapsEnabled(c) {
+		serveSitemapDisabled(w)
+		return
+	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	entries := []string{
 		home + "/wp-sitemap-posts-post-1.xml",
@@ -63,6 +103,10 @@ func serveSitemapIndex(w http.ResponseWriter, c *wp.Context) {
 
 // serveSitemapPosts writes a basic posts/pages sitemap page.
 func serveSitemapPosts(w http.ResponseWriter, c *wp.Context, postType string) {
+	if !sitemapsEnabled(c) {
+		serveSitemapDisabled(w)
+		return
+	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	posts, err := wp.GetPosts(c, wp.QueryArgs{
 		PostType:     postType,
@@ -105,6 +149,10 @@ func serveSitemapPosts(w http.ResponseWriter, c *wp.Context, postType string) {
 
 // serveSitemapTaxonomy writes a taxonomy terms sitemap page (P3.14).
 func serveSitemapTaxonomy(w http.ResponseWriter, c *wp.Context, taxonomy string) {
+	if !sitemapsEnabled(c) {
+		serveSitemapDisabled(w)
+		return
+	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")
@@ -208,6 +256,10 @@ func categorySitemapLoc(c *wp.Context, home string, row map[string]any) string {
 
 // serveSitemapUsers writes an author sitemap page (P3.14).
 func serveSitemapUsers(w http.ResponseWriter, c *wp.Context) {
+	if !sitemapsEnabled(c) {
+		serveSitemapDisabled(w)
+		return
+	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	var b strings.Builder
 	b.WriteString(`<?xml version="1.0" encoding="UTF-8"?>` + "\n")

@@ -2050,6 +2050,21 @@
   task: P3.44
   api: n/a
 
+# P3.78: robots_txt filter + sitemaps disabled when blog_public=0.
+- prefix: wp-includes/functions.php#robots_txt
+  go: internal/server/robots_sitemap.go
+  status: partial
+  task: P3.78
+  api: n/a
+  notes: "P3.78 — do_robotstxt action + robots_txt filter; Sitemap via add_robots path"
+
+- prefix: wp-includes/sitemaps/class-wp-sitemaps.php#enabled
+  go: internal/server/robots_sitemap.go
+  status: partial
+  task: P3.78
+  api: n/a
+  notes: "P3.78 — wp_sitemaps_enabled; 404 sitemap routes when blog_public=0"
+
 # P3.37 / P10.35: file-level link-template row (fragments above are docs-only).
 - prefix: wp-includes/link-template.php
   go: internal/wp/link_template.go
