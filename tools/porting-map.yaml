@@ -277,7 +277,16 @@
   notes: "P6.23 — HttpOnly wp_lang session cookie from query; switcher reads cookie"
 
 # P6.30: language switcher preserves POST/REQUEST fields after failed login.
-- prefix: wp-login.php#language-switcher-post
+- prefix: 
+# P6.39: deepen login language switcher filters + reauth preserve.
+- prefix: wp-login.php#language-switcher#p6.39
+  go: internal/login/login.go
+  status: partial
+  task: P6.39
+  api: n/a
+  notes: "P6.39 — login_display_language_dropdown; login_language_dropdown_args; preserve reauth"
+
+wp-login.php#language-switcher-post
   go: internal/login/login.go
   status: partial
   task: P6.30

@@ -80,6 +80,43 @@ func TestWriteLanguageSwitcherPreservesPOSTFields(t *testing.T) {
 	}
 }
 
+func TestWriteLanguageSwitcherDisplayFilter(t *testing.T) {
+	c := &wp.Context{Hooks: wp.NewHooks()}
+	c.Hooks.AddFilter("login_display_language_dropdown", func(value any, args ...any) any {
+		return false
+	}, 10, 1)
+	var b strings.Builder
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php", nil)
+	writeLanguageSwitcher(&b, req, c, []string{"de_DE"})
+	if b.Len() != 0 {
+		t.Fatalf("filter false should hide switcher: %q", b.String())
+	}
+}
+
+func TestWriteLanguageSwitcherPreservesReauthAndArgsFilter(t *testing.T) {
+	c := &wp.Context{Hooks: wp.NewHooks()}
+	c.Hooks.AddFilter("login_language_dropdown_args", func(value any, args ...any) any {
+		return map[string]any{
+			"id":       "custom-lang",
+			"name":     "wp_lang",
+			"selected": "fr_FR",
+		}
+	}, 10, 1)
+	var b strings.Builder
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?reauth=1&redirect_to=%2Fwp-admin%2F", nil)
+	writeLanguageSwitcher(&b, req, c, []string{"de_DE", "fr_FR"})
+	out := b.String()
+	if !strings.Contains(out, `id="custom-lang"`) || !strings.Contains(out, `for="custom-lang"`) {
+		t.Fatalf("expected filtered id: %q", out)
+	}
+	if !strings.Contains(out, `value="fr_FR" selected="selected"`) {
+		t.Fatalf("expected filtered selected: %q", out)
+	}
+	if !strings.Contains(out, `name="reauth"`) || !strings.Contains(out, `value="1"`) {
+		t.Fatalf("expected reauth hidden: %q", out)
+	}
+}
+
 func TestWriteLoginHTMLSetsLangCookie(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?wp_lang=fr_FR", nil)
 	rec := httptest.NewRecorder()

@@ -1416,11 +1416,25 @@ func sanitizeRedirect(raw, home string) string {
 	return u.RequestURI()
 }
 
-// writeLanguageSwitcher emits the login language dropdown when languages exist (P6.11).
-// Mirrors wp-login.php: only rendered when get_available_languages() is non-empty.
+// writeLanguageSwitcher emits the login language dropdown when languages exist (P6.11 / P6.39).
+// Mirrors wp-login.php: only rendered when get_available_languages() is non-empty
+// and login_display_language_dropdown is true.
 // P6.30: preserve redirect_to/action/interim-login from query or POST body.
+// P6.39: honor login_display_language_dropdown + preserve reauth.
 func writeLanguageSwitcher(b *strings.Builder, r *http.Request, c *wp.Context, languages []string) {
 	if len(languages) == 0 {
+		return
+	}
+	// P6.39: apply_filters( 'login_display_language_dropdown', true ).
+	display := true
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("login_display_language_dropdown", true); v != nil {
+			if t, ok := v.(bool); ok {
+				display = t
+			}
+		}
+	}
+	if !display {
 		return
 	}
 	selected := "en_US"
@@ -1442,12 +1456,41 @@ func writeLanguageSwitcher(b *strings.Builder, r *http.Request, c *wp.Context, l
 	} else if ck, err := r.Cookie("wp_lang"); err == nil && ck != nil && ck.Value != "" {
 		selected = ck.Value
 	}
+	selectID := "language-switcher-locales"
+	selectName := "wp_lang"
+	// P6.39: login_language_dropdown_args subset (id/name/selected).
+	if c != nil && c.Hooks != nil {
+		args := map[string]any{
+			"id":       selectID,
+			"name":     selectName,
+			"selected": selected,
+		}
+		if v := c.Hooks.ApplyFilters("login_language_dropdown_args", args); v != nil {
+			if m, ok := v.(map[string]any); ok {
+				if id, ok := m["id"].(string); ok && strings.TrimSpace(id) != "" {
+					selectID = strings.TrimSpace(id)
+				}
+				if name, ok := m["name"].(string); ok && strings.TrimSpace(name) != "" {
+					selectName = strings.TrimSpace(name)
+				}
+				if sel, ok := m["selected"].(string); ok {
+					selected = sel
+				}
+			}
+		}
+	}
 	b.WriteString("\t\t\t<div class=\"language-switcher\">\n")
 	b.WriteString("\t\t\t\t<form id=\"language-switcher\" method=\"get\">\n")
-	b.WriteString("\t\t\t\t\t<label for=\"language-switcher-locales\">\n")
+	b.WriteString("\t\t\t\t\t<label for=\"")
+	b.WriteString(html.EscapeString(selectID))
+	b.WriteString("\">\n")
 	b.WriteString("\t\t\t\t\t\tLanguage<span class=\"dashicons dashicons-translation\" aria-hidden=\"true\"></span>\n")
 	b.WriteString("\t\t\t\t\t</label>\n")
-	b.WriteString("\t\t\t\t\t<select name=\"wp_lang\" id=\"language-switcher-locales\">\n")
+	b.WriteString("\t\t\t\t\t<select name=\"")
+	b.WriteString(html.EscapeString(selectName))
+	b.WriteString("\" id=\"")
+	b.WriteString(html.EscapeString(selectID))
+	b.WriteString("\">\n")
 	b.WriteString("\t\t\t\t\t\t<option value=\"en_US\"")
 	if selected == "en_US" || selected == "" {
 		b.WriteString(" selected=\"selected\"")
@@ -1490,6 +1533,16 @@ func writeLanguageSwitcher(b *strings.Builder, r *http.Request, c *wp.Context, l
 	}
 	if isInterimLogin(r) {
 		b.WriteString("\t\t\t\t\t\t<input type=\"hidden\" name=\"interim-login\" value=\"1\" />\n")
+	}
+	// P6.39: preserve reauth across language changes.
+	reauth := r.URL.Query().Get("reauth")
+	if reauth == "" {
+		reauth = r.FormValue("reauth")
+	}
+	if reauth != "" {
+		b.WriteString("\t\t\t\t\t\t<input type=\"hidden\" name=\"reauth\" value=\"")
+		b.WriteString(html.EscapeString(reauth))
+		b.WriteString("\" />\n")
 	}
 	b.WriteString("\t\t\t\t\t\t<input type=\"submit\" class=\"button\" value=\"Change\">\n")
 	b.WriteString("\t\t\t\t\t</form>\n")
