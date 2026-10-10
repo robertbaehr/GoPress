@@ -1405,6 +1405,21 @@
   api: n/a
   notes: "P10.51 — summarize spacer, font-families write, users bulk, ext2type, feed language, export email"
 
+# P10.52: e2e menu-locations DELETE unset + STATUS/PORTING refresh after P5.60–P6.24.
+- prefix: tests/e2e/menu-location-delete.spec.js
+  go: tests/e2e/menu-location-delete.spec.js
+  status: partial
+  task: P10.52
+  api: n/a
+  notes: "P10.52 — Playwright coverage for menu-locations DELETE unset (P4.74)"
+
+- prefix: docs/STATUS.md#P10.52
+  go: docs/STATUS.md
+  status: partial
+  task: P10.52
+  api: n/a
+  notes: "P10.52 — summarize separator, font-faces write, media bulk, getimagesize, feed copyright, rememberme, e2e"
+
 # P10.45: e2e WXR export download + STATUS/PORTING refresh after P5.53–P6.21.
 - prefix: tests/e2e/wxr-export.spec.js
   go: tests/e2e/wxr-export.spec.js
