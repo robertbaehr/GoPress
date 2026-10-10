@@ -36,6 +36,10 @@ func TestLoginPOSTMissingTestCookie(t *testing.T) {
 	if !strings.Contains(body, "Cookies are blocked") {
 		t.Fatalf("expected test_cookie message: %q", body)
 	}
+	// P6.28: test_cookie is not in shake_error_codes.
+	if strings.Contains(body, "classList.add('shake')") {
+		t.Fatalf("test_cookie must not shake the form: %q", body)
+	}
 	if loc := rec.Header().Get("Location"); loc != "" {
 		t.Fatalf("must not redirect when cookies blocked: Location=%q", loc)
 	}
