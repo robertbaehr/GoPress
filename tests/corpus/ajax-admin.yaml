@@ -1306,3 +1306,108 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.214: ajax toppers after stack.
+
+- id: ajax-p10214-001
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10214-002
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=logged-in
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10214-003
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=wp-compression-test
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10214-004
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=rest-nonce
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+# P10.214b: replacement headers-safe toppers after drop.
+
+- id: ajax-p10214b-001
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=upload
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10214b-002
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10214b-003
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=dashboard
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10214b-004
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=wp-link-ajax
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+# P10.214c: safe toppers after second drop.
+
+- id: ajax-p10214c-001
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=media
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10214c-002
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=themes
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10214c-003
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=plugins
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

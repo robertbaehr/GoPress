@@ -51,6 +51,7 @@ make check
 ## Recent stack (through P10.213)
 
 - P10.213 STATUS/PORTING refresh after P5.151–P10.212
+- P10.214 Diff corpus expand (3033/3033 match) + media-text/meta_value/custom-bg/retrieve/oembed/doing-action toppers; dropped Link/set-cookie-divergent cases
 - P10.212 Diff corpus expand (2806/2806 match) + cover/attachment/prev-next/headertitle/safe-remote toppers; dropped Link/set-cookie/meta_key-divergent cases
 - P6.60 `login_headertitle` PHP `empty()` seed + unescaped `login_headertext`
 - P3.145 Front archive `get_pagenum_link` + EscURL prev/next; adjacent post rel HTML helpers

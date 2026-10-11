@@ -17246,3 +17246,1170 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.214: expand after P5.152–P9.37 (media-text/meta_value/custom-bg/retrieve/oembed/doing-action) — headers-safe.
+
+- id: rest-p10214-001
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/media-text
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-002
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/media-text?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-003
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/media-text?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-004
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/media-text?context=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-005
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/group?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-006
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/cover?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-007
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/columns?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-008
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/image?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-009
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/paragraph?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-010
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/heading?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-011
+  role: anon
+  method: GET
+  path: /wp-json/oembed/1.0/embed?url=http://127.0.0.1:8081/?p=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-012
+  role: anon
+  method: GET
+  path: /wp-json/oembed/1.0/embed?url=http://127.0.0.1:8081/?p=1&format=json
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-013
+  role: anon
+  method: GET
+  path: /wp-json/oembed/1.0/embed?url=http://127.0.0.1:8081/sample-page/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-014
+  role: anon
+  method: GET
+  path: /wp-json/oembed/1.0/embed?url=http://127.0.0.1:8081/sample-page/&format=json
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-015
+  role: anon
+  method: GET
+  path: /wp-json/oembed/1.0/embed?url=http://127.0.0.1:8081/2024/06/15/hello-world/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-016
+  role: anon
+  method: GET
+  path: /wp-json/oembed/1.0/embed?url=http://127.0.0.1:8081/2024/06/15/hello-world/&format=json
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-017
+  role: anon
+  method: GET
+  path: /wp-json/oembed/1.0/embed?url=http://127.0.0.1:8081/?page_id=2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-018
+  role: anon
+  method: GET
+  path: /wp-json/oembed/1.0/embed?url=http://127.0.0.1:8081/?page_id=2&format=json
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-019
+  role: anon
+  method: GET
+  path: /wp-json/oembed/1.0
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-021
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-022
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?per_page=1&orderby=date
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-023
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?per_page=1&orderby=title
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-026
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?per_page=1&context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-027
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-028
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?per_page=1&orderby=menu_order
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-029
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/media?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-030
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/media?per_page=1&orderby=date
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-031
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-032
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types/post
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-033
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types/page?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-034
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/statuses
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-035
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/taxonomies
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-036
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/categories?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-037
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/tags?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-038
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?search=media-text&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-039
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?search=oembed&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-040
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?search=background&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-041
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?search=regexp&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-042
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?search=doing_action&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-043
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-044
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types?namespace=core
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-045
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/media-text&context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-046
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/posts&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-047
+  role: anon
+  method: GET
+  path: /?rest_route=/oembed/1.0/embed&url=http://127.0.0.1:8081/?p=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-048
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/settings
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-049
+  role: anon
+  method: GET
+  path: /wp-json/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-050
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-h01
+  role: anon
+  method: HEAD
+  path: /wp-json/wp/v2/block-types/core/media-text
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214-h03
+  role: anon
+  method: HEAD
+  path: /wp-json/oembed/1.0
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+# P10.214b: replacement headers-safe toppers after drop.
+
+- id: rest-p10214b-001
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/media-text?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-002
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/quote?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-003
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/table?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-004
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/list?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-005
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/code?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-006
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/verse?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-007
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/preformatted?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-008
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/separator?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-009
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/spacer?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-010
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/buttons?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-011
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/button?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-012
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/columns?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-013
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/group?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-014
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/cover?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-015
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?search=media&per_page=1&type=post
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-016
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?search=text&per_page=1&type=post
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-017
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?search=hero&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-019
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/categories?per_page=1&orderby=id
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-020
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/tags?per_page=1&orderby=id
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-021
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/users?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-022
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/comments?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-023
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/statuses/publish
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-024
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/taxonomies/category
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-025
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/taxonomies/post_tag
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-026
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/media-text
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-027
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/group&context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-028
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/search&search=oembed&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-029
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types/page
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-030
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types/attachment
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-031
+  role: anon
+  method: GET
+  path: /wp-json/oembed/1.0/embed?url=http://127.0.0.1:8081/sample-page/&format=xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-032
+  role: anon
+  method: GET
+  path: /wp-json/oembed/1.0/embed?url=http://127.0.0.1:8081/?p=1&maxwidth=600
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-033
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-patterns/categories
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-034
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/menu-locations
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214b-035
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/font-collections
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+# P10.214c: safe toppers after second drop.
+
+- id: rest-p10214c-001
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/audio?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-002
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/video?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-003
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/file?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-004
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/gallery?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-005
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/embed?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-006
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/html?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-007
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/shortcode?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-008
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/archives?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-009
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/calendar?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-010
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/latest-posts?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-011
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/latest-comments?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-012
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/tag-cloud?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-013
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/search?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-014
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/social-links?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-015
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/site-title?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-016
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/site-tagline?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-017
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/site-logo?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-018
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/query?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-019
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/post-title?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-020
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/post-content?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-021
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/post-excerpt?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-022
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/post-date?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-023
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/post-author?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-024
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/post-terms?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-025
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/post-featured-image?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-026
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/navigation?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-027
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/page-list?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-028
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/home-link?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-029
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/loginout?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-030
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/avatar?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-031
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/media-text&context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-032
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/cover&context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-033
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/types
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-034
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/statuses
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-035
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/taxonomies
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-036
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/media-text
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-037
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/media-text?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-038
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?search=media-text&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-039
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?search=background&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-040
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?search=oembed&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-041
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?per_page=1&orderby=title
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-042
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/media?per_page=1&orderby=title
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-043
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/categories?per_page=1&orderby=name
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-044
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/tags?per_page=1&orderby=name
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-045
+  role: anon
+  method: GET
+  path: /wp-json/oembed/1.0/embed?url=http://127.0.0.1:8081/fixture-parent/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10214c-046
+  role: anon
+  method: GET
+  path: /wp-json/oembed/1.0/embed?url=http://127.0.0.1:8081/?p=13&format=json
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
