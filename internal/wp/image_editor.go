@@ -7,6 +7,7 @@ import (
 	"image/draw"
 	"image/jpeg"
 	"image/png"
+	"math"
 	"os"
 	"path/filepath"
 	"strings"
@@ -84,6 +85,38 @@ func (e *ImageEditor) Crop(srcX, srcY, srcW, srcH, dstW, dstH int, srcAbs bool) 
 		return nil
 	}
 	e.img = scaleImage(cropped, dstW, dstH)
+	return nil
+}
+
+// Rotate rotates the image counter-clockwise by angle degrees (WP_Image_Editor::rotate, P8.36).
+// Supports quarter-turns (0/90/180/270 after normalization); other angles error.
+func (e *ImageEditor) Rotate(angle float64) error {
+	if e == nil || e.img == nil {
+		return fmt.Errorf("wp: ImageEditor.Rotate: nil editor")
+	}
+	if math.IsNaN(angle) || math.IsInf(angle, 0) {
+		return fmt.Errorf("wp: ImageEditor.Rotate: invalid angle")
+	}
+	// Normalize to [0, 360).
+	a := math.Mod(angle, 360)
+	if a < 0 {
+		a += 360
+	}
+	// Snap near-quarter turns (Imagick/GD media UI uses 90° steps).
+	quarter := int(math.Round(a/90.0)) % 4
+	if math.Abs(a-float64(quarter*90)) > 0.5 && !(quarter == 0 && math.Abs(a-360) <= 0.5) {
+		return fmt.Errorf("wp: ImageEditor.Rotate: unsupported angle %v (quarter-turns only)", angle)
+	}
+	switch quarter {
+	case 0:
+		return nil
+	case 1:
+		e.img = rotateImage90CCW(e.img)
+	case 2:
+		e.img = rotateImage180(e.img)
+	case 3:
+		e.img = rotateImage270CCW(e.img)
+	}
 	return nil
 }
 
@@ -292,5 +325,43 @@ func cropImage(src image.Image, x, y, w, h int) image.Image {
 	r := image.Rect(b.Min.X+x, b.Min.Y+y, b.Min.X+x+w, b.Min.Y+y+h)
 	dst := image.NewRGBA(image.Rect(0, 0, w, h))
 	draw.Draw(dst, dst.Bounds(), src, r.Min, draw.Src)
+	return dst
+}
+
+// rotateImage90CCW maps (x,y) → (y, W-1-x); output size HxW.
+func rotateImage90CCW(src image.Image) image.Image {
+	b := src.Bounds()
+	w, h := b.Dx(), b.Dy()
+	dst := image.NewRGBA(image.Rect(0, 0, h, w))
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			dst.Set(y, w-1-x, src.At(b.Min.X+x, b.Min.Y+y))
+		}
+	}
+	return dst
+}
+
+func rotateImage180(src image.Image) image.Image {
+	b := src.Bounds()
+	w, h := b.Dx(), b.Dy()
+	dst := image.NewRGBA(image.Rect(0, 0, w, h))
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			dst.Set(w-1-x, h-1-y, src.At(b.Min.X+x, b.Min.Y+y))
+		}
+	}
+	return dst
+}
+
+// rotateImage270CCW maps (x,y) → (H-1-y, x); output size HxW.
+func rotateImage270CCW(src image.Image) image.Image {
+	b := src.Bounds()
+	w, h := b.Dx(), b.Dy()
+	dst := image.NewRGBA(image.Rect(0, 0, h, w))
+	for y := 0; y < h; y++ {
+		for x := 0; x < w; x++ {
+			dst.Set(h-1-y, x, src.At(b.Min.X+x, b.Min.Y+y))
+		}
+	}
 	return dst
 }

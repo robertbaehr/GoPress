@@ -86,6 +86,44 @@ func TestImageEditorCrop(t *testing.T) {
 	}
 }
 
+func TestImageEditorRotate(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "rot-src.png")
+	writeTestPNG(t, src, 40, 20)
+
+	ed, err := wp.GetImageEditor(src)
+	if err != nil {
+		t.Fatalf("GetImageEditor: %v", err)
+	}
+	if err := ed.Rotate(90); err != nil {
+		t.Fatalf("Rotate 90: %v", err)
+	}
+	w, h := ed.Size()
+	if w != 20 || h != 40 {
+		t.Fatalf("after 90° Size=%dx%d want 20x40", w, h)
+	}
+	if err := ed.Rotate(90); err != nil {
+		t.Fatalf("Rotate 90 again: %v", err)
+	}
+	w, h = ed.Size()
+	if w != 40 || h != 20 {
+		t.Fatalf("after 180° Size=%dx%d want 40x20", w, h)
+	}
+	if err := ed.Rotate(180); err != nil {
+		t.Fatalf("Rotate 180: %v", err)
+	}
+	w, h = ed.Size()
+	if w != 40 || h != 20 {
+		t.Fatalf("after +180 Size=%dx%d", w, h)
+	}
+	if err := ed.Rotate(0); err != nil {
+		t.Fatalf("Rotate 0: %v", err)
+	}
+	if err := ed.Rotate(45); err == nil {
+		t.Fatal("expected error for non-quarter angle")
+	}
+}
+
 func TestMakeIntermediateSizeAndResizeImage(t *testing.T) {
 	dir := t.TempDir()
 	src := filepath.Join(dir, "wide.png")
