@@ -10714,3 +10714,17 @@ wp-login.php#language-switcher-post
   task: P4.158
   api: n/a
   notes: "P4.158 — empty sticky_posts + is_sticky filter field coverage"
+
+# P7.143: deepen privacy-policy-guide.php collapsed accordion + privacy-tools enqueue marker.
+- prefix: wp-admin/privacy-policy-guide.php#collapsed
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.143
+  api: n/a
+  notes: "P7.143 — Introduction accordion aria-expanded=false + hidden; privacy-tools-js-extra marker"
+- prefix: wp-admin/privacy-policy-guide.php#collapsed#tests
+  go: internal/admin/privacy_policy_guide_p7_143_test.go
+  status: partial
+  task: P7.143
+  api: n/a
+  notes: "P7.143 — collapsed accordion + enqueue marker coverage"

@@ -5403,7 +5403,7 @@ func parsePositiveInt64(raw string) int64 {
 	return n
 }
 
-// servePrivacyPolicyGuide is the Privacy Policy Guide screen stub (P8.7 / P7.93).
+// servePrivacyPolicyGuide is the Privacy Policy Guide screen stub (P8.7 / P7.93 / P7.143).
 func (h *Handler) servePrivacyPolicyGuide(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	// P7.93: capability gate (manage_privacy_options → manage_options).
 	if !canManagePrivacyOptionsAdmin(c) {
@@ -5415,7 +5415,11 @@ func (h *Handler) servePrivacyPolicyGuide(w http.ResponseWriter, r *http.Request
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>Privacy Policy Guide &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString(" &#8212; WordPress</title>\n")
+	// P7.143: wp_enqueue_script( 'privacy-tools' ) marker (inline accordion/search below).
+	b.WriteString("<script id=\"privacy-tools-js-extra\">/* privacy-tools */</script>\n")
+	b.WriteString("</head>\n")
+	// P7.143: admin_body_class += privacy-settings (already on body).
 	b.WriteString("<body class=\"wp-admin wp-core-ui js privacy-settings privacy-policy-guide-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	// P8.14: warn when suggested privacy policy text has changed.
@@ -5439,9 +5443,10 @@ func (h *Handler) servePrivacyPolicyGuide(w http.ResponseWriter, r *http.Request
 	b.WriteString("<p>It is your responsibility to write a comprehensive privacy policy, to make sure it reflects all national and international legal requirements on privacy, and to keep your policy current and accurate.</p>\n")
 	b.WriteString("<div class=\"privacy-settings-accordion\">\n")
 	b.WriteString("<h4 class=\"privacy-settings-accordion-heading\">")
-	b.WriteString("<button aria-expanded=\"true\" class=\"privacy-settings-accordion-trigger\" aria-controls=\"privacy-settings-accordion-block-privacy-policy-guide\" type=\"button\">")
+	// P7.143: WP defaults the Introduction accordion to collapsed (aria-expanded=false + hidden).
+	b.WriteString("<button aria-expanded=\"false\" class=\"privacy-settings-accordion-trigger\" aria-controls=\"privacy-settings-accordion-block-privacy-policy-guide\" type=\"button\">")
 	b.WriteString("<span class=\"title\">Privacy Policy Guide</span><span class=\"icon\"></span></button></h4>\n")
-	b.WriteString("<div id=\"privacy-settings-accordion-block-privacy-policy-guide\" class=\"privacy-settings-accordion-panel\">\n")
+	b.WriteString("<div id=\"privacy-settings-accordion-block-privacy-policy-guide\" class=\"privacy-settings-accordion-panel\" hidden=\"hidden\">\n")
 	// P8.11: WP_Privacy_Policy_Content::get_default_content( true, false )
 	b.WriteString(wp.GetDefaultPrivacyPolicyContent(c, true, false))
 	b.WriteString("</div>\n</div>\n")
@@ -5457,7 +5462,7 @@ func (h *Handler) servePrivacyPolicyGuide(w http.ResponseWriter, r *http.Request
 	// P8.12: WP_Privacy_Policy_Content::privacy_policy_guide (registered sections).
 	b.WriteString(wp.PrivacyPolicyGuideHTML(c))
 	b.WriteString("</div>\n")
-	b.WriteString("<p class=\"description\">GoPress privacy policy guide content (P7.93).</p>\n")
+	b.WriteString("<p class=\"description\">GoPress privacy policy guide content (P7.143).</p>\n")
 	b.WriteString("</div>\n")
 	// P8.18: privacy-tools.js accordion toggle (vanilla; no jQuery dependency).
 	b.WriteString(privacySettingsAccordionScript())
