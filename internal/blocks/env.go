@@ -44,8 +44,8 @@ type Env struct {
 	SiteTagline func() string
 	SiteLogoURL func() string // custom logo / site_logo attachment URL
 	// SiteLogoID is the custom logo attachment ID for width/height (P5.120).
-	SiteLogoID func() int64
-	HomeURL    func() string
+	SiteLogoID  func() int64
+	HomeURL     func() string
 	IsFrontPage func() bool
 	// IsHome / IsPaged / QueriedObjectID / PageForPostsID refine home-link + site-title current state (P5.93).
 	IsHome          func() bool

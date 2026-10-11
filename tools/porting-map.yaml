@@ -8184,3 +8184,11 @@ wp-login.php#language-switcher-post
   task: P8.37
   api: n/a
   notes: "P8.37 — threshold filter + scaled metadata coverage"
+
+# P10.150: expand diff corpus after P5.120–P8.37.
+- prefix: tests/corpus#p10.150
+  go: tests/corpus
+  status: partial
+  task: P10.150
+  api: n/a
+  notes: "P10.150 — categories_exclude/tax_relation/site-logo block-types/front/login toppers"

@@ -199,3 +199,13 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.150: ajax heartbeat topper.
+- id: ajax-p10150-001-heartbeat
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
