@@ -8,13 +8,16 @@ import (
 
 var reGroupTag = regexp.MustCompile(`(?i)wp-block-group\b`)
 
-// renderGroup renders core/group (P5.58 / P5.107).
+// renderGroup renders core/group (P5.58 / P5.107 / P5.150).
 // Prefers saved markup; synthesizes a layout wrapper from inner blocks when
 // missing; honors tagName; applies layout/align/className/anchor polish on
 // saved and synthesized output.
-// Color/typography/spacing/border land via applySupports on the caller.
+// P5.150: coerce align to wide|full; gradient preset + fontSize + ariaLabel polish.
+// Color/typography/spacing/border land via applySupports on the caller (sanitized attrs).
 func (e *Env) renderGroup(block Block) string {
 	e = e.ensure()
+	attrs := sanitizeGroupBlockAttrs(block.Attrs)
+	block.Attrs = attrs
 	out := e.renderSaved(block)
 	if strings.TrimSpace(out) == "" || !reGroupTag.MatchString(out) {
 		out = synthesizeGroupBlock(e, block)
@@ -22,7 +25,27 @@ func (e *Env) renderGroup(block Block) string {
 	if strings.TrimSpace(out) == "" {
 		return ""
 	}
-	return applyGroupAttrs(out, block.Attrs)
+	return applyGroupAttrs(out, attrs)
+}
+
+// sanitizeGroupBlockAttrs coerces core/group supports.align to the block.json enum (P5.150).
+// Allowed: wide, full. Other align values are dropped before synthesize/polish/supports.
+func sanitizeGroupBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "wide", "full":
+		// keep
+	default:
+		delete(out, "align")
+	}
+	return out
 }
 
 func synthesizeGroupBlock(e *Env, block Block) string {
@@ -85,6 +108,13 @@ func groupClassFromAttrs(attrs map[string]any) string {
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		class += " " + html.EscapeString(cn)
 	}
+	// P5.150: typography.fontSize + color.gradients presets on synthesize.
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		class += " has-" + sanitizeClassToken(fs) + "-font-size"
+	}
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		class += " has-background has-" + sanitizeClassToken(g) + "-gradient-background"
+	}
 	return class
 }
 
@@ -124,7 +154,7 @@ func applyGroupAttrs(htmlFragment string, attrs map[string]any) string {
 			out = addRootClass(out, cls)
 		}
 	}
-	// P5.107: className / anchor polish on saved + synthesized markup.
+	// P5.107 / P5.150: className / anchor / fontSize / gradient / ariaLabel polish.
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		for _, part := range strings.Fields(cn) {
 			out = addRootClass(out, part)
@@ -132,6 +162,19 @@ func applyGroupAttrs(htmlFragment string, attrs map[string]any) string {
 	}
 	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
 		out = ensureRootAttribute(out, "id", anchor)
+	}
+	// P5.150: typography.fontSize preset class (also via applySupports).
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		out = addRootClass(out, "has-"+sanitizeClassToken(fs)+"-font-size")
+	}
+	// P5.150: color.gradients preset → has-{slug}-gradient-background.
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		out = addRootClass(out, "has-background")
+		out = addRootClass(out, "has-"+sanitizeClassToken(g)+"-gradient-background")
+	}
+	// P5.150: supports.ariaLabel → aria-label on root.
+	if al := strings.TrimSpace(attrString(attrs, "ariaLabel")); al != "" {
+		out = ensureRootAttribute(out, "aria-label", al)
 	}
 	// Retag root element when tagName differs from saved markup.
 	tag := groupTagName(attrs)
