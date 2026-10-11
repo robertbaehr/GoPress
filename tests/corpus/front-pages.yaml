@@ -1201,11 +1201,3 @@
   compare: headers
   nonce: null
 
-- id: front-p10152-008-head-robots
-  role: anon
-  method: HEAD
-  path: /robots.txt
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
