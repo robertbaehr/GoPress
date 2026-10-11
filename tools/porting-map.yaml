@@ -9135,3 +9135,11 @@ wp-login.php#language-switcher-post
   task: P10.166
   api: n/a
   notes: "P10.166 — core/pattern + modified_gmt fields + post-navigation + edit-comments/front/login/ajax toppers; 1394 cases"
+
+# P10.167: STATUS/PORTING refresh after P5.128–P10.166.
+- prefix: docs/STATUS.md#p10.167
+  go: docs/STATUS.md
+  status: partial
+  task: P10.167
+  api: n/a
+  notes: "P10.167 — summarize pattern halt, modified_gmt shim, comments screen options, MapDeep unslash, adjacent posts, HasFilterFunc + 1394 corpus"
