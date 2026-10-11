@@ -658,30 +658,6 @@ func ksesBadProtocol(content string) string {
 	return KsesBadProtocol(content, nil)
 }
 
-func ksesBadProtocolOnce(content string) string {
-	// split on first :
-	idx := strings.Index(content, ":")
-	if idx < 0 {
-		return content
-	}
-	scheme := content[:idx]
-	rest := content[idx+1:]
-	// if scheme contains /? skip (WP: preg_match('%/\?%', $content2[0]))
-	if strings.Contains(scheme, "/") || strings.Contains(scheme, "?") {
-		return content
-	}
-	scheme = strings.ToLower(ksesNoNull(strings.Map(func(r rune) rune {
-		if unicode.IsSpace(r) {
-			return -1
-		}
-		return r
-	}, scheme)))
-	if allowedProtocols[scheme] {
-		return scheme + ":" + rest
-	}
-	return rest // strip bad protocol
-}
-
 func ksesNoNull(content string) string {
 	var b strings.Builder
 	b.Grow(len(content))
