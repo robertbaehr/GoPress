@@ -11788,3 +11788,17 @@ wp-login.php#language-switcher-post
   task: P3.145
   api: n/a
   notes: "P3.145 — get_pagenum_link filter, EscURL, adjacent rel HTML"
+
+# P6.60: deepen login_headertitle empty() + unescaped headertext.
+- prefix: wp-login.php#login_headertitle
+  go: internal/login/login.go
+  status: partial
+  task: P6.60
+  api: n/a
+  notes: "P6.60 — PHP empty() for headertitle; echo headertext without esc_html"
+- prefix: wp-login.php#login_headertitle#tests
+  go: internal/login/login_headertitle_p6_60_test.go
+  status: partial
+  task: P6.60
+  api: n/a
+  notes: "P6.60 — empty('0'), whitespace seed, markup pass-through"
