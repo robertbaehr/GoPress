@@ -1295,3 +1295,14 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.212: ajax toppers after attachment-edit stack.
+
+- id: ajax-p10212-002
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

@@ -11802,3 +11802,11 @@ wp-login.php#language-switcher-post
   task: P6.60
   api: n/a
   notes: "P6.60 — empty('0'), whitespace seed, markup pass-through"
+
+# P10.212: expand diff corpus after P5.151–P6.60 stack.
+- prefix: tests/corpus#p10.212
+  go: tests/corpus
+  status: partial
+  task: P10.212
+  api: n/a
+  notes: "P10.212 — cover/attachment/prev-next/headertitle/safe-remote toppers; 2806 cases; headers-safe; drop meta_key/Link/set-cookie-divergent"

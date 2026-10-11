@@ -3548,3 +3548,87 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.212: front toppers after cover/prev-next/headertitle stack — headers-safe.
+
+- id: front-p10212-001
+  role: anon
+  method: GET
+  path: /category/uncategorized/page/2/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10212-003
+  role: anon
+  method: GET
+  path: /?s=cover+attrs
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10212-004
+  role: anon
+  method: GET
+  path: /?s=meta_key
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10212-005
+  role: anon
+  method: GET
+  path: /?s=safe+remote
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10212-006
+  role: anon
+  method: GET
+  path: /?s=headertitle
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10212-008
+  role: anon
+  method: GET
+  path: /2024/page/2/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10212-010
+  role: anon
+  method: GET
+  path: /?s=attachment+edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10212-012
+  role: anon
+  method: GET
+  path: /?s=prev+next+rel
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10212-013
+  role: anon
+  method: GET
+  path: /?s=cover+block
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
