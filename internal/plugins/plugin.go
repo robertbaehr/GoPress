@@ -253,6 +253,11 @@ func IsPluginActive(c *wp.Context, pluginFile string) bool {
 	return false
 }
 
+// IsPluginInactive reports whether pluginFile is not active (is_plugin_inactive, P9.47).
+func IsPluginInactive(c *wp.Context, pluginFile string) bool {
+	return !IsPluginActive(c, pluginFile)
+}
+
 // ActivatePlugin adds pluginFile to active_plugins and runs its Go shim (P9.4).
 // Fires activate_plugin / activate_{plugin} before the option write and
 // activated_plugin afterward (P9.9).
