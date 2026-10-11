@@ -10530,3 +10530,11 @@ wp-login.php#language-switcher-post
   task: P10.190
   api: n/a
   notes: "P10.190 — drop 26 set-cookie-sensitive admin toppers; 2003/2003 match"
+
+# P10.191: STATUS/PORTING refresh after P5.140–P10.190.
+- prefix: docs/STATUS.md#p10.191
+  go: docs/STATUS.md
+  status: partial
+  task: P10.191
+  api: n/a
+  notes: "P10.191 — summarize read-more attrs, tags_exclude integer, browser_nag, KsesStripslashes, wlwmanifest, ApplyFiltersDeprecated + 2003 corpus"
