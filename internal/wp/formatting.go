@@ -473,39 +473,9 @@ func wpSpecialchars(text string, quotes bool) string {
 	return escapeHTML(text, quotes)
 }
 
+// normalizeEntities delegates to KsesNormalizeEntities (P2.134 / wp_kses_normalize_entities).
 func normalizeEntities(content string) string {
-	content = strings.ReplaceAll(content, "&", "&amp;")
-	// Decimal numeric: &amp;#38; → &#038;
-	content = reNormDecEntity.ReplaceAllStringFunc(content, func(m string) string {
-		inner := m[len("&amp;#") : len(m)-1]
-		inner = strings.TrimLeft(inner, "0")
-		if inner == "" {
-			return m
-		}
-		for len(inner) < 3 {
-			inner = "0" + inner
-		}
-		return "&#" + inner + ";"
-	})
-	// Hex numeric: &amp;#x26; → &#x26;
-	content = reNormHexEntity.ReplaceAllStringFunc(content, func(m string) string {
-		idx := strings.IndexAny(m, "xX")
-		hex := m[idx+1 : len(m)-1]
-		hex = strings.TrimLeft(hex, "0")
-		if hex == "" {
-			return m
-		}
-		return "&#x" + hex + ";"
-	})
-	// Named
-	content = reNormNamedEnt.ReplaceAllStringFunc(content, func(m string) string {
-		name := m[len("&amp;") : len(m)-1]
-		if namedEntities[name] {
-			return "&" + name + ";"
-		}
-		return "&amp;" + name + ";"
-	})
-	return content
+	return KsesNormalizeEntities(content, "html")
 }
 
 func escapeHTML(text string, quotes bool) string {

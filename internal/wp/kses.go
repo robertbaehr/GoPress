@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"html"
 	"regexp"
+	"strconv"
 	"strings"
 	"sync"
 	"unicode"
@@ -399,6 +400,8 @@ func ksesRun(content string, allowed AllowedHTML, protocols []string) string {
 	}
 	// Strip unwanted C0 controls (HTML-API path); keep TAB/LF/CR.
 	content = stripKsesControls(content)
+	// P2.134: wp_kses_normalize_entities (legacy wp_kses path).
+	content = KsesNormalizeEntities(content, "html")
 	// P2.130: wp_kses → wp_kses_split.
 	return KsesSplit(content, allowed, protocols)
 }
@@ -730,6 +733,84 @@ func ksesEscapeAttr(v string) string {
 		`'`, `&apos;`,
 	)
 	return replacer.Replace(v)
+}
+
+// KsesNormalizeEntities is wp_kses_normalize_entities (P2.134).
+// Disarms bare &, then restores valid decimal/hex numeric and named entities.
+// context is "html" (default) or "xml" (xml named entities stay encoded as refs;
+// html-only named entities decode to code points via html.UnescapeString).
+func KsesNormalizeEntities(content string, context string) string {
+	if context == "" {
+		context = "html"
+	}
+	loadKsesAllowed()
+	allowed := make(map[string]bool, len(ksesEntities))
+	for _, name := range ksesEntities {
+		allowed[name] = true
+	}
+	// XML predefined named entities (wp $allowedxmlentitynames).
+	xmlNamed := map[string]bool{
+		"amp": true, "lt": true, "gt": true, "apos": true, "quot": true,
+	}
+
+	content = strings.ReplaceAll(content, "&", "&amp;")
+	// Decimal numeric: &amp;#38; → &#038; when valid_unicode.
+	content = reNormDecEntity.ReplaceAllStringFunc(content, func(m string) string {
+		inner := m[len("&amp;#") : len(m)-1]
+		trimmed := strings.TrimLeft(inner, "0")
+		if trimmed == "" {
+			return m
+		}
+		n, err := strconv.Atoi(trimmed)
+		if err != nil || !validUnicode(n) {
+			return "&amp;#" + inner + ";"
+		}
+		padded := trimmed
+		for len(padded) < 3 {
+			padded = "0" + padded
+		}
+		return "&#" + padded + ";"
+	})
+	// Hex numeric: &amp;#x26; → &#x26; when valid_unicode.
+	content = reNormHexEntity.ReplaceAllStringFunc(content, func(m string) string {
+		idx := strings.IndexAny(m, "xX")
+		hex := m[idx+1 : len(m)-1]
+		trimmed := strings.TrimLeft(hex, "0")
+		if trimmed == "" {
+			return m
+		}
+		n64, err := strconv.ParseInt(trimmed, 16, 64)
+		if err != nil || !validUnicode(int(n64)) {
+			return "&amp;#x" + hex + ";"
+		}
+		return "&#x" + trimmed + ";"
+	})
+	// Named entities.
+	content = reNormNamedEnt.ReplaceAllStringFunc(content, func(m string) string {
+		name := m[len("&amp;") : len(m)-1]
+		if context == "xml" {
+			if xmlNamed[name] {
+				return "&" + name + ";"
+			}
+			if allowed[name] {
+				return html.UnescapeString("&" + name + ";")
+			}
+			return "&amp;" + name + ";"
+		}
+		if allowed[name] {
+			return "&" + name + ";"
+		}
+		return "&amp;" + name + ";"
+	})
+	return content
+}
+
+// validUnicode mirrors WP valid_unicode() for numeric character references (P2.134).
+func validUnicode(i int) bool {
+	return i == 0x9 || i == 0xA || i == 0xD ||
+		(i >= 0x20 && i <= 0xD7FF) ||
+		(i >= 0xE000 && i <= 0xFFFD) ||
+		(i >= 0x10000 && i <= 0x10FFFF)
 }
 
 // KsesNoNullOptions mirrors the $options array for wp_kses_no_null (P2.133).
