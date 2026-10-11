@@ -70,10 +70,10 @@ func TestQueryOrderByMetaValueNumP4175(t *testing.T) {
 func TestQueryOrderByMetaValueMissingKeyP4175(t *testing.T) {
 	c := testBootQuery(t)
 	posts, err := wp.GetPosts(c, wp.QueryArgs{
-		PostType:   "post",
-		PostStatus: "publish",
-		OrderBy:    "meta_value",
-		Order:      "DESC",
+		PostType:     "post",
+		PostStatus:   "publish",
+		OrderBy:      "meta_value",
+		Order:        "DESC",
 		PostsPerPage: 2,
 	})
 	if err != nil {
