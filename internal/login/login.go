@@ -1210,17 +1210,11 @@ func writeLoginHead(b *strings.Builder, c *wp.Context, home, blogname, title, ac
 		b.WriteString("\t\t<style>html{background-color: transparent;}</style>\n")
 	}
 	b.WriteString("\t\t</head>\n")
-	b.WriteString("\t<body class=\"login no-js login-action-")
-	b.WriteString(html.EscapeString(action))
-	for _, cls := range extraClasses {
-		cls = strings.TrimSpace(cls)
-		if cls == "" {
-			continue
-		}
-		b.WriteByte(' ')
-		b.WriteString(html.EscapeString(cls))
-	}
-	b.WriteString(" wp-core-ui admin-color-modern locale-en-us\">\n")
+	// P6.56: build classes then login_body_class filter (WP login_header).
+	classes := loginBodyClasses(c, action, extraClasses...)
+	b.WriteString("\t<body class=\"login no-js ")
+	b.WriteString(html.EscapeString(strings.Join(classes, " ")))
+	b.WriteString("\">\n")
 	b.WriteString("\t<script>\n")
 	b.WriteString("document.body.className = document.body.className.replace('no-js','js');\n")
 	b.WriteString("</script>\n\n")
@@ -1228,6 +1222,44 @@ func writeLoginHead(b *strings.Builder, c *wp.Context, home, blogname, title, ac
 	if c != nil && c.Hooks != nil {
 		c.Hooks.DoAction("login_header")
 	}
+}
+
+// loginBodyClasses builds login page body classes and runs login_body_class (P6.56).
+func loginBodyClasses(c *wp.Context, action string, extraClasses ...string) []string {
+	classes := []string{
+		"login-action-" + strings.TrimSpace(action),
+		"wp-core-ui",
+		"admin-color-modern",
+	}
+	for _, cls := range extraClasses {
+		cls = strings.TrimSpace(cls)
+		if cls == "" {
+			continue
+		}
+		classes = append(classes, cls)
+	}
+	classes = append(classes, "locale-en-us")
+	if c != nil && c.Hooks != nil {
+		filtered := c.Hooks.ApplyFilters("login_body_class", classes, action)
+		switch v := filtered.(type) {
+		case []string:
+			classes = v
+		case []any:
+			out := make([]string, 0, len(v))
+			for _, item := range v {
+				if s, ok := item.(string); ok {
+					s = strings.TrimSpace(s)
+					if s != "" {
+						out = append(out, s)
+					}
+				}
+			}
+			if len(out) > 0 {
+				classes = out
+			}
+		}
+	}
+	return classes
 }
 
 // writeLoginLogo emits the login logo h1 with login_headerurl / login_headertext (P6.55).
