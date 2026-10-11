@@ -4637,19 +4637,16 @@ func (h *Handler) serveSiteHealth(w http.ResponseWriter, r *http.Request, c *wp.
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveSiteHealthInfo is the Site Health → Info (debug) tab stub (P7.44 / P7.45 / P7.92).
+// serveSiteHealthInfo is the Site Health → Info (debug) tab stub (P7.44 / P7.45 / P7.92 / P7.148).
+// P7.148: WP_Debug_Data-shaped accordion sections + copy clipboard text.
 func (h *Handler) serveSiteHealthInfo(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	if !canViewSiteHealthAdmin(c) {
 		http.Error(w, "Sorry, you are not allowed to access site health information.\n", http.StatusForbidden)
 		return
 	}
 	blogname := optionString(c, "blogname", "GoPress")
-	version := optionString(c, "db_version", "")
-	stylesheet := ""
-	if c != nil {
-		stylesheet = wp.ActiveStylesheet(c)
-	}
-	home := optionString(c, "home", optionString(c, "siteurl", ""))
+	sections := siteHealthDebugSections(c)
+	clipboard := siteHealthDebugClipboard(sections)
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>Site Health - Info &lsaquo; ")
@@ -4664,31 +4661,186 @@ func (h *Handler) serveSiteHealthInfo(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString("<h2>Site Health Info</h2>\n")
 	b.WriteString("<p>This page can show debugging information about your GoPress configuration. For status checks, see the ")
 	b.WriteString("<a href=\"site-health.php\">Site Health Status</a> page.</p>\n")
+	b.WriteString("<p>If you want to export a handy list of all the information on this page, you can use the button below to copy it to the clipboard.</p>\n")
 	b.WriteString("<div class=\"site-health-copy-buttons\">\n")
-	b.WriteString("<button type=\"button\" class=\"button button-primary copy-button\" data-clipboard-text=\"\">Copy site info to clipboard</button>\n")
-	b.WriteString("<span class=\"copy-success hidden\" aria-hidden=\"true\">Copied!</span>\n")
-	b.WriteString("</div>\n")
-	b.WriteString("<div id=\"health-check-debug\" class=\"health-check-accordion\" role=\"presentation\">\n")
-	b.WriteString("<h3 class=\"health-check-accordion-heading\">WordPress</h3>\n")
-	b.WriteString("<div class=\"health-check-accordion-panel\"><table class=\"widefat striped health-check-table\" role=\"presentation\">\n")
-	b.WriteString("<tbody>\n")
-	b.WriteString("<tr><td>Site Title</td><td>")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString("</td></tr>\n")
-	b.WriteString("<tr><td>Site URL</td><td>")
-	b.WriteString(html.EscapeString(home))
-	b.WriteString("</td></tr>\n")
-	b.WriteString("<tr><td>Active Theme</td><td>")
-	b.WriteString(html.EscapeString(stylesheet))
-	b.WriteString("</td></tr>\n")
-	b.WriteString("<tr><td>Database Version</td><td>")
-	b.WriteString(html.EscapeString(version))
-	b.WriteString("</td></tr>\n")
-	b.WriteString("<tr><td>Runtime</td><td>GoPress (Go)</td></tr>\n")
-	b.WriteString("</tbody></table></div>\n")
-	b.WriteString("<p class=\"description\">GoPress site-health info stub (P7.92).</p>\n")
+	b.WriteString("<div class=\"copy-button-wrapper\">\n")
+	b.WriteString("<button type=\"button\" class=\"button copy-button\" data-clipboard-text=\"")
+	b.WriteString(html.EscapeString(clipboard))
+	b.WriteString("\">Copy site info to clipboard</button>\n")
+	b.WriteString("<span class=\"success hidden\" aria-hidden=\"true\">Copied!</span>\n")
+	b.WriteString("</div>\n</div>\n")
+	b.WriteString("<div id=\"health-check-debug\" class=\"health-check-accordion\">\n")
+	for _, sec := range sections {
+		b.WriteString("<h3 class=\"health-check-accordion-heading\">\n")
+		b.WriteString(`<button id="health-check-section-`)
+		b.WriteString(html.EscapeString(sec.slug))
+		b.WriteString(`" aria-expanded="false" class="health-check-accordion-trigger" aria-controls="health-check-accordion-block-`)
+		b.WriteString(html.EscapeString(sec.slug))
+		b.WriteString(`" type="button">`)
+		b.WriteString(`<span class="title">`)
+		b.WriteString(html.EscapeString(sec.label))
+		if sec.showCount {
+			b.WriteString(" (")
+			b.WriteString(strconv.Itoa(len(sec.fields)))
+			b.WriteString(")")
+		}
+		b.WriteString(`</span><span class="icon"></span></button>`)
+		b.WriteString("\n</h3>\n")
+		b.WriteString(`<div id="health-check-accordion-block-`)
+		b.WriteString(html.EscapeString(sec.slug))
+		b.WriteString(`" class="health-check-accordion-panel" hidden="hidden">`)
+		b.WriteString("\n")
+		b.WriteString("<table class=\"widefat striped health-check-table\"><tbody>\n")
+		for _, f := range sec.fields {
+			b.WriteString("<tr><th scope=\"row\">")
+			b.WriteString(html.EscapeString(f.label))
+			b.WriteString("</th><td>")
+			b.WriteString(html.EscapeString(f.value))
+			b.WriteString("</td></tr>\n")
+		}
+		b.WriteString("</tbody></table>\n</div>\n")
+	}
+	b.WriteString("<p class=\"description\">GoPress site-health info stub (P7.148).</p>\n")
 	b.WriteString("</div>\n</div>\n</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
+}
+
+type siteHealthDebugField struct {
+	label string
+	value string
+	debug string
+}
+
+type siteHealthDebugSection struct {
+	slug      string
+	label     string
+	showCount bool
+	fields    []siteHealthDebugField
+}
+
+// siteHealthDebugSections builds WP_Debug_Data-shaped Info sections (P7.148).
+func siteHealthDebugSections(c *wp.Context) []siteHealthDebugSection {
+	blogname := optionString(c, "blogname", "GoPress")
+	home := optionString(c, "home", optionString(c, "siteurl", ""))
+	siteurl := optionString(c, "siteurl", home)
+	dbVersion := optionString(c, "db_version", "")
+	stylesheet := ""
+	if c != nil {
+		stylesheet = wp.ActiveStylesheet(c)
+	}
+	permalink := optionString(c, "permalink_structure", "")
+	if permalink == "" {
+		permalink = "No permalink structure set"
+	}
+	https := "No"
+	if wp.IsSSL(c) {
+		https = "Yes"
+	}
+	usersCanRegister := "No"
+	if optionString(c, "users_can_register", "0") == "1" {
+		usersCanRegister = "Yes"
+	}
+	blogPublic := optionString(c, "blog_public", "1")
+	discourage := "No"
+	if blogPublic == "0" {
+		discourage = "Yes"
+	}
+	env := wp.GetEnvironmentType(c)
+	tz := wp.TimezoneString(c)
+	if tz == "" {
+		tz = "UTC"
+	}
+	locale := optionString(c, "WPLANG", "")
+	if locale == "" {
+		locale = "en_US"
+	}
+
+	return []siteHealthDebugSection{
+		{
+			slug:  "wp-core",
+			label: "WordPress",
+			fields: []siteHealthDebugField{
+				{label: "Version", value: wp.Version, debug: wp.Version},
+				{label: "Site Language", value: locale, debug: locale},
+				{label: "Timezone", value: tz, debug: tz},
+				{label: "Home URL", value: home, debug: home},
+				{label: "Site URL", value: siteurl, debug: siteurl},
+				{label: "Permalink structure", value: permalink, debug: permalink},
+				{label: "Is this site using HTTPS?", value: https, debug: https},
+				{label: "Is this a multisite?", value: "No", debug: "false"},
+				{label: "Can anyone register on this site?", value: usersCanRegister, debug: usersCanRegister},
+				{label: "Is this site discouraging search engines?", value: discourage, debug: discourage},
+				{label: "Default comment status", value: optionString(c, "default_comment_status", "open"), debug: optionString(c, "default_comment_status", "open")},
+				{label: "Environment type", value: env, debug: env},
+				{label: "Site Title", value: blogname, debug: blogname},
+				{label: "Runtime", value: "GoPress (Go)", debug: "GoPress"},
+			},
+		},
+		{
+			slug:  "wp-server",
+			label: "Server",
+			fields: []siteHealthDebugField{
+				{label: "Server architecture", value: "GoPress runtime", debug: "gopress"},
+				{label: "Web server", value: "GoPress HTTP", debug: "gopress"},
+				{label: "PHP version", value: "n/a (Go)", debug: "n/a"},
+				{label: "PHP SAPI", value: "n/a (Go)", debug: "n/a"},
+				{label: "GoPress version", value: wp.Version, debug: wp.Version},
+			},
+		},
+		{
+			slug:  "wp-database",
+			label: "Database",
+			fields: []siteHealthDebugField{
+				{label: "Extension", value: "mysql", debug: "mysql"},
+				{label: "Server version", value: "MySQL (fixture)", debug: "mysql"},
+				{label: "Database version", value: dbVersion, debug: dbVersion},
+				{label: "Client version", value: "Go database/sql", debug: "go"},
+			},
+		},
+		{
+			slug:      "wp-active-theme",
+			label:     "Active Theme",
+			showCount: true,
+			fields: []siteHealthDebugField{
+				{label: "Name", value: stylesheet, debug: stylesheet},
+				{label: "Version", value: "n/a", debug: "n/a"},
+				{label: "Author", value: "GoPress", debug: "GoPress"},
+				{label: "Theme directory", value: "wp-content/themes/" + stylesheet, debug: stylesheet},
+			},
+		},
+		{
+			slug:  "wp-constants",
+			label: "WordPress Constants",
+			fields: []siteHealthDebugField{
+				{label: "ABSPATH", value: "(GoPress root)", debug: "gopress"},
+				{label: "WP_DEBUG", value: "Enabled", debug: "true"},
+				{label: "WP_ENVIRONMENT_TYPE", value: env, debug: env},
+				{label: "DB_CHARSET", value: optionString(c, "DB_CHARSET", "utf8mb4"), debug: "utf8mb4"},
+			},
+		},
+	}
+}
+
+// siteHealthDebugClipboard formats debug sections like WP_Debug_Data::format(..., 'debug') (P7.148).
+func siteHealthDebugClipboard(sections []siteHealthDebugSection) string {
+	var b strings.Builder
+	for _, sec := range sections {
+		b.WriteString("### ")
+		b.WriteString(sec.label)
+		b.WriteString(" ###\n\n")
+		for _, f := range sec.fields {
+			debug := f.debug
+			if debug == "" {
+				debug = f.value
+			}
+			b.WriteString(f.label)
+			b.WriteString(": ")
+			b.WriteString(debug)
+			b.WriteByte('\n')
+		}
+		b.WriteByte('\n')
+	}
+	return b.String()
 }
 
 type siteHealthAccordionItem struct {
