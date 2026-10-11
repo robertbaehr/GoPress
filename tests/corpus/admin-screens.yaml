@@ -322,10 +322,10 @@
   compare: headers
   nonce: null
 
-- id: admin-p10154-002-upload
+- id: admin-p10154-002-plugins
   role: admin
   method: GET
-  path: /wp-admin/upload.php
+  path: /wp-admin/plugins.php
   headers: {}
   body: null
   compare: headers
