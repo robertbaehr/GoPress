@@ -10082,3 +10082,17 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P2.132 — https short-circuit + javascript strip + custom allowlist"
 
+# P3.130: wp_shortlink_header.
+- prefix: wp-includes/link-template.php#wp_shortlink_header
+  go: internal/wp/shortlink.go
+  status: partial
+  task: P3.130
+  api: wp_shortlink_header
+  notes: "P3.130 — ShortlinkHeader via GetShortlink(0, query); singular Link emit"
+- prefix: wp-includes/link-template.php#wp_shortlink_header#tests
+  go: internal/wp/shortlink_header_p3_130_test.go
+  status: partial
+  task: P3.130
+  api: n/a
+  notes: "P3.130 — query context header + pre_get_shortlink filter"
+
