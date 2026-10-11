@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P4.177: MetaType UNSIGNED on orderby=meta_value; meta_value_num ignores MetaType.
+- prefix: wp-includes/class-wp-query.php#orderby_meta_unsigned
+  go: internal/wp/query.go
+  status: partial
+  task: P4.177
+  api: n/a
+  notes: "P4.177 — UNSIGNED CAST on orderby=meta_value; meta_value_num ignores MetaType"
+- prefix: wp-includes/class-wp-query.php#orderby_meta_unsigned#tests
+  go: internal/wp/query_orderby_meta_unsigned_p4_177_test.go
+  status: partial
+  task: P4.177
+  api: n/a
+  notes: "P4.177 — UNSIGNED numeric sort + meta_value_num vs CHAR"
+
 # P7.163: export.php pagenow chrome.
 - prefix: wp-admin/export.php#pagenow
   go: internal/admin/export_wxr.go
