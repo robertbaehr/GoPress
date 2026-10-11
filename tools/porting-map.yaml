@@ -4030,6 +4030,21 @@ wp-login.php#language-switcher-post
   api: internal
   notes: "P5.55 — renderMediaText synthesize from mediaUrl/mediaId + featured image in figure"
 
+# P5.109: deepen core/media-text className/anchor/align + href wrap.
+- prefix: wp-includes/blocks/media-text.php#p5-109
+  go: internal/blocks/media_text.go
+  status: partial
+  task: P5.109
+  api: internal
+  notes: "P5.109 — className/anchor/align polish; href/linkTarget/rel wrap media figure"
+
+- prefix: internal/blocks/media_text_test.go#p5-109
+  go: internal/blocks/media_text_test.go
+  status: partial
+  task: P5.109
+  api: n/a
+  notes: "P5.109 — unit coverage for className/anchor/align and href wrap"
+
 # P5.56: polish core/buttons + core/button (empty, synthesize, width).
 - prefix: wp-includes/blocks/button.php
   go: internal/blocks/button.go

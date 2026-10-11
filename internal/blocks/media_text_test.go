@@ -100,3 +100,41 @@ func TestMediaTextFeaturedImageInjection(t *testing.T) {
 		t.Fatalf("featured image should be inside media figure: %q", out)
 	}
 }
+
+func TestMediaTextClassNameAnchorAlign(t *testing.T) {
+	src := `<!-- wp:media-text {"mediaUrl":"https://example.com/a.jpg","mediaType":"image","className":"hero-mt","anchor":"mt-1","align":"wide"} -->
+<!-- wp:paragraph --><p>Copy</p><!-- /wp:paragraph -->
+<!-- /wp:media-text -->`
+	out := blocks.Render(src)
+	if !strings.Contains(out, "hero-mt") {
+		t.Fatalf("expected className: %q", out)
+	}
+	if !strings.Contains(out, `id="mt-1"`) {
+		t.Fatalf("expected anchor id: %q", out)
+	}
+	if !strings.Contains(out, "alignwide") {
+		t.Fatalf("expected alignwide: %q", out)
+	}
+}
+
+func TestMediaTextHrefWrap(t *testing.T) {
+	src := `<!-- wp:media-text {"mediaUrl":"https://example.com/a.jpg","mediaType":"image","href":"https://example.com/more","linkTarget":"_blank","rel":"noopener"} -->
+<!-- wp:paragraph --><p>Copy</p><!-- /wp:paragraph -->
+<!-- /wp:media-text -->`
+	out := blocks.Render(src)
+	if !strings.Contains(out, `href="https://example.com/more"`) {
+		t.Fatalf("expected media href: %q", out)
+	}
+	if !strings.Contains(out, `target="_blank"`) {
+		t.Fatalf("expected linkTarget: %q", out)
+	}
+	if !strings.Contains(out, `rel="noopener"`) {
+		t.Fatalf("expected rel: %q", out)
+	}
+	a := strings.Index(out, `<a href="https://example.com/more"`)
+	img := strings.Index(out, `src="https://example.com/a.jpg"`)
+	aClose := strings.Index(out, `</a>`)
+	if a < 0 || img < 0 || aClose < 0 || !(a < img && img < aClose) {
+		t.Fatalf("img should be inside media link: %q", out)
+	}
+}
