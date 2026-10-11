@@ -7531,3 +7531,11 @@ wp-login.php#language-switcher-post
   task: P10.137
   api: n/a
   notes: "P10.137 — summarize image, comments query, plugin-install, html_split, prev/next ?s=, admin-email confirm, 771 corpus"
+
+# P10.138: expand diff corpus after P5.114–P9.25 deepen stack.
+- prefix: tests/corpus#p10-138
+  go: tests/corpus
+  status: partial
+  task: P10.138
+  api: n/a
+  notes: "P10.138 — audio/video/file block-types, comments-pagination, meta _fields, cpage headers; +69 cases (840 total)"

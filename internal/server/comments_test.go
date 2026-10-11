@@ -13,6 +13,8 @@ import (
 
 func TestFrontSingularRendersComments(t *testing.T) {
 	c := testBoot(t)
+	// Ensure prior paging tests did not leave page_comments enabled on the shared fixture DB.
+	_, _ = c.Options.UpdateOption("page_comments", "0", "yes")
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
 	req := httptest.NewRequest(http.MethodGet, "/?p=1", nil)
 	rec := httptest.NewRecorder()
@@ -100,10 +102,19 @@ func TestCommentsPostMethodNotAllowed(t *testing.T) {
 func TestFrontPagedComments(t *testing.T) {
 	// P3.108: page_comments + cpage slices block comment-template roots.
 	c := testBoot(t)
-	prevPage, _ := c.Options.GetOption("page_comments", "0").(string)
-	prevPer, _ := c.Options.GetOption("comments_per_page", "50").(string)
-	prevDef, _ := c.Options.GetOption("default_comments_page", "newest").(string)
+	prevPage := fmt.Sprint(c.Options.GetOption("page_comments", "0"))
+	prevPer := fmt.Sprint(c.Options.GetOption("comments_per_page", "50"))
+	prevDef := fmt.Sprint(c.Options.GetOption("default_comments_page", "newest"))
 	t.Cleanup(func() {
+		if prevPage == "" || prevPage == "<nil>" {
+			prevPage = "0"
+		}
+		if prevPer == "" || prevPer == "<nil>" {
+			prevPer = "50"
+		}
+		if prevDef == "" || prevDef == "<nil>" {
+			prevDef = "newest"
+		}
 		_, _ = c.Options.UpdateOption("page_comments", prevPage, "yes")
 		_, _ = c.Options.UpdateOption("comments_per_page", prevPer, "yes")
 		_, _ = c.Options.UpdateOption("default_comments_page", prevDef, "yes")
