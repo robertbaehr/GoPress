@@ -7,6 +7,14 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P10.227: STATUS/PORTING refresh after P6.69–P9.45 stack.
+- prefix: docs/STATUS.md#p10-227
+  go: docs/STATUS.md
+  status: partial
+  task: P10.227
+  api: n/a
+  notes: "P10.227 — summarize lostpassword_form, GetServerProtocol, edit comment link, GetAttachedMedia, calendar align, privacy-policy-guide chrome, DATETIME orderby, PluginBasename"
+
 # P9.45: plugin_basename / plugin_dir_path / wp_register_plugin_realpath.
 - prefix: wp-includes/plugin.php#plugin_basename
   go: internal/plugins/basename.go
