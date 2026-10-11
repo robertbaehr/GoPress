@@ -4805,6 +4805,14 @@ func (h *Handler) serveTools(w http.ResponseWriter, r *http.Request, c *wp.Conte
 		b.WriteString("<a href=\"import.php\">Categories and Tags Converter</a> available from the Import screen.</p>\n")
 		b.WriteString("</div>\n")
 	}
+	// P7.147: Import card when user can import (tools.php deepen).
+	if canImport {
+		b.WriteString("<div class=\"card\">\n")
+		b.WriteString("<h2 class=\"title\">Import</h2>\n")
+		b.WriteString("<p>Import content from another blogging system or WordPress export file. ")
+		b.WriteString("<a href=\"import.php\">Open the Import screen</a> to choose an importer.</p>\n")
+		b.WriteString("</div>\n")
+	}
 	// P7.146: Export card when user can export (tools.php deepen).
 	canExport := c != nil && c.CurrentUser != nil && c.UserCan(c.CurrentUser, "export")
 	if canExport {

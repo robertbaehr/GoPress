@@ -11,7 +11,7 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// serveImport is the Tools → Import screen with a WordPress WXR upload stub (P7.54 / P7.91).
+// serveImport is the Tools → Import screen with a WordPress WXR upload stub (P7.54 / P7.91 / P7.147).
 func (h *Handler) serveImport(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	// P7.91: import capability gate (mirrors import.php wp_die).
 	if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "import") {
@@ -51,11 +51,28 @@ func (h *Handler) serveImport(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	b.WriteString("<table class=\"widefat importers striped\">\n")
 	b.WriteString("<thead><tr><th scope=\"col\">Importer</th><th scope=\"col\">Description</th></tr></thead>\n")
 	b.WriteString("<tbody>\n")
+	// P7.147: WordPress importer first (run locally), then popular fallback list.
 	b.WriteString("<tr class=\"importer-item\">\n")
 	b.WriteString("<td class=\"import-system row-title\"><a href=\"#wordpress-importer\" aria-label=\"Run WordPress\"><strong>WordPress</strong></a> ")
 	b.WriteString("<span class=\"importer-action\"><a href=\"#wordpress-importer\">Run Importer</a></span></td>\n")
 	b.WriteString("<td class=\"desc\"><span class=\"importer-desc\">Import posts, pages, comments, custom fields, categories, and tags from a WordPress export file.</span></td>\n")
 	b.WriteString("</tr>\n")
+	for _, imp := range popularImportersFallback() {
+		if imp.id == "wordpress" {
+			continue
+		}
+		b.WriteString("<tr class=\"importer-item\">\n")
+		b.WriteString("<td class=\"import-system row-title\"><strong>")
+		b.WriteString(html.EscapeString(imp.name))
+		b.WriteString("</strong> ")
+		b.WriteString("<span class=\"importer-action\"><span class=\"importer-install\">Install the ")
+		b.WriteString(html.EscapeString(imp.name))
+		b.WriteString(" importer from the WordPress.org plugin directory.</span></span></td>\n")
+		b.WriteString("<td class=\"desc\"><span class=\"importer-desc\">")
+		b.WriteString(html.EscapeString(imp.description))
+		b.WriteString("</span></td>\n")
+		b.WriteString("</tr>\n")
+	}
 	b.WriteString("</tbody>\n</table>\n")
 	b.WriteString("<div class=\"wp-upload-form\" id=\"wordpress-importer\">\n")
 	b.WriteString("<h2>Import WordPress</h2>\n")
@@ -69,6 +86,26 @@ func (h *Handler) serveImport(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	b.WriteString("</form>\n</div>\n")
 	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
+}
+
+// popularImporter is a fallback popular-importer row (wp_get_popular_importers, P7.147).
+type popularImporter struct {
+	id          string
+	name        string
+	description string
+}
+
+// popularImportersFallback mirrors the offline fallback in wp_get_popular_importers().
+func popularImportersFallback() []popularImporter {
+	return []popularImporter{
+		{id: "blogger", name: "Blogger", description: "Import posts, comments, and users from a Blogger blog."},
+		{id: "wpcat2tag", name: "Categories and Tags Converter", description: "Convert existing categories to tags or tags to categories, selectively."},
+		{id: "livejournal", name: "LiveJournal", description: "Import posts from LiveJournal using their API."},
+		{id: "movabletype", name: "Movable Type and TypePad", description: "Import posts and comments from a Movable Type or TypePad blog."},
+		{id: "rss", name: "RSS", description: "Import posts from an RSS feed."},
+		{id: "tumblr", name: "Tumblr", description: "Import posts & media from Tumblr using their API."},
+		{id: "wordpress", name: "WordPress", description: "Import posts, pages, comments, custom fields, categories, and tags from a WordPress export file."},
+	}
 }
 
 func (h *Handler) handleWXRUpload(r *http.Request) (note, noteClass string) {
@@ -96,6 +133,16 @@ func (h *Handler) handleWXRUpload(r *http.Request) (note, noteClass string) {
 	msg := "Parsed WXR " + html.EscapeString(name) +
 		": version " + html.EscapeString(result.Version) +
 		", " + strconv.Itoa(result.Items) + " item(s)"
+	// P7.147: report category/tag/author counts from WXR channel.
+	if result.Categories > 0 {
+		msg += ", " + strconv.Itoa(result.Categories) + " categor" + pluralIES(result.Categories)
+	}
+	if result.Tags > 0 {
+		msg += ", " + strconv.Itoa(result.Tags) + " tag" + pluralS(result.Tags)
+	}
+	if result.Authors > 0 {
+		msg += ", " + strconv.Itoa(result.Authors) + " author" + pluralS(result.Authors)
+	}
 	if strings.TrimSpace(result.Title) != "" {
 		msg += ", site “" + html.EscapeString(strings.TrimSpace(result.Title)) + "”"
 	}
@@ -103,10 +150,27 @@ func (h *Handler) handleWXRUpload(r *http.Request) (note, noteClass string) {
 	return msg, "notice notice-success"
 }
 
+func pluralS(n int) string {
+	if n == 1 {
+		return ""
+	}
+	return "s"
+}
+
+func pluralIES(n int) string {
+	if n == 1 {
+		return "y"
+	}
+	return "ies"
+}
+
 type wxrParseResult struct {
-	Version string
-	Items   int
-	Title   string
+	Version    string
+	Items      int
+	Title      string
+	Categories int
+	Tags       int
+	Authors    int
 }
 
 // parseMinimalWXR validates a WordPress eXtended RSS document and counts items.
@@ -126,7 +190,16 @@ func parseMinimalWXR(data []byte) (*wxrParseResult, error) {
 	type wxrChannel struct {
 		Title      string `xml:"title"`
 		WXRVersion string `xml:"http://wordpress.org/export/1.2/ wxr_version"`
-		Items      []struct {
+		Authors    []struct {
+			Login string `xml:"http://wordpress.org/export/1.2/ author_login"`
+		} `xml:"http://wordpress.org/export/1.2/ author"`
+		Categories []struct {
+			NiceName string `xml:"http://wordpress.org/export/1.2/ category_nicename"`
+		} `xml:"http://wordpress.org/export/1.2/ category"`
+		Tags []struct {
+			Slug string `xml:"http://wordpress.org/export/1.2/ tag_slug"`
+		} `xml:"http://wordpress.org/export/1.2/ tag"`
+		Items []struct {
 			Title string `xml:"title"`
 		} `xml:"item"`
 	}
@@ -143,7 +216,14 @@ func parseMinimalWXR(data []byte) (*wxrParseResult, error) {
 			return nil, errWXR("invalid XML: " + err.Error())
 		}
 		items := strings.Count(lower, "<item>")
-		return &wxrParseResult{Version: strings.TrimSpace(ver), Items: items, Title: extractBetween(raw, "<title>", "</title>")}, nil
+		return &wxrParseResult{
+			Version:    strings.TrimSpace(ver),
+			Items:      items,
+			Title:      extractBetween(raw, "<title>", "</title>"),
+			Categories: strings.Count(lower, "<wp:category>"),
+			Tags:       strings.Count(lower, "<wp:tag>"),
+			Authors:    strings.Count(lower, "<wp:author>"),
+		}, nil
 	}
 	ver := strings.TrimSpace(doc.Channel.WXRVersion)
 	if ver == "" {
@@ -152,10 +232,26 @@ func parseMinimalWXR(data []byte) (*wxrParseResult, error) {
 	if ver == "" {
 		return nil, errWXR("missing wp:wxr_version")
 	}
+	cats := len(doc.Channel.Categories)
+	tags := len(doc.Channel.Tags)
+	authors := len(doc.Channel.Authors)
+	// Fallback counts when namespace decode misses channel children.
+	if cats == 0 {
+		cats = strings.Count(lower, "<wp:category>")
+	}
+	if tags == 0 {
+		tags = strings.Count(lower, "<wp:tag>")
+	}
+	if authors == 0 {
+		authors = strings.Count(lower, "<wp:author>")
+	}
 	return &wxrParseResult{
-		Version: ver,
-		Items:   len(doc.Channel.Items),
-		Title:   strings.TrimSpace(doc.Channel.Title),
+		Version:    ver,
+		Items:      len(doc.Channel.Items),
+		Title:      strings.TrimSpace(doc.Channel.Title),
+		Categories: cats,
+		Tags:       tags,
+		Authors:    authors,
 	}, nil
 }
 
