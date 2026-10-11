@@ -12040,3 +12040,17 @@ wp-login.php#language-switcher-post
   task: P10.216
   api: n/a
   notes: "P10.216 — gallery/meta_compare/custom-header/response-code/feed-link/image-src toppers; 3162 cases; headers-safe; drop set-cookie/Link/status-divergent"
+
+# P5.154: deepen core/image aspectRatio/scale/title/isDecorative; coerce align enum.
+- prefix: wp-includes/blocks/image.php#attrs
+  go: internal/blocks/gallery_image.go
+  status: partial
+  task: P5.154
+  api: n/a
+  notes: "P5.154 — coerce align left|center|right|wide|full; drop none/bogus; aspectRatio/scale/title/isDecorative polish; sanitize before applySupports"
+- prefix: wp-includes/blocks/image.php#attrs#tests
+  go: internal/blocks/image_attrs_p5_154_test.go
+  status: partial
+  task: P5.154
+  api: n/a
+  notes: "P5.154 — align coerce, saved aspect/scale/decorative coverage"

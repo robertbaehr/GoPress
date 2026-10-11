@@ -64,7 +64,9 @@ func (e *Env) RenderBlock(block Block) string {
 		html = addRootClass(html, "is-layout-flow")
 		out = addRootClass(html, "wp-block-terms-query-is-layout-flow")
 	case "core/image":
+		// P5.154: coerce align enum before applySupports; aspectRatio/scale/title polish.
 		out = e.renderImage(block)
+		return applySupports(out, sanitizeImageBlockAttrs(block.Attrs), name)
 	case "core/gallery":
 		// P5.153: coerce align enum before applySupports; gradient polish.
 		out = e.renderGallery(block)
