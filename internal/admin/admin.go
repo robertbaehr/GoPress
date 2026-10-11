@@ -3164,6 +3164,10 @@ func (h *Handler) serveMediaUpload(w http.ResponseWriter, r *http.Request, c *wp
 }
 
 func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	// P7.129: Screen Options edit_comments_per_page (before bulk so Apply is not treated as bulk).
+	if handleEditCommentsScreenOptions(w, r, c) {
+		return
+	}
 	// P7.43 / P7.83: bulk actions (approve / unapprove / spam / unspam / trash / untrash / delete).
 	if r.Method == http.MethodPost {
 		if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "moderate_comments") {
@@ -3246,13 +3250,16 @@ func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *w
 	commentStatus := parseEditCommentStatus(r)
 	// P7.107: list-table search box (?s=) filters author/content/post title.
 	search := strings.TrimSpace(r.URL.Query().Get("s"))
-	items, err := recentComments(c, 50, commentStatus, search)
+	// P7.129: Screen Options pagination (edit_comments_per_page).
+	perPage := wp.EditCommentsPerPage(c, commentStatus)
+	items, err := recentComments(c, perPage, commentStatus, search)
 	if err != nil {
 		http.Error(w, "comments: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
 	statusCounts := countCommentsByStatus(c)
 	var b strings.Builder
+	writeEditCommentsScreenOptions(&b, c, perPage)
 	b.WriteString("<h1>Comments</h1>\n")
 	if n := r.URL.Query().Get("approved"); n != "" {
 		b.WriteString(`<div id="message" class="updated notice is-dismissible"><p>`)
@@ -7113,6 +7120,77 @@ func parseEditShowSticky(r *http.Request) bool {
 	}
 	raw := strings.TrimSpace(r.URL.Query().Get("show_sticky"))
 	return raw != "" && raw != "0" && !strings.EqualFold(raw, "false")
+}
+
+// handleEditCommentsScreenOptions saves edit_comments_per_page (P7.129).
+func handleEditCommentsScreenOptions(w http.ResponseWriter, r *http.Request, c *wp.Context) bool {
+	if r.Method != http.MethodPost || c == nil || c.CurrentUser == nil {
+		return false
+	}
+	if err := r.ParseForm(); err != nil {
+		return false
+	}
+	option := strings.TrimSpace(r.Form.Get("wp_screen_options[option]"))
+	value := strings.TrimSpace(r.Form.Get("wp_screen_options[value]"))
+	if option != "edit_comments_per_page" || value == "" {
+		return false
+	}
+	if c.VerifyNonce(r.Form.Get("screenoptionnonce"), "screen-options-nonce") == 0 {
+		http.Error(w, "Invalid screen options nonce\n", http.StatusForbidden)
+		return true
+	}
+	n, err := strconv.Atoi(value)
+	if err != nil || n < 1 || n > 999 {
+		http.Error(w, "Invalid per page value\n", http.StatusBadRequest)
+		return true
+	}
+	if err := wp.UpdateUserOption(c, c.CurrentUser.ID, option, strconv.Itoa(n)); err != nil {
+		http.Error(w, "screen options: "+err.Error()+"\n", http.StatusInternalServerError)
+		return true
+	}
+	http.Redirect(w, r, "/wp-admin/edit-comments.php", http.StatusFound)
+	return true
+}
+
+// writeEditCommentsScreenOptions emits Screen Options pagination for comments (P7.129).
+func writeEditCommentsScreenOptions(b *strings.Builder, c *wp.Context, perPage int) {
+	if b == nil {
+		return
+	}
+	option := "edit_comments_per_page"
+	nonce := ""
+	if c != nil {
+		nonce = c.CreateNonce("screen-options-nonce")
+	}
+	b.WriteString(`<div id="screen-meta" class="metabox-prefs">` + "\n")
+	b.WriteString(`<div id="screen-options-wrap" class="" tabindex="-1" aria-label="Screen Options Tab">` + "\n")
+	b.WriteString(`<form id="adv-settings" method="post">` + "\n")
+	b.WriteString(`<fieldset class="screen-options">` + "\n")
+	b.WriteString(`<legend>Pagination</legend>` + "\n")
+	b.WriteString(`<label for="`)
+	b.WriteString(html.EscapeString(option))
+	b.WriteString(`">Number of items per page:</label>` + "\n")
+	b.WriteString(`<input type="number" step="1" min="1" max="999" class="screen-per-page small-text" name="wp_screen_options[value]" id="`)
+	b.WriteString(html.EscapeString(option))
+	b.WriteString(`" value="`)
+	b.WriteString(strconv.Itoa(perPage))
+	b.WriteString(`" />` + "\n")
+	b.WriteString(`<input type="hidden" name="wp_screen_options[option]" value="`)
+	b.WriteString(html.EscapeString(option))
+	b.WriteString(`" />` + "\n")
+	b.WriteString(`</fieldset>` + "\n")
+	b.WriteString(`<p class="submit"><input type="submit" name="screen-options-apply" id="screen-options-apply" class="button button-primary" value="Apply" /></p>` + "\n")
+	b.WriteString(`<input type="hidden" id="screenoptionnonce" name="screenoptionnonce" value="`)
+	b.WriteString(html.EscapeString(nonce))
+	b.WriteString(`" />` + "\n")
+	b.WriteString(`</form>` + "\n")
+	b.WriteString(`</div>` + "\n")
+	b.WriteString(`</div>` + "\n")
+	b.WriteString(`<div id="screen-meta-links">` + "\n")
+	b.WriteString(`<div id="screen-options-link-wrap" class="hide-if-no-js screen-meta-toggle">` + "\n")
+	b.WriteString(`<button type="button" id="show-settings-link" class="button button-compact show-settings" aria-controls="screen-options-wrap" aria-expanded="true">Screen Options</button>` + "\n")
+	b.WriteString(`</div>` + "\n")
+	b.WriteString(`</div>` + "\n")
 }
 
 // handleEditScreenOptions saves edit_{post_type}_per_page + column prefs (P7.77 / P7.80).

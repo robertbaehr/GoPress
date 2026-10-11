@@ -114,3 +114,47 @@ func EditPostsPerPage(c *Context, postType string) int {
 	}
 	return perPage
 }
+
+// EditCommentsPerPage returns Screen Options per-page for edit-comments.php
+// (edit_comments_per_page / comments_per_page filters). Default 20 (P7.129).
+func EditCommentsPerPage(c *Context, commentStatus string) int {
+	perPage := 20
+	if raw := strings.TrimSpace(GetUserOption(c, "edit_comments_per_page", 0)); raw != "" {
+		if n, err := strconv.Atoi(raw); err == nil && n >= 1 {
+			perPage = n
+		}
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("edit_comments_per_page", perPage); v != nil {
+			switch t := v.(type) {
+			case int:
+				perPage = t
+			case int64:
+				perPage = int(t)
+			case string:
+				if n, err := strconv.Atoi(strings.TrimSpace(t)); err == nil {
+					perPage = n
+				}
+			}
+		}
+		if v := c.Hooks.ApplyFilters("comments_per_page", perPage, commentStatus); v != nil {
+			switch t := v.(type) {
+			case int:
+				perPage = t
+			case int64:
+				perPage = int(t)
+			case string:
+				if n, err := strconv.Atoi(strings.TrimSpace(t)); err == nil {
+					perPage = n
+				}
+			}
+		}
+	}
+	if perPage < 1 {
+		perPage = 20
+	}
+	if perPage > 999 {
+		perPage = 999
+	}
+	return perPage
+}
