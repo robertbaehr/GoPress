@@ -1942,3 +1942,123 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.206: login toppers after headerurl deepen.
+
+- id: login-p10206-001
+  role: anon
+  method: GET
+  path: /wp-login.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10206-002
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10206-003
+  role: anon
+  method: GET
+  path: /wp-login.php?action=rp
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10206-004
+  role: anon
+  method: GET
+  path: /wp-login.php?action=resetpass
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10206-005
+  role: anon
+  method: GET
+  path: /wp-login.php?action=register
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10206-006
+  role: anon
+  method: GET
+  path: /wp-login.php?action=logout
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10206-007
+  role: anon
+  method: GET
+  path: /wp-login.php?action=confirmaction
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10206-008
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=confirm
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10206-009
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=registered
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10206-010
+  role: anon
+  method: GET
+  path: /wp-login.php?interim-login=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10206-011
+  role: anon
+  method: GET
+  path: /wp-login.php?redirect_to=/wp-admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10206-012
+  role: anon
+  method: GET
+  path: /wp-login.php?reauth=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10206-013
+  role: anon
+  method: GET
+  path: /wp-login.php?wp_lang=en_US
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
