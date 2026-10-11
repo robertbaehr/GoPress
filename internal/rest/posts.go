@@ -1146,24 +1146,24 @@ func postsMetaTypeEnumMessage() string {
 	return "meta_type is not one of NUMERIC, BINARY, CHAR, DATE, DATETIME, DECIMAL, SIGNED, TIME and UNSIGNED."
 }
 
-// parsePostsMetaCompareKeyTyped reads REST ?meta_compare_key= (WP_Meta_Query compare_key, P4.172).
-// Allowed: =, LIKE (case-insensitive). Absent → ("", true, false, "").
+// parsePostsMetaCompareKeyTyped reads REST ?meta_compare_key= (WP_Meta_Query compare_key, P4.172 / P4.173).
+// Allowed: =, !=, LIKE, NOT LIKE, EXISTS, NOT EXISTS (case-insensitive). Absent → ("", true, false, "").
 func parsePostsMetaCompareKeyTyped(r *http.Request) (value string, ok bool, typeErr bool, enumErr string) {
 	value, ok, typeErr = parseRESTStringQueryTyped(r, "meta_compare_key", true)
 	if typeErr || !ok || value == "" {
 		return value, ok, typeErr, ""
 	}
 	switch strings.ToUpper(strings.TrimSpace(value)) {
-	case "=", "LIKE":
+	case "=", "!=", "LIKE", "NOT LIKE", "EXISTS", "NOT EXISTS":
 		return strings.ToUpper(strings.TrimSpace(value)), true, false, ""
 	default:
 		return "", false, false, postsMetaCompareKeyEnumMessage()
 	}
 }
 
-// postsMetaCompareKeyEnumMessage is the WP-style rest_not_in_enum message for meta_compare_key (P4.172).
+// postsMetaCompareKeyEnumMessage is the WP-style rest_not_in_enum message for meta_compare_key (P4.173).
 func postsMetaCompareKeyEnumMessage() string {
-	return "meta_compare_key is not one of = and LIKE."
+	return "meta_compare_key is not one of =, !=, LIKE, NOT LIKE, EXISTS and NOT EXISTS."
 }
 
 // parsePostsMetaQueryReject returns true when meta_query / meta_query[] is present (P4.166).

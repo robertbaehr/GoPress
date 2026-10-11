@@ -593,7 +593,7 @@ func appendDateQueryFilters(where []string, vals []any, args QueryArgs) ([]strin
 // P4.169: BETWEEN / NOT BETWEEN (meta_value "low,high" or "low high").
 // P4.170: meta_type CAST (NUMERIC→SIGNED, etc.) on value comparisons.
 // P4.171: IN / NOT IN (meta_value comma- or space-separated list).
-// P4.172: meta_compare_key =|LIKE on meta_key.
+// P4.172/P4.173: meta_compare_key =|LIKE|NOT LIKE|!=|EXISTS|NOT EXISTS on meta_key.
 func appendMetaQueryFilters(c *Context, where []string, vals []any, args QueryArgs, idCol string) ([]string, []any) {
 	key := strings.TrimSpace(args.MetaKey)
 	if key == "" || c == nil || c.DB == nil {
@@ -606,19 +606,35 @@ func appendMetaQueryFilters(c *Context, where []string, vals []any, args QueryAr
 	if compare == "" {
 		compare = "="
 	}
-	keySQL, keyVal := metaKeyCompareSQL(args.MetaCompareKey, key)
+	keySQL, keyVal, negateKey := metaKeyCompareSQL(args.MetaCompareKey, key)
 	cast := metaTypeCastSQL(args.MetaType)
 	valExpr := "mq.meta_value"
 	if cast != "" && cast != "CHAR" {
 		valExpr = "CAST(mq.meta_value AS " + cast + ")"
 	}
 	pm := c.DB.PostMeta()
+	existsOp, notExistsOp := "EXISTS", "NOT EXISTS"
+	if negateKey {
+		if compare == "EXISTS" || compare == "NOT EXISTS" {
+			// P4.173: negative compare_key flips EXISTS/NOT EXISTS (WP NOT EXISTS nest subset).
+			existsOp, notExistsOp = notExistsOp, existsOp
+		} else {
+			// Value compares: emit negative key operator inline.
+			switch strings.ToUpper(strings.TrimSpace(args.MetaCompareKey)) {
+			case "NOT LIKE":
+				keySQL = "mq.meta_key NOT LIKE %s"
+			case "!=", "NOT EXISTS":
+				keySQL = "mq.meta_key != %s"
+			}
+			negateKey = false
+		}
+	}
 	switch compare {
 	case "EXISTS":
-		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND "+keySQL+")")
+		where = append(where, existsOp+" (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND "+keySQL+")")
 		vals = append(vals, keyVal)
 	case "NOT EXISTS":
-		where = append(where, "NOT EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND "+keySQL+")")
+		where = append(where, notExistsOp+" (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND "+keySQL+")")
 		vals = append(vals, keyVal)
 	case "LIKE":
 		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND "+keySQL+" AND "+valExpr+" LIKE %s)")
@@ -678,14 +694,19 @@ func appendMetaQueryFilters(c *Context, where []string, vals []any, args QueryAr
 	return where, vals
 }
 
-// metaKeyCompareSQL maps meta_compare_key to a meta_key predicate (P4.172).
-// Returns SQL fragment with one %s placeholder and the bound value.
-func metaKeyCompareSQL(compareKey, key string) (sqlFrag string, val string) {
+// metaKeyCompareSQL maps meta_compare_key to a meta_key predicate (P4.172 / P4.173).
+// Returns SQL fragment with one %s placeholder, the bound value, and whether
+// EXISTS/NOT EXISTS should be flipped (negative operators NOT LIKE / != / NOT EXISTS).
+func metaKeyCompareSQL(compareKey, key string) (sqlFrag string, val string, negate bool) {
 	switch strings.ToUpper(strings.TrimSpace(compareKey)) {
 	case "LIKE":
-		return "mq.meta_key LIKE %s", "%" + key + "%"
+		return "mq.meta_key LIKE %s", "%" + key + "%", false
+	case "NOT LIKE":
+		return "mq.meta_key LIKE %s", "%" + key + "%", true
+	case "!=", "NOT EXISTS":
+		return "mq.meta_key = %s", key, true
 	default: // "=", EXISTS, empty, unknown
-		return "mq.meta_key = %s", key
+		return "mq.meta_key = %s", key, false
 	}
 }
 
