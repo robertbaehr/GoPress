@@ -14,6 +14,7 @@ import (
 //   - missing idBase → ""
 //   - instance.encoded + instance.hash must pass wp_hash / hash_equals (else "")
 //   - resolved widget object missing → ""
+//
 // Saved InnerHTML is never reused (widget output is dynamic).
 func (e *Env) renderLegacyWidget(block Block) string {
 	e = e.ensure()
