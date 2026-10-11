@@ -7882,3 +7882,220 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.152: include[]/exclude[] + loginout/stack toppers after P5.121–P9.27.
+- id: rest-p10152-001-posts-include-array
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?include[]=1&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-002-posts-include-array-multi
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?include[]=1&include[]=13&per_page=2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-003-posts-include-exclude-array
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?include[]=1&exclude[]=13&per_page=2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-004-pages-include-array
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?include[]=2&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-005-posts-include-exclude-comma
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?include=1&exclude=13&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-006-posts-exclude-include
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?exclude=1&include=13&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-007-rest-route-posts-include-array
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/posts&include[]=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-008-loginout-context-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/loginout?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-009-head-loginout
+  role: anon
+  method: HEAD
+  path: /wp-json/wp/v2/block-types/core/loginout
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-010-categories-include-array
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/categories?include[]=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-011-tags-include-array
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/tags?include[]=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-012-comments-include
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/comments?include=1&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-013-statuses-publish
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/statuses/publish
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-014-types-post
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types/post
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-015-taxonomies-category
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/taxonomies/category
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-016-taxonomies-post-tag
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/taxonomies/post_tag
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-017-rest-route-statuses-publish
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/statuses/publish
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-018-rest-route-types-post
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/types/post
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-019-wp-json-index
+  role: anon
+  method: GET
+  path: /wp-json/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-020-wp-json-namespace
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-021-slug-fixture-post-07
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?slug=fixture-post-07
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-022-pages-include-2
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?include=2&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-023-head-statuses-publish
+  role: anon
+  method: HEAD
+  path: /wp-json/wp/v2/statuses/publish
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10152-024-posts-include-13
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?include=13&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

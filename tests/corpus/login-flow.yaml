@@ -779,3 +779,40 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.152: login toppers after deepen stack.
+- id: login-p10152-001-redirect-sample
+  role: anon
+  method: GET
+  path: /wp-login.php?redirect_to=%2Fsample-page%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10152-002-login
+  role: anon
+  method: GET
+  path: /wp-login.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10152-003-lostpassword
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10152-004-interim
+  role: anon
+  method: GET
+  path: /wp-login.php?interim-login=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

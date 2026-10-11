@@ -290,3 +290,24 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.152: revision compare screen headers after P7.122.
+
+- id: admin-p10152-002-edit
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+
+- id: admin-p10152-004-dashboard
+  role: admin
+  method: GET
+  path: /wp-admin/index.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

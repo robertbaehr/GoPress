@@ -1136,3 +1136,68 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.152: front toppers after post_class / loginout stack.
+- id: front-p10152-001-sample-page
+  role: anon
+  method: GET
+  path: /sample-page/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10152-002-feed
+  role: anon
+  method: GET
+  path: /feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10152-003-feed-atom
+  role: anon
+  method: GET
+  path: /feed/atom/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10152-004-comments-feed
+  role: anon
+  method: GET
+  path: /comments/feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10152-005-robots
+  role: anon
+  method: GET
+  path: /robots.txt
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10152-006-sitemap
+  role: anon
+  method: GET
+  path: /wp-sitemap.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10152-007-hello-world-pretty
+  role: anon
+  method: GET
+  path: /2024/06/15/hello-world/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+

@@ -8290,3 +8290,11 @@ wp-login.php#language-switcher-post
   task: P10.151
   api: n/a
   notes: "P10.151 — summarize site-logo/tax-query/post-edit/is_stream/body_class/media-scale + 1130 corpus"
+
+# P10.152: expand diff corpus after P5.121–P9.27.
+- prefix: tests/corpus#p10.152
+  go: tests/corpus
+  status: partial
+  task: P10.152
+  api: n/a
+  notes: "P10.152 — include[]/exclude[] + loginout + front/login/admin toppers; 1167 cases"
