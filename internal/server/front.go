@@ -4851,6 +4851,10 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			}
 			return wp.GetAttachmentURL(c, id)
 		},
+		// P5.120: attachment ID for site-logo width→height aspect.
+		SiteLogoID: func() int64 {
+			return wp.CustomLogoID(c)
+		},
 		HomeURL: func() string {
 			return strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 		},
