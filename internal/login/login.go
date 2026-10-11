@@ -126,17 +126,11 @@ func (h *Handler) serveConfirmAction(w http.ResponseWriter, r *http.Request, c *
 	if strings.TrimSpace(message) != "" {
 		b.WriteString(message)
 	}
-	b.WriteString("\t\t<p id=\"backtoblog\"><a href=\"")
-	if home != "" {
-		b.WriteString(html.EscapeString(home + "/"))
-	} else {
-		b.WriteString("/")
-	}
-	b.WriteString("\">")
-	b.WriteString("&larr; Go to ")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString("</a></p>\n")
+	writeLoginBackToBlog(&b, c, home, blogname)
 	b.WriteString("\t\t</div>\n")
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("login_footer", "")
+	}
 	b.WriteString("\t</body>\n")
 	b.WriteString("\t</html>\n")
 	writeLoginHTML(w, r, b.String(), false, c)
@@ -457,22 +451,17 @@ func (h *Handler) serveRegisterForm(w http.ResponseWriter, r *http.Request, c *w
 	b.WriteString(html.EscapeString(lostURL))
 	b.WriteString("\">Lost your password?</a>\n")
 	b.WriteString("\t\t</p>\n")
-	b.WriteString("\t\t\t\t<p id=\"backtoblog\">\n")
-	b.WriteString("\t\t\t<a href=\"")
-	b.WriteString(html.EscapeString(home + "/"))
-	b.WriteString("\">&larr; Go to ")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString("</a>\t\t</p>\n")
+	writeLoginBackToBlog(&b, c, home, blogname)
 	if link := wp.PrivacyPolicyPageLinkHTML(c); link != "" {
 		b.WriteString("\t\t")
 		b.WriteString(link)
 		b.WriteString("\n")
 	}
 	b.WriteString("\t\t\t</div>\n")
-	b.WriteString("\t<script>\n")
-	b.WriteString("\t\ttry{document.getElementById('user_login').focus();}catch(e){}\n")
-	b.WriteString("\t\tif(typeof wpOnload==='function')wpOnload();\n")
-	b.WriteString("\t</script>\n")
+	writeLoginFooterFocus(&b, "user_login")
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("login_footer", "")
+	}
 	b.WriteString("\t</body>\n")
 	b.WriteString("\t</html>\n")
 	writeLoginHTML(w, r, b.String(), loginShouldShake(c, extractLoginErrorCode(errMsg)), c)
@@ -532,13 +521,11 @@ func (h *Handler) serveCheckEmail(w http.ResponseWriter, r *http.Request, c *wp.
 	if strings.TrimSpace(loginMsg) != "" {
 		b.WriteString(loginMsg)
 	}
-	b.WriteString("\t\t<p id=\"backtoblog\">\n")
-	b.WriteString("\t\t\t<a href=\"")
-	b.WriteString(html.EscapeString(home + "/"))
-	b.WriteString("\">&larr; Go to ")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString("</a>\t\t</p>\n")
+	writeLoginBackToBlog(&b, c, home, blogname)
 	b.WriteString("\t\t\t</div>\n")
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("login_footer", "")
+	}
 	b.WriteString("\t</body>\n")
 	b.WriteString("\t</html>\n")
 	writeLoginHTML(w, r, b.String(), false, c)
@@ -746,12 +733,7 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		writeInterimLoginBlankTargetScript(&b)
 	}
 	if !interim {
-		b.WriteString("\t\t<p id=\"backtoblog\">\n")
-		b.WriteString("\t\t\t<a href=\"")
-		b.WriteString(html.EscapeString(home + "/"))
-		b.WriteString("\">&larr; Go to ")
-		b.WriteString(html.EscapeString(blogname))
-		b.WriteString("</a>\t\t</p>\n")
+		writeLoginBackToBlog(&b, c, home, blogname)
 		if link := wp.PrivacyPolicyPageLinkHTML(c); link != "" {
 			b.WriteString("\t\t")
 			b.WriteString(link)
@@ -1026,7 +1008,17 @@ func (h *Handler) serveResetPassForm(w http.ResponseWriter, r *http.Request, c *
 	b.WriteString(html.EscapeString(loginURL))
 	b.WriteString("\">Log in</a>\n")
 	b.WriteString("\t\t</p>\n")
+	writeLoginBackToBlog(&b, c, home, blogname)
+	if link := wp.PrivacyPolicyPageLinkHTML(c); link != "" {
+		b.WriteString("\t\t")
+		b.WriteString(link)
+		b.WriteString("\n")
+	}
 	b.WriteString("\t\t\t</div>\n")
+	writeLoginFooterFocus(&b, "pass1")
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("login_footer", "")
+	}
 	b.WriteString("\t</body>\n")
 	b.WriteString("\t</html>\n")
 	writeLoginHTML(w, r, b.String(), false, c)
@@ -1081,29 +1073,63 @@ func (h *Handler) serveLostPassword(w http.ResponseWriter, r *http.Request, c *w
 	b.WriteString(html.EscapeString(loginURL))
 	b.WriteString("\">Log in</a>\n")
 	b.WriteString("\t\t\t\t\t</p>\n")
-	b.WriteString("\t\t\t\t<p id=\"backtoblog\">\n")
-	b.WriteString("\t\t\t<a href=\"")
-	b.WriteString(html.EscapeString(home + "/"))
-	b.WriteString("\">&larr; Go to ")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString("</a>\t\t</p>\n")
+	writeLoginBackToBlog(&b, c, home, blogname)
 	if link := wp.PrivacyPolicyPageLinkHTML(c); link != "" {
 		b.WriteString("\t\t")
 		b.WriteString(link)
 		b.WriteString("\n")
 	}
 	b.WriteString("\t\t\t</div>\n")
-	b.WriteString("\t\t\n")
-	b.WriteString("\t<script>\n")
-	b.WriteString("\t\ttry{document.getElementById('user_login').focus();}catch(e){}\n")
-	b.WriteString("\t\tif(typeof wpOnload==='function')wpOnload();\n")
-	b.WriteString("\t\t\n")
-	b.WriteString("</script>\n")
+	writeLoginFooterFocus(&b, "user_login")
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("login_footer", "")
+	}
 	b.WriteString("\t</body>\n")
 	b.WriteString("\t</html>\n")
 	b.WriteString("\t")
 
 	writeLoginHTML(w, r, b.String(), false, c)
+}
+
+// loginSiteHTMLLink builds the "← Go to {blog}" anchor and applies login_site_html_link (P6.54).
+func loginSiteHTMLLink(c *wp.Context, home, blogname string) string {
+	href := "/"
+	if strings.TrimSpace(home) != "" {
+		href = strings.TrimRight(home, "/") + "/"
+	}
+	link := `<a href="` + html.EscapeString(href) + `">&larr; Go to ` + html.EscapeString(blogname) + `</a>`
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("login_site_html_link", link); v != nil {
+			if s, ok := v.(string); ok {
+				return s
+			}
+		}
+	}
+	return link
+}
+
+// writeLoginBackToBlog emits <p id="backtoblog">…</p> via login_site_html_link (P6.54).
+func writeLoginBackToBlog(b *strings.Builder, c *wp.Context, home, blogname string) {
+	if b == nil {
+		return
+	}
+	b.WriteString("\t\t<p id=\"backtoblog\">\n")
+	b.WriteString("\t\t\t")
+	b.WriteString(loginSiteHTMLLink(c, home, blogname))
+	b.WriteString("\t\t</p>\n")
+}
+
+// writeLoginFooterFocus emits WP login_footer input focus + wpOnload (P6.54).
+func writeLoginFooterFocus(b *strings.Builder, inputID string) {
+	if b == nil || strings.TrimSpace(inputID) == "" {
+		return
+	}
+	b.WriteString("\t<script>\n")
+	b.WriteString("\t\ttry{document.getElementById('")
+	b.WriteString(inputID)
+	b.WriteString("').focus();}catch(e){}\n")
+	b.WriteString("\t\tif(typeof wpOnload==='function')wpOnload();\n")
+	b.WriteString("\t</script>\n")
 }
 
 // applyLoginMessage mirrors login_header's apply_filters( 'login_message', $message ) (P6.51).
