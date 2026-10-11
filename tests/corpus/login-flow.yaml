@@ -1685,3 +1685,76 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.200: login toppers after login_init deepen.
+- id: login-p10200-001-login
+  role: anon
+  method: GET
+  path: /wp-login.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10200-002-lostpassword
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10200-003-register
+  role: anon
+  method: GET
+  path: /wp-login.php?action=register
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10200-004-checkemail
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=confirm
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10200-005-rp
+  role: anon
+  method: GET
+  path: /wp-login.php?action=rp
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10200-006-interim
+  role: anon
+  method: GET
+  path: /wp-login.php?interim-login=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10200-007-loggedout
+  role: anon
+  method: GET
+  path: /wp-login.php?loggedout=true
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10200-008-login-head
+  role: anon
+  method: HEAD
+  path: /wp-login.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
