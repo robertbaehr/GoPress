@@ -1,4 +1,4 @@
-GoPress stack tip cursor/p10-225-status-refresh-ddf1 / b0f3edf3fcf009c43147288bfd8655034e770129
+GoPress stack tip cursor/p10-225-status-refresh-ddf1 / 5343f6188c21914a34117c84d3a2458e82f2eb4b
 
 cursor/p6-67-register-html-link-ddf1 → 7960f7ea0131
 cursor/p2-158-status-header-ddf1 → ef167b4671fc
@@ -8,7 +8,7 @@ cursor/p5-163-search-align-ddf1 → 9c2ace82fdd6
 cursor/p7-164-import-chrome-ddf1 → 90fea4044851
 cursor/p9-43-do-action-filter-helpers-ddf1 → e1a951315c5c
 
-cursor/p10-225-status-refresh-ddf1 → b0f3edf3fcf0
+cursor/p10-225-status-refresh-ddf1 → 5343f6188c21
 
 make diff: 100.0% (3162/3162 strict matches, 0 allowlisted, 0 failed) — carried from P10.218
 make check: ok (lint + go test -p 1 ./...)
