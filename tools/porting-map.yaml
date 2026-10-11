@@ -440,9 +440,16 @@ wp-login.php#language-switcher-post
 - prefix: wp-login.php#resetpass
   go: internal/login/login.go
   status: partial
-  task: P6.41
+  task: P6.48
   api: n/a
-  notes: "P6.41 — strength meter, pw-weak, generate button, password_hint, resetpass_form; P6.13 cookie/key flow"
+  notes: "P6.48 — hash_equals rp_key on isset(pass1); P6.41 strength meter/pw-weak/generate; P6.13 cookie/key flow"
+
+- prefix: wp-includes/compat.php#hash_equals
+  go: internal/wp/hash_equals.go
+  status: partial
+  task: P6.48
+  api: exported
+  notes: "P6.48 — HashEquals constant-time compare for resetpass rp_key"
 
 - prefix: wp-includes/user.php#wp_get_password_hint
   go: internal/wp/password_reset.go

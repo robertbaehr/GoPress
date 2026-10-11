@@ -886,6 +886,54 @@ func TestResetPassInvalidKeyRedirects(t *testing.T) {
 	}
 }
 
+func TestResetPassMismatchedRPKeyRedirects(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	key, err := wp.GetPasswordResetKey(c, user)
+	if err != nil || key == "" {
+		t.Fatalf("reset key: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?action=rp&key="+key+"&login=admin", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	var rpCookie *http.Cookie
+	for _, ck := range rec.Result().Cookies() {
+		if strings.HasPrefix(ck.Name, "wp-resetpass-") {
+			rpCookie = ck
+		}
+	}
+	if rpCookie == nil {
+		t.Fatal("expected resetpass cookie")
+	}
+
+	// P6.48: POST with isset(pass1) but wrong rp_key → invalidkey (hash_equals).
+	form := url.Values{}
+	form.Set("pass1", "Anything-Reset-99")
+	form.Set("pass2", "Anything-Reset-99")
+	form.Set("rp_key", "not-the-real-key")
+	form.Set("action", "resetpass")
+	req = httptest.NewRequest(http.MethodPost, "/wp-login.php?action=resetpass", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(rpCookie)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	loc := rec.Header().Get("Location")
+	if !strings.Contains(loc, "action=lostpassword") || !strings.Contains(loc, "error=invalidkey") {
+		t.Fatalf("Location=%q", loc)
+	}
+}
+
 func TestLogoutClearsCookies(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
