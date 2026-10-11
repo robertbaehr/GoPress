@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.225)
 
+- P8.57 `AttachmentURLToPostID` (`attachment_url_to_postid`)
 - P3.157 `GetPreviewPostLink` (`preview_post_link`)
 - P2.159 `SendNosniffHeader` / `AdminHeaders` (`admin_referrer_policy`)
 - P6.68 `wp_logout` action with user ID after cookie clear
