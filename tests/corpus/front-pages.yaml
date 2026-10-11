@@ -3437,3 +3437,114 @@
   body: null
   compare: headers
   nonce: null
+
+
+# P10.210: front toppers (headers-safe) — cpage/canonical/srcset/date archives.
+
+- id: front-p10210-001
+  role: anon
+  method: GET
+  path: /?p=1&cpage=2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10210-002
+  role: anon
+  method: GET
+  path: /?page_id=2&cpage=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10210-003
+  role: anon
+  method: GET
+  path: /?s=canonical
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10210-004
+  role: anon
+  method: GET
+  path: /?s=srcset
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10210-005
+  role: anon
+  method: GET
+  path: /?s=group+block
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10210-006
+  role: anon
+  method: GET
+  path: /?s=http+validate
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10210-007
+  role: anon
+  method: GET
+  path: /?s=image+srcset
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10210-008
+  role: anon
+  method: GET
+  path: /page/3/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10210-009
+  role: anon
+  method: GET
+  path: /?s=media+grid
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10210-010
+  role: anon
+  method: GET
+  path: /?s=group+attrs
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10210-011
+  role: anon
+  method: GET
+  path: /?s=meta_query
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10210-012
+  role: anon
+  method: GET
+  path: /2024/06/15/page/1/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
