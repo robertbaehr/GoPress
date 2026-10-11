@@ -9202,3 +9202,25 @@ wp-login.php#language-switcher-post
   task: P7.130
   api: n/a
   notes: "P7.130 — posts/pages help chrome coverage"
+
+# P2.125: wp_filter_kses / wp_filter_post_kses.
+- prefix: wp-includes/kses.php#wp_filter_kses
+  go: internal/wp/kses.go
+  status: partial
+  task: P2.125
+  api: wp_filter_kses
+  notes: "P2.125 — FilterKses unslash→kses(current_filter/data)→slash; FilterPostKses post allow list"
+
+- prefix: wp-includes/kses.php#wp_filter_post_kses
+  go: internal/wp/kses.go
+  status: partial
+  task: P2.125
+  api: wp_filter_post_kses
+  notes: "P2.125 — slashed post-content sanitize helper"
+
+- prefix: wp-includes/kses.php#wp_filter_kses#tests
+  go: internal/wp/filter_kses_p2_125_test.go
+  status: partial
+  task: P2.125
+  api: n/a
+  notes: "P2.125 — slash round-trip + current_filter allow list"
