@@ -11237,4 +11237,4 @@ wp-login.php#language-switcher-post
   status: partial
   task: P10.202
   api: n/a
-  notes: "P10.202 — quote/ignore_sticky/import/wordcount/prefetch/has_action toppers; headers-safe"
+  notes: "P10.202 — quote/ignore_sticky/import/wordcount/prefetch/has_action toppers; 2393/2393; headers-safe; dropped set-cookie admin cases"
