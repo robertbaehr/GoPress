@@ -4267,24 +4267,88 @@ func termArchiveFeedLink(c *wp.Context, blogname, home, taxonomy string, term *t
 	return title, href
 }
 
+// feedLinksShow applies a feed_links_* bool filter (P3.117).
+func feedLinksShow(hooks *wp.Hooks, tag string, def bool) bool {
+	if hooks == nil {
+		return def
+	}
+	show := def
+	if v := hooks.ApplyFilters(tag, show); v != nil {
+		switch t := v.(type) {
+		case bool:
+			show = t
+		case int:
+			show = t != 0
+		case string:
+			show = t != "" && t != "0" && !strings.EqualFold(t, "false")
+		}
+	}
+	return show
+}
+
+// formatFeedLinkTitleAttr builds esc_attr(sprintf(fmt, blogname, sep)) for feed_links (P3.117).
+// Named entities in sep (e.g. &raquo;) are preserved unescaped to match prior Go/WP markup.
+func formatFeedLinkTitleAttr(format, blogname, sep string) string {
+	out := format
+	out = strings.ReplaceAll(out, "%1$s", html.EscapeString(blogname))
+	out = strings.ReplaceAll(out, "%2$s", sep)
+	// Fallback order if format uses plain sprintf %s %s.
+	if !strings.Contains(format, "%1$s") {
+		out = fmt.Sprintf(format, html.EscapeString(blogname), sep)
+	}
+	return out
+}
+
 func writeFrontHeadLinks(b *strings.Builder, home, blogname, permalink, restPath, title, extraFeedTitle, extraFeedHref, shortlink string, hooks *wp.Hooks, siteIconHTML string) {
 	if home == "" || b == nil {
 		return
 	}
-	b.WriteString("<link rel=\"alternate\" type=\"application/rss+xml\" title=\"")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &raquo; Feed\" href=\"")
-	b.WriteString(html.EscapeString(home + "/feed/"))
-	b.WriteString("\" />\n")
-	b.WriteString("<link rel=\"alternate\" type=\"application/rss+xml\" title=\"")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &raquo; Comments Feed\" href=\"")
-	b.WriteString(html.EscapeString(home + "/comments/feed/"))
-	b.WriteString("\" />\n")
-	if permalink != "" && title != "" {
+	// P3.117: feed_links() show filters + args (separator / titles).
+	showPostsFeed := feedLinksShow(hooks, "feed_links_show_posts_feed", true)
+	showCommentsFeed := feedLinksShow(hooks, "feed_links_show_comments_feed", true)
+	sep := "&raquo;"
+	feedTitleFmt := "%1$s %2$s Feed"
+	comsTitleFmt := "%1$s %2$s Comments Feed"
+	if hooks != nil {
+		args := map[string]any{
+			"separator": sep,
+			"feedtitle": feedTitleFmt,
+			"comstitle": comsTitleFmt,
+		}
+		if v := hooks.ApplyFilters("feed_links_args", args); v != nil {
+			if m, ok := v.(map[string]any); ok {
+				if s, ok := m["separator"].(string); ok && s != "" {
+					sep = s
+				}
+				if s, ok := m["feedtitle"].(string); ok && s != "" {
+					feedTitleFmt = s
+				}
+				if s, ok := m["comstitle"].(string); ok && s != "" {
+					comsTitleFmt = s
+				}
+			}
+		}
+	}
+	if showPostsFeed {
+		b.WriteString("<link rel=\"alternate\" type=\"application/rss+xml\" title=\"")
+		b.WriteString(formatFeedLinkTitleAttr(feedTitleFmt, blogname, sep))
+		b.WriteString("\" href=\"")
+		b.WriteString(html.EscapeString(home + "/feed/"))
+		b.WriteString("\" />\n")
+	}
+	if showCommentsFeed {
+		b.WriteString("<link rel=\"alternate\" type=\"application/rss+xml\" title=\"")
+		b.WriteString(formatFeedLinkTitleAttr(comsTitleFmt, blogname, sep))
+		b.WriteString("\" href=\"")
+		b.WriteString(html.EscapeString(home + "/comments/feed/"))
+		b.WriteString("\" />\n")
+	}
+	if permalink != "" && title != "" && showCommentsFeed {
 		b.WriteString("<link rel=\"alternate\" type=\"application/rss+xml\" title=\"")
 		b.WriteString(html.EscapeString(blogname))
-		b.WriteString(" &raquo; ")
+		b.WriteString(" ")
+		b.WriteString(sep)
+		b.WriteString(" ")
 		b.WriteString(html.EscapeString(title))
 		b.WriteString(" Comments Feed\" href=\"")
 		b.WriteString(html.EscapeString(strings.TrimRight(permalink, "/") + "/feed/"))

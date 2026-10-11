@@ -29,6 +29,34 @@ func testBoot(t *testing.T) *wp.Context {
 	return c
 }
 
+func TestFrontHeadFeedLinksShowFilters(t *testing.T) {
+	c := testBoot(t)
+	c.Hooks.AddFilter("feed_links_show_posts_feed", func(value any, _ ...any) any {
+		return false
+	}, 10, 1)
+	c.Hooks.AddFilter("feed_links_show_comments_feed", func(value any, _ ...any) any {
+		return false
+	}, 10, 1)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if strings.Contains(body, " &raquo; Feed\"") {
+		t.Fatalf("posts feed should be hidden: %q", body[:min(800, len(body))])
+	}
+	if strings.Contains(body, " &raquo; Comments Feed\"") {
+		t.Fatalf("comments feed should be hidden: %q", body[:min(800, len(body))])
+	}
+	// Discovery links still present.
+	if !strings.Contains(body, `rel="https://api.w.org/"`) {
+		t.Fatalf("expected api.w.org link: %q", body[:min(800, len(body))])
+	}
+}
+
 func TestFrontHomeRendersBlogname(t *testing.T) {
 	c := testBoot(t)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
