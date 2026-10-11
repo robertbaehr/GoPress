@@ -682,14 +682,25 @@ func parsePostsAuthorIDs(r *http.Request, key string) ([]int64, bool) {
 
 // parsePostsCategories reads REST ?categories= (maps to tax_query category term_id IN, P4.86).
 // Accepts comma-separated IDs and/or repeated query values.
-func parsePostsCategories(r *http.Request) []int64 {
-	return parsePostsTermIDs(r, "categories")
+// P4.161: object form categories[terms]=…&categories[include_children]=true expands
+// hierarchical children (WP prepare_tax_query).
+func parsePostsCategories(r *http.Request, c *wp.Context) []int64 {
+	ids, includeChildren, ok := parsePostsTaxLimit(r, "categories", false)
+	if !ok {
+		return nil
+	}
+	return wp.ExpandTermIDsWithChildren(c, "category", ids, includeChildren)
 }
 
 // parsePostsCategoriesExclude reads REST ?categories_exclude= (tax_query NOT IN, P4.136 / P4.155).
 // Present but non-integer → ok=false (rest_invalid_param / rest_invalid_type).
-func parsePostsCategoriesExclude(r *http.Request) ([]int64, bool) {
-	return parsePostsStrictTermIDs(r, "categories_exclude")
+// P4.161: object form with include_children expands hierarchical children.
+func parsePostsCategoriesExclude(r *http.Request, c *wp.Context) ([]int64, bool) {
+	ids, includeChildren, ok := parsePostsTaxLimit(r, "categories_exclude", true)
+	if !ok {
+		return nil, false
+	}
+	return wp.ExpandTermIDsWithChildren(c, "category", ids, includeChildren), true
 }
 
 // parsePostsStrictTermIDs parses term ID query args with strict integer validation (P4.155).
@@ -753,14 +764,90 @@ func parsePostsStrictTermIDs(r *http.Request, key string) ([]int64, bool) {
 
 // parsePostsTags reads REST ?tags= (maps to tax_query post_tag term_id IN, P4.87).
 // Accepts comma-separated IDs and/or repeated query values.
+// P4.161: object form tags[terms]=… (include_children ignored — non-hierarchical).
 func parsePostsTags(r *http.Request) []int64 {
-	return parsePostsTermIDs(r, "tags")
+	ids, _, ok := parsePostsTaxLimit(r, "tags", false)
+	if !ok {
+		return nil
+	}
+	return ids
 }
 
 // parsePostsTagsExclude reads REST ?tags_exclude= (tax_query NOT IN, P4.136 / P4.156).
 // Present but non-integer → ok=false (rest_invalid_param / rest_invalid_type).
+// P4.161: object form tags_exclude[terms]=… (include_children ignored).
 func parsePostsTagsExclude(r *http.Request) ([]int64, bool) {
-	return parsePostsStrictTermIDs(r, "tags_exclude")
+	ids, _, ok := parsePostsTaxLimit(r, "tags_exclude", true)
+	return ids, ok
+}
+
+// parsePostsTaxLimit parses REST taxonomy limit args as either a term ID list or
+// an advanced object {terms, include_children, operator} (P4.161).
+// When object-form keys are present, they win over the simple list.
+// strict=true applies integer-array validation (rest_invalid_type).
+func parsePostsTaxLimit(r *http.Request, key string, strict bool) (ids []int64, includeChildren bool, ok bool) {
+	if r == nil || key == "" {
+		return nil, false, true
+	}
+	q := r.URL.Query()
+	hasObject := q.Has(key+"[terms]") || q.Has(key+"[terms][]") ||
+		q.Has(key+"[include_children]") || q.Has(key+"[operator]")
+	if !hasObject {
+		if strict {
+			ids, ok = parsePostsStrictTermIDs(r, key)
+			return ids, false, ok
+		}
+		return parsePostsTermIDs(r, key), false, true
+	}
+	// Object form: terms from categories[terms] / categories[terms][].
+	seen := map[int64]bool{}
+	var out []int64
+	anyToken := false
+	addCSV := func(raw string, arrayElem bool) bool {
+		if arrayElem && strings.TrimSpace(raw) == "" {
+			return !strict
+		}
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			return true
+		}
+		for _, part := range strings.Split(raw, ",") {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			anyToken = true
+			n, err := strconv.ParseInt(part, 10, 64)
+			if err != nil {
+				if strict {
+					return false
+				}
+				continue
+			}
+			if n <= 0 || seen[n] {
+				continue
+			}
+			seen[n] = true
+			out = append(out, n)
+		}
+		return true
+	}
+	for _, v := range q[key+"[terms]"] {
+		if !addCSV(v, false) {
+			return nil, false, false
+		}
+	}
+	for _, v := range q[key+"[terms][]"] {
+		if !addCSV(v, true) {
+			return nil, false, false
+		}
+	}
+	if !anyToken {
+		out = nil
+	}
+	inc := strings.TrimSpace(strings.ToLower(q.Get(key + "[include_children]")))
+	includeChildren = inc == "1" || inc == "true"
+	return out, includeChildren, true
 }
 
 // parsePostsTaxRelation reads REST ?tax_relation=AND|OR (P4.136). Empty → AND.
