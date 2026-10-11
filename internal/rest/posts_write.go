@@ -318,7 +318,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 	if metaCompareEnumErr != "" || !metaCompareOK {
 		msg := metaCompareEnumErr
 		if msg == "" {
-			msg = "meta_compare is not one of =, !=, LIKE, NOT LIKE, >, >=, <, <=, EXISTS and NOT EXISTS."
+			msg = postsMetaCompareEnumMessage()
 		}
 		writeRESTInvalidOrderParams(w, map[string]string{"meta_compare": msg})
 		return
