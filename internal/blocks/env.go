@@ -118,8 +118,13 @@ type Env struct {
 	// ArchiveTitle is the front date/term archive heading for core/query-title type=archive (P3.22).
 	ArchiveTitle string
 
-	// ListArchives returns monthly archive links for core/archives (P5.42).
-	ListArchives func() []ArchiveItem
+	// ListArchives returns archive links for core/archives (P5.42 / P5.122).
+	// archiveType is monthly|yearly|daily|weekly (default monthly).
+	ListArchives func(archiveType string) []ArchiveItem
+
+	// HasPublishedPosts reports whether any published post exists (core/calendar, P5.122).
+	// When false, logged-in users see a notice; guests get empty markup.
+	HasPublishedPosts func() bool
 
 	// ListTagCloud returns terms for core/tag-cloud (P5.42 / P5.82).
 	// taxonomy defaults to post_tag; number caps the result (WP numberOfTags, default 45).

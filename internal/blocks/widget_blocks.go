@@ -122,6 +122,13 @@ func (e *Env) renderSearch(block Block) string {
 
 func (e *Env) renderCalendar(block Block) string {
 	e = e.ensure()
+	// P5.122: hide calendar when no published posts (block_core_calendar_has_published_posts).
+	if e.HasPublishedPosts != nil && !e.HasPublishedPosts() {
+		if e.IsLoggedIn != nil && e.IsLoggedIn() {
+			return `<div>The calendar block is hidden because there are no published posts.</div>`
+		}
+		return ""
+	}
 	now := time.Now()
 	year, month := now.Year(), now.Month()
 	if m, ok := attrInt(block.Attrs, "month"); ok && m >= 1 && m <= 12 {
@@ -140,8 +147,34 @@ func (e *Env) renderCalendar(block Block) string {
 		home = strings.TrimRight(e.HomeURL(), "/")
 	}
 
+	// P5.122: wrapper + table color classes (get_block_wrapper_attributes subset).
+	wrapClasses := []string{"wp-block-calendar"}
+	tableClasses := []string{"wp-calendar-table"}
+	if hasLinkColorAttr(block.Attrs) {
+		tableClasses = append(tableClasses, "has-link-color")
+	}
+	if bg := strings.TrimSpace(attrString(block.Attrs, "backgroundColor")); bg != "" {
+		tableClasses = append(tableClasses, "has-background", "has-"+bg+"-background-color")
+	}
+	if tc := strings.TrimSpace(attrString(block.Attrs, "textColor")); tc != "" {
+		tableClasses = append(tableClasses, "has-text-color", "has-"+tc+"-color")
+	}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		wrapClasses = append(wrapClasses, cn)
+	}
+
 	var b strings.Builder
-	b.WriteString(`<div class="wp-block-calendar"><div class="wp-calendar-table"><table class="wp-calendar-table"><caption>`)
+	b.WriteString(`<div class="`)
+	b.WriteString(html.EscapeString(strings.Join(wrapClasses, " ")))
+	b.WriteString(`"`)
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		b.WriteString(` id="`)
+		b.WriteString(html.EscapeString(anchor))
+		b.WriteString(`"`)
+	}
+	b.WriteString(`><div class="wp-calendar-table"><table class="`)
+	b.WriteString(html.EscapeString(strings.Join(tableClasses, " ")))
+	b.WriteString(`"><caption>`)
 	b.WriteString(html.EscapeString(first.Format("January 2006")))
 	b.WriteString(`</caption><thead><tr>`)
 	for _, d := range []string{"S", "M", "T", "W", "T", "F", "S"} {
@@ -194,15 +227,47 @@ func (e *Env) renderArchives(block Block) string {
 	if v, ok := block.Attrs["displayAsDropdown"].(bool); ok {
 		asDropdown = v
 	}
+	// P5.122: type + showLabel + unique dropdown id + onChange script.
+	archiveType := strings.TrimSpace(attrString(block.Attrs, "type"))
+	if archiveType == "" {
+		archiveType = "monthly"
+	}
+	showLabel := true
+	if v, ok := block.Attrs["showLabel"].(bool); ok {
+		showLabel = v
+	}
 	var items []ArchiveItem
 	if e.ListArchives != nil {
-		items = e.ListArchives()
+		items = e.ListArchives(archiveType)
 	}
+	wrapExtra := archivesWrapperClasses(block.Attrs)
 	if asDropdown {
+		dropdownID := nextArchivesDropdownID()
+		labelText := archivesDropdownLabel(archiveType)
 		var b strings.Builder
-		b.WriteString(`<div class="wp-block-archives wp-block-archives-dropdown">`)
-		b.WriteString(`<label class="wp-block-archives__label">Archives</label>`)
-		b.WriteString(`<select name="archive-dropdown"><option value="">Select Month</option>`)
+		b.WriteString(`<div class="`)
+		b.WriteString(html.EscapeString(strings.Join(append([]string{"wp-block-archives", "wp-block-archives-dropdown"}, wrapExtra...), " ")))
+		b.WriteString(`"`)
+		if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+			b.WriteString(` id="`)
+			b.WriteString(html.EscapeString(anchor))
+			b.WriteString(`"`)
+		}
+		b.WriteString(`>`)
+		labelClass := "wp-block-archives__label"
+		if !showLabel {
+			labelClass += " screen-reader-text"
+		}
+		b.WriteString(`<label for="`)
+		b.WriteString(html.EscapeString(dropdownID))
+		b.WriteString(`" class="`)
+		b.WriteString(labelClass)
+		b.WriteString(`">Archives</label>`)
+		b.WriteString(`<select id="`)
+		b.WriteString(html.EscapeString(dropdownID))
+		b.WriteString(`" name="archive-dropdown"><option value="">`)
+		b.WriteString(html.EscapeString(labelText))
+		b.WriteString(`</option>`)
 		for _, it := range items {
 			b.WriteString(`<option value="`)
 			b.WriteString(html.EscapeString(it.URL))
@@ -213,14 +278,28 @@ func (e *Env) renderArchives(block Block) string {
 			}
 			b.WriteString(`</option>`)
 		}
-		b.WriteString(`</select></div>`)
+		b.WriteString(`</select>`)
+		b.WriteString(archivesDropdownScript(dropdownID, e))
+		b.WriteString(`</div>`)
 		return b.String()
 	}
 	if len(items) == 0 {
-		return `<div class="wp-block-archives wp-block-archives-list">No archives to show.</div>`
+		var b strings.Builder
+		b.WriteString(`<div class="`)
+		b.WriteString(html.EscapeString(strings.Join(append([]string{"wp-block-archives", "wp-block-archives-list"}, wrapExtra...), " ")))
+		b.WriteString(`">No archives to show.</div>`)
+		return b.String()
 	}
 	var b strings.Builder
-	b.WriteString(`<ul class="wp-block-archives wp-block-archives-list">`)
+	b.WriteString(`<ul class="`)
+	b.WriteString(html.EscapeString(strings.Join(append([]string{"wp-block-archives", "wp-block-archives-list"}, wrapExtra...), " ")))
+	b.WriteString(`"`)
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		b.WriteString(` id="`)
+		b.WriteString(html.EscapeString(anchor))
+		b.WriteString(`"`)
+	}
+	b.WriteString(`>`)
 	for _, it := range items {
 		b.WriteString(`<li><a href="`)
 		b.WriteString(html.EscapeString(it.URL))
@@ -233,6 +312,68 @@ func (e *Env) renderArchives(block Block) string {
 		b.WriteString(`</li>`)
 	}
 	b.WriteString(`</ul>`)
+	return b.String()
+}
+
+var archivesDropdownSeq atomic.Uint64
+
+func nextArchivesDropdownID() string {
+	n := archivesDropdownSeq.Add(1)
+	return fmt.Sprintf("wp-block-archives-%d", n)
+}
+
+func archivesDropdownLabel(archiveType string) string {
+	switch archiveType {
+	case "yearly":
+		return "Select Year"
+	case "daily":
+		return "Select Day"
+	case "weekly":
+		return "Select Week"
+	case "postbypost", "alpha":
+		return "Select Post"
+	default:
+		return "Select Month"
+	}
+}
+
+func archivesWrapperClasses(attrs map[string]any) []string {
+	var out []string
+	if hasLinkColorAttr(attrs) {
+		out = append(out, "has-link-color")
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		out = append(out, cn)
+	}
+	return out
+}
+
+// archivesDropdownScript mirrors block_core_archives_build_dropdown_script (P5.122).
+func archivesDropdownScript(dropdownID string, e *Env) string {
+	home := "/"
+	if e != nil && e.HomeURL != nil {
+		if h := strings.TrimSpace(e.HomeURL()); h != "" {
+			home = h
+		}
+	}
+	var b strings.Builder
+	b.WriteString(`<script>`)
+	b.WriteString(`( ( [ dropdownId, homeUrl ] ) => {`)
+	b.WriteString(`const dropdown = document.getElementById( dropdownId );`)
+	b.WriteString(`function onSelectChange() { setTimeout( () => {`)
+	b.WriteString(`if ( 'escape' === dropdown.dataset.lastkey ) { return; }`)
+	b.WriteString(`if ( dropdown.value ) { location.href = dropdown.value; }`)
+	b.WriteString(`}, 250 ); }`)
+	b.WriteString(`function onKeyUp( event ) {`)
+	b.WriteString(`if ( 'Escape' === event.key ) { dropdown.dataset.lastkey = 'escape'; }`)
+	b.WriteString(`else { delete dropdown.dataset.lastkey; } }`)
+	b.WriteString(`function onClick() { delete dropdown.dataset.lastkey; }`)
+	b.WriteString(`dropdown.addEventListener( 'keyup', onKeyUp );`)
+	b.WriteString(`dropdown.addEventListener( 'click', onClick );`)
+	b.WriteString(`dropdown.addEventListener( 'change', onSelectChange );`)
+	b.WriteString(`} )( `)
+	b.WriteString(fmt.Sprintf(`[%q,%q]`, dropdownID, home))
+	b.WriteString(` );</script>`)
 	return b.String()
 }
 

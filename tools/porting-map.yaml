@@ -8306,3 +8306,25 @@ wp-login.php#language-switcher-post
   task: P10.153
   api: n/a
   notes: "P10.153 — summarize loginout/include[]/revision/filesize/post_class/do_action_ref + 1167 corpus"
+
+# P5.122: deepen core/archives + core/calendar.
+- prefix: wp-includes/blocks/archives.php#p5.122
+  go: internal/blocks/widget_blocks.go
+  status: partial
+  task: P5.122
+  api: internal
+  notes: "P5.122 — type/showLabel/dropdown id+script/className/has-link-color; yearly ListArchives"
+
+- prefix: wp-includes/blocks/calendar.php#p5.122
+  go: internal/blocks/widget_blocks.go
+  status: partial
+  task: P5.122
+  api: internal
+  notes: "P5.122 — HasPublishedPosts empty state; wrapper className/anchor; table color classes"
+
+- prefix: internal/blocks/widget_blocks_test.go#p5.122
+  go: internal/blocks/widget_blocks_test.go
+  status: partial
+  task: P5.122
+  api: n/a
+  notes: "P5.122 — archives dropdown + calendar empty/wrapper unit coverage"

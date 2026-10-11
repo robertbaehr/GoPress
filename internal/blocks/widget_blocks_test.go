@@ -49,7 +49,7 @@ func TestRenderCalendarBlock(t *testing.T) {
 
 func TestRenderArchivesBlock(t *testing.T) {
 	env := &blocks.Env{
-		ListArchives: func() []blocks.ArchiveItem {
+		ListArchives: func(archiveType string) []blocks.ArchiveItem {
 			return []blocks.ArchiveItem{{Label: "June 2024", URL: "/2024/06/", Count: 3}}
 		},
 	}
@@ -59,6 +59,71 @@ func TestRenderArchivesBlock(t *testing.T) {
 	}
 	if !strings.Contains(out, `June 2024`) || !strings.Contains(out, `(3)`) {
 		t.Fatalf("missing item: %q", out)
+	}
+}
+
+func TestRenderArchivesDropdownPolish(t *testing.T) {
+	var gotType string
+	env := &blocks.Env{
+		HomeURL: func() string { return "http://example.test" },
+		ListArchives: func(archiveType string) []blocks.ArchiveItem {
+			gotType = archiveType
+			return []blocks.ArchiveItem{{Label: "2024", URL: "/2024/", Count: 5}}
+		},
+	}
+	out := blocks.RenderWith(env, `<!-- wp:archives {"displayAsDropdown":true,"showLabel":false,"type":"yearly","showPostCounts":true,"className":"is-style-default","style":{"elements":{"link":{"color":{"text":"var:preset|color|vivid-red"}}}}} /-->`)
+	if gotType != "yearly" {
+		t.Fatalf("archiveType=%q", gotType)
+	}
+	if !strings.Contains(out, `wp-block-archives-dropdown`) || !strings.Contains(out, `has-link-color`) {
+		t.Fatalf("missing wrapper classes: %q", out)
+	}
+	if !strings.Contains(out, `screen-reader-text`) {
+		t.Fatalf("expected hidden label: %q", out)
+	}
+	if !strings.Contains(out, `Select Year`) {
+		t.Fatalf("expected yearly label: %q", out)
+	}
+	if !strings.Contains(out, `id="wp-block-archives-`) || !strings.Contains(out, `for="wp-block-archives-`) {
+		t.Fatalf("expected unique dropdown id: %q", out)
+	}
+	if !strings.Contains(out, `location.href`) || !strings.Contains(out, `http://example.test`) {
+		t.Fatalf("expected dropdown script: %q", out)
+	}
+	if !strings.Contains(out, `2024 (5)`) {
+		t.Fatalf("missing option: %q", out)
+	}
+}
+
+func TestRenderCalendarHiddenWhenNoPosts(t *testing.T) {
+	env := &blocks.Env{
+		HasPublishedPosts: func() bool { return false },
+		IsLoggedIn:        func() bool { return true },
+	}
+	out := blocks.RenderWith(env, `<!-- wp:calendar /-->`)
+	if !strings.Contains(out, `no published posts`) {
+		t.Fatalf("expected empty-state notice: %q", out)
+	}
+	env.IsLoggedIn = func() bool { return false }
+	if out := blocks.RenderWith(env, `<!-- wp:calendar /-->`); out != "" {
+		t.Fatalf("guest should see empty calendar: %q", out)
+	}
+}
+
+func TestRenderCalendarWrapperPolish(t *testing.T) {
+	env := &blocks.Env{
+		HomeURL:           func() string { return "http://example.test" },
+		HasPublishedPosts: func() bool { return true },
+	}
+	out := blocks.RenderWith(env, `<!-- wp:calendar {"className":"is-style-default","anchor":"site-cal","textColor":"contrast","backgroundColor":"base","style":{"elements":{"link":{"color":{"text":"var:preset|color|vivid-red"}}}}} /-->`)
+	if !strings.Contains(out, `wp-block-calendar`) || !strings.Contains(out, `is-style-default`) {
+		t.Fatalf("missing wrapper: %q", out)
+	}
+	if !strings.Contains(out, `id="site-cal"`) {
+		t.Fatalf("missing anchor: %q", out)
+	}
+	if !strings.Contains(out, `has-link-color`) || !strings.Contains(out, `has-contrast-color`) || !strings.Contains(out, `has-base-background-color`) {
+		t.Fatalf("missing color classes: %q", out)
 	}
 }
 

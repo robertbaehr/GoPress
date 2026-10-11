@@ -5070,12 +5070,44 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			}
 			return out
 		},
-		// P5.42: widget-style dynamic blocks.
-		ListArchives: func() []blocks.ArchiveItem {
+		// P5.42 / P5.122: widget-style dynamic blocks.
+		ListArchives: func(archiveType string) []blocks.ArchiveItem {
 			if c == nil || c.DB == nil {
 				return nil
 			}
 			home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+			archiveType = strings.TrimSpace(archiveType)
+			if archiveType == "" {
+				archiveType = "monthly"
+			}
+			if archiveType == "yearly" {
+				q, args, err := c.DB.Prepare(
+					"SELECT YEAR(post_date) AS y, COUNT(*) AS n FROM "+c.DB.Posts()+
+						" WHERE post_type = %s AND post_status = %s "+
+						"GROUP BY YEAR(post_date) ORDER BY post_date DESC LIMIT %d",
+					"post", "publish", 24,
+				)
+				if err != nil {
+					return nil
+				}
+				rows, err := c.DB.GetResults(q, args...)
+				if err != nil {
+					return nil
+				}
+				out := make([]blocks.ArchiveItem, 0, len(rows))
+				for _, row := range rows {
+					y := int(rowInt64DB(row["y"]))
+					if y <= 0 {
+						continue
+					}
+					out = append(out, blocks.ArchiveItem{
+						Label: strconv.Itoa(y),
+						URL:   fmt.Sprintf("%s/%04d/", home, y),
+						Count: int(rowInt64DB(row["n"])),
+					})
+				}
+				return out
+			}
 			q, args, err := c.DB.Prepare(
 				"SELECT YEAR(post_date) AS y, MONTH(post_date) AS m, COUNT(*) AS n FROM "+c.DB.Posts()+
 					" WHERE post_type = %s AND post_status = %s "+
@@ -5104,6 +5136,20 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 				})
 			}
 			return out
+		},
+		HasPublishedPosts: func() bool {
+			if c == nil || c.DB == nil {
+				return false
+			}
+			q, args, err := c.DB.Prepare(
+				"SELECT 1 FROM "+c.DB.Posts()+" WHERE post_type = %s AND post_status = %s LIMIT 1",
+				"post", "publish",
+			)
+			if err != nil {
+				return false
+			}
+			v, err := c.DB.GetVar(q, args...)
+			return err == nil && v != nil && fmt.Sprint(v) != "" && fmt.Sprint(v) != "<nil>"
 		},
 		ListTagCloud: func(taxonomy string, number int) []blocks.TagCloudItem {
 			if c == nil || c.DB == nil {
