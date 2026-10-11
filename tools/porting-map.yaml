@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P4.178: orderby meta_value + meta_type DECIMAL.
+- prefix: wp-includes/class-wp-query.php#meta_type_decimal
+  go: internal/wp/query.go
+  status: partial
+  task: P4.178
+  api: n/a
+  notes: "P4.178 — orderby=meta_value + meta_type=DECIMAL CAST coverage"
+- prefix: wp-includes/class-wp-query.php#meta_type_decimal#tests
+  go: internal/wp/query_orderby_meta_decimal_p4_178_test.go
+  status: partial
+  task: P4.178
+  api: n/a
+  notes: "P4.178 — DECIMAL numeric vs CHAR lexicographic"
+
 # P7.165: site-health.php pagenow chrome.
 - prefix: wp-admin/site-health.php#pagenow
   go: internal/admin/admin.go
