@@ -263,3 +263,41 @@ func TestHooksApplyFiltersRefArray(t *testing.T) {
 		t.Fatal("empty args should return nil")
 	}
 }
+
+// P9.28: did_filter increments on ApplyFilters / ApplyFiltersRefArray.
+func TestHooksDidFilter(t *testing.T) {
+	h := wp.NewHooks()
+	if h.DidFilter("f") != 0 {
+		t.Fatal("DidFilter before apply")
+	}
+	_ = h.ApplyFilters("f", "x")
+	if h.DidFilter("f") != 1 {
+		t.Fatalf("DidFilter after ApplyFilters=%d want 1", h.DidFilter("f"))
+	}
+	_ = h.ApplyFiltersRefArray("f", []any{"y"})
+	if h.DidFilter("f") != 2 {
+		t.Fatalf("DidFilter after RefArray=%d want 2", h.DidFilter("f"))
+	}
+	// No callbacks still increments (WP $wp_filters).
+	_ = h.ApplyFilters("never", 1)
+	if h.DidFilter("never") != 1 {
+		t.Fatalf("DidFilter(never)=%d want 1", h.DidFilter("never"))
+	}
+	// Empty RefArray does not bump.
+	_ = h.ApplyFiltersRefArray("empty", nil)
+	if h.DidFilter("empty") != 0 {
+		t.Fatalf("empty RefArray should not bump DidFilter")
+	}
+	// Actions must not bump filter counts.
+	h.DoAction("f")
+	if h.DidFilter("f") != 2 {
+		t.Fatalf("DoAction must not bump DidFilter, got %d", h.DidFilter("f"))
+	}
+	if h.DidFilter("") != 0 {
+		t.Fatal("nil-safe empty tag")
+	}
+	var nilH *wp.Hooks
+	if nilH.DidFilter("f") != 0 {
+		t.Fatal("nil DidFilter")
+	}
+}

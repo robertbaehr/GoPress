@@ -403,6 +403,19 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 	if postType == "post" && (args.StickyFirst || args.IgnoreSticky) && args.P == 0 && args.Name == "" && args.PageName == "" && len(args.NameIn) == 0 && args.Tag == "" && args.Category == "" && len(args.CategoryIn) == 0 && len(args.CategoryNotIn) == 0 && len(args.TagIn) == 0 && len(args.TagNotIn) == 0 && len(args.PostFormatIn) == 0 && !args.PostFormatStandard {
 		out = applyStickyOrdering(c, out, args)
 	}
+	// P9.28: posts_results / the_posts via apply_filters_ref_array (query + posts slice).
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFiltersRefArray("posts_results", []any{out, args}); v != nil {
+			if posts, ok := v.([]Post); ok {
+				out = posts
+			}
+		}
+		if v := c.Hooks.ApplyFiltersRefArray("the_posts", []any{out, args}); v != nil {
+			if posts, ok := v.([]Post); ok {
+				out = posts
+			}
+		}
+	}
 	return out, nil
 }
 

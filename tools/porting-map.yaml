@@ -8724,3 +8724,25 @@ wp-login.php#language-switcher-post
   task: P3.119
   api: n/a
   notes: "P3.119 — head hook order + front fire coverage"
+
+# P9.28: did_filter + apply_filters_ref_array query wiring.
+- prefix: wp-includes/plugin.php#did_filter
+  go: internal/wp/hooks.go
+  status: partial
+  task: P9.28
+  api: exported
+  notes: "P9.28 — DidFilter / filterCounts; ApplyFilters bumps even with no callbacks"
+
+- prefix: wp-includes/class-wp-query.php#posts_results#p9.28
+  go: internal/wp/query.go
+  status: partial
+  task: P9.28
+  api: exported
+  notes: "P9.28 — GetPosts applies posts_results + the_posts via ApplyFiltersRefArray"
+
+- prefix: wp-includes/plugin.php#did_filter#tests
+  go: internal/wp/hooks_test.go
+  status: partial
+  task: P9.28
+  api: n/a
+  notes: "P9.28 — DidFilter increment / action isolation coverage"
