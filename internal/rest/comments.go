@@ -3,6 +3,7 @@ package rest
 import (
 	"crypto/sha256"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -28,6 +29,57 @@ type Comment struct {
 	AuthorAvatarURLs map[string]string `json:"author_avatar_urls"`
 	Meta             map[string]any    `json:"meta"`
 	Links            map[string]any    `json:"_links"`
+	// RESTContext is view|embed; drives filter_response_by_context (P4.148).
+	RESTContext string `json:"-"`
+}
+
+// MarshalJSON omits view-only fields in embed context (P4.148).
+func (c Comment) MarshalJSON() ([]byte, error) {
+	if c.RESTContext == "embed" {
+		type embedOut struct {
+			ID               int64             `json:"id"`
+			Parent           int64             `json:"parent"`
+			Author           int64             `json:"author"`
+			AuthorName       string            `json:"author_name"`
+			AuthorURL        string            `json:"author_url"`
+			Date             string            `json:"date"`
+			Content          RenderedString    `json:"content"`
+			Link             string            `json:"link"`
+			Type             string            `json:"type"`
+			AuthorAvatarURLs map[string]string `json:"author_avatar_urls"`
+			Links            map[string]any    `json:"_links"`
+		}
+		return json.Marshal(embedOut{
+			ID: c.ID, Parent: c.Parent, Author: c.Author,
+			AuthorName: c.AuthorName, AuthorURL: c.AuthorURL, Date: c.Date,
+			Content: c.Content, Link: c.Link, Type: c.Type,
+			AuthorAvatarURLs: c.AuthorAvatarURLs, Links: c.Links,
+		})
+	}
+	type viewOut struct {
+		ID               int64             `json:"id"`
+		Post             int64             `json:"post"`
+		Parent           int64             `json:"parent"`
+		Author           int64             `json:"author"`
+		AuthorName       string            `json:"author_name"`
+		AuthorURL        string            `json:"author_url"`
+		Date             string            `json:"date"`
+		DateGMT          string            `json:"date_gmt"`
+		Content          RenderedString    `json:"content"`
+		Link             string            `json:"link"`
+		Status           string            `json:"status"`
+		Type             string            `json:"type"`
+		AuthorAvatarURLs map[string]string `json:"author_avatar_urls"`
+		Meta             map[string]any    `json:"meta"`
+		Links            map[string]any    `json:"_links"`
+	}
+	return json.Marshal(viewOut{
+		ID: c.ID, Post: c.Post, Parent: c.Parent, Author: c.Author,
+		AuthorName: c.AuthorName, AuthorURL: c.AuthorURL, Date: c.Date,
+		DateGMT: c.DateGMT, Content: c.Content, Link: c.Link, Status: c.Status,
+		Type: c.Type, AuthorAvatarURLs: c.AuthorAvatarURLs, Meta: c.Meta,
+		Links: c.Links,
+	})
 }
 
 func (s *Server) serveCommentItem(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64) {

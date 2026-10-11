@@ -74,8 +74,8 @@ func applyPostRESTEmbed(c *wp.Context, post *Post, r *http.Request) {
 	post.Embedded = buildPostEmbedded(c, post, parseEmbedRelations(r))
 }
 
-// buildPostEmbedded resolves embeddable _links into _embedded (P4.146).
-// Supports author, wp:featuredmedia, and wp:term (categories + tags).
+// buildPostEmbedded resolves embeddable _links into _embedded (P4.146 / P4.148).
+// Supports author, wp:featuredmedia, wp:term, replies, and up (page parent).
 func buildPostEmbedded(c *wp.Context, post *Post, wanted map[string]bool) map[string]any {
 	if post == nil {
 		return nil
@@ -97,10 +97,56 @@ func buildPostEmbedded(c *wp.Context, post *Post, wanted map[string]bool) map[st
 			out["wp:term"] = terms
 		}
 	}
+	// P4.148: replies → approved comments in embed context.
+	if embedRelationWanted(wanted, "replies") {
+		if replies := embedPostReplies(c, post.ID); replies != nil {
+			out["replies"] = replies
+		}
+	}
+	// P4.148: up → parent page (pages only; embeddable when Parent > 0).
+	if embedRelationWanted(wanted, "up") && post.Type == "page" && post.Parent > 0 {
+		if parent := embedParentPage(c, post.Parent); parent != nil {
+			out["up"] = []any{parent}
+		}
+	}
 	if len(out) == 0 {
 		return nil
 	}
 	return out
+}
+
+// embedPostReplies returns [[comments…]] matching WP replies embed shape (P4.148).
+func embedPostReplies(c *wp.Context, postID int64) []any {
+	if c == nil || postID <= 0 {
+		return nil
+	}
+	comments, err := listCommentsPaged(c, commentListQuery{
+		PostID: postID,
+		Status: commentStatusFilter{Approved: []string{"1"}},
+	}, 100, 1)
+	if err != nil || len(comments) == 0 {
+		return nil
+	}
+	items := make([]any, 0, len(comments))
+	for i := range comments {
+		cm := comments[i]
+		cm.RESTContext = "embed"
+		items = append(items, cm)
+	}
+	return []any{items}
+}
+
+// embedParentPage returns the embed-context parent page (P4.148).
+func embedParentPage(c *wp.Context, parentID int64) *Post {
+	if c == nil || parentID <= 0 {
+		return nil
+	}
+	p, err := getPostByID(c, "page", parentID, false)
+	if err != nil || p == nil {
+		return nil
+	}
+	p.RESTContext = "embed"
+	return p
 }
 
 // embedAuthor returns the public/embed user subset for a post author (P4.146).
