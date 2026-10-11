@@ -163,8 +163,61 @@ func SanitizeTextField(str string) string {
 
 // SanitizeTitle produces a slug (sanitize_title + sanitize_title_with_dashes, save context).
 func SanitizeTitle(title string) string {
-	title = removeAccents(title)
-	return sanitizeTitleWithDashes(title)
+	return SanitizeTitleWithContext(nil, title, "", "save")
+}
+
+// SanitizeTitleForQuery mirrors sanitize_title_for_query (query context, P2.119).
+func SanitizeTitleForQuery(title string) string {
+	return SanitizeTitleWithContext(nil, title, "", "query")
+}
+
+// SanitizeTitleWithDashes mirrors sanitize_title_with_dashes (P2.119).
+// context is "save" or "display" (default display when empty).
+func SanitizeTitleWithDashes(title, rawTitle, context string) string {
+	_ = rawTitle
+	if context == "" {
+		context = "display"
+	}
+	return sanitizeTitleWithDashesCtx(title, context)
+}
+
+// SanitizeTitleWithContext mirrors sanitize_title($title, $fallback, $context) (P2.119).
+// Applies sanitize_title_with_dashes (save/query/display), then the sanitize_title
+// filter when hooks are present. Empty result falls back to fallback.
+func SanitizeTitleWithContext(c *Context, title, fallback, context string) string {
+	if context == "" {
+		context = "save"
+	}
+	raw := title
+	if context == "save" {
+		title = removeAccents(title)
+	}
+	// Default WP filter chain: sanitize_title_with_dashes at priority 10.
+	title = sanitizeTitleWithDashesCtx(title, context)
+	if c != nil && c.Hooks != nil {
+		filtered := c.Hooks.ApplyFilters("sanitize_title", title, raw, context)
+		switch t := filtered.(type) {
+		case string:
+			title = t
+		case bool:
+			if !t {
+				title = ""
+			}
+		case nil:
+			title = ""
+		default:
+			title = fmt.Sprint(t)
+		}
+	}
+	if title == "" {
+		return fallback
+	}
+	return title
+}
+
+// SanitizeTitleFiltered is SanitizeTitleWithContext with save context (P2.119).
+func SanitizeTitleFiltered(c *Context, title, fallback string) string {
+	return SanitizeTitleWithContext(c, title, fallback, "save")
 }
 
 // SanitizeFileName sanitizes a filename (sanitize_file_name, P2.29).
@@ -283,6 +336,10 @@ func sanitizeTextFields(str string, keepNewlines bool) string {
 }
 
 func sanitizeTitleWithDashes(title string) string {
+	return sanitizeTitleWithDashesCtx(title, "save")
+}
+
+func sanitizeTitleWithDashesCtx(title, context string) string {
 	// PHP strip_tags (keeps script/style inner text), not wp_strip_all_tags.
 	title = strings.ReplaceAll(title, "\x00", "")
 	title = reTags.ReplaceAllString(title, "")
@@ -297,15 +354,23 @@ func sanitizeTitleWithDashes(title string) string {
 	}
 	title = strings.ToLower(title)
 
-	// save context
-	for _, pair := range [][2]string{
-		{"%c2%a0", "-"}, {"%e2%80%91", "-"}, {"%e2%80%93", "-"}, {"%e2%80%94", "-"},
-		{"&nbsp;", "-"}, {"&#8209;", "-"}, {"&#160;", "-"},
-		{"&ndash;", "-"}, {"&#8211;", "-"}, {"&mdash;", "-"}, {"&#8212;", "-"},
-	} {
-		title = strings.ReplaceAll(title, pair[0], pair[1])
+	if context == "save" {
+		for _, pair := range [][2]string{
+			{"%c2%a0", "-"}, {"%e2%80%91", "-"}, {"%e2%80%93", "-"}, {"%e2%80%94", "-"},
+			{"&nbsp;", "-"}, {"&#8209;", "-"}, {"&#160;", "-"},
+			{"&ndash;", "-"}, {"&#8211;", "-"}, {"&mdash;", "-"}, {"&#8212;", "-"},
+		} {
+			title = strings.ReplaceAll(title, pair[0], pair[1])
+		}
+		title = strings.ReplaceAll(title, "/", "-")
+		// Soft hyphen / angle quotes / common punctuation octets stripped in save.
+		for _, strip := range []string{
+			"%c2%ad", "%c2%a1", "%c2%bf", "%c2%ab", "%c2%bb", "%e2%80%b9", "%e2%80%ba",
+			"%e2%80%98", "%e2%80%99", "%e2%80%9c", "%e2%80%9d",
+		} {
+			title = strings.ReplaceAll(title, strip, "")
+		}
 	}
-	title = strings.ReplaceAll(title, "/", "-")
 
 	title = reTitleEntity.ReplaceAllString(title, "")
 	title = strings.ReplaceAll(title, ".", "-")
