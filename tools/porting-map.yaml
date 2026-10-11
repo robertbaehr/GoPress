@@ -27,6 +27,20 @@
 
 
 
+# P7.170: network.php pagenow chrome.
+- prefix: wp-admin/network.php#pagenow
+  go: internal/admin/network.go
+  status: partial
+  task: P7.170
+  api: n/a
+  notes: "P7.170 — network.php pagenow/adminpage + admin_body_class + locale"
+- prefix: wp-admin/network.php#pagenow#tests
+  go: internal/admin/network_chrome_p7_170_test.go
+  status: partial
+  task: P7.170
+  api: n/a
+  notes: "P7.170 — pagenow chrome + folded body class"
+
 # P5.169: core/rss align coerce.
 - prefix: wp-includes/blocks/rss#align
   go: internal/blocks/rss.go

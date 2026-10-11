@@ -11,18 +11,33 @@ import (
 // serveNetwork is the Tools → Network Setup stub (network.php, P7.96).
 // Multisite / network admin is Tier 2 out of scope for GoPress; this screen
 // explains that and links back to Tools.
+// P7.170: pagenow/adminpage chrome, locale body class, admin_body_class.
 func (h *Handler) serveNetwork(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	_ = r
 	blogname := optionString(c, "blogname", "GoPress")
 	canSetup := c != nil && c.CurrentUser != nil &&
 		(c.UserCan(c.CurrentUser, "setup_network") || c.UserCan(c.CurrentUser, "manage_options"))
 
+	bodyClass := "wp-admin wp-core-ui network-php locale-en-us"
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("admin_body_class", ""); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				bodyClass += " " + strings.TrimSpace(s)
+			}
+		}
+	}
+
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n")
 	b.WriteString("<title>Create a Network of WordPress Sites &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui network-php\">\n")
+	b.WriteString(" &#8212; WordPress</title>\n")
+	b.WriteString("<script>var ajaxurl = \"/wp-admin/admin-ajax.php\", pagenow = \"network\", typenow = \"\", adminpage = \"network-php\";</script>\n")
+	b.WriteString("</head>\n")
+	b.WriteString("<body class=\"")
+	b.WriteString(html.EscapeString(bodyClass))
+	b.WriteString("\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1>Create a Network of WordPress Sites</h1>\n")
