@@ -45,8 +45,15 @@ type QueryArgs struct {
 	Category string
 	// CategoryIn is category term IDs (WP_Query category__in / REST ?categories=, P4.86).
 	CategoryIn []int64
+	// CategoryNotIn is category term IDs to exclude (REST ?categories_exclude=, P4.136).
+	CategoryNotIn []int64
 	// TagIn is post_tag term IDs (WP_Query tag__in / REST ?tags=, P4.87).
 	TagIn []int64
+	// TagNotIn is post_tag term IDs to exclude (REST ?tags_exclude=, P4.136).
+	TagNotIn []int64
+	// TaxRelation is tax_query relation AND|OR across category/tag clauses (REST ?tax_relation=, P4.136).
+	// Empty defaults to AND.
+	TaxRelation string
 	// PostFormatIn is post_format term slugs with post-format- prefix (REST ?format=, P4.96).
 	PostFormatIn []string
 	// PostFormatStandard includes posts with no post_format term (format=standard, P4.96).
@@ -163,74 +170,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 			" INNER JOIN " + c.DB.Terms() + " t ON t.term_id = tt.term_id"
 		where = append(where, "tt.taxonomy = %s", "t.slug = %s")
 		vals = append(vals, "post_tag", tag)
-		where, vals = appendPostFormatFilter(c, where, vals, args, "p.ID")
-		whereSQL := strings.Join(where, " AND ")
-		whereSQL = strings.ReplaceAll(whereSQL, "post_type", "p.post_type")
-		whereSQL = strings.ReplaceAll(whereSQL, "post_status", "p.post_status")
-		whereSQL = strings.ReplaceAll(whereSQL, "post_author", "p.post_author")
-		whereSQL = strings.ReplaceAll(whereSQL, "post_title", "p.post_title")
-		whereSQL = strings.ReplaceAll(whereSQL, "post_excerpt", "p.post_excerpt")
-		whereSQL = strings.ReplaceAll(whereSQL, "post_content", "p.post_content")
-		whereSQL = strings.ReplaceAll(whereSQL, "post_name", "p.post_name")
-		whereSQL = strings.ReplaceAll(whereSQL, "post_date", "p.post_date")
-		whereSQL = strings.ReplaceAll(whereSQL, "post_modified", "p.post_modified")
-		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
-		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
-		whereSQL = strings.ReplaceAll(whereSQL, "post_parent", "p.post_parent")
-		q := "SELECT COUNT(DISTINCT p.ID) AS total FROM " + from + " WHERE " + whereSQL
-		sqlStr, sqlArgs, err := c.DB.Prepare(q, vals...)
-		if err != nil {
-			return 0, err
-		}
-		v, err := c.DB.GetVar(sqlStr, sqlArgs...)
-		if err != nil {
-			return 0, err
-		}
-		return intFromAny(v), nil
-	}
-	if len(args.TagIn) > 0 {
-		from = c.DB.Posts() + " p INNER JOIN " + c.DB.TermRelationships() + " tr ON tr.object_id = p.ID" +
-			" INNER JOIN " + c.DB.TermTaxonomy() + " tt ON tt.term_taxonomy_id = tr.term_taxonomy_id" +
-			" INNER JOIN " + c.DB.Terms() + " t ON t.term_id = tt.term_id"
-		where = append(where, "tt.taxonomy = %s")
-		vals = append(vals, "post_tag")
-		clause, cvals := postInNotInSQL("t.term_id", args.TagIn, nil)
-		where = append(where, clause)
-		vals = append(vals, cvals...)
-		where, vals = appendPostFormatFilter(c, where, vals, args, "p.ID")
-		whereSQL := strings.Join(where, " AND ")
-		whereSQL = strings.ReplaceAll(whereSQL, "post_type", "p.post_type")
-		whereSQL = strings.ReplaceAll(whereSQL, "post_status", "p.post_status")
-		whereSQL = strings.ReplaceAll(whereSQL, "post_author", "p.post_author")
-		whereSQL = strings.ReplaceAll(whereSQL, "post_title", "p.post_title")
-		whereSQL = strings.ReplaceAll(whereSQL, "post_excerpt", "p.post_excerpt")
-		whereSQL = strings.ReplaceAll(whereSQL, "post_content", "p.post_content")
-		whereSQL = strings.ReplaceAll(whereSQL, "post_name", "p.post_name")
-		whereSQL = strings.ReplaceAll(whereSQL, "post_date", "p.post_date")
-		whereSQL = strings.ReplaceAll(whereSQL, "post_modified", "p.post_modified")
-		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
-		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
-		whereSQL = strings.ReplaceAll(whereSQL, "post_parent", "p.post_parent")
-		q := "SELECT COUNT(DISTINCT p.ID) AS total FROM " + from + " WHERE " + whereSQL
-		sqlStr, sqlArgs, err := c.DB.Prepare(q, vals...)
-		if err != nil {
-			return 0, err
-		}
-		v, err := c.DB.GetVar(sqlStr, sqlArgs...)
-		if err != nil {
-			return 0, err
-		}
-		return intFromAny(v), nil
-	}
-	if len(args.CategoryIn) > 0 {
-		from = c.DB.Posts() + " p INNER JOIN " + c.DB.TermRelationships() + " tr ON tr.object_id = p.ID" +
-			" INNER JOIN " + c.DB.TermTaxonomy() + " tt ON tt.term_taxonomy_id = tr.term_taxonomy_id" +
-			" INNER JOIN " + c.DB.Terms() + " t ON t.term_id = tt.term_id"
-		where = append(where, "tt.taxonomy = %s")
-		vals = append(vals, "category")
-		clause, cvals := postInNotInSQL("t.term_id", args.CategoryIn, nil)
-		where = append(where, clause)
-		vals = append(vals, cvals...)
+		where, vals = appendTaxQueryFilters(c, where, vals, args, "p.ID")
 		where, vals = appendPostFormatFilter(c, where, vals, args, "p.ID")
 		whereSQL := strings.Join(where, " AND ")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_type", "p.post_type")
@@ -263,6 +203,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 			" INNER JOIN " + c.DB.Terms() + " t ON t.term_id = tt.term_id"
 		where = append(where, "tt.taxonomy = %s", "t.slug = %s")
 		vals = append(vals, "category", cat)
+		where, vals = appendTaxQueryFilters(c, where, vals, args, "p.ID")
 		where, vals = appendPostFormatFilter(c, where, vals, args, "p.ID")
 		whereSQL := strings.Join(where, " AND ")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_type", "p.post_type")
@@ -288,6 +229,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		}
 		return intFromAny(v), nil
 	}
+	where, vals = appendTaxQueryFilters(c, where, vals, args, "ID")
 	where, vals = appendPostFormatFilter(c, where, vals, args, "ID")
 	q := "SELECT COUNT(*) AS total FROM " + from + " WHERE " + strings.Join(where, " AND ")
 	sqlStr, sqlArgs, err := c.DB.Prepare(q, vals...)
@@ -394,24 +336,6 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 			" INNER JOIN " + c.DB.Terms() + " t ON t.term_id = tt.term_id"
 		where = append(where, "tt.taxonomy = %s", "t.slug = %s")
 		vals = append(vals, "post_tag", tag)
-	} else if len(args.TagIn) > 0 {
-		from += " INNER JOIN " + c.DB.TermRelationships() + " tr ON tr.object_id = p.ID" +
-			" INNER JOIN " + c.DB.TermTaxonomy() + " tt ON tt.term_taxonomy_id = tr.term_taxonomy_id" +
-			" INNER JOIN " + c.DB.Terms() + " t ON t.term_id = tt.term_id"
-		where = append(where, "tt.taxonomy = %s")
-		vals = append(vals, "post_tag")
-		clause, cvals := postInNotInSQL("t.term_id", args.TagIn, nil)
-		where = append(where, clause)
-		vals = append(vals, cvals...)
-	} else if len(args.CategoryIn) > 0 {
-		from += " INNER JOIN " + c.DB.TermRelationships() + " tr ON tr.object_id = p.ID" +
-			" INNER JOIN " + c.DB.TermTaxonomy() + " tt ON tt.term_taxonomy_id = tr.term_taxonomy_id" +
-			" INNER JOIN " + c.DB.Terms() + " t ON t.term_id = tt.term_id"
-		where = append(where, "tt.taxonomy = %s")
-		vals = append(vals, "category")
-		clause, cvals := postInNotInSQL("t.term_id", args.CategoryIn, nil)
-		where = append(where, clause)
-		vals = append(vals, cvals...)
 	} else if cat := strings.TrimSpace(args.Category); cat != "" {
 		cat = lastPathSegment(cat)
 		from += " INNER JOIN " + c.DB.TermRelationships() + " tr ON tr.object_id = p.ID" +
@@ -429,6 +353,8 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 	} else {
 		from = c.DB.Posts()
 	}
+	// P4.136: categories/tags include+exclude via EXISTS (combine with tax_relation).
+	where, vals = appendTaxQueryFilters(c, where, vals, args, idCol)
 	// P4.96: format= via EXISTS / NOT EXISTS (works with or without tax joins).
 	where, vals = appendPostFormatFilter(c, where, vals, args, idCol)
 	whereSQL := strings.Join(where, " AND ")
@@ -474,7 +400,7 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 	for _, row := range rows {
 		out = append(out, postFromRow(row))
 	}
-	if postType == "post" && (args.StickyFirst || args.IgnoreSticky) && args.P == 0 && args.Name == "" && args.PageName == "" && len(args.NameIn) == 0 && args.Tag == "" && args.Category == "" && len(args.CategoryIn) == 0 && len(args.TagIn) == 0 && len(args.PostFormatIn) == 0 && !args.PostFormatStandard {
+	if postType == "post" && (args.StickyFirst || args.IgnoreSticky) && args.P == 0 && args.Name == "" && args.PageName == "" && len(args.NameIn) == 0 && args.Tag == "" && args.Category == "" && len(args.CategoryIn) == 0 && len(args.CategoryNotIn) == 0 && len(args.TagIn) == 0 && len(args.TagNotIn) == 0 && len(args.PostFormatIn) == 0 && !args.PostFormatStandard {
 		out = applyStickyOrdering(c, out, args)
 	}
 	return out, nil
@@ -782,6 +708,65 @@ func postNameFilterSQL(name, pageName string, nameIn []string) (string, []any) {
 		return "", nil
 	}
 	return "post_name = %s", []any{lastPathSegment(slug)}
+}
+
+// appendTaxQueryFilters adds REST categories/tags include+exclude as EXISTS clauses (P4.136).
+// tax_relation AND|OR joins the clauses (default AND). idCol is "ID" or "p.ID".
+func appendTaxQueryFilters(c *Context, where []string, vals []any, args QueryArgs, idCol string) ([]string, []any) {
+	if c == nil || c.DB == nil {
+		return where, vals
+	}
+	if idCol == "" {
+		idCol = "ID"
+	}
+	tr := c.DB.TermRelationships()
+	tt := c.DB.TermTaxonomy()
+	terms := c.DB.Terms()
+	termExists := func(taxonomy string, ids []int64, not bool) (string, []any) {
+		if len(ids) == 0 {
+			return "", nil
+		}
+		ph := make([]string, len(ids))
+		v := make([]any, 0, 1+len(ids))
+		v = append(v, taxonomy)
+		for i, id := range ids {
+			ph[i] = "%d"
+			v = append(v, id)
+		}
+		op := "EXISTS"
+		if not {
+			op = "NOT EXISTS"
+		}
+		sql := op + " (SELECT 1 FROM " + tr + " tr_tq INNER JOIN " + tt + " tt_tq ON tt_tq.term_taxonomy_id = tr_tq.term_taxonomy_id INNER JOIN " + terms + " t_tq ON t_tq.term_id = tt_tq.term_id WHERE tr_tq.object_id = " + idCol + " AND tt_tq.taxonomy = %s AND t_tq.term_id IN (" + strings.Join(ph, ",") + "))"
+		return sql, v
+	}
+	var parts []string
+	var partVals []any
+	add := func(sql string, v []any) {
+		if sql == "" {
+			return
+		}
+		parts = append(parts, sql)
+		partVals = append(partVals, v...)
+	}
+	s, v := termExists("category", args.CategoryIn, false)
+	add(s, v)
+	s, v = termExists("post_tag", args.TagIn, false)
+	add(s, v)
+	s, v = termExists("category", args.CategoryNotIn, true)
+	add(s, v)
+	s, v = termExists("post_tag", args.TagNotIn, true)
+	add(s, v)
+	if len(parts) == 0 {
+		return where, vals
+	}
+	rel := "AND"
+	if strings.EqualFold(strings.TrimSpace(args.TaxRelation), "OR") {
+		rel = "OR"
+	}
+	where = append(where, "("+strings.Join(parts, " "+rel+" ")+")")
+	vals = append(vals, partVals...)
+	return where, vals
 }
 
 // appendPostFormatFilter adds REST ?format= tax_query (P4.96).

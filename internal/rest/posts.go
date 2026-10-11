@@ -213,7 +213,7 @@ func parsePostsOffset(r *http.Request) (offset int, ok bool) {
 	return n, true
 }
 
-func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, offsetOverride int, useOffset bool) ([]Post, error) {
+func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, offsetOverride int, useOffset bool) ([]Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -241,7 +241,10 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 		AuthorIn:           authorIn,
 		AuthorNotIn:        authorNotIn,
 		CategoryIn:         categoryIn,
+		CategoryNotIn:      categoryNotIn,
 		TagIn:              tagIn,
+		TagNotIn:           tagNotIn,
+		TaxRelation:        taxRelation,
 		NameIn:             slugs,
 		PostIn:             include,
 		PostNotIn:          exclude,
@@ -352,10 +355,35 @@ func parsePostsCategories(r *http.Request) []int64 {
 	return parsePostsTermIDs(r, "categories")
 }
 
+// parsePostsCategoriesExclude reads REST ?categories_exclude= (tax_query NOT IN, P4.136).
+func parsePostsCategoriesExclude(r *http.Request) []int64 {
+	return parsePostsTermIDs(r, "categories_exclude")
+}
+
 // parsePostsTags reads REST ?tags= (maps to tax_query post_tag term_id IN, P4.87).
 // Accepts comma-separated IDs and/or repeated query values.
 func parsePostsTags(r *http.Request) []int64 {
 	return parsePostsTermIDs(r, "tags")
+}
+
+// parsePostsTagsExclude reads REST ?tags_exclude= (tax_query NOT IN, P4.136).
+func parsePostsTagsExclude(r *http.Request) []int64 {
+	return parsePostsTermIDs(r, "tags_exclude")
+}
+
+// parsePostsTaxRelation reads REST ?tax_relation=AND|OR (P4.136). Empty → AND.
+func parsePostsTaxRelation(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	v := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("tax_relation")))
+	if v == "OR" {
+		return "OR"
+	}
+	if v == "AND" {
+		return "AND"
+	}
+	return ""
 }
 
 // knownPostFormats mirrors get_post_format_slugs() (P4.96).
@@ -659,7 +687,7 @@ func parsePostsTermIDs(r *http.Request, key string) []int64 {
 	return out
 }
 
-func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool) (int, error) {
+func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
@@ -675,7 +703,10 @@ func countPosts(c *wp.Context, postType string, stickyFilter *bool, search strin
 		AuthorIn:           authorIn,
 		AuthorNotIn:        authorNotIn,
 		CategoryIn:         categoryIn,
+		CategoryNotIn:      categoryNotIn,
 		TagIn:              tagIn,
+		TagNotIn:           tagNotIn,
+		TaxRelation:        taxRelation,
 		NameIn:             slugs,
 		PostIn:             include,
 		PostNotIn:          exclude,
