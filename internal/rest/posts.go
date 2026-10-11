@@ -850,7 +850,8 @@ func stickyIDList(c *wp.Context) []int64 {
 	return out
 }
 
-// parseStickyQuery reads REST ?sticky= as an optional boolean.
+// parseStickyQuery reads REST ?sticky= as an optional boolean (P4.82 / P2.120).
+// Accepts rest_is_boolean values and sanitizes via rest_sanitize_boolean.
 func parseStickyQuery(r *http.Request) *bool {
 	if r == nil {
 		return nil
@@ -859,16 +860,11 @@ func parseStickyQuery(r *http.Request) *bool {
 	if raw == "" {
 		return nil
 	}
-	switch strings.ToLower(raw) {
-	case "1", "true", "yes", "on":
-		v := true
-		return &v
-	case "0", "false", "no", "off":
-		v := false
-		return &v
-	default:
+	if !wp.RestIsBoolean(raw) {
 		return nil
 	}
+	v := wp.RestSanitizeBoolean(raw)
+	return &v
 }
 
 func getPostByID(c *wp.Context, postType string, id int64, edit bool) (*Post, error) {

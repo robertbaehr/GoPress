@@ -1960,6 +1960,27 @@ wp-login.php#language-switcher-post
   task: P2.34
   api: exported
 
+- prefix: wp-includes/rest-api.php#rest_is_boolean
+  go: internal/wp/validate_boolean.go
+  status: partial
+  task: P2.120
+  api: exported
+  notes: "P2.120 — RestIsBoolean / RestSanitizeBoolean; sticky query uses rest boolean helpers"
+
+- prefix: wp-includes/rest-api.php#rest_sanitize_boolean
+  go: internal/wp/validate_boolean.go
+  status: partial
+  task: P2.120
+  api: exported
+  notes: "P2.120 — rest_sanitize_boolean string false/0 special case"
+
+- prefix: wp-includes/functions.php#wp_validate_boolean-test
+  go: internal/wp/validate_boolean_test.go
+  status: partial
+  task: P2.120
+  api: n/a
+  notes: "P2.120 — unit coverage for ValidateBoolean / RestIsBoolean / RestSanitizeBoolean"
+
 # P2.47: WP_Http::is_ip_address.
 - prefix: wp-includes/class-wp-http.php#is_ip_address
   go: internal/wp/is_ip_address.go
