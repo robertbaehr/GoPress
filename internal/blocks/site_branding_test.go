@@ -73,3 +73,39 @@ func TestRenderSiteLogo(t *testing.T) {
 		t.Fatalf("missing logo URL should omit markup, got %q", noLogo)
 	}
 }
+
+// P5.120: className/align wrapper, height from aspect ratio, aria-current on front.
+func TestRenderSiteLogoPolish(t *testing.T) {
+	env := &blocks.Env{
+		SiteLogoURL: func() string { return "http://127.0.0.1:8081/wp-content/uploads/logo.png" },
+		SiteLogoID:  func() int64 { return 42 },
+		GetAttachmentDimensions: func(id int64) (int, int) {
+			if id != 42 {
+				t.Fatalf("unexpected id %d", id)
+			}
+			return 200, 100
+		},
+		HomeURL:     func() string { return "http://127.0.0.1:8081" },
+		IsFrontPage: func() bool { return true },
+		IsPaged:     func() bool { return false },
+	}
+	out := blocks.RenderWith(env, `<!-- wp:site-logo {"width":80,"align":"center","className":"is-style-rounded"} /-->`)
+	if !strings.Contains(out, `class="wp-block-site-logo aligncenter is-style-rounded"`) {
+		t.Fatalf("wrapper classes: %q", out)
+	}
+	if !strings.Contains(out, `width="80"`) || !strings.Contains(out, `height="40"`) {
+		t.Fatalf("expected aspect height 40, got %q", out)
+	}
+	if !strings.Contains(out, `aria-current="page"`) {
+		t.Fatalf("expected aria-current on front, got %q", out)
+	}
+	paged := blocks.RenderWith(&blocks.Env{
+		SiteLogoURL: func() string { return "http://127.0.0.1:8081/logo.png" },
+		HomeURL:     func() string { return "http://127.0.0.1:8081" },
+		IsFrontPage: func() bool { return true },
+		IsPaged:     func() bool { return true },
+	}, `<!-- wp:site-logo /-->`)
+	if strings.Contains(paged, `aria-current`) {
+		t.Fatalf("paged front should omit aria-current: %q", paged)
+	}
+}

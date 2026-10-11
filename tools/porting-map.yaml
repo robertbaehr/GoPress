@@ -8066,3 +8066,32 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P10.149 — summarize post-template/pagination, search_columns, post-new, unique_filename siblings, bloginfo, wp_lang COOKIEPATH, 1092 corpus"
 
+
+# P5.120: deepen core/site-logo (className/align, height aspect, aria-current).
+- prefix: wp-includes/blocks/site-logo.php#p5.120
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.120
+  api: internal
+  notes: "P5.120 — className/align wrapper; width→height via attachment dims; aria-current on front"
+
+- prefix: wp-includes/blocks/site-logo.php#p5.120#env
+  go: internal/blocks/env.go
+  status: partial
+  task: P5.120
+  api: internal
+  notes: "P5.120 — SiteLogoID for aspect height"
+
+- prefix: wp-includes/blocks/site-logo.php#p5.120#tests
+  go: internal/blocks/site_branding_test.go
+  status: partial
+  task: P5.120
+  api: n/a
+  notes: "P5.120 — className/align/height/aria-current coverage"
+
+- prefix: wp-includes/blocks/site-logo.php#p5.120#front
+  go: internal/server/front.go
+  status: partial
+  task: P5.120
+  api: internal
+  notes: "P5.120 — wire SiteLogoID from CustomLogoID"

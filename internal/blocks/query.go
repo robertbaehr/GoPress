@@ -837,7 +837,7 @@ func (e *Env) renderSiteTagline(block Block) string {
 	return `<` + tag + ` class="` + html.EscapeString(strings.Join(classes, " ")) + `">` + html.EscapeString(tagline) + `</` + tag + `>`
 }
 
-// renderSiteLogo renders core/site-logo from the site_logo / custom logo URL (P5.45).
+// renderSiteLogo renders core/site-logo from the site_logo / custom logo URL (P5.45 / P5.120).
 func (e *Env) renderSiteLogo(block Block) string {
 	e = e.ensure()
 	if e.SiteLogoURL == nil {
@@ -848,11 +848,29 @@ func (e *Env) renderSiteLogo(block Block) string {
 		return ""
 	}
 	width := attrInt64(block.Attrs, "width")
+	// P5.120: adjust height from attachment aspect ratio when width is set
+	// (mirrors wp_get_attachment_image_src filter in render_block_core_site_logo).
+	var height int64
+	if width > 0 && e.SiteLogoID != nil && e.GetAttachmentDimensions != nil {
+		if id := e.SiteLogoID(); id > 0 {
+			if natW, natH := e.GetAttachmentDimensions(id); natW > 0 && natH > 0 {
+				height = int64(float64(width) / (float64(natW) / float64(natH)))
+				if height < 1 {
+					height = 1
+				}
+			}
+		}
+	}
 	var imgB strings.Builder
 	imgB.WriteString(`<img`)
 	if width > 0 {
 		imgB.WriteString(` width="`)
 		imgB.WriteString(strconv.FormatInt(width, 10))
+		imgB.WriteString(`"`)
+	}
+	if height > 0 {
+		imgB.WriteString(` height="`)
+		imgB.WriteString(strconv.FormatInt(height, 10))
 		imgB.WriteString(`"`)
 	}
 	imgB.WriteString(` src="`)
@@ -876,14 +894,26 @@ func (e *Env) renderSiteLogo(block Block) string {
 			if target == "_blank" {
 				aria = ` aria-label="(Home link, opens in a new tab)"`
 			}
-			inner = `<a href="` + html.EscapeString(home) + `" class="custom-logo-link" rel="home"` + aria + ` target="` + html.EscapeString(target) + `">` + img + `</a>`
+			// P5.120: aria-current like get_custom_logo / site-title (!is_paged front/home).
+			current := ""
+			if e.isSiteTitleCurrent() {
+				current = ` aria-current="page"`
+			}
+			inner = `<a` + current + ` href="` + html.EscapeString(home) + `" class="custom-logo-link" rel="home"` + aria + ` target="` + html.EscapeString(target) + `">` + img + `</a>`
 		}
 	}
-	classes := "wp-block-site-logo"
+	// P5.120: className / align like get_block_wrapper_attributes.
+	classes := []string{"wp-block-site-logo"}
 	if width <= 0 {
-		classes += " is-default-size"
+		classes = append(classes, "is-default-size")
 	}
-	return `<div class="` + classes + `">` + inner + `</div>`
+	if align := strings.TrimSpace(attrString(block.Attrs, "align")); align != "" {
+		classes = append(classes, "align"+sanitizeClassToken(align))
+	}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		classes = append(classes, cn)
+	}
+	return `<div class="` + html.EscapeString(strings.Join(classes, " ")) + `">` + inner + `</div>`
 }
 
 // renderReadMore renders core/read-more as a permalink link (P5.47 / P5.92).
