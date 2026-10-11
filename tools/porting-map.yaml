@@ -15,6 +15,21 @@
 
 
 
+
+# P8.60: wp_constrain_dimensions.
+- prefix: wp-includes/media.php#wp_constrain_dimensions
+  go: internal/wp/constrain_dimensions.go
+  status: partial
+  task: P8.60
+  api: n/a
+  notes: "P8.60 — ConstrainDimensions aspect fit + 1px bump + filter"
+- prefix: wp-includes/media.php#wp_constrain_dimensions#tests
+  go: internal/wp/constrain_dimensions_p8_60_test.go
+  status: partial
+  task: P8.60
+  api: n/a
+  notes: "P8.60 — 800x600→400x300; noop; filter"
+
 # P3.160: content_url.
 - prefix: wp-includes/link-template.php#content_url
   go: internal/wp/content_url.go
