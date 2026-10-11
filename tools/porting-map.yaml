@@ -11090,3 +11090,17 @@ wp-login.php#language-switcher-post
   task: P2.141
   api: n/a
   notes: "P2.141 — default words, characters modes, invalid fallback"
+
+# P3.139: deepen front preconnect resource hints.
+- prefix: wp-includes/general-template.php#wp_resource_hints#preconnect
+  go: internal/wp/resource_hints.go
+  status: partial
+  task: P3.139
+  api: n/a
+  notes: "P3.139 — case-insensitive scheme+host preconnect dedupe; crossorigin preserved"
+- prefix: wp-includes/general-template.php#wp_resource_hints#preconnect#tests
+  go: internal/wp/resource_hints_p3_139_test.go
+  status: partial
+  task: P3.139
+  api: n/a
+  notes: "P3.139 — preconnect dedupe + crossorigin + bare host"
