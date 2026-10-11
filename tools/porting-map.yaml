@@ -1133,12 +1133,20 @@ wp-login.php#language-switcher-post
   task: P4.50
   api: exported
 
-# P4.61: GET /wp/v2/block-types/{namespace} and /{namespace}/{name}.
+# P4.61 / P4.124: GET /wp/v2/block-types + OPTIONS/HEAD/context/supports.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-types-controller.php
   go: internal/rest/block_types.go
   status: partial
-  task: P4.61
+  task: P4.124
   api: exported
+  notes: "P4.124 — OPTIONS schema; HEAD; context view/edit/embed; keywords/supports subset"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-block-types-controller.php#test
+  go: internal/rest/block_types_test.go
+  status: partial
+  task: P4.124
+  api: n/a
+  notes: "P4.124 — unit coverage for OPTIONS/HEAD/context/supports"
 
 # P7.35: save menu location assignments on nav-menus.php Manage Locations.
 - prefix: wp-admin/nav-menus.php#locations
