@@ -832,3 +832,13 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.134: attachment shortlink / ?p=10 headers.
+- id: front-p10134-attachment-p10
+  role: anon
+  method: GET
+  path: /?p=10
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

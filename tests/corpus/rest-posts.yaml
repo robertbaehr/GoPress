@@ -4783,3 +4783,184 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.134: batch/v1 + separator/spacer contexts + related headers-only expands.
+- id: rest-p10134-batch-v1-get
+  role: anon
+  method: GET
+  path: /wp-json/batch/v1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10134-batch-v1-options
+  role: anon
+  method: OPTIONS
+  path: /wp-json/batch/v1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10134-rest-route-batch-v1
+  role: anon
+  method: GET
+  path: /?rest_route=/batch/v1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10134-block-types-separator-context-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/separator?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10134-block-types-separator-context-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/separator?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10134-block-types-separator-context-edit
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/separator?context=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10134-block-types-spacer-context-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/spacer?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10134-block-types-spacer-context-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/spacer?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10134-block-types-spacer-context-edit
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/spacer?context=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10134-rest-route-separator-context-view
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/separator&context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10134-rest-route-spacer-context-embed
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/spacer&context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10134-block-types-cover-context-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/cover?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10134-block-types-columns-context-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/columns?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10134-block-types-quote-context-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/quote?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10134-block-types-list-context-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/list?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10134-block-types-image-context-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/image?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10134-types-attachment-context-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types/attachment?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10134-types-wp-template-context-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types/wp_template?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10134-block-directory-term-separator
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-directory/search?term=separator
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10134-pattern-directory-search-header
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pattern-directory/patterns?search=header
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
