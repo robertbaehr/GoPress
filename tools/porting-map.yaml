@@ -8162,3 +8162,25 @@ wp-login.php#language-switcher-post
   task: P3.114
   api: n/a
   notes: "P3.114 — logged-in classes + body_class filter coverage"
+
+# P8.37: big_image_size_threshold / *-scaled full size.
+- prefix: wp-admin/includes/image.php#big_image_size_threshold
+  go: internal/wp/media_scale.go
+  status: partial
+  task: P8.37
+  api: exported
+  notes: "P8.37 — BigImageSizeThreshold filter; maybeScaleBigImage *-scaled + original_image"
+
+- prefix: wp-admin/includes/image.php#big_image_size_threshold#meta
+  go: internal/wp/image_meta.go
+  status: partial
+  task: P8.37
+  api: exported
+  notes: "P8.37 — GenerateAttachmentMetadata scales oversized originals"
+
+- prefix: wp-admin/includes/image.php#big_image_size_threshold#tests
+  go: internal/wp/media_scale_test.go
+  status: partial
+  task: P8.37
+  api: n/a
+  notes: "P8.37 — threshold filter + scaled metadata coverage"
