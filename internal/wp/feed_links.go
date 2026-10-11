@@ -251,6 +251,99 @@ func GetTermFeedLink(c *Context, home string, termID int64, taxonomy, feed strin
 	return out
 }
 
+// GetSearchLink builds a search results permalink (get_search_link subset, P3.151).
+// Pretty: {home}/search/{query}/ with spaces as +. Empty query → {home}/search/.
+func GetSearchLink(c *Context, home, query string) string {
+	home = strings.TrimRight(strings.TrimSpace(home), "/")
+	if home == "" && c != nil {
+		home = strings.TrimRight(optionStringBlogInfo(c, "home", optionStringBlogInfo(c, "siteurl", "")), "/")
+	}
+	if home == "" {
+		return ""
+	}
+	q := strings.TrimSpace(query)
+	if q == "" {
+		return home + "/search/"
+	}
+	// WP uses rawurlencode then replaces %20 with +.
+	enc := strings.ReplaceAll(pathEscapeSearch(q), "%20", "+")
+	return home + "/search/" + enc + "/"
+}
+
+// GetSearchFeedLink builds a search results feed permalink (get_search_feed_link, P3.151).
+// Pretty: {search_link}feed/ or …/feed/{type}/ when type ≠ default rss2.
+// Applies search_feed_link filter with type "posts".
+func GetSearchFeedLink(c *Context, home, query, feed string) string {
+	base := strings.TrimRight(GetSearchLink(c, home, query), "/")
+	if base == "" {
+		return ""
+	}
+	feed = strings.ToLower(strings.TrimSpace(feed))
+	if feed == "" {
+		feed = "rss2"
+	}
+	out := ""
+	if feed == "rss2" || feed == "rss" {
+		out = base + "/feed/"
+	} else {
+		out = base + "/feed/" + feed + "/"
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("search_feed_link", out, feed, "posts"); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				return strings.TrimSpace(s)
+			}
+		}
+	}
+	return out
+}
+
+// GetSearchCommentsFeedLink builds a search comments feed permalink (P3.151).
+// Pretty subset: appends ?withcomments=1 to the search feed link.
+// Applies search_feed_link filter with type "comments".
+func GetSearchCommentsFeedLink(c *Context, home, query, feed string) string {
+	out := GetSearchFeedLink(c, home, query, feed)
+	if out == "" {
+		return ""
+	}
+	if strings.Contains(out, "?") {
+		out += "&withcomments=1"
+	} else {
+		out += "?withcomments=1"
+	}
+	if c != nil && c.Hooks != nil {
+		feed = strings.ToLower(strings.TrimSpace(feed))
+		if feed == "" {
+			feed = "rss2"
+		}
+		if v := c.Hooks.ApplyFilters("search_feed_link", out, feed, "comments"); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				return strings.TrimSpace(s)
+			}
+		}
+	}
+	return out
+}
+
+// pathEscapeSearch percent-encodes a search query for pretty /search/ paths.
+func pathEscapeSearch(q string) string {
+	var b strings.Builder
+	for i := 0; i < len(q); i++ {
+		c := q[i]
+		// Unreserved + common path-safe chars WP keeps via rawurlencode of UTF-8.
+		if (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') ||
+			c == '-' || c == '_' || c == '.' || c == '~' {
+			b.WriteByte(c)
+			continue
+		}
+		b.WriteByte('%')
+		const hex = "0123456789ABCDEF"
+		b.WriteByte(hex[c>>4])
+		b.WriteByte(hex[c&0xf])
+	}
+	return b.String()
+}
+
 // termSlugForTaxonomy looks up a term slug when the term exists in taxonomy.
 func termSlugForTaxonomy(c *Context, termID int64, taxonomy string) string {
 	if c == nil || c.DB == nil || termID <= 0 || taxonomy == "" {
