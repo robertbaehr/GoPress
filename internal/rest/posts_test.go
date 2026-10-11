@@ -1829,9 +1829,24 @@ func TestPostsPerPageValidation(t *testing.T) {
 // P4.144: zero post_modified_gmt is shimmed from post_modified via site timezone.
 func TestPostsModifiedGMTZeroShim(t *testing.T) {
 	c := bootOrSkip(t)
-	defer c.DB.Close()
-
 	const postID int64 = 1
+	orig, err := wp.GetPostByID(c, postID)
+	if err != nil || orig == nil {
+		t.Fatalf("load post: %v", err)
+	}
+	prevOff := c.Options.GetOption("gmt_offset", "0")
+	prevTZ := c.Options.GetOption("timezone_string", "")
+	t.Cleanup(func() {
+		uq, uargs, _ := c.DB.Prepare(
+			"UPDATE "+c.DB.Posts()+" SET post_modified = %s, post_modified_gmt = %s WHERE ID = %d",
+			orig.Modified, orig.ModifiedGMT, postID,
+		)
+		_, _ = c.DB.Exec(uq, uargs...)
+		_, _ = c.Options.UpdateOption("gmt_offset", prevOff, "yes")
+		_, _ = c.Options.UpdateOption("timezone_string", prevTZ, "yes")
+		_ = c.DB.Close()
+	})
+
 	uq, uargs, err := c.DB.Prepare(
 		"UPDATE "+c.DB.Posts()+" SET post_modified = %s, post_modified_gmt = %s WHERE ID = %d",
 		"2024-06-15 14:00:00", "0000-00-00 00:00:00", postID,
@@ -1842,24 +1857,13 @@ func TestPostsModifiedGMTZeroShim(t *testing.T) {
 	if _, err := c.DB.Exec(uq, uargs...); err != nil {
 		t.Fatalf("zero modified_gmt: %v", err)
 	}
-	prevOff := c.Options.GetOption("gmt_offset", "0")
-	prevTZ := c.Options.GetOption("timezone_string", "")
 	_, _ = c.Options.UpdateOption("timezone_string", "", "yes")
 	_, _ = c.Options.UpdateOption("gmt_offset", "-5", "yes")
-	t.Cleanup(func() {
-		uq, uargs, _ := c.DB.Prepare(
-			"UPDATE "+c.DB.Posts()+" SET post_modified = %s, post_modified_gmt = %s WHERE ID = %d",
-			"2024-06-15 12:00:00", "2024-06-15 12:00:00", postID,
-		)
-		_, _ = c.DB.Exec(uq, uargs...)
-		_, _ = c.Options.UpdateOption("gmt_offset", prevOff, "yes")
-		_, _ = c.Options.UpdateOption("timezone_string", prevTZ, "yes")
-	})
 
 	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts/"+strconv.FormatInt(postID, 10), nil)
 	rec := httptest.NewRecorder()
-	c = c.ForRequest(rec, req)
-	(&rest.Server{}).Handle(rec, req, c)
+	rc := c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
 	}
@@ -1879,8 +1883,19 @@ func TestPostsModifiedGMTZeroShim(t *testing.T) {
 func TestMySQLDateToRESTZeroEmpty(t *testing.T) {
 	// Indirect: zero modified_gmt with empty local yields empty modified_gmt.
 	c := bootOrSkip(t)
-	defer c.DB.Close()
 	const postID int64 = 1
+	orig, err := wp.GetPostByID(c, postID)
+	if err != nil || orig == nil {
+		t.Fatalf("load post: %v", err)
+	}
+	t.Cleanup(func() {
+		uq, uargs, _ := c.DB.Prepare(
+			"UPDATE "+c.DB.Posts()+" SET post_modified = %s, post_modified_gmt = %s WHERE ID = %d",
+			orig.Modified, orig.ModifiedGMT, postID,
+		)
+		_, _ = c.DB.Exec(uq, uargs...)
+		_ = c.DB.Close()
+	})
 	uq, uargs, err := c.DB.Prepare(
 		"UPDATE "+c.DB.Posts()+" SET post_modified = %s, post_modified_gmt = %s WHERE ID = %d",
 		"0000-00-00 00:00:00", "0000-00-00 00:00:00", postID,
@@ -1891,17 +1906,10 @@ func TestMySQLDateToRESTZeroEmpty(t *testing.T) {
 	if _, err := c.DB.Exec(uq, uargs...); err != nil {
 		t.Fatalf("zero both: %v", err)
 	}
-	t.Cleanup(func() {
-		uq, uargs, _ := c.DB.Prepare(
-			"UPDATE "+c.DB.Posts()+" SET post_modified = %s, post_modified_gmt = %s WHERE ID = %d",
-			"2024-06-15 12:00:00", "2024-06-15 12:00:00", postID,
-		)
-		_, _ = c.DB.Exec(uq, uargs...)
-	})
 	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts/"+strconv.FormatInt(postID, 10), nil)
 	rec := httptest.NewRecorder()
-	c = c.ForRequest(rec, req)
-	(&rest.Server{}).Handle(rec, req, c)
+	rc := c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
 	}
