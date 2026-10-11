@@ -2,6 +2,7 @@ package wp
 
 import (
 	"fmt"
+	"net/http"
 	"strconv"
 	"strings"
 )
@@ -91,4 +92,17 @@ func getShortlinkFilter(c *Context, shortlink string, id int64, context string, 
 		return s
 	}
 	return shortlink
+}
+
+// ShortlinkHeader emits Link: <url>; rel=shortlink (wp_shortlink_header, P3.130).
+// Uses wp_get_shortlink(0, 'query') with the queried object ID.
+func ShortlinkHeader(w http.ResponseWriter, c *Context, queriedID int64) {
+	if w == nil {
+		return
+	}
+	short := GetShortlink(c, 0, "query", queriedID)
+	if strings.TrimSpace(short) == "" {
+		return
+	}
+	w.Header().Add("Link", fmt.Sprintf(`<%s>; rel=shortlink`, short))
 }

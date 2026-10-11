@@ -4495,10 +4495,8 @@ func setFrontSingularLinks(w http.ResponseWriter, c *wp.Context, post *singularP
 			`<%s/wp-json/wp/v2/%s/%d>; rel="alternate"; title="JSON"; type="application/json"`,
 			home, restType, post.ID))
 	}
-	// P3.106: shortlink Link header for public singular types (post/page/attachment).
-	if short := wp.GetShortlink(c, post.ID, "post", 0); short != "" {
-		w.Header().Add("Link", fmt.Sprintf(`<%s>; rel=shortlink`, short))
-	}
+	// P3.106 / P3.130: shortlink Link header via wp_shortlink_header (query context).
+	wp.ShortlinkHeader(w, c, post.ID)
 }
 
 // stripPingbackLinkHeaders removes Link headers that advertise rel=pingback (P3.98).
