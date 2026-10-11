@@ -81,7 +81,17 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		})
 		return
 	}
-	edit := r.URL.Query().Get("context") == "edit" && canEditPosts(c)
+	// P4.145: context enum + edit-context capability gate.
+	restCtx, ctxOK := parsePostsRESTContext(r)
+	if !ctxOK {
+		writeRESTInvalidPostsContext(w)
+		return
+	}
+	if restCtx == "edit" && !canEditPosts(c) {
+		writeRESTForbiddenPostsContext(w, c, false)
+		return
+	}
+	edit := restCtx == "edit"
 	// P4.141: strict sticky / ignore_sticky boolean validation (rest_invalid_type).
 	stickyFilter, stickyOK := parseStickyQuery(r)
 	ignoreSticky, ignoreOK := parseIgnoreStickyQuery(r)
@@ -211,6 +221,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 	if canEditPosts(c) {
 		w.Header().Set("Allow", "GET, POST")
 	}
+	applyPostsRESTContext(posts, restCtx)
 	// P9.26: merge register_rest_field get_callback values when registered.
 	writeJSON(w, http.StatusOK, EncodeWithAdditionalFields(postType, posts, r))
 }
@@ -249,7 +260,17 @@ func (s *Server) serveTypedItem(w http.ResponseWriter, r *http.Request, c *wp.Co
 }
 
 func (s *Server) getTypedItem(w http.ResponseWriter, r *http.Request, c *wp.Context, postType string, id int64) {
-	edit := r.URL.Query().Get("context") == "edit" && canEditPosts(c)
+	// P4.145: context enum + edit-context capability gate.
+	restCtx, ctxOK := parsePostsRESTContext(r)
+	if !ctxOK {
+		writeRESTInvalidPostsContext(w)
+		return
+	}
+	if restCtx == "edit" && !canEditPosts(c) {
+		writeRESTForbiddenPostsContext(w, c, true)
+		return
+	}
+	edit := restCtx == "edit"
 	var (
 		post *Post
 		err  error
@@ -279,6 +300,7 @@ func (s *Server) getTypedItem(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	if canEditPosts(c) {
 		w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
 	}
+	post.RESTContext = restCtx
 	// P9.26: merge register_rest_field get_callback values when registered.
 	writeJSON(w, http.StatusOK, EncodeWithAdditionalFields(postType, post, r))
 }

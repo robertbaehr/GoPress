@@ -149,7 +149,8 @@ func TestPostEditContextRawFields(t *testing.T) {
 	}
 }
 
-func TestPostEditContextAnonNoRaw(t *testing.T) {
+func TestPostEditContextAnonForbidden(t *testing.T) {
+	// P4.145: anon context=edit → rest_forbidden_context (WP posts controller).
 	c := bootOrSkip(t)
 	defer c.DB.Close()
 
@@ -157,14 +158,14 @@ func TestPostEditContextAnonNoRaw(t *testing.T) {
 	rec := httptest.NewRecorder()
 	c = c.ForRequest(rec, req)
 	(&rest.Server{}).Handle(rec, req, c)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("status=%d", rec.Code)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
 	}
-	var post rest.Post
-	if err := json.Unmarshal(rec.Body.Bytes(), &post); err != nil {
+	var body map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
 		t.Fatal(err)
 	}
-	if post.Title.Raw != nil || post.Content.Raw != nil {
-		t.Fatalf("anon should not see raw fields: title=%+v content=%+v", post.Title, post.Content)
+	if body["code"] != "rest_forbidden_context" {
+		t.Fatalf("code=%v body=%s", body["code"], rec.Body.String())
 	}
 }
