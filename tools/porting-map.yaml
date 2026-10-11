@@ -10593,6 +10593,14 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P7.142 — pending/confirm/dismiss coverage"
 
+# P10.193: STATUS/PORTING refresh after P5.141–P10.192.
+- prefix: docs/STATUS.md#p10.193
+  go: docs/STATUS.md
+  status: partial
+  task: P10.193
+  api: n/a
+  notes: "P10.193 — summarize spacer orientation, menu_order write, admin-email verify, utf8 charset, rsd_link, image_downsize, corpus 2072"
+
 # P10.192: expand diff corpus after spacer/menu_order/admin-email/utf8/rsd/downsize.
 - prefix: tests/corpus#p10.192
   go: tests/corpus
