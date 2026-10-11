@@ -671,6 +671,66 @@ func TestPostsAuthorQueryParam(t *testing.T) {
 	}
 }
 
+func TestPostsAuthorExcludeQueryParam(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	// Exclude admin (ID 1); fixture also has authors 2/3 — none may be author 1.
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?author_exclude=1&per_page=20", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("author_exclude=1 status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var hits []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &hits); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range hits {
+		if p.Author == 1 {
+			t.Fatalf("author_exclude=1 returned author=1 post %d", p.ID)
+		}
+	}
+
+	// author=1 with author_exclude=99999 still returns admin posts.
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?author=1&author_exclude=99999&per_page=10", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("author+exclude status=%d", rec.Code)
+	}
+	var keep []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &keep); err != nil {
+		t.Fatal(err)
+	}
+	if len(keep) == 0 {
+		t.Fatal("expected posts for author=1 with unrelated exclude")
+	}
+	for _, p := range keep {
+		if p.Author != 1 {
+			t.Fatalf("expected author=1, got %d", p.Author)
+		}
+	}
+
+	// Exclude all known fixture authors → empty.
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?author_exclude=1,2,3&per_page=10", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("author_exclude multi status=%d", rec.Code)
+	}
+	var none []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &none); err != nil {
+		t.Fatal(err)
+	}
+	if len(none) != 0 {
+		t.Fatalf("expected empty for author_exclude=1,2,3, got %d", len(none))
+	}
+}
+
 func TestPostsStickyQueryParam(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()

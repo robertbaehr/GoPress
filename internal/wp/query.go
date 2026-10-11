@@ -32,6 +32,10 @@ type QueryArgs struct {
 	Day      int
 	// Author is the post_author user ID for author archives (P3.23).
 	Author int64
+	// AuthorIn is author__in (REST ?author= list, P4.85 / P4.132).
+	AuthorIn []int64
+	// AuthorNotIn is author__not_in (REST ?author_exclude=, P4.132).
+	AuthorNotIn []int64
 	// Tag is the post_tag slug for tag archives (P3.24).
 	Tag string
 	// Category is the category slug for category archives (P3.25).
@@ -138,9 +142,9 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		vals = append(vals, args.Day)
 	}
 	where, vals = appendDateQueryFilters(where, vals, args)
-	if args.Author > 0 {
-		where = append(where, "post_author = %d")
-		vals = append(vals, args.Author)
+	if clause, cvals := authorFilterSQL(args); clause != "" {
+		where = append(where, clause)
+		vals = append(vals, cvals...)
 	}
 	if clause, cvals := postInNotInSQL("ID", args.PostIn, args.PostNotIn); clause != "" {
 		where = append(where, clause)
@@ -370,9 +374,9 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 		vals = append(vals, args.Day)
 	}
 	where, vals = appendDateQueryFilters(where, vals, args)
-	if args.Author > 0 {
-		where = append(where, "post_author = %d")
-		vals = append(vals, args.Author)
+	if clause, cvals := authorFilterSQL(args); clause != "" {
+		where = append(where, clause)
+		vals = append(vals, cvals...)
 	}
 	if clause, cvals := postInNotInSQL("ID", args.PostIn, args.PostNotIn); clause != "" {
 		where = append(where, clause)
@@ -711,6 +715,36 @@ func postStatusSQL(status string, statuses []string) (string, []any) {
 		vals[i] = s
 	}
 	return "post_status IN (" + strings.Join(ph, ", ") + ")", vals
+}
+
+// authorFilterSQL builds post_author / author__in / author__not_in (P3.23 / P4.132).
+// AuthorIn takes precedence over single Author when non-empty.
+func authorFilterSQL(args QueryArgs) (string, []any) {
+	var parts []string
+	var vals []any
+	if len(args.AuthorIn) > 0 {
+		ph := make([]string, len(args.AuthorIn))
+		for i, id := range args.AuthorIn {
+			ph[i] = "%d"
+			vals = append(vals, id)
+		}
+		parts = append(parts, "post_author IN ("+strings.Join(ph, ",")+")")
+	} else if args.Author > 0 {
+		parts = append(parts, "post_author = %d")
+		vals = append(vals, args.Author)
+	}
+	if len(args.AuthorNotIn) > 0 {
+		ph := make([]string, len(args.AuthorNotIn))
+		for i, id := range args.AuthorNotIn {
+			ph[i] = "%d"
+			vals = append(vals, id)
+		}
+		parts = append(parts, "post_author NOT IN ("+strings.Join(ph, ",")+")")
+	}
+	if len(parts) == 0 {
+		return "", nil
+	}
+	return strings.Join(parts, " AND "), vals
 }
 
 // postInNotInSQL builds post__in / post__not_in fragments (P4.82).

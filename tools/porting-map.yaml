@@ -2304,20 +2304,27 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P4.84 — listPostCollection honors ?search= for posts/pages"
 
-# P4.85: REST GET /wp/v2/posts?author= collection filter (WP_Query author).
+# P4.85 / P4.132: REST GET /wp/v2/posts?author= / author_exclude= (author__in / author__not_in).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#author
   go: internal/rest/posts.go
   status: partial
-  task: P4.85
+  task: P4.132
   api: exported
-  notes: "P4.85 — ?author= → QueryArgs.Author (post_author)"
+  notes: "P4.132 — ?author= → AuthorIn (multi); ?author_exclude= → AuthorNotIn; P4.85 base"
 
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#author-list
   go: internal/rest/posts_write.go
   status: partial
-  task: P4.85
+  task: P4.132
   api: exported
-  notes: "P4.85 — listPostCollection honors ?author= for posts/pages"
+  notes: "P4.132 — listPostCollection honors ?author= / ?author_exclude= for posts/pages"
+
+- prefix: wp-includes/class-wp-query.php#author__in
+  go: internal/wp/query.go
+  status: partial
+  task: P4.132
+  api: exported
+  notes: "P4.132 — QueryArgs.AuthorIn / AuthorNotIn SQL filters"
 
 # P4.86: REST GET /wp/v2/posts?categories= collection filter (tax_query term_id IN).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#categories

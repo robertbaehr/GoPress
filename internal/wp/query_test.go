@@ -258,3 +258,35 @@ func TestGetPostsOrderBy(t *testing.T) {
 		}
 	}
 }
+
+func TestGetPostsAuthorInNotIn(t *testing.T) {
+	c := testBootQuery(t)
+	hits, err := wp.GetPosts(c, wp.QueryArgs{PostsPerPage: 10, AuthorIn: []int64{1}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(hits) == 0 {
+		t.Fatal("expected author__in=1 hits")
+	}
+	for _, p := range hits {
+		if p.Author != 1 {
+			t.Fatalf("author=%d want 1", p.Author)
+		}
+	}
+	miss, err := wp.GetPosts(c, wp.QueryArgs{PostsPerPage: 20, AuthorNotIn: []int64{1}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range miss {
+		if p.Author == 1 {
+			t.Fatalf("author__not_in=1 returned author=1 post %d", p.ID)
+		}
+	}
+	none, err := wp.GetPosts(c, wp.QueryArgs{PostsPerPage: 10, AuthorNotIn: []int64{1, 2, 3}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(none) != 0 {
+		t.Fatalf("author__not_in=1,2,3 should be empty, got %d", len(none))
+	}
+}
