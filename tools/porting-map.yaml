@@ -9462,3 +9462,18 @@ wp-login.php#language-switcher-post
   task: P4.147
   api: n/a
   notes: "P4.147 — id,title / title.rendered / _links opt-in"
+
+# P7.132: At a Glance update_right_now_message + end actions.
+- prefix: wp-admin/includes/update.php#update_right_now_message
+  go: internal/admin/dashboard_right_now.go
+  status: partial
+  task: P7.132
+  api: update_right_now_message
+  notes: "P7.132 — wp-version + theme link; update_right_now_text; rightnow_end/activity_box_end .sub"
+
+- prefix: wp-admin/includes/update.php#update_right_now_message#tests
+  go: internal/admin/dashboard_glance_p7_132_test.go
+  status: partial
+  task: P7.132
+  api: n/a
+  notes: "P7.132 — version/theme + sub capture"
