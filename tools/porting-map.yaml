@@ -8949,3 +8949,25 @@ wp-login.php#language-switcher-post
   task: P2.123
   api: n/a
   notes: "P2.123 — strict/loose/string/maybe_* coverage"
+
+# P3.121: front generator filters (the_generator / get_the_generator_* / wp_generator_type).
+- prefix: wp-includes/general-template.php#the_generator
+  go: internal/wp/generator.go
+  status: partial
+  task: P3.121
+  api: the_generator
+  notes: "P3.121 — TheGenerator/GetTheGeneratorFiltered/MetaGeneratorXHTMLFor + type aliases"
+
+- prefix: wp-includes/general-template.php#the_generator#front
+  go: internal/server/front.go
+  status: partial
+  task: P3.121
+  api: n/a
+  notes: "P3.121 — wire filtered generator into wp_head and feeds"
+
+- prefix: wp-includes/general-template.php#the_generator#tests
+  go: internal/wp/generator_test.go
+  status: partial
+  task: P3.121
+  api: n/a
+  notes: "P3.121 — filter coverage for type/get/the_generator"

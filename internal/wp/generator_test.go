@@ -47,3 +47,37 @@ func TestGetTheGeneratorRDFAndAliases(t *testing.T) {
 		t.Fatal("atom_head alias mismatch")
 	}
 }
+
+func TestGetTheGeneratorFiltered(t *testing.T) {
+	c := &wp.Context{Hooks: wp.NewHooks()}
+	c.Hooks.AddFilter("get_the_generator_xhtml", func(value any, _ ...any) any {
+		return `<meta name="generator" content="Filtered" />`
+	}, 10, 1)
+	got := wp.GetTheGeneratorFiltered(c, "xhtml")
+	if got != `<meta name="generator" content="Filtered" />` {
+		t.Fatalf("got %q", got)
+	}
+}
+
+func TestTheGeneratorFilter(t *testing.T) {
+	c := &wp.Context{Hooks: wp.NewHooks()}
+	c.Hooks.AddFilter("the_generator", func(value any, args ...any) any {
+		return value.(string) + "<!--x-->"
+	}, 10, 2)
+	got := wp.TheGenerator(c, "rss2")
+	if !strings.Contains(got, "<!--x-->") {
+		t.Fatalf("missing the_generator injection: %q", got)
+	}
+}
+
+func TestMetaGeneratorXHTMLForTypeFilter(t *testing.T) {
+	c := &wp.Context{Hooks: wp.NewHooks()}
+	c.Hooks.AddFilter("wp_generator_type", func(value any, _ ...any) any {
+		return "html"
+	}, 10, 1)
+	got := wp.MetaGeneratorXHTMLFor(c)
+	want := wp.GetTheGenerator("html")
+	if got != want {
+		t.Fatalf("got %q want %q", got, want)
+	}
+}
