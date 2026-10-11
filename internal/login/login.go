@@ -38,6 +38,18 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 		_ = r.ParseForm()
 		action = r.FormValue("action")
 	}
+	// WP: isset($_GET['checkemail']) forces action=checkemail before login_init.
+	if r.URL.Query().Get("checkemail") != "" {
+		action = "checkemail"
+	}
+	if action == "" {
+		action = "login"
+	}
+	// P6.58: do_action('login_init') then do_action("login_form_{$action}").
+	if c.Hooks != nil {
+		c.Hooks.DoAction("login_init")
+		c.Hooks.DoAction("login_form_" + action)
+	}
 	switch r.Method {
 	case http.MethodGet, http.MethodHead:
 		switch action {
