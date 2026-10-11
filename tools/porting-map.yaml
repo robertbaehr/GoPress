@@ -9981,3 +9981,17 @@ wp-login.php#language-switcher-post
   task: P2.131
   api: n/a
   notes: "P2.131 — pre_kses via KsesHook + KsesFiltered composition"
+
+# P3.129: front canonical comment-page + inherit status.
+- prefix: wp-includes/link-template.php#wp_get_canonical_url
+  go: internal/wp/canonical.go
+  status: partial
+  task: P3.129
+  api: wp_get_canonical_url
+  notes: "P3.129 — comment-page-N/#comments + inherit→parent publish resolve"
+- prefix: wp-includes/link-template.php#wp_get_canonical_url#tests
+  go: internal/wp/canonical_p3_129_test.go
+  status: partial
+  task: P3.129
+  api: n/a
+  notes: "P3.129 — pretty comment-page parse + orphan attachment empty"

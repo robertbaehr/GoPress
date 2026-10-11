@@ -8,8 +8,8 @@ import (
 )
 
 // GetCanonicalURL returns the canonical URL for a published post
-// (wp_get_canonical_url subset, P3.42 / P3.101 / P3.105). page/cpage mirror
-// query vars for multipage content and comment pagination when > 1 / > 0
+// (wp_get_canonical_url subset, P3.42 / P3.101 / P3.105 / P3.129). page/cpage
+// mirror query vars for multipage content and comment pagination when > 1 / > 0
 // respectively. Applies the get_canonical_url filter.
 func GetCanonicalURL(c *Context, postID int64, page, cpage int) string {
 	if postID <= 0 {
@@ -19,23 +19,19 @@ func GetCanonicalURL(c *Context, postID int64, page, cpage int) string {
 	if err != nil || post == nil {
 		return ""
 	}
-	if !strings.EqualFold(strings.TrimSpace(post.Status), "publish") &&
-		!strings.EqualFold(strings.TrimSpace(post.Status), "inherit") {
-		// Attachments use inherit; other non-publish statuses have no canonical.
-		return ""
-	}
-	if strings.EqualFold(strings.TrimSpace(post.Status), "inherit") && post.Type != "attachment" {
+	// P3.129: resolve inherit like get_post_status (parent status for attachments).
+	if !canonicalPostIsPublic(c, post) {
 		return ""
 	}
 	url := postCanonicalPermalink(c, post)
 	if url == "" {
 		return ""
 	}
+	structure := ""
+	if c != nil && c.Options != nil {
+		structure = strings.TrimSpace(fmt.Sprint(c.Options.GetOption("permalink_structure", "")))
+	}
 	if page >= 2 {
-		structure := ""
-		if c != nil && c.Options != nil {
-			structure = strings.TrimSpace(fmt.Sprint(c.Options.GetOption("permalink_structure", "")))
-		}
 		if structure == "" {
 			url = addQueryArg(url, "page", strconv.Itoa(page))
 		} else {
@@ -43,7 +39,8 @@ func GetCanonicalURL(c *Context, postID int64, page, cpage int) string {
 		}
 	}
 	if cpage > 0 {
-		url = addQueryArg(url, "cpage", strconv.Itoa(cpage))
+		// P3.129 / get_comments_pagenum_link: pretty comment-page-N + #comments.
+		url = canonicalCommentsPagenumURL(url, cpage, structure != "")
 	}
 	// P3.101: get_canonical_url filter (url, post).
 	if c != nil && c.Hooks != nil {
@@ -53,6 +50,50 @@ func GetCanonicalURL(c *Context, postID int64, page, cpage int) string {
 		}
 	}
 	return url
+}
+
+// canonicalPostIsPublic mirrors get_post_status()==publish for canonical (P3.129).
+func canonicalPostIsPublic(c *Context, post *Post) bool {
+	if post == nil {
+		return false
+	}
+	status := strings.ToLower(strings.TrimSpace(post.Status))
+	if status == "publish" {
+		return true
+	}
+	if status != "inherit" {
+		return false
+	}
+	// Walk parent chain for attachment/revision inherit.
+	parentID := post.Parent
+	for parentID > 0 {
+		parent, err := GetPostByID(c, parentID)
+		if err != nil || parent == nil {
+			return false
+		}
+		ps := strings.ToLower(strings.TrimSpace(parent.Status))
+		if ps == "publish" {
+			return true
+		}
+		if ps != "inherit" {
+			return false
+		}
+		parentID = parent.Parent
+	}
+	return false
+}
+
+// canonicalCommentsPagenumURL builds get_comments_pagenum_link-style URL (P3.129).
+func canonicalCommentsPagenumURL(permalink string, cpage int, pretty bool) string {
+	permalink = strings.TrimSpace(permalink)
+	if permalink == "" || cpage <= 0 {
+		return permalink
+	}
+	if pretty {
+		base := strings.TrimRight(permalink, "/")
+		return base + "/comment-page-" + strconv.Itoa(cpage) + "/#comments"
+	}
+	return addQueryArg(permalink, "cpage", strconv.Itoa(cpage)) + "#comments"
 }
 
 // RelCanonicalLink returns <link rel="canonical" …> HTML for a post, or "".
@@ -70,8 +111,9 @@ func RelCanonicalLinkPaged(c *Context, postID int64, page, cpage int) string {
 	return `<link rel="canonical" href="` + EscURL(url) + `" />` + "\n"
 }
 
-// CanonicalPageFromRequest reads page/cpage for singular canonical (P3.101 / P3.105).
-// Prefers rewrite Scope.Page (pretty /N/), then request query vars.
+// CanonicalPageFromRequest reads page/cpage for singular canonical (P3.101 / P3.105 / P3.129).
+// Prefers rewrite Scope.Page (pretty /N/), then request query vars, then
+// /comment-page-N/ path segments (P3.129).
 func CanonicalPageFromRequest(c *Context) (page, cpage int) {
 	if c != nil && c.Scope != nil {
 		c.Scope.mu.Lock()
@@ -92,6 +134,18 @@ func CanonicalPageFromRequest(c *Context) (page, cpage int) {
 	if v := strings.TrimSpace(q.Get("cpage")); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {
 			cpage = n
+		}
+	}
+	// P3.129: pretty comments pagination base comment-page-N.
+	if cpage == 0 {
+		path := c.Req.URL.Path
+		const marker = "/comment-page-"
+		if i := strings.LastIndex(path, marker); i >= 0 {
+			rest := path[i+len(marker):]
+			rest = strings.Trim(rest, "/")
+			if n, err := strconv.Atoi(rest); err == nil && n > 0 {
+				cpage = n
+			}
 		}
 	}
 	return page, cpage

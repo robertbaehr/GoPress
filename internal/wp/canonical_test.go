@@ -65,7 +65,8 @@ func TestGetCanonicalURLPagePagination(t *testing.T) {
 		t.Fatalf("paged=%q base=%q", paged, base)
 	}
 	cpage := wp.GetCanonicalURL(c, 1, 0, 3)
-	if !strings.Contains(cpage, "cpage=3") {
+	// P3.129: pretty permalinks use comment-page-N/#comments.
+	if !strings.Contains(cpage, "comment-page-3") || !strings.Contains(cpage, "#comments") {
 		t.Fatalf("cpage=%q", cpage)
 	}
 }
