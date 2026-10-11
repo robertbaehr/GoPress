@@ -11076,3 +11076,17 @@ wp-login.php#language-switcher-post
   task: P7.146
   api: n/a
   notes: "P7.146 — export filters + tools Export card coverage"
+
+# P2.141: wp_get_word_count_type / WP_Locale::get_word_count_type.
+- prefix: wp-includes/l10n.php#wp_get_word_count_type
+  go: internal/wp/word_count_type.go
+  status: partial
+  task: P2.141
+  api: n/a
+  notes: "P2.141 — WPGetWordCountType + Locale.GetWordCountType words/characters_*"
+- prefix: wp-includes/l10n.php#wp_get_word_count_type#tests
+  go: internal/wp/word_count_type_p2_141_test.go
+  status: partial
+  task: P2.141
+  api: n/a
+  notes: "P2.141 — default words, characters modes, invalid fallback"
