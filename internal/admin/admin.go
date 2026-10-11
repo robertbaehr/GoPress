@@ -2955,21 +2955,38 @@ func (h *Handler) handleMediaNewUpload(w http.ResponseWriter, r *http.Request, c
 	http.Redirect(w, r, "/wp-admin/upload.php", http.StatusFound)
 }
 
-// serveAsyncUpload handles multipart POST /wp-admin/async-upload.php (P7.7 / P8.31).
+// serveAsyncUpload handles /wp-admin/async-upload.php (P7.7 / P8.31 / P7.124).
+// Mirrors async-upload.php: upload_files gate, attachment_id fetch HTML,
+// action=upload-attachment AJAX JSON, short ID response, multipart create.
 func (h *Handler) serveAsyncUpload(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	if r.Method != http.MethodPost {
-		http.Error(w, "Method not allowed\n", http.StatusMethodNotAllowed)
-		return
-	}
 	if c == nil || c.CurrentUser == nil {
 		http.Error(w, "Unauthorized\n", http.StatusUnauthorized)
 		return
 	}
-	if !c.UserCan(c.CurrentUser, "upload_files") && !c.UserCan(c.CurrentUser, "edit_posts") {
-		http.Error(w, "Forbidden\n", http.StatusForbidden)
+	// P7.124: async-upload.php gates on upload_files only (not edit_posts).
+	if !c.UserCan(c.CurrentUser, "upload_files") {
+		http.Error(w, "Sorry, you are not allowed to upload files.\n", http.StatusForbidden)
 		return
 	}
+	_ = r.ParseForm()
+
+	// Just fetch the detail form for an existing attachment (GET/POST).
+	if aid, _ := strconv.ParseInt(strings.TrimSpace(firstNonEmpty(r.FormValue("attachment_id"), r.URL.Query().Get("attachment_id"))), 10, 64); aid > 0 {
+		fetch := strings.TrimSpace(firstNonEmpty(r.FormValue("fetch"), r.URL.Query().Get("fetch")))
+		if fetch != "" {
+			h.serveAsyncUploadFetch(w, r, c, aid, fetch)
+			return
+		}
+	}
+
+	if r.Method != http.MethodPost {
+		w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
+		http.Error(w, "Method not allowed\n", http.StatusMethodNotAllowed)
+		return
+	}
+
 	if err := r.ParseMultipartForm(32 << 20); err != nil {
+		// Allow non-multipart when only fetching (handled above).
 		http.Error(w, "No data supplied\n", http.StatusBadRequest)
 		return
 	}
@@ -2983,16 +3000,100 @@ func (h *Handler) serveAsyncUpload(w http.ResponseWriter, r *http.Request, c *wp
 		return
 	}
 	defer file.Close()
+
+	action := strings.TrimSpace(r.FormValue("action"))
+	if action == "" {
+		action = strings.TrimSpace(r.URL.Query().Get("action"))
+	}
+
 	postID, _ := strconv.ParseInt(strings.TrimSpace(r.FormValue("post_id")), 10, 64)
+	if postID > 0 {
+		if p, err := wp.GetPostByID(c, postID); err != nil || p == nil || !c.UserCan(c.CurrentUser, "edit_posts") {
+			postID = 0
+		}
+	}
 	up, err := wp.MediaHandleUpload(c, hdr.Filename, file, hdr.Size, postID)
 	if err != nil {
 		http.Error(w, err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
+
+	// P7.124: action=upload-attachment → AJAX-style JSON + nosniff/nocache.
+	if action == "upload-attachment" {
+		w.Header().Set("X-Content-Type-Options", "nosniff")
+		w.Header().Set("Cache-Control", "no-cache, must-revalidate, max-age=0")
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, `{"success":true,"data":{"id":%d,"url":%q,"filename":%q}}`+"\n",
+			up.ID, up.URL, up.RelPath)
+		return
+	}
+
+	// short=1 → attachment ID only (text/plain like WP).
+	if strings.TrimSpace(r.FormValue("short")) != "" {
+		w.Header().Set("Content-Type", "text/plain; charset=UTF-8")
+		w.WriteHeader(http.StatusOK)
+		fmt.Fprintf(w, "%d", up.ID)
+		return
+	}
+
+	// Default plupload/media-new clients expect JSON success payload.
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(http.StatusOK)
 	fmt.Fprintf(w, `{"success":true,"data":{"id":%d,"url":%q,"filename":%q}}`+"\n",
 		up.ID, up.URL, up.RelPath)
+}
+
+// serveAsyncUploadFetch returns attachment detail HTML for async-upload.php?attachment_id=&fetch= (P7.124).
+func (h *Handler) serveAsyncUploadFetch(w http.ResponseWriter, r *http.Request, c *wp.Context, id int64, fetch string) {
+	p, err := wp.GetPostByID(c, id)
+	if err != nil || p == nil || p.Type != "attachment" {
+		http.Error(w, "Invalid post type.\n", http.StatusBadRequest)
+		return
+	}
+	title := strings.TrimSpace(p.Title)
+	if title == "" {
+		title = wp.Basename(p.GUID, "")
+	}
+	fileURL := wp.GetAttachmentURL(c, id)
+	thumb := wp.GetAttachmentImageURL(c, id, "thumbnail", true)
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	var b strings.Builder
+	switch fetch {
+	case "3":
+		b.WriteString(`<div class="media-item-wrapper"><div class="attachment-details">`)
+		if thumb != "" {
+			b.WriteString(`<img class="pinkynail" src="`)
+			b.WriteString(html.EscapeString(thumb))
+			b.WriteString(`" alt="" />`)
+		}
+		b.WriteString(`<div class="filename new">`)
+		b.WriteString(`<span class="media-list-title word-wrap-break-word"><strong>`)
+		b.WriteString(html.EscapeString(title))
+		b.WriteString(`</strong></span>`)
+		if fileURL != "" {
+			b.WriteString(`<span class="media-list-subtitle word-wrap-break-word">`)
+			b.WriteString(html.EscapeString(wp.Basename(fileURL, "")))
+			b.WriteString(`</span>`)
+		}
+		b.WriteString(`<div class="attachment-tools">`)
+		if c.UserCan(c.CurrentUser, "edit_posts") {
+			b.WriteString(`<a class="edit-attachment" href="/wp-admin/post.php?post=`)
+			b.WriteString(strconv.FormatInt(id, 10))
+			b.WriteString(`&amp;action=edit">Edit</a>`)
+		} else {
+			b.WriteString(`<span class="edit-attachment">Success</span>`)
+		}
+		b.WriteString(`</div></div></div></div>`)
+	default:
+		b.WriteString(`<div class="media-item" id="media-item-`)
+		b.WriteString(strconv.FormatInt(id, 10))
+		b.WriteString(`"><div class="filename original">`)
+		b.WriteString(html.EscapeString(title))
+		b.WriteString(`</div></div>`)
+	}
+	w.WriteHeader(http.StatusOK)
+	_, _ = w.Write([]byte(b.String()))
 }
 
 // serveMediaUpload is the legacy media-upload.php iframe stub (P8.31).
