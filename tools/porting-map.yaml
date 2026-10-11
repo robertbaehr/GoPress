@@ -1,4 +1,18 @@
 
+# P9.39: DoActionRefArray / ApplyFiltersRefArray Context helpers.
+- prefix: wp-includes/plugin.php#do_action_ref_array
+  go: internal/wp/ref_array.go
+  status: partial
+  task: P9.39
+  api: DoActionRefArray
+  notes: "P9.39 — DoActionRefArray/ApplyFiltersRefArray package helpers"
+- prefix: wp-includes/plugin.php#do_action_ref_array#tests
+  go: internal/wp/ref_array_p9_39_test.go
+  status: partial
+  task: P9.39
+  api: n/a
+  notes: "P9.39 — nil/empty guards; args unpack; DidAction/DidFilter"
+
 # P4.175: WP_Query orderby=meta_value / meta_value_num.
 - prefix: wp-includes/class-wp-query.php#orderby-meta_value
   go: internal/wp/query.go
