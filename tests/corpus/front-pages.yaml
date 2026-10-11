@@ -1201,3 +1201,49 @@
   compare: headers
   nonce: null
 
+
+# P10.154: front toppers after archives/calendar/comment_class stack.
+- id: front-p10154-001-year-archive
+  role: anon
+  method: GET
+  path: /2024/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10154-002-month-archive
+  role: anon
+  method: GET
+  path: /2024/06/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10154-003-search-hello
+  role: anon
+  method: GET
+  path: /?s=hello
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10154-004-feed
+  role: anon
+  method: GET
+  path: /feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10154-005-home
+  role: anon
+  method: GET
+  path: /
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

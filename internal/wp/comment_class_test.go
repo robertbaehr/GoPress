@@ -18,12 +18,15 @@ func TestBuildCommentClassParity(t *testing.T) {
 	if nextAlt != 1 || nextThread != 1 {
 		t.Fatalf("nextAlt=%d nextThread=%d", nextAlt, nextThread)
 	}
-	classes, nextAlt, nextThread = wp.BuildCommentClass("comment", 1, "admin", 1, 1, nextAlt, nextThread)
+	classes, nextAlt2, nextThread2 := wp.BuildCommentClass("comment", 1, "admin", 1, 1, nextAlt, nextThread)
 	joined = strings.Join(classes, " ")
 	for _, want := range []string{"byuser", "comment-author-admin", "bypostauthor", "odd", "alt", "thread-odd", "thread-alt"} {
 		if !strings.Contains(joined, want) {
 			t.Fatalf("missing %q in %q", want, joined)
 		}
+	}
+	if nextAlt2 != 2 || nextThread2 != 2 {
+		t.Fatalf("nextAlt2=%d nextThread2=%d", nextAlt2, nextThread2)
 	}
 }
 
