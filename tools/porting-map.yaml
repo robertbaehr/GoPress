@@ -5637,22 +5637,32 @@ wp-login.php#language-switcher-post
   notes: "P3.48 — GetOption always 0; manage_links → do_not_allow"
 
 - prefix: wp-admin/link-manager.php
-  go: internal/admin
+  go: internal/admin/link_manager.go
   status: out-of-scope
-  task: P7.25
+  task: P7.118
   api: n/a
+  notes: "P7.118 — manage_links denial 403 stub + Dashboard link; link_manager_enabled permanently off; P7.25 base"
 
 - prefix: wp-admin/link-add.php
-  go: internal/admin
+  go: internal/admin/link_manager.go
   status: out-of-scope
-  task: P7.25
+  task: P7.118
   api: n/a
+  notes: "P7.118 — Add Link title stub; same manage_links 403"
 
 - prefix: wp-admin/link.php
-  go: internal/admin
+  go: internal/admin/link_manager.go
   status: out-of-scope
-  task: P7.25
+  task: P7.118
   api: n/a
+  notes: "P7.118 — Edit Link title stub; same manage_links 403"
+
+- prefix: wp-admin/link-manager.php#tests
+  go: internal/admin/link_manager_test.go
+  status: out-of-scope
+  task: P7.118
+  api: n/a
+  notes: "P7.118 — unit coverage for link-manager stub + login gate"
 
 # P7.48 / P7.103: POST /wp-admin/options.php saves writing options group.
 - prefix: wp-admin/options.php#writing
