@@ -5928,16 +5928,16 @@ wp-login.php#language-switcher-post
 - prefix: wp-admin/plugin-editor.php
   go: internal/admin/plugin_editor.go
   status: out-of-scope
-  task: P7.116
+  task: P7.157
   api: n/a
-  notes: "P7.116 — Plugin File Editor stub; edit_plugins denied → 403; PHP file editing remains out of scope (P7.38)"
+  notes: "P7.157 — plugin/file/action data attrs; pagenow; updated notice; X-GoPress-Plugin-Editor-Plugin; edit_plugins 403 stub"
 
 - prefix: wp-admin/plugin-editor.php#tests
   go: internal/admin/plugin_editor_test.go
   status: partial
-  task: P7.116
+  task: P7.157
   api: n/a
-  notes: "P7.116 — 403 stub chrome + login redirect coverage"
+  notes: "P7.157 — query chrome + 403 stub + login redirect coverage"
 
 - prefix: wp-admin/plugin-install.php
   go: internal/admin/plugin_install.go

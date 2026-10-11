@@ -68,3 +68,47 @@ func TestPluginEditorScreenRequiresLogin(t *testing.T) {
 		t.Fatalf("Location=%q", loc)
 	}
 }
+
+// P7.157: plugin/file/action chrome, pagenow, updated notice, plugin header.
+func TestPluginEditorDeepensQueryChromeP7157(t *testing.T) {
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	ck := &http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue}
+
+	req := httptest.NewRequest(http.MethodGet,
+		"/wp-admin/plugin-editor.php?plugin=hello.php&file=hello.php&action=edit&updated=true",
+		nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/plugin-editor.php") {
+		t.Fatal("plugin-editor.php not handled")
+	}
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`pagenow = "plugin-editor"`,
+		`data-plugin="hello.php"`,
+		`data-file="hello.php"`,
+		`data-action="edit"`,
+		`File edited successfully`,
+		`locale-en-us`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in %q", want, body)
+		}
+	}
+	if got := rec.Header().Get("X-GoPress-Plugin-Editor-Plugin"); got != "hello.php" {
+		t.Fatalf("plugin header=%q", got)
+	}
+}
