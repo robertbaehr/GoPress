@@ -27,6 +27,20 @@
 
 
 
+# P9.48: is_plugin_active_for_network (single-site always false).
+- prefix: wp-admin/includes/plugin.php#is_plugin_active_for_network
+  go: internal/plugins/plugin.go
+  status: partial
+  task: P9.48
+  api: n/a
+  notes: "P9.48 — IsPluginActiveForNetwork always false (no multisite)"
+- prefix: wp-admin/includes/plugin.php#is_plugin_active_for_network#tests
+  go: internal/plugins/is_plugin_active_for_network_p9_48_test.go
+  status: partial
+  task: P9.48
+  api: n/a
+  notes: "P9.48 — site-active and missing plugins return false"
+
 # P4.182: orderby meta_value + meta_type SIGNED.
 - prefix: wp-includes/class-wp-query.php#meta_type_signed
   go: internal/wp/query.go

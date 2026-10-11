@@ -258,6 +258,15 @@ func IsPluginInactive(c *wp.Context, pluginFile string) bool {
 	return !IsPluginActive(c, pluginFile)
 }
 
+// IsPluginActiveForNetwork reports whether pluginFile is network-activated
+// (is_plugin_active_for_network, P9.48). GoPress is single-site only, so this
+// always returns false (WP returns false when !is_multisite()).
+func IsPluginActiveForNetwork(c *wp.Context, pluginFile string) bool {
+	_ = c
+	_ = pluginFile
+	return false
+}
+
 // ActivatePlugin adds pluginFile to active_plugins and runs its Go shim (P9.4).
 // Fires activate_plugin / activate_{plugin} before the option write and
 // activated_plugin afterward (P9.9).
