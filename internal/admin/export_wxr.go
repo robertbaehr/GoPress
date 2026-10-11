@@ -13,7 +13,7 @@ import (
 
 const wxrVersion = "1.2"
 
-// serveExport is the Tools → Export screen (P7.10 / P7.53 / P7.90).
+// serveExport is the Tools → Export screen (P7.10 / P7.53 / P7.90 / P7.146).
 func (h *Handler) serveExport(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	// P7.90: export capability gate (mirrors export.php wp_die).
 	if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "export") {
@@ -24,12 +24,19 @@ func (h *Handler) serveExport(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		h.serveWXRDownload(w, r, c)
 		return
 	}
+	// P7.146: populate category/author/date filter dropdowns (export.php).
+	categories, _ := editPostCategories(c)
+	authors, _ := editPostAuthors(c, "post")
+	dateOpts := exportDateOptions(c, "post")
 	blogname := optionString(c, "blogname", "GoPress")
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>Export &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString(" &#8212; WordPress</title>\n")
+	// P7.146: export_add_js — show/hide filter lists by content radio.
+	b.WriteString("<script>\njQuery(function($){var form=$('#export-filters'),filters=form.find('.export-filters');filters.hide();form.find('input:radio').on('change',function(){filters.slideUp('fast');switch($(this).val()){case'attachment':$('#attachment-filters').slideDown();break;case'posts':$('#post-filters').slideDown();break;case'pages':$('#page-filters').slideDown();break;}});});\n</script>\n")
+	b.WriteString("</head>\n")
 	// P7.90: export-php body class like get_body_class for this screen.
 	b.WriteString("<body class=\"wp-admin wp-core-ui export-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
@@ -46,14 +53,38 @@ func (h *Handler) serveExport(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	b.WriteString("<p class=\"description\" id=\"all-content-desc\">This will contain all of your posts, pages, comments, custom fields, terms, navigation menus, and custom posts.</p>\n")
 	b.WriteString("<p><label><input type=\"radio\" name=\"content\" value=\"posts\"> Posts</label></p>\n")
 	b.WriteString("<ul id=\"post-filters\" class=\"export-filters\">\n")
+	b.WriteString("<li><label><span class=\"label-responsive\">Categories:</span> ")
+	b.WriteString(`<select name="cat" id="cat" class="postform"><option value="0">All</option>`)
+	for _, cat := range categories {
+		b.WriteString(`<option value="`)
+		b.WriteString(strconv.FormatInt(cat.ID, 10))
+		b.WriteString(`">`)
+		b.WriteString(html.EscapeString(cat.Name))
+		b.WriteString(`</option>`)
+	}
+	b.WriteString(`</select></label></li>` + "\n")
+	b.WriteString("<li><label><span class=\"label-responsive\">Authors:</span> ")
+	b.WriteString(`<select name="post_author" id="post_author"><option value="0">All</option>`)
+	for _, a := range authors {
+		b.WriteString(`<option value="`)
+		b.WriteString(strconv.FormatInt(a.ID, 10))
+		b.WriteString(`">`)
+		b.WriteString(html.EscapeString(a.Name))
+		b.WriteString(`</option>`)
+	}
+	b.WriteString(`</select></label></li>` + "\n")
+	b.WriteString("<li><label for=\"post-start-date\" class=\"label-responsive\">Start date:</label> ")
+	b.WriteString(`<select name="post_start_date" id="post-start-date"><option value="0">&mdash; Select &mdash;</option>`)
+	b.WriteString(dateOpts)
+	b.WriteString(`</select> `)
+	b.WriteString(`<label for="post-end-date" class="label-responsive">End date:</label> `)
+	b.WriteString(`<select name="post_end_date" id="post-end-date"><option value="0">&mdash; Select &mdash;</option>`)
+	b.WriteString(dateOpts)
+	b.WriteString(`</select></li>` + "\n")
 	b.WriteString("<li><label for=\"post-status\" class=\"label-responsive\">Status:</label> ")
 	b.WriteString(`<select name="post_status" id="post-status"><option value="0">All</option>`)
 	b.WriteString(`<option value="publish">Published</option><option value="draft">Draft</option>`)
 	b.WriteString(`<option value="pending">Pending</option><option value="private">Private</option></select></li>` + "\n")
-	b.WriteString("<li><label for=\"post-start-date\" class=\"label-responsive\">Start date:</label> ")
-	b.WriteString(`<select name="post_start_date" id="post-start-date"><option value="0">&mdash; Select &mdash;</option></select> `)
-	b.WriteString(`<label for="post-end-date" class="label-responsive">End date:</label> `)
-	b.WriteString(`<select name="post_end_date" id="post-end-date"><option value="0">&mdash; Select &mdash;</option></select></li>` + "\n")
 	b.WriteString("</ul>\n")
 	b.WriteString("<p><label><input type=\"radio\" name=\"content\" value=\"pages\"> Pages</label></p>\n")
 	b.WriteString("<ul id=\"page-filters\" class=\"export-filters\">\n")
@@ -69,6 +100,46 @@ func (h *Handler) serveExport(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Download Export File\"></p>\n")
 	b.WriteString("</form>\n</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
+}
+
+// exportDateOptions mirrors export_date_options() month/year <option> list (P7.146).
+func exportDateOptions(c *wp.Context, postType string) string {
+	if c == nil || c.DB == nil {
+		return ""
+	}
+	if postType == "" {
+		postType = "post"
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT DISTINCT YEAR(post_date) AS y, MONTH(post_date) AS m FROM "+c.DB.Posts()+
+			" WHERE post_type = %s AND post_status != %s ORDER BY post_date DESC",
+		postType, "auto-draft",
+	)
+	if err != nil {
+		return ""
+	}
+	rows, err := c.DB.GetResults(q, args...)
+	if err != nil || len(rows) == 0 {
+		return ""
+	}
+	monthNames := []string{"", "January", "February", "March", "April", "May", "June",
+		"July", "August", "September", "October", "November", "December"}
+	var b strings.Builder
+	for _, row := range rows {
+		year := asInt64(row["y"])
+		month := asInt64(row["m"])
+		if year <= 0 || month < 1 || month > 12 {
+			continue
+		}
+		val := fmt.Sprintf("%d-%02d", year, month)
+		label := monthNames[month] + " " + strconv.FormatInt(year, 10)
+		b.WriteString(`<option value="`)
+		b.WriteString(html.EscapeString(val))
+		b.WriteString(`">`)
+		b.WriteString(html.EscapeString(label))
+		b.WriteString(`</option>`)
+	}
+	return b.String()
 }
 
 func (h *Handler) serveWXRDownload(w http.ResponseWriter, r *http.Request, c *wp.Context) {
