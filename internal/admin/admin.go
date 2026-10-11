@@ -109,7 +109,8 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 		h.requireLogin(w, r, c, h.serveThemeEditorGone)
 		return true
 	case "/wp-admin/plugin-install.php":
-		h.requireLogin(w, r, c, h.servePluginInstallGone)
+		// P7.114: Add Plugins stub (directory install remains out of scope).
+		h.requireLogin(w, r, c, h.servePluginInstall)
 		return true
 	case "/wp-admin/plugin-editor.php":
 		h.requireLogin(w, r, c, h.servePluginEditorGone)
@@ -5061,21 +5062,6 @@ func (h *Handler) serveThemeEditorGone(w http.ResponseWriter, r *http.Request, c
 	b.WriteString("<body class=\"wp-admin\">\n")
 	b.WriteString("<h1>Theme editor unavailable</h1>\n")
 	b.WriteString("<p>Editing PHP theme files via <code>theme-editor.php</code> is out of scope for GoPress. Use the <a href=\"/wp-admin/site-editor.php\">Site Editor</a> instead.</p>\n")
-	b.WriteString("</body>\n</html>\n")
-	writeHTML(w, http.StatusForbidden, b.String())
-}
-
-// servePluginInstallGone rejects plugin-install.php as out of scope (P7.19).
-func (h *Handler) servePluginInstallGone(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	blogname := optionString(c, "blogname", "GoPress")
-	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
-	b.WriteString("<title>Add Plugins &lsaquo; ")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin\">\n")
-	b.WriteString("<h1>Plugin install unavailable</h1>\n")
-	b.WriteString("<p>Installing plugins from wordpress.org is out of scope for GoPress. Use the <a href=\"/wp-admin/plugins.php\">Plugins</a> screen to manage local plugins.</p>\n")
 	b.WriteString("</body>\n</html>\n")
 	writeHTML(w, http.StatusForbidden, b.String())
 }
