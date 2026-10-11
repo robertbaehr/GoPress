@@ -10410,3 +10410,11 @@ wp-login.php#language-switcher-post
   task: P6.56
   api: n/a
   notes: "P6.56 — filter append + interim-login class coverage"
+
+# P10.188: expand diff corpus after P5.139–P6.56.
+- prefix: tests/corpus#p10.188
+  go: tests/corpus
+  status: partial
+  task: P10.188
+  api: n/a
+  notes: "P10.188 — +40 headers-safe cases after drop of Link/status/json-sensitive toppers"

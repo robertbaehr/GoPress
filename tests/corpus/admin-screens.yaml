@@ -76,7 +76,6 @@
   compare: headers
   nonce: null
 
-
 # P10.120: pages list chrome after P7.106.
 
 - id: admin-edit-pages
@@ -248,8 +247,6 @@
   body: null
   compare: headers
   nonce: null
-
-
 
 # P10.144 safe toppers (plugin/theme editor stubs already deep; link-manager admin 500≠403 skipped).
 
@@ -744,6 +741,62 @@
   role: admin
   method: GET
   path: /wp-admin/edit-comments.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+# P10.188: admin toppers after php-nag / update-nag stack (cookie-stable screens).
+
+- id: admin-p10188-001-dashboard
+  role: admin
+  method: GET
+  path: /wp-admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10188-002-edit-posts
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10188-003-edit-pages
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_type=page
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10188-004-edit-comments
+  role: admin
+  method: GET
+  path: /wp-admin/edit-comments.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10188-005-options-general
+  role: admin
+  method: GET
+  path: /wp-admin/options-general.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10188-006-profile
+  role: admin
+  method: GET
+  path: /wp-admin/profile.php
   headers: {}
   body: null
   compare: headers

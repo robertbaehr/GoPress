@@ -709,3 +709,14 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.188: ajax toppers after php-nag / dashboard stack.
+
+- id: ajax-p10188-003-heartbeat-anon
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
