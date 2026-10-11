@@ -330,7 +330,7 @@ func parsePostsOffset(r *http.Request) (offset int, useOffset bool, valid bool) 
 	return n, true, true
 }
 
-func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, ignoreSticky bool, orderby, order, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation, categoryOperator, tagOperator string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, offsetOverride int, useOffset bool, menuOrderFilter *int, metaKey, metaValue, metaCompare, metaType string) ([]Post, error) {
+func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, ignoreSticky bool, orderby, order, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation, categoryOperator, tagOperator string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, offsetOverride int, useOffset bool, menuOrderFilter *int, metaKey, metaValue, metaCompare, metaType, metaCompareKey string) ([]Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -380,6 +380,7 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 		MetaValue:          metaValue,
 		MetaCompare:        metaCompare,
 		MetaType:           metaType,
+		MetaCompareKey:     metaCompareKey,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	// P4.141: ignore_sticky=false → StickyFirst (prepend stickies). When sticky=
@@ -1145,6 +1146,26 @@ func postsMetaTypeEnumMessage() string {
 	return "meta_type is not one of NUMERIC, BINARY, CHAR, DATE, DATETIME, DECIMAL, SIGNED, TIME and UNSIGNED."
 }
 
+// parsePostsMetaCompareKeyTyped reads REST ?meta_compare_key= (WP_Meta_Query compare_key, P4.172).
+// Allowed: =, LIKE (case-insensitive). Absent → ("", true, false, "").
+func parsePostsMetaCompareKeyTyped(r *http.Request) (value string, ok bool, typeErr bool, enumErr string) {
+	value, ok, typeErr = parseRESTStringQueryTyped(r, "meta_compare_key", true)
+	if typeErr || !ok || value == "" {
+		return value, ok, typeErr, ""
+	}
+	switch strings.ToUpper(strings.TrimSpace(value)) {
+	case "=", "LIKE":
+		return strings.ToUpper(strings.TrimSpace(value)), true, false, ""
+	default:
+		return "", false, false, postsMetaCompareKeyEnumMessage()
+	}
+}
+
+// postsMetaCompareKeyEnumMessage is the WP-style rest_not_in_enum message for meta_compare_key (P4.172).
+func postsMetaCompareKeyEnumMessage() string {
+	return "meta_compare_key is not one of = and LIKE."
+}
+
 // parsePostsMetaQueryReject returns true when meta_query / meta_query[] is present (P4.166).
 // Full WP_Meta_Query object form is not a REST collection param; reject as invalid type.
 func parsePostsMetaQueryReject(r *http.Request) bool {
@@ -1541,7 +1562,7 @@ func parsePostsTermIDs(r *http.Request, key string) []int64 {
 	return out
 }
 
-func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation, categoryOperator, tagOperator string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, menuOrderFilter *int, metaKey, metaValue, metaCompare, metaType string) (int, error) {
+func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation, categoryOperator, tagOperator string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, menuOrderFilter *int, metaKey, metaValue, metaCompare, metaType, metaCompareKey string) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
@@ -1579,6 +1600,7 @@ func countPosts(c *wp.Context, postType string, stickyFilter *bool, search strin
 		MetaValue:          metaValue,
 		MetaCompare:        metaCompare,
 		MetaType:           metaType,
+		MetaCompareKey:     metaCompareKey,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	return wp.CountPosts(c, args)

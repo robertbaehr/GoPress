@@ -91,12 +91,13 @@ type QueryArgs struct {
 	ParentIn []int64
 	// ParentNotIn is post_parent__not_in (REST ?parent_exclude=, P4.93).
 	ParentNotIn []int64
-	// MetaKey / MetaValue / MetaCompare / MetaType are WP_Query meta_* (REST P4.166–P4.170).
+	// MetaKey / MetaValue / MetaCompare / MetaType are WP_Query meta_* (REST P4.166–P4.172).
 	// Empty MetaKey skips the clause.
-	MetaKey     string
-	MetaValue   string
-	MetaCompare string // default "="; supports =, !=, LIKE, NOT LIKE, >, >=, <, <=, EXISTS, NOT EXISTS, REGEXP, BETWEEN, …
-	MetaType    string // CHAR (default), NUMERIC/SIGNED/UNSIGNED/DECIMAL/BINARY/DATE/DATETIME/TIME
+	MetaKey        string
+	MetaValue      string
+	MetaCompare    string // default "="; supports =, !=, LIKE, NOT LIKE, >, >=, <, <=, EXISTS, NOT EXISTS, REGEXP, BETWEEN, IN, …
+	MetaType       string // CHAR (default), NUMERIC/SIGNED/UNSIGNED/DECIMAL/BINARY/DATE/DATETIME/TIME
+	MetaCompareKey string // P4.172: = (default) or LIKE on meta_key
 }
 
 // Post is a row from wp_posts used by front and REST helpers.
@@ -585,13 +586,14 @@ func appendDateQueryFilters(where []string, vals []any, args QueryArgs) ([]strin
 	return where, vals
 }
 
-// appendMetaQueryFilters applies WP_Query meta_key/meta_value/meta_compare/meta_type (P4.166–P4.171).
+// appendMetaQueryFilters applies WP_Query meta_key/meta_value/meta_compare/meta_type (P4.166–P4.172).
 // Emits EXISTS/NOT EXISTS against postmeta. idCol is "ID" or "p.ID".
 // P4.167: NOT LIKE, >, >=, <, <= numeric/string compares.
 // P4.168: REGEXP / NOT REGEXP / RLIKE / NOT RLIKE against meta_value.
 // P4.169: BETWEEN / NOT BETWEEN (meta_value "low,high" or "low high").
 // P4.170: meta_type CAST (NUMERIC→SIGNED, etc.) on value comparisons.
 // P4.171: IN / NOT IN (meta_value comma- or space-separated list).
+// P4.172: meta_compare_key =|LIKE on meta_key.
 func appendMetaQueryFilters(c *Context, where []string, vals []any, args QueryArgs, idCol string) ([]string, []any) {
 	key := strings.TrimSpace(args.MetaKey)
 	if key == "" || c == nil || c.DB == nil {
@@ -604,6 +606,7 @@ func appendMetaQueryFilters(c *Context, where []string, vals []any, args QueryAr
 	if compare == "" {
 		compare = "="
 	}
+	keySQL, keyVal := metaKeyCompareSQL(args.MetaCompareKey, key)
 	cast := metaTypeCastSQL(args.MetaType)
 	valExpr := "mq.meta_value"
 	if cast != "" && cast != "CHAR" {
@@ -612,29 +615,29 @@ func appendMetaQueryFilters(c *Context, where []string, vals []any, args QueryAr
 	pm := c.DB.PostMeta()
 	switch compare {
 	case "EXISTS":
-		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s)")
-		vals = append(vals, key)
+		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND "+keySQL+")")
+		vals = append(vals, keyVal)
 	case "NOT EXISTS":
-		where = append(where, "NOT EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s)")
-		vals = append(vals, key)
+		where = append(where, "NOT EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND "+keySQL+")")
+		vals = append(vals, keyVal)
 	case "LIKE":
-		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND "+valExpr+" LIKE %s)")
-		vals = append(vals, key, "%"+args.MetaValue+"%")
+		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND "+keySQL+" AND "+valExpr+" LIKE %s)")
+		vals = append(vals, keyVal, "%"+args.MetaValue+"%")
 	case "NOT LIKE":
-		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND "+valExpr+" NOT LIKE %s)")
-		vals = append(vals, key, "%"+args.MetaValue+"%")
+		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND "+keySQL+" AND "+valExpr+" NOT LIKE %s)")
+		vals = append(vals, keyVal, "%"+args.MetaValue+"%")
 	case "!=":
-		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND "+valExpr+" != %s)")
-		vals = append(vals, key, args.MetaValue)
+		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND "+keySQL+" AND "+valExpr+" != %s)")
+		vals = append(vals, keyVal, args.MetaValue)
 	case ">", ">=", "<", "<=":
-		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND "+valExpr+" "+compare+" %s)")
-		vals = append(vals, key, args.MetaValue)
+		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND "+keySQL+" AND "+valExpr+" "+compare+" %s)")
+		vals = append(vals, keyVal, args.MetaValue)
 	case "REGEXP", "RLIKE":
-		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND mq.meta_value REGEXP %s)")
-		vals = append(vals, key, args.MetaValue)
+		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND "+keySQL+" AND mq.meta_value REGEXP %s)")
+		vals = append(vals, keyVal, args.MetaValue)
 	case "NOT REGEXP", "NOT RLIKE":
-		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND mq.meta_value NOT REGEXP %s)")
-		vals = append(vals, key, args.MetaValue)
+		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND "+keySQL+" AND mq.meta_value NOT REGEXP %s)")
+		vals = append(vals, keyVal, args.MetaValue)
 	case "BETWEEN", "NOT BETWEEN":
 		low, high, ok := splitMetaBetweenValue(args.MetaValue)
 		if !ok {
@@ -643,12 +646,12 @@ func appendMetaQueryFilters(c *Context, where []string, vals []any, args QueryAr
 			if compare == "NOT BETWEEN" {
 				op = "!="
 			}
-			where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND "+valExpr+" "+op+" %s)")
-			vals = append(vals, key, args.MetaValue)
+			where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND "+keySQL+" AND "+valExpr+" "+op+" %s)")
+			vals = append(vals, keyVal, args.MetaValue)
 			break
 		}
-		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND "+valExpr+" "+compare+" %s AND %s)")
-		vals = append(vals, key, low, high)
+		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND "+keySQL+" AND "+valExpr+" "+compare+" %s AND %s)")
+		vals = append(vals, keyVal, low, high)
 	case "IN", "NOT IN":
 		parts := splitMetaInValues(args.MetaValue)
 		if len(parts) == 0 {
@@ -657,22 +660,33 @@ func appendMetaQueryFilters(c *Context, where []string, vals []any, args QueryAr
 			if compare == "NOT IN" {
 				op = "!="
 			}
-			where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND "+valExpr+" "+op+" %s)")
-			vals = append(vals, key, args.MetaValue)
+			where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND "+keySQL+" AND "+valExpr+" "+op+" %s)")
+			vals = append(vals, keyVal, args.MetaValue)
 			break
 		}
 		ph := make([]string, len(parts))
-		vals = append(vals, key)
+		vals = append(vals, keyVal)
 		for i, p := range parts {
 			ph[i] = "%s"
 			vals = append(vals, p)
 		}
-		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND "+valExpr+" "+compare+" ("+strings.Join(ph, ", ")+"))")
+		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND "+keySQL+" AND "+valExpr+" "+compare+" ("+strings.Join(ph, ", ")+"))")
 	default: // "="
-		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND "+valExpr+" = %s)")
-		vals = append(vals, key, args.MetaValue)
+		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND "+keySQL+" AND "+valExpr+" = %s)")
+		vals = append(vals, keyVal, args.MetaValue)
 	}
 	return where, vals
+}
+
+// metaKeyCompareSQL maps meta_compare_key to a meta_key predicate (P4.172).
+// Returns SQL fragment with one %s placeholder and the bound value.
+func metaKeyCompareSQL(compareKey, key string) (sqlFrag string, val string) {
+	switch strings.ToUpper(strings.TrimSpace(compareKey)) {
+	case "LIKE":
+		return "mq.meta_key LIKE %s", "%" + key + "%"
+	default: // "=", EXISTS, empty, unknown
+		return "mq.meta_key = %s", key
+	}
 }
 
 // metaTypeCastSQL maps WP_Meta_Query meta_type to a MySQL CAST type (P4.170).

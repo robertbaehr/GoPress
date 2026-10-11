@@ -293,7 +293,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		writeRESTInvalidDateParams(w, badDates)
 		return
 	}
-	// P4.166/P4.170: meta_key/meta_value/meta_compare/meta_type string-type; meta_query object rejected.
+	// P4.166/P4.170/P4.172: meta_key/meta_value/meta_compare/meta_type/meta_compare_key string-type; meta_query object rejected.
 	if parsePostsMetaQueryReject(r) {
 		writeRESTInvalidStringParams(w, []string{"meta_query"})
 		return
@@ -302,6 +302,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 	metaValue, _, metaValueTypeErr := parsePostsMetaValueTyped(r)
 	metaCompare, metaCompareOK, metaCompareTypeErr, metaCompareEnumErr := parsePostsMetaCompareTyped(r)
 	metaType, metaTypeOK, metaTypeTypeErr, metaTypeEnumErr := parsePostsMetaTypeTyped(r)
+	metaCompareKey, metaCompareKeyOK, metaCompareKeyTypeErr, metaCompareKeyEnumErr := parsePostsMetaCompareKeyTyped(r)
 	var badMetaTypes []string
 	if metaKeyTypeErr {
 		badMetaTypes = append(badMetaTypes, "meta_key")
@@ -314,6 +315,9 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 	}
 	if metaTypeTypeErr {
 		badMetaTypes = append(badMetaTypes, "meta_type")
+	}
+	if metaCompareKeyTypeErr {
+		badMetaTypes = append(badMetaTypes, "meta_compare_key")
 	}
 	if len(badMetaTypes) > 0 {
 		writeRESTInvalidStringParams(w, badMetaTypes)
@@ -335,13 +339,21 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		writeRESTInvalidOrderParams(w, map[string]string{"meta_type": msg})
 		return
 	}
+	if metaCompareKeyEnumErr != "" || !metaCompareKeyOK {
+		msg := metaCompareKeyEnumErr
+		if msg == "" {
+			msg = postsMetaCompareKeyEnumMessage()
+		}
+		writeRESTInvalidOrderParams(w, map[string]string{"meta_compare_key": msg})
+		return
+	}
 	statuses, forbiddenCode, enumInvalid := parsePostsStatus(r, c)
 	if forbiddenCode != 0 || enumInvalid {
 		// P4.151: WP wraps status sanitize errors as rest_invalid_param.
 		writeRESTInvalidPostsStatus(w, forbiddenCode, enumInvalid)
 		return
 	}
-	total, err := countPosts(c, postType, stickyFilter, search, searchColumns, authorIn, authorNotIn, categories, categoriesExclude, tags, tagsExclude, taxRelation, categoryOperator, tagOperator, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, menuOrderFilter, metaKey, metaValue, metaCompare, metaType)
+	total, err := countPosts(c, postType, stickyFilter, search, searchColumns, authorIn, authorNotIn, categories, categoriesExclude, tags, tagsExclude, taxRelation, categoryOperator, tagOperator, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, menuOrderFilter, metaKey, metaValue, metaCompare, metaType, metaCompareKey)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",
@@ -350,7 +362,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		})
 		return
 	}
-	posts, err := listPostsPaged(c, postType, perPage, page, edit, stickyFilter, ignoreSticky, orderby, order, search, searchColumns, authorIn, authorNotIn, categories, categoriesExclude, tags, tagsExclude, taxRelation, categoryOperator, tagOperator, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, offset, useOffset, menuOrderFilter, metaKey, metaValue, metaCompare, metaType)
+	posts, err := listPostsPaged(c, postType, perPage, page, edit, stickyFilter, ignoreSticky, orderby, order, search, searchColumns, authorIn, authorNotIn, categories, categoriesExclude, tags, tagsExclude, taxRelation, categoryOperator, tagOperator, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, offset, useOffset, menuOrderFilter, metaKey, metaValue, metaCompare, metaType, metaCompareKey)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",
