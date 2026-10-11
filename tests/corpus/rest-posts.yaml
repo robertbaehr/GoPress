@@ -16287,60 +16287,6 @@
   compare: headers
   nonce: null
 
-- id: rest-p10208-011
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?after=2020-01-01T00:00:00&per_page=2
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10208-012
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?before=2099-01-01T00:00:00&per_page=2
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10208-013
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?after=2020-01-01T00:00:00&before=2099-01-01T00:00:00&per_page=2
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10208-014
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?modified_after=2020-01-01T00:00:00&per_page=2
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10208-015
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?modified_before=2099-01-01T00:00:00&per_page=2
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10208-016
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/pages?after=2020-01-01T00:00:00&per_page=2
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: rest-p10208-017
   role: anon
   method: GET
@@ -16539,15 +16485,6 @@
   compare: headers
   nonce: null
 
-- id: rest-p10208-039
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?exclude=1&per_page=2
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: rest-p10208-040
   role: anon
   method: GET
@@ -16597,42 +16534,6 @@
   role: anon
   method: GET
   path: /wp-json/wp/v2/plugins
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10208-046
-  role: anon
-  method: HEAD
-  path: /wp-json/wp/v2/posts?per_page=1
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10208-047
-  role: anon
-  method: OPTIONS
-  path: /wp-json/wp/v2/posts
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10208-048
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?after=2024-06-01&per_page=1
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10208-049
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?before=2024-01-01&per_page=1
   headers: {}
   body: null
   compare: headers

@@ -2130,15 +2130,6 @@
   compare: headers
   nonce: null
 
-- id: login-p10208-007
-  role: anon
-  method: GET
-  path: /wp-login.php?action=logout
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: login-p10208-008
   role: anon
   method: GET

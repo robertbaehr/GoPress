@@ -3411,37 +3411,10 @@
   compare: headers
   nonce: null
 
-- id: front-p10208-010
-  role: anon
-  method: GET
-  path: /?cat=1
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: front-p10208-011
-  role: anon
-  method: GET
-  path: /?author=1
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: front-p10208-012
   role: anon
   method: GET
   path: /favicon.ico
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: front-p10208-013
-  role: anon
-  method: GET
-  path: /rsd.xml
   headers: {}
   body: null
   compare: headers

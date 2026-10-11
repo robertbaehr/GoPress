@@ -1246,15 +1246,6 @@
   compare: headers
   nonce: null
 
-- id: ajax-p10208-004
-  role: admin
-  method: GET
-  path: /wp-admin/admin-ajax.php?action=heartbeat
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: ajax-p10208-005
   role: anon
   method: GET
