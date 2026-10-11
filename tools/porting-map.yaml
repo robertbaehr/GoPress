@@ -1821,13 +1821,20 @@ wp-login.php#language-switcher-post
   task: P2.47
   api: exported
 
-# P2.49: wp_html_split (tag/comment/CDATA delimiter capture).
+# P2.49 / P2.109: wp_html_split (tag/comment/CDATA delimiter capture).
 - prefix: wp-includes/formatting.php#wp_html_split
   go: internal/wp/html_split.go
   status: partial
-  task: P2.49
+  task: P2.109
   api: exported
-  notes: "P2.49 — WPHTMLSplit RE2-friendly tag/comment/CDATA splitter"
+  notes: "P2.109 — quote-aware tag ends (attrs may contain '>'); P2.49 comment/CDATA base"
+
+- prefix: wp-includes/formatting.php#wp_html_split#tests
+  go: internal/wp/html_split_test.go
+  status: partial
+  task: P2.109
+  api: exported
+  notes: "P2.109 — unit coverage for quoted '>' in attributes"
 
 # P2.50: wp_basename (locale-independent basename).
 - prefix: wp-includes/formatting.php#wp_basename

@@ -1,10 +1,16 @@
 package wp
 
-import "strings"
+import (
+	"strings"
+	"unicode/utf8"
+)
 
-// WPHTMLSplit mirrors wp_html_split (P2.49).
+// WPHTMLSplit mirrors wp_html_split (P2.49 / P2.109).
 // Splits HTML into text and tag/comment/CDATA pieces (preg_split with
 // PREG_SPLIT_DELIM_CAPTURE). Consecutive tags yield an empty string between them.
+// P2.109: quote-aware tag ends so '>' inside "..." / '...' attributes does not
+// terminate the element (PHP strip_tags / real-world markup; complements the
+// naive [^>]*>? branch in get_html_split_regex).
 func WPHTMLSplit(input string) []string {
 	if input == "" {
 		return []string{""}
@@ -56,9 +62,39 @@ func findHTMLTagEnd(s string, lt int) int {
 		}
 		return len(s)
 	}
-	// Normal tag: consume through '>' or EOF (WP [^>]*>?).
-	if j := strings.IndexByte(rest, '>'); j >= 0 {
-		return lt + 1 + j + 1
+	// P2.109: normal tag — quote-aware scan for '>' (attrs may contain '>').
+	if end := findQuotedTagClose(s, lt+1); end >= 0 {
+		return end + 1
 	}
 	return len(s)
+}
+
+// findQuotedTagClose returns the index of '>' closing a tag whose content starts
+// at start (immediately after '<'), or -1 if none. Skips '>' inside quotes.
+func findQuotedTagClose(text string, start int) int {
+	var quote rune
+	for i := start; i < len(text); {
+		r, size := utf8.DecodeRuneInString(text[i:])
+		if r == utf8.RuneError && size == 1 {
+			i++
+			continue
+		}
+		if quote != 0 {
+			if r == quote {
+				quote = 0
+			}
+			i += size
+			continue
+		}
+		switch r {
+		case '"', '\'':
+			quote = r
+			i += size
+		case '>':
+			return i
+		default:
+			i += size
+		}
+	}
+	return -1
 }

@@ -41,3 +41,19 @@ func TestWPHTMLSplitRoundtrip(t *testing.T) {
 		t.Fatalf("roundtrip %q → %q parts=%#v", in, b, parts)
 	}
 }
+
+func TestWPHTMLSplitQuotedGreaterThan(t *testing.T) {
+	// P2.109: '>' inside quoted attrs must not end the tag.
+	in := `x<img alt="a>b" src='c>d'>y`
+	got := wp.WPHTMLSplit(in)
+	want := []string{"x", `<img alt="a>b" src='c>d'>`, "y"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("WPHTMLSplit(%q)=%#v want %#v", in, got, want)
+	}
+	in2 := `<span title="1>2">ok</span>`
+	got2 := wp.WPHTMLSplit(in2)
+	want2 := []string{"", `<span title="1>2">`, "ok", "</span>", ""}
+	if !reflect.DeepEqual(got2, want2) {
+		t.Fatalf("WPHTMLSplit(%q)=%#v want %#v", in2, got2, want2)
+	}
+}
