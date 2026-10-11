@@ -12263,6 +12263,20 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P10.216 — gallery/meta_compare/custom-header/response-code/feed-link/image-src toppers; 3162 cases; headers-safe; drop set-cookie/Link/status-divergent"
 
+# P5.157: deepen core/audio fontSize/gradient; coerce align enum.
+- prefix: wp-includes/blocks/audio
+  go: internal/blocks/audio_video.go
+  status: partial
+  task: P5.157
+  api: n/a
+  notes: "P5.157 — coerce align left|center|right|wide|full; drop none/bogus; fontSize/gradient polish; sanitize before applySupports"
+- prefix: wp-includes/blocks/audio#tests
+  go: internal/blocks/audio_attrs_p5_157_test.go
+  status: partial
+  task: P5.157
+  api: n/a
+  notes: "P5.157 — align coerce, saved fontSize/gradient coverage"
+
 # P5.156: deepen core/file fontSize/gradient; coerce align enum.
 - prefix: wp-includes/blocks/file
   go: internal/blocks/file.go
