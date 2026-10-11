@@ -929,22 +929,28 @@ func (h *Handler) serveResetPass(w http.ResponseWriter, r *http.Request, c *wp.C
 	}
 
 	formErr := ""
+	pass1 := ""
 	if r.Method == http.MethodPost {
 		_ = r.ParseForm()
-		pass1 := strings.TrimSpace(r.FormValue("pass1"))
+		pass1 = strings.TrimSpace(r.FormValue("pass1"))
 		pass2 := r.FormValue("pass2")
 		if pass1 == "" && r.FormValue("pass1") != "" {
 			formErr = "The password cannot be a space or all spaces."
 		} else if pass1 != "" && strings.TrimSpace(pass2) != pass1 {
 			formErr = "The passwords do not match."
-		} else if pass1 != "" {
-			if err := wp.ResetPassword(c, user, pass1); err != nil {
-				formErr = "Could not reset password."
-			} else {
-				clearResetPassCookie(w, c)
-				h.serveResetPassDone(w, r, c)
-				return
-			}
+		}
+	}
+	// P6.71: do_action( 'validate_password_reset', $errors, $user ) before reset.
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("validate_password_reset", formErr, user)
+	}
+	if r.Method == http.MethodPost && formErr == "" && pass1 != "" {
+		if err := wp.ResetPassword(c, user, pass1); err != nil {
+			formErr = "Could not reset password."
+		} else {
+			clearResetPassCookie(w, c)
+			h.serveResetPassDone(w, r, c)
+			return
 		}
 	}
 
