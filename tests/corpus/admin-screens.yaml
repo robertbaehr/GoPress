@@ -131,3 +131,115 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.142: headers-only expand after P5.116–P6.48.
+- id: admin-p10142-001-wp-admin-edit-tags-php-taxonomy-category
+  role: admin
+  method: GET
+  path: /wp-admin/edit-tags.php?taxonomy=category
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-002-wp-admin-edit-tags-php-taxonomy-post-tag
+  role: admin
+  method: GET
+  path: /wp-admin/edit-tags.php?taxonomy=post_tag
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-003-wp-admin-edit-tags-php-taxonomy-category-s-uncategorized
+  role: admin
+  method: GET
+  path: /wp-admin/edit-tags.php?taxonomy=category&s=uncategorized
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-004-wp-admin-edit-tags-php-taxonomy-post-tag-s-fixture
+  role: admin
+  method: GET
+  path: /wp-admin/edit-tags.php?taxonomy=post_tag&s=fixture
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-005-wp-admin-edit-tags-php-taxonomy-category-s-zzzz-no-match
+  role: admin
+  method: GET
+  path: /wp-admin/edit-tags.php?taxonomy=category&s=zzzz-no-match
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-006-wp-admin-edit-tags-php
+  role: admin
+  method: GET
+  path: /wp-admin/edit-tags.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-007-wp-admin-edit-php-s-hello
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?s=hello
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-008-wp-admin-edit-php-post-status-draft
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_status=draft
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-009-wp-admin-edit-php-author-1
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?author=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+# P10.142c safe toppers.
+- id: admin-p10142c-001-edit-tags-msg
+  role: admin
+  method: GET
+  path: /wp-admin/edit-tags.php?taxonomy=category&message=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142c-002-edit-tags-tag-msg
+  role: admin
+  method: GET
+  path: /wp-admin/edit-tags.php?taxonomy=post_tag&message=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142c-003-edit-tags-error
+  role: admin
+  method: GET
+  path: /wp-admin/edit-tags.php?taxonomy=category&error=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+

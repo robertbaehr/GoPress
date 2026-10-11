@@ -7705,3 +7705,11 @@ wp-login.php#language-switcher-post
   task: P10.141
   api: n/a
   notes: "P10.141 — summarize embed polish, posts orderby, plugin-editor, normalize_whitespace, attachment redirects, ImageEditor.Crop, 902 corpus"
+
+# P10.142: expand diff corpus after P5.116–P6.48.
+- prefix: tests/corpus#p10.142
+  go: tests/corpus
+  status: partial
+  task: P10.142
+  api: n/a
+  notes: "P10.142 — author_exclude, heading/paragraph block-types, edit-tags search, rp_key login; 902→1008"
