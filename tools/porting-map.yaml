@@ -8297,4 +8297,4 @@ wp-login.php#language-switcher-post
   status: partial
   task: P10.152
   api: n/a
-  notes: "P10.152 — include[]/exclude[] + loginout + revision.php + front/login toppers; 1170 cases"
+  notes: "P10.152 — include[]/exclude[] + loginout + front/login/admin toppers; 1167 cases"
