@@ -67,21 +67,60 @@ func applyAudioAttrs(htmlFragment string, attrs map[string]any) string {
 	return out
 }
 
-// renderVideo renders core/video (P5.53 / P5.114).
+// renderVideo renders core/video (P5.53 / P5.114 / P5.158).
 // Prefers saved markup; synthesizes from src/id; applies width/height + aspect-ratio
 // from block attrs or attachment metadata (subset of render_block_core_video).
 // P5.114: className/align/anchor polish; metadata dimensions when attrs omit them.
+// P5.158: coerce align left|center|right|wide|full; fontSize/gradient polish.
 func (e *Env) renderVideo(block Block) string {
 	e = e.ensure()
+	attrs := sanitizeVideoBlockAttrs(block.Attrs)
+	block.Attrs = attrs
 	out := e.renderSaved(block)
 	if strings.TrimSpace(out) == "" {
-		out = synthesizeVideoBlock(e, block.Attrs)
+		out = synthesizeVideoBlock(e, attrs)
 	}
 	if strings.TrimSpace(out) == "" || !reVideoTag.MatchString(out) {
 		return ""
 	}
-	out = applyVideoDimensions(out, block.Attrs, e)
-	return applyMediaFigureAttrs(out, "wp-block-video", block.Attrs)
+	out = applyVideoDimensions(out, attrs, e)
+	out = applyMediaFigureAttrs(out, "wp-block-video", attrs)
+	return applyVideoAttrs(out, attrs)
+}
+
+// sanitizeVideoBlockAttrs coerces core/video supports.align to the block.json set (P5.158).
+// Allowed: left, center, right, wide, full. Other align values (incl. none) are dropped.
+func sanitizeVideoBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "left", "center", "right", "wide", "full":
+		// keep
+	case "none":
+		delete(out, "align")
+	default:
+		delete(out, "align")
+	}
+	return out
+}
+
+// applyVideoAttrs polishes gradient and fontSize on core/video (P5.158).
+func applyVideoAttrs(htmlFragment string, attrs map[string]any) string {
+	out := htmlFragment
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		out = addRootClass(out, "has-background")
+		out = addRootClass(out, "has-"+sanitizeClassToken(g)+"-gradient-background")
+	}
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		out = addRootClass(out, "has-"+sanitizeClassToken(fs)+"-font-size")
+	}
+	return out
 }
 
 func synthesizeAudioBlock(e *Env, attrs map[string]any) string {
