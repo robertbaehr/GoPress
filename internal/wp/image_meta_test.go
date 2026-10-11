@@ -195,3 +195,57 @@ func TestFilesizeFilteredHooks(t *testing.T) {
 		t.Fatalf("wp_filesize filter=%d want 15", got)
 	}
 }
+
+func TestWPUpdateAttachmentMetadata(t *testing.T) {
+	c := mediaBoot(t)
+	dir := t.TempDir()
+	path := filepath.Join(dir, "upd.png")
+	writeTinyPNG(t, path)
+	f, err := os.Open(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer f.Close()
+	up, err := wp.SaveUploadedMedia(c, "upd.png", f, 0)
+	if err != nil {
+		t.Fatalf("upload: %v", err)
+	}
+
+	// Filter can rewrite metadata before store.
+	c.Hooks.AddFilter("wp_update_attachment_metadata", func(value any, args ...any) any {
+		m, _ := value.(map[string]any)
+		if m == nil {
+			return value
+		}
+		m["gopress"] = "p8.39"
+		return m
+	}, 10, 2)
+
+	meta := wp.GenerateAttachmentMetadata(c, up.ID, path)
+	if !wp.WPUpdateAttachmentMetadata(c, up.ID, meta) {
+		t.Fatal("expected update success")
+	}
+	got, ok := wp.GetAttachmentMetadata(c, up.ID)
+	if !ok {
+		t.Fatal("expected metadata after update")
+	}
+	if got["gopress"] != "p8.39" {
+		t.Fatalf("filter not applied: %#v", got)
+	}
+
+	// Clear filter so empty data stays falsy after apply_filters.
+	c.Hooks = wp.NewHooks()
+
+	// Empty data → delete meta (PHP if ( $data ) falsy).
+	if !wp.WPUpdateAttachmentMetadata(c, up.ID, map[string]any{}) {
+		t.Fatal("expected delete success for empty data")
+	}
+	if _, ok := wp.GetAttachmentMetadata(c, up.ID); ok {
+		t.Fatal("expected metadata deleted")
+	}
+
+	// Missing attachment → false.
+	if wp.WPUpdateAttachmentMetadata(c, 999999991, map[string]any{"file": "x"}) {
+		t.Fatal("missing attachment should fail")
+	}
+}

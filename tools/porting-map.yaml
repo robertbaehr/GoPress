@@ -8858,3 +8858,18 @@ wp-login.php#language-switcher-post
   task: P3.120
   api: n/a
   notes: "P3.120 — default/rtl/filter/xhtml unit coverage"
+
+# P8.39: wp_update_attachment_metadata.
+- prefix: wp-includes/post.php#wp_update_attachment_metadata
+  go: internal/wp/image_meta.go
+  status: partial
+  task: P8.39
+  api: wp_update_attachment_metadata
+  notes: "P8.39 — filter + update/delete empty; upload/sideload persist via WPUpdateAttachmentMetadata"
+
+- prefix: wp-includes/post.php#wp_update_attachment_metadata#tests
+  go: internal/wp/image_meta_test.go
+  status: partial
+  task: P8.39
+  api: n/a
+  notes: "P8.39 — filter/delete/missing attachment coverage"
