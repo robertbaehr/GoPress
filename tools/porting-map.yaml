@@ -10354,3 +10354,17 @@ wp-login.php#language-switcher-post
   task: P4.155
   api: n/a
   notes: "P4.155 — notint/empty-array/valid coverage"
+
+# P7.140: dashboard PHP nag stub.
+- prefix: wp-admin/includes/dashboard.php#dashboard_php_nag
+  go: internal/admin/php_nag.go
+  status: partial
+  task: P7.140
+  api: wp_dashboard_php_nag
+  notes: "P7.140 — dashboard_php_nag widget; default no check (no PHP runtime); update_php→manage_options"
+- prefix: wp-admin/includes/dashboard.php#dashboard_php_nag#tests
+  go: internal/admin/php_nag_p7_140_test.go
+  status: partial
+  task: P7.140
+  api: n/a
+  notes: "P7.140 — absent by default; injected unacceptable check; UpdatePHPURL"
