@@ -11036,3 +11036,23 @@ wp-login.php#language-switcher-post
   task: P5.145
   api: n/a
   notes: "P5.145 — align drop, saved gradient/fontSize/textAlign coverage"
+
+# P4.161: REST posts categories include_children object-form tax query.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#include_children
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.161
+  api: n/a
+  notes: "P4.161 — categories[terms]+include_children object form; expand via GetTermChildren"
+- prefix: wp-includes/taxonomy.php#get_term_children
+  go: internal/wp/term_children.go
+  status: partial
+  task: P4.161
+  api: n/a
+  notes: "P4.161 — GetTermChildren + ExpandTermIDsWithChildren"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#include_children#tests
+  go: internal/rest/posts_include_children_p4_161_test.go
+  status: partial
+  task: P4.161
+  api: n/a
+  notes: "P4.161 — Root expand/exclude + object default false"
