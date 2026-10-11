@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.226)
 
+- P8.58 `GetAttachedMedia` (`get_attached_media`)
 - P3.158 `GetEditCommentLink` + `edit_comment` meta cap
 - P2.160 `GetServerProtocol` (`wp_get_server_protocol`)
 - P6.69 `lostpassword_form` action on lost-password screen
