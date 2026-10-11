@@ -27,6 +27,20 @@
 
 
 
+# P3.162: get_term_link / get_category_link / get_tag_link.
+- prefix: wp-includes/taxonomy.php#get_term_link
+  go: internal/wp/term_link.go
+  status: partial
+  task: P3.162
+  api: n/a
+  notes: "P3.162 — GetTermLink pretty/query + category_link/tag_link/term_link"
+- prefix: wp-includes/taxonomy.php#get_term_link#tests
+  go: internal/wp/term_link_p3_162_test.go
+  status: partial
+  task: P3.162
+  api: n/a
+  notes: "P3.162 — category/tag pretty + query + filters"
+
 # P2.164: self_admin_url.
 - prefix: wp-includes/link-template.php#self_admin_url
   go: internal/wp/self_admin_url.go
