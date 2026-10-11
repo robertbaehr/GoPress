@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P6.67: register filter on Register nav link.
+- prefix: wp-includes/general-template.php#register
+  go: internal/login/login.go
+  status: partial
+  task: P6.67
+  api: n/a
+  notes: "P6.67 — register filter on login/lostpassword Register nav link"
+- prefix: wp-includes/general-template.php#register#tests
+  go: internal/login/register_html_link_p6_67_test.go
+  status: partial
+  task: P6.67
+  api: n/a
+  notes: "P6.67 — filter replace + default Register link"
+
 # P10.224: STATUS/PORTING refresh after P6.66–P9.42 stack.
 - prefix: docs/STATUS.md#p10-224
   go: docs/STATUS.md
