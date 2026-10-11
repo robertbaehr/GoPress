@@ -12125,6 +12125,26 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P2.149 — nil/value/fallback/blocked RemoteGet response code coverage"
 
+# P3.149: get_author_feed_link / get_author_posts_url pretty subset.
+- prefix: wp-includes/link-template.php#get_author_feed_link
+  go: internal/wp/feed_links.go
+  status: partial
+  task: P3.149
+  api: exported
+  notes: "P3.149 — GetAuthorFeedLink pretty /author/{nicename}/feed/; author_feed_link filter; front wired"
+- prefix: wp-includes/author-template.php#get_author_posts_url
+  go: internal/wp/feed_links.go
+  status: partial
+  task: P3.149
+  api: exported
+  notes: "P3.149 — GetAuthorPostsURL pretty /author/{nicename}/"
+- prefix: wp-includes/link-template.php#get_author_feed_link#tests
+  go: internal/wp/author_feed_link_p3_149_test.go
+  status: partial
+  task: P3.149
+  api: n/a
+  notes: "P3.149 — posts URL, default/atom feeds, filter coverage"
+
 # P3.147: front feed_links alternate EscURL + feed_content_type.
 - prefix: wp-includes/general-template.php#feed_links
   go: internal/server/front.go

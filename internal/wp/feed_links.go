@@ -128,3 +128,55 @@ func PostCommentsFeedLinkHTML(c *Context, permalink, feed, linkText string) stri
 	}
 	return link
 }
+
+// GetAuthorPostsURL builds an author archive permalink (get_author_posts_url subset, P3.149).
+// Pretty: {home}/author/{nicename}/. Empty when author cannot be resolved.
+func GetAuthorPostsURL(c *Context, home string, authorID int64) string {
+	home = strings.TrimRight(strings.TrimSpace(home), "/")
+	if home == "" && c != nil {
+		home = strings.TrimRight(optionStringBlogInfo(c, "home", optionStringBlogInfo(c, "siteurl", "")), "/")
+	}
+	if home == "" || authorID <= 0 || c == nil {
+		return ""
+	}
+	u, err := c.GetUserBy("id", authorID)
+	if err != nil || u == nil {
+		return ""
+	}
+	slug := strings.TrimSpace(u.Nicename)
+	if slug == "" {
+		slug = strings.TrimSpace(u.Login)
+	}
+	if slug == "" {
+		return ""
+	}
+	return home + "/author/" + slug + "/"
+}
+
+// GetAuthorFeedLink builds an author feed permalink (get_author_feed_link, P3.149).
+// Pretty: {author_posts_url}feed/ or …/feed/{type}/ when type ≠ default rss2.
+// Applies the author_feed_link filter.
+func GetAuthorFeedLink(c *Context, home string, authorID int64, feed string) string {
+	base := strings.TrimRight(GetAuthorPostsURL(c, home, authorID), "/")
+	if base == "" {
+		return ""
+	}
+	feed = strings.ToLower(strings.TrimSpace(feed))
+	if feed == "" {
+		feed = "rss2"
+	}
+	out := ""
+	if feed == "rss2" || feed == "rss" {
+		out = base + "/feed/"
+	} else {
+		out = base + "/feed/" + feed + "/"
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("author_feed_link", out, feed); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				return strings.TrimSpace(s)
+			}
+		}
+	}
+	return out
+}
