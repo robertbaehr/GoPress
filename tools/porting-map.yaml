@@ -9656,3 +9656,19 @@ wp-login.php#language-switcher-post
   task: P8.41
   api: n/a
   notes: "P8.41 — post_data title/excerpt + parent date + basename sanitize"
+
+# P10.174: expand diff corpus after P5.132–P8.41.
+- prefix: tests/corpus#p10.174
+  go: tests/corpus
+  status: partial
+  task: P10.174
+  api: n/a
+  notes: "P10.174 — collection _embed replies/author json + widget-group headers + front/login/ajax/admin toppers; 1551 cases"
+
+# P10.175: STATUS/PORTING refresh after P5.132–P10.174.
+- prefix: docs/STATUS.md#p10.175
+  go: docs/STATUS.md
+  status: partial
+  task: P10.175
+  api: n/a
+  notes: "P10.175 — summarize widget-group, _embed replies/up, Activity row actions, KsesAttr, GetDocumentTitle, MediaHandleUploadWith + 1551 corpus"
