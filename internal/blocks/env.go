@@ -158,8 +158,8 @@ type Env struct {
 	// Mirrors PHP $seen_ids reentrancy guard in render_block_core_post_content.
 	seenPostContent map[int64]bool
 
-	// DebugDisplay, when true, surfaces post-content reentrancy warnings (P5.87).
-	// Mirrors WP_DEBUG && WP_DEBUG_DISPLAY in PHP.
+	// DebugDisplay, when true, surfaces post-content / synced-pattern reentrancy
+	// warnings (P5.87 / P5.127). Mirrors WP_DEBUG && WP_DEBUG_DISPLAY in PHP.
 	DebugDisplay bool
 
 	// currentPost is the post in scope for post-title/content/date (P5.13).

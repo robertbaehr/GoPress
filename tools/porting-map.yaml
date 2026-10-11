@@ -8889,3 +8889,18 @@ wp-login.php#language-switcher-post
   task: P10.163
   api: n/a
   notes: "P10.163 — summarize post-terms/author, parent validate, block-editor, parse_list, language_attributes, attachment metadata + 1325 corpus"
+
+# P5.127: deepen core/block (synced pattern) cycle guard.
+- prefix: wp-includes/blocks/block.php#render_block_core_block
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.127
+  api: render_block_core_block
+  notes: "P5.127 — DebugDisplay circular-ref halt; missing ref/load empty"
+
+- prefix: wp-includes/blocks/block.php#render_block_core_block#tests
+  go: internal/blocks/block_p5_127_test.go
+  status: partial
+  task: P5.127
+  api: n/a
+  notes: "P5.127 — circular halt / quiet / missing ref coverage"
