@@ -411,43 +411,6 @@ func removeAccents(text string) string {
 	return b.String()
 }
 
-func utf8URIEncode(s string, length int) string {
-	var b strings.Builder
-	n := 0
-	for i := 0; i < len(s); {
-		r, size := utf8.DecodeRuneInString(s[i:])
-		if r == utf8.RuneError && size == 1 {
-			// encode raw byte
-			if length > 0 && n+3 > length {
-				break
-			}
-			b.WriteString("%" + strings.ToLower(hexByte(s[i])))
-			n += 3
-			i++
-			continue
-		}
-		if r < 128 {
-			if length > 0 && n+1 > length {
-				break
-			}
-			b.WriteByte(byte(r))
-			n++
-		} else {
-			enc := s[i : i+size]
-			need := 3 * len(enc)
-			if length > 0 && n+need > length {
-				break
-			}
-			for j := 0; j < len(enc); j++ {
-				b.WriteString("%" + strings.ToLower(hexByte(enc[j])))
-			}
-			n += need
-		}
-		i += size
-	}
-	return b.String()
-}
-
 func hexByte(c byte) string {
 	const hexdigits = "0123456789abcdef"
 	return string([]byte{hexdigits[c>>4], hexdigits[c&0x0f]})
