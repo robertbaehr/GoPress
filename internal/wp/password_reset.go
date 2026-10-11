@@ -122,27 +122,37 @@ func (c *Context) SetUserActivationKey(userID int64, key string) error {
 // records a wp_mail message (retrieve_password).
 func RetrievePassword(c *Context, userLogin string) error {
 	userLogin = strings.TrimSpace(userLogin)
+	errCode := ""
 	if userLogin == "" {
-		return fmt.Errorf("empty_username")
+		errCode = "empty_username"
 	}
 	var user *User
 	var err error
-	if strings.Contains(userLogin, "@") {
-		user, err = c.GetUserBy("email", userLogin)
+	if errCode == "" {
+		if strings.Contains(userLogin, "@") {
+			user, err = c.GetUserBy("email", userLogin)
+			if err != nil {
+				return err
+			}
+			if user == nil {
+				user, err = c.GetUserBy("login", userLogin)
+			}
+		} else {
+			user, err = c.GetUserBy("login", userLogin)
+		}
 		if err != nil {
 			return err
 		}
 		if user == nil {
-			user, err = c.GetUserBy("login", userLogin)
+			errCode = "invalidcombo"
 		}
-	} else {
-		user, err = c.GetUserBy("login", userLogin)
 	}
-	if err != nil {
-		return err
+	// P6.72: do_action( 'lostpassword_post', $errors, $user_data ) before abort/send.
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("lostpassword_post", errCode, user)
 	}
-	if user == nil {
-		return fmt.Errorf("invalidcombo")
+	if errCode != "" {
+		return fmt.Errorf("%s", errCode)
 	}
 
 	key, err := GetPasswordResetKey(c, user)
