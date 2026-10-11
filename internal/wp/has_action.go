@@ -1,5 +1,23 @@
 package wp
 
+// AddAction registers an action callback on c.Hooks (add_action, P9.42).
+// Nil context/hooks, empty tag, or nil fn is a no-op.
+func AddAction(c *Context, tag string, fn ActionFunc, priority int, acceptedArgs int) {
+	if c == nil || c.Hooks == nil || tag == "" || fn == nil {
+		return
+	}
+	c.Hooks.AddAction(tag, fn, priority, acceptedArgs)
+}
+
+// AddFilter registers a filter callback on c.Hooks (add_filter, P9.42).
+// Nil context/hooks, empty tag, or nil fn is a no-op.
+func AddFilter(c *Context, tag string, fn FilterFunc, priority int, acceptedArgs int) {
+	if c == nil || c.Hooks == nil || tag == "" || fn == nil {
+		return
+	}
+	c.Hooks.AddFilter(tag, fn, priority, acceptedArgs)
+}
+
 // HasAction reports whether tag has at least one registered callback on c.Hooks
 // (has_action, P9.35). Nil context/hooks or empty tag → false.
 func HasAction(c *Context, tag string) bool {

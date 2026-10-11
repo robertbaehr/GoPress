@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.223)
 
+- P9.42 `AddAction` / `AddFilter` Context helpers
 - P4.177 WP_Query `orderby=meta_value` + `meta_type=UNSIGNED`
 - P7.163 export.php pagenow chrome + `admin_body_class`
 - P5.162 `core/navigation` align coerce wide|full
