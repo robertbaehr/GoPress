@@ -253,13 +253,30 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 			menuOrderFilter = &mo
 		}
 	}
-	// P4.140: strict date-time validation for after/before/modified_* (rest_invalid_date).
-	dateAfter, afterOK := parsePostsAfter(r)
-	dateBefore, beforeOK := parsePostsBefore(r)
-	modifiedAfter, modAfterOK := parsePostsModifiedAfter(r)
-	modifiedBefore, modBeforeOK := parsePostsModifiedBefore(r)
-	var badDates []string
+	// P4.140 / P4.165: strict date-time validation + string-type for after/before/modified_*.
+	dateAfter, afterOK, afterTypeErr := parsePostsAfterTyped(r)
+	dateBefore, beforeOK, beforeTypeErr := parsePostsBeforeTyped(r)
+	modifiedAfter, modAfterOK, modAfterTypeErr := parsePostsModifiedAfterTyped(r)
+	modifiedBefore, modBeforeOK, modBeforeTypeErr := parsePostsModifiedBeforeTyped(r)
+	var badDateTypes []string
 	// Schema order from WP_REST_Posts_Controller::get_collection_params.
+	if afterTypeErr {
+		badDateTypes = append(badDateTypes, "after")
+	}
+	if modAfterTypeErr {
+		badDateTypes = append(badDateTypes, "modified_after")
+	}
+	if beforeTypeErr {
+		badDateTypes = append(badDateTypes, "before")
+	}
+	if modBeforeTypeErr {
+		badDateTypes = append(badDateTypes, "modified_before")
+	}
+	if len(badDateTypes) > 0 {
+		writeRESTInvalidStringParams(w, badDateTypes)
+		return
+	}
+	var badDates []string
 	if !afterOK {
 		badDates = append(badDates, "after")
 	}

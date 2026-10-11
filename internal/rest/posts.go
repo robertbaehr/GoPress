@@ -1064,54 +1064,96 @@ func writeRESTInvalidIntegerArrayParams(w http.ResponseWriter, keys []string) {
 	})
 }
 
-// parsePostsAfter reads REST ?after= (ISO8601 → MySQL datetime, P4.91 / P4.140).
+// parsePostsAfter reads REST ?after= (ISO8601 → MySQL datetime, P4.91 / P4.140 / P4.165).
 // Present but invalid/empty → ok=false (rest_invalid_param / rest_invalid_date).
+// typeErr is true when after[]= / after[N]= is present (rest_invalid_type / not string).
 func parsePostsAfter(r *http.Request) (string, bool) {
-	return parseRESTDateTimeQuery(r, "after")
+	v, ok, _ := parsePostsAfterTyped(r)
+	return v, ok
 }
 
-// parsePostsBefore reads REST ?before= (ISO8601 → MySQL datetime, P4.91 / P4.140).
+// parsePostsAfterTyped is like parsePostsAfter with array-form type detection (P4.165).
+func parsePostsAfterTyped(r *http.Request) (value string, ok bool, typeErr bool) {
+	return parseRESTDateTimeQueryTyped(r, "after")
+}
+
+// parsePostsBefore reads REST ?before= (ISO8601 → MySQL datetime, P4.91 / P4.140 / P4.165).
 func parsePostsBefore(r *http.Request) (string, bool) {
-	return parseRESTDateTimeQuery(r, "before")
+	v, ok, _ := parsePostsBeforeTyped(r)
+	return v, ok
 }
 
-// parsePostsModifiedAfter reads REST ?modified_after= (P4.95 / P4.140).
+// parsePostsBeforeTyped is like parsePostsBefore with array-form type detection (P4.165).
+func parsePostsBeforeTyped(r *http.Request) (value string, ok bool, typeErr bool) {
+	return parseRESTDateTimeQueryTyped(r, "before")
+}
+
+// parsePostsModifiedAfter reads REST ?modified_after= (P4.95 / P4.140 / P4.165).
 func parsePostsModifiedAfter(r *http.Request) (string, bool) {
-	return parseRESTDateTimeQuery(r, "modified_after")
+	v, ok, _ := parsePostsModifiedAfterTyped(r)
+	return v, ok
 }
 
-// parsePostsModifiedBefore reads REST ?modified_before= (P4.95 / P4.140).
+// parsePostsModifiedAfterTyped is like parsePostsModifiedAfter with array-form type detection (P4.165).
+func parsePostsModifiedAfterTyped(r *http.Request) (value string, ok bool, typeErr bool) {
+	return parseRESTDateTimeQueryTyped(r, "modified_after")
+}
+
+// parsePostsModifiedBefore reads REST ?modified_before= (P4.95 / P4.140 / P4.165).
 func parsePostsModifiedBefore(r *http.Request) (string, bool) {
-	return parseRESTDateTimeQuery(r, "modified_before")
+	v, ok, _ := parsePostsModifiedBeforeTyped(r)
+	return v, ok
+}
+
+// parsePostsModifiedBeforeTyped is like parsePostsModifiedBefore with array-form type detection (P4.165).
+func parsePostsModifiedBeforeTyped(r *http.Request) (value string, ok bool, typeErr bool) {
+	return parseRESTDateTimeQueryTyped(r, "modified_before")
 }
 
 // parseRESTDateTimeQuery parses an ISO8601 / MySQL datetime query arg to MySQL form.
 // Absent → ("", true). Present but empty/unparseable → ("", false) (P4.140).
 func parseRESTDateTimeQuery(r *http.Request, key string) (string, bool) {
+	v, ok, _ := parseRESTDateTimeQueryTyped(r, key)
+	return v, ok
+}
+
+// parseRESTDateTimeQueryTyped parses date-time query args with string-type enforcement (P4.165).
+// Schema type is string (format date-time); after[]= / after[0]= → typeErr.
+// Absent → ("", true, false). Present but empty/unparseable → ("", false, false).
+func parseRESTDateTimeQueryTyped(r *http.Request, key string) (value string, ok bool, typeErr bool) {
 	if r == nil || key == "" {
-		return "", true
+		return "", true, false
 	}
 	q := r.URL.Query()
+	// P4.165: schema type string — reject key[]= and key[N]= array forms.
+	if _, hasArray := q[key+"[]"]; hasArray {
+		return "", false, true
+	}
+	for k := range q {
+		if strings.HasPrefix(k, key+"[") && strings.HasSuffix(k, "]") && k != key {
+			return "", false, true
+		}
+	}
 	if !q.Has(key) {
-		return "", true
+		return "", true, false
 	}
 	raw := strings.TrimSpace(q.Get(key))
 	if raw == "" {
-		return "", false
+		return "", false, false
 	}
 	// Zoned timestamps → UTC MySQL; bare wall times keep the clock as written
 	// (matches WP date_query against post_date / post_modified).
 	for _, layout := range []string{time.RFC3339Nano, time.RFC3339} {
 		if t, err := time.Parse(layout, raw); err == nil {
-			return t.UTC().Format("2006-01-02 15:04:05"), true
+			return t.UTC().Format("2006-01-02 15:04:05"), true, false
 		}
 	}
 	for _, layout := range []string{"2006-01-02T15:04:05", "2006-01-02 15:04:05", "2006-01-02"} {
 		if t, err := time.ParseInLocation(layout, raw, time.UTC); err == nil {
-			return t.Format("2006-01-02 15:04:05"), true
+			return t.Format("2006-01-02 15:04:05"), true, false
 		}
 	}
-	return "", false
+	return "", false, false
 }
 
 // writeRESTInvalidDateParams emits rest_invalid_param for invalid date-time args (P4.140).

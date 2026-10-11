@@ -551,8 +551,9 @@ func orderByPostDate(aliased bool) string {
 	return "post_date"
 }
 
-// appendDateQueryFilters applies REST after/before / modified_* filters (P4.91).
-// Comparisons are inclusive to match WP date_query inclusive=true.
+// appendDateQueryFilters applies REST after/before / modified_* filters (P4.91 / P4.165).
+// Comparisons are inclusive to match WP date_query inclusive=true on post_date /
+// post_modified columns (WP_REST_Posts_Controller::prepare_items_query).
 func appendDateQueryFilters(where []string, vals []any, args QueryArgs) ([]string, []any) {
 	if s := strings.TrimSpace(args.DateAfter); s != "" {
 		where = append(where, "post_date >= %s")
