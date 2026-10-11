@@ -10834,3 +10834,17 @@ wp-login.php#language-switcher-post
   task: P7.144
   api: n/a
   notes: "P7.144 — search hit/miss + privacy-tools marker coverage"
+
+# P2.139: wp_html_excerpt.
+- prefix: wp-includes/formatting.php#wp_html_excerpt
+  go: internal/wp/html_excerpt.go
+  status: partial
+  task: P2.139
+  api: wp_html_excerpt
+  notes: "P2.139 — WPHtmlExcerpt/WPHtmlExcerptEllipsis; strip tags remove_breaks; rune substr; trailing entity trim"
+- prefix: wp-includes/formatting.php#wp_html_excerpt#tests
+  go: internal/wp/html_excerpt_p2_139_test.go
+  status: partial
+  task: P2.139
+  api: n/a
+  notes: "P2.139 — unit + golden formatting vectors (count=40, &hellip;)"

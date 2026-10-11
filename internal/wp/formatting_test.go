@@ -25,6 +25,7 @@ type formattingVector struct {
 	WPStripAllTags      string `json:"wp_strip_all_tags"`
 	NormalizeWhitespace string `json:"normalize_whitespace"`
 	WPTrimWords         string `json:"wp_trim_words"`
+	WPHtmlExcerpt       string `json:"wp_html_excerpt"`
 }
 
 type formattingCorpus struct {
@@ -67,6 +68,7 @@ var goldenFormatters = map[string]func(string) string{
 	"wp_strip_all_tags":    func(s string) string { return wp.WPStripAllTags(s, false) },
 	"normalize_whitespace": wp.NormalizeWhitespace,
 	"wp_trim_words":        func(s string) string { return wp.TrimWordsEllipsis(s, 5) },
+	"wp_html_excerpt":      func(s string) string { return wp.WPHtmlExcerptEllipsis(s, 40) },
 }
 
 func TestFormattingGoldenVectors(t *testing.T) {
@@ -94,6 +96,7 @@ func TestFormattingGoldenVectors(t *testing.T) {
 			"wp_strip_all_tags":    v.WPStripAllTags,
 			"normalize_whitespace": v.NormalizeWhitespace,
 			"wp_trim_words":        v.WPTrimWords,
+			"wp_html_excerpt":      v.WPHtmlExcerpt,
 		}
 		for key, fn := range goldenFormatters {
 			total++
