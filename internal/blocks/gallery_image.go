@@ -48,9 +48,11 @@ func (e *Env) renderImage(block Block) string {
 	return out
 }
 
-// renderGallery renders core/gallery (P5.48).
+// renderGallery renders core/gallery (P5.48 / P5.110).
 // Applies data-id backcompat onto nested image blocks, ensures gallery
 // wrapper classes (columns / is-cropped), and can build from ids attrs.
+// P5.110: className/align/anchor polish; linkTo/sizeSlug/linkTarget on
+// synthesized ids galleries; fixedHeight class when enabled.
 func (e *Env) renderGallery(block Block) string {
 	e = e.ensure()
 	block = applyGalleryDataIDBackcompat(block)
@@ -62,7 +64,8 @@ func (e *Env) renderGallery(block Block) string {
 	if strings.TrimSpace(out) == "" {
 		return ""
 	}
-	return ensureGalleryWrapperClasses(out, block.Attrs)
+	out = ensureGalleryWrapperClasses(out, block.Attrs)
+	return applyGalleryAttrs(out, block.Attrs)
 }
 
 func applyGalleryDataIDBackcompat(block Block) Block {
@@ -267,29 +270,49 @@ func synthesizeGalleryFromIDs(e *Env, block Block) string {
 	}
 	columns := galleryColumns(block.Attrs)
 	cropped := galleryImageCrop(block.Attrs)
-	class := "wp-block-gallery has-nested-images"
-	if columns > 0 {
-		class += fmt.Sprintf(" columns-%d", columns)
-	} else {
-		class += " columns-default"
-	}
-	if cropped {
-		class += " is-cropped"
-	}
+	class := galleryClassFromAttrs(block.Attrs, columns, cropped)
 	var b strings.Builder
-	b.WriteString(`<figure class="` + class + `">`)
+	b.WriteString(`<figure`)
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		b.WriteString(` id="`)
+		b.WriteString(html.EscapeString(anchor))
+		b.WriteString(`"`)
+	}
+	b.WriteString(` class="` + class + `">`)
+	sizeSlug := strings.TrimSpace(attrString(block.Attrs, "sizeSlug"))
+	if sizeSlug == "" {
+		sizeSlug = "large"
+	}
+	linkTo := strings.ToLower(strings.TrimSpace(attrString(block.Attrs, "linkTo")))
+	linkTarget := strings.TrimSpace(attrString(block.Attrs, "linkTarget"))
 	for _, id := range ids {
 		url := strings.TrimSpace(e.GetAttachmentURL(id))
 		if url == "" {
 			continue
 		}
+		imgAttrs := map[string]any{
+			"id":       id,
+			"url":      url,
+			"data-id":  strconv.FormatInt(id, 10),
+			"sizeSlug": sizeSlug,
+		}
+		switch linkTo {
+		case "media", "file":
+			imgAttrs["href"] = url
+			imgAttrs["linkDestination"] = "media"
+		case "attachment", "post":
+			imgAttrs["href"] = url
+			imgAttrs["linkDestination"] = "attachment"
+		}
+		if linkTarget != "" && imgAttrs["href"] != nil {
+			imgAttrs["linkTarget"] = linkTarget
+			if linkTarget == "_blank" {
+				imgAttrs["rel"] = "noopener"
+			}
+		}
 		imgBlock := Block{
 			BlockName: strPtr("core/image"),
-			Attrs: map[string]any{
-				"id":      id,
-				"url":     url,
-				"data-id": strconv.FormatInt(id, 10),
-			},
+			Attrs:     imgAttrs,
 		}
 		b.WriteString(e.renderImage(imgBlock))
 	}
@@ -300,6 +323,43 @@ func synthesizeGalleryFromIDs(e *Env, block Block) string {
 	}
 	b.WriteString(`</figure>`)
 	return b.String()
+}
+
+func galleryClassFromAttrs(attrs map[string]any, columns int, cropped bool) string {
+	class := "wp-block-gallery has-nested-images"
+	if columns > 0 {
+		class += fmt.Sprintf(" columns-%d", columns)
+	} else {
+		class += " columns-default"
+	}
+	if cropped {
+		class += " is-cropped"
+	}
+	// Surface align + className on the wrapper (P5.110).
+	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
+		class += " align" + sanitizeClassToken(align)
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		class += " " + cn
+	}
+	return class
+}
+
+// applyGalleryAttrs polishes className/align/anchor on gallery wrappers (P5.110).
+func applyGalleryAttrs(htmlStr string, attrs map[string]any) string {
+	out := htmlStr
+	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
+		out = addRootClass(out, "align"+sanitizeClassToken(align))
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		for _, part := range strings.Fields(cn) {
+			out = addRootClass(out, part)
+		}
+	}
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
+		out = ensureRootAttribute(out, "id", anchor)
+	}
+	return out
 }
 
 func ensureGalleryWrapperClasses(htmlStr string, attrs map[string]any) string {

@@ -145,3 +145,53 @@ func TestRenderImageEnsureClassOnSaved(t *testing.T) {
 		t.Fatalf("expected alignwide: %q", out)
 	}
 }
+
+func TestRenderGalleryClassNameAlignAnchorLinkTo(t *testing.T) {
+	env := &blocks.Env{
+		GetAttachmentURL: func(id int64) string {
+			if id == 9 {
+				return "http://example.test/g.jpg"
+			}
+			return ""
+		},
+	}
+	out := env.Render(`<!-- wp:gallery {"ids":[9],"columns":2,"linkTo":"media","linkTarget":"_blank","sizeSlug":"medium","align":"wide","className":"my-gallery","anchor":"gal-1","caption":"Shots"} /-->`)
+	for _, want := range []string{
+		`id="gal-1"`,
+		`wp-block-gallery`,
+		`alignwide`,
+		`my-gallery`,
+		`columns-2`,
+		`href="http://example.test/g.jpg"`,
+		`target="_blank"`,
+		`rel="noopener"`,
+		`size-medium`,
+		`blocks-gallery-caption`,
+		`Shots`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
+
+func TestRenderGallerySavedPolishClassNameAnchor(t *testing.T) {
+	env := &blocks.Env{}
+	markup := `<!-- wp:gallery {"columns":3,"className":"extra-g","anchor":"g2","align":"full"} -->
+<figure class="wp-block-gallery">
+<!-- wp:image {"id":5} -->
+<figure class="wp-block-image"><img src="http://example.test/a.jpg" alt=""/></figure>
+<!-- /wp:image -->
+</figure>
+<!-- /wp:gallery -->`
+	out := env.Render(markup)
+	if !strings.Contains(out, `id="g2"`) {
+		t.Fatalf("expected anchor: %q", out)
+	}
+	if !strings.Contains(out, "extra-g") || !strings.Contains(out, "alignfull") {
+		t.Fatalf("expected className/align: %q", out)
+	}
+	if !strings.Contains(out, "columns-3") || !strings.Contains(out, `data-id="5"`) {
+		t.Fatalf("expected columns/data-id: %q", out)
+	}
+}

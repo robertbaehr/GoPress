@@ -4486,6 +4486,21 @@ wp-login.php#language-switcher-post
   api: internal
   notes: "P5.65 — ensure wp-block-image/align*; width/height/aspectRatio/scale/title/isDecorative/linkClass"
 
+# P5.110: deepen core/gallery className/align/anchor + linkTo/sizeSlug synthesize.
+- prefix: wp-includes/blocks/gallery.php#render
+  go: internal/blocks/gallery_image.go
+  status: partial
+  task: P5.110
+  api: internal
+  notes: "P5.110 — className/align/anchor polish; linkTo/linkTarget/sizeSlug on ids synthesize; caption"
+
+- prefix: wp-includes/blocks/gallery.php#attrs
+  go: internal/blocks/gallery_image_test.go
+  status: partial
+  task: P5.110
+  api: internal
+  notes: "P5.110 — unit coverage for className/align/anchor and linkTo synthesize"
+
 # P5.66 / P5.105: polish core/table (hasFixedLayout, align, stripes, anchor, synthesize head/body/foot).
 - prefix: wp-includes/blocks/table
   go: internal/blocks/table.go
