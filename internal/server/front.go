@@ -645,7 +645,9 @@ func (f *Front) renderSearchBlockTemplate(w http.ResponseWriter, c *wp.Context, 
 	safe = ensureMainSkipTarget(safe)
 
 	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
+	b.WriteString("<!DOCTYPE html>\n<html")
+	b.WriteString(wp.LanguageAttributesHTML(c))
+	b.WriteString(">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
 	b.WriteString(frontRobotsMetaTag(c))
@@ -834,7 +836,9 @@ func (f *Front) renderDateArchiveBlockTemplate(w http.ResponseWriter, c *wp.Cont
 	bodyClasses = wp.BodyClassWithAdminBar(c, bodyClasses)
 
 	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
+	b.WriteString("<!DOCTYPE html>\n<html")
+	b.WriteString(wp.LanguageAttributesHTML(c))
+	b.WriteString(">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
 	b.WriteString(frontRobotsMetaTag(c))
@@ -1012,7 +1016,9 @@ func (f *Front) renderAuthorArchiveBlockTemplate(w http.ResponseWriter, c *wp.Co
 	bodyClasses = wp.BodyClassWithAdminBar(c, bodyClasses)
 
 	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
+	b.WriteString("<!DOCTYPE html>\n<html")
+	b.WriteString(wp.LanguageAttributesHTML(c))
+	b.WriteString(">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
 	b.WriteString(frontRobotsMetaTag(c))
@@ -1174,7 +1180,9 @@ func (f *Front) renderCategoryArchiveBlockTemplate(w http.ResponseWriter, c *wp.
 	bodyClasses = wp.BodyClassWithAdminBar(c, bodyClasses)
 
 	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
+	b.WriteString("<!DOCTYPE html>\n<html")
+	b.WriteString(wp.LanguageAttributesHTML(c))
+	b.WriteString(">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
 	b.WriteString(frontRobotsMetaTag(c))
@@ -1387,7 +1395,9 @@ func (f *Front) renderTagArchiveBlockTemplate(w http.ResponseWriter, c *wp.Conte
 	bodyClasses = wp.BodyClassWithAdminBar(c, bodyClasses)
 
 	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
+	b.WriteString("<!DOCTYPE html>\n<html")
+	b.WriteString(wp.LanguageAttributesHTML(c))
+	b.WriteString(">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
 	b.WriteString(frontRobotsMetaTag(c))
@@ -1736,10 +1746,6 @@ func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, templa
 		blogname = "GoPress"
 	}
 	home := strings.TrimRight(wp.BlogInfo(c, "url", "raw"), "/")
-	lang := wp.BlogInfo(c, "language", "raw")
-	if lang == "" {
-		lang = "en-US"
-	}
 	charset := wp.BlogInfo(c, "charset", "raw")
 	if charset == "" {
 		charset = "UTF-8"
@@ -1774,9 +1780,9 @@ func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, templa
 	safe = ensureMainSkipTarget(safe)
 
 	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html lang=\"")
-	b.WriteString(html.EscapeString(lang))
-	b.WriteString("\">\n<head>\n")
+	b.WriteString("<!DOCTYPE html>\n<html")
+	b.WriteString(wp.LanguageAttributesHTML(c))
+	b.WriteString(">\n<head>\n")
 	b.WriteString("<meta charset=\"")
 	b.WriteString(html.EscapeString(charset))
 	b.WriteString("\" />\n")
@@ -1947,7 +1953,9 @@ func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context
 	bodyClasses = wp.BodyClassWithAdminBar(c, bodyClasses)
 
 	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
+	b.WriteString("<!DOCTYPE html>\n<html")
+	b.WriteString(wp.LanguageAttributesHTML(c))
+	b.WriteString(">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
 	b.WriteString(frontRobotsMetaTag(c))
@@ -2080,7 +2088,9 @@ func (f *Front) renderEmbed(w http.ResponseWriter, c *wp.Context, vars map[strin
 	}
 
 	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\" class=\"no-js\">\n<head>\n")
+	b.WriteString("<!DOCTYPE html>\n<html")
+	b.WriteString(wp.LanguageAttributesHTML(c))
+	b.WriteString(" class=\"no-js\">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	// P3.90: embed_head includes wp_robots (noindex on embeds).
 	b.WriteString(frontRobotsMetaTag(c))
@@ -2118,7 +2128,9 @@ func (f *Front) renderEmbed(w http.ResponseWriter, c *wp.Context, vars map[strin
 func (f *Front) renderEmbed404(w http.ResponseWriter, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
 	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\" class=\"no-js\">\n<head>\n")
+	b.WriteString("<!DOCTYPE html>\n<html")
+	b.WriteString(wp.LanguageAttributesHTML(c))
+	b.WriteString(" class=\"no-js\">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n<title>")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString("</title>\n</head>\n<body class=\"wp-embed\">\n")
@@ -3976,7 +3988,9 @@ func (f *Front) render404BlockTemplate(w http.ResponseWriter, c *wp.Context, tem
 	bodyClasses = wp.BodyClassWithAdminBar(c, bodyClasses)
 
 	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
+	b.WriteString("<!DOCTYPE html>\n<html")
+	b.WriteString(wp.LanguageAttributesHTML(c))
+	b.WriteString(">\n<head>\n")
 	b.WriteString("<meta charset=\"UTF-8\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
 	b.WriteString(frontRobotsMetaTag(c))
