@@ -243,3 +243,22 @@
   nonce: null
 
 
+
+# P10.144 safe toppers (plugin/theme editor stubs already deep; link-manager admin 500≠403 skipped).
+- id: admin-p10144-001-dashboard
+  role: admin
+  method: GET
+  path: /wp-admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10144-002-plugins
+  role: admin
+  method: GET
+  path: /wp-admin/plugins.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

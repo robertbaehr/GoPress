@@ -676,3 +676,22 @@
   nonce: null
 
 
+
+# P10.144 safe toppers.
+- id: login-p10144-001-lostpassword
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10144-002-login
+  role: anon
+  method: GET
+  path: /wp-login.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

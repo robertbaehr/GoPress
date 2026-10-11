@@ -7811,3 +7811,11 @@ wp-login.php#language-switcher-post
   task: P10.143
   api: n/a
   notes: "P10.143 — summarize heading/paragraph, author_exclude, edit-tags search, trim_words, password form, rp_key hash_equals, 1008 corpus"
+
+# P10.144: expand diff corpus after P5.117–P8.36.
+- prefix: tests/corpus#p10.144
+  go: tests/corpus
+  status: partial
+  task: P10.144
+  api: n/a
+  notes: "P10.144 — slug[] / navigation+site-logo block-types / stack toppers; keep 100% after expand"

@@ -961,3 +961,31 @@
   compare: headers
   nonce: null
 
+
+# P10.144 safe toppers.
+- id: front-p10144-001-hello-world
+  role: anon
+  method: GET
+  path: /hello-world/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10144-002-feed
+  role: anon
+  method: GET
+  path: /feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10144-003-robots
+  role: anon
+  method: GET
+  path: /robots.txt
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
