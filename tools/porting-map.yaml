@@ -11984,3 +11984,17 @@ wp-login.php#language-switcher-post
   task: P7.154
   api: n/a
   notes: "P7.154 — login redirect, text color save nonce, body class with support"
+
+# P2.149: deepen wp_remote_retrieve_response_code / response_message.
+- prefix: wp-includes/http.php#wp_remote_retrieve_response_code
+  go: internal/wp/http.go
+  status: partial
+  task: P2.149
+  api: exported
+  notes: "P2.149 — RemoteRetrieveResponseCodeOK; ResponseMessage; Status reason phrase on HTTPResponse"
+- prefix: wp-includes/http.php#wp_remote_retrieve_response_code#tests
+  go: internal/wp/remote_retrieve_response_code_p2_149_test.go
+  status: partial
+  task: P2.149
+  api: n/a
+  notes: "P2.149 — nil/value/fallback/blocked RemoteGet response code coverage"
