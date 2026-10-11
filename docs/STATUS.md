@@ -48,8 +48,16 @@ make check
 - `make diff` / `gopress-tools diff` reloads `tests/fixtures/site.sql` into `gopress_ref` and `gopress_go` unless `--skip-db`.
 - After e2e uploads or other writes, restart `gopress serve` (or omit `--skip-db`) so object-cache/options match the reloaded fixture. Stale process memory can make a green corpus look red.
 
-## Recent stack (through P10.193)
+## Recent stack (through P10.195)
 
+- P10.195 STATUS/PORTING refresh after P5.142–P10.194
+- P10.194 Diff corpus expand (2142/2142 match) + sticky_posts/separator/privacy-guide/emoji/login-enqueue toppers; dropped Link/set-cookie-sensitive cases
+- P6.57 Login `login_enqueue_scripts` + `login_head` before `</head>`
+- P3.136 Front emoji settings filters (`emoji_url`/`emoji_ext`/`emoji_svg_url`/`emoji_svg_ext`; loader still skipped)
+- P2.138 `wp_strip_all_tags` quote-aware script/style opens + `WPStripAllTagsDeep`
+- P7.143 `privacy-policy-guide.php` collapsed Introduction accordion + privacy-tools enqueue marker
+- P4.158 REST `sticky_posts` deepen (`is_sticky` filter; `post_stuck`/`post_unstuck`; empty → `post__in=[0]`)
+- P5.142 `core/separator` gradient/align/tagName/opacity/margin attrs
 - P10.193 STATUS/PORTING refresh after P5.141–P10.192
 - P10.192 Diff corpus expand (2072/2072 match) + menu_order/spacer/rsd/image-downsize/admin-email/utf8 toppers
 - P8.44 `image_downsize` thumb alias + PDF `sizes.full` preview + `ImageGetIntermediateSize`
