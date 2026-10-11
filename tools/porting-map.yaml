@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P9.44: notice capture Context helpers.
+- prefix: wp-includes/plugin.php#notice_capture
+  go: internal/wp/has_action.go
+  status: partial
+  task: P9.44
+  api: n/a
+  notes: "P9.44 — BeginNoticeCapture / WriteNotice / EndNoticeCapture Context helpers"
+- prefix: wp-includes/plugin.php#notice_capture#tests
+  go: internal/wp/notice_capture_helpers_p9_44_test.go
+  status: partial
+  task: P9.44
+  api: n/a
+  notes: "P9.44 — capture/write/end + nil guards"
+
 # P4.178: orderby meta_value + meta_type DECIMAL.
 - prefix: wp-includes/class-wp-query.php#meta_type_decimal
   go: internal/wp/query.go
