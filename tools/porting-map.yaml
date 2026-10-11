@@ -8971,3 +8971,25 @@ wp-login.php#language-switcher-post
   task: P3.121
   api: n/a
   notes: "P3.121 — filter coverage for type/get/the_generator"
+
+# P6.52: login_form_top / middle / bottom + login_form action.
+- prefix: wp-includes/general-template.php#login_form_top
+  go: internal/blocks/loginout.go
+  status: partial
+  task: P6.52
+  api: login_form_top
+  notes: "P6.52 — login_form_top/middle/bottom on core/loginout wp_login_form"
+
+- prefix: wp-login.php#login_form_top
+  go: internal/login/login.go
+  status: partial
+  task: P6.52
+  api: login_form
+  notes: "P6.52 — login_form action + login_form_top filter on wp-login.php"
+
+- prefix: wp-includes/general-template.php#login_form_top#tests
+  go: internal/blocks/login_form_top_p6_52_test.go
+  status: partial
+  task: P6.52
+  api: n/a
+  notes: "P6.52 — top/middle/bottom order coverage"

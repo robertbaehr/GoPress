@@ -77,7 +77,7 @@ func (e *Env) renderLoginoutLink(loggedIn bool, redirect string) string {
 	return `<a href="` + html.EscapeString(href) + `">Log in</a>`
 }
 
-// renderLoginForm is a minimal wp_login_form subset for displayLoginAsForm.
+// renderLoginForm is a minimal wp_login_form subset for displayLoginAsForm (P5.74 / P6.52).
 func (e *Env) renderLoginForm(redirect string) string {
 	e = e.ensure()
 	action := "/wp-login.php"
@@ -87,21 +87,58 @@ func (e *Env) renderLoginForm(redirect string) string {
 	if redirect == "" && e.CurrentURL != nil {
 		redirect = strings.TrimSpace(e.CurrentURL())
 	}
+	args := map[string]any{
+		"echo":           true,
+		"redirect":       redirect,
+		"form_id":        "loginform",
+		"label_username": "Username or Email Address",
+		"label_password": "Password",
+		"label_remember": "Remember Me",
+		"label_log_in":   "Log In",
+		"id_username":    "user_login",
+		"id_password":    "user_pass",
+		"id_remember":    "rememberme",
+		"id_submit":      "wp-submit",
+		"remember":       true,
+		"value_username": "",
+		"value_remember": false,
+	}
+	// P6.52: login_form_top / middle / bottom filters (wp_login_form).
+	top := e.applyLoginFormFilter("login_form_top", "", args)
+	middle := e.applyLoginFormFilter("login_form_middle", "", args)
+	bottom := e.applyLoginFormFilter("login_form_bottom", "", args)
+
 	var b strings.Builder
 	b.WriteString(`<form name="loginform" id="loginform" action="`)
 	b.WriteString(html.EscapeString(action))
 	b.WriteString(`" method="post">`)
+	b.WriteString(top)
 	b.WriteString(`<p class="login-username"><label for="user_login">Username or Email Address</label>`)
 	b.WriteString(`<input type="text" name="log" id="user_login" autocomplete="username" class="input" value="" size="20" /></p>`)
 	b.WriteString(`<p class="login-password"><label for="user_pass">Password</label>`)
 	b.WriteString(`<input type="password" name="pwd" id="user_pass" autocomplete="current-password" spellcheck="false" class="input" value="" size="20" /></p>`)
+	b.WriteString(middle)
 	b.WriteString(`<p class="login-remember"><label><input name="rememberme" type="checkbox" id="rememberme" value="forever" /> Remember Me</label></p>`)
 	// P5.121: block themes add wp-block-button__link on the submit input.
 	b.WriteString(`<p class="login-submit"><input type="submit" name="wp-submit" id="wp-submit" class="button button-primary wp-block-button__link" value="Log In" />`)
 	b.WriteString(`<input type="hidden" name="redirect_to" value="`)
 	b.WriteString(html.EscapeString(redirect))
-	b.WriteString(`" /></p></form>`)
+	b.WriteString(`" /></p>`)
+	b.WriteString(bottom)
+	b.WriteString(`</form>`)
 	return b.String()
+}
+
+func (e *Env) applyLoginFormFilter(tag, value string, args map[string]any) string {
+	e = e.ensure()
+	if e.ApplyFilter == nil {
+		return value
+	}
+	filtered := e.ApplyFilter(tag, value, args)
+	if s, ok := filtered.(string); ok {
+		return s
+	}
+	return value
 }
 
 func redirectToCurrent(attrs map[string]any) bool {

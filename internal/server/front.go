@@ -4971,6 +4971,13 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			return id
 		},
 		// P5.74: core/loginout resolvers.
+		// P6.52: login_form_top/middle/bottom via ApplyFilter.
+		ApplyFilter: func(tag string, value any, args ...any) any {
+			if c == nil || c.Hooks == nil {
+				return value
+			}
+			return c.Hooks.ApplyFilters(tag, value, args...)
+		},
 		IsLoggedIn: func() bool {
 			return c != nil && c.CurrentUser != nil
 		},

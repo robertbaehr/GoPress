@@ -100,6 +100,28 @@ func TestLoginNoCacheHeaders(t *testing.T) {
 	}
 }
 
+
+func TestLoginFormTopFilter(t *testing.T) {
+	// P6.52: login_form_top filter injects markup into wp-login.php form.
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	c.Hooks.AddFilter("login_form_top", func(value any, _ ...any) any {
+		return `<!--LOGIN-FORM-TOP-->`
+	}, 10, 1)
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "<!--LOGIN-FORM-TOP-->") {
+		t.Fatalf("expected login_form_top injection: %q", body[:min(900, len(body))])
+	}
+}
+
 func TestInterimLoginForm(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
