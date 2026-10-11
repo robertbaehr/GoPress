@@ -11532,3 +11532,17 @@ wp-login.php#language-switcher-post
   task: P2.145
   api: n/a
   notes: "P2.145 — IPv6, empty URL, colon query, port 0, translate keys"
+
+# P3.143: front noindex for replytocom / unapproved preview.
+- prefix: wp-includes/default-filters.php#wp_robots_no_robots
+  go: internal/server/front.go
+  status: partial
+  task: P3.143
+  api: n/a
+  notes: "P3.143 — replytocom / unapproved+moderation-hash → wp_robots_no_robots"
+- prefix: wp-includes/robots-template.php#wp_robots_no_robots#replytocom#tests
+  go: internal/server/front_noindex_p3_143_test.go
+  status: partial
+  task: P3.143
+  api: n/a
+  notes: "P3.143 — replytocom + unapproved preview noindex coverage"
