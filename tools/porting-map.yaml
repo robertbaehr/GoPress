@@ -7427,3 +7427,19 @@ wp-login.php#language-switcher-post
   task: P10.136
   api: n/a
   notes: "P10.136 — comments orderby/search + image/block-type/search/directory cases; 771 cases"
+
+# P10.136: rest_route collection Link pagination parity (unblocks corpus).
+- prefix: internal/rest/headers.go#rest-route-link
+  go: internal/rest/headers.go
+  status: partial
+  task: P10.136
+  api: n/a
+  notes: "P10.136 — ?rest_route= pagination Link → /wp-json{route} + urlencoded rest_route"
+
+# P10.137: STATUS/PORTING refresh after P5.113–P10.136.
+- prefix: docs/STATUS.md#p10-137
+  go: docs/STATUS.md
+  status: partial
+  task: P10.137
+  api: n/a
+  notes: "P10.137 — summarize image, comments query, plugin-install, html_split, prev/next ?s=, admin-email confirm, 771 corpus"
