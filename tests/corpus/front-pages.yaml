@@ -1653,3 +1653,50 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.174: corpus expand after widget-group/_embed/activity/kses-attr/document-title/upload stack.
+
+- id: front-p10174-001-home-preview-false
+  role: anon
+  method: GET
+  path: /?preview=false
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10174-002-search-hello
+  role: anon
+  method: GET
+  path: /?s=hello
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10174-003-feed-rss2
+  role: anon
+  method: GET
+  path: /feed/rss2/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10174-004-head-home
+  role: anon
+  method: HEAD
+  path: /
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10174-005-robots
+  role: anon
+  method: GET
+  path: /robots.txt
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

@@ -469,3 +469,23 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.174: corpus expand after widget-group/_embed/activity/kses-attr/document-title/upload stack.
+
+- id: admin-p10174-001-dashboard
+  role: admin
+  method: GET
+  path: /wp-admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10174-003-edit-comments
+  role: admin
+  method: GET
+  path: /wp-admin/edit-comments.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

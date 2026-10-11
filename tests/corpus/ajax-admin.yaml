@@ -398,3 +398,32 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.174: corpus expand after widget-group/_embed/activity/kses-attr/document-title/upload stack.
+
+- id: ajax-p10174-001-heartbeat-dashboard
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=dashboard
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10174-002-heartbeat-upload
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=upload
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10174-003-heartbeat-profile
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=profile
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
