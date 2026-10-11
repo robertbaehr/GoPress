@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P8.54: original image path/URL helpers.
+- prefix: wp-includes/post.php#wp_get_original_image_path
+  go: internal/wp/original_image.go
+  status: partial
+  task: P8.54
+  api: n/a
+  notes: "P8.54 — GetOriginalImagePath / GetOriginalImageURL + filters"
+- prefix: wp-includes/post.php#wp_get_original_image_path#tests
+  go: internal/wp/original_image_p8_54_test.go
+  status: partial
+  task: P8.54
+  api: n/a
+  notes: "P8.54 — default attached + original_image meta"
+
 # P3.154: date archive permalink helpers.
 - prefix: wp-includes/link-template.php#get_year_link
   go: internal/wp/date_archive_link.go
