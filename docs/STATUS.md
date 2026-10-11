@@ -48,8 +48,9 @@ make check
 - `make diff` / `gopress-tools diff` reloads `tests/fixtures/site.sql` into `gopress_ref` and `gopress_go` unless `--skip-db`.
 - After e2e uploads or other writes, restart `gopress serve` (or omit `--skip-db`) so object-cache/options match the reloaded fixture. Stale process memory can make a green corpus look red.
 
-## Recent stack (through P6.70)
+## Recent stack (through P2.161)
 
+- P2.161 `SendFrameOptionsHeader` (`send_frame_options_header`)
 - P6.70 `wp_login_failed` action on credential failures (skip empty_*)
 - P10.227 STATUS/PORTING refresh after P6.69–P9.45
 - P9.45 `PluginBasename` / `PluginDirPath` / `RegisterPluginRealpath`

@@ -13,6 +13,16 @@ func SendNosniffHeader(w http.ResponseWriter) {
 	w.Header().Set("X-Content-Type-Options", "nosniff")
 }
 
+// SendFrameOptionsHeader sets X-Frame-Options: SAMEORIGIN and
+// Content-Security-Policy frame-ancestors 'self' (send_frame_options_header, P2.161).
+func SendFrameOptionsHeader(w http.ResponseWriter) {
+	if w == nil {
+		return
+	}
+	w.Header().Set("X-Frame-Options", "SAMEORIGIN")
+	w.Header().Set("Content-Security-Policy", "frame-ancestors 'self'")
+}
+
 // AdminHeaders sets the admin Referrer-Policy header (wp_admin_headers, P2.159).
 // Default policy is strict-origin-when-cross-origin; filter admin_referrer_policy may replace it.
 // Empty filtered policy skips the header.
