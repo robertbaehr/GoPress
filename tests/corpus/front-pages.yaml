@@ -2398,24 +2398,6 @@
   compare: headers
   nonce: null
 
-- id: front-p10194-006-author
-  role: anon
-  method: GET
-  path: /author/admin/
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: front-p10194-007-category
-  role: anon
-  method: GET
-  path: /category/uncategorized/
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: front-p10194-008-feed
   role: anon
   method: GET
