@@ -9,6 +9,12 @@ import (
 	"time"
 )
 
+// HTTPCookie is a minimal WP_Http_Cookie (name/value subset, P2.152).
+type HTTPCookie struct {
+	Name  string
+	Value string
+}
+
 // HTTPResponse is a minimal wp_remote_get response.
 type HTTPResponse struct {
 	StatusCode int
@@ -16,6 +22,8 @@ type HTTPResponse struct {
 	Status  string
 	Body    string
 	Headers http.Header
+	// Cookies are Set-Cookie values from the response (wp_remote_retrieve_cookies, P2.152).
+	Cookies []HTTPCookie
 }
 
 // HTTPError mirrors a WP_Error for blocked/failed HTTP requests.
@@ -129,11 +137,19 @@ func remoteRequest(c *Context, method, rawURL, body string) (*HTTPResponse, erro
 	if status == "" {
 		status = http.StatusText(resp.StatusCode)
 	}
+	cookies := make([]HTTPCookie, 0, len(resp.Cookies()))
+	for _, ck := range resp.Cookies() {
+		if ck == nil || ck.Name == "" {
+			continue
+		}
+		cookies = append(cookies, HTTPCookie{Name: ck.Name, Value: ck.Value})
+	}
 	return &HTTPResponse{
 		StatusCode: resp.StatusCode,
 		Status:     status,
 		Body:       string(respBody),
 		Headers:    resp.Header.Clone(),
+		Cookies:    cookies,
 	}, nil
 }
 
@@ -195,4 +211,40 @@ func RemoteRetrieveHeaders(resp *HTTPResponse) http.Header {
 		return nil
 	}
 	return resp.Headers
+}
+
+// RemoteRetrieveCookies returns cookies from the response (wp_remote_retrieve_cookies, P2.152).
+// Nil response or no cookies → empty slice (never nil).
+func RemoteRetrieveCookies(resp *HTTPResponse) []HTTPCookie {
+	if resp == nil || len(resp.Cookies) == 0 {
+		return []HTTPCookie{}
+	}
+	out := make([]HTTPCookie, len(resp.Cookies))
+	copy(out, resp.Cookies)
+	return out
+}
+
+// RemoteRetrieveCookie returns the first cookie matching name (wp_remote_retrieve_cookie, P2.152).
+// Missing cookie or nil response → zero HTTPCookie and ok=false (WP returns ”).
+func RemoteRetrieveCookie(resp *HTTPResponse, name string) (HTTPCookie, bool) {
+	name = strings.TrimSpace(name)
+	if resp == nil || name == "" {
+		return HTTPCookie{}, false
+	}
+	for _, ck := range resp.Cookies {
+		if ck.Name == name {
+			return ck, true
+		}
+	}
+	return HTTPCookie{}, false
+}
+
+// RemoteRetrieveCookieValue returns a cookie value by name (wp_remote_retrieve_cookie_value, P2.152).
+// Missing cookie or nil response → "".
+func RemoteRetrieveCookieValue(resp *HTTPResponse, name string) string {
+	ck, ok := RemoteRetrieveCookie(resp, name)
+	if !ok {
+		return ""
+	}
+	return ck.Value
 }
