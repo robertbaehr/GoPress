@@ -29,7 +29,8 @@ func (s *Server) servePostCollection(w http.ResponseWriter, r *http.Request, c *
 	case http.MethodGet:
 		s.listPostCollection(w, r, c, postType)
 	case http.MethodPost:
-		if postType != "post" {
+		// P4.150: create for post and page; type is forced from the route.
+		if postType != "post" && postType != "page" {
 			writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 				"code":    "rest_no_route",
 				"message": "No route was found matching the URL and request method.",
@@ -37,7 +38,7 @@ func (s *Server) servePostCollection(w http.ResponseWriter, r *http.Request, c *
 			})
 			return
 		}
-		s.createPost(w, r, c)
+		s.createTypedPost(w, r, c, postType)
 	default:
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
@@ -352,7 +353,17 @@ func (s *Server) getTypedItem(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	writeJSON(w, http.StatusOK, applyRESTResponseFields(r, payload))
 }
 
+// createPost creates a post (P4.13); type is always "post".
 func (s *Server) createPost(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	s.createTypedPost(w, r, c, "post")
+}
+
+// createTypedPost creates a post-type row; type is forced from the route (P4.150).
+// Request body "type" is ignored (WP schema readonly).
+func (s *Server) createTypedPost(w http.ResponseWriter, r *http.Request, c *wp.Context, postType string) {
+	if postType == "" {
+		postType = "post"
+	}
 	if c == nil || c.CurrentUser == nil {
 		writeJSON(w, http.StatusUnauthorized, map[string]any{
 			"code":    "rest_cannot_create",
@@ -400,14 +411,15 @@ func (s *Server) createPost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		slug = wp.SanitizeTitle(slug)
 	}
 	if slug == "" {
-		slug = "post"
+		slug = postType
 	}
 	author := c.CurrentUser.ID
 	if body.Author != nil && *body.Author > 0 {
 		author = *body.Author
 	}
 	now := time.Now().UTC().Format("2006-01-02 15:04:05")
-	if body.Sticky != nil {
+	// Sticky applies to posts only (P4.97 / P4.150).
+	if body.Sticky != nil && postType == "post" {
 		if code, msg := stickyWriteForbidden(c); code != 0 {
 			writeJSON(w, code, map[string]any{
 				"code":    "rest_cannot_assign_sticky",
@@ -425,7 +437,7 @@ func (s *Server) createPost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		Excerpt: excerpt,
 		Status:  status,
 		Slug:    slug,
-		Type:    "post",
+		Type:    postType, // P4.150: route type wins over any body type
 	})
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
@@ -435,7 +447,7 @@ func (s *Server) createPost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		})
 		return
 	}
-	if body.Sticky != nil {
+	if body.Sticky != nil && postType == "post" {
 		if err := applyStickyWrite(c, id, *body.Sticky); err != nil {
 			writeJSON(w, http.StatusInternalServerError, map[string]any{
 				"code":    "rest_post_sticky",
@@ -453,11 +465,13 @@ func (s *Server) createPost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		})
 		return
 	}
-	post, err := getPostByIDAny(c, "post", id, true)
+	post, err := getPostByIDAny(c, postType, id, true)
 	if err != nil || post == nil {
-		writeJSON(w, http.StatusCreated, map[string]any{"id": id})
+		writeJSON(w, http.StatusCreated, map[string]any{"id": id, "type": postType})
 		return
 	}
+	// P4.150: defensive — response type always matches the controller.
+	post.Type = postType
 	w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
 	writeJSON(w, http.StatusCreated, post)
 }

@@ -1252,11 +1252,13 @@ func collectionListArgs() map[string]any {
 
 func collectionCreateArgs() map[string]any {
 	return map[string]any{
-		"date":           map[string]any{"description": "The date the post was published, in the site's timezone.", "type": []any{"string", "null"}, "format": "date-time", "required": false},
-		"date_gmt":       map[string]any{"description": "The date the post was published, as GMT.", "type": []any{"string", "null"}, "format": "date-time", "required": false},
-		"slug":           map[string]any{"description": "An alphanumeric identifier for the post unique to its type.", "type": "string", "required": false},
-		"status":         map[string]any{"description": "A named status for the post.", "type": "string", "required": false, "enum": []string{"publish", "future", "draft", "pending", "private"}},
-		"password":       map[string]any{"description": "A password to protect access to the content and excerpt.", "type": "string", "required": false},
+		"date":     map[string]any{"description": "The date the post was published, in the site's timezone.", "type": []any{"string", "null"}, "format": "date-time", "required": false},
+		"date_gmt": map[string]any{"description": "The date the post was published, as GMT.", "type": []any{"string", "null"}, "format": "date-time", "required": false},
+		"slug":     map[string]any{"description": "An alphanumeric identifier for the post unique to its type.", "type": "string", "required": false},
+		"status":   map[string]any{"description": "A named status for the post.", "type": "string", "required": false, "enum": []string{"publish", "future", "draft", "pending", "private"}},
+		"password": map[string]any{"description": "A password to protect access to the content and excerpt.", "type": "string", "required": false},
+		// P4.150: type is readonly (forced from the route controller).
+		"type":           map[string]any{"description": "Type of post.", "type": "string", "readonly": true, "required": false},
 		"title":          map[string]any{"description": "The title for the post.", "type": "object", "required": false},
 		"content":        map[string]any{"description": "The content for the post.", "type": "object", "required": false},
 		"author":         map[string]any{"description": "The ID for the author of the post.", "type": "integer", "required": false},
