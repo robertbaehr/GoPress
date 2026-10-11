@@ -7240,3 +7240,25 @@ wp-login.php#language-switcher-post
   task: P3.105
   api: n/a
   notes: "P3.105 — pretty /hello-world/2/ → page=2 canonical"
+
+# P6.46: wp-login.php?action=confirmaction privacy request confirm.
+- prefix: wp-login.php#confirmaction
+  go: internal/login/login.go
+  status: partial
+  task: P6.46
+  api: n/a
+  notes: "P6.46 — request_id/confirm_key die; ValidateUserRequestKey; user_request_action_confirmed; confirmed message"
+
+- prefix: wp-includes/user.php#wp_validate_user_request_key
+  go: internal/wp/privacy_user_request.go
+  status: partial
+  task: P6.46
+  api: exported
+  notes: "P6.46 — Generate/ValidateUserRequestKey; ConfirmUserRequest; PrivacyAccountRequestConfirmedMessage"
+
+- prefix: internal/login/login_test.go#confirmaction
+  go: internal/login/login_test.go
+  status: done
+  task: P6.46
+  api: n/a
+  notes: "P6.46 — missing params die + valid key confirm chrome"

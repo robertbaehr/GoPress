@@ -1157,3 +1157,68 @@ func TestPostPassMissingPasswordStillRedirects(t *testing.T) {
 		}
 	}
 }
+
+func TestConfirmActionMissingParams(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?action=confirmaction", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusInternalServerError {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "Missing request ID") {
+		t.Fatalf("body=%q", rec.Body.String())
+	}
+	req = httptest.NewRequest(http.MethodGet, "/wp-login.php?action=confirmaction&request_id=1", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if !strings.Contains(rec.Body.String(), "Missing confirm key") {
+		t.Fatalf("body=%q", rec.Body.String())
+	}
+}
+
+func TestConfirmActionValidKey(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	reqRow, err := wp.CreateUserRequest(c, "confirm-action@example.com", "export_personal_data", "pending")
+	if err != nil {
+		t.Fatalf("create: %v", err)
+	}
+	key, err := wp.GenerateUserRequestKey(c, reqRow.ID)
+	if err != nil || key == "" {
+		t.Fatalf("key: %v %q", err, key)
+	}
+	fired := false
+	c.Hooks.AddAction("user_request_action_confirmed", func(args ...any) {
+		fired = true
+	}, 10, 1)
+	u := fmt.Sprintf("/wp-login.php?action=confirmaction&request_id=%d&confirm_key=%s", reqRow.ID, url.QueryEscape(key))
+	req := httptest.NewRequest(http.MethodGet, u, nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		"login-action-confirmaction",
+		"User action confirmed",
+		"Thanks for confirming your export request",
+		"success",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in %q", want, body)
+		}
+	}
+	if !fired {
+		t.Fatal("expected user_request_action_confirmed action")
+	}
+	got, err := wp.GetUserRequest(c, reqRow.ID)
+	if err != nil || got.Status != "request-confirmed" {
+		t.Fatalf("status after confirm: %#v err=%v", got, err)
+	}
+}
