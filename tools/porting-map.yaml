@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P3.157: get_preview_post_link helper.
+- prefix: wp-includes/link-template.php#get_preview_post_link
+  go: internal/wp/preview_post_link.go
+  status: partial
+  task: P3.157
+  api: n/a
+  notes: "P3.157 — GetPreviewPostLink permalink + preview=true + filter"
+- prefix: wp-includes/link-template.php#get_preview_post_link#tests
+  go: internal/wp/preview_post_link_p3_157_test.go
+  status: partial
+  task: P3.157
+  api: n/a
+  notes: "P3.157 — preview query args, seed link, filter replace"
+
 # P2.159: nosniff + admin Referrer-Policy headers.
 - prefix: wp-includes/functions.php#wp_send_nosniff_header
   go: internal/wp/nosniff_admin_headers.go

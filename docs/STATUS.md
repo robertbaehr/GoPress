@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.225)
 
+- P3.157 `GetPreviewPostLink` (`preview_post_link`)
 - P2.159 `SendNosniffHeader` / `AdminHeaders` (`admin_referrer_policy`)
 - P6.68 `wp_logout` action with user ID after cookie clear
 - P10.225 STATUS/PORTING refresh after P6.67–P9.43
