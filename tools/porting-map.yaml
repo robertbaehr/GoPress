@@ -11246,3 +11246,17 @@ wp-login.php#language-switcher-post
   task: P10.203
   api: n/a
   notes: "P10.203 — summarize quote attrs, ignore_sticky, tools-import, WordCount, prefetch, has_action, corpus 2393"
+
+# P5.147: deepen core/list fontSize / gradient; coerce align enum; ordered attrs polish.
+- prefix: wp-includes/blocks/list#attrs
+  go: internal/blocks/list.go
+  status: partial
+  task: P5.147
+  api: n/a
+  notes: "P5.147 — coerce align wide|full; gradient preset + fontSize polish; ordered start/reversed/type on saved ol; sanitize before applySupports"
+- prefix: wp-includes/blocks/list#attrs#tests
+  go: internal/blocks/list_attrs_p5_147_test.go
+  status: partial
+  task: P5.147
+  api: n/a
+  notes: "P5.147 — align coerce, saved gradient/fontSize/ordered attrs coverage"

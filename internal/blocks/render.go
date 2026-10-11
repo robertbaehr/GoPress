@@ -78,7 +78,9 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/group":
 		out = e.renderGroup(block)
 	case "core/list":
+		// P5.147: coerce align enum before applySupports; fontSize/gradient polish.
 		out = e.renderList(block)
+		return applySupports(out, sanitizeListBlockAttrs(block.Attrs), name)
 	case "core/list-item":
 		out = e.renderListItem(block)
 	case "core/heading":
