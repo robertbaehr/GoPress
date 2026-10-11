@@ -12241,6 +12241,20 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P2.149 — nil/value/fallback/blocked RemoteGet response code coverage"
 
+# P3.151: get_search_feed_link / get_search_comments_feed_link / get_search_link.
+- prefix: wp-includes/link-template.php#get_search_feed_link
+  go: internal/wp/feed_links.go
+  status: partial
+  task: P3.151
+  api: exported
+  notes: "P3.151 — GetSearchLink/FeedLink/CommentsFeedLink pretty paths; search_feed_link filter"
+- prefix: wp-includes/link-template.php#get_search_feed_link#tests
+  go: internal/wp/search_feed_link_p3_151_test.go
+  status: partial
+  task: P3.151
+  api: n/a
+  notes: "P3.151 — space encoding, atom feed, withcomments, filter coverage"
+
 # P3.150: get_category_feed_link / get_tag_feed_link / get_term_feed_link.
 - prefix: wp-includes/link-template.php#get_term_feed_link
   go: internal/wp/feed_links.go
