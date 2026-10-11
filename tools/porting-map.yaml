@@ -12019,6 +12019,26 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P7.154 — login redirect, text color save nonce, body class with support"
 
+# P2.150: wp_remote_post / wp_safe_remote_post.
+- prefix: wp-includes/http.php#wp_remote_post
+  go: internal/wp/http.go
+  status: partial
+  task: P2.150
+  api: n/a
+  notes: "P2.150 — RemotePost POST body + form Content-Type; shared remoteRequest dial"
+- prefix: wp-includes/http.php#wp_safe_remote_post
+  go: internal/wp/http.go
+  status: partial
+  task: P2.150
+  api: n/a
+  notes: "P2.150 — SafeRemotePost validates via HttpValidateURL then RemotePost"
+- prefix: wp-includes/http.php#wp_remote_post#tests
+  go: internal/wp/remote_post_p2_150_test.go
+  status: partial
+  task: P2.150
+  api: n/a
+  notes: "P2.150 — body dial; BlockExternal; SafeRemotePost unsafe reject"
+
 # P2.149: deepen wp_remote_retrieve_response_code / response_message.
 - prefix: wp-includes/http.php#wp_remote_retrieve_response_code
   go: internal/wp/http.go
