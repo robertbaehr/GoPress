@@ -47,6 +47,45 @@ func TestGetImageEditorResizeCropSave(t *testing.T) {
 	}
 }
 
+func TestImageEditorCrop(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "crop-src.png")
+	writeTestPNG(t, src, 100, 80)
+
+	ed, err := wp.GetImageEditor(src)
+	if err != nil {
+		t.Fatalf("GetImageEditor: %v", err)
+	}
+	if err := ed.Crop(10, 10, 40, 30, 0, 0, false); err != nil {
+		t.Fatalf("Crop: %v", err)
+	}
+	w, h := ed.Size()
+	if w != 40 || h != 30 {
+		t.Fatalf("after Crop Size=%dx%d", w, h)
+	}
+
+	ed2, err := wp.GetImageEditor(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	// src_abs: srcW/srcH are bottom-right coords → width=50-10=40, height=50-10=40.
+	if err := ed2.Crop(10, 10, 50, 50, 20, 20, true); err != nil {
+		t.Fatalf("Crop abs: %v", err)
+	}
+	w, h = ed2.Size()
+	if w != 20 || h != 20 {
+		t.Fatalf("after abs Crop+scale Size=%dx%d", w, h)
+	}
+
+	ed3, err := wp.GetImageEditor(src)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := ed3.Crop(0, 0, 0, 10, 0, 0, false); err == nil {
+		t.Fatal("expected error for empty crop width")
+	}
+}
+
 func TestMakeIntermediateSizeAndResizeImage(t *testing.T) {
 	dir := t.TempDir()
 	src := filepath.Join(dir, "wide.png")
