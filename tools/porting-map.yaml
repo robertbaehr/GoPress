@@ -9158,3 +9158,25 @@ wp-login.php#language-switcher-post
   task: P5.129
   api: n/a
   notes: "P5.129 — content attr / empty / null / nameless / InnerContent coverage"
+
+# P4.145: REST posts/pages context enum, embed subset, edit gate.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#context
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.145
+  api: context
+  notes: "P4.145 — view/embed/edit enum; embed field subset; rest_forbidden_context for edit without cap"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#context#handlers
+  go: internal/rest/posts_write.go
+  status: partial
+  task: P4.145
+  api: n/a
+  notes: "P4.145 — collection/item context validation + RESTContext stamp"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#context#tests
+  go: internal/rest/posts_context_p4_145_test.go
+  status: partial
+  task: P4.145
+  api: n/a
+  notes: "P4.145 — invalid/embed/forbidden coverage"

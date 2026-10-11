@@ -60,10 +60,32 @@ type Post struct {
 	Password          *string `json:"password,omitempty"`
 	PermalinkTemplate string  `json:"permalink_template,omitempty"`
 	GeneratedSlug     string  `json:"generated_slug,omitempty"`
+	// RESTContext is view|embed|edit; drives filter_response_by_context (P4.145).
+	RESTContext string `json:"-"`
 }
 
 // MarshalJSON omits post-only fields on pages and page-only fields on posts.
+// Embed context keeps the WP schema subset (P4.145).
 func (p Post) MarshalJSON() ([]byte, error) {
+	if p.RESTContext == "embed" {
+		type embedOut struct {
+			ID            int64             `json:"id"`
+			Date          string            `json:"date"`
+			Slug          string            `json:"slug"`
+			Type          string            `json:"type"`
+			Link          string            `json:"link"`
+			Title         RenderedString    `json:"title"`
+			Excerpt       ProtectedRendered `json:"excerpt"`
+			Author        int64             `json:"author"`
+			FeaturedMedia int64             `json:"featured_media"`
+			Links         map[string]any    `json:"_links"`
+		}
+		return json.Marshal(embedOut{
+			ID: p.ID, Date: p.Date, Slug: p.Slug, Type: p.Type, Link: p.Link,
+			Title: p.Title, Excerpt: p.Excerpt, Author: p.Author,
+			FeaturedMedia: p.FeaturedMedia, Links: p.Links,
+		})
+	}
 	if p.Type == "page" {
 		type pageOut struct {
 			ID                int64             `json:"id"`
@@ -147,6 +169,67 @@ func (p Post) MarshalJSON() ([]byte, error) {
 		Password: p.Password, PermalinkTemplate: p.PermalinkTemplate,
 		GeneratedSlug: p.GeneratedSlug,
 	})
+}
+
+// parsePostsRESTContext returns view|embed|edit (default view). ok=false when invalid (P4.145).
+func parsePostsRESTContext(r *http.Request) (string, bool) {
+	ctx := strings.TrimSpace(r.URL.Query().Get("context"))
+	if ctx == "" {
+		return "view", true
+	}
+	switch ctx {
+	case "view", "embed", "edit":
+		return ctx, true
+	default:
+		return "", false
+	}
+}
+
+// writeRESTInvalidPostsContext emits rest_invalid_param for bad context (P4.145).
+func writeRESTInvalidPostsContext(w http.ResponseWriter) {
+	msg := "context is not one of view, embed, and edit."
+	w.Header().Set("Allow", "GET")
+	writeJSON(w, http.StatusBadRequest, map[string]any{
+		"code":    "rest_invalid_param",
+		"message": "Invalid parameter(s): context",
+		"data": map[string]any{
+			"status": 400,
+			"params": map[string]any{
+				"context": msg,
+			},
+			"details": map[string]any{
+				"context": map[string]any{
+					"code":    "rest_not_in_enum",
+					"message": msg,
+					"data":    nil,
+				},
+			},
+		},
+	})
+}
+
+// writeRESTForbiddenPostsContext emits rest_forbidden_context (P4.145).
+func writeRESTForbiddenPostsContext(w http.ResponseWriter, c *wp.Context, item bool) {
+	status := http.StatusUnauthorized
+	if c != nil && c.CurrentUser != nil {
+		status = http.StatusForbidden
+	}
+	msg := "Sorry, you are not allowed to edit posts in this post type."
+	if item {
+		msg = "Sorry, you are not allowed to edit this post."
+	}
+	w.Header().Set("Allow", "GET")
+	writeJSON(w, status, map[string]any{
+		"code":    "rest_forbidden_context",
+		"message": msg,
+		"data":    map[string]any{"status": status},
+	})
+}
+
+func applyPostsRESTContext(posts []Post, ctx string) {
+	for i := range posts {
+		posts[i].RESTContext = ctx
+	}
 }
 
 func (s *Server) servePosts(w http.ResponseWriter, r *http.Request, c *wp.Context) {
