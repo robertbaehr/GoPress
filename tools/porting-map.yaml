@@ -8873,3 +8873,11 @@ wp-login.php#language-switcher-post
   task: P8.39
   api: n/a
   notes: "P8.39 — filter/delete/missing attachment coverage"
+
+# P10.162: expand diff corpus after P5.126–P8.39.
+- prefix: tests/corpus#p10.162
+  go: tests/corpus
+  status: partial
+  task: P10.162
+  api: n/a
+  notes: "P10.162 — parent invalid/array + post-terms/author block-types + front/login/ajax toppers; 1324 cases"

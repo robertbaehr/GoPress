@@ -937,3 +937,22 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.162: login toppers after language_attributes stack.
+- id: login-p10162-001-lostpassword
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10162-002-checkemail-confirm
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=confirm
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

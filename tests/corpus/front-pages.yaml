@@ -1358,3 +1358,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.162: front toppers after language_attributes / post-terms stack.
+- id: front-p10162-001-search-author
+  role: anon
+  method: GET
+  path: /?s=author
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10162-002-search-terms
+  role: anon
+  method: GET
+  path: /?s=terms
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10162-003-page-2
+  role: anon
+  method: GET
+  path: /page/2/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

@@ -8895,3 +8895,211 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.162: parent validation + post-author/terms toppers after P5.126–P8.39.
+- id: rest-p10162-001-pages-parent-foo
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?parent=foo
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-002-pages-parent-exclude-bar
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?parent_exclude=bar
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-003-pages-parent-empty
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?parent=&per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-004-pages-parent-array-436
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?parent[]=436&per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-005-pages-parent-array-436-0
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?parent[]=436&parent[]=0&per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-006-pages-parent-float
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?parent=1.5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-007-pages-parent-abc-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?parent=abc,1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-008-pages-parent-neg1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?parent=-1&per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-009-pages-parent-436
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?parent=436&per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-010-pages-parent-0-orderby-parent
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?parent=0&orderby=parent&per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-011-pages-parent-exclude-436
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?parent_exclude=436&per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-012-rest-route-pages-parent-foo
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/pages&parent=foo
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-013-post-terms-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/post-terms?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-014-post-terms-edit
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/post-terms?context=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-015-post-author-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/post-author?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-016-post-author-edit
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/post-author?context=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-017-post-author-name-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/post-author-name?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-018-post-author-biography-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/post-author-biography?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-019-rest-route-post-terms
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/post-terms
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-020-rest-route-post-author
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/post-author
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-021-block-editor-ns
+  role: anon
+  method: GET
+  path: /wp-json/wp-block-editor/v1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-022-media-parent-0
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/media?parent=0&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10162-023-oembed-sample-page
+  role: anon
+  method: GET
+  path: /wp-json/oembed/1.0/embed?url=http://127.0.0.1:8081/sample-page/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
