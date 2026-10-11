@@ -4982,6 +4982,28 @@ wp-login.php#language-switcher-post
   api: internal
   notes: "P5.84 — has-child submenu container + chevron icon"
 
+# P9.26: register_rest_field additional fields registry.
+- prefix: wp-includes/rest-api.php#register_rest_field
+  go: internal/rest/fields.go
+  status: partial
+  task: P9.26
+  api: exported
+  notes: "P9.26 — RegisterRestField registry; ApplyAdditionalFields get_callback; posts list/item merge"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-controller.php#add_additional_fields_to_object
+  go: internal/rest/fields.go
+  status: partial
+  task: P9.26
+  api: exported
+  notes: "P9.26 — EncodeWithAdditionalFields for post/page collections and items"
+
+- prefix: wp-includes/rest-api.php#register_rest_field#tests
+  go: internal/rest/fields_test.go
+  status: partial
+  task: P9.26
+  api: n/a
+  notes: "P9.26 — get_callback merge + multi-type + no-op identity coverage"
+
 # P5.118: deepen core/template-part wrapper attrs + area tags + theme gate.
 - prefix: wp-includes/blocks/template-part.php#p5.118
   go: internal/blocks/render.go
