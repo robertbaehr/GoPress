@@ -10226,3 +10226,17 @@ wp-login.php#language-switcher-post
   task: P10.185
   api: n/a
   notes: "P10.185 — summarize query-no-results attrs, search_columns enum, admin_footer_text, KsesNoNull, ClearPingbackHeaders, doing_filter all + 1809 corpus"
+
+# P5.138: comment-template align / fontSize / anchor.
+- prefix: wp-includes/blocks/comment-template.php#align-fontSize-anchor
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.138
+  api: render_block_core_comment_template
+  notes: "P5.138 — supports.align / fontSize / anchor on comment-template ol"
+- prefix: wp-includes/blocks/comment-template.php#align-fontSize-anchor#tests
+  go: internal/blocks/comment_template_attrs_p5_138_test.go
+  status: partial
+  task: P5.138
+  api: n/a
+  notes: "P5.138 — alignwide/fontSize/anchor when comments; empty when none"
