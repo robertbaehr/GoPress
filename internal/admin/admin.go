@@ -5359,41 +5359,116 @@ func privacyPolicyGuideSearchScript() string {
 `
 }
 
-// serveCustomizerGone rejects the Customizer as out of scope (P7.6 / P7.88).
+// serveCustomizerGone rejects the Customizer as out of scope (P7.6 / P7.88 / P7.125).
 // Mirrors customize.php bootstrap: logged-in gate (caller), customize capability
-// denial messaging, optional validated return URL, and Site Editor fallback.
+// denial messaging, validated return/url/autofocus/changeset_uuid, controls init
+// action, and Site Editor fallback.
 func (h *Handler) serveCustomizerGone(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "/")), "/")
 	returnURL := "/wp-admin/"
+	previewURL := home + "/"
+	autofocus := map[string]string{}
+	changesetUUID := ""
 	if r != nil {
-		if raw := strings.TrimSpace(r.URL.Query().Get("return")); raw != "" {
+		q := r.URL.Query()
+		if raw := strings.TrimSpace(q.Get("return")); raw != "" {
 			if safe := wp.ValidateRedirect(c, raw, ""); safe != "" {
 				returnURL = safe
 			}
 		}
+		// P7.125: url → preview URL (wp_customize->set_preview_url).
+		if raw := strings.TrimSpace(q.Get("url")); raw != "" {
+			if safe := wp.ValidateRedirect(c, raw, ""); safe != "" {
+				previewURL = safe
+			}
+		}
+		// P7.125: autofocus[control|section|panel] sanitized text fields.
+		for _, key := range []string{"control", "section", "panel"} {
+			if v := strings.TrimSpace(q.Get("autofocus[" + key + "]")); v != "" {
+				autofocus[key] = wp.SanitizeTextField(v)
+			}
+		}
+		changesetUUID = wp.SanitizeKey(strings.TrimSpace(q.Get("changeset_uuid")))
 	}
 	// P7.88: customize maps to do_not_allow in GoPress (Customizer gone).
 	canCustomize := c != nil && c.CurrentUser != nil && c.UserCan(c.CurrentUser, "customize")
+
+	// P7.125: customize_controls_init fires before controls UI (even when stubbed).
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("customize_controls_init")
+	}
+
+	bodyClass := "wp-admin wp-core-ui wp-customizer js iframe locale-en-us admin-color-fresh wp-embed-responsive"
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("admin_body_class", ""); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				bodyClass += " " + strings.TrimSpace(s)
+			}
+		}
+	}
 
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n")
 	b.WriteString("<title>Customizer &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui wp-customizer js iframe\">\n")
-	b.WriteString("<div class=\"wrap\" id=\"customize-controls\">\n")
+	b.WriteString(" &#8212; WordPress</title>\n")
+	b.WriteString("<script>var ajaxurl = \"/wp-admin/admin-ajax.php\", pagenow = \"customize\";</script>\n")
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("customize_controls_print_styles")
+		c.Hooks.DoAction("customize_controls_print_scripts")
+		c.Hooks.DoAction("customize_controls_head")
+	}
+	b.WriteString("</head>\n")
+	b.WriteString("<body class=\"")
+	b.WriteString(html.EscapeString(bodyClass))
+	b.WriteString("\">\n")
+	b.WriteString("<div class=\"wp-full-overlay expanded\">\n")
+	b.WriteString("<form id=\"customize-controls\" class=\"wrap wp-full-overlay-sidebar\"")
+	b.WriteString(` data-preview-url="`)
+	b.WriteString(html.EscapeString(previewURL))
+	b.WriteString(`"`)
+	if changesetUUID != "" {
+		b.WriteString(` data-changeset-uuid="`)
+		b.WriteString(html.EscapeString(changesetUUID))
+		b.WriteString(`"`)
+	}
+	for _, key := range []string{"control", "section", "panel"} {
+		if v := autofocus[key]; v != "" {
+			b.WriteString(` data-autofocus-`)
+			b.WriteString(key)
+			b.WriteString(`="`)
+			b.WriteString(html.EscapeString(v))
+			b.WriteString(`"`)
+		}
+	}
+	b.WriteString(">\n")
 	if !canCustomize {
 		b.WriteString("<h1>You need a higher level of permission.</h1>\n")
 		b.WriteString("<p>Sorry, you are not allowed to customize this site.</p>\n")
 	}
+	if changesetUUID != "" {
+		// P7.125: changeset present but unsupported — mirror published/trash dead-end copy.
+		b.WriteString("<h1>An error occurred while saving your changeset.</h1>\n")
+		b.WriteString("<p>Please try again or start a new changeset. This changeset cannot be further modified.</p>\n")
+		b.WriteString("<p><a href=\"/wp-admin/customize.php\">Customize New Changes</a></p>\n")
+	}
 	b.WriteString("<h1>Customizer unavailable</h1>\n")
 	b.WriteString("<p>The Customizer is out of scope for GoPress. Use the <a href=\"/wp-admin/site-editor.php\">Site Editor</a> instead.</p>\n")
+	b.WriteString("<noscript><p>The Customizer requires JavaScript.</p></noscript>\n")
 	b.WriteString("<p><a class=\"button\" href=\"")
 	b.WriteString(html.EscapeString(returnURL))
 	b.WriteString("\">&larr; Back</a></p>\n")
-	b.WriteString("</div>\n</body>\n</html>\n")
+	b.WriteString("</form>\n</div>\n")
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("customize_controls_print_footer_scripts")
+	}
+	b.WriteString("</body>\n</html>\n")
 	w.Header().Set("X-GoPress-Customizer", "disabled")
+	if previewURL != "" {
+		w.Header().Set("X-GoPress-Customizer-Preview", previewURL)
+	}
 	writeHTML(w, http.StatusForbidden, b.String())
 }
 

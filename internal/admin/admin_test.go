@@ -224,6 +224,62 @@ func TestCustomizerRejectsExternalReturn(t *testing.T) {
 	}
 }
 
+func TestCustomizerDeepensURLAutofocusChangeset(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	var initFired int
+	c.Hooks.AddAction("customize_controls_init", func(args ...any) {
+		initFired++
+	}, 10, 0)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	req := httptest.NewRequest(http.MethodGet,
+		"/wp-admin/customize.php?url=/sample-page/&autofocus[section]=title_tagline&autofocus[control]=blogname&changeset_uuid=abc-123-DEF&return=/wp-admin/themes.php",
+		nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	if initFired != 1 {
+		t.Fatalf("customize_controls_init fired %d want 1", initFired)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `data-preview-url="/sample-page/"`) {
+		t.Fatalf("expected preview url attr: %q", body)
+	}
+	if !strings.Contains(body, `data-autofocus-section="title_tagline"`) ||
+		!strings.Contains(body, `data-autofocus-control="blogname"`) {
+		t.Fatalf("expected autofocus attrs: %q", body)
+	}
+	if !strings.Contains(body, `data-changeset-uuid="abc-123-def"`) {
+		t.Fatalf("expected sanitized changeset uuid: %q", body)
+	}
+	if !strings.Contains(body, "cannot be further modified") {
+		t.Fatalf("expected changeset dead-end copy: %q", body)
+	}
+	if !strings.Contains(body, `pagenow = "customize"`) {
+		t.Fatalf("expected pagenow script: %q", body)
+	}
+	if !strings.Contains(body, "wp-full-overlay") || !strings.Contains(body, "locale-en-us") {
+		t.Fatalf("expected overlay/locale body chrome: %q", body)
+	}
+	if !strings.Contains(body, "requires JavaScript") {
+		t.Fatalf("expected noscript notice: %q", body)
+	}
+	if got := rec.Header().Get("X-GoPress-Customizer-Preview"); got != "/sample-page/" {
+		t.Fatalf("preview header=%q", got)
+	}
+	// External preview url rejected.
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/customize.php?url=https://evil.example/", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if strings.Contains(rec.Body.String(), "evil.example") {
+		t.Fatalf("external preview must be rejected: %q", rec.Body.String())
+	}
+}
+
 func TestThemeInstallOutOfScope(t *testing.T) {
 	// P7.113: authorized users get a 200 stub; remote install stays unavailable.
 	c := bootOrSkip(t)

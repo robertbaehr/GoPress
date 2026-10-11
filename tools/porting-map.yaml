@@ -5386,6 +5386,20 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P7.88 — customize cap denial; validated ?return=; wp-customizer body; Site Editor link"
 
+- prefix: wp-admin/customize.php#p7.125
+  go: internal/admin/admin.go
+  status: out-of-scope
+  task: P7.125
+  api: n/a
+  notes: "P7.125 — url/autofocus/changeset_uuid; customize_controls_init; overlay chrome; noscript"
+
+- prefix: wp-admin/customize.php#p7.125-test
+  go: internal/admin/admin_test.go
+  status: out-of-scope
+  task: P7.125
+  api: n/a
+  notes: "P7.125 — unit coverage for customizer stub deepenings"
+
 - prefix: wp-includes/widgets/
   go: out-of-scope
   status: out-of-scope
