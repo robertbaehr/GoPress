@@ -6907,6 +6907,21 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P4.97 — StickPost / UnstickPost update sticky_posts option"
 
+# P3.115: deepen get_post_class — extras, password, thumbnail, filter.
+- prefix: wp-includes/post-template.php#get_post_class
+  go: internal/wp/post_class.go
+  status: partial
+  task: P3.115
+  api: exported
+  notes: "P3.115 — css_class extras; password/thumbnail classes; post_class filter"
+
+- prefix: wp-includes/post-template.php#get_post_class.tests
+  go: internal/wp/post_class_test.go
+  status: partial
+  task: P3.115
+  api: n/a
+  notes: "P3.115 — GetPostClass unit coverage"
+
 # P7.82: edit.php sticky status view (?show_sticky=1).
 - prefix: wp-admin/includes/class-wp-posts-list-table.php#show_sticky
   go: internal/admin/admin.go

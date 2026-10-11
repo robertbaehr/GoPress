@@ -5,27 +5,59 @@ import (
 	"strings"
 )
 
-// GetPostClass mirrors get_post_class() for front query loops (P5.19).
-func GetPostClass(c *Context, postID int64) []string {
+// GetPostClass mirrors get_post_class() for front query loops (P5.19 / P3.115).
+// Optional cssClass values are space-split extras prepended like WP's $css_class.
+// P3.115: password classes, has-post-thumbnail, post_class filter.
+func GetPostClass(c *Context, postID int64, cssClass ...string) []string {
+	extra := splitPostClasses(cssClass...)
 	if c == nil || c.DB == nil || postID <= 0 {
-		return nil
+		return extra
 	}
 	p, err := GetPostByID(c, postID)
 	if err != nil || p == nil {
-		return nil
+		return extra
 	}
-	classes := []string{
-		"post-" + strconv.FormatInt(p.ID, 10),
+	classes := append([]string{}, extra...)
+	classes = append(classes,
+		"post-"+strconv.FormatInt(p.ID, 10),
 		p.Type,
-		"type-" + p.Type,
-		"status-" + p.Status,
-	}
+		"type-"+p.Type,
+		"status-"+p.Status,
+	)
 	if p.Type == "post" {
 		classes = append(classes, "format-standard")
+	}
+	// Password classes (post_password_required subset without request → required).
+	if strings.TrimSpace(p.Password) != "" {
+		if PostPasswordRequired(c, nil, p) {
+			classes = append(classes, "post-password-required")
+		} else {
+			classes = append(classes, "post-password-protected")
+		}
+	} else if GetPostThumbnailID(c, postID) > 0 {
+		// Thumbnail only when not password-gated (WP skips when required).
+		classes = append(classes, "has-post-thumbnail")
 	}
 	// sticky class is added by callers only on the main blog query (is_home).
 	classes = append(classes, "hentry")
 	classes = append(classes, objectTermClasses(c, postID)...)
+	classes = dedupePostClasses(classes)
+
+	if c.Hooks != nil {
+		filtered := c.Hooks.ApplyFilters("post_class", classes, extra, postID)
+		switch t := filtered.(type) {
+		case []string:
+			classes = t
+		case []any:
+			classes = make([]string, 0, len(t))
+			for _, v := range t {
+				if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+					classes = append(classes, strings.TrimSpace(s))
+				}
+			}
+		}
+		classes = dedupePostClasses(classes)
+	}
 	return classes
 }
 
@@ -142,6 +174,33 @@ func objectTermClasses(c *Context, postID int64) []string {
 			prefix = "tag"
 		}
 		out = append(out, prefix+"-"+slug)
+	}
+	return out
+}
+
+func splitPostClasses(cssClass ...string) []string {
+	var out []string
+	for _, raw := range cssClass {
+		for _, p := range strings.Fields(raw) {
+			p = strings.TrimSpace(p)
+			if p != "" {
+				out = append(out, p)
+			}
+		}
+	}
+	return out
+}
+
+func dedupePostClasses(parts []string) []string {
+	seen := map[string]bool{}
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		p = strings.TrimSpace(p)
+		if p == "" || seen[p] {
+			continue
+		}
+		seen[p] = true
+		out = append(out, p)
 	}
 	return out
 }
