@@ -9,9 +9,10 @@ import (
 
 var reEmbedFigureOpen = regexp.MustCompile(`(?is)^(\s*<figure\b)([^>]*)(>)`)
 
-// renderEmbed renders core/embed (P5.49).
-// Honors providerNameSlug / type / align attrs (WP save.mjs classnames), keeps
-// saved InnerHTML when present, and synthesizes a figure fallback from url.
+// renderEmbed renders core/embed (P5.49 / P5.115).
+// Honors providerNameSlug / type / align / className / anchor attrs (WP save.mjs
+// classnames + supports.anchor), keeps saved InnerHTML when present, and
+// synthesizes a figure fallback from url.
 func (e *Env) renderEmbed(block Block) string {
 	e = e.ensure()
 	urlStr := strings.TrimSpace(attrString(block.Attrs, "url"))
@@ -34,7 +35,12 @@ func (e *Env) renderEmbed(block Block) string {
 	if strings.TrimSpace(out) == "" {
 		return ""
 	}
-	return ensureEmbedFigureClasses(out, typ, provider, block.Attrs)
+	out = ensureEmbedFigureClasses(out, typ, provider, block.Attrs)
+	// P5.115: supports.anchor → id on the figure root.
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		out = ensureRootAttribute(out, "id", anchor)
+	}
+	return out
 }
 
 func synthesizeEmbedFigure(rawURL, caption, typ, provider string, attrs map[string]any) string {
@@ -156,6 +162,14 @@ func inferEmbedProvider(rawURL string) string {
 		return "tiktok"
 	case strings.Contains(host, "dailymotion.com"):
 		return "dailymotion"
+	case strings.Contains(host, "wordpress.tv"), strings.Contains(host, "videopress.com"):
+		return "wordpress-tv"
+	case strings.Contains(host, "reddit.com"):
+		return "reddit"
+	case strings.Contains(host, "pinterest.com"), host == "pin.it":
+		return "pinterest"
+	case strings.Contains(host, "amazon."):
+		return "amazon"
 	default:
 		return ""
 	}

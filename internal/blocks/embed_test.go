@@ -61,3 +61,30 @@ https://twitter.com/WordPress/status/1
 		t.Fatalf("expected rich type: %q", out)
 	}
 }
+
+func TestRenderEmbedClassNameAndAnchor(t *testing.T) {
+	out := blocks.Render(`<!-- wp:embed {"url":"https://www.youtube.com/watch?v=abc","providerNameSlug":"youtube","type":"video","className":"is-style-rounded my-embed","anchor":"hero-embed","align":"full"} /-->`)
+	for _, needle := range []string{
+		`id="hero-embed"`,
+		`is-style-rounded`,
+		`my-embed`,
+		`alignfull`,
+		`is-provider-youtube`,
+		`wp-block-embed-youtube`,
+	} {
+		if !strings.Contains(out, needle) {
+			t.Fatalf("missing %q in %q", needle, out)
+		}
+	}
+}
+
+func TestRenderEmbedInfersWordPressTVAndReddit(t *testing.T) {
+	out := blocks.Render(`<!-- wp:embed {"url":"https://wordpress.tv/2024/01/01/demo/"} /-->`)
+	if !strings.Contains(out, `is-provider-wordpress-tv`) || !strings.Contains(out, `wp-block-embed-wordpress-tv`) {
+		t.Fatalf("expected wordpress-tv classes: %q", out)
+	}
+	out = blocks.Render(`<!-- wp:embed {"url":"https://www.reddit.com/r/WordPress/comments/1"} /-->`)
+	if !strings.Contains(out, `is-provider-reddit`) {
+		t.Fatalf("expected reddit provider: %q", out)
+	}
+}
