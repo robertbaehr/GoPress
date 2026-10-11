@@ -27,6 +27,20 @@
 
 
 
+# P4.183: orderby meta_value + meta_type BINARY.
+- prefix: wp-includes/class-wp-query.php#meta_type_binary
+  go: internal/wp/query.go
+  status: partial
+  task: P4.183
+  api: n/a
+  notes: "P4.183 — orderby=meta_value + meta_type=BINARY CAST coverage"
+- prefix: wp-includes/class-wp-query.php#meta_type_binary#tests
+  go: internal/wp/query_orderby_meta_binary_p4_183_test.go
+  status: partial
+  task: P4.183
+  api: n/a
+  notes: "P4.183 — case-sensitive ASC (Banana before apple)"
+
 # P7.170: network.php pagenow chrome.
 - prefix: wp-admin/network.php#pagenow
   go: internal/admin/network.go
