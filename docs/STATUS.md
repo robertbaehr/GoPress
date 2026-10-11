@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.224)
 
+- P9.43 `DoAction` / `ApplyFilters` Context helpers
 - P5.163 `core/search` align coerce left|center|right
 - P7.164 import.php pagenow chrome + `admin_body_class`
 - P8.56 `get_attached_file` filter + unfiltered
