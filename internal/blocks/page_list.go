@@ -200,9 +200,10 @@ func pageListWrapperAttrs(attrs map[string]any) (classAttr, styleAttr string) {
 	return classAttr, styleAttr
 }
 
-// pageListNavCtxFromAttrs reads Navigation attrs into page-list nav context (P5.94).
+// pageListNavCtxFromAttrs reads Navigation attrs into page-list nav context (P5.94 / P5.117).
+// showSubmenuIcon defaults true (block.json); openSubmenusOnClick / submenuVisibility map to hover|click|always.
 func pageListNavCtxFromAttrs(attrs map[string]any) pageListNavCtx {
-	ctx := pageListNavCtx{submenuVisibility: "hover"}
+	ctx := pageListNavCtx{submenuVisibility: "hover", showSubmenuIcon: true}
 	if attrs == nil {
 		return ctx
 	}

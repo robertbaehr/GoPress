@@ -91,6 +91,7 @@ func TestRenderNavigationLinkPolish(t *testing.T) {
 }
 
 func TestRenderNavigationSubmenu(t *testing.T) {
+	// Standalone submenu (no Navigation parent): showSubmenuIcon defaults true → toggle button.
 	in := `<!-- wp:navigation-submenu {"label":"Parent","url":"/parent/"} -->
 <!-- wp:navigation-link {"label":"Child","url":"/child/"} /-->
 <!-- /wp:navigation-submenu -->`
@@ -99,6 +100,7 @@ func TestRenderNavigationSubmenu(t *testing.T) {
 		`has-child`,
 		`wp-block-navigation__submenu-container`,
 		`wp-block-navigation__submenu-icon`,
+		`wp-block-navigation-submenu__toggle`,
 		`>Parent</span>`,
 		`href="/child/"`,
 		`Child`,
@@ -106,6 +108,42 @@ func TestRenderNavigationSubmenu(t *testing.T) {
 		if !strings.Contains(out, want) {
 			t.Fatalf("missing %q in %q", want, out)
 		}
+	}
+}
+
+func TestRenderNavigationLayoutAndSubmenuContext(t *testing.T) {
+	// P5.117: justifyContent / flexWrap / textDecoration / className / open-on-click.
+	in := `<!-- wp:navigation {"className":"main-nav","layout":{"orientation":"horizontal","justifyContent":"center","flexWrap":"nowrap"},"style":{"typography":{"textDecoration":"underline"}},"openSubmenusOnClick":true,"showSubmenuIcon":true,"anchor":"site-nav"} -->
+<!-- wp:navigation-submenu {"label":"Parent","url":"/parent/"} -->
+<!-- wp:navigation-link {"label":"Child","url":"/child/"} /-->
+<!-- /wp:navigation-submenu -->
+<!-- /wp:navigation -->`
+	out := blocks.Render(in)
+	for _, want := range []string{
+		`items-justified-center`,
+		`no-wrap`,
+		`has-text-decoration-underline`,
+		`main-nav`,
+		`id="site-nav"`,
+		`open-on-click`,
+		`wp-block-navigation-submenu__toggle`,
+		`aria-expanded="false"`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+	// showSubmenuIcon false omits hover toggle button (keeps open-on-click span icon).
+	out2 := blocks.Render(`<!-- wp:navigation {"showSubmenuIcon":false} -->
+<!-- wp:navigation-submenu {"label":"Parent","url":"/parent/"} -->
+<!-- wp:navigation-link {"label":"Child","url":"/child/"} /-->
+<!-- /wp:navigation-submenu -->
+<!-- /wp:navigation -->`)
+	if strings.Contains(out2, `wp-block-navigation-submenu__toggle`) {
+		t.Fatalf("expected no submenu toggle when showSubmenuIcon=false: %q", out2)
+	}
+	if !strings.Contains(out2, `href="/parent/"`) {
+		t.Fatalf("expected anchor when not open-on-click: %q", out2)
 	}
 }
 
