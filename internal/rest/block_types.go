@@ -20,6 +20,7 @@ type BlockType struct {
 	Category    string              `json:"category"`
 	Description string              `json:"description,omitempty"`
 	Keywords    []string            `json:"keywords,omitempty"`
+	Parent      []string            `json:"parent,omitempty"`
 	APIVersion  int                 `json:"api_version"`
 	Attributes  map[string]any      `json:"attributes"`
 	Supports    map[string]any      `json:"supports,omitempty"`
@@ -58,6 +59,8 @@ func knownBlockTypes() []BlockType {
 		{"core/home-link", "Home Link", "design", "Create a link that always points to the homepage of the site. Usually not necessary if there is already a site title link present in the header.", true},
 		{"core/loginout", "Login/out", "theme", "Show login & logout links.", true},
 		{"core/page-list", "Page List", "widgets", "Display a list of all pages.", true},
+		// P5.134: core/page-list-item (editor child of page-list; SSR via page-list).
+		{"core/page-list-item", "Page List Item", "widgets", "Displays a page inside a list of all pages.", false},
 		{"core/details", "Details", "text", "Hide and show additional content.", false},
 		{"core/footnotes", "Footnotes", "text", "Display footnotes added to the page.", true},
 		{"core/freeform", "Classic", "text", "Use the classic WordPress editor.", false},
@@ -120,11 +123,34 @@ func knownBlockTypes() []BlockType {
 	extra := map[string]struct {
 		keywords []string
 		supports map[string]any
+		parent   []string
+		attrs    map[string]any
 	}{
 		"core/paragraph": {keywords: []string{"text"}, supports: map[string]any{"anchor": true, "className": true}},
 		"core/group":     {keywords: []string{"container", "wrapper", "row", "section"}, supports: map[string]any{"anchor": true, "align": true, "html": false}},
 		"core/cover":     {keywords: []string{"image", "video", "overlay"}, supports: map[string]any{"anchor": true, "align": true, "html": false, "shadow": true}},
 		"core/columns":   {keywords: []string{"layout"}, supports: map[string]any{"anchor": true, "align": []any{"wide", "full"}, "html": false}},
+		// P5.134: page-list-item block.json parent/attrs/supports.
+		"core/page-list-item": {
+			keywords: []string{"page", "menu", "navigation"},
+			parent:   []string{"core/page-list"},
+			supports: map[string]any{
+				"anchor": true, "reusable": false, "html": false,
+				"lock": false, "inserter": false, "__experimentalToolbar": false,
+			},
+			attrs: map[string]any{
+				"id":          map[string]any{"type": "number"},
+				"label":       map[string]any{"type": "string"},
+				"title":       map[string]any{"type": "string"},
+				"link":        map[string]any{"type": "string"},
+				"hasChildren": map[string]any{"type": "boolean"},
+			},
+		},
+		"core/page-list": {
+			keywords: []string{"menu", "navigation"},
+			supports: map[string]any{"anchor": true, "reusable": false, "html": false},
+			attrs:    map[string]any{"parentPageID": map[string]any{"type": "integer", "default": 0}},
+		},
 	}
 	out := make([]BlockType, 0, len(defs))
 	for _, d := range defs {
@@ -140,6 +166,12 @@ func knownBlockTypes() []BlockType {
 		if x, ok := extra[d.name]; ok {
 			bt.Keywords = x.keywords
 			bt.Supports = x.supports
+			if len(x.parent) > 0 {
+				bt.Parent = x.parent
+			}
+			if x.attrs != nil {
+				bt.Attributes = x.attrs
+			}
 		}
 		out = append(out, bt)
 	}
