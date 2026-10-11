@@ -7713,3 +7713,11 @@ wp-login.php#language-switcher-post
   task: P10.142
   api: n/a
   notes: "P10.142 — author_exclude, heading/paragraph block-types, edit-tags search, rp_key login; 902→1008"
+
+# P10.143: STATUS/PORTING refresh after P5.116–P10.142.
+- prefix: docs/STATUS.md#p10.143
+  go: docs/STATUS.md
+  status: partial
+  task: P10.143
+  api: n/a
+  notes: "P10.143 — summarize heading/paragraph, author_exclude, edit-tags search, trim_words, password form, rp_key hash_equals, 1008 corpus"
