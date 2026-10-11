@@ -162,8 +162,10 @@ func (e *Env) renderNavigationItems(items []Block) string {
 	return b.String()
 }
 
-// renderHomeLink renders core/home-link (P5.73 / P5.93) — a nav item that always
-// points at home_url(), with current-menu-item when on the front/home edge case.
+// renderHomeLink renders core/home-link (P5.73 / P5.93 / P5.135) — a nav item that
+// always points at home_url(), with current-menu-item when on the front/home edge.
+// Colors prefer block attrs, then Navigation context (usesContext), like PHP
+// block_core_home_link_build_css_colors( $block->context ).
 func (e *Env) renderHomeLink(block Block) string {
 	e = e.ensure()
 	label := strings.TrimSpace(attrString(block.Attrs, "label"))
@@ -181,23 +183,38 @@ func (e *Env) renderHomeLink(block Block) string {
 	}
 	isCurrent := e.isHomeLinkCurrent()
 
-	classes := []string{"wp-block-home-link", "wp-block-navigation-item"}
+	// P5.135: class order mirrors get_block_wrapper_attributes + build_li_wrapper —
+	// wp-block-home-link, color classes, wp-block-navigation-item, current-menu-item.
+	classes := []string{"wp-block-home-link"}
+	styleAttr := ""
+	textColor := strings.TrimSpace(attrString(block.Attrs, "textColor"))
+	customText := styleColorText(block.Attrs)
+	bgColor := strings.TrimSpace(attrString(block.Attrs, "backgroundColor"))
+	customBg := styleColorBackground(block.Attrs)
+	// Fall back to Navigation providesContext when attrs omit colors (P5.135).
+	if textColor == "" && customText == "" {
+		textColor = e.pageListNav.textColor
+		customText = e.pageListNav.customTextColor
+	}
+	if bgColor == "" && customBg == "" {
+		bgColor = e.pageListNav.backgroundColor
+		customBg = e.pageListNav.customBackground
+	}
+	if textColor != "" {
+		classes = append(classes, "has-text-color", "has-"+sanitizeClassToken(textColor)+"-color")
+	} else if customText != "" {
+		classes = append(classes, "has-text-color")
+		styleAttr += "color: " + customText + ";"
+	}
+	if bgColor != "" {
+		classes = append(classes, "has-background", "has-"+sanitizeClassToken(bgColor)+"-background-color")
+	} else if customBg != "" {
+		classes = append(classes, "has-background")
+		styleAttr += "background-color: " + customBg + ";"
+	}
+	classes = append(classes, "wp-block-navigation-item")
 	if isCurrent {
 		classes = append(classes, "current-menu-item")
-	}
-	// P5.93: named/custom colors like block_core_home_link_build_css_colors.
-	styleAttr := ""
-	if tc := strings.TrimSpace(attrString(block.Attrs, "textColor")); tc != "" {
-		classes = append(classes, "has-text-color", "has-"+sanitizeClassToken(tc)+"-color")
-	} else if custom := styleColorText(block.Attrs); custom != "" {
-		classes = append(classes, "has-text-color")
-		styleAttr += "color: " + custom + ";"
-	}
-	if bg := strings.TrimSpace(attrString(block.Attrs, "backgroundColor")); bg != "" {
-		classes = append(classes, "has-background", "has-"+sanitizeClassToken(bg)+"-background-color")
-	} else if custom := styleColorBackground(block.Attrs); custom != "" {
-		classes = append(classes, "has-background")
-		styleAttr += "background-color: " + custom + ";"
 	}
 	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
 		classes = append(classes, cn)
@@ -207,11 +224,18 @@ func (e *Env) renderHomeLink(block Block) string {
 	b.WriteString(`<li class="`)
 	b.WriteString(html.EscapeString(strings.Join(classes, " ")))
 	b.WriteString(`"`)
+	// P5.135: supports.anchor → id on the li wrapper.
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		b.WriteString(` id="`)
+		b.WriteString(html.EscapeString(anchor))
+		b.WriteString(`"`)
+	}
 	if styleAttr != "" {
 		b.WriteString(` style="`)
 		b.WriteString(html.EscapeString(styleAttr))
 		b.WriteString(`"`)
 	}
+	// P5.135 / PHP sprintf: href, rel="home", target, then aria-current.
 	b.WriteString(`><a class="wp-block-home-link__content wp-block-navigation-item__content" href="`)
 	b.WriteString(html.EscapeString(home))
 	b.WriteString(`" rel="home"`)
