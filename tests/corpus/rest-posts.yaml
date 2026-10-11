@@ -10219,3 +10219,221 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.174: corpus expand after widget-group/_embed/activity/kses-attr/document-title/upload stack.
+
+- id: rest-p10174-003-posts-collection-embed-replies-json
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?per_page=1&_embed=replies
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-p10174-006-posts-include-embed-replies-fields-id-json
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?include=1&_embed=replies&_fields=id
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-p10174-008-types-post-view-json
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types/post?context=view
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-p10174-009-statuses-publish-json
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/statuses/publish
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-p10174-010-taxonomies-category-json
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/taxonomies/category
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-p10174-011-block-types-widget-group-headers
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/widget-group?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10174-012-block-types-legacy-widget-headers
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/legacy-widget
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10174-013-rest-route-widget-group
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/widget-group
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10174-014-head-widget-group
+  role: anon
+  method: HEAD
+  path: /wp-json/wp/v2/block-types/core/widget-group
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10174-017-comments-post-1-per-page-headers
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/comments?post=1&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10174-018-search-hello-post-headers
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?search=hello&type=post&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10174-019-media-per-page-headers
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/media?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10174-020-users-1-headers
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/users/1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10174-021-settings-headers
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/settings
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10174-022-posts-slug-embed-replies-headers
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?slug=hello-world&_embed=replies
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10174-023-pages-sample-fields-json
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?slug=sample-page&_fields=id,slug
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-p10174-024-statuses-draft-headers
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/statuses/draft
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10174-025-types-page-headers
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types/page
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10174-026-posts-collection-embed-author-json
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?per_page=1&_embed=author
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-p10174-027-posts-include-fields-id-slug-json
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?include=1&_fields=id,slug
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-p10174-028-pages-include-fields-id-parent-json
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?include=438&_fields=id,parent,slug
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-p10174-029-posts-embed-replies-collection-headers
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?per_page=1&_embed=replies
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10174-030-categories-per-page-headers
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/categories?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10174-031-tags-per-page-headers
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/tags?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
