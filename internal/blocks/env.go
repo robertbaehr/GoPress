@@ -67,6 +67,10 @@ type Env struct {
 	// When nil, encoded+hash instances fail closed (empty render).
 	HashNonce func(data string) string
 
+	// SidebarBeingRendered mirrors $_sidebar_being_rendered for core/widget-group
+	// (P5.132 / note_sidebar_being_rendered). Empty means no dynamic sidebar.
+	SidebarBeingRendered string
+
 	// GetAttachmentURL resolves attachment IDs for core/image and core/gallery (P5.48).
 	GetAttachmentURL func(id int64) string
 	// GetAttachmentDimensions returns width/height from attachment metadata (P5.114 / core/video).

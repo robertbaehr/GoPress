@@ -9545,3 +9545,18 @@ wp-login.php#language-switcher-post
   task: P10.173
   api: n/a
   notes: "P10.173 — summarize legacy-widget, _fields, glance version/theme, kses_hair, wp_title, remove_all_filters + 1515 corpus"
+
+# P5.132: deepen core/widget-group title + sidebar note (still empty).
+- prefix: wp-includes/blocks/widget-group.php#p5.132
+  go: internal/blocks/widget_group.go
+  status: partial
+  task: P5.132
+  api: n/a
+  notes: "P5.132 — title attr + SidebarBeingRendered gates; InnerBlocks/InnerHTML never leak"
+
+- prefix: wp-includes/blocks/widget-group.php#p5.132#tests
+  go: internal/blocks/widget_group_p5_132_test.go
+  status: partial
+  task: P5.132
+  api: n/a
+  notes: "P5.132 — title/sidebar paths still empty; no leak"
