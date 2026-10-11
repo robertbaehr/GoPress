@@ -4255,6 +4255,21 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P5.74 — unit coverage for loginout; REST block-types metadata"
 
+# P5.121: deepen core/loginout wrapper attributes + form submit class.
+- prefix: wp-includes/blocks/loginout.php#p5.121
+  go: internal/blocks/loginout.go
+  status: partial
+  task: P5.121
+  api: internal
+  notes: "P5.121 — className/has-link-color/backgroundColor/anchor; wp-block-button__link on submit"
+
+- prefix: wp-includes/blocks/loginout.php#p5.121.tests
+  go: internal/blocks/loginout_test.go
+  status: partial
+  task: P5.121
+  api: n/a
+  notes: "P5.121 — wrapper polish + form submit class coverage"
+
 # P5.93: polish home-link / site-title / site-tagline wrappers.
 - prefix: wp-includes/blocks/home-link.php#p5.93
   go: internal/blocks/navigation.go

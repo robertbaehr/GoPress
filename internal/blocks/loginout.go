@@ -6,8 +6,10 @@ import (
 	"strings"
 )
 
-// renderLoginout renders core/loginout (P5.74) — Log in / Log out link, or an
-// optional login form when displayLoginAsForm is set for logged-out visitors.
+// renderLoginout renders core/loginout (P5.74 / P5.121) — Log in / Log out link,
+// or an optional login form when displayLoginAsForm is set for logged-out visitors.
+// P5.121: className / has-link-color / backgroundColor / anchor like
+// get_block_wrapper_attributes; form submit gets wp-block-button__link.
 func (e *Env) renderLoginout(block Block) string {
 	e = e.ensure()
 	loggedIn := e.IsLoggedIn != nil && e.IsLoggedIn()
@@ -18,22 +20,41 @@ func (e *Env) renderLoginout(block Block) string {
 		}
 	}
 
-	classes := "wp-block-loginout"
+	classes := []string{"wp-block-loginout"}
 	if loggedIn {
-		classes += " logged-in"
+		classes = append(classes, "logged-in")
 	} else {
-		classes += " logged-out"
+		classes = append(classes, "logged-out")
 	}
 
 	var contents string
 	if !loggedIn && displayLoginAsForm(block.Attrs) {
-		classes += " has-login-form"
+		classes = append(classes, "has-login-form")
 		contents = e.renderLoginForm(redirect)
 	} else {
 		contents = e.renderLoginoutLink(loggedIn, redirect)
 	}
 
-	return `<div class="` + html.EscapeString(classes) + `">` + contents + `</div>`
+	// P5.121: wrapper attrs subset of get_block_wrapper_attributes.
+	if hasLinkColorAttr(block.Attrs) {
+		classes = append(classes, "has-link-color")
+	}
+	if bg := strings.TrimSpace(attrString(block.Attrs, "backgroundColor")); bg != "" {
+		classes = append(classes, "has-background", "has-"+bg+"-background-color")
+	}
+	if hasCustomBackgroundColor(block.Attrs) {
+		classes = append(classes, "has-background")
+	}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		classes = append(classes, cn)
+	}
+
+	attrs := `class="` + html.EscapeString(strings.Join(classes, " ")) + `"`
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		attrs += ` id="` + html.EscapeString(anchor) + `"`
+	}
+
+	return `<div ` + attrs + `>` + contents + `</div>`
 }
 
 func (e *Env) renderLoginoutLink(loggedIn bool, redirect string) string {
@@ -75,7 +96,8 @@ func (e *Env) renderLoginForm(redirect string) string {
 	b.WriteString(`<p class="login-password"><label for="user_pass">Password</label>`)
 	b.WriteString(`<input type="password" name="pwd" id="user_pass" autocomplete="current-password" spellcheck="false" class="input" value="" size="20" /></p>`)
 	b.WriteString(`<p class="login-remember"><label><input name="rememberme" type="checkbox" id="rememberme" value="forever" /> Remember Me</label></p>`)
-	b.WriteString(`<p class="login-submit"><input type="submit" name="wp-submit" id="wp-submit" class="button button-primary" value="Log In" />`)
+	// P5.121: block themes add wp-block-button__link on the submit input.
+	b.WriteString(`<p class="login-submit"><input type="submit" name="wp-submit" id="wp-submit" class="button button-primary wp-block-button__link" value="Log In" />`)
 	b.WriteString(`<input type="hidden" name="redirect_to" value="`)
 	b.WriteString(html.EscapeString(redirect))
 	b.WriteString(`" /></p></form>`)

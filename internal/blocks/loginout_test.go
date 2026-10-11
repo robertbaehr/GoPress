@@ -72,7 +72,34 @@ func TestRenderLoginoutAsForm(t *testing.T) {
 	if !strings.Contains(out, `name="redirect_to" value="http://example.test/hello-world/"`) {
 		t.Fatalf("expected redirect_to hidden: %q", out)
 	}
+	if !strings.Contains(out, `wp-block-button__link`) {
+		t.Fatalf("expected submit button class: %q", out)
+	}
 	if strings.Contains(out, `>Log in</a>`) {
 		t.Fatalf("form mode should not emit Log in link: %q", out)
+	}
+}
+
+func TestRenderLoginoutWrapperPolish(t *testing.T) {
+	env := &blocks.Env{
+		IsLoggedIn: func() bool { return false },
+		CurrentURL: func() string { return "http://example.test/" },
+		LoginURL:   func(redirect string) string { return "http://example.test/wp-login.php" },
+	}
+	out := blocks.RenderWith(env, `<!-- wp:loginout {"className":"is-style-outline","backgroundColor":"cyan-bluish-gray","anchor":"login-widget","style":{"elements":{"link":{"color":{"text":"var:preset|color|vivid-red"}}},"color":{"background":"#f0f0f0"}}} /-->`)
+	if !strings.Contains(out, `wp-block-loginout logged-out`) {
+		t.Fatalf("expected base classes: %q", out)
+	}
+	if !strings.Contains(out, `has-link-color`) {
+		t.Fatalf("expected has-link-color: %q", out)
+	}
+	if !strings.Contains(out, `has-background`) || !strings.Contains(out, `has-cyan-bluish-gray-background-color`) {
+		t.Fatalf("expected background classes: %q", out)
+	}
+	if !strings.Contains(out, `is-style-outline`) {
+		t.Fatalf("expected className: %q", out)
+	}
+	if !strings.Contains(out, `id="login-widget"`) {
+		t.Fatalf("expected anchor id: %q", out)
 	}
 }
