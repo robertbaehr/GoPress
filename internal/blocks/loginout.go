@@ -10,11 +10,13 @@ import (
 // or an optional login form when displayLoginAsForm is set for logged-out visitors.
 // P5.121: className / has-link-color / backgroundColor / anchor like
 // get_block_wrapper_attributes; form submit gets wp-block-button__link.
+// P5.164: coerce supports.align to left|center|right before wrapper classes.
 func (e *Env) renderLoginout(block Block) string {
 	e = e.ensure()
+	attrs := sanitizeLoginoutBlockAttrs(block.Attrs)
 	loggedIn := e.IsLoggedIn != nil && e.IsLoggedIn()
 	redirect := ""
-	if redirectToCurrent(block.Attrs) {
+	if redirectToCurrent(attrs) {
 		if e.CurrentURL != nil {
 			redirect = strings.TrimSpace(e.CurrentURL())
 		}
@@ -28,7 +30,7 @@ func (e *Env) renderLoginout(block Block) string {
 	}
 
 	var contents string
-	if !loggedIn && displayLoginAsForm(block.Attrs) {
+	if !loggedIn && displayLoginAsForm(attrs) {
 		classes = append(classes, "has-login-form")
 		contents = e.renderLoginForm(redirect)
 	} else {
@@ -36,25 +38,48 @@ func (e *Env) renderLoginout(block Block) string {
 	}
 
 	// P5.121: wrapper attrs subset of get_block_wrapper_attributes.
-	if hasLinkColorAttr(block.Attrs) {
+	if hasLinkColorAttr(attrs) {
 		classes = append(classes, "has-link-color")
 	}
-	if bg := strings.TrimSpace(attrString(block.Attrs, "backgroundColor")); bg != "" {
+	if bg := strings.TrimSpace(attrString(attrs, "backgroundColor")); bg != "" {
 		classes = append(classes, "has-background", "has-"+bg+"-background-color")
 	}
-	if hasCustomBackgroundColor(block.Attrs) {
+	if hasCustomBackgroundColor(attrs) {
 		classes = append(classes, "has-background")
 	}
-	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+	// P5.164: supports.align left|center|right.
+	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
+		classes = append(classes, "align"+sanitizeClassToken(align))
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		classes = append(classes, cn)
 	}
 
-	attrs := `class="` + html.EscapeString(strings.Join(classes, " ")) + `"`
-	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
-		attrs += ` id="` + html.EscapeString(anchor) + `"`
+	attrHTML := `class="` + html.EscapeString(strings.Join(classes, " ")) + `"`
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
+		attrHTML += ` id="` + html.EscapeString(anchor) + `"`
 	}
 
-	return `<div ` + attrs + `>` + contents + `</div>`
+	return `<div ` + attrHTML + `>` + contents + `</div>`
+}
+
+// sanitizeLoginoutBlockAttrs coerces core/loginout supports.align (P5.164).
+// Allowed: left, center, right. Other values (incl. wide/full/none) are dropped.
+func sanitizeLoginoutBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "left", "center", "right":
+	default:
+		delete(out, "align")
+	}
+	return out
 }
 
 func (e *Env) renderLoginoutLink(loggedIn bool, redirect string) string {

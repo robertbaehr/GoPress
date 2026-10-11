@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P5.164: core/loginout align coerce left|center|right.
+- prefix: wp-includes/blocks/loginout#align
+  go: internal/blocks/loginout.go
+  status: partial
+  task: P5.164
+  api: n/a
+  notes: "P5.164 — align left|center|right coerce before applySupports"
+- prefix: wp-includes/blocks/loginout#align#tests
+  go: internal/blocks/loginout_attrs_p5_164_test.go
+  status: partial
+  task: P5.164
+  api: n/a
+  notes: "P5.164 — drop wide/full/none/bogus"
+
 # P8.57: attachment_url_to_postid.
 - prefix: wp-includes/media.php#attachment_url_to_postid
   go: internal/wp/attachment_url_to_postid.go
