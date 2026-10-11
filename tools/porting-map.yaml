@@ -11740,3 +11740,17 @@ wp-login.php#language-switcher-post
   task: P4.167
   api: n/a
   notes: "P4.167 — NOT LIKE / >= filters + expanded enum message"
+
+# P7.152: deepen attachment edit screen save (title/caption/description/alt).
+- prefix: wp-admin/post.php#attachment#edit
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.152
+  api: n/a
+  notes: "P7.152 — POST editattachment save + nonce + Media file updated notice"
+- prefix: wp-admin/post.php#attachment#edit#tests
+  go: internal/admin/attachment_edit_p7_152_test.go
+  status: partial
+  task: P7.152
+  api: n/a
+  notes: "P7.152 — save title/caption/description/alt coverage"
