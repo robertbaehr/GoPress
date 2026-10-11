@@ -10282,3 +10282,17 @@ wp-login.php#language-switcher-post
   task: P2.134
   api: n/a
   notes: "P2.134 — named/numeric/xml context + kses wiring"
+
+# P3.132: deepen X-Pingback / Link rel=pingback clearing.
+- prefix: wp-includes/comment-template.php#x-pingback#p3.132
+  go: internal/wp/pingback.go
+  status: partial
+  task: P3.132
+  api: n/a
+  notes: "P3.132 — comma-split Link; spaced rel; REST/RSD/robots ClearPingbackHeaders"
+- prefix: wp-includes/comment-template.php#x-pingback#p3.132#tests
+  go: internal/wp/pingback_x_p3_132_test.go
+  status: partial
+  task: P3.132
+  api: n/a
+  notes: "P3.132 — comma-joined Link + IsPingbackLink"

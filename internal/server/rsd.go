@@ -18,6 +18,8 @@ func serveRSDXMLStub(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	home := rsdHomeURL(c)
 	apiRoot := strings.TrimRight(home, "/") + "/wp-json/"
 	// P3.100: rest_output_link_header on RSD responses.
+	// P3.132: clear X-Pingback / Link rel=pingback before discovery Link.
+	wp.ClearPingbackHeaders(w)
 	if home != "" {
 		w.Header().Set("Link", fmt.Sprintf(`<%s>; rel="https://api.w.org/"`, apiRoot))
 	}

@@ -17,6 +17,8 @@ func setAPILinkHeader(w http.ResponseWriter, c *wp.Context) {
 	if root == "" {
 		return
 	}
+	// P3.132: never leave X-Pingback / Link rel=pingback on REST responses.
+	wp.ClearPingbackHeaders(w)
 	w.Header().Set("Link", fmt.Sprintf(`<%s>; rel="https://api.w.org/"`, root))
 }
 
@@ -47,6 +49,8 @@ func setCollectionHeaders(w http.ResponseWriter, r *http.Request, c *wp.Context,
 		links = append(links, fmt.Sprintf(`<%s>; rel="next"`, withPage(base, page+1)))
 	}
 	if len(links) > 0 {
+		// P3.132: drop any pingback discovery before writing pagination Link.
+		wp.ClearPingbackHeaders(w)
 		w.Header().Set("Link", strings.Join(links, ", "))
 	}
 }
