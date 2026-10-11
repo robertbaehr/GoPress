@@ -7021,3 +7021,25 @@ wp-login.php#language-switcher-post
   task: P3.103
   api: n/a
   notes: "P3.103 — category/tag feed alternate assertions"
+
+# P8.33: JPEG EXIF read for wp_read_image_metadata.
+- prefix: wp-admin/includes/image.php#wp_exif
+  go: internal/wp/exif.go
+  status: partial
+  task: P8.33
+  api: exported
+  notes: "P8.33 — ExifFrac2Dec/ExifDate2TS + JPEG APP1 IFD0/ExifIFD → image_meta"
+
+- prefix: wp-admin/includes/image.php#wp_read_image_metadata-p8-33
+  go: internal/wp/image_meta.go
+  status: partial
+  task: P8.33
+  api: exported
+  notes: "P8.33 — wire JPEG EXIF into ReadImageMetadata + types filter"
+
+- prefix: internal/wp/exif_test.go#p8-33
+  go: internal/wp/exif_test.go
+  status: partial
+  task: P8.33
+  api: n/a
+  notes: "P8.33 — unit coverage for frac/date helpers and JPEG EXIF bag"

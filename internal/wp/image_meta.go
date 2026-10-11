@@ -45,10 +45,10 @@ func emptyImageMetaMap() map[string]any {
 	}
 }
 
-// ReadImageMetadata is wp_read_image_metadata (P8.25).
+// ReadImageMetadata is wp_read_image_metadata (P8.25 / P8.33).
 // Returns nil,false when the file is missing or not an image.
-// Full EXIF/IPTC parsing is stubbed; the default empty bag is returned and
-// filtered via wp_read_image_metadata so callers can inject fields.
+// P8.33: JPEG EXIF APP1 is parsed for orientation/camera/exposure fields;
+// remaining formats keep the empty bag. Filtered via wp_read_image_metadata.
 func ReadImageMetadata(c *Context, file string) (map[string]any, bool) {
 	file = strings.TrimSpace(file)
 	if file == "" {
@@ -60,11 +60,17 @@ func ReadImageMetadata(c *Context, file string) (map[string]any, bool) {
 	}
 	meta := emptyImageMetaMap()
 
-	// P8.25: optional type filter (wp_read_image_metadata_types) — accepted, unused without EXIF.
+	// P8.25 / P8.33: types filter (default JPEG + TIFF family).
+	exifTypes := []any{ImageTypeJPEG, 7 /* TIFF_II */, 8 /* TIFF_MM */}
 	if c != nil && c.Hooks != nil {
-		_ = c.Hooks.ApplyFilters("wp_read_image_metadata_types", []any{
-			ImageTypeJPEG,
-		})
+		if v := c.Hooks.ApplyFilters("wp_read_image_metadata_types", exifTypes); v != nil {
+			if arr, ok := v.([]any); ok {
+				exifTypes = arr
+			}
+		}
+	}
+	if info.Type == ImageTypeJPEG && exifTypesAllow(exifTypes, ImageTypeJPEG) {
+		applyJPEGExif(meta, file)
 	}
 
 	if c != nil && c.Hooks != nil {
@@ -88,6 +94,29 @@ func ReadImageMetadata(c *Context, file string) (map[string]any, bool) {
 		meta["keywords"] = map[string]any{}
 	}
 	return meta, true
+}
+
+func exifTypesAllow(types []any, want int) bool {
+	if len(types) == 0 {
+		return true
+	}
+	for _, t := range types {
+		switch v := t.(type) {
+		case int:
+			if v == want {
+				return true
+			}
+		case int64:
+			if int(v) == want {
+				return true
+			}
+		case float64:
+			if int(v) == want {
+				return true
+			}
+		}
+	}
+	return false
 }
 
 // Filesize returns the file size in bytes (wp_filesize, P8.26).
