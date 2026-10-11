@@ -854,14 +854,28 @@ func (h *Handler) serveEditTags(w http.ResponseWriter, r *http.Request, c *wp.Co
 		return
 	}
 
-	terms, err := listAdminTerms(c, taxonomy, 50)
+	// P7.117: WP_Terms_List_Table::search_box (?s=) filters name/slug/description.
+	search := strings.TrimSpace(r.URL.Query().Get("s"))
+	allTerms, err := listAdminTerms(c, taxonomy, 50, "")
 	if err != nil {
 		http.Error(w, "terms: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
+	terms := allTerms
+	if search != "" {
+		terms, err = listAdminTerms(c, taxonomy, 50, search)
+		if err != nil {
+			http.Error(w, "terms: "+err.Error()+"\n", http.StatusInternalServerError)
+			return
+		}
+	}
 	nonce := ""
 	if c != nil {
 		nonce = c.CreateNonce("add-tag")
+	}
+	searchLabel := "Search Categories"
+	if taxonomy == "post_tag" {
+		searchLabel = "Search Tags"
 	}
 
 	var b strings.Builder
@@ -919,7 +933,7 @@ func (h *Handler) serveEditTags(w http.ResponseWriter, r *http.Request, c *wp.Co
 		b.WriteString("<label for=\"parent\">Parent Category</label>\n")
 		b.WriteString("<select name=\"parent\" id=\"parent\" class=\"postform\">\n")
 		b.WriteString("<option value=\"-1\">None</option>\n")
-		for _, t := range terms {
+		for _, t := range allTerms {
 			b.WriteString("<option value=\"")
 			b.WriteString(strconv.FormatInt(t.ID, 10))
 			b.WriteString("\">")
@@ -938,6 +952,27 @@ func (h *Handler) serveEditTags(w http.ResponseWriter, r *http.Request, c *wp.Co
 	b.WriteString("</form>\n</div>\n</div>\n</div>\n")
 
 	b.WriteString("<div id=\"col-right\">\n<div class=\"col-wrap\">\n")
+	// P7.117: search_box before the terms list table.
+	b.WriteString(`<form method="get" action="/wp-admin/edit-tags.php" class="search-form search-tags">` + "\n")
+	b.WriteString(`<input type="hidden" name="taxonomy" value="`)
+	b.WriteString(html.EscapeString(taxonomy))
+	b.WriteString(`" />` + "\n")
+	b.WriteString(`<p class="search-box">` + "\n")
+	b.WriteString(`<label class="screen-reader-text" for="tag-search-input">`)
+	b.WriteString(html.EscapeString(searchLabel))
+	b.WriteString(`:</label>` + "\n")
+	b.WriteString(`<input type="search" id="tag-search-input" name="s" value="`)
+	b.WriteString(html.EscapeString(search))
+	b.WriteString(`" />` + "\n")
+	b.WriteString(`<input type="submit" id="search-submit" class="button" value="`)
+	b.WriteString(html.EscapeString(searchLabel))
+	b.WriteString(`" />` + "\n")
+	b.WriteString("</p>\n</form>\n")
+	if search != "" {
+		b.WriteString("<p class=\"subtitle\">Search results for &#8220;")
+		b.WriteString(html.EscapeString(search))
+		b.WriteString("&#8221;</p>\n")
+	}
 	b.WriteString("<table class=\"wp-list-table widefat fixed striped table-view-list tags\">\n")
 	b.WriteString("<thead><tr>")
 	b.WriteString("<th scope=\"col\" class=\"manage-column column-name column-primary\">Name</th>")
@@ -1126,19 +1161,25 @@ func adminTermSlugExists(c *wp.Context, slug string) (bool, error) {
 	return row != nil, nil
 }
 
-func listAdminTerms(c *wp.Context, taxonomy string, limit int) ([]adminTerm, error) {
+func listAdminTerms(c *wp.Context, taxonomy string, limit int, search string) ([]adminTerm, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
 	if limit <= 0 {
 		limit = 50
 	}
-	q, args, err := c.DB.Prepare(
-		"SELECT t.term_id, t.name, t.slug, tt.description, tt.count FROM "+
-			c.DB.Terms()+" t INNER JOIN "+c.DB.TermTaxonomy()+
-			" tt ON t.term_id = tt.term_id WHERE tt.taxonomy = %s ORDER BY t.name ASC LIMIT %d",
-		taxonomy, limit,
-	)
+	sql := "SELECT t.term_id, t.name, t.slug, tt.description, tt.count FROM " +
+		c.DB.Terms() + " t INNER JOIN " + c.DB.TermTaxonomy() +
+		" tt ON t.term_id = tt.term_id WHERE tt.taxonomy = %s"
+	vals := []any{taxonomy}
+	if term := strings.TrimSpace(search); term != "" {
+		like := "%" + db.EscapeLike(term) + "%"
+		sql += " AND (t.name LIKE %s OR t.slug LIKE %s OR tt.description LIKE %s)"
+		vals = append(vals, like, like, like)
+	}
+	sql += " ORDER BY t.name ASC LIMIT %d"
+	vals = append(vals, limit)
+	q, args, err := c.DB.Prepare(sql, vals...)
 	if err != nil {
 		return nil, err
 	}

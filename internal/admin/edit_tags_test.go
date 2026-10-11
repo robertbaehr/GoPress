@@ -10,6 +10,41 @@ import (
 	"github.com/robertbaehr/GoPress/internal/admin"
 )
 
+func TestEditTagsSearchBox(t *testing.T) {
+	c := bootOrSkip(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/edit-tags.php?taxonomy=category&s=uncategorized", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/edit-tags.php") {
+		t.Fatal("edit-tags.php not handled")
+	}
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`id="tag-search-input"`,
+		`name="s"`,
+		`value="uncategorized"`,
+		`Search Categories`,
+		`Search results for`,
+		`uncategorized`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in %q", want, body)
+		}
+	}
+}
+
 func TestEditTagsCategoriesStub(t *testing.T) {
 	c := bootOrSkip(t)
 	user, err := c.GetUserBy("login", "admin")
