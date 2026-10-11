@@ -11238,3 +11238,11 @@ wp-login.php#language-switcher-post
   task: P10.202
   api: n/a
   notes: "P10.202 — quote/ignore_sticky/import/wordcount/prefetch/has_action toppers; 2393/2393; headers-safe; dropped set-cookie admin cases"
+
+# P10.203: STATUS/PORTING refresh after P5.146–P10.202.
+- prefix: docs/STATUS.md#p10.203
+  go: docs/STATUS.md
+  status: partial
+  task: P10.203
+  api: n/a
+  notes: "P10.203 — summarize quote attrs, ignore_sticky, tools-import, WordCount, prefetch, has_action, corpus 2393"
