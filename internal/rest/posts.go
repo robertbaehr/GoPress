@@ -474,55 +474,103 @@ func parsePostsExclude(r *http.Request) []int64 {
 	return parsePostsTermIDs(r, "exclude")
 }
 
-// parsePostsParent reads REST ?parent= (maps to post_parent__in, P4.93).
-// Allows 0 for top-level hierarchical posts/pages. nil when absent.
-func parsePostsParent(r *http.Request) []int64 {
+// parsePostsParent reads REST ?parent= (maps to post_parent__in, P4.93 / P4.142).
+// Allows 0 for top-level hierarchical posts/pages. nil when absent or empty.
+// Present but non-integer → ok=false (rest_invalid_param / rest_invalid_type).
+func parsePostsParent(r *http.Request) ([]int64, bool) {
 	return parsePostsParentIDs(r, "parent")
 }
 
-// parsePostsParentExclude reads REST ?parent_exclude= (post_parent__not_in, P4.93).
-func parsePostsParentExclude(r *http.Request) []int64 {
+// parsePostsParentExclude reads REST ?parent_exclude= (post_parent__not_in, P4.93 / P4.142).
+func parsePostsParentExclude(r *http.Request) ([]int64, bool) {
 	return parsePostsParentIDs(r, "parent_exclude")
 }
 
-// parsePostsParentIDs parses parent / parent_exclude, allowing 0.
-// Returns nil when the query key is absent; non-nil (possibly empty) when present.
-func parsePostsParentIDs(r *http.Request, key string) []int64 {
+// parsePostsParentIDs parses parent / parent_exclude, allowing 0 and negatives.
+// Returns (nil, true) when the query key is absent or scalar-empty (no filter).
+// Supports key=1,2, repeated ?key=, and key[]=1&key[]=2 (P4.142).
+// Present but non-integer tokens → (nil, false).
+func parsePostsParentIDs(r *http.Request, key string) ([]int64, bool) {
 	if r == nil || key == "" {
-		return nil
+		return nil, true
 	}
 	q := r.URL.Query()
-	vals, ok := q[key]
-	if !ok {
-		return nil
+	scalarVals, hasScalar := q[key]
+	arrayVals, hasArray := q[key+"[]"]
+	if !hasScalar && !hasArray {
+		return nil, true
 	}
 	seen := map[int64]bool{}
 	var out []int64
-	add := func(raw string) {
+	// Track whether any non-empty token was seen (scalar "" alone → no filter).
+	anyToken := false
+	addCSV := func(raw string, arrayElem bool) bool {
+		// PHP ?parent[]= yields ['']; empty array elements fail integer validation.
+		if arrayElem && strings.TrimSpace(raw) == "" {
+			return false
+		}
 		raw = strings.TrimSpace(raw)
 		if raw == "" {
-			return
+			return true
 		}
 		for _, part := range strings.Split(raw, ",") {
 			part = strings.TrimSpace(part)
 			if part == "" {
 				continue
 			}
+			anyToken = true
 			n, err := strconv.ParseInt(part, 10, 64)
-			if err != nil || n < 0 || seen[n] {
-				continue
+			if err != nil {
+				return false
 			}
-			seen[n] = true
-			out = append(out, n)
+			if !seen[n] {
+				seen[n] = true
+				out = append(out, n)
+			}
+		}
+		return true
+	}
+	for _, v := range scalarVals {
+		if !addCSV(v, false) {
+			return nil, false
 		}
 	}
-	for _, v := range vals {
-		add(v)
+	for _, v := range arrayVals {
+		if !addCSV(v, true) {
+			return nil, false
+		}
 	}
-	if out == nil {
-		out = []int64{}
+	if !anyToken {
+		// parent= / parent_exclude= → empty list after sanitize → no filter (WP).
+		return nil, true
 	}
-	return out
+	return out, true
+}
+
+// writeRESTInvalidIntegerArrayParams emits rest_invalid_param for bad integer-array query args (P4.142).
+func writeRESTInvalidIntegerArrayParams(w http.ResponseWriter, keys []string) {
+	params := map[string]any{}
+	details := map[string]any{}
+	for _, k := range keys {
+		msg := k + "[0] is not of type integer."
+		params[k] = msg
+		details[k] = map[string]any{
+			"code":    "rest_invalid_type",
+			"message": msg,
+			"data":    map[string]any{"param": k + "[0]"},
+		}
+	}
+	msg := "Invalid parameter(s): " + strings.Join(keys, ", ")
+	w.Header().Set("Allow", "GET")
+	writeJSON(w, http.StatusBadRequest, map[string]any{
+		"code":    "rest_invalid_param",
+		"message": msg,
+		"data": map[string]any{
+			"status":  400,
+			"params":  params,
+			"details": details,
+		},
+	})
 }
 
 // parsePostsAfter reads REST ?after= (ISO8601 → MySQL datetime, P4.91 / P4.140).

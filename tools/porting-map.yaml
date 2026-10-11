@@ -8784,3 +8784,18 @@ wp-login.php#language-switcher-post
   task: P5.126
   api: n/a
   notes: "P5.126 — post-terms/post-author polish unit coverage"
+
+# P4.142: strict REST pages parent/parent_exclude validation.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#parent-validate
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.142
+  api: n/a
+  notes: "P4.142 — parent/parent_exclude non-integer → rest_invalid_param; parent[]=; empty scalar → no filter"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#parent-validate#tests
+  go: internal/rest/posts_test.go
+  status: partial
+  task: P4.142
+  api: n/a
+  notes: "P4.142 — invalid parent/parent[]=/empty/parent[] multi coverage"

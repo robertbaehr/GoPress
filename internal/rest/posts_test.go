@@ -1418,6 +1418,78 @@ func TestPagesParentQueryParam(t *testing.T) {
 	}
 }
 
+func TestPagesParentStrictValidation(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	// parent=foo → rest_invalid_param / rest_invalid_type (P4.142).
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/pages?parent=foo", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("parent=foo status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var errBody map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &errBody); err != nil {
+		t.Fatal(err)
+	}
+	if errBody["code"] != "rest_invalid_param" {
+		t.Fatalf("code=%v", errBody["code"])
+	}
+	data, _ := errBody["data"].(map[string]any)
+	params, _ := data["params"].(map[string]any)
+	if params["parent"] != "parent[0] is not of type integer." {
+		t.Fatalf("params.parent=%v", params["parent"])
+	}
+
+	// parent= empty → no filter (all pages), matching WP sanitize to [].
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/pages?parent=&per_page=100", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("parent= status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var all []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &all); err != nil {
+		t.Fatal(err)
+	}
+	if len(all) == 0 {
+		t.Fatal("parent= should not filter to empty")
+	}
+
+	// parent[]=436&parent[]=0 → children of 436 plus top-level.
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/pages?parent[]=436&parent[]=0&per_page=100", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("parent[] status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var multi []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &multi); err != nil {
+		t.Fatal(err)
+	}
+	if len(multi) == 0 {
+		t.Fatal("expected pages for parent[]=436&parent[]=0")
+	}
+	for _, p := range multi {
+		if p.Parent != 436 && p.Parent != 0 {
+			t.Fatalf("page %d parent=%d want 0 or 436", p.ID, p.Parent)
+		}
+	}
+
+	// parent[]= alone → invalid.
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/pages?parent[]=", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("parent[]= status=%d body=%s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestPagesOrderbyMenuOrder(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
