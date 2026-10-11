@@ -11991,6 +11991,26 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P4.169 — BETWEEN/NOT BETWEEN filters + expanded enum message"
 
+# P4.171: REST posts meta_compare IN / NOT IN.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_compare_in
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.171
+  api: n/a
+  notes: "P4.171 — meta_compare IN/NOT IN enum; comma/space meta_value lists"
+- prefix: wp-includes/class-wp-meta-query.php#compare_in
+  go: internal/wp/query.go
+  status: partial
+  task: P4.171
+  api: n/a
+  notes: "P4.171 — appendMetaQueryFilters IN/NOT IN; splitMetaInValues shared with BETWEEN"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_compare_in#tests
+  go: internal/rest/posts_meta_in_p4_171_test.go
+  status: partial
+  task: P4.171
+  api: n/a
+  notes: "P4.171 — enum/IN filter/space-separated coverage"
+
 # P4.170: REST posts meta_type (WP_Query / WP_Meta_Query cast).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_type
   go: internal/rest/posts.go
