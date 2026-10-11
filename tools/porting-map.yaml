@@ -10,6 +10,21 @@
 
 
 
+
+# P9.46: plugins_url / plugin_dir_url.
+- prefix: wp-includes/link-template.php#plugins_url
+  go: internal/plugins/plugins_url.go
+  status: partial
+  task: P9.46
+  api: n/a
+  notes: "P9.46 — PluginsURL + PluginDirURL; mu-plugins base; plugins_url filter"
+- prefix: wp-includes/link-template.php#plugins_url#tests
+  go: internal/plugins/plugins_url_p9_46_test.go
+  status: partial
+  task: P9.46
+  api: n/a
+  notes: "P9.46 — base/folder/path; mu-plugins; filter"
+
 # P4.180: orderby meta_value + meta_type DATE.
 - prefix: wp-includes/class-wp-query.php#meta_type_date
   go: internal/wp/query.go
