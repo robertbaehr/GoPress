@@ -39,6 +39,38 @@ func TestCheckFiletypeCustomMimes(t *testing.T) {
 	}
 }
 
+func TestCheckFiletypeNormalizesQueryFragmentAndPath(t *testing.T) {
+	cases := []string{
+		"/var/uploads/2024/song.mp3",
+		"https://cdn.example.com/media/song.mp3?ver=2",
+		"song.mp3#t=10",
+		`C:\tmp\song.mp3`,
+	}
+	for _, file := range cases {
+		got := wp.CheckFiletype(nil, file, nil)
+		if got.Ext != "mp3" || got.Type != "audio/mpeg" {
+			t.Fatalf("CheckFiletype(%q)=%+v want mp3/audio/mpeg", file, got)
+		}
+	}
+}
+
+func TestCheckFiletypeStableCustomMimeOrder(t *testing.T) {
+	// Overlapping patterns: first key in sorted order among extras wins when
+	// neither is in the default order list — "aaa" before "zzz".
+	mimes := map[string]string{
+		"zzz": "application/z",
+		"aaa": "application/a",
+	}
+	got := wp.CheckFiletype(nil, "file.aaa", mimes)
+	if got.Ext != "aaa" || got.Type != "application/a" {
+		t.Fatalf("got=%+v", got)
+	}
+	got = wp.CheckFiletype(nil, "file.zzz", mimes)
+	if got.Ext != "zzz" || got.Type != "application/z" {
+		t.Fatalf("got=%+v", got)
+	}
+}
+
 func TestGetAllowedMimeTypesUnsets(t *testing.T) {
 	m := wp.GetAllowedMimeTypes(nil)
 	if _, ok := m["swf"]; ok {

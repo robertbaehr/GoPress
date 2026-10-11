@@ -2030,13 +2030,20 @@ wp-login.php#language-switcher-post
   task: P2.29
   api: exported
 
-# P2.57: wp_check_filetype (+ get_allowed_mime_types / wp_get_mime_types subset).
+# P2.57 / P2.110: wp_check_filetype (+ get_allowed_mime_types / wp_get_mime_types subset).
 - prefix: wp-includes/functions.php#wp_check_filetype
   go: internal/wp/check_filetype.go
   status: partial
-  task: P2.57
+  task: P2.110
   api: exported
-  notes: "P2.57 — CheckFiletype/GetMimeTypes/GetAllowedMimeTypes; upload_mimes filter"
+  notes: "P2.110 — basename/query/fragment normalize + stable mime-key order on P2.57 CheckFiletype"
+
+- prefix: wp-includes/functions.php#wp_check_filetype#tests
+  go: internal/wp/check_filetype_test.go
+  status: partial
+  task: P2.110
+  api: n/a
+  notes: "P2.110 — unit coverage for path/query normalize + stable custom mime order"
 
 # P2.58: wp_get_mime_types full map parity (Office OOXML macros, OpenDocument, OneNote, XPS).
 - prefix: wp-includes/functions.php#wp_get_mime_types

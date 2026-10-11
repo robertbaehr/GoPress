@@ -4,6 +4,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 )
 
@@ -130,6 +131,23 @@ var defaultMimeTypes = map[string]string{
 	"pages":   "application/vnd.apple.pages",
 }
 
+// defaultMimeTypeOrder is PHP wp_get_mime_types() insertion order (P2.110).
+var defaultMimeTypeOrder = []string{
+	"jpg|jpeg|jpe", "gif", "png", "bmp", "tiff|tif", "webp", "avif", "ico",
+	"heic", "heif", "heics", "heifs",
+	"asf|asx", "wmv", "wmx", "wm", "avi", "divx", "flv", "mov|qt", "mpeg|mpg|mpe",
+	"mp4|m4v", "ogv", "webm", "mkv", "3gp|3gpp", "3g2|3gp2",
+	"txt|asc|c|cc|h|srt", "csv", "tsv", "ics", "rtx", "css", "htm|html", "vtt", "dfxp",
+	"mp3|m4a|m4b", "aac", "ra|ram", "wav|x-wav", "ogg|oga", "flac", "mid|midi", "wma", "wax", "mka",
+	"rtf", "js", "pdf", "swf", "class", "tar", "zip", "gz|gzip", "rar", "7z", "exe", "psd", "xcf",
+	"doc", "pot|pps|ppt", "wri", "xla|xls|xlt|xlw", "mdb", "mpp",
+	"docx", "docm", "dotx", "dotm", "xlsx", "xlsm", "xlsb", "xltx", "xltm", "xlam",
+	"pptx", "pptm", "ppsx", "ppsm", "potx", "potm", "ppam", "sldx", "sldm",
+	"onetoc|onetoc2|onetmp|onepkg", "oxps", "xps",
+	"odt", "odp", "ods", "odg", "odc", "odb", "odf",
+	"wp|wpd", "key", "numbers", "pages",
+}
+
 // GetMimeTypes returns the mime map (wp_get_mime_types, P2.58).
 // Applies "mime_types" filter when c != nil.
 func GetMimeTypes(c *Context) map[string]string {
@@ -178,8 +196,9 @@ func GetAllowedMimeTypes(c *Context, userOpt ...*User) map[string]string {
 	return t
 }
 
-// CheckFiletype maps a filename to extension + mime (wp_check_filetype, P2.57).
+// CheckFiletype maps a filename to extension + mime (wp_check_filetype, P2.57 / P2.110).
 // When mimes is nil, uses GetAllowedMimeTypes(c) (or defaults when c is nil).
+// P2.110: basename + strip query/fragment before match; stable mime-key iteration.
 func CheckFiletype(c *Context, filename string, mimes map[string]string) Filetype {
 	if mimes == nil {
 		if c != nil {
@@ -188,11 +207,12 @@ func CheckFiletype(c *Context, filename string, mimes map[string]string) Filetyp
 			mimes = GetAllowedMimeTypes(nil)
 		}
 	}
-	filename = strings.TrimSpace(filename)
+	filename = normalizeCheckFilename(filename)
 	if filename == "" {
 		return Filetype{}
 	}
-	for extPreg, mime := range mimes {
+	for _, extPreg := range mimeExtKeys(mimes) {
+		mime := mimes[extPreg]
 		re, err := regexp.Compile(`(?i)\.(` + extPreg + `)$`)
 		if err != nil {
 			continue
@@ -202,6 +222,48 @@ func CheckFiletype(c *Context, filename string, mimes map[string]string) Filetyp
 		}
 	}
 	return Filetype{}
+}
+
+// normalizeCheckFilename prepares a name for wp_check_filetype (P2.110).
+// Strips URL query/fragment and reduces to the basename so path prefixes and
+// download URLs still match extension patterns anchored at $.
+func normalizeCheckFilename(filename string) string {
+	filename = strings.TrimSpace(filename)
+	if filename == "" {
+		return ""
+	}
+	if i := strings.IndexAny(filename, "?#"); i >= 0 {
+		filename = filename[:i]
+	}
+	filename = strings.TrimSpace(filename)
+	if filename == "" {
+		return ""
+	}
+	return filepath.Base(filename)
+}
+
+// mimeExtKeys returns mime map keys in a stable order (P2.110).
+// Prefer PHP defaultMimeTypes insertion order when the key set matches; otherwise sort.
+func mimeExtKeys(mimes map[string]string) []string {
+	if len(mimes) == 0 {
+		return nil
+	}
+	keys := make([]string, 0, len(mimes))
+	seen := make(map[string]bool, len(mimes))
+	for _, k := range defaultMimeTypeOrder {
+		if _, ok := mimes[k]; ok {
+			keys = append(keys, k)
+			seen[k] = true
+		}
+	}
+	var extra []string
+	for k := range mimes {
+		if !seen[k] {
+			extra = append(extra, k)
+		}
+	}
+	sort.Strings(extra)
+	return append(keys, extra...)
 }
 
 // CheckFiletypeAndExt validates filename + optional on-disk image mime
