@@ -10868,3 +10868,17 @@ wp-login.php#language-switcher-post
   task: P3.137
   api: n/a
   notes: "P3.137 — empty default + filter dns-prefetch/preconnect coverage"
+
+# P9.34: deepen do_action_deprecated / _deprecated_hook notices.
+- prefix: wp-includes/plugin.php#do_action_deprecated
+  go: internal/wp/hooks.go
+  status: partial
+  task: P9.34
+  api: do_action_deprecated
+  notes: "P9.34 — DeprecatedHookNotice + deprecated_hook_trigger_error; empty-args fire; LastDeprecatedHookNotice"
+- prefix: wp-includes/plugin.php#do_action_deprecated#tests
+  go: internal/wp/do_action_deprecated_p9_34_test.go
+  status: partial
+  task: P9.34
+  api: n/a
+  notes: "P9.34 — notice text, suppress filter, apply_filters_deprecated notice"
