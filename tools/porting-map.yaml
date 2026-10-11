@@ -1,4 +1,18 @@
 
+# P7.159: deepen credits.php pagenow chrome stub.
+- prefix: wp-admin/credits.php#chrome
+  go: internal/admin/credits.go
+  status: partial
+  task: P7.159
+  api: n/a
+  notes: "P7.159 — pagenow/adminpage; locale body; admin_body_class; data-tab; X-GoPress-Credits"
+- prefix: wp-admin/credits.php#chrome#tests
+  go: internal/admin/credits_chrome_p7_159_test.go
+  status: partial
+  task: P7.159
+  api: n/a
+  notes: "P7.159 — chrome + tab query + body class filter coverage"
+
 # P7.158: deepen about.php pagenow / version chrome stub.
 - prefix: wp-admin/about.php#chrome
   go: internal/admin/credits.go
