@@ -22,6 +22,21 @@
 
 
 
+
+# P2.163: includes_url.
+- prefix: wp-includes/link-template.php#includes_url
+  go: internal/wp/includes_url.go
+  status: partial
+  task: P2.163
+  api: n/a
+  notes: "P2.163 — IncludesURL siteurl/wp-includes + path + includes_url filter"
+- prefix: wp-includes/link-template.php#includes_url#tests
+  go: internal/wp/includes_url_p2_163_test.go
+  status: partial
+  task: P2.163
+  api: n/a
+  notes: "P2.163 — base/path/filter"
+
 # P6.72: lostpassword_post action.
 - prefix: wp-includes/user.php#lostpassword_post
   go: internal/wp/password_reset.go
