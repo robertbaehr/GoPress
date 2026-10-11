@@ -6,9 +6,10 @@ import (
 	"strings"
 )
 
-// ResourceHintsHTML mirrors wp_resource_hints() markup (P3.137).
+// ResourceHintsHTML mirrors wp_resource_hints() markup (P3.137 / P3.138).
 // Default dns-prefetch hosts come from DependenciesUniqueHosts (empty until
 // remote script/style enqueue is wired). Filters wp_resource_hints per relation.
+// P3.138: bare hostnames, case-insensitive dns-prefetch host dedupe.
 func ResourceHintsHTML(c *Context) string {
 	hints := map[string][]any{
 		"dns-prefetch": dependenciesUniqueHostsAny(c),
@@ -37,6 +38,7 @@ func ResourceHintsHTML(c *Context) string {
 		}
 		unique := map[string]map[string]string{}
 		order := make([]string, 0)
+		seenHosts := map[string]bool{} // P3.138: case-insensitive host dedupe for dns-prefetch
 		for _, item := range urls {
 			atts := map[string]string{}
 			href := ""
@@ -68,11 +70,13 @@ func ResourceHintsHTML(c *Context) string {
 			default:
 				continue
 			}
+			href = strings.TrimSpace(href)
+			// P3.138: accept bare hostnames before EscURL (which may reject them).
+			if (relation == "dns-prefetch" || relation == "preconnect") && isBareHostname(href) {
+				href = "//" + href
+			}
 			href = strings.TrimSpace(EscURL(href))
 			if href == "" {
-				continue
-			}
-			if _, seen := unique[href]; seen {
 				continue
 			}
 			if relation == "preconnect" || relation == "dns-prefetch" {
@@ -86,6 +90,13 @@ func ResourceHintsHTML(c *Context) string {
 						continue
 					}
 				}
+				hostKey := strings.ToLower(parsed.Host)
+				if relation == "dns-prefetch" {
+					if seenHosts[hostKey] {
+						continue
+					}
+					seenHosts[hostKey] = true
+				}
 				if relation == "preconnect" && parsed.Scheme != "" {
 					href = parsed.Scheme + "://" + parsed.Host
 				} else {
@@ -95,6 +106,9 @@ func ResourceHintsHTML(c *Context) string {
 				if href == "" {
 					continue
 				}
+			}
+			if _, seen := unique[href]; seen {
+				continue
 			}
 			atts["rel"] = relation
 			atts["href"] = href
@@ -119,6 +133,22 @@ func ResourceHintsHTML(c *Context) string {
 		}
 	}
 	return b.String()
+}
+
+// isBareHostname reports a host-only token (no scheme/path/query) for dns-prefetch (P3.138).
+func isBareHostname(s string) bool {
+	s = strings.TrimSpace(s)
+	if s == "" || strings.Contains(s, "://") || strings.HasPrefix(s, "//") {
+		return false
+	}
+	if strings.ContainsAny(s, "/?# ") {
+		return false
+	}
+	// Require a dot (example.com) or bracketed IPv6; reject lone words.
+	if !strings.Contains(s, ".") && !strings.HasPrefix(s, "[") {
+		return false
+	}
+	return true
 }
 
 func dependenciesUniqueHostsAny(c *Context) []any {
