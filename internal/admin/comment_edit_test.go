@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/robertbaehr/GoPress/internal/admin"
+	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
 func TestCommentEditFormGET(t *testing.T) {
@@ -23,18 +24,7 @@ func TestCommentEditFormGET(t *testing.T) {
 		t.Fatalf("cookie: %v", err)
 	}
 
-	q, args, err := c.DB.Prepare(
-		"SELECT comment_ID FROM "+c.DB.Comments()+" WHERE comment_approved = %s ORDER BY comment_ID ASC LIMIT 1",
-		"1",
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	row, err := c.DB.GetRow(q, args...)
-	if err != nil || row == nil {
-		t.Fatalf("need an approved fixture comment: %v", err)
-	}
-	cid := asInt64Any(row["comment_ID"])
+	cid := insertDisposableComment(t, c, "Edit Form Author", "edit-form@example.com", "https://example.com/form", "editable body", "1")
 
 	req := httptest.NewRequest(http.MethodGet, "/wp-admin/comment.php?action=editcomment&c="+strconv.FormatInt(cid, 10), nil)
 	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
@@ -56,15 +46,16 @@ func TestCommentEditFormGET(t *testing.T) {
 		`value="editedcomment"`,
 		`id="post"`,
 		`class="form-table editcomment"`,
+		"Edit Form Author",
 	} {
 		if !strings.Contains(body, want) {
-			t.Fatalf("missing %q in body: %s", want, body[:min(800, len(body))])
+			t.Fatalf("missing %q in body: %s", want, trunc(body, 800))
 		}
 	}
 }
 
 func TestCommentEditFormPOST(t *testing.T) {
-	// P7.119: editedcomment updates author/email/url/content.
+	// P7.119: editedcomment updates author/email/url/content on a disposable row.
 	c := bootOrSkip(t)
 	user, err := c.GetUserBy("login", "admin")
 	if err != nil || user == nil {
@@ -75,19 +66,8 @@ func TestCommentEditFormPOST(t *testing.T) {
 		t.Fatalf("cookie: %v", err)
 	}
 
-	q, args, err := c.DB.Prepare(
-		"SELECT comment_ID, comment_post_ID FROM "+c.DB.Comments()+" WHERE comment_approved = %s ORDER BY comment_ID ASC LIMIT 1",
-		"1",
-	)
-	if err != nil {
-		t.Fatal(err)
-	}
-	row, err := c.DB.GetRow(q, args...)
-	if err != nil || row == nil {
-		t.Fatalf("need an approved fixture comment: %v", err)
-	}
-	cid := asInt64Any(row["comment_ID"])
-	postID := asInt64Any(row["comment_post_ID"])
+	cid := insertDisposableComment(t, c, "Before Edit", "before@example.com", "https://example.com/before", "before body", "1")
+	postID := int64(1)
 
 	form := url.Values{}
 	form.Set("action", "editedcomment")
@@ -137,4 +117,36 @@ func TestCommentEditFormPOST(t *testing.T) {
 	if asStringAny(row2["comment_content"]) != "Edited comment body for P7.119" {
 		t.Fatalf("content=%v", row2["comment_content"])
 	}
+}
+
+func insertDisposableComment(t *testing.T, c *wp.Context, author, email, urlStr, content, approved string) int64 {
+	t.Helper()
+	q, args, err := c.DB.Prepare(
+		"INSERT INTO "+c.DB.Comments()+
+			" (comment_post_ID, comment_author, comment_author_email, comment_author_url, comment_author_IP, "+
+			"comment_date, comment_date_gmt, comment_content, comment_karma, comment_approved, comment_agent, "+
+			"comment_type, comment_parent, user_id) VALUES "+
+			"(%d, %s, %s, %s, %s, %s, %s, %s, %d, %s, %s, %s, %d, %d)",
+		1, author, email, urlStr, "127.0.0.1",
+		"2024-01-01 00:00:00", "2024-01-01 00:00:00", content, 0, approved, "test",
+		"comment", 0, 0,
+	)
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := c.DB.Exec(q, args...)
+	if err != nil {
+		t.Fatal(err)
+	}
+	cid, _ := res.LastInsertId()
+	if cid <= 0 {
+		t.Fatal("no insert id")
+	}
+	t.Cleanup(func() {
+		dq, dargs, err := c.DB.Prepare("DELETE FROM "+c.DB.Comments()+" WHERE comment_ID = %d", cid)
+		if err == nil {
+			_, _ = c.DB.Exec(dq, dargs...)
+		}
+	})
+	return cid
 }
