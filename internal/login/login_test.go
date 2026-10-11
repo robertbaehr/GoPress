@@ -1324,3 +1324,56 @@ func TestConfirmActionValidKey(t *testing.T) {
 		t.Fatalf("status after confirm: %#v err=%v", got, err)
 	}
 }
+
+func TestLoginShakeErrorCodesFilter(t *testing.T) {
+	// P6.50: shake_error_codes filter can remove incorrect_password.
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	c.Hooks.AddFilter("shake_error_codes", func(value any, _ ...any) any {
+		return []string{"empty_username", "empty_password"}
+	}, 10, 1)
+
+	form := url.Values{}
+	form.Set("log", "admin")
+	form.Set("pwd", "wrong-password")
+	req := httptest.NewRequest(http.MethodPost, "/wp-login.php", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	body := rec.Body.String()
+	if !strings.Contains(body, `id="login_error"`) {
+		t.Fatalf("expected login_error: %q", body)
+	}
+	if strings.Contains(body, "document.querySelector('form').classList.add('shake')") {
+		t.Fatalf("shake_error_codes filter should suppress shake: %q", body)
+	}
+}
+
+func TestLoginShakeErrorCodesFilterAdd(t *testing.T) {
+	// P6.50: filter can add custom codes such as test_cookie.
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	c.Hooks.AddFilter("shake_error_codes", func(value any, _ ...any) any {
+		list, _ := value.([]string)
+		return append(list, "test_cookie")
+	}, 10, 1)
+
+	form := url.Values{}
+	form.Set("log", "admin")
+	form.Set("pwd", "admin")
+	form.Set("testcookie", "1")
+	req := httptest.NewRequest(http.MethodPost, "/wp-login.php", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	// No wordpress_test_cookie → test_cookie error.
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	body := rec.Body.String()
+	if !strings.Contains(body, "Cookies are blocked") {
+		t.Fatalf("expected test_cookie error: %q", body)
+	}
+	if !strings.Contains(body, "document.querySelector('form').classList.add('shake')") {
+		t.Fatalf("expected shake when test_cookie added to shake_error_codes: %q", body)
+	}
+}

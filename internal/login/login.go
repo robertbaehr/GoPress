@@ -472,7 +472,7 @@ func (h *Handler) serveRegisterForm(w http.ResponseWriter, r *http.Request, c *w
 	b.WriteString("\t</script>\n")
 	b.WriteString("\t</body>\n")
 	b.WriteString("\t</html>\n")
-	writeLoginHTML(w, r, b.String(), loginShouldShake(extractLoginErrorCode(errMsg)), c)
+	writeLoginHTML(w, r, b.String(), loginShouldShake(c, extractLoginErrorCode(errMsg)), c)
 }
 
 func extractLoginErrorCode(errHTML string) string {
@@ -1340,7 +1340,7 @@ func (h *Handler) servePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		if home == "" {
 			lostURL = "/wp-login.php?action=lostpassword"
 		}
-		errHTML, shake := formatLoginAuthError(err, login, password, lostURL)
+		errHTML, shake := formatLoginAuthError(c, err, login, password, lostURL)
 		h.serveForm(w, r, c, errHTML, shake)
 		return
 	}
@@ -1399,23 +1399,53 @@ func maybeAdminEmailConfirmRedirect(c *wp.Context, redirectTo, home string, user
 
 const testCookieName = "wordpress_test_cookie"
 
-// shakeLoginErrorCodes mirrors wp-login.php $shake_error_codes (P6.28).
-var shakeLoginErrorCodes = map[string]bool{
-	"empty_password":                  true,
-	"empty_email":                     true,
-	"invalid_email":                   true,
-	"invalidcombo":                    true,
-	"empty_username":                  true,
-	"invalid_username":                true,
-	"incorrect_password":              true,
-	"retrieve_password_email_failure": true,
+// defaultShakeLoginErrorCodes mirrors wp-login.php $shake_error_codes (P6.28 / P6.50).
+var defaultShakeLoginErrorCodes = []string{
+	"empty_password",
+	"empty_email",
+	"invalid_email",
+	"invalidcombo",
+	"empty_username",
+	"invalid_username",
+	"incorrect_password",
+	"retrieve_password_email_failure",
 }
 
-func loginShouldShake(code string) bool {
-	return shakeLoginErrorCodes[code]
+// shakeErrorCodes returns the effective shake_error_codes list (P6.50).
+// Applies the shake_error_codes filter like wp-login.php.
+func shakeErrorCodes(c *wp.Context) map[string]bool {
+	codes := append([]string{}, defaultShakeLoginErrorCodes...)
+	if c != nil && c.Hooks != nil {
+		filtered := c.Hooks.ApplyFilters("shake_error_codes", codes)
+		switch t := filtered.(type) {
+		case []string:
+			codes = t
+		case []any:
+			codes = codes[:0]
+			for _, v := range t {
+				if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+					codes = append(codes, strings.TrimSpace(s))
+				}
+			}
+		}
+	}
+	out := make(map[string]bool, len(codes))
+	for _, code := range codes {
+		if code != "" {
+			out[code] = true
+		}
+	}
+	return out
 }
 
-// writeLoginShakeJS emits wp_shake_js inline script (P6.28 / P6.29).
+func loginShouldShake(c *wp.Context, code string) bool {
+	if code == "" {
+		return false
+	}
+	return shakeErrorCodes(c)[code]
+}
+
+// writeLoginShakeJS emits wp_shake_js inline script (P6.28 / P6.29 / P6.50).
 // Same script for standard and interim-login forms (WP login_footer).
 func writeLoginShakeJS(b *strings.Builder) {
 	if b == nil {
@@ -1435,15 +1465,15 @@ func hasTestCookie(r *http.Request) bool {
 }
 
 // formatLoginAuthError builds WP-shaped login_error HTML (P6.12) and whether
-// the form should shake (P6.28).
-func formatLoginAuthError(err error, login, password, lostURL string) (string, bool) {
+// the form should shake (P6.28 / P6.50 shake_error_codes filter).
+func formatLoginAuthError(c *wp.Context, err error, login, password, lostURL string) (string, bool) {
 	ae, ok := err.(*wp.AuthError)
 	if !ok || ae == nil {
 		// Empty fields without typed error (e.g. both empty before Login change).
 		if strings.TrimSpace(login) == "" && password == "" {
 			html := `<ul class="login-error-list"><li><strong>Error:</strong> The username field is empty.</li>` +
 				`<li><strong>Error:</strong> The password field is empty.</li></ul>`
-			return html, true // empty_username / empty_password
+			return html, loginShouldShake(c, "empty_username") || loginShouldShake(c, "empty_password")
 		}
 		return loginErrorHTML("invalid_credentials", "The username or password you entered is incorrect.", "", ""), false
 	}
@@ -1452,27 +1482,27 @@ func formatLoginAuthError(err error, login, password, lostURL string) (string, b
 		if password == "" {
 			html := `<ul class="login-error-list"><li><strong>Error:</strong> The username field is empty.</li>` +
 				`<li><strong>Error:</strong> The password field is empty.</li></ul>`
-			return html, true
+			return html, loginShouldShake(c, "empty_username") || loginShouldShake(c, "empty_password")
 		}
-		return loginErrorHTML("empty_username", "The username field is empty.", "", ""), loginShouldShake("empty_username")
+		return loginErrorHTML("empty_username", "The username field is empty.", "", ""), loginShouldShake(c, "empty_username")
 	case "empty_password":
-		return loginErrorHTML("empty_password", "The password field is empty.", "", ""), loginShouldShake("empty_password")
+		return loginErrorHTML("empty_password", "The password field is empty.", "", ""), loginShouldShake(c, "empty_password")
 	case "invalid_username":
 		user := html.EscapeString(ae.Login)
 		msg := "The username <strong>" + user + "</strong> is not registered on this site. If you are unsure of your username, try your email address instead."
-		return loginErrorHTML("invalid_username", msg, "", ""), loginShouldShake("invalid_username")
+		return loginErrorHTML("invalid_username", msg, "", ""), loginShouldShake(c, "invalid_username")
 	case "incorrect_password":
 		user := html.EscapeString(ae.Login)
 		msg := "The password you entered for the username <strong>" + user + "</strong> is incorrect. "
 		if lostURL != "" {
 			msg += `<a href="` + html.EscapeString(lostURL) + `">Lost your password?</a>`
 		}
-		return loginErrorHTML("incorrect_password", msg, "", ""), loginShouldShake("incorrect_password")
+		return loginErrorHTML("incorrect_password", msg, "", ""), loginShouldShake(c, "incorrect_password")
 	case "test_cookie":
 		msg := `Cookies are blocked or not supported by your browser. You must <a href="https://developer.wordpress.org/advanced-administration/wordpress/cookies/#enable-cookies-in-your-browser">enable cookies</a> to use WordPress.`
-		return loginErrorHTML("test_cookie", msg, "", ""), false // not in shake_error_codes
+		return loginErrorHTML("test_cookie", msg, "", ""), loginShouldShake(c, "test_cookie") // default list omits test_cookie
 	default:
-		return loginErrorHTML(ae.Code, "The username or password you entered is incorrect.", "", ""), loginShouldShake(ae.Code)
+		return loginErrorHTML(ae.Code, "The username or password you entered is incorrect.", "", ""), loginShouldShake(c, ae.Code)
 	}
 }
 
