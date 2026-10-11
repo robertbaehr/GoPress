@@ -3,6 +3,7 @@ package wp
 
 import (
 	"html"
+	"strings"
 )
 
 // AdminBarHTML returns minimal #wpadminbar markup when a user is logged in.
