@@ -859,7 +859,8 @@ func (h *Handler) serveResetPass(w http.ResponseWriter, r *http.Request, c *wp.C
 		user, keyErr = wp.CheckPasswordResetKey(c, rpKey, rpLogin)
 		if r.Method == http.MethodPost {
 			_ = r.ParseForm()
-			if r.FormValue("pass1") != "" && r.FormValue("rp_key") != rpKey {
+			// P6.48: WP isset($_POST['pass1']) + hash_equals($rp_key, $_POST['rp_key']).
+			if _, pass1Set := r.PostForm["pass1"]; pass1Set && !wp.HashEquals(rpKey, r.FormValue("rp_key")) {
 				user = nil
 				keyErr = fmt.Errorf("invalid_key")
 			}
