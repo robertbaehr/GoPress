@@ -1,5 +1,34 @@
 package wp
 
+import "strings"
+
+// BeginNoticeCapture starts buffering AdminNotice / WriteNotice HTML on c.Hooks (P9.44).
+// Nil context/hooks is a no-op.
+func BeginNoticeCapture(c *Context, buf *strings.Builder) {
+	if c == nil || c.Hooks == nil {
+		return
+	}
+	c.Hooks.BeginNoticeCapture(buf)
+}
+
+// EndNoticeCapture clears the notice capture buffer on c.Hooks (P9.44).
+// Nil context/hooks is a no-op.
+func EndNoticeCapture(c *Context) {
+	if c == nil || c.Hooks == nil {
+		return
+	}
+	c.Hooks.EndNoticeCapture()
+}
+
+// WriteNotice appends HTML to the active notice capture buffer on c.Hooks (P9.44).
+// Nil context/hooks or empty html is a no-op.
+func WriteNotice(c *Context, html string) {
+	if c == nil || c.Hooks == nil || html == "" {
+		return
+	}
+	c.Hooks.WriteNotice(html)
+}
+
 // DoAction fires an action on c.Hooks (do_action, P9.43).
 // Nil context/hooks or empty tag is a no-op.
 func DoAction(c *Context, tag string, args ...any) {
