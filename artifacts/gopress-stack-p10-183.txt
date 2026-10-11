@@ -1,0 +1,14 @@
+Stacked from origin/cursor/p10-181-status-refresh-ddf1 (a5ba229462)
+
+branch → SHA
+cursor/p5-136-post-featured-image-attrs-ddf1  d1e31979c41cf03d733c655084bd36583afa0236
+cursor/p4-152-rest-posts-author-exclude-ddf1  a6e28351e2917dfe3b1315264249e0dc0d0300f5
+cursor/p7-137-admin-menu-collapse-ddf1        90954d7aa5852fd94e1314686c9178e5354b5675
+cursor/p2-132-wp-kses-bad-protocol-ddf1       0fd75c17cd6bd277dc320d76f0f11a2b663fae04
+cursor/p3-130-front-shortlink-header-ddf1     02c743fe7ce2528e910a97f50dc8c5a1bcd63528
+cursor/p6-55-login-header-ddf1                1d28a35e5b785787a6542d3bb3a81bddc4ccb935
+cursor/p10-182-corpus-expand-ddf1             713b8fdcd9bf96dad98b9791f9cba3d541cfce12
+cursor/p10-183-status-refresh-ddf1            2636fc8875cb267c174caf3eebc54b62ecd9c7dc
+
+make check: ok
+make diff:  match: 100.0% (1754/1754 strict matches, 0 allowlisted, 0 failed)

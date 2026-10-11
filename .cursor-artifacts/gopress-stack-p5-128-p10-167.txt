@@ -1,0 +1,13 @@
+Stack from origin/cursor/p10-165-status-refresh-ddf1 (96a4728b80)
+
+cursor/p5-128-pattern-block-ddf1          cda5c4b5d273b56553214bc737cf5ec148685e9d
+cursor/p4-144-rest-posts-modified-gmt-ddf1 0b98ffb61c002c6943f69a0247b288b797e9e89e
+cursor/p7-129-screen-options-ddf1         f8a5e80788675c05b42d444646c02d67dbd30722
+cursor/p2-124-wp-unslash-ddf1             47ccc8839106226b5d353f3d09aba35f699d7d29
+cursor/p3-122-front-adjacent-posts-ddf1   be385898841c224f5f75a7575cff1ce1a6ca877c
+cursor/p9-29-has-filter-ddf1              0ab276d2f295d73ebb44bd3dd8f0fc30cb1dbe6c
+cursor/p10-166-corpus-expand-ddf1         70d2a629cc4e5a99f59d75344af54fa47b646c30
+cursor/p10-167-status-refresh-ddf1        6f2b2a8470b9306e2121b8a43f2676821f8a2896
+
+make check: ok
+make diff: 100.0% (1394/1394 strict matches, 0 allowlisted, 0 failed)

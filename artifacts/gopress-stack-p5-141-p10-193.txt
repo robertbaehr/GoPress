@@ -1,0 +1,11 @@
+GoPress stack P5.141–P10.193
+cursor/p5-141-spacer-attrs-ddf1 → db041c66ce
+cursor/p4-157-rest-posts-menu-order-ddf1 → 75cd8dc8ee
+cursor/p7-142-admin-email-verify-ddf1 → 4bbc342e33
+cursor/p2-137-wp-check-invalid-utf8-ddf1 → 30c1752458
+cursor/p3-135-front-rsd-link-ddf1 → a7fb276b00
+cursor/p8-44-media-image-downsize-ddf1 → 717b3e50ee
+cursor/p10-192-corpus-expand-ddf1 → fa7fe7d259
+cursor/p10-193-status-refresh-ddf1 → d7f1148ed0
+make diff: 100.0% (2072/2072)
+make check: ok

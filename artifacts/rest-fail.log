@@ -1,0 +1,6 @@
+=== RUN   TestCreateUpdateDeletePost
+    posts_write_test.go:89: content="<p>Updated body</p>\n"
+--- FAIL: TestCreateUpdateDeletePost (0.06s)
+FAIL
+FAIL	github.com/robertbaehr/GoPress/internal/rest	0.067s
+FAIL

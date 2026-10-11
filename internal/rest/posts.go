@@ -330,7 +330,7 @@ func parsePostsOffset(r *http.Request) (offset int, useOffset bool, valid bool) 
 	return n, true, true
 }
 
-func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, ignoreSticky bool, orderby, order, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation, categoryOperator, tagOperator string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, offsetOverride int, useOffset bool, menuOrderFilter *int) ([]Post, error) {
+func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, ignoreSticky bool, orderby, order, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation, categoryOperator, tagOperator string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, offsetOverride int, useOffset bool, menuOrderFilter *int, metaKey, metaValue, metaCompare string) ([]Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -376,6 +376,9 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 		PostFormatIn:       formatIn,
 		PostFormatStandard: formatStandard,
 		MenuOrderFilter:    menuOrderFilter,
+		MetaKey:            metaKey,
+		MetaValue:          metaValue,
+		MetaCompare:        metaCompare,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	// P4.141: ignore_sticky=false → StickyFirst (prepend stickies). When sticky=
@@ -1086,6 +1089,77 @@ func parsePostsModifiedBeforeTyped(r *http.Request) (value string, ok bool, type
 	return parseRESTDateTimeQueryTyped(r, "modified_before")
 }
 
+// parsePostsMetaKeyTyped reads REST ?meta_key= (WP_Query meta_key, P4.166).
+// Schema type string; meta_key[]= / meta_key[N]= → typeErr.
+func parsePostsMetaKeyTyped(r *http.Request) (value string, ok bool, typeErr bool) {
+	return parseRESTStringQueryTyped(r, "meta_key", true)
+}
+
+// parsePostsMetaValueTyped reads REST ?meta_value= (WP_Query meta_value, P4.166).
+func parsePostsMetaValueTyped(r *http.Request) (value string, ok bool, typeErr bool) {
+	return parseRESTStringQueryTyped(r, "meta_value", true)
+}
+
+// parsePostsMetaCompareTyped reads REST ?meta_compare= (WP_Query meta_compare, P4.166).
+// Allowed: =, !=, LIKE, EXISTS, NOT EXISTS (case-insensitive).
+// Returns (value, ok, typeErr, enumErr). Absent → ("", true, false, "").
+func parsePostsMetaCompareTyped(r *http.Request) (value string, ok bool, typeErr bool, enumErr string) {
+	value, ok, typeErr = parseRESTStringQueryTyped(r, "meta_compare", true)
+	if typeErr || !ok || value == "" {
+		return value, ok, typeErr, ""
+	}
+	switch strings.ToUpper(strings.TrimSpace(value)) {
+	case "=", "!=", "LIKE", "EXISTS", "NOT EXISTS":
+		return strings.ToUpper(strings.TrimSpace(value)), true, false, ""
+	default:
+		return "", false, false, "meta_compare is not one of =, !=, LIKE, EXISTS and NOT EXISTS."
+	}
+}
+
+// parsePostsMetaQueryReject returns true when meta_query / meta_query[] is present (P4.166).
+// Full WP_Meta_Query object form is not a REST collection param; reject as invalid type.
+func parsePostsMetaQueryReject(r *http.Request) bool {
+	if r == nil {
+		return false
+	}
+	q := r.URL.Query()
+	if q.Has("meta_query") || q.Has("meta_query[]") {
+		return true
+	}
+	for k := range q {
+		if strings.HasPrefix(k, "meta_query[") {
+			return true
+		}
+	}
+	return false
+}
+
+// parseRESTStringQueryTyped parses string query args with array-form rejection (P4.166).
+// allowEmpty: when true, present empty string is ok (returns "", true, false).
+// Absent → ("", true, false). Array form → typeErr.
+func parseRESTStringQueryTyped(r *http.Request, key string, allowEmpty bool) (value string, ok bool, typeErr bool) {
+	if r == nil || key == "" {
+		return "", true, false
+	}
+	q := r.URL.Query()
+	if _, hasArray := q[key+"[]"]; hasArray {
+		return "", false, true
+	}
+	for k := range q {
+		if strings.HasPrefix(k, key+"[") && strings.HasSuffix(k, "]") && k != key {
+			return "", false, true
+		}
+	}
+	if !q.Has(key) {
+		return "", true, false
+	}
+	raw := q.Get(key)
+	if !allowEmpty && strings.TrimSpace(raw) == "" {
+		return "", false, false
+	}
+	return raw, true, false
+}
+
 // parseRESTDateTimeQueryTyped parses date-time query args with string-type enforcement (P4.165).
 // Schema type is string (format date-time); after[]= / after[0]= → typeErr.
 // Absent → ("", true, false). Present but empty/unparseable → ("", false, false).
@@ -1438,7 +1512,7 @@ func parsePostsTermIDs(r *http.Request, key string) []int64 {
 	return out
 }
 
-func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation, categoryOperator, tagOperator string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, menuOrderFilter *int) (int, error) {
+func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation, categoryOperator, tagOperator string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, menuOrderFilter *int, metaKey, metaValue, metaCompare string) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
@@ -1472,6 +1546,9 @@ func countPosts(c *wp.Context, postType string, stickyFilter *bool, search strin
 		PostFormatIn:       formatIn,
 		PostFormatStandard: formatStandard,
 		MenuOrderFilter:    menuOrderFilter,
+		MetaKey:            metaKey,
+		MetaValue:          metaValue,
+		MetaCompare:        metaCompare,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	return wp.CountPosts(c, args)

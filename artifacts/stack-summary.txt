@@ -1,0 +1,12 @@
+branch→SHA
+cursor/p5-139-avatar-block-attrs-ddf1 → e651fa41ad75afccadc6a3dd89697763afcccc58
+cursor/p4-155-rest-posts-categories-exclude-ddf1 → 8d4358b3b0ac6758b6394930d2fee58f9f01a727
+cursor/p7-140-php-nag-ddf1 → bd78d1e6e7b8d3e56f7961b14091a03745b2ed07
+cursor/p2-135-wp-kses-decode-entities-ddf1 → e7a623bc8f201182c50d9c8ca6e70220ec6d9554
+cursor/p3-133-front-rest-link-header-ddf1 → f07a60f2c504a4d8975b8bfd7812a01e175566fc
+cursor/p6-56-login-body-class-ddf1 → 3a3b3b697110932ce74e0905fceb611ac590342d
+cursor/p10-188-corpus-expand-ddf1 → 7f6a98d8fe8d12c574d128f94a08206f5a8cfff9
+cursor/p10-189-status-refresh-ddf1 → 3db649b9e6eb5ec5888421a516f2a61c840c73f5
+
+make diff: 100.0% (1905/1905 strict matches, 0 allowlisted, 0 failed)
+make check: ok

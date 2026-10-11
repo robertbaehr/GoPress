@@ -1,0 +1,32 @@
+go build -o bin/gopress ./cmd/gopress
+go build -o bin/gopress-tools ./cmd/gopress-tools
+go build -o bin/gopress-lint ./cmd/gopress-lint
+go vet ./...
+staticcheck ./...
+./bin/gopress-lint ./...
+go mod verify
+all modules verified
+./bin/gopress-tools deps-check
+deps-check: ok
+# -p 1: packages share the fixture MySQL DB; parallel boots race on
+# session_tokens / usermeta read-modify-write and flake auth tests.
+go test -p 1 ./...
+?   	github.com/robertbaehr/GoPress/cmd/gopress	[no test files]
+?   	github.com/robertbaehr/GoPress/cmd/gopress-lint	[no test files]
+?   	github.com/robertbaehr/GoPress/cmd/gopress-tools	[no test files]
+ok  	github.com/robertbaehr/GoPress/internal/admin	11.270s
+ok  	github.com/robertbaehr/GoPress/internal/blocks	(cached)
+ok  	github.com/robertbaehr/GoPress/internal/config	(cached)
+ok  	github.com/robertbaehr/GoPress/internal/db	(cached)
+ok  	github.com/robertbaehr/GoPress/internal/htmlapi	(cached)
+ok  	github.com/robertbaehr/GoPress/internal/login	(cached)
+ok  	github.com/robertbaehr/GoPress/internal/plugins	(cached)
+ok  	github.com/robertbaehr/GoPress/internal/rest	11.784s
+ok  	github.com/robertbaehr/GoPress/internal/server	(cached)
+ok  	github.com/robertbaehr/GoPress/internal/theme	(cached)
+ok  	github.com/robertbaehr/GoPress/internal/tools/depscheck	(cached)
+?   	github.com/robertbaehr/GoPress/internal/tools/diffharness	[no test files]
+?   	github.com/robertbaehr/GoPress/internal/tools/porting	[no test files]
+ok  	github.com/robertbaehr/GoPress/internal/wp	6.397s
+ok  	github.com/robertbaehr/GoPress/plugins/hellodolly	(cached)
+ok  	github.com/robertbaehr/GoPress/tests/diff	(cached)

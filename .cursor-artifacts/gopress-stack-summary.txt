@@ -1,0 +1,13 @@
+branch→SHA
+cursor/p5-131-legacy-widget-block-ddf1 b95ea2574fbc (b95ea2574fbcb757be11bddd3703c35876d7860c)
+cursor/p4-147-rest-posts-_fields-ddf1 0d5841768bf3 (0d5841768bf3438ca1693b6cea472aa190c72302)
+cursor/p7-132-dashboard-glance-ddf1 1231e821c821 (1231e821c821c3d9cbf377351b0af9257c8d7496)
+cursor/p2-127-wp-kses-hair-ddf1 67c14dc8576f (67c14dc8576ff940f41f4289980f36bf0cc932b6)
+cursor/p3-125-front-wp-title-ddf1 8aed529882f3 (8aed529882f3b8f9b5828af8333c49f48faaaf09)
+cursor/p9-30-remove-all-filters-ddf1 43252e263583 (43252e26358348bb417b42fe2115c0ef38c7a45f)
+cursor/p10-172-corpus-expand-ddf1 ac4d009cab1f (ac4d009cab1f4fb60cc56d7b2fab5b925880131f)
+cursor/p10-173-status-refresh-ddf1 fcefd1a3b172 (fcefd1a3b17263096ba5feca7a71fa92fac48b85)
+
+make diff: match: 100.0% (1515/1515 strict matches, 0 allowlisted, 0 failed)
+make check: ok
+base tip: origin/cursor/p10-171-status-refresh-ddf1 @ 2c6d50ccd465

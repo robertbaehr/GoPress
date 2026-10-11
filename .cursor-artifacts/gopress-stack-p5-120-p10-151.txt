@@ -1,0 +1,11 @@
+cursor/p5-120-site-logo-block-ddf1 c1daf3a39ce4
+cursor/p4-136-rest-posts-tax-query-ddf1 5573cd554c38
+cursor/p7-121-post-edit-ddf1 0ef55058bdb2
+cursor/p2-116-wp-is-stream-ddf1 4c98ef790e88
+cursor/p3-114-front-body-class-ddf1 82e36a4525ed
+cursor/p8-37-media-scale-ddf1 c2861c891045
+cursor/p10-150-corpus-expand-ddf1 c7b230c28d86
+cursor/p10-151-status-refresh-ddf1 26572ef10417
+
+make diff: match: 100.0% (1130/1130 strict matches, 0 allowlisted, 0 failed)
+make check: ok
