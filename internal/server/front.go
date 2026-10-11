@@ -1176,7 +1176,9 @@ func (f *Front) renderCategoryArchiveBlockTemplate(w http.ResponseWriter, c *wp.
 	b.WriteString("<title>")
 	b.WriteString(frontCategoryDocumentTitle(c, blogname, archiveTitle))
 	b.WriteString("</title>\n")
-	writeFrontHeadLinks(&b, home, blogname, "", "", "", "", "", "", hooksFor(c))
+	// P3.103: feed_links_extra category alternate.
+	extraTitle, extraHref := termArchiveFeedLink(c, blogname, home, "category", term)
+	writeFrontHeadLinks(&b, home, blogname, "", "", "", extraTitle, extraHref, "", hooksFor(c))
 	writeArchiveRelLinks(&b, c, home)
 	b.WriteString(wp.EmojiHeadHTML())
 	b.WriteString("</head>\n<body class=\"")
@@ -1387,7 +1389,9 @@ func (f *Front) renderTagArchiveBlockTemplate(w http.ResponseWriter, c *wp.Conte
 	b.WriteString("<title>")
 	b.WriteString(frontTagDocumentTitle(c, blogname, archiveTitle))
 	b.WriteString("</title>\n")
-	writeFrontHeadLinks(&b, home, blogname, "", "", "", "", "", "", hooksFor(c))
+	// P3.103: feed_links_extra tag alternate.
+	extraTitle, extraHref := termArchiveFeedLink(c, blogname, home, "post_tag", term)
+	writeFrontHeadLinks(&b, home, blogname, "", "", "", extraTitle, extraHref, "", hooksFor(c))
 	writeArchiveRelLinks(&b, c, home)
 	b.WriteString(wp.EmojiHeadHTML())
 	b.WriteString("</head>\n<body class=\"")
@@ -4104,13 +4108,62 @@ func formatRobotsDirectives(robots map[string]any) string {
 // writeFrontHeadLinks emits wp_head discovery links (feeds, api.w.org, oEmbed, canonical).
 // Stylesheet <link> tags are omitted: the HTML normalizer strips them, and TT5 enqueues
 // styles as inline <style> which we also normalize away (P5.19).
-// extraFeedTitle/Href implement feed_links_extra for author/search archives (P3.39).
+// extraFeedTitle/Href implement feed_links_extra for author/search/category/tag (P3.39 / P3.103).
 
 func hooksFor(c *wp.Context) *wp.Hooks {
 	if c == nil {
 		return nil
 	}
 	return c.Hooks
+}
+
+// termArchiveFeedLink builds feed_links_extra title/href for category or tag archives (P3.103).
+func termArchiveFeedLink(c *wp.Context, blogname, home, taxonomy string, term *termInfo) (title, href string) {
+	if term == nil || term.Slug == "" || home == "" {
+		return "", ""
+	}
+	showFilter := "feed_links_extra_show_category_feed"
+	kind := " Category Feed"
+	basePath := "/category/"
+	if taxonomy == "post_tag" || taxonomy == "tag" {
+		showFilter = "feed_links_extra_show_tag_feed"
+		kind = " Tag Feed"
+		basePath = "/tag/"
+	}
+	show := true
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters(showFilter, show); v != nil {
+			switch t := v.(type) {
+			case bool:
+				show = t
+			case int:
+				show = t != 0
+			case string:
+				show = t != "" && t != "0" && !strings.EqualFold(t, "false")
+			}
+		}
+	}
+	if !show {
+		return "", ""
+	}
+	name := term.Name
+	if name == "" {
+		name = term.Slug
+	}
+	title = html.EscapeString(blogname) + " &raquo; " + html.EscapeString(name) + kind
+	href = home + basePath + term.Slug + "/feed/"
+	if c != nil && c.Hooks != nil {
+		filterName := "category_feed_link"
+		if taxonomy == "post_tag" || taxonomy == "tag" {
+			filterName = "tag_feed_link"
+		}
+		if v := c.Hooks.ApplyFilters(filterName, href, "rss2"); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				href = s
+			}
+		}
+	}
+	return title, href
 }
 
 func writeFrontHeadLinks(b *strings.Builder, home, blogname, permalink, restPath, title, extraFeedTitle, extraFeedHref, shortlink string, hooks *wp.Hooks) {
