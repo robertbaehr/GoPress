@@ -7250,7 +7250,106 @@ func handleEditScreenOptions(w http.ResponseWriter, r *http.Request, c *wp.Conte
 	return true
 }
 
-// writeEditScreenOptions emits Screen Options pagination + Columns (P7.77 / P7.80).
+// helpTab is one WP_Screen::add_help_tab entry (P7.130).
+type helpTab struct {
+	ID      string
+	Title   string
+	Content string
+}
+
+// editHelpTabs returns contextual help tabs for edit.php (P7.130).
+func editHelpTabs(postType string) []helpTab {
+	if postType == "page" {
+		return []helpTab{
+			{ID: "overview", Title: "Overview", Content: `<p>Pages are similar to posts in that they have a title, body text, and associated metadata, but they are different in that they are not part of the chronological blog stream, kind of like permanent posts. Pages are not categorized or tagged, but can have a hierarchy. You can nest pages under other pages by making one the &#8220;Parent&#8221; of the other, creating a group of pages.</p>`},
+			{ID: "managing-pages", Title: "Managing Pages", Content: `<p>Managing pages is very similar to managing posts, and the screens can be customized in the same way.</p>` +
+				`<p>You can also perform the same types of actions, including narrowing the list by using the filters, acting on a page using the action links that appear when you hover over a row, or using the Bulk actions menu to edit the metadata for multiple pages at once.</p>`},
+		}
+	}
+	return []helpTab{
+		{ID: "overview", Title: "Overview", Content: `<p>This screen provides access to all of your posts. You can customize the display of this screen to suit your workflow.</p>`},
+		{ID: "screen-content", Title: "Screen Content", Content: `<p>You can customize the display of this screen&#8217;s contents in a number of ways:</p>` +
+			`<ul><li>You can hide/display columns based on your needs and decide how many posts to list per screen using the Screen Options tab.</li>` +
+			`<li>You can filter the list of posts by post status using the text links above the posts list to only show posts with that status. The default view is to show all posts.</li></ul>`},
+		{ID: "action-links", Title: "Available Actions", Content: `<p>Hovering over a row in the posts list will display action links that allow you to manage your post.</p>`},
+		{ID: "bulk-actions", Title: "Bulk actions", Content: `<p>You can also edit or move multiple posts to the Trash at once. Select the posts you want to act on using the checkboxes, then select the action you want to take from the Bulk actions menu and click Apply.</p>`},
+	}
+}
+
+// editHelpSidebar returns the help sidebar HTML for edit.php (P7.130).
+func editHelpSidebar(postType string) string {
+	doc := "https://wordpress.org/documentation/article/posts-screen/"
+	label := "Posts"
+	if postType == "page" {
+		doc = "https://wordpress.org/documentation/article/pages-screen/"
+		label = "Pages"
+	}
+	return `<p><strong>For more information:</strong></p>` +
+		`<p><a href="` + html.EscapeString(doc) + `">Documentation on Managing ` + label + `</a></p>` +
+		`<p><a href="https://wordpress.org/support/forums/">Support forums</a></p>`
+}
+
+// writeEditHelpTabs emits contextual-help-wrap + tabs (WP_Screen::render_screen_meta subset, P7.130).
+func writeEditHelpTabs(b *strings.Builder, postType string) {
+	if b == nil {
+		return
+	}
+	tabs := editHelpTabs(postType)
+	if len(tabs) == 0 {
+		return
+	}
+	sidebar := editHelpSidebar(postType)
+	b.WriteString(`<div id="contextual-help-wrap" class="hidden" tabindex="-1" aria-label="Contextual Help Tab">` + "\n")
+	b.WriteString(`<div id="contextual-help-back"></div>` + "\n")
+	b.WriteString(`<div id="contextual-help-columns">` + "\n")
+	b.WriteString(`<div class="contextual-help-tabs">` + "\n")
+	b.WriteString(`<ul>` + "\n")
+	for i, tab := range tabs {
+		cls := ""
+		if i == 0 {
+			cls = ` class="active"`
+		}
+		b.WriteString(`<li id="tab-link-`)
+		b.WriteString(html.EscapeString(tab.ID))
+		b.WriteString(`"`)
+		b.WriteString(cls)
+		b.WriteString(`>` + "\n")
+		b.WriteString(`<a href="#tab-panel-`)
+		b.WriteString(html.EscapeString(tab.ID))
+		b.WriteString(`" aria-controls="tab-panel-`)
+		b.WriteString(html.EscapeString(tab.ID))
+		b.WriteString(`">`)
+		b.WriteString(html.EscapeString(tab.Title))
+		b.WriteString(`</a>` + "\n")
+		b.WriteString(`</li>` + "\n")
+	}
+	b.WriteString(`</ul>` + "\n")
+	b.WriteString(`</div>` + "\n")
+	if sidebar != "" {
+		b.WriteString(`<div class="contextual-help-sidebar">` + "\n")
+		b.WriteString(sidebar)
+		b.WriteString("\n</div>\n")
+	}
+	b.WriteString(`<div class="contextual-help-tabs-wrap">` + "\n")
+	for i, tab := range tabs {
+		cls := "help-tab-content"
+		if i == 0 {
+			cls = "help-tab-content active"
+		}
+		b.WriteString(`<div id="tab-panel-`)
+		b.WriteString(html.EscapeString(tab.ID))
+		b.WriteString(`" class="`)
+		b.WriteString(cls)
+		b.WriteString(`">` + "\n")
+		b.WriteString(tab.Content)
+		b.WriteString("\n</div>\n")
+	}
+	b.WriteString(`</div>` + "\n")
+	b.WriteString(`</div>` + "\n")
+	b.WriteString(`</div>` + "\n")
+}
+
+// writeEditScreenOptions emits Screen Options pagination + Columns + Help (P7.77 / P7.80 / P7.130).
 func writeEditScreenOptions(b *strings.Builder, c *wp.Context, postType string, perPage int, hidden []string) {
 	if b == nil {
 		return
@@ -7265,6 +7364,7 @@ func writeEditScreenOptions(b *strings.Builder, c *wp.Context, postType string, 
 	}
 	hiddenSet := hiddenColumnSet(hidden)
 	b.WriteString(`<div id="screen-meta" class="metabox-prefs">` + "\n")
+	writeEditHelpTabs(b, postType)
 	b.WriteString(`<div id="screen-options-wrap" class="" tabindex="-1" aria-label="Screen Options Tab">` + "\n")
 	b.WriteString(`<form id="adv-settings" method="post">` + "\n")
 	// P7.80: Columns preferences (WP_Screen::render_list_table_columns_preferences).
@@ -7313,6 +7413,9 @@ func writeEditScreenOptions(b *strings.Builder, c *wp.Context, postType string, 
 	b.WriteString(`<div id="screen-meta-links">` + "\n")
 	b.WriteString(`<div id="screen-options-link-wrap" class="hide-if-no-js screen-meta-toggle">` + "\n")
 	b.WriteString(`<button type="button" id="show-settings-link" class="button button-compact show-settings" aria-controls="screen-options-wrap" aria-expanded="true">Screen Options</button>` + "\n")
+	b.WriteString(`</div>` + "\n")
+	b.WriteString(`<div id="contextual-help-link-wrap" class="hide-if-no-js screen-meta-toggle">` + "\n")
+	b.WriteString(`<button type="button" id="contextual-help-link" class="button button-compact show-settings" aria-controls="contextual-help-wrap" aria-expanded="false">Help</button>` + "\n")
 	b.WriteString(`</div>` + "\n")
 	b.WriteString(`</div>` + "\n")
 }

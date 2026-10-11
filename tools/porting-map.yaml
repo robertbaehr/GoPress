@@ -9180,3 +9180,25 @@ wp-login.php#language-switcher-post
   task: P4.145
   api: n/a
   notes: "P4.145 — invalid/embed/forbidden coverage"
+
+# P7.130: edit.php contextual Help tabs.
+- prefix: wp-admin/edit.php#help_tabs
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.130
+  api: add_help_tab
+  notes: "P7.130 — contextual-help-wrap + Overview/Screen Content/Actions/Bulk tabs; pages Managing Pages; Help button"
+
+- prefix: wp-admin/includes/class-wp-screen.php#render_screen_meta
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.130
+  api: render_screen_meta
+  notes: "P7.130 — help tabs + sidebar + contextual-help-link"
+
+- prefix: wp-admin/edit.php#help_tabs#tests
+  go: internal/admin/help_tabs_p7_130_test.go
+  status: partial
+  task: P7.130
+  api: n/a
+  notes: "P7.130 — posts/pages help chrome coverage"
