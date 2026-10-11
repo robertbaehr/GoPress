@@ -7050,4 +7050,12 @@ wp-login.php#language-switcher-post
   status: partial
   task: P10.128
   api: n/a
-  notes: "P10.128 — types item/context, media-text, search/login/front; grow after stacked deepen"
+  notes: "P10.128 — types/block-types/search/login/front headers; 672/672"
+
+# P10.129: STATUS/PORTING refresh after P5.109–P10.128.
+- prefix: docs/STATUS.md#p10-129
+  go: docs/STATUS.md
+  status: partial
+  task: P10.129
+  api: n/a
+  notes: "P10.129 — summarize media-text, types REST, dashboard, parse_str, feed links, EXIF, 672 corpus"
