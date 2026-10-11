@@ -926,3 +926,40 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.200: ajax toppers after tools-export deepen.
+- id: ajax-p10200-001-heartbeat
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10200-002-heartbeat-export
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=export
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10200-003-heartbeat-tools
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=tools
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10200-004-heartbeat-export-personal
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=export-personal-data
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

@@ -14491,3 +14491,293 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.200: REST toppers after verse/include_children/export/wordcount/preconnect/login_init.
+# Note: use per_page large enough to avoid Link rel=next query-encoding divergence.
+- id: rest-p10200-001-verse
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/verse
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-002-verse-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/verse?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-003-categories-include-children
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?categories[terms]=2&categories[include_children]=true&per_page=100
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-004-categories-include-children-false
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?categories[terms]=2&categories[include_children]=false&per_page=100
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-005-categories-object-terms
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?categories[terms]=4&per_page=100
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-007-categories-2
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?categories=2&per_page=100
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-008-categories-4
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?categories=4&per_page=100
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-009-tags-object-terms
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?tags[terms]=5&per_page=100
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-010-rest-route-verse
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/verse
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-011-rest-route-include-children
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/posts&categories[terms]=2&categories[include_children]=true&per_page=100
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-012-preformatted
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/preformatted
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-013-code
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/code
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-014-posts-pp1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-015-pages-pp1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-016-categories-collection
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/categories?per_page=10
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-017-tags-collection
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/tags?per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-018-taxonomies
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/taxonomies
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-019-types
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-020-statuses
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/statuses
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-021-media-pp1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/media?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-022-comments-pp1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/comments?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-023-search
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?search=hello&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-024-block-types
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-025-patterns
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-patterns/patterns
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-026-pattern-cats
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-patterns/categories
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-027-wp-json
+  role: anon
+  method: GET
+  path: /wp-json/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-028-wp-v2
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-029-users
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/users
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-030-themes
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/themes
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-031-plugins
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/plugins
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-032-settings
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/settings
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10200-034-verse-head
+  role: anon
+  method: HEAD
+  path: /wp-json/wp/v2/block-types/core/verse
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

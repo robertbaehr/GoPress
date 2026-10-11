@@ -11118,3 +11118,11 @@ wp-login.php#language-switcher-post
   task: P6.58
   api: n/a
   notes: "P6.58 — init/form_login before enqueue; lostpassword form action"
+
+# P10.200: expand diff corpus after P5.145–P6.58 stack.
+- prefix: tests/corpus#p10.200
+  go: tests/corpus/
+  status: partial
+  task: P10.200
+  api: n/a
+  notes: "P10.200 — verse/include_children/export/preconnect/login_init toppers; 2325/2325; headers-safe"
