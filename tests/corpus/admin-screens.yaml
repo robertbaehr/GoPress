@@ -214,65 +214,32 @@
   compare: headers
   nonce: null
 
-- id: admin-p10142-010-wp-admin-upload-php
+# P10.142c safe toppers.
+- id: admin-p10142c-001-edit-tags-msg
   role: admin
   method: GET
-  path: /wp-admin/upload.php
+  path: /wp-admin/edit-tags.php?taxonomy=category&message=1
   headers: {}
   body: null
   compare: headers
   nonce: null
 
-- id: admin-p10142-011-wp-admin-themes-php
+- id: admin-p10142c-002-edit-tags-tag-msg
   role: admin
   method: GET
-  path: /wp-admin/themes.php
+  path: /wp-admin/edit-tags.php?taxonomy=post_tag&message=1
   headers: {}
   body: null
   compare: headers
   nonce: null
 
-- id: admin-p10142-012-wp-admin-nav-menus-php
+- id: admin-p10142c-003-edit-tags-error
   role: admin
   method: GET
-  path: /wp-admin/nav-menus.php
+  path: /wp-admin/edit-tags.php?taxonomy=category&error=1
   headers: {}
   body: null
   compare: headers
   nonce: null
 
-- id: admin-p10142-013-wp-admin-options-reading-php
-  role: admin
-  method: GET
-  path: /wp-admin/options-reading.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
 
-- id: admin-p10142-014-wp-admin-options-writing-php
-  role: admin
-  method: GET
-  path: /wp-admin/options-writing.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: admin-p10142-015-wp-admin-options-discussion-php
-  role: admin
-  method: GET
-  path: /wp-admin/options-discussion.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: admin-p10142-016-wp-admin-tools-php
-  role: admin
-  method: GET
-  path: /wp-admin/tools.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null

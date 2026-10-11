@@ -655,3 +655,24 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.142c safe toppers.
+- id: login-p10142c-001-loggedout
+  role: anon
+  method: GET
+  path: /wp-login.php?loggedout=true
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10142c-002-postpass
+  role: anon
+  method: GET
+  path: /wp-login.php?action=postpass
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+
