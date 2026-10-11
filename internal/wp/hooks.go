@@ -444,12 +444,6 @@ func (h *Hooks) DoingAction(tag string) bool {
 	return h.DoingFilter(tag)
 }
 
-func (h *Hooks) begin(tag string) ([]callback, bool) {
-	h.pushCurrent(tag)
-	list := h.callbacksCopy(tag)
-	return list, len(list) > 0
-}
-
 func (h *Hooks) pushCurrent(tag string) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
