@@ -507,3 +507,13 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.124: login headers after stacked deepen.
+- id: login-p10124-redirect-sample-page
+  role: anon
+  method: GET
+  path: /wp-login.php?action=login&redirect_to=%2Fsample-page%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

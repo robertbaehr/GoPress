@@ -152,3 +152,22 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.124: heartbeat screens after media/settings deepen.
+- id: ajax-p10124-heartbeat-themes
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=themes
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10124-heartbeat-users
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=users
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
