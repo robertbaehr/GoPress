@@ -12,6 +12,21 @@
 
 
 
+
+# P6.71: validate_password_reset action.
+- prefix: wp-login.php#validate_password_reset
+  go: internal/login/login.go
+  status: partial
+  task: P6.71
+  api: n/a
+  notes: "P6.71 — DoAction validate_password_reset with formErr + user before reset"
+- prefix: wp-login.php#validate_password_reset#tests
+  go: internal/login/validate_password_reset_p6_71_test.go
+  status: partial
+  task: P6.71
+  api: n/a
+  notes: "P6.71 — fires on GET form + mismatch POST"
+
 # P10.228: STATUS/PORTING refresh after P6.70–P9.46 stack.
 - prefix: docs/STATUS.md#p10-228
   go: docs/STATUS.md
