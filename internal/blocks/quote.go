@@ -8,15 +8,18 @@ import (
 
 var reQuoteTag = regexp.MustCompile(`(?i)wp-block-quote\b`)
 
-// renderQuote renders core/quote (P5.61 / P5.103).
+// renderQuote renders core/quote (P5.61 / P5.103 / P5.146).
 // Prefers saved markup; synthesizes blockquote from value/citation/inner blocks;
 // always applies flow layout classes; honors textAlign, align, className, anchor.
-// Color/typography/spacing land via applySupports on the caller.
+// P5.146: coerce align enum (left|right|wide|full); gradient preset + fontSize polish.
+// Color/typography/spacing land via applySupports on the caller (sanitized attrs).
 func (e *Env) renderQuote(block Block) string {
 	e = e.ensure()
+	attrs := sanitizeQuoteBlockAttrs(block.Attrs)
+	block.Attrs = attrs
 	out := e.renderSaved(block)
 	if strings.TrimSpace(out) != "" && reQuoteTag.MatchString(out) {
-		out = polishQuoteMarkup(out, block.Attrs)
+		out = polishQuoteMarkup(out, attrs)
 	} else {
 		out = synthesizeQuoteBlock(e, block)
 	}
@@ -28,7 +31,29 @@ func (e *Env) renderQuote(block Block) string {
 	return out
 }
 
-// polishQuoteMarkup ensures wp-block-quote + textAlign/align/className/anchor on saved HTML (P5.103).
+// sanitizeQuoteBlockAttrs coerces core/quote supports.align to the block.json enum (P5.146).
+// Allowed: left, right, wide, full. Other align values are dropped before
+// synthesize/polish/supports.
+func sanitizeQuoteBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "left", "right", "wide", "full":
+		// keep
+	default:
+		delete(out, "align")
+	}
+	return out
+}
+
+// polishQuoteMarkup ensures wp-block-quote + textAlign/align/className/anchor/gradient/fontSize
+// on saved HTML (P5.103 / P5.146).
 func polishQuoteMarkup(out string, attrs map[string]any) string {
 	out = addRootClass(out, "wp-block-quote")
 	if ta := strings.TrimSpace(attrString(attrs, "textAlign")); ta != "" {
@@ -44,6 +69,15 @@ func polishQuoteMarkup(out string, attrs map[string]any) string {
 	}
 	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
 		out = ensureRootAttribute(out, "id", anchor)
+	}
+	// P5.146: typography.fontSize preset class (also via applySupports).
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		out = addRootClass(out, "has-"+sanitizeClassToken(fs)+"-font-size")
+	}
+	// P5.146: color.gradients preset → has-{slug}-gradient-background.
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		out = addRootClass(out, "has-background")
+		out = addRootClass(out, "has-"+sanitizeClassToken(g)+"-gradient-background")
 	}
 	return out
 }
@@ -94,6 +128,12 @@ func quoteClassFromAttrs(attrs map[string]any) string {
 	}
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		class += " " + html.EscapeString(cn)
+	}
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		class += " has-" + sanitizeClassToken(fs) + "-font-size"
+	}
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		class += " has-background has-" + sanitizeClassToken(g) + "-gradient-background"
 	}
 	return class
 }
