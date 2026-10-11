@@ -1,4 +1,4 @@
-// the_content filter pipeline (P5.11) — blocks, shortcodes, texturize.
+// the_content filter pipeline (P5.11 / P3.123) — blocks, shortcodes, texturize, autop.
 package wp
 
 import (
@@ -10,7 +10,10 @@ import (
 )
 
 // TheContent runs the display pipeline for post_content (the_content subset):
-// do_blocks → do_shortcode → wptexturize, then the "the_content" filter.
+// do_blocks → do_shortcode → wptexturize → (classic wpautop) → capital_P_dangit,
+// then the "the_content" filter (P5.11 / P3.123).
+// Shortcodes run before texturize so attribute quotes survive (full WP
+// wptexturize skips shortcode interiors; this port keeps the safer order).
 func TheContent(c *Context, raw string) string {
 	out := ApplyContentFilters(c, raw)
 	if c != nil && c.Hooks != nil {
@@ -23,15 +26,129 @@ func TheContent(c *Context, raw string) string {
 	return out
 }
 
-// ApplyContentFilters runs blocks + shortcodes + texturize without the hook.
+// TheContentDisplay is the_content echo path: filter pipeline + ]]> escape (P3.123).
+func TheContentDisplay(c *Context, raw string) string {
+	return strings.ReplaceAll(TheContent(c, raw), "]]>", "]]&gt;")
+}
+
+// GetTheContent is get_the_content subset for <!--more--> teaser split (P3.123).
+// When moreLinkText is non-empty and a more tag exists, appends a simple more link.
+func GetTheContent(raw, moreLinkText string, stripTeaser bool) string {
+	if raw == "" {
+		return ""
+	}
+	const moreTag = "<!--more-->"
+	idx := strings.Index(raw, moreTag)
+	if idx < 0 {
+		// Also accept <!--more Text-->.
+		if i := strings.Index(raw, "<!--more "); i >= 0 {
+			if j := strings.Index(raw[i:], "-->"); j >= 0 {
+				idx = i
+				end := i + j + 3
+				teaser := raw[:idx]
+				if stripTeaser {
+					return strings.TrimSpace(raw[end:])
+				}
+				rest := raw[end:]
+				if moreLinkText == "" {
+					return teaser + rest
+				}
+				return teaser + moreLinkHTML(moreLinkText) + rest
+			}
+		}
+		return raw
+	}
+	teaser := raw[:idx]
+	rest := raw[idx+len(moreTag):]
+	if stripTeaser {
+		return strings.TrimSpace(rest)
+	}
+	if moreLinkText == "" {
+		return teaser + rest
+	}
+	return teaser + moreLinkHTML(moreLinkText) + rest
+}
+
+func moreLinkHTML(text string) string {
+	return `<p><a class="more-link">` + text + `</a></p>`
+}
+
+// ApplyContentFilters runs blocks + shortcodes + texturize + classic wpautop +
+// capital_P_dangit without the the_content hook (P3.123).
 func ApplyContentFilters(c *Context, raw string) string {
 	if raw == "" {
 		return ""
 	}
+	hadBlocks := blocks.HasBlocks(raw)
 	out := blocks.Render(raw)
 	out = DoShortcode(c, out)
 	out = Texturize(out)
+	if !hadBlocks {
+		out = WpAutop(out, true)
+	}
+	out = CapitalPDangit(out, "")
 	return out
+}
+
+// WpAutop is a wpautop subset for classic (non-block) content (P3.123).
+// Wraps plain text in <p>, converts double newlines to paragraphs, and optional
+// single newlines to <br />. Skips when content already has block-level markup.
+func WpAutop(text string, br bool) string {
+	if strings.TrimSpace(text) == "" {
+		return ""
+	}
+	trimmed := strings.TrimSpace(text)
+	if strings.Contains(text, "<p>") || strings.Contains(text, "<p ") ||
+		strings.HasPrefix(trimmed, "<div") || strings.HasPrefix(trimmed, "<ul") ||
+		strings.HasPrefix(trimmed, "<ol") || strings.HasPrefix(trimmed, "<h") ||
+		strings.HasPrefix(trimmed, "<table") || strings.HasPrefix(trimmed, "<blockquote") {
+		if !strings.HasSuffix(text, "\n") {
+			text += "\n"
+		}
+		return text
+	}
+	// Normalize newlines.
+	text = strings.ReplaceAll(text, "\r\n", "\n")
+	text = strings.ReplaceAll(text, "\r", "\n")
+	text = strings.TrimSpace(text) + "\n"
+	parts := strings.Split(text, "\n\n")
+	var b strings.Builder
+	for _, part := range parts {
+		part = strings.TrimSpace(part)
+		if part == "" {
+			continue
+		}
+		if br {
+			part = strings.ReplaceAll(part, "\n", "<br />\n")
+		}
+		b.WriteString("<p>")
+		b.WriteString(part)
+		b.WriteString("</p>\n")
+	}
+	return b.String()
+}
+
+// CapitalPDangit is capital_P_dangit (P3.123).
+// For title-like filters, replaces all "Wordpress"; otherwise uses cautious
+// replacements around spaces/quotes/tags/parens.
+func CapitalPDangit(text, currentFilter string) string {
+	if text == "" || !strings.Contains(text, "Wordpress") {
+		return text
+	}
+	if currentFilter == "the_title" || currentFilter == "wp_title" || currentFilter == "document_title" {
+		return strings.ReplaceAll(text, "Wordpress", "WordPress")
+	}
+	repl := []struct{ old, new string }{
+		{" Wordpress", " WordPress"},
+		{"&#8216;Wordpress", "&#8216;WordPress"},
+		{"&#8220;Wordpress", "&#8220;WordPress"},
+		{">Wordpress", ">WordPress"},
+		{"(Wordpress", "(WordPress"},
+	}
+	for _, r := range repl {
+		text = strings.ReplaceAll(text, r.old, r.new)
+	}
+	return text
 }
 
 // Texturize is a wptexturize subset used by REST and front the_content (P2.25).

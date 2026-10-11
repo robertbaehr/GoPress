@@ -2006,8 +2006,9 @@ func (f *Front) renderSingularShim(w http.ResponseWriter, c *wp.Context, post *s
 			// P3.109: prepend_attachment subset — medium image linked to the file.
 			content = wp.PrependAttachment(c, post.ID, content)
 		}
-		// the_content: blocks → shortcodes → texturize (P5.11).
-		content = wp.TheContent(c, content)
+		// the_content: blocks → texturize → classic wpautop → shortcodes → capital_P (P5.11 / P3.123).
+		content = wp.GetTheContent(content, "", false)
+		content = wp.TheContentDisplay(c, content)
 		safeContent = wp.ProcessInteractivityHTML(wp.KsesPostFiltered(c, content))
 	}
 
