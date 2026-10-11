@@ -368,6 +368,8 @@ func TestThemesActivate(t *testing.T) {
 }
 
 func TestPluginInstallOutOfScope(t *testing.T) {
+	// P7.114: authorized users get a 200 stub that still explains directory
+	// install is out of scope (mirrors theme-install.php).
 	c := bootOrSkip(t)
 	ck := loginCookie(t, c)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
@@ -375,7 +377,7 @@ func TestPluginInstallOutOfScope(t *testing.T) {
 	req.AddCookie(ck)
 	rec := httptest.NewRecorder()
 	srv.ServeHTTP(rec, req)
-	if rec.Code != http.StatusForbidden {
+	if rec.Code != http.StatusOK {
 		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
 	}
 	body := rec.Body.String()
@@ -384,6 +386,9 @@ func TestPluginInstallOutOfScope(t *testing.T) {
 	}
 	if !strings.Contains(body, "plugins.php") {
 		t.Fatalf("expected plugins screen link, got %q", body)
+	}
+	if rec.Header().Get("X-GoPress-Plugin-Install") != "disabled" {
+		t.Fatalf("X-GoPress-Plugin-Install=%q", rec.Header().Get("X-GoPress-Plugin-Install"))
 	}
 }
 
