@@ -9105,3 +9105,25 @@ wp-login.php#language-switcher-post
   task: P3.122
   api: n/a
   notes: "P3.122 — previous/next + where filter + permalink coverage"
+
+# P9.29: has_filter / has_action callback + priority lookup.
+- prefix: wp-includes/plugin.php#has_filter
+  go: internal/wp/hooks.go
+  status: partial
+  task: P9.29
+  api: has_filter
+  notes: "P9.29 — HasFilterFunc/HasActionFunc return callback priority; exact priority check"
+
+- prefix: wp-includes/class-wp-hook.php#has_filter
+  go: internal/wp/hooks.go
+  status: partial
+  task: P9.29
+  api: has_filter
+  notes: "P9.29 — WP_Hook::has_filter priority / bool semantics"
+
+- prefix: wp-includes/plugin.php#has_filter#tests
+  go: internal/wp/hooks_test.go
+  status: partial
+  task: P9.29
+  api: n/a
+  notes: "P9.29 — HasFilterFunc/HasActionFunc coverage"

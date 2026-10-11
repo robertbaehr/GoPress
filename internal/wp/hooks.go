@@ -254,6 +254,26 @@ func (h *Hooks) HasFilter(tag string) bool {
 	return h.has(tag)
 }
 
+// HasFilterFunc reports whether fn is hooked on tag (has_filter with callback).
+// When found, returns its priority and true — matching WP_Hook::has_filter
+// returning the callback priority (P9.29). When priorityExact >= 0, requires
+// that exact priority (WP $priority int check → bool).
+func (h *Hooks) HasFilterFunc(tag string, fn FilterFunc, priorityExact int) (priority int, ok bool) {
+	if h == nil || fn == nil {
+		return 0, false
+	}
+	return h.hasFunc(tag, funcID(fn), priorityExact)
+}
+
+// HasActionFunc reports whether fn is hooked on tag (has_action with callback).
+// See HasFilterFunc (P9.29).
+func (h *Hooks) HasActionFunc(tag string, fn ActionFunc, priorityExact int) (priority int, ok bool) {
+	if h == nil || fn == nil {
+		return 0, false
+	}
+	return h.hasFunc(tag, funcID(fn), priorityExact)
+}
+
 func (h *Hooks) has(tag string) bool {
 	if h == nil {
 		return false
@@ -261,6 +281,30 @@ func (h *Hooks) has(tag string) bool {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	return len(h.byTag[tag]) > 0
+}
+
+// hasFunc looks up a callback by id. priorityExact < 0 means "any priority"
+// (return first match priority); >= 0 requires that priority (bool-style).
+func (h *Hooks) hasFunc(tag string, id uintptr, priorityExact int) (int, bool) {
+	if id == 0 {
+		return 0, false
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	list := h.byTag[tag]
+	for i := range list {
+		if list[i].id != id {
+			continue
+		}
+		if priorityExact >= 0 {
+			if list[i].priority == priorityExact {
+				return list[i].priority, true
+			}
+			continue
+		}
+		return list[i].priority, true
+	}
+	return 0, false
 }
 
 // CurrentFilter returns the innermost tag being run, or "".
