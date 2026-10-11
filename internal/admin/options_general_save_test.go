@@ -44,7 +44,8 @@ func TestOptionsGeneralSaveViaOptionsPHP(t *testing.T) {
 	form.Set("option_page", "general")
 	form.Set("blogname", "GoPress General")
 	form.Set("blogdescription", "Just another GoPress site")
-	form.Set("admin_email", "admin@example.test")
+	// P7.142: same email → no pending change; admin_email stays put.
+	form.Set("new_admin_email", strings.TrimSpace(fmt.Sprint(origEmail)))
 	form.Set("timezone_string", "UTC")
 	form.Set("date_format", "Y-m-d")
 	form.Set("time_format", "H:i")
@@ -73,8 +74,8 @@ func TestOptionsGeneralSaveViaOptionsPHP(t *testing.T) {
 	if got := strings.TrimSpace(fmt.Sprint(c.Options.GetOption("blogdescription", ""))); got != "Just another GoPress site" {
 		t.Fatalf("blogdescription=%v", got)
 	}
-	if got := strings.TrimSpace(fmt.Sprint(c.Options.GetOption("admin_email", ""))); got != "admin@example.test" {
-		t.Fatalf("admin_email=%v", got)
+	if got := strings.TrimSpace(fmt.Sprint(c.Options.GetOption("admin_email", ""))); got != strings.TrimSpace(fmt.Sprint(origEmail)) {
+		t.Fatalf("admin_email=%v want unchanged %v", got, origEmail)
 	}
 	if got := strings.TrimSpace(fmt.Sprint(c.Options.GetOption("date_format", ""))); got != "Y-m-d" {
 		t.Fatalf("date_format=%v", got)
@@ -99,7 +100,7 @@ func TestOptionsGeneralSaveViaOptionsPHP(t *testing.T) {
 		`value="general"`,
 		`name="blogname"`,
 		`name="blogdescription"`,
-		`name="admin_email"`,
+		`name="new_admin_email"`,
 		`name="timezone_string"`,
 		`name="date_format"`,
 		`name="time_format"`,
