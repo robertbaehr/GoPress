@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P4.179: orderby meta_value + meta_type DATETIME.
+- prefix: wp-includes/class-wp-query.php#meta_type_datetime
+  go: internal/wp/query.go
+  status: partial
+  task: P4.179
+  api: n/a
+  notes: "P4.179 — orderby=meta_value + meta_type=DATETIME CAST coverage"
+- prefix: wp-includes/class-wp-query.php#meta_type_datetime#tests
+  go: internal/wp/query_orderby_meta_datetime_p4_179_test.go
+  status: partial
+  task: P4.179
+  api: n/a
+  notes: "P4.179 — chronological ASC for datetime meta values"
+
 # P7.166: privacy-policy-guide.php pagenow chrome.
 - prefix: wp-admin/privacy-policy-guide.php#pagenow
   go: internal/admin/admin.go

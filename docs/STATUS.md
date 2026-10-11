@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.226)
 
+- P4.179 WP_Query `orderby=meta_value` + `meta_type=DATETIME`
 - P7.166 privacy-policy-guide.php pagenow chrome + `admin_body_class`
 - P5.165 `core/calendar` align coerce left|center|right|wide|full
 - P8.58 `GetAttachedMedia` (`get_attached_media`)
