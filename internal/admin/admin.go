@@ -4647,12 +4647,26 @@ func (h *Handler) serveSiteHealth(w http.ResponseWriter, r *http.Request, c *wp.
 		return
 	}
 	blogname := optionString(c, "blogname", "GoPress")
+	// P7.165: pagenow/adminpage chrome, locale body class, admin_body_class.
+	bodyClass := "wp-admin wp-core-ui js site-health site-health-php locale-en-us"
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("admin_body_class", ""); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				bodyClass += " " + strings.TrimSpace(s)
+			}
+		}
+	}
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n")
 	b.WriteString("<title>Site Health - Status &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui js site-health site-health-php\">\n")
+	b.WriteString(" &#8212; WordPress</title>\n")
+	b.WriteString("<script>var ajaxurl = \"/wp-admin/admin-ajax.php\", pagenow = \"site-health\", typenow = \"\", adminpage = \"site-health-php\";</script>\n")
+	b.WriteString("</head>\n")
+	b.WriteString("<body class=\"")
+	b.WriteString(html.EscapeString(bodyClass))
+	b.WriteString("\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap health-check-header\" id=\"site-health\">\n")
 	b.WriteString("<h1>Site Health</h1>\n")
