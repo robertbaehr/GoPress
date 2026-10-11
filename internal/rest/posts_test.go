@@ -129,6 +129,16 @@ func TestPostsOrderbyQueryParam(t *testing.T) {
 			name: "date desc",
 			cmp:  func(a, b rest.Post) bool { return a.Date >= b.Date },
 		},
+		{
+			q:    "orderby=modified&order=desc&per_page=5",
+			name: "modified desc",
+			cmp:  func(a, b rest.Post) bool { return a.Modified >= b.Modified },
+		},
+		{
+			q:    "orderby=author&order=asc&per_page=5",
+			name: "author asc",
+			cmp:  func(a, b rest.Post) bool { return a.Author <= b.Author },
+		},
 	} {
 		req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?"+tc.q, nil)
 		rec := httptest.NewRecorder()
@@ -1051,6 +1061,66 @@ func TestPagesOrderbyMenuOrder(t *testing.T) {
 		if pages[i].ID != id {
 			t.Fatalf("desc[%d]=%d want %d", i, pages[i].ID, id)
 		}
+	}
+}
+
+func TestPostsOrderbyIncludeAndValidation(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?include=13,1&orderby=include&per_page=10", nil)
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("include orderby status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var posts []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &posts); err != nil {
+		t.Fatal(err)
+	}
+	if len(posts) != 2 || posts[0].ID != 13 || posts[1].ID != 1 {
+		t.Fatalf("orderby=include want [13,1], got %+v", posts)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?orderby=include", nil)
+	rec = httptest.NewRecorder()
+	rc = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("missing include status=%d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "rest_orderby_include_missing_include") {
+		t.Fatalf("body=%s", rec.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?orderby=relevance", nil)
+	rec = httptest.NewRecorder()
+	rc = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("relevance without search status=%d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "rest_no_search_term_defined") {
+		t.Fatalf("body=%s", rec.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?slug=fixture-post-01,hello-world&orderby=include_slugs&per_page=10", nil)
+	rec = httptest.NewRecorder()
+	rc = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("include_slugs status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &posts); err != nil {
+		t.Fatal(err)
+	}
+	if len(posts) != 2 || posts[0].Slug != "fixture-post-01" || posts[1].Slug != "hello-world" {
+		got := make([]string, len(posts))
+		for i, p := range posts {
+			got[i] = p.Slug
+		}
+		t.Fatalf("orderby=include_slugs got %v", got)
 	}
 }
 
