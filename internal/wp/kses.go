@@ -355,6 +355,20 @@ func Kses(content string, allowed AllowedHTML, protocols []string) string {
 	return ksesRun(content, allowed, protocols)
 }
 
+// KsesSplit searches for HTML tags and filters them (wp_kses_split, P2.130).
+// Matches WP: tokenizes content and keeps only allowed elements/attrs.
+func KsesSplit(content string, allowed AllowedHTML, protocols []string) string {
+	loadKsesAllowed()
+	if protocols == nil {
+		protocols = append([]string(nil), ksesProtos...)
+	}
+	protoSet := make(map[string]bool, len(protocols))
+	for _, p := range protocols {
+		protoSet[p] = true
+	}
+	return ksesSanitize(content, allowed, protoSet)
+}
+
 // KsesFiltered is wp_kses with the pre_kses hook (P2.108).
 func KsesFiltered(c *Context, content string, allowed AllowedHTML, protocols []string) string {
 	loadKsesAllowed()
@@ -375,14 +389,10 @@ func ksesRun(content string, allowed AllowedHTML, protocols []string) string {
 	if protocols == nil {
 		protocols = ksesProtos
 	}
-	protoSet := make(map[string]bool, len(protocols))
-	for _, p := range protocols {
-		protoSet[p] = true
-	}
-
 	// Strip unwanted C0 controls (HTML-API path); keep TAB/LF/CR.
 	content = stripKsesControls(content)
-	return ksesSanitize(content, allowed, protoSet)
+	// P2.130: wp_kses → wp_kses_split.
+	return KsesSplit(content, allowed, protocols)
 }
 
 func stripKsesControls(s string) string {
