@@ -11230,3 +11230,11 @@ wp-login.php#language-switcher-post
   task: P9.35
   api: n/a
   notes: "P9.35 — shared registry, RemoveAllActions, package helpers"
+
+# P10.202: expand diff corpus after P5.146–P9.35 stack.
+- prefix: tests/corpus#p10.202
+  go: tests/corpus/
+  status: partial
+  task: P10.202
+  api: n/a
+  notes: "P10.202 — quote/ignore_sticky/import/wordcount/prefetch/has_action toppers; headers-safe"

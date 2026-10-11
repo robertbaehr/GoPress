@@ -1758,3 +1758,77 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.202: login toppers after stack deepen.
+
+- id: login-p10202-001-login
+  role: anon
+  method: GET
+  path: /wp-login.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10202-002-lostpassword
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10202-003-checkemail
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=confirm
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10202-004-loggedout
+  role: anon
+  method: GET
+  path: /wp-login.php?loggedout=true
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10202-005-interim
+  role: anon
+  method: GET
+  path: /wp-login.php?interim-login=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10202-006-registration
+  role: anon
+  method: GET
+  path: /wp-login.php?registration=disabled
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10202-007-redirect-admin
+  role: anon
+  method: GET
+  path: /wp-login.php?redirect_to=%2Fwp-admin%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10202-008-login-head
+  role: anon
+  method: HEAD
+  path: /wp-login.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

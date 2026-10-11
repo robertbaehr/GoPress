@@ -1042,3 +1042,95 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.202: admin headers toppers after tools-import deepen.
+
+- id: admin-p10202-001-tools
+  role: admin
+  method: GET
+  path: /wp-admin/tools.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10202-002-import
+  role: admin
+  method: GET
+  path: /wp-admin/import.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10202-003-export
+  role: admin
+  method: GET
+  path: /wp-admin/export.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10202-004-dashboard
+  role: admin
+  method: GET
+  path: /wp-admin/index.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10202-005-edit
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10202-006-plugins
+  role: admin
+  method: GET
+  path: /wp-admin/plugins.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10202-007-themes
+  role: admin
+  method: GET
+  path: /wp-admin/themes.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10202-008-users
+  role: admin
+  method: GET
+  path: /wp-admin/users.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10202-009-options-general
+  role: admin
+  method: GET
+  path: /wp-admin/options-general.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10202-010-site-health
+  role: admin
+  method: GET
+  path: /wp-admin/site-health.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
