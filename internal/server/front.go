@@ -5259,14 +5259,15 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 					link = postPermalink(home, *p)
 				}
 				out = append(out, blocks.LatestCommentItem{
-					ID:        cm.ID,
-					Author:    cm.Author,
-					AuthorURL: cm.AuthorURL,
-					Content:   strings.TrimSpace(stripTagsSimple(cm.Content)),
-					Date:      cm.Date,
-					PostID:    cm.PostID,
-					PostTitle: title,
-					PostURL:   link + "#comment-" + strconv.FormatInt(cm.ID, 10),
+					ID:          cm.ID,
+					Author:      cm.Author,
+					AuthorURL:   cm.AuthorURL,
+					AuthorEmail: cm.AuthorEmail,
+					Content:     strings.TrimSpace(stripTagsSimple(cm.Content)),
+					Date:        cm.Date,
+					PostID:      cm.PostID,
+					PostTitle:   title,
+					PostURL:     link + "#comment-" + strconv.FormatInt(cm.ID, 10),
 				})
 			}
 			return out

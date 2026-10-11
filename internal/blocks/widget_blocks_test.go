@@ -146,13 +146,57 @@ func TestRenderLatestPostsBlock(t *testing.T) {
 	if !strings.Contains(out, `wp-block-latest-posts__post-date`) {
 		t.Fatalf("missing date: %q", out)
 	}
+	if !strings.Contains(out, `has-dates`) {
+		t.Fatalf("missing has-dates: %q", out)
+	}
+}
+
+func TestRenderLatestPostsBlockDeepen(t *testing.T) {
+	var got blocks.QueryLoopArgs
+	env := &blocks.Env{
+		ListPosts: func(q blocks.QueryLoopArgs) []blocks.QueryPost {
+			got = q
+			return []blocks.QueryPost{{
+				ID: 7, Title: "Grid Post", Link: "/grid/", Date: "2024-06-15 12:00:00",
+				Excerpt: "One two three four five six", Content: "<p>Full body</p>",
+			}}
+		},
+		AuthorName: func(postID int64) string {
+			if postID != 7 {
+				t.Fatalf("author post=%d", postID)
+			}
+			return "Admin"
+		},
+	}
+	markup := `<!-- wp:latest-posts {"postsToShow":3,"displayPostDate":true,"displayAuthor":true,"displayPostContent":true,"displayPostContentRadio":"excerpt","excerptLength":3,"order":"asc","orderBy":"title","selectedAuthor":2,"categories":[{"id":1}],"postLayout":"grid","columns":3,"className":"lp-extra","style":{"elements":{"link":{"color":{"text":"red"}}}}} /-->`
+	out := blocks.RenderWith(env, markup)
+	if got.PerPage != 3 || got.Order != "asc" || got.OrderBy != "title" || got.Author != 2 {
+		t.Fatalf("query args=%+v", got)
+	}
+	if len(got.CategoryIn) != 1 || got.CategoryIn[0] != 1 {
+		t.Fatalf("categories=%v", got.CategoryIn)
+	}
+	if got.Sticky != "ignore" {
+		t.Fatalf("sticky=%q", got.Sticky)
+	}
+	for _, want := range []string{
+		`is-grid`, `columns-3`, `has-dates`, `has-author`,
+		`wp-block-latest-posts__post-author`, `by Admin`,
+		`wp-block-latest-posts__post-excerpt`, `One two three`,
+		`lp-extra`, `has-link-color`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
 }
 
 func TestRenderLatestCommentsBlock(t *testing.T) {
 	env := &blocks.Env{
 		ListLatestComments: func(limit int) []blocks.LatestCommentItem {
 			return []blocks.LatestCommentItem{{
-				Author: "Alice", Content: "Nice post", PostTitle: "Hello", PostURL: "/hello/#comment-1", Date: "2024-06-15",
+				Author: "Alice", AuthorEmail: "a@example.com", Content: "Nice post",
+				PostTitle: "Hello", PostURL: "/hello/#comment-1", Date: "2024-06-15",
 			}}
 		},
 	}
@@ -162,6 +206,24 @@ func TestRenderLatestCommentsBlock(t *testing.T) {
 	}
 	if !strings.Contains(out, `Alice`) || !strings.Contains(out, `Hello`) {
 		t.Fatalf("missing meta: %q", out)
+	}
+	if !strings.Contains(out, `has-avatars`) || !strings.Contains(out, `wp-block-latest-comments__comment-avatar`) {
+		t.Fatalf("missing avatar polish: %q", out)
+	}
+}
+
+func TestRenderLatestCommentsBlockNoAvatar(t *testing.T) {
+	env := &blocks.Env{
+		ListLatestComments: func(limit int) []blocks.LatestCommentItem {
+			return []blocks.LatestCommentItem{{Author: "Bob", Content: "Hi", PostTitle: "P", PostURL: "/p/"}}
+		},
+	}
+	out := blocks.RenderWith(env, `<!-- wp:latest-comments {"displayAvatar":false,"displayDate":false,"displayContent":"none","className":"lc-extra"} /-->`)
+	if strings.Contains(out, `has-avatars`) || strings.Contains(out, `comment-avatar`) {
+		t.Fatalf("avatar should be off: %q", out)
+	}
+	if !strings.Contains(out, `lc-extra`) {
+		t.Fatalf("missing className: %q", out)
 	}
 }
 
