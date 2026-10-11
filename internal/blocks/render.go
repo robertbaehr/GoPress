@@ -272,7 +272,9 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderArchives(block)
 		return applySupports(out, sanitizeArchivesBlockAttrs(block.Attrs), name)
 	case "core/latest-posts":
+		// P5.168: coerce align enum before applySupports.
 		out = e.renderLatestPosts(block)
+		return applySupports(out, sanitizeLatestPostsBlockAttrs(block.Attrs), name)
 	case "core/rss":
 		// P5.79: local feed link list; remote fetch blocked.
 		out = e.renderRSS(block)

@@ -25,6 +25,21 @@
 
 
 
+
+# P5.168: core/latest-posts align coerce.
+- prefix: wp-includes/blocks/latest-posts#align
+  go: internal/blocks/widget_blocks.go
+  status: partial
+  task: P5.168
+  api: n/a
+  notes: "P5.168 — latest-posts align left|center|right|wide|full coerce"
+- prefix: wp-includes/blocks/latest-posts#align#tests
+  go: internal/blocks/latest_posts_attrs_p5_168_test.go
+  status: partial
+  task: P5.168
+  api: n/a
+  notes: "P5.168 — drop none/bogus"
+
 # P8.61: image_resize_dimensions.
 - prefix: wp-includes/media.php#image_resize_dimensions
   go: internal/wp/image_resize_dimensions.go
