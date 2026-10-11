@@ -27,6 +27,20 @@
 
 
 
+# P6.73: retrieve_password_title / retrieve_password_message filters.
+- prefix: wp-includes/user.php#retrieve_password_filters
+  go: internal/wp/password_reset.go
+  status: partial
+  task: P6.73
+  api: n/a
+  notes: "P6.73 — retrieve_password_title + retrieve_password_message before Mail"
+- prefix: wp-includes/user.php#retrieve_password_filters#tests
+  go: internal/wp/retrieve_password_filters_p6_73_test.go
+  status: partial
+  task: P6.73
+  api: n/a
+  notes: "P6.73 — custom subject/body via filters"
+
 # P10.230: STATUS/PORTING refresh after P6.72–P9.48 stack.
 - prefix: docs/STATUS.md#p10-230
   go: docs/STATUS.md
