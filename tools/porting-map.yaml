@@ -10218,3 +10218,11 @@ wp-login.php#language-switcher-post
   task: P10.184
   api: n/a
   notes: "P10.184 — search_columns enum / query-no-results / pingback / admin-footer toppers; 1809 cases"
+
+# P10.185: STATUS/PORTING refresh after P5.137–P10.184.
+- prefix: docs/STATUS.md#p10.185
+  go: docs/STATUS.md
+  status: partial
+  task: P10.185
+  api: n/a
+  notes: "P10.185 — summarize query-no-results attrs, search_columns enum, admin_footer_text, KsesNoNull, ClearPingbackHeaders, doing_filter all + 1809 corpus"
