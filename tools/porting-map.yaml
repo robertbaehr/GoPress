@@ -9365,3 +9365,39 @@ wp-login.php#language-switcher-post
   task: P2.126
   api: n/a
   notes: "P2.126 — context coverage + form restore + explicit filter"
+
+# P3.124: front get_the_excerpt / the_excerpt / has_excerpt.
+- prefix: wp-includes/post-template.php#get_the_excerpt
+  go: internal/wp/excerpt.go
+  status: partial
+  task: P3.124
+  api: get_the_excerpt
+  notes: "P3.124 — password message; get_the_excerpt filter; TrimExcerptFromContent"
+
+- prefix: wp-includes/post-template.php#the_excerpt
+  go: internal/wp/excerpt.go
+  status: partial
+  task: P3.124
+  api: the_excerpt
+  notes: "P3.124 — WpAutop + the_excerpt filter"
+
+- prefix: wp-includes/post-template.php#has_excerpt
+  go: internal/wp/excerpt.go
+  status: partial
+  task: P3.124
+  api: has_excerpt
+  notes: "P3.124 — HasExcerpt non-empty post_excerpt"
+
+- prefix: wp-includes/post-template.php#the_excerpt#front
+  go: internal/server/front.go
+  status: partial
+  task: P3.124
+  api: n/a
+  notes: "P3.124 — classic archives/search + query loop Excerpt via GetTheExcerpt"
+
+- prefix: wp-includes/post-template.php#the_excerpt#tests
+  go: internal/wp/excerpt_p3_124_test.go
+  status: partial
+  task: P3.124
+  api: n/a
+  notes: "P3.124 — custom/trim/password/filters/autop"
