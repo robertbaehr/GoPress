@@ -227,6 +227,9 @@ func (c *Context) MapMetaCap(cap string, userID int64, args ...int64) []string {
 		return c.mapEditDeletePost(cap, userID, args...)
 	case "delete_post", "delete_page":
 		return c.mapEditDeletePost(cap, userID, args...)
+	case "edit_comment":
+		// P3.158: map_meta_cap('edit_comment') → edit_post for the comment's post.
+		return c.mapEditComment(userID, args...)
 	case "edit_user":
 		return c.mapEditUser(userID, args...)
 	case "delete_user":
@@ -238,6 +241,22 @@ func (c *Context) MapMetaCap(cap string, userID int64, args ...int64) []string {
 	default:
 		return c.Roles.MapMetaCap(cap, userID, args...)
 	}
+}
+
+// mapEditComment maps edit_comment to edit_post of the parent post (P3.158).
+// Missing comment ID / comment → do_not_allow; orphaned comment → edit_posts.
+func (c *Context) mapEditComment(userID int64, args ...int64) []string {
+	if len(args) < 1 || args[0] <= 0 {
+		return []string{"do_not_allow"}
+	}
+	cm, err := GetCommentByID(c, args[0])
+	if err != nil || cm == nil {
+		return []string{"do_not_allow"}
+	}
+	if cm.PostID <= 0 {
+		return []string{"edit_posts"}
+	}
+	return c.mapEditDeletePost("edit_post", userID, cm.PostID)
 }
 
 // mapEditUser mirrors WP map_meta_cap('edit_user'): self-edit needs no primitive;
