@@ -4820,19 +4820,8 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			return optionString(c, "blogdescription", "")
 		},
 		SiteLogoURL: func() string {
-			id := int64(0)
-			if c != nil && c.Options != nil {
-				switch v := c.Options.GetOption("site_logo", 0).(type) {
-				case int64:
-					id = v
-				case int:
-					id = int64(v)
-				case float64:
-					id = int64(v)
-				case string:
-					id, _ = strconv.ParseInt(strings.TrimSpace(v), 10, 64)
-				}
-			}
+			// P3.111: theme_mod custom_logo, then site_logo option.
+			id := wp.CustomLogoID(c)
 			if id <= 0 {
 				return ""
 			}
