@@ -7419,3 +7419,11 @@ wp-login.php#language-switcher-post
   task: P10.135
   api: n/a
   notes: "P10.135 — summarize separator/spacer, batch, theme-install, kses hooks, shortlink, PDF preview, 734 corpus"
+
+# P10.136: expand diff corpus after P5.113–P6.47 deepen stack.
+- prefix: tests/corpus#p10-136
+  go: tests/corpus
+  status: partial
+  task: P10.136
+  api: n/a
+  notes: "P10.136 — comments orderby/search + image/block-type/search/directory cases; 771 cases"
