@@ -452,6 +452,27 @@ func GetAttachmentCaption(c *Context, postID int64) string {
 	return caption
 }
 
+// GetAttachmentThumbURL returns the thumbnail URL (wp_get_attachment_thumb_url, P8.50).
+// Uses GetAttachmentImageURL(..., "thumbnail", false); empty when missing.
+// Honors the wp_get_attachment_thumb_url filter.
+func GetAttachmentThumbURL(c *Context, postID int64) string {
+	if c == nil || postID <= 0 {
+		return ""
+	}
+	url := strings.TrimSpace(GetAttachmentImageURL(c, postID, "thumbnail", false))
+	if url == "" {
+		return ""
+	}
+	if c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("wp_get_attachment_thumb_url", url, postID); v != nil {
+			if s, ok := v.(string); ok {
+				return s
+			}
+		}
+	}
+	return url
+}
+
 // GetAttachmentURL returns the public URL for an attachment (wp_get_attachment_url, P8.42).
 func GetAttachmentURL(c *Context, attachmentID int64) string {
 	if c == nil || attachmentID <= 0 {
