@@ -278,6 +278,58 @@ func TestPostsStatusQueryParam(t *testing.T) {
 			t.Fatalf("expected publish, got %q", p.Status)
 		}
 	}
+
+	// P4.134: status[]= array form + status=any for editors.
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?status[]=draft&status[]=publish&per_page=20", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	rc = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status[]= status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var mixed []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &mixed); err != nil {
+		t.Fatal(err)
+	}
+	if len(mixed) == 0 {
+		t.Fatal("expected posts for status[]=draft&status[]=publish")
+	}
+	seenDraft, seenPub := false, false
+	for _, p := range mixed {
+		switch p.Status {
+		case "draft":
+			seenDraft = true
+		case "publish":
+			seenPub = true
+		default:
+			t.Fatalf("unexpected status %q", p.Status)
+		}
+	}
+	if !seenDraft || !seenPub {
+		t.Fatalf("want both draft and publish in status[] results (draft=%v publish=%v)", seenDraft, seenPub)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?status=any&per_page=5", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	rc = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=any status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var anyPosts []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &anyPosts); err != nil {
+		t.Fatal(err)
+	}
+	if len(anyPosts) == 0 {
+		t.Fatal("expected posts for status=any")
+	}
+	for _, p := range anyPosts {
+		if p.Status == "trash" || p.Status == "auto-draft" {
+			t.Fatalf("status=any should exclude trash/auto-draft, got %q", p.Status)
+		}
+	}
 }
 
 func TestPostsTagsQueryParam(t *testing.T) {
