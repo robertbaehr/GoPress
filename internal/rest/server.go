@@ -74,12 +74,17 @@ func (s *Server) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	setAPILinkHeader(w, c)
 
 	path := restPathFromRequest(r)
+	// P4.127: GET /wp-json/{namespace} → namespace index (before collection handlers).
+	if ns, ok := matchNamespaceIndex(path); ok {
+		s.serveNamespaceIndex(w, r, c, ns)
+		return
+	}
 	switch {
 	case path == "/" || path == "":
 		s.serveIndex(w, c)
 	case path == "/batch/v1" || path == "/batch/v1/":
 		s.serveBatch(w, r, c)
-	case path == "/oembed/1.0" || path == "/oembed/1.0/" || path == "/oembed/1.0/embed":
+	case path == "/oembed/1.0/embed" || path == "/oembed/1.0/embed/":
 		s.serveOEmbed(w, r, c)
 	case path == "/wp/v2/types":
 		s.serveTypes(w, r, c)

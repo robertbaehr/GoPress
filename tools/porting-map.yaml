@@ -7187,3 +7187,18 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P10.131 — summarize gallery, statuses REST, nav-menus, is_email, robots, theme supports, 693 corpus"
 
+
+# P4.127: REST namespace index GET /wp-json/{namespace}.
+- prefix: wp-includes/rest-api/class-wp-rest-server.php#get_namespace_index
+  go: internal/rest/namespaces.go
+  status: partial
+  task: P4.127
+  api: internal
+  notes: "P4.127 — GET /wp/v2|/oembed/1.0|/wp-site-health/v1|/wp-block-editor/v1|/wp-abilities/v1 namespace index + _links.up"
+
+- prefix: internal/rest/namespaces_test.go
+  go: internal/rest/namespaces_test.go
+  status: done
+  task: P4.127
+  api: n/a
+  notes: "P4.127 — unit coverage for namespace indexes, HEAD, rest_route, unknown"
