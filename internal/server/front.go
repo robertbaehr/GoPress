@@ -1254,16 +1254,8 @@ func (f *Front) renderCategoryArchiveShim(w http.ResponseWriter, c *wp.Context, 
 		b.WriteString("\">")
 		b.WriteString(html.EscapeString(p.Title))
 		b.WriteString("</a>")
-		// P3.84: classic shim shows excerpt/content tease when available.
-		ex := strings.TrimSpace(p.Excerpt)
-		if ex == "" {
-			ex = strings.TrimSpace(stripTagsSimple(p.Content))
-			words := strings.Fields(ex)
-			if len(words) > 40 {
-				ex = strings.Join(words[:40], " ") + "…"
-			}
-		}
-		if ex != "" {
+		// P3.124: classic shim uses get_the_excerpt (password + trim + filters).
+		if ex := strings.TrimSpace(wp.GetTheExcerpt(c, &p)); ex != "" {
 			b.WriteString("<p class=\"entry-summary\">")
 			b.WriteString(html.EscapeString(ex))
 			b.WriteString("</p>")
@@ -1469,16 +1461,8 @@ func (f *Front) renderTagArchiveShim(w http.ResponseWriter, c *wp.Context, title
 		b.WriteString("\">")
 		b.WriteString(html.EscapeString(p.Title))
 		b.WriteString("</a>")
-		// P3.85: classic shim shows excerpt/content tease when available.
-		ex := strings.TrimSpace(p.Excerpt)
-		if ex == "" {
-			ex = strings.TrimSpace(stripTagsSimple(p.Content))
-			words := strings.Fields(ex)
-			if len(words) > 40 {
-				ex = strings.Join(words[:40], " ") + "…"
-			}
-		}
-		if ex != "" {
+		// P3.124: classic shim uses get_the_excerpt (password + trim + filters).
+		if ex := strings.TrimSpace(wp.GetTheExcerpt(c, &p)); ex != "" {
 			b.WriteString("<p class=\"entry-summary\">")
 			b.WriteString(html.EscapeString(ex))
 			b.WriteString("</p>")
@@ -1593,16 +1577,8 @@ func (f *Front) renderAuthorArchiveShim(w http.ResponseWriter, c *wp.Context, ti
 		b.WriteString("\">")
 		b.WriteString(html.EscapeString(p.Title))
 		b.WriteString("</a>")
-		// P3.83: classic shim shows excerpt/content tease when available.
-		ex := strings.TrimSpace(p.Excerpt)
-		if ex == "" {
-			ex = strings.TrimSpace(stripTagsSimple(p.Content))
-			words := strings.Fields(ex)
-			if len(words) > 40 {
-				ex = strings.Join(words[:40], " ") + "…"
-			}
-		}
-		if ex != "" {
+		// P3.124: classic shim uses get_the_excerpt (password + trim + filters).
+		if ex := strings.TrimSpace(wp.GetTheExcerpt(c, &p)); ex != "" {
 			b.WriteString("<p class=\"entry-summary\">")
 			b.WriteString(html.EscapeString(ex))
 			b.WriteString("</p>")
@@ -1647,16 +1623,8 @@ func (f *Front) renderDateArchiveShim(w http.ResponseWriter, c *wp.Context, titl
 		b.WriteString("\">")
 		b.WriteString(html.EscapeString(p.Title))
 		b.WriteString("</a>")
-		// P3.86: classic shim shows excerpt/content tease when available.
-		ex := strings.TrimSpace(p.Excerpt)
-		if ex == "" {
-			ex = strings.TrimSpace(stripTagsSimple(p.Content))
-			words := strings.Fields(ex)
-			if len(words) > 40 {
-				ex = strings.Join(words[:40], " ") + "…"
-			}
-		}
-		if ex != "" {
+		// P3.124: classic shim uses get_the_excerpt (password + trim + filters).
+		if ex := strings.TrimSpace(wp.GetTheExcerpt(c, &p)); ex != "" {
 			b.WriteString("<p class=\"entry-summary\">")
 			b.WriteString(html.EscapeString(ex))
 			b.WriteString("</p>")
@@ -1725,7 +1693,7 @@ func (f *Front) renderSearchShim(w http.ResponseWriter, c *wp.Context, term stri
 		b.WriteString("\">")
 		b.WriteString(html.EscapeString(p.Title))
 		b.WriteString("</a>")
-		if ex := strings.TrimSpace(p.Excerpt); ex != "" {
+		if ex := strings.TrimSpace(wp.GetTheExcerpt(c, &p)); ex != "" {
 			b.WriteString("<p class=\"excerpt\">")
 			b.WriteString(html.EscapeString(ex))
 			b.WriteString("</p>")
@@ -4870,7 +4838,7 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 					ID:               p.ID,
 					Title:            p.Title,
 					Content:          p.Content,
-					Excerpt:          p.Excerpt,
+					Excerpt:          wp.GetTheExcerpt(c, &p),
 					Date:             p.Date,
 					Link:             postPermalink(home, p),
 					FeaturedImageURL: thumbURL,
