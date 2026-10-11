@@ -10210,3 +10210,11 @@ wp-login.php#language-switcher-post
   task: P9.32
   api: n/a
   notes: "P9.32 — all during ApplyFilters/DoAction; all not on stack"
+
+# P10.184: expand diff corpus after P5.137–P9.32.
+- prefix: tests/corpus#p10.184
+  go: tests/corpus
+  status: partial
+  task: P10.184
+  api: n/a
+  notes: "P10.184 — search_columns enum / query-no-results / pingback / admin-footer toppers; 1809 cases"
