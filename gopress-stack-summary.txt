@@ -1,4 +1,4 @@
-GoPress stack tip cursor/p10-224-status-refresh-ddf1 / d87e1c0c7fb706d7d7b486ae88d1b42731636e69
+GoPress stack tip cursor/p10-224-status-refresh-ddf1 / bf7da61f469e1834bf3d376b8e9bfcd654ad72c0
 
 cursor/p6-66-remember-me-help-ddf1 → 56374149d5e8
 cursor/p2-157-send-origin-headers-ddf1 → 806e42668981
@@ -9,7 +9,7 @@ cursor/p7-163-export-chrome-ddf1 → f7a6ff1966bf
 cursor/p4-177-orderby-meta-unsigned-ddf1 → 7ac25d58a986
 cursor/p9-42-add-hook-helpers-ddf1 → 688ca86544a8
 
-cursor/p10-224-status-refresh-ddf1 → d87e1c0c7fb7
+cursor/p10-224-status-refresh-ddf1 → bf7da61f469e
 
 make diff: 100.0% (3162/3162 strict matches, 0 allowlisted, 0 failed) — carried from P10.218
 make check: ok (lint + go test -p 1 ./...)
