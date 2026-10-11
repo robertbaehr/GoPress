@@ -10117,4 +10117,12 @@ wp-login.php#language-switcher-post
   status: partial
   task: P10.182
   api: n/a
-  notes: "P10.182 — author_exclude/featured-image/shortlink/login/admin/ajax headers; grow past 1704"
+  notes: "P10.182 — author_exclude/featured-image/shortlink/login/admin/ajax headers; 1754 cases"
+
+# P10.183: STATUS/PORTING refresh after P5.136–P10.182.
+- prefix: docs/STATUS.md#p10.183
+  go: docs/STATUS.md
+  status: partial
+  task: P10.183
+  api: n/a
+  notes: "P10.183 — summarize featured-image attrs, author_exclude invalid_param, menu collapse, KsesBadProtocol, ShortlinkHeader, login_header + 1754 corpus"
