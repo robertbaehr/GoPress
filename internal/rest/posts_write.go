@@ -353,13 +353,8 @@ func (s *Server) getTypedItem(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	writeJSON(w, http.StatusOK, applyRESTResponseFields(r, payload))
 }
 
-// createPost creates a post (P4.13); type is always "post".
-func (s *Server) createPost(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	s.createTypedPost(w, r, c, "post")
-}
-
 // createTypedPost creates a post-type row; type is forced from the route (P4.150).
-// Request body "type" is ignored (WP schema readonly).
+// Request body "type" is ignored (WP schema readonly). Replaces createPost (P4.13).
 func (s *Server) createTypedPost(w http.ResponseWriter, r *http.Request, c *wp.Context, postType string) {
 	if postType == "" {
 		postType = "post"
