@@ -7104,3 +7104,184 @@
   nonce: null
 
 
+
+# P10.144: expand after P5.117–P8.36 (slug[] / navigation / site-logo).
+- id: rest-p10144-001-posts-slug-array-hello
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?slug[]=hello-world&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10144-002-posts-slug-array-multi
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?slug[]=hello-world&slug[]=fixture-post-01&per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10144-003-posts-slug-array-miss
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?slug[]=no-such&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10144-004-posts-slug-unsanitized-title
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?slug=Hello%20World&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10144-005-pages-slug-array
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?slug[]=sample-page&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10144-006-rest-route-posts-slug-array
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/posts&slug[]=hello-world&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10144-007-posts-slug-fixture
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?slug=fixture-post-01&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10144-008-posts-slug-comma-pair
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?slug=fixture-post-01,hello-world&per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10144-009-nav-block-type-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/navigation?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10144-010-nav-block-type-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/navigation?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10144-011-nav-link-block-type-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/navigation-link?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10144-012-nav-submenu-block-type-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/navigation-submenu?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10144-013-site-logo-block-type-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/site-logo?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10144-014-home-link-block-type-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/home-link?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10144-015-statuses-publish
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/statuses/publish
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10144-016-types-wp-navigation
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types/wp_navigation
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10144-017-taxonomies-post-tag-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/taxonomies/post_tag?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10144-018-pages-slug-miss
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?slug=no-such-page&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10144-019-posts-slug-miss
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?slug=no-such-slug-xyz&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10144-020-rest-route-slug-hello
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/posts&slug=hello-world&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

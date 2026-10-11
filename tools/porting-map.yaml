@@ -2487,14 +2487,14 @@ wp-login.php#language-switcher-post
   status: partial
   task: P4.133
   api: exported
-  notes: "P4.133 — ?slug= / slug[]= → NameIn; sanitize_title (wp_parse_slug_list); P4.89 base"
+  notes: "P4.133 — ?slug= / slug[]= → NameIn (no collection sanitize_title); P4.89 base"
 
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#slug-list
   go: internal/rest/posts.go
   status: partial
   task: P4.133
   api: exported
-  notes: "P4.133 — listPostCollection honors ?slug= / slug[]= with sanitize_title"
+  notes: "P4.133 — listPostCollection honors ?slug= / slug[]="
 
 - prefix: wp-includes/class-wp-query.php#post_name__in
   go: internal/wp/query.go
@@ -2503,19 +2503,12 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P4.89 — NameIn → post_name IN (...)"
 
-- prefix: wp-includes/functions.php#wp_parse_slug_list
-  go: internal/rest/posts.go
-  status: partial
-  task: P4.133
-  api: internal
-  notes: "P4.133 — parsePostsSlug sanitize_title + unique (wp_parse_slug_list subset)"
-
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#slug#tests
   go: internal/rest/posts_test.go
   status: partial
   task: P4.133
   api: n/a
-  notes: "P4.133 — slug[] array + sanitize_title query coverage"
+  notes: "P4.133 — slug[] array + unsanitized collection query coverage"
 
 # P4.88: REST GET /wp/v2/posts?status= filter (editors may query non-publish).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#status
@@ -7818,3 +7811,11 @@ wp-login.php#language-switcher-post
   task: P10.143
   api: n/a
   notes: "P10.143 — summarize heading/paragraph, author_exclude, edit-tags search, trim_words, password form, rp_key hash_equals, 1008 corpus"
+
+# P10.144: expand diff corpus after P5.117–P8.36.
+- prefix: tests/corpus#p10.144
+  go: tests/corpus
+  status: partial
+  task: P10.144
+  api: n/a
+  notes: "P10.144 — slug[] / navigation+site-logo block-types / stack toppers; keep 100% after expand"
