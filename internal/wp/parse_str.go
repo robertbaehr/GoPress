@@ -5,10 +5,12 @@ import (
 	"strings"
 )
 
-// ParseStr parses a query string into a nested map (wp_parse_str / PHP parse_str, P2.35).
+// ParseStr parses a query string into a nested map (wp_parse_str / PHP parse_str, P2.35 / P2.105).
 //
 // Supports PHP-style nested keys: a[b]=1&a[c]=2 → {"a":{"b":"1","c":"2"}}.
 // Repeated scalar keys become []any. Leading "?" is stripped.
+// P2.105: NUL bytes stripped; HTML `&amp;` accepted as separators; PHP key
+// normalization converts '.' and spaces in bare key segments to '_'.
 func ParseStr(input string) map[string]any {
 	return parseStrRaw(input)
 }
@@ -32,18 +34,69 @@ func parseStrRaw(input string) map[string]any {
 	if input == "" {
 		return map[string]any{}
 	}
+	// P2.105: PHP parse_str ignores embedded NUL bytes.
+	input = strings.ReplaceAll(input, "\x00", "")
 	input = strings.TrimPrefix(input, "?")
+	// Accept HTML-entity ampersands commonly passed from markup.
+	input = strings.ReplaceAll(input, "&amp;", "&")
+	input = strings.ReplaceAll(input, "&Amp;", "&")
 	vals, err := url.ParseQuery(input)
 	if err != nil {
 		return map[string]any{}
 	}
 	out := map[string]any{}
 	for key, vs := range vals {
+		key = normalizeParseStrKey(key)
 		for _, v := range vs {
 			assignParseStr(out, key, v)
 		}
 	}
 	return out
+}
+
+// normalizeParseStrKey mirrors PHP parse_str key munging (P2.105):
+// spaces and dots in each segment become underscores. Bracket structure
+// is preserved (a[b.c] → a[b_c]).
+func normalizeParseStrKey(key string) string {
+	if key == "" {
+		return key
+	}
+	if !strings.ContainsAny(key, ". ") {
+		return key
+	}
+	if !strings.Contains(key, "[") {
+		return strings.ReplaceAll(strings.ReplaceAll(key, ".", "_"), " ", "_")
+	}
+	base, rest, ok := strings.Cut(key, "[")
+	if !ok {
+		return strings.ReplaceAll(strings.ReplaceAll(key, ".", "_"), " ", "_")
+	}
+	base = strings.ReplaceAll(strings.ReplaceAll(base, ".", "_"), " ", "_")
+	var b strings.Builder
+	b.WriteString(base)
+	b.WriteByte('[')
+	for i := 0; i < len(rest); {
+		if rest[i] == ']' {
+			b.WriteByte(']')
+			i++
+			continue
+		}
+		if rest[i] == '[' {
+			b.WriteByte('[')
+			i++
+			continue
+		}
+		// Segment until next ']' or '['.
+		j := i
+		for j < len(rest) && rest[j] != ']' && rest[j] != '[' {
+			j++
+		}
+		seg := rest[i:j]
+		seg = strings.ReplaceAll(strings.ReplaceAll(seg, ".", "_"), " ", "_")
+		b.WriteString(seg)
+		i = j
+	}
+	return b.String()
 }
 
 // assignParseStr writes value into dest under a PHP-style key path.

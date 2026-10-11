@@ -71,3 +71,32 @@ func TestParseStrFiltered(t *testing.T) {
 		t.Fatalf("got=%v", got)
 	}
 }
+
+func TestParseStrDotSpaceToUnderscore(t *testing.T) {
+	// P2.105: PHP parse_str converts '.' and spaces in keys to '_'.
+	got := wp.ParseStr("foo.bar=1&a+b=2&x%20y=3")
+	if got["foo_bar"] != "1" {
+		t.Fatalf("foo.bar → foo_bar: %v", got)
+	}
+	if got["a_b"] != "2" {
+		t.Fatalf("a+b → a_b: %v", got)
+	}
+	if got["x_y"] != "3" {
+		t.Fatalf("x%%20y → x_y: %v", got)
+	}
+}
+
+func TestParseStrNestedKeyDot(t *testing.T) {
+	got := wp.ParseStr("user[first.name]=Ada")
+	user, _ := got["user"].(map[string]any)
+	if user["first_name"] != "Ada" {
+		t.Fatalf("nested key normalize: %v", got)
+	}
+}
+
+func TestParseStrAmpEntityAndNUL(t *testing.T) {
+	got := wp.ParseStr("a=1&amp;b=2\x00&c=3")
+	if got["a"] != "1" || got["b"] != "2" || got["c"] != "3" {
+		t.Fatalf("amp/NUL: %v", got)
+	}
+}
