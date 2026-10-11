@@ -18,6 +18,21 @@
 
 
 
+
+# P4.181: orderby meta_value + meta_type TIME.
+- prefix: wp-includes/class-wp-query.php#meta_type_time
+  go: internal/wp/query.go
+  status: partial
+  task: P4.181
+  api: n/a
+  notes: "P4.181 — orderby=meta_value + meta_type=TIME CAST coverage"
+- prefix: wp-includes/class-wp-query.php#meta_type_time#tests
+  go: internal/wp/query_orderby_meta_time_p4_181_test.go
+  status: partial
+  task: P4.181
+  api: n/a
+  notes: "P4.181 — chronological ASC for time-of-day meta values"
+
 # P7.168: theme-install.php pagenow chrome.
 - prefix: wp-admin/theme-install.php#pagenow
   go: internal/admin/theme_install.go
