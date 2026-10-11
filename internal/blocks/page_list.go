@@ -5,7 +5,7 @@ import (
 	"strings"
 )
 
-// pageListNavCtx carries Navigation block context for page-list children (P5.94).
+// pageListNavCtx carries Navigation block context for page-list children (P5.94 / P5.134).
 type pageListNavCtx struct {
 	showSubmenuIcon   bool
 	submenuVisibility string // hover | click | always
@@ -13,6 +13,11 @@ type pageListNavCtx struct {
 	backgroundColor   string
 	customTextColor   string
 	customBackground  string
+	// Overlay colors apply to nested submenu page-list items (P5.134 / page-list-item).
+	overlayTextColor        string
+	overlayBackgroundColor  string
+	customOverlayText       string
+	customOverlayBackground string
 }
 
 // renderPageList renders core/page-list (P5.3 / P5.75 / P5.94).
@@ -47,7 +52,7 @@ func renderPageListItems(pages []NavLink, parentID, currentID, frontPageID int64
 	if parentID != 0 && len(roots) == 0 {
 		return ""
 	}
-	return renderPageListLevel(roots, byParent, currentID, frontPageID, ancestorIDs, inNav, nav)
+	return renderPageListLevel(roots, byParent, currentID, frontPageID, ancestorIDs, inNav, nav, 0)
 }
 
 // pageListAncestorIDs walks Parent links for the current page (P5.94).
@@ -70,7 +75,7 @@ func pageListAncestorIDs(byID map[int64]NavLink, currentID int64) map[int64]bool
 	return out
 }
 
-func renderPageListLevel(level []NavLink, byParent map[int64][]NavLink, currentID, frontPageID int64, ancestors map[int64]bool, inNav bool, nav pageListNavCtx) string {
+func renderPageListLevel(level []NavLink, byParent map[int64][]NavLink, currentID, frontPageID int64, ancestors map[int64]bool, inNav bool, nav pageListNavCtx, depth int) string {
 	var b strings.Builder
 	openOnClick := inNav && nav.submenuVisibility == "click"
 	openOnHover := inNav && nav.submenuVisibility == "hover"
@@ -106,13 +111,26 @@ func renderPageListLevel(level []NavLink, byParent map[int64][]NavLink, currentI
 		if page.ID > 0 && frontPageID > 0 && page.ID == frontPageID {
 			classes = append(classes, "menu-item-home")
 		}
+		// P5.134: overlay colors on nested page-list-item rows (depth > 0).
+		styleAttr := ""
+		if depth > 0 {
+			overlayClasses, overlayStyle := pageListOverlayItemAttrs(nav)
+			classes = append(classes, overlayClasses...)
+			styleAttr = overlayStyle
+		}
 		title := strings.TrimSpace(page.Label)
 		if title == "" {
 			title = "(no title)"
 		}
 		b.WriteString(`<li class="`)
 		b.WriteString(html.EscapeString(strings.Join(classes, " ")))
-		b.WriteString(`">`)
+		b.WriteString(`"`)
+		if styleAttr != "" {
+			b.WriteString(` style="`)
+			b.WriteString(html.EscapeString(styleAttr))
+			b.WriteString(`"`)
+		}
+		b.WriteString(`>`)
 		linkClass := "wp-block-pages-list__item__link"
 		if inNav {
 			linkClass += " wp-block-navigation-item__content"
@@ -161,12 +179,35 @@ func renderPageListLevel(level []NavLink, byParent map[int64][]NavLink, currentI
 			b.WriteString(`<ul class="`)
 			b.WriteString(html.EscapeString(subClass))
 			b.WriteString(`">`)
-			b.WriteString(renderPageListLevel(children, byParent, currentID, frontPageID, ancestors, inNav, nav))
+			b.WriteString(renderPageListLevel(children, byParent, currentID, frontPageID, ancestors, inNav, nav, depth+1))
 			b.WriteString(`</ul>`)
 		}
 		b.WriteString(`</li>`)
 	}
 	return b.String()
+}
+
+// pageListOverlayItemAttrs builds overlay color classes/styles for nested items (P5.134).
+func pageListOverlayItemAttrs(nav pageListNavCtx) (classes []string, style string) {
+	hasText := nav.overlayTextColor != "" || nav.customOverlayText != ""
+	hasBG := nav.overlayBackgroundColor != "" || nav.customOverlayBackground != ""
+	if hasText {
+		classes = append(classes, "has-text-color")
+		if nav.overlayTextColor != "" {
+			classes = append(classes, "has-"+sanitizeClassToken(nav.overlayTextColor)+"-color")
+		} else {
+			style += "color: " + nav.customOverlayText + ";"
+		}
+	}
+	if hasBG {
+		classes = append(classes, "has-background")
+		if nav.overlayBackgroundColor != "" {
+			classes = append(classes, "has-"+sanitizeClassToken(nav.overlayBackgroundColor)+"-background-color")
+		} else {
+			style += "background-color: " + nav.customOverlayBackground + ";"
+		}
+	}
+	return classes, style
 }
 
 func pageListSubmenuSVG() string {
@@ -227,5 +268,10 @@ func pageListNavCtxFromAttrs(attrs map[string]any) pageListNavCtx {
 	ctx.backgroundColor = strings.TrimSpace(attrString(attrs, "backgroundColor"))
 	ctx.customTextColor = styleColorText(attrs)
 	ctx.customBackground = styleColorBackground(attrs)
+	// P5.134: Navigation overlay colors for nested page-list-item rows.
+	ctx.overlayTextColor = strings.TrimSpace(attrString(attrs, "overlayTextColor"))
+	ctx.overlayBackgroundColor = strings.TrimSpace(attrString(attrs, "overlayBackgroundColor"))
+	ctx.customOverlayText = strings.TrimSpace(attrString(attrs, "customOverlayTextColor"))
+	ctx.customOverlayBackground = strings.TrimSpace(attrString(attrs, "customOverlayBackgroundColor"))
 	return ctx
 }

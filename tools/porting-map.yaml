@@ -9801,3 +9801,29 @@ wp-login.php#language-switcher-post
   task: P10.177
   api: n/a
   notes: "P10.177 — summarize social-link services, REST order/menu_order, Quick Draft, KsesOneAttr, rel=home, login_site_html_link + 1595 corpus"
+
+# P5.134: core/page-list-item registration + nested overlay colors.
+- prefix: wp-includes/blocks/page-list-item.php
+  go: internal/rest/block_types.go
+  status: partial
+  task: P5.134
+  api: register_block_core_page_list_item
+  notes: "P5.134 — REST block-types core/page-list-item parent/attrs/supports"
+- prefix: wp-includes/blocks/page-list.php#overlay-item-colors
+  go: internal/blocks/page_list.go
+  status: partial
+  task: P5.134
+  api: block_core_page_list_render_nested_page_list
+  notes: "P5.134 — overlay text/bg classes+styles on nested page-list-item rows"
+- prefix: wp-includes/blocks/page-list-item.php#tests
+  go: internal/blocks/page_list_item_p5_134_test.go
+  status: partial
+  task: P5.134
+  api: n/a
+  notes: "P5.134 — overlay named/custom color unit coverage"
+- prefix: wp-includes/blocks/page-list-item.php#rest-tests
+  go: internal/rest/page_list_item_p5_134_test.go
+  status: partial
+  task: P5.134
+  api: n/a
+  notes: "P5.134 — REST block-types item parent/attrs"
