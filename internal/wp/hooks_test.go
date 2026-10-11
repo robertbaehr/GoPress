@@ -194,13 +194,72 @@ func TestContextHoldsHooks(t *testing.T) {
 func TestHooksNilSafe(t *testing.T) {
 	var h *wp.Hooks
 	h.DoAction("x")
+	h.DoActionRefArray("x", []any{1})
 	if h.ApplyFilters("x", 1) != 1 {
 		t.Fatal("nil ApplyFilters")
+	}
+	if h.ApplyFiltersRefArray("x", []any{1}) != 1 {
+		t.Fatal("nil ApplyFiltersRefArray")
+	}
+	if h.DidAction("x") != 0 {
+		t.Fatal("nil DidAction")
 	}
 	if h.HasAction("x") || h.HasFilter("x") {
 		t.Fatal("nil Has*")
 	}
 	if h.CurrentFilter() != "" {
 		t.Fatal("nil CurrentFilter")
+	}
+}
+
+// P9.27: do_action_ref_array / apply_filters_ref_array / did_action.
+func TestHooksDoActionRefArrayAndDidAction(t *testing.T) {
+	h := wp.NewHooks()
+	if h.DidAction("ref") != 0 {
+		t.Fatal("DidAction before fire")
+	}
+	type bag struct{ N int }
+	b := &bag{}
+	h.AddAction("ref", func(args ...any) {
+		if len(args) > 0 {
+			if p, ok := args[0].(*bag); ok {
+				p.N++
+			}
+		}
+	}, 10, 1)
+	h.DoActionRefArray("ref", []any{b, "extra"})
+	if b.N != 1 {
+		t.Fatalf("ref mutate N=%d want 1", b.N)
+	}
+	if h.DidAction("ref") != 1 {
+		t.Fatalf("DidAction=%d want 1", h.DidAction("ref"))
+	}
+	h.DoAction("ref", b)
+	if h.DidAction("ref") != 2 {
+		t.Fatalf("DidAction after DoAction=%d want 2", h.DidAction("ref"))
+	}
+	// No callbacks still increments did_action (WP behavior).
+	h.DoActionRefArray("never", nil)
+	if h.DidAction("never") != 1 {
+		t.Fatalf("DidAction(never)=%d want 1", h.DidAction("never"))
+	}
+}
+
+func TestHooksApplyFiltersRefArray(t *testing.T) {
+	h := wp.NewHooks()
+	h.AddFilter("ref", func(value any, args ...any) any {
+		s, _ := value.(string)
+		extra := ""
+		if len(args) > 0 {
+			extra, _ = args[0].(string)
+		}
+		return s + "-" + extra
+	}, 10, 2)
+	got := h.ApplyFiltersRefArray("ref", []any{"hello", "world"})
+	if got != "hello-world" {
+		t.Fatalf("ApplyFiltersRefArray=%v", got)
+	}
+	if h.ApplyFiltersRefArray("ref", nil) != nil {
+		t.Fatal("empty args should return nil")
 	}
 }

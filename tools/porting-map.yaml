@@ -547,6 +547,21 @@ wp-login.php#language-switcher-post
   task: P1.4
   api: internal
 
+# P9.27: do_action_ref_array / apply_filters_ref_array / did_action.
+- prefix: wp-includes/plugin.php#do_action_ref_array
+  go: internal/wp/hooks.go
+  status: partial
+  task: P9.27
+  api: exported
+  notes: "P9.27 — DoActionRefArray / ApplyFiltersRefArray / DidAction counts"
+
+- prefix: wp-includes/plugin.php#do_action_ref_array.tests
+  go: internal/wp/hooks_test.go
+  status: partial
+  task: P9.27
+  api: n/a
+  notes: "P9.27 — ref-array mutate + did_action coverage"
+
 - prefix: wp-includes/cache.php
   go: internal/wp/cache.go
   status: done
