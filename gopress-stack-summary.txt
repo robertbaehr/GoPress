@@ -7,7 +7,7 @@ cursor/p2-148-wp-remote-retrieve-body-ddf1 → 1839d5f7a029cccff33e065433670e7ce
 cursor/p3-146-front-oembed-discovery-ddf1 → f7d8abc525083117697e90fa1a1a2afa597e9236
 cursor/p9-37-doing-action-ddf1 → 18dc618e2a615384f4d35ed99d51719967630ca6
 cursor/p10-214-corpus-expand-ddf1 → cd5274a3d93bda3c54d36c3f6a3b345c025a07d9
-cursor/p10-215-status-refresh-ddf1 → TIP
+cursor/p10-215-status-refresh-ddf1 → 8d551d367404d75a37ada735253532bbb53f338d
 
 make diff: 100.0% (3033/3033 strict matches, 0 allowlisted, 0 failed)
 make check: pending
