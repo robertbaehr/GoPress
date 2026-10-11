@@ -223,7 +223,8 @@ func prepareTheme(c *wp.Context, abs string, t theme.ThemeData, active string) T
 		},
 	}
 	if status == "active" {
-		out.ThemeSupports = map[string]any{}
+		// P9.24: expose registered theme_supports for the active theme.
+		out.ThemeSupports = wp.ThemeSupportsForREST(c)
 	}
 	return out
 }
