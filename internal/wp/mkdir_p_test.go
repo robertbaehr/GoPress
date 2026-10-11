@@ -55,3 +55,25 @@ func TestMkdirPEmptyFalse(t *testing.T) {
 		t.Fatal("empty should be false")
 	}
 }
+
+func TestMkdirPFileSchemeAndMode(t *testing.T) {
+	// P2.114: file:// wrapper + inherited mode bits after umask.
+	base := t.TempDir()
+	if err := os.Chmod(base, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	target := filepath.Join(base, "nested", "dir")
+	if !wp.MkdirP("file://" + target) {
+		t.Fatal("file:// MkdirP failed")
+	}
+	fi, err := os.Stat(target)
+	if err != nil || !fi.IsDir() {
+		t.Fatalf("stat: %v", err)
+	}
+	if got := fi.Mode().Perm(); got != 0o755 {
+		t.Fatalf("perms=%o want 755", got)
+	}
+	if wp.MkdirP("http://example.com/path") {
+		t.Fatal("non-file streams should fail")
+	}
+}
