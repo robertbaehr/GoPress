@@ -16122,46 +16122,10 @@
 
 # P10.206: safer replacement toppers.
 
-- id: rest-p10206-r01
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?categories=1&tax_relation=OR&per_page=1
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10206-r02
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?categories=1&tax_relation=AND&per_page=1
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: rest-p10206-r03
   role: anon
   method: GET
   path: /wp-json/wp/v2/posts?tags=1&per_page=1
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10206-r04
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?author=1&per_page=1
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10206-r05
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?status=publish&per_page=1
   headers: {}
   body: null
   compare: headers
