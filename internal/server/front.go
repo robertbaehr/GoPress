@@ -4356,6 +4356,8 @@ func writeFrontHeadLinks(b *strings.Builder, c *wp.Context, home, blogname, perm
 	if home == "" || b == nil {
 		return
 	}
+	// P3.137: wp_resource_hints (priority 2); default empty without remote deps.
+	b.WriteString(wp.ResourceHintsHTML(c))
 	// P3.117: feed_links() show filters + args (separator / titles).
 	showPostsFeed := feedLinksShow(hooks, "feed_links_show_posts_feed", true)
 	showCommentsFeed := feedLinksShow(hooks, "feed_links_show_comments_feed", true)

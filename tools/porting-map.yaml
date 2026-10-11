@@ -10848,3 +10848,23 @@ wp-login.php#language-switcher-post
   task: P2.139
   api: n/a
   notes: "P2.139 — unit + golden formatting vectors (count=40, &hellip;)"
+
+# P3.137: front wp_resource_hints.
+- prefix: wp-includes/general-template.php#wp_resource_hints
+  go: internal/wp/resource_hints.go
+  status: partial
+  task: P3.137
+  api: wp_resource_hints
+  notes: "P3.137 — ResourceHintsHTML + wp_resource_hints filter; dns-prefetch host normalize; default empty hosts"
+- prefix: wp-includes/general-template.php#wp_resource_hints#front
+  go: internal/server/front.go
+  status: partial
+  task: P3.137
+  api: n/a
+  notes: "P3.137 — writeFrontHeadLinks emits ResourceHintsHTML before feed_links"
+- prefix: wp-includes/general-template.php#wp_resource_hints#tests
+  go: internal/wp/resource_hints_p3_137_test.go
+  status: partial
+  task: P3.137
+  api: n/a
+  notes: "P3.137 — empty default + filter dns-prefetch/preconnect coverage"
