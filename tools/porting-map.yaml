@@ -9953,3 +9953,17 @@ wp-login.php#language-switcher-post
   task: P4.151
   api: n/a
   notes: "P4.151 — anon forbidden wrap + editor enum reject"
+
+# P7.136: admin color scheme from user option.
+- prefix: wp-includes/general-template.php#register_admin_color_schemes
+  go: internal/admin/chrome.go
+  status: partial
+  task: P7.136
+  api: admin_color
+  notes: "P7.136 — body admin-color-{scheme} + colors/{scheme}/colors.min.css from get_user_option"
+- prefix: wp-includes/general-template.php#admin_color#tests
+  go: internal/admin/admin_color_p7_136_test.go
+  status: partial
+  task: P7.136
+  api: n/a
+  notes: "P7.136 — editor coffee fixture scheme on dashboard"

@@ -27,14 +27,15 @@ func newAdminChrome(c *wp.Context, title, screen string) adminChrome {
 	if c != nil && c.CurrentUser != nil {
 		login = c.CurrentUser.Login
 	}
-	head := adminHeadStyles(c, screen)
+	scheme := adminColorScheme(c)
+	head := adminHeadStyles(c, screen, scheme)
 	if c != nil {
 		// P9.12: fire admin_head so plugins (Hello Dolly CSS) can inject.
 		head += c.CaptureAdminHead()
 	}
 	return adminChrome{
 		Title:     title,
-		BodyClass: "wp-admin wp-core-ui no-js " + screen + " admin-bar admin-color-modern locale-en-us",
+		BodyClass: "wp-admin wp-core-ui no-js " + screen + " admin-bar admin-color-" + scheme + " locale-en-us",
 		Blogname:  blogname,
 		Screen:    screen,
 		UserLogin: login,
@@ -42,26 +43,49 @@ func newAdminChrome(c *wp.Context, title, screen string) adminChrome {
 	}
 }
 
-// adminHeadStyles emits WP-like load-styles.php + color scheme links (P7.16).
-func adminHeadStyles(c *wp.Context, screen string) string {
+// adminColorSchemes are registered WP admin color keys (register_admin_color_schemes).
+var adminColorSchemes = map[string]bool{
+	"fresh": true, "light": true, "modern": true, "blue": true,
+	"coffee": true, "ectoplasm": true, "midnight": true, "ocean": true, "sunrise": true,
+}
+
+// adminColorScheme returns the current user's admin_color (P7.136), default modern.
+func adminColorScheme(c *wp.Context) string {
+	if c == nil || c.CurrentUser == nil {
+		return "modern"
+	}
+	raw := strings.TrimSpace(wp.GetUserOption(c, "admin_color", c.CurrentUser.ID))
+	raw = strings.ToLower(raw)
+	if raw == "" || !adminColorSchemes[raw] {
+		return "modern"
+	}
+	return raw
+}
+
+// adminHeadStyles emits WP-like load-styles.php + color scheme links (P7.16 / P7.136).
+func adminHeadStyles(c *wp.Context, screen, scheme string) string {
+	if scheme == "" {
+		scheme = "modern"
+	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	if home == "" {
 		home = "http://127.0.0.1:8081"
 	}
 	ver := "7.2-alpha-64260"
-	chunk := "dashicons,admin-bar,common,forms,admin-menu,dashboard,list-tables,edit,revisions,media,misc,admin-color-modern,buttons,l10n"
+	colorHandle := "admin-color-" + scheme
+	chunk := "dashicons,admin-bar,common,forms,admin-menu,dashboard,list-tables,edit,revisions,media,misc," + colorHandle + ",buttons,l10n"
 	switch screen {
 	case "index-php":
-		chunk = "dashicons,admin-bar,site-health,common,forms,admin-menu,dashboard,list-tables,edit,revisions,media,misc,admin-color-modern,buttons,l10n"
+		chunk = "dashicons,admin-bar,site-health,common,forms,admin-menu,dashboard,list-tables,edit,revisions,media,misc," + colorHandle + ",buttons,l10n"
 	case "edit-php":
-		chunk = "dashicons,admin-bar,common,forms,admin-menu,dashboard,list-tables,edit,revisions,media,misc,admin-color-modern,buttons,l10n"
+		chunk = "dashicons,admin-bar,common,forms,admin-menu,dashboard,list-tables,edit,revisions,media,misc," + colorHandle + ",buttons,l10n"
 	case "plugins-php":
-		chunk = "dashicons,admin-bar,common,forms,admin-menu,dashboard,list-tables,edit,revisions,media,misc,admin-color-modern,buttons,l10n,admin-plugins"
+		chunk = "dashicons,admin-bar,common,forms,admin-menu,dashboard,list-tables,edit,revisions,media,misc," + colorHandle + ",buttons,l10n,admin-plugins"
 	case "profile-php":
-		chunk = "dashicons,admin-bar,common,forms,admin-menu,dashboard,list-tables,edit,revisions,media,misc,admin-color-modern,buttons,l10n"
+		chunk = "dashicons,admin-bar,common,forms,admin-menu,dashboard,list-tables,edit,revisions,media,misc," + colorHandle + ",buttons,l10n"
 	}
 	styles := home + "/wp-admin/load-styles.php?c=0&dir=ltr&load%5Bchunk_0%5D=" + chunk + "&ver=" + ver
-	colors := home + "/wp-admin/css/colors/modern/colors.min.css?ver=" + ver
+	colors := home + "/wp-admin/css/colors/" + scheme + "/colors.min.css?ver=" + ver
 	var b strings.Builder
 	b.WriteString("<link rel='stylesheet' href='")
 	b.WriteString(html.EscapeString(styles))
