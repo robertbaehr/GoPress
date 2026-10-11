@@ -113,7 +113,7 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 		h.requireLogin(w, r, c, h.servePluginInstall)
 		return true
 	case "/wp-admin/plugin-editor.php":
-		h.requireLogin(w, r, c, h.servePluginEditorGone)
+		h.requireLogin(w, r, c, h.servePluginEditor)
 		return true
 	case "/wp-admin/update-core.php":
 		// P7.99: Updates stub (core updates remain out of scope).
@@ -5047,22 +5047,6 @@ func (h *Handler) serveCustomizerGone(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString("\">&larr; Back</a></p>\n")
 	b.WriteString("</div>\n</body>\n</html>\n")
 	w.Header().Set("X-GoPress-Customizer", "disabled")
-	writeHTML(w, http.StatusForbidden, b.String())
-}
-
-// servePluginEditorGone rejects plugin-editor.php as out of scope (P7.38).
-// PHP plugin file editing is intentionally unavailable.
-func (h *Handler) servePluginEditorGone(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	blogname := optionString(c, "blogname", "GoPress")
-	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
-	b.WriteString("<title>Edit Plugins &lsaquo; ")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin\">\n")
-	b.WriteString("<h1>Plugin editor unavailable</h1>\n")
-	b.WriteString("<p>Editing PHP plugin files via <code>plugin-editor.php</code> is out of scope for GoPress. Use the <a href=\"/wp-admin/plugins.php\">Plugins</a> screen to manage local plugins.</p>\n")
-	b.WriteString("</body>\n</html>\n")
 	writeHTML(w, http.StatusForbidden, b.String())
 }
 

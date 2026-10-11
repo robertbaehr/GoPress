@@ -5425,10 +5425,18 @@ wp-login.php#language-switcher-post
   notes: "P7.115 — 403 stub chrome + login redirect coverage"
 
 - prefix: wp-admin/plugin-editor.php
-  go: internal/admin/admin.go
+  go: internal/admin/plugin_editor.go
   status: out-of-scope
-  task: P7.38
+  task: P7.116
   api: n/a
+  notes: "P7.116 — Plugin File Editor stub; edit_plugins denied → 403; PHP file editing remains out of scope (P7.38)"
+
+- prefix: wp-admin/plugin-editor.php#tests
+  go: internal/admin/plugin_editor_test.go
+  status: partial
+  task: P7.116
+  api: n/a
+  notes: "P7.116 — 403 stub chrome + login redirect coverage"
 
 - prefix: wp-admin/plugin-install.php
   go: internal/admin/plugin_install.go
