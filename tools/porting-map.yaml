@@ -9763,3 +9763,25 @@ wp-login.php#language-switcher-post
   task: P3.127
   api: n/a
   notes: "P3.127 — exact attr order with aria-current on front"
+
+# P6.54: login_footer backtoblog + login_site_html_link + input focus.
+- prefix: wp-login.php#login_footer
+  go: internal/login/login.go
+  status: partial
+  task: P6.54
+  api: login_footer
+  notes: "P6.54 — writeLoginBackToBlog + writeLoginFooterFocus; login_footer on more screens"
+
+- prefix: wp-login.php#login_site_html_link
+  go: internal/login/login.go
+  status: partial
+  task: P6.54
+  api: login_site_html_link
+  notes: "P6.54 — loginSiteHTMLLink filter on backtoblog anchor"
+
+- prefix: wp-login.php#login_footer#tests
+  go: internal/login/login_footer_p6_54_test.go
+  status: partial
+  task: P6.54
+  api: n/a
+  notes: "P6.54 — filter rewrite + resetpass pass1 focus"
