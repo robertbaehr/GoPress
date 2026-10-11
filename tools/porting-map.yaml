@@ -10593,6 +10593,20 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P7.142 — pending/confirm/dismiss coverage"
 
+# P8.44: image_downsize deepen (thumb alias, PDF sizes.full, intermediate size).
+- prefix: wp-includes/media.php#image_downsize
+  go: internal/wp/media.go
+  status: partial
+  task: P8.44
+  api: image_downsize
+  notes: "P8.44 — thumb→thumbnail; non-image sizes.full preview; ImageGetIntermediateSize; legacy meta.thumb"
+- prefix: wp-includes/media.php#image_downsize#tests
+  go: internal/wp/image_downsize_p8_44_test.go
+  status: partial
+  task: P8.44
+  api: n/a
+  notes: "P8.44 — thumb alias + PDF preview + filter short-circuit"
+
 # P3.135: front rsd_link (EditURI) via site_url xmlrpc.php?rsd rpc.
 - prefix: wp-includes/general-template.php#rsd_link
   go: internal/wp/rsd_link.go
