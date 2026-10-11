@@ -757,6 +757,21 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P8.35 — crop, abs coords + scale, empty-size error"
 
+# P8.36: WP_Image_Editor::rotate (counter-clockwise quarter-turns).
+- prefix: wp-includes/class-wp-image-editor.php#rotate
+  go: internal/wp/image_editor.go
+  status: partial
+  task: P8.36
+  api: exported
+  notes: "P8.36 — ImageEditor.Rotate CCW; 0/90/180/270 after normalize; other angles error"
+
+- prefix: wp-includes/class-wp-image-editor.php#rotate#tests
+  go: internal/wp/image_editor_test.go
+  status: partial
+  task: P8.36
+  api: n/a
+  notes: "P8.36 — 90/180 dims swap + unsupported angle"
+
 # P2.21: wp_check_password covers $wp$ / phpass; application passwords reuse it.
 # P4.110: introspect + AuthenticatedAppPasswordUUID + last_used recording.
 - prefix: wp-includes/class-wp-application-passwords.php
