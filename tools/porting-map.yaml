@@ -7345,3 +7345,11 @@ wp-login.php#language-switcher-post
   task: P10.134
   api: n/a
   notes: "P10.134 — batch/v1 + separator/spacer contexts + block-directory/pattern-directory; 734 cases"
+
+# P10.135: STATUS/PORTING refresh after P5.112–P10.134.
+- prefix: docs/STATUS.md#p10-135
+  go: docs/STATUS.md
+  status: partial
+  task: P10.135
+  api: n/a
+  notes: "P10.135 — summarize separator/spacer, batch, theme-install, kses hooks, shortlink, PDF preview, 734 corpus"
