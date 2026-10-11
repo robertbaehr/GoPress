@@ -1,8 +1,9 @@
-// get_adjacent_post subset (P3.122) — wp-includes/link-template.php.
+// get_adjacent_post subset (P3.122 / P3.145) — wp-includes/link-template.php.
 package wp
 
 import (
 	"fmt"
+	"html"
 	"strconv"
 	"strings"
 	"time"
@@ -135,6 +136,67 @@ func AdjacentPostPermalink(home string, adj *AdjacentPostResult) string {
 	if adj.Name != "" && adj.Date != "" {
 		if t, err := time.Parse("2006-01-02 15:04:05", adj.Date); err == nil {
 			link = fmt.Sprintf("%s/%04d/%02d/%02d/%s/", home, t.Year(), int(t.Month()), t.Day(), adj.Name)
+		}
+	}
+	return link
+}
+
+// GetAdjacentPostRelLinkHTML mirrors get_adjacent_post_rel_link (P3.145).
+// Emits <link rel='prev|next' title='…' href='…' />. Empty when no adjacent post.
+// Applies previous_post_rel_link / next_post_rel_link filters.
+func GetAdjacentPostRelLinkHTML(c *Context, home string, postID int64, previous bool, taxonomy string) string {
+	if postID <= 0 {
+		return ""
+	}
+	// Attachment: previous rel points at parent (WP get_adjacent_post_rel_link).
+	if previous && c != nil {
+		if p, err := GetPostByID(c, postID); err == nil && p != nil && p.Type == "attachment" && p.Parent > 0 {
+			parent, err := GetPostByID(c, p.Parent)
+			if err == nil && parent != nil {
+				return formatAdjacentPostRelLink(c, home, &AdjacentPostResult{
+					ID: parent.ID, Title: parent.Title, Name: parent.Name, Date: parent.Date, Type: parent.Type,
+				}, true)
+			}
+		}
+	}
+	adj, err := GetAdjacentPost(c, postID, previous, taxonomy)
+	if err != nil || adj == nil {
+		return ""
+	}
+	return formatAdjacentPostRelLink(c, home, adj, previous)
+}
+
+// AdjacentPostsRelLinkHTML emits prev+next adjacent rel links (adjacent_posts_rel_link, P3.145).
+func AdjacentPostsRelLinkHTML(c *Context, home string, postID int64, taxonomy string) string {
+	return GetAdjacentPostRelLinkHTML(c, home, postID, true, taxonomy) +
+		GetAdjacentPostRelLinkHTML(c, home, postID, false, taxonomy)
+}
+
+func formatAdjacentPostRelLink(c *Context, home string, adj *AdjacentPostResult, previous bool) string {
+	if adj == nil {
+		return ""
+	}
+	title := strings.TrimSpace(adj.Title)
+	if title == "" {
+		if previous {
+			title = "Previous Post"
+		} else {
+			title = "Next Post"
+		}
+	}
+	href := EscURL(AdjacentPostPermalink(home, adj))
+	rel := "next"
+	filter := "next_post_rel_link"
+	if previous {
+		rel = "prev"
+		filter = "previous_post_rel_link"
+	}
+	link := "<link rel='" + rel + "' title='" + html.EscapeString(title) + "' href='" + html.EscapeString(href) + "' />\n"
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters(filter, link); v != nil {
+			if s, ok := v.(string); ok {
+				return s
+			}
 		}
 	}
 	return link
