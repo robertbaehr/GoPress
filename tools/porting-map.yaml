@@ -6976,3 +6976,18 @@ wp-login.php#language-switcher-post
   task: P4.125
   api: n/a
   notes: "P4.125 — unit coverage for type item, invalid, OPTIONS, HEAD, edit context"
+
+# P7.110: deepen dashboard At a Glance + recently published.
+- prefix: wp-admin/includes/dashboard.php#wp_dashboard_right_now
+  go: internal/admin/dashboard_right_now.go
+  status: partial
+  task: P7.110
+  api: internal
+  notes: "P7.110 — publish links, moderation count, glance_items filter, search-engines notice, recent posts"
+
+- prefix: internal/admin/dashboard_right_now_test.go#p7-110
+  go: internal/admin/dashboard_right_now_test.go
+  status: partial
+  task: P7.110
+  api: n/a
+  notes: "P7.110 — dashboard deepen unit coverage"
