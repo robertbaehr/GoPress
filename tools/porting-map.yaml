@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P2.159: nosniff + admin Referrer-Policy headers.
+- prefix: wp-includes/functions.php#wp_send_nosniff_header
+  go: internal/wp/nosniff_admin_headers.go
+  status: partial
+  task: P2.159
+  api: n/a
+  notes: "P2.159 — SendNosniffHeader + AdminHeaders + admin_referrer_policy filter"
+- prefix: wp-includes/functions.php#wp_send_nosniff_header#tests
+  go: internal/wp/nosniff_admin_headers_p2_159_test.go
+  status: partial
+  task: P2.159
+  api: n/a
+  notes: "P2.159 — nosniff + default/filter/empty Referrer-Policy"
+
 # P6.68: wp_logout action after cookie clear.
 - prefix: wp-includes/pluggable.php#wp_logout
   go: internal/login/login.go
