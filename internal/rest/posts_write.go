@@ -106,8 +106,20 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		writeRESTInvalidBooleanParams(w, badBools)
 		return
 	}
-	orderby := parsePostsOrderby(r)
-	order := parsePostsOrder(r)
+	// P4.149: strict order / orderby enum validation (rest_not_in_enum).
+	orderby, orderbyOK := parsePostsOrderby(r, postType)
+	order, orderOK := parsePostsOrder(r)
+	badOrder := map[string]string{}
+	if !orderOK {
+		badOrder["order"] = "order is not one of asc and desc."
+	}
+	if !orderbyOK {
+		badOrder["orderby"] = postsOrderbyEnumMessage(postType)
+	}
+	if len(badOrder) > 0 {
+		writeRESTInvalidOrderParams(w, badOrder)
+		return
+	}
 	search := parsePostsSearch(r)
 	searchColumns := parsePostsSearchColumns(r)
 	authorIn := parsePostsAuthor(r)
@@ -146,7 +158,9 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		formatIn, formatStandard = parsePostsFormat(r)
 	}
 	// P4.93 / P4.142: parent / parent_exclude for hierarchical types (pages).
+	// P4.149: menu_order equality filter (pages / page-attributes only).
 	var parentIn, parentNotIn []int64
+	var menuOrderFilter *int
 	if postType == "page" {
 		var parentOK, parentExOK bool
 		parentIn, parentOK = parsePostsParent(r)
@@ -161,6 +175,31 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		if len(badParents) > 0 {
 			writeRESTInvalidIntegerArrayParams(w, badParents)
 			return
+		}
+		mo, useMO, moOK := parsePostsMenuOrder(r)
+		if !moOK {
+			w.Header().Set("Allow", "GET")
+			writeJSON(w, http.StatusBadRequest, map[string]any{
+				"code":    "rest_invalid_param",
+				"message": "Invalid parameter(s): menu_order",
+				"data": map[string]any{
+					"status": 400,
+					"params": map[string]any{
+						"menu_order": "menu_order is not of type integer.",
+					},
+					"details": map[string]any{
+						"menu_order": map[string]any{
+							"code":    "rest_invalid_type",
+							"message": "menu_order is not of type integer.",
+							"data":    map[string]any{"param": "menu_order"},
+						},
+					},
+				},
+			})
+			return
+		}
+		if useMO {
+			menuOrderFilter = &mo
 		}
 	}
 	// P4.140: strict date-time validation for after/before/modified_* (rest_invalid_date).
@@ -195,7 +234,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		})
 		return
 	}
-	total, err := countPosts(c, postType, stickyFilter, search, searchColumns, authorIn, authorNotIn, categories, categoriesExclude, tags, tagsExclude, taxRelation, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard)
+	total, err := countPosts(c, postType, stickyFilter, search, searchColumns, authorIn, authorNotIn, categories, categoriesExclude, tags, tagsExclude, taxRelation, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, menuOrderFilter)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",
@@ -204,7 +243,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		})
 		return
 	}
-	posts, err := listPostsPaged(c, postType, perPage, page, edit, stickyFilter, ignoreSticky, orderby, order, search, searchColumns, authorIn, authorNotIn, categories, categoriesExclude, tags, tagsExclude, taxRelation, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, offset, useOffset)
+	posts, err := listPostsPaged(c, postType, perPage, page, edit, stickyFilter, ignoreSticky, orderby, order, search, searchColumns, authorIn, authorNotIn, categories, categoriesExclude, tags, tagsExclude, taxRelation, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, offset, useOffset, menuOrderFilter)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",

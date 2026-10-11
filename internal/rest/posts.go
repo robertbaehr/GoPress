@@ -330,7 +330,7 @@ func parsePostsOffset(r *http.Request) (offset int, useOffset bool, valid bool) 
 	return n, true, true
 }
 
-func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, ignoreSticky bool, orderby, order, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, offsetOverride int, useOffset bool) ([]Post, error) {
+func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, ignoreSticky bool, orderby, order, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, offsetOverride int, useOffset bool, menuOrderFilter *int) ([]Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -373,6 +373,7 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 		ModifiedBefore:     modifiedBefore,
 		PostFormatIn:       formatIn,
 		PostFormatStandard: formatStandard,
+		MenuOrderFilter:    menuOrderFilter,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	// P4.141: ignore_sticky=false → StickyFirst (prepend stickies). When sticky=
@@ -393,29 +394,96 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 	return out, nil
 }
 
-// parsePostsOrderby accepts REST orderby aliases (P4.83 / P4.94 / P4.131).
-// Default date. Unknown values fall back to date (collection enum rejects others
-// at the schema layer when OPTIONS is consulted).
-func parsePostsOrderby(r *http.Request) string {
+// parsePostsOrderby accepts REST orderby aliases (P4.83 / P4.94 / P4.131 / P4.149).
+// Absent → ("date", true). Present but not in the post-type enum → ("", false).
+func parsePostsOrderby(r *http.Request, postType string) (string, bool) {
+	if r == nil || !r.URL.Query().Has("orderby") {
+		return "date", true
+	}
 	v := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("orderby")))
 	switch v {
-	case "title", "date", "id", "slug", "menu_order",
-		"author", "modified", "parent", "include", "include_slugs", "relevance":
-		return v
-	case "":
-		return "date"
+	case "author", "date", "id", "include", "modified", "parent",
+		"relevance", "slug", "include_slugs", "title":
+		return v, true
+	case "menu_order":
+		// P4.94 / P4.149: menu_order enum only for pages (page-attributes).
+		if postType == "page" {
+			return v, true
+		}
+		return "", false
 	default:
-		return "date"
+		return "", false
 	}
 }
 
-// parsePostsOrder accepts REST order=asc|desc (P4.83). Default desc.
-func parsePostsOrder(r *http.Request) string {
-	v := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("order")))
-	if v == "asc" {
-		return "asc"
+// parsePostsOrder accepts REST order=asc|desc (P4.83 / P4.149).
+// Absent → ("desc", true). Present but not asc|desc → ("", false).
+func parsePostsOrder(r *http.Request) (string, bool) {
+	if r == nil || !r.URL.Query().Has("order") {
+		return "desc", true
 	}
-	return "desc"
+	v := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("order")))
+	if v == "asc" || v == "desc" {
+		return v, true
+	}
+	return "", false
+}
+
+// parsePostsMenuOrder reads REST ?menu_order= for pages (P4.149).
+// Absent → use=false, ok=true. Present non-integer → ok=false.
+func parsePostsMenuOrder(r *http.Request) (val int, use bool, ok bool) {
+	if r == nil {
+		return 0, false, true
+	}
+	q := r.URL.Query()
+	if !q.Has("menu_order") {
+		return 0, false, true
+	}
+	v := strings.TrimSpace(q.Get("menu_order"))
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return 0, false, false
+	}
+	return n, true, true
+}
+
+// writeRESTInvalidOrderParams emits rest_invalid_param for bad order/orderby (P4.149).
+// params maps query key → human message (rest_not_in_enum).
+func writeRESTInvalidOrderParams(w http.ResponseWriter, params map[string]string) {
+	keys := make([]string, 0, len(params))
+	for k := range params {
+		keys = append(keys, k)
+	}
+	sort.Strings(keys)
+	details := map[string]any{}
+	paramMsgs := map[string]any{}
+	for _, k := range keys {
+		msg := params[k]
+		paramMsgs[k] = msg
+		details[k] = map[string]any{
+			"code":    "rest_not_in_enum",
+			"message": msg,
+			"data":    nil,
+		}
+	}
+	w.Header().Set("Allow", "GET")
+	writeJSON(w, http.StatusBadRequest, map[string]any{
+		"code":    "rest_invalid_param",
+		"message": "Invalid parameter(s): " + strings.Join(keys, ", "),
+		"data": map[string]any{
+			"status":  400,
+			"params":  paramMsgs,
+			"details": details,
+		},
+	})
+}
+
+// postsOrderbyEnumMessage is the WP rest_not_in_enum message for orderby (P4.149).
+func postsOrderbyEnumMessage(postType string) string {
+	if postType == "page" {
+		return "orderby is not one of author, date, id, include, modified, parent, relevance, slug, include_slugs, title, and menu_order."
+	}
+	return "orderby is not one of author, date, id, include, modified, parent, relevance, slug, include_slugs, and title."
 }
 
 // parsePostsSearch reads REST ?search= (maps to WP_Query s / QueryArgs.Search, P4.84).
@@ -960,7 +1028,7 @@ func parsePostsTermIDs(r *http.Request, key string) []int64 {
 	return out
 }
 
-func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool) (int, error) {
+func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, menuOrderFilter *int) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
@@ -991,6 +1059,7 @@ func countPosts(c *wp.Context, postType string, stickyFilter *bool, search strin
 		ModifiedBefore:     modifiedBefore,
 		PostFormatIn:       formatIn,
 		PostFormatStandard: formatStandard,
+		MenuOrderFilter:    menuOrderFilter,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
 	return wp.CountPosts(c, args)

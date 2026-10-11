@@ -9686,3 +9686,23 @@ wp-login.php#language-switcher-post
   task: P5.133
   api: n/a
   notes: "P5.133 — unit coverage for extra services + share label"
+
+# P4.149: REST posts/pages order/orderby enum + pages menu_order filter.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#order-p4.149
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.149
+  api: internal
+  notes: "P4.149 — order/orderby rest_not_in_enum; pages ?menu_order= filter + integer type"
+- prefix: wp-includes/class-wp-query.php#menu_order-p4.149
+  go: internal/wp/query.go
+  status: partial
+  task: P4.149
+  api: internal
+  notes: "P4.149 — QueryArgs.MenuOrderFilter equality"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#order-p4.149#tests
+  go: internal/rest/posts_order_p4_149_test.go
+  status: partial
+  task: P4.149
+  api: n/a
+  notes: "P4.149 — unit coverage for order/orderby 400 + menu_order filter"
