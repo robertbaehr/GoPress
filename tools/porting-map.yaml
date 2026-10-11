@@ -9039,3 +9039,25 @@ wp-login.php#language-switcher-post
   task: P4.144
   api: n/a
   notes: "P4.144 — zero GMT shim + both-zero empty coverage"
+
+# P7.129: edit-comments.php Screen Options edit_comments_per_page.
+- prefix: wp-admin/edit-comments.php#screen_options
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.129
+  api: edit_comments_per_page
+  notes: "P7.129 — Screen Options pagination + EditCommentsPerPage / comments_per_page filters"
+
+- prefix: wp-includes/user.php#edit_comments_per_page
+  go: internal/wp/user_option.go
+  status: partial
+  task: P7.129
+  api: edit_comments_per_page
+  notes: "P7.129 — EditCommentsPerPage user option + filters"
+
+- prefix: wp-admin/edit-comments.php#screen_options#tests
+  go: internal/admin/screen_options_p7_129_test.go
+  status: partial
+  task: P7.129
+  api: n/a
+  notes: "P7.129 — screen options UI + save coverage"
