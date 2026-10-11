@@ -1,4 +1,4 @@
-GoPress stack tip cursor/p10-218-status-refresh-ddf1 / 8cb975f78b46c84dcf0764328a6555be0d730a9a
+GoPress stack tip cursor/p10-218-status-refresh-ddf1 / 44bf0971867b4d420d180cbb6c427027e69e8830
 
 cursor/p5-154-image-attrs-ddf1 → f68ace7083f2
 cursor/p4-170-rest-posts-meta_type-ddf1 → 3f5aa8401863
@@ -14,7 +14,7 @@ cursor/p2-151-remote-head-ddf1 → 2db2dbd1dce4
 cursor/p3-149-author-feed-link-ddf1 → a00549a6a5a5
 cursor/p7-157-plugin-editor-ddf1 → be5f5dc397b6
 
-cursor/p10-218-status-refresh-ddf1 → 8cb975f78b46
+cursor/p10-218-status-refresh-ddf1 → 44bf0971867b
 
 make diff: 100.0% (3162/3162 strict matches, 0 allowlisted, 0 failed)
 make check: ok (lint + go test -p 1 ./...)
