@@ -474,3 +474,50 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.178: corpus expand after page-list-item/type/welcome/kses-split/feed-extra/current-filter stack.
+
+- id: ajax-p10178-001-heartbeat-index
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=index
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10178-002-heartbeat-edit
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10178-003-heartbeat-dashboard
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=dashboard
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10178-004-heartbeat-plugins
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=plugins
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10178-005-heartbeat-themes
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=themes
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

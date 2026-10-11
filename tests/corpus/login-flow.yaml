@@ -1137,3 +1137,32 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.178: corpus expand after page-list-item/type/welcome/kses-split/feed-extra/current-filter stack.
+
+- id: login-p10178-001-loggedout-redirect-home
+  role: anon
+  method: GET
+  path: /wp-login.php?loggedout=true&redirect_to=%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10178-002-redirect-admin
+  role: anon
+  method: GET
+  path: /wp-login.php?redirect_to=%2Fwp-admin%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10178-003-lostpassword-lang
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword&wp_lang=en_US
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

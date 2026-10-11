@@ -9909,3 +9909,11 @@ wp-login.php#language-switcher-post
   task: P9.31
   api: n/a
   notes: "P9.31 — nested DoAction/ApplyFiltersRefArray stack + nil-safe"
+
+# P10.178: expand diff corpus after P5.134–P9.31.
+- prefix: tests/corpus#p10.178
+  go: tests/corpus
+  status: partial
+  task: P10.178
+  api: n/a
+  notes: "P10.178 — page-list-item/type json + nav embed + front/login/ajax/admin toppers; 1649 cases"
