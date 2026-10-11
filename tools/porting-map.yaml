@@ -3970,13 +3970,20 @@ wp-login.php#language-switcher-post
   api: internal
   notes: "P5.56 — synthesize flex buttons wrapper from inner button blocks"
 
-# P5.58: polish core/group (synthesize, tagName, layout classes).
+# P5.58 / P5.107: polish core/group (synthesize, tagName, layout, className/anchor).
 - prefix: wp-includes/blocks/group
   go: internal/blocks/group.go
   status: partial
-  task: P5.58
+  task: P5.107
   api: internal
-  notes: "P5.58 — synthesize group wrapper; tagName; default/flex/constrained layout classes"
+  notes: "P5.107 — synthesize group wrapper; tagName; layout; className/anchor/align polish on saved+synth"
+
+- prefix: wp-includes/blocks/group#tests
+  go: internal/blocks/group_test.go
+  status: partial
+  task: P5.107
+  api: n/a
+  notes: "P5.107 — unit coverage for className/anchor polish"
 
 # P5.59: polish core/spacer (synthesize height/width, unitless → px, className).
 - prefix: wp-includes/blocks/spacer

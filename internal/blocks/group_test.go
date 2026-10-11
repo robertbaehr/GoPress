@@ -66,3 +66,32 @@ func TestRenderGroupDefaultFlowOnSynthesize(t *testing.T) {
 		t.Fatalf("expected default flow layout: %q", out)
 	}
 }
+
+func TestRenderGroupClassNameAnchorPolish(t *testing.T) {
+	// P5.107: className/anchor on synthesize + saved markup.
+	src := `<!-- wp:group {"anchor":"hero","className":"my-group","align":"wide","layout":{"type":"constrained"}} -->
+<!-- wp:paragraph --><p>G</p><!-- /wp:paragraph -->
+<!-- /wp:group -->`
+	out := blocks.Render(src)
+	for _, want := range []string{
+		`id="hero"`,
+		"my-group",
+		"alignwide",
+		"is-layout-constrained",
+		"has-global-padding",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+
+	saved := `<!-- wp:group {"anchor":"saved-g","className":"extra"} -->
+<div class="wp-block-group"><!-- wp:paragraph -->
+<p>Saved</p>
+<!-- /wp:paragraph --></div>
+<!-- /wp:group -->`
+	out = blocks.Render(saved)
+	if !strings.Contains(out, `id="saved-g"`) || !strings.Contains(out, "extra") {
+		t.Fatalf("saved polish: %q", out)
+	}
+}

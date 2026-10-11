@@ -1,36 +1,28 @@
 package blocks
 
 import (
+	"html"
 	"regexp"
 	"strings"
 )
 
 var reGroupTag = regexp.MustCompile(`(?i)wp-block-group\b`)
 
-// renderGroup renders core/group (P5.58).
+// renderGroup renders core/group (P5.58 / P5.107).
 // Prefers saved markup; synthesizes a layout wrapper from inner blocks when
-// missing; honors tagName; applies layout/align polish only on synthesized output
-// so saved markup class order stays WP-parity for the front HTML corpus.
+// missing; honors tagName; applies layout/align/className/anchor polish on
+// saved and synthesized output.
+// Color/typography/spacing/border land via applySupports on the caller.
 func (e *Env) renderGroup(block Block) string {
 	e = e.ensure()
 	out := e.renderSaved(block)
-	synthesized := false
 	if strings.TrimSpace(out) == "" || !reGroupTag.MatchString(out) {
 		out = synthesizeGroupBlock(e, block)
-		synthesized = true
 	}
 	if strings.TrimSpace(out) == "" {
 		return ""
 	}
-	if synthesized {
-		return applyGroupAttrs(out, block.Attrs)
-	}
-	// Saved markup: only retag when tagName requests a non-div element.
-	tag := groupTagName(block.Attrs)
-	if tag != "div" {
-		out = retagRootElement(out, tag)
-	}
-	return out
+	return applyGroupAttrs(out, block.Attrs)
 }
 
 func synthesizeGroupBlock(e *Env, block Block) string {
@@ -43,6 +35,11 @@ func synthesizeGroupBlock(e *Env, block Block) string {
 	var b strings.Builder
 	b.WriteString("<")
 	b.WriteString(tag)
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		b.WriteString(` id="`)
+		b.WriteString(html.EscapeString(anchor))
+		b.WriteString(`"`)
+	}
 	b.WriteString(` class="`)
 	b.WriteString(class)
 	b.WriteString(`">`)
@@ -85,6 +82,9 @@ func groupClassFromAttrs(attrs map[string]any) string {
 	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
 		class += " align" + sanitizeClassToken(align)
 	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		class += " " + html.EscapeString(cn)
+	}
 	return class
 }
 
@@ -108,12 +108,30 @@ func applyGroupAttrs(htmlFragment string, attrs map[string]any) string {
 		if slug == "constrained" && !strings.Contains(out, "has-global-padding") {
 			out = addRootClass(out, "has-global-padding")
 		}
+		if info.Orientation != "" {
+			out = addRootClass(out, "is-"+sanitizeClassToken(info.Orientation))
+		}
+		if info.Justify != "" {
+			out = addRootClass(out, "is-content-justification-"+sanitizeClassToken(info.Justify))
+		}
+		if info.FlexWrap == "nowrap" {
+			out = addRootClass(out, "is-nowrap")
+		}
 	}
 	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
 		cls := "align" + sanitizeClassToken(align)
 		if !strings.Contains(out, cls) {
 			out = addRootClass(out, cls)
 		}
+	}
+	// P5.107: className / anchor polish on saved + synthesized markup.
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		for _, part := range strings.Fields(cn) {
+			out = addRootClass(out, part)
+		}
+	}
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
+		out = ensureRootAttribute(out, "id", anchor)
 	}
 	// Retag root element when tagName differs from saved markup.
 	tag := groupTagName(attrs)
