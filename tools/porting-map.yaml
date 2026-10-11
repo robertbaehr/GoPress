@@ -7,6 +7,14 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P10.226: STATUS/PORTING refresh after P6.68–P9.44 stack.
+- prefix: docs/STATUS.md#p10-226
+  go: docs/STATUS.md
+  status: partial
+  task: P10.226
+  api: n/a
+  notes: "P10.226 — summarize wp_logout, nosniff/admin headers, preview link, attachment_url_to_postid, loginout align, site-health chrome, DECIMAL orderby, notice capture helpers"
+
 # P9.44: notice capture Context helpers.
 - prefix: wp-includes/plugin.php#notice_capture
   go: internal/wp/has_action.go
