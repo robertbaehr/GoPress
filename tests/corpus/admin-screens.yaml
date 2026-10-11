@@ -680,3 +680,95 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.186: admin update-nag / footer chrome after stack.
+
+- id: admin-p10186-001-dashboard
+  role: admin
+  method: GET
+  path: /wp-admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10186-002-edit
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10186-003-plugins
+  role: admin
+  method: GET
+  path: /wp-admin/plugins.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10186-004-users
+  role: admin
+  method: GET
+  path: /wp-admin/users.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10186-005-options-general
+  role: admin
+  method: GET
+  path: /wp-admin/options-general.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10186-006-update-core
+  role: admin
+  method: GET
+  path: /wp-admin/update-core.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10186-007-media
+  role: admin
+  method: GET
+  path: /wp-admin/upload.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10186-008-comments
+  role: admin
+  method: GET
+  path: /wp-admin/edit-comments.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10186-009-themes
+  role: admin
+  method: GET
+  path: /wp-admin/themes.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10186-010-tools
+  role: admin
+  method: GET
+  path: /wp-admin/tools.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

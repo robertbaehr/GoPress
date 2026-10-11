@@ -1307,3 +1307,50 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.186: login headers after stack.
+
+- id: login-p10186-001-login
+  role: anon
+  method: GET
+  path: /wp-login.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10186-002-lostpassword
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10186-003-rp
+  role: anon
+  method: GET
+  path: /wp-login.php?action=rp
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10186-004-checkemail
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=confirm
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10186-005-interim
+  role: anon
+  method: GET
+  path: /wp-login.php?interim-login=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

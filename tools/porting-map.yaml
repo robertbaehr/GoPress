@@ -10310,3 +10310,11 @@ wp-login.php#language-switcher-post
   task: P8.43
   api: n/a
   notes: "P8.43 — filter/fetchpriority/decoding/dims coverage"
+
+# P10.186: expand diff corpus after P5.138–P8.43.
+- prefix: tests/corpus#p10.186
+  go: tests/corpus
+  status: partial
+  task: P10.186
+  api: n/a
+  notes: "P10.186 — format enum / comment-template / update-nag / x-pingback / attachment-image toppers"
