@@ -9827,3 +9827,17 @@ wp-login.php#language-switcher-post
   task: P5.134
   api: n/a
   notes: "P5.134 — REST block-types item parent/attrs"
+
+# P4.150: REST posts/pages type forced from route; page create.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#type
+  go: internal/rest/posts_write.go
+  status: partial
+  task: P4.150
+  api: WP_REST_Posts_Controller
+  notes: "P4.150 — createTypedPost; type readonly from route; pages POST create"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#type#tests
+  go: internal/rest/posts_type_p4_150_test.go
+  status: partial
+  task: P4.150
+  api: n/a
+  notes: "P4.150 — type field on list + create ignores body type"
