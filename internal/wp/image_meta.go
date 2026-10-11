@@ -186,6 +186,10 @@ func generateAttachmentMetadata(c *Context, attachmentID int64, file, context st
 		}
 	} else {
 		out["file"] = rel
+		// P8.34: application/pdf → Ghostscript preview JPEG + fallback sizes.
+		if isPDFFile(file) {
+			attachPDFPreviewSizes(c, out, file)
+		}
 	}
 	// P8.26: always capture filesize when the file exists (WP 6.0+).
 	if fs := Filesize(file); fs > 0 {
