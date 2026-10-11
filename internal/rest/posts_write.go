@@ -148,9 +148,10 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		writeRESTInvalidIntegerArrayParams(w, []string{"author_exclude"})
 		return
 	}
-	categories := parsePostsCategories(r)
+	categories := parsePostsCategories(r, c)
 	// P4.155: strict categories_exclude integer-array validation (rest_invalid_type).
-	categoriesExclude, catExOK := parsePostsCategoriesExclude(r)
+	// P4.161: object form include_children expands hierarchical descendants.
+	categoriesExclude, catExOK := parsePostsCategoriesExclude(r, c)
 	if !catExOK {
 		writeRESTInvalidIntegerArrayParams(w, []string{"categories_exclude"})
 		return
