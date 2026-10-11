@@ -294,3 +294,69 @@ func TestBlockRendererRequiresAuth(t *testing.T) {
 		t.Fatalf("code=%v want block_cannot_read", errBody["code"])
 	}
 }
+
+func TestBlockTypesOptionsHeadContext(t *testing.T) {
+	// P4.124: OPTIONS schema (public), HEAD empty body, context validation, supports/keywords.
+	c := bootOrSkip(t)
+	t.Cleanup(func() { _ = c.DB.Close() })
+
+	req := httptest.NewRequest(http.MethodOptions, "/wp-json/wp/v2/block-types", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("OPTIONS status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), `"title":"block-type"`) {
+		t.Fatalf("OPTIONS schema: %s", rec.Body.String())
+	}
+	if got := rec.Header().Get("Allow"); !strings.Contains(got, "GET") || !strings.Contains(got, "OPTIONS") {
+		t.Fatalf("Allow=%q", got)
+	}
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+
+	req = httptest.NewRequest(http.MethodHead, "/wp-json/wp/v2/block-types/core/cover", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("HEAD status=%d", rec.Code)
+	}
+	if rec.Body.Len() != 0 {
+		t.Fatalf("HEAD body should be empty: %q", rec.Body.String())
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/block-types/core/cover?context=bogus", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("bogus context status=%d", rec.Code)
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/block-types/core/cover?context=edit", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("edit context status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var bt rest.BlockType
+	if err := json.Unmarshal(rec.Body.Bytes(), &bt); err != nil {
+		t.Fatal(err)
+	}
+	if len(bt.Keywords) == 0 || bt.Supports == nil {
+		t.Fatalf("expected keywords/supports on cover: %#v", bt)
+	}
+}

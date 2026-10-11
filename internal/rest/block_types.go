@@ -13,14 +13,16 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// BlockType is a minimal wp/v2 block-types object (P4.14 stub).
+// BlockType is a minimal wp/v2 block-types object (P4.14 / P4.124).
 type BlockType struct {
 	Name        string              `json:"name"`
 	Title       string              `json:"title"`
 	Category    string              `json:"category"`
 	Description string              `json:"description,omitempty"`
+	Keywords    []string            `json:"keywords,omitempty"`
 	APIVersion  int                 `json:"api_version"`
 	Attributes  map[string]any      `json:"attributes"`
+	Supports    map[string]any      `json:"supports,omitempty"`
 	IsDynamic   bool                `json:"is_dynamic"`
 	Variations  []wp.BlockVariation `json:"variations,omitempty"`
 }
@@ -114,9 +116,19 @@ func knownBlockTypes() []BlockType {
 		{"core/post-navigation-link", "Post Navigation Link", "theme", "Displays the next or previous post link that is adjacent to the current post.", true},
 		{"core/terms-query", "Terms Query", "theme", "An advanced block that allows displaying taxonomy terms based on specified parameters.", true},
 	}
+	// P4.124: subset of keywords/supports from block.json for key types.
+	extra := map[string]struct {
+		keywords []string
+		supports map[string]any
+	}{
+		"core/paragraph": {keywords: []string{"text"}, supports: map[string]any{"anchor": true, "className": true}},
+		"core/group":     {keywords: []string{"container", "wrapper", "row", "section"}, supports: map[string]any{"anchor": true, "align": true, "html": false}},
+		"core/cover":     {keywords: []string{"image", "video", "overlay"}, supports: map[string]any{"anchor": true, "align": true, "html": false, "shadow": true}},
+		"core/columns":   {keywords: []string{"layout"}, supports: map[string]any{"anchor": true, "align": []any{"wide", "full"}, "html": false}},
+	}
 	out := make([]BlockType, 0, len(defs))
 	for _, d := range defs {
-		out = append(out, BlockType{
+		bt := BlockType{
 			Name:        d.name,
 			Title:       d.title,
 			Category:    d.category,
@@ -124,7 +136,12 @@ func knownBlockTypes() []BlockType {
 			APIVersion:  3,
 			Attributes:  map[string]any{},
 			IsDynamic:   d.dynamic,
-		})
+		}
+		if x, ok := extra[d.name]; ok {
+			bt.Keywords = x.keywords
+			bt.Supports = x.supports
+		}
+		out = append(out, bt)
 	}
 	return out
 }
@@ -139,7 +156,13 @@ func (s *Server) serveBlockTypesNamespace(w http.ResponseWriter, r *http.Request
 }
 
 func (s *Server) serveBlockTypesFiltered(w http.ResponseWriter, r *http.Request, c *wp.Context, ns string) {
-	if r.Method != http.MethodGet {
+	// P4.124: OPTIONS returns public item schema (like WP_REST_Block_Types_Controller).
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Allow", "GET, HEAD, OPTIONS")
+		writeJSON(w, http.StatusOK, blockTypeItemSchema())
+		return
+	}
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
@@ -159,24 +182,38 @@ func (s *Server) serveBlockTypesFiltered(w http.ResponseWriter, r *http.Request,
 		})
 		return
 	}
-	all := attachBlockVariations(c, knownBlockTypes())
-	if ns == "" {
-		writeJSON(w, http.StatusOK, all)
+	if !validateBlockTypeContext(w, r) {
 		return
 	}
-	filtered := make([]BlockType, 0, len(all))
-	prefix := ns + "/"
-	for _, bt := range all {
-		if strings.HasPrefix(bt.Name, prefix) {
-			filtered = append(filtered, bt)
+	all := attachBlockVariations(c, knownBlockTypes())
+	var out any = all
+	if ns != "" {
+		filtered := make([]BlockType, 0, len(all))
+		prefix := ns + "/"
+		for _, bt := range all {
+			if strings.HasPrefix(bt.Name, prefix) {
+				filtered = append(filtered, bt)
+			}
 		}
+		out = filtered
 	}
-	writeJSON(w, http.StatusOK, filtered)
+	w.Header().Set("Allow", "GET, HEAD, OPTIONS")
+	if r.Method == http.MethodHead {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
-// serveBlockTypeItem serves GET /wp/v2/block-types/{namespace}/{name} (P4.61).
+// serveBlockTypeItem serves GET /wp/v2/block-types/{namespace}/{name} (P4.61 / P4.124).
 func (s *Server) serveBlockTypeItem(w http.ResponseWriter, r *http.Request, c *wp.Context, namespace, name string) {
-	if r.Method != http.MethodGet {
+	// P4.124: OPTIONS on item returns the same public schema.
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Allow", "GET, HEAD, OPTIONS")
+		writeJSON(w, http.StatusOK, blockTypeItemSchema())
+		return
+	}
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
@@ -196,6 +233,9 @@ func (s *Server) serveBlockTypeItem(w http.ResponseWriter, r *http.Request, c *w
 		})
 		return
 	}
+	if !validateBlockTypeContext(w, r) {
+		return
+	}
 	namespace = strings.TrimSpace(namespace)
 	name = strings.TrimSpace(name)
 	if namespace == "" || name == "" || strings.Contains(namespace, "..") || strings.Contains(name, "..") {
@@ -210,6 +250,11 @@ func (s *Server) serveBlockTypeItem(w http.ResponseWriter, r *http.Request, c *w
 	all := attachBlockVariations(c, knownBlockTypes())
 	for _, bt := range all {
 		if bt.Name == full {
+			w.Header().Set("Allow", "GET, HEAD, OPTIONS")
+			if r.Method == http.MethodHead {
+				w.WriteHeader(http.StatusOK)
+				return
+			}
 			writeJSON(w, http.StatusOK, bt)
 			return
 		}
@@ -219,6 +264,56 @@ func (s *Server) serveBlockTypeItem(w http.ResponseWriter, r *http.Request, c *w
 		"message": "Invalid block type.",
 		"data":    map[string]any{"status": 404},
 	})
+}
+
+func blockTypeContext(r *http.Request) string {
+	if r == nil {
+		return "view"
+	}
+	ctx := r.URL.Query().Get("context")
+	if ctx == "" {
+		return "view"
+	}
+	return ctx
+}
+
+func validateBlockTypeContext(w http.ResponseWriter, r *http.Request) bool {
+	switch blockTypeContext(r) {
+	case "view", "edit", "embed":
+		return true
+	default:
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_invalid_param",
+			"message": "Invalid parameter(s): context",
+			"data": map[string]any{
+				"status": 400,
+				"params": map[string]any{"context": "context is not one of view, edit, embed."},
+			},
+		})
+		return false
+	}
+}
+
+// blockTypeItemSchema is the public REST schema for /wp/v2/block-types (P4.124).
+func blockTypeItemSchema() map[string]any {
+	ctxAll := []string{"view", "edit", "embed"}
+	return map[string]any{
+		"$schema": "http://json-schema.org/draft-04/schema#",
+		"title":   "block-type",
+		"type":    "object",
+		"properties": map[string]any{
+			"api_version": map[string]any{"description": "Version of block API.", "type": "integer", "context": ctxAll},
+			"name":        map[string]any{"description": "Block name.", "type": "string", "context": ctxAll},
+			"title":       map[string]any{"description": "Human-readable block type title.", "type": "string", "context": ctxAll},
+			"category":    map[string]any{"description": "Block category.", "type": []any{"string", "null"}, "context": ctxAll},
+			"description": map[string]any{"description": "Description of block type.", "type": "string", "context": ctxAll},
+			"keywords":    map[string]any{"description": "Block keywords.", "type": "array", "context": ctxAll},
+			"attributes":  map[string]any{"description": "Block attributes.", "type": "object", "context": ctxAll},
+			"supports":    map[string]any{"description": "Block supports.", "type": "object", "context": ctxAll},
+			"is_dynamic":  map[string]any{"description": "Is the block dynamically rendered?", "type": "boolean", "context": ctxAll},
+			"variations":  map[string]any{"description": "Block variations.", "type": "array", "context": ctxAll},
+		},
+	}
 }
 
 // attachBlockVariations copies registered variations onto block-type payloads (P5.37).

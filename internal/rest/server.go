@@ -883,8 +883,11 @@ func builtInIndexRoutes() map[string]RouteIndex {
 		"/wp/v2/blocks/(?P<id>[\\d]+)": itemRoute("wp/v2"),
 		"/wp/v2/block-types": {
 			Namespace: "wp/v2",
-			Methods:   []string{"GET"},
-			Endpoints: []RouteEndpoint{{Methods: []string{"GET"}}},
+			Methods:   []string{"GET", "HEAD", "OPTIONS"},
+			Endpoints: []RouteEndpoint{
+				{Methods: []string{"GET", "HEAD"}},
+				{Methods: []string{"OPTIONS"}},
+			},
 		},
 		"/wp/v2/block-renderer/(?P<name>[a-z0-9-]+/[a-z0-9-]+)": {
 			Namespace: "wp/v2",
