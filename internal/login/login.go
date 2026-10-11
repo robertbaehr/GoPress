@@ -566,14 +566,23 @@ func usersCanRegister(c *wp.Context) bool {
 // serveLogout clears auth cookies and redirects (wp-login.php?action=logout, P6.6 / P6.16).
 // When redirect_to is provided, honor it (wp_safe_redirect). When omitted, send the
 // user to wp-login.php?loggedout=true like core.
+// P6.68: fire wp_logout with the pre-clear user ID (wp_logout() in pluggable.php).
 func (h *Handler) serveLogout(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	c.AuthenticateRequest()
+	var userID int64
+	if c.CurrentUser != nil {
+		userID = c.CurrentUser.ID
+	}
 	if c.CurrentUser != nil && c.SessionToken != "" {
 		_ = c.DestroySessionToken(c.CurrentUser.ID, c.SessionToken)
 	}
 	c.ClearAuthCookies(w, "/")
 	c.CurrentUser = nil
 	c.SessionToken = ""
+	// P6.68: do_action( 'wp_logout', $user_id ) after cookies cleared / user zeroed.
+	if c.Hooks != nil {
+		c.Hooks.DoAction("wp_logout", userID)
+	}
 
 	requested := strings.TrimSpace(r.URL.Query().Get("redirect_to"))
 	if requested == "" {
