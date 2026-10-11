@@ -348,3 +348,13 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.156: one cookie-stable admin topper after async-upload deepen.
+- id: admin-p10156-001-edit-pages
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_type=page
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
