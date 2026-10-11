@@ -9143,3 +9143,18 @@ wp-login.php#language-switcher-post
   task: P10.167
   api: n/a
   notes: "P10.167 — summarize pattern halt, modified_gmt shim, comments screen options, MapDeep unslash, adjacent posts, HasFilterFunc + 1394 corpus"
+
+# P5.129: deepen core/freeform / Classic render.
+- prefix: wp-includes/blocks/freeform
+  go: internal/blocks/html_freeform.go
+  status: partial
+  task: P5.129
+  api: render_block_core_freeform
+  notes: "P5.129 — content attr wins; empty/null fallthrough; InnerContent join; nameless classic HTML path"
+
+- prefix: wp-includes/blocks/freeform#tests
+  go: internal/blocks/freeform_p5_129_test.go
+  status: partial
+  task: P5.129
+  api: n/a
+  notes: "P5.129 — content attr / empty / null / nameless / InnerContent coverage"
