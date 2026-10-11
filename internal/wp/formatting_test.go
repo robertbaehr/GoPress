@@ -13,17 +13,17 @@ import (
 )
 
 type formattingVector struct {
-	Input                string `json:"input"`
-	EscHTML              string `json:"esc_html"`
-	EscAttr              string `json:"esc_attr"`
-	EscURL               string `json:"esc_url"`
-	EscJS                string `json:"esc_js"`
-	SanitizeTextField    string `json:"sanitize_text_field"`
-	SanitizeKey          string `json:"sanitize_key"`
-	SanitizeTitle        string `json:"sanitize_title"`
-	SanitizeFileName     string `json:"sanitize_file_name"`
-	WPStripAllTags       string `json:"wp_strip_all_tags"`
-	NormalizeWhitespace  string `json:"normalize_whitespace"`
+	Input               string `json:"input"`
+	EscHTML             string `json:"esc_html"`
+	EscAttr             string `json:"esc_attr"`
+	EscURL              string `json:"esc_url"`
+	EscJS               string `json:"esc_js"`
+	SanitizeTextField   string `json:"sanitize_text_field"`
+	SanitizeKey         string `json:"sanitize_key"`
+	SanitizeTitle       string `json:"sanitize_title"`
+	SanitizeFileName    string `json:"sanitize_file_name"`
+	WPStripAllTags      string `json:"wp_strip_all_tags"`
+	NormalizeWhitespace string `json:"normalize_whitespace"`
 }
 
 type formattingCorpus struct {
@@ -55,16 +55,16 @@ func loadFormattingVectors(t *testing.T) []formattingVector {
 
 // Implemented golden keys and how to compute them.
 var goldenFormatters = map[string]func(string) string{
-	"esc_html":            wp.EscHTML,
-	"esc_attr":            wp.EscAttr,
-	"esc_url":             wp.EscURL,
-	"esc_js":              wp.EscJS,
-	"sanitize_text_field": wp.SanitizeTextField,
-	"sanitize_key":        wp.SanitizeKey,
-	"sanitize_title":      wp.SanitizeTitle,
-	"sanitize_file_name":     wp.SanitizeFileName,
-	"wp_strip_all_tags":      func(s string) string { return wp.WPStripAllTags(s, false) },
-	"normalize_whitespace":   wp.NormalizeWhitespace,
+	"esc_html":             wp.EscHTML,
+	"esc_attr":             wp.EscAttr,
+	"esc_url":              wp.EscURL,
+	"esc_js":               wp.EscJS,
+	"sanitize_text_field":  wp.SanitizeTextField,
+	"sanitize_key":         wp.SanitizeKey,
+	"sanitize_title":       wp.SanitizeTitle,
+	"sanitize_file_name":   wp.SanitizeFileName,
+	"wp_strip_all_tags":    func(s string) string { return wp.WPStripAllTags(s, false) },
+	"normalize_whitespace": wp.NormalizeWhitespace,
 }
 
 func TestFormattingGoldenVectors(t *testing.T) {
@@ -81,16 +81,16 @@ func TestFormattingGoldenVectors(t *testing.T) {
 
 	for i, v := range vectors {
 		wantByKey := map[string]string{
-			"esc_html":            v.EscHTML,
-			"esc_attr":            v.EscAttr,
-			"esc_url":             v.EscURL,
-			"esc_js":              v.EscJS,
-			"sanitize_text_field": v.SanitizeTextField,
-			"sanitize_key":        v.SanitizeKey,
-			"sanitize_title":      v.SanitizeTitle,
-			"sanitize_file_name":    v.SanitizeFileName,
-			"wp_strip_all_tags":     v.WPStripAllTags,
-			"normalize_whitespace":  v.NormalizeWhitespace,
+			"esc_html":             v.EscHTML,
+			"esc_attr":             v.EscAttr,
+			"esc_url":              v.EscURL,
+			"esc_js":               v.EscJS,
+			"sanitize_text_field":  v.SanitizeTextField,
+			"sanitize_key":         v.SanitizeKey,
+			"sanitize_title":       v.SanitizeTitle,
+			"sanitize_file_name":   v.SanitizeFileName,
+			"wp_strip_all_tags":    v.WPStripAllTags,
+			"normalize_whitespace": v.NormalizeWhitespace,
 		}
 		for key, fn := range goldenFormatters {
 			total++
