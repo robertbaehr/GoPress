@@ -11832,3 +11832,23 @@ wp-login.php#language-switcher-post
   task: P5.152
   api: n/a
   notes: "P5.152 — align coerce, saved fontSize/gradient, synthesize mediaAlt coverage"
+
+# P4.168: deepen REST posts meta_value REGEXP / RLIKE compares.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_value
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.168
+  api: n/a
+  notes: "P4.168 — meta_compare REGEXP / NOT REGEXP / RLIKE / NOT RLIKE enum + message"
+- prefix: wp-includes/class-wp-query.php#meta_value#regexp
+  go: internal/wp/query.go
+  status: partial
+  task: P4.168
+  api: n/a
+  notes: "P4.168 — appendMetaQueryFilters REGEXP / NOT REGEXP (RLIKE aliases)"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_value#tests
+  go: internal/rest/posts_meta_value_p4_168_test.go
+  status: partial
+  task: P4.168
+  api: n/a
+  notes: "P4.168 — REGEXP/NOT REGEXP/RLIKE filters + expanded enum message"

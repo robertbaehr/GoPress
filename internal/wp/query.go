@@ -584,9 +584,10 @@ func appendDateQueryFilters(where []string, vals []any, args QueryArgs) ([]strin
 	return where, vals
 }
 
-// appendMetaQueryFilters applies WP_Query meta_key/meta_value/meta_compare (P4.166 / P4.167).
+// appendMetaQueryFilters applies WP_Query meta_key/meta_value/meta_compare (P4.166 / P4.167 / P4.168).
 // Emits EXISTS/NOT EXISTS against postmeta. idCol is "ID" or "p.ID".
 // P4.167: NOT LIKE, >, >=, <, <= numeric/string compares.
+// P4.168: REGEXP / NOT REGEXP / RLIKE / NOT RLIKE against meta_value.
 func appendMetaQueryFilters(c *Context, where []string, vals []any, args QueryArgs, idCol string) ([]string, []any) {
 	key := strings.TrimSpace(args.MetaKey)
 	if key == "" || c == nil || c.DB == nil {
@@ -618,6 +619,12 @@ func appendMetaQueryFilters(c *Context, where []string, vals []any, args QueryAr
 		vals = append(vals, key, args.MetaValue)
 	case ">", ">=", "<", "<=":
 		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND mq.meta_value "+compare+" %s)")
+		vals = append(vals, key, args.MetaValue)
+	case "REGEXP", "RLIKE":
+		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND mq.meta_value REGEXP %s)")
+		vals = append(vals, key, args.MetaValue)
+	case "NOT REGEXP", "NOT RLIKE":
+		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND mq.meta_value NOT REGEXP %s)")
 		vals = append(vals, key, args.MetaValue)
 	default: // "="
 		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND mq.meta_value = %s)")
