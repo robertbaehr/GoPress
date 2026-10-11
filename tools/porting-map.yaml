@@ -11449,4 +11449,12 @@ wp-login.php#language-switcher-post
   status: partial
   task: P10.206
   api: n/a
-  notes: "P10.206 — table/tax_relation/site-health/utf8/robots/headerurl toppers; headers-safe; drop Link/set-cookie-sensitive"
+  notes: "P10.206 — table/tax_relation/site-health/utf8/robots/headerurl toppers; 2629 cases; headers-safe; drop Link/set-cookie-sensitive"
+
+# P10.207: STATUS/PORTING refresh after P5.148–P10.206.
+- prefix: docs/STATUS.md#p10.207
+  go: docs/STATUS.md
+  status: partial
+  task: P10.207
+  api: n/a
+  notes: "P10.207 — summarize table attrs, tax_relation, site-health debug, UTF8URIEncode, robots meta, headerurl, corpus 2629"
