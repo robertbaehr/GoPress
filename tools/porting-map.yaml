@@ -8132,3 +8132,18 @@ wp-login.php#language-switcher-post
   task: P7.121
   api: n/a
   notes: "P7.121 — shell chrome + editpost save/restore coverage"
+
+# P2.116: wp_is_stream mutable stream wrapper registry.
+- prefix: wp-includes/functions.php#wp_is_stream#p2.116
+  go: internal/wp/normalize_path.go
+  status: partial
+  task: P2.116
+  api: exported
+  notes: "P2.116 — RegisterStreamWrapper/UnregisterStreamWrapper; case-sensitive registry"
+
+- prefix: wp-includes/functions.php#wp_is_stream#p2.116#tests
+  go: internal/wp/normalize_path_test.go
+  status: partial
+  task: P2.116
+  api: n/a
+  notes: "P2.116 — register/unregister + NormalizePath preserve scheme"
