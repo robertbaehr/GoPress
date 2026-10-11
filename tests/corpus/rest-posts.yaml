@@ -14539,8 +14539,6 @@
   compare: headers
   nonce: null
 
-  nonce: null
-
 - id: rest-p10200-007-categories-2
   role: anon
   method: GET
@@ -14775,8 +14773,6 @@
   compare: headers
   nonce: null
 
-  nonce: null
-
 - id: rest-p10200-034-verse-head
   role: anon
   method: HEAD
@@ -14784,6 +14780,4 @@
   headers: {}
   body: null
   compare: headers
-  nonce: null
-
   nonce: null
