@@ -11428,3 +11428,17 @@ wp-login.php#language-switcher-post
   task: P3.142
   api: n/a
   notes: "P3.142 — string-map filter, sensitive-page noarchive, search noindex follow"
+
+# P6.59: deepen login_headerurl EscURL + login_headertitle deprecated.
+- prefix: wp-login.php#login_headerurl
+  go: internal/login/login.go
+  status: partial
+  task: P6.59
+  api: n/a
+  notes: "P6.59 — EscURL on login_headerurl; ApplyFiltersDeprecated login_headertitle → login_headertext"
+- prefix: wp-login.php#login_headerurl#tests
+  go: internal/login/login_headerurl_p6_59_test.go
+  status: partial
+  task: P6.59
+  api: n/a
+  notes: "P6.59 — EscURL spaces, deprecated title seed, headertext override"

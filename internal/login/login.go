@@ -1280,7 +1280,8 @@ func loginBodyClasses(c *wp.Context, action string, extraClasses ...string) []st
 	return classes
 }
 
-// writeLoginLogo emits the login logo h1 with login_headerurl / login_headertext (P6.55).
+// writeLoginLogo emits the login logo h1 with login_headerurl / login_headertext (P6.55 / P6.59).
+// P6.59: EscURL on filtered header URL; login_headertitle deprecated → login_headertext.
 func writeLoginLogo(b *strings.Builder, c *wp.Context) {
 	if b == nil {
 		return
@@ -1289,9 +1290,21 @@ func writeLoginLogo(b *strings.Builder, c *wp.Context) {
 	text := "Powered by WordPress"
 	if c != nil && c.Hooks != nil {
 		if v := c.Hooks.ApplyFilters("login_headerurl", href); v != nil {
-			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
-				href = s
+			if s, ok := v.(string); ok {
+				// Match WP: filtered string wins (incl. empty); then esc_url.
+				href = strings.TrimSpace(wp.EscURL(s))
 			}
+		}
+		// Deprecated login_headertitle → seed login_headertext when non-empty (P6.59 / WP 5.2).
+		headerTitle := ""
+		if v := c.Hooks.ApplyFiltersDeprecated("login_headertitle", []any{headerTitle}, "5.2.0", "login_headertext",
+			"Usage of the title attribute on the login logo is not recommended for accessibility reasons. Use the link text instead."); v != nil {
+			if s, ok := v.(string); ok {
+				headerTitle = s
+			}
+		}
+		if strings.TrimSpace(headerTitle) != "" {
+			text = headerTitle
 		}
 		if v := c.Hooks.ApplyFilters("login_headertext", text); v != nil {
 			if s, ok := v.(string); ok {
