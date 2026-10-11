@@ -391,6 +391,8 @@ func (e *Env) renderCalendar(block Block) string {
 
 func (e *Env) renderArchives(block Block) string {
 	e = e.ensure()
+	// P5.166: coerce supports.align before class assembly.
+	block.Attrs = sanitizeArchivesBlockAttrs(block.Attrs)
 	showCounts := false
 	if v, ok := block.Attrs["showPostCounts"].(bool); ok {
 		showCounts = v
@@ -511,11 +513,34 @@ func archivesDropdownLabel(archiveType string) string {
 
 func archivesWrapperClasses(attrs map[string]any) []string {
 	var out []string
+	// P5.166: supports.align true → left|center|right|wide|full.
+	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
+		out = append(out, "align"+sanitizeClassToken(align))
+	}
 	if hasLinkColorAttr(attrs) {
 		out = append(out, "has-link-color")
 	}
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		out = append(out, cn)
+	}
+	return out
+}
+
+// sanitizeArchivesBlockAttrs coerces core/archives supports.align (P5.166).
+// Allowed: left, center, right, wide, full. Other values (incl. none) are dropped.
+func sanitizeArchivesBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "left", "center", "right", "wide", "full":
+	default:
+		delete(out, "align")
 	}
 	return out
 }

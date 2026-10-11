@@ -7,6 +7,21 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+
+# P5.166: core/archives align coerce.
+- prefix: wp-includes/blocks/archives#align
+  go: internal/blocks/widget_blocks.go
+  status: partial
+  task: P5.166
+  api: n/a
+  notes: "P5.166 — archives align left|center|right|wide|full coerce"
+- prefix: wp-includes/blocks/archives#align#tests
+  go: internal/blocks/archives_attrs_p5_166_test.go
+  status: partial
+  task: P5.166
+  api: n/a
+  notes: "P5.166 — drop none/bogus"
+
 # P8.59: get_adjacent_image_link.
 - prefix: wp-includes/media.php#get_adjacent_image_link
   go: internal/wp/adjacent_image_link.go
