@@ -9424,3 +9424,11 @@ wp-login.php#language-switcher-post
   task: P10.170
   api: n/a
   notes: "P10.170 — posts _embed + missing block-type + front/login/admin/ajax toppers; >1470 cases"
+
+# P10.171: STATUS/PORTING refresh after P5.130–P10.170.
+- prefix: docs/STATUS.md#p10.171
+  go: docs/STATUS.md
+  status: partial
+  task: P10.171
+  api: n/a
+  notes: "P10.171 — summarize missing, _embed, admin notices, kses contexts, the_excerpt, login_errors + 1476 corpus"
