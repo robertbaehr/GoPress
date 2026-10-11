@@ -240,7 +240,7 @@ func parsePostsOffset(r *http.Request) (offset int, useOffset bool, valid bool) 
 	return n, true, true
 }
 
-func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, offsetOverride int, useOffset bool) ([]Post, error) {
+func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, ignoreSticky bool, orderby, order, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, offsetOverride int, useOffset bool) ([]Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -285,6 +285,11 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 		PostFormatStandard: formatStandard,
 	}
 	applyStickyQueryFilter(c, postType, stickyFilter, &args)
+	// P4.141: ignore_sticky=false → StickyFirst (prepend stickies). When sticky=
+	// sets post__in, WP unsets ignore_sticky_posts — skip StickyFirst then.
+	if postType == "post" && !ignoreSticky && stickyFilter == nil && len(args.PostIn) == 0 {
+		args.StickyFirst = true
+	}
 	rows, err := wp.GetPosts(c, args)
 	if err != nil {
 		return nil, err
@@ -850,21 +855,67 @@ func stickyIDList(c *wp.Context) []int64 {
 	return out
 }
 
-// parseStickyQuery reads REST ?sticky= as an optional boolean (P4.82 / P2.120).
+// parseStickyQuery reads REST ?sticky= as an optional boolean (P4.82 / P2.120 / P4.141).
+// Absent → (nil, true). Present but empty/non-boolean → (nil, false) → rest_invalid_param.
 // Accepts rest_is_boolean values and sanitizes via rest_sanitize_boolean.
-func parseStickyQuery(r *http.Request) *bool {
+func parseStickyQuery(r *http.Request) (*bool, bool) {
 	if r == nil {
-		return nil
+		return nil, true
 	}
-	raw := strings.TrimSpace(r.URL.Query().Get("sticky"))
-	if raw == "" {
-		return nil
+	q := r.URL.Query()
+	if !q.Has("sticky") {
+		return nil, true
 	}
-	if !wp.RestIsBoolean(raw) {
-		return nil
+	raw := strings.TrimSpace(q.Get("sticky"))
+	if raw == "" || !wp.RestIsBoolean(raw) {
+		return nil, false
 	}
 	v := wp.RestSanitizeBoolean(raw)
-	return &v
+	return &v, true
+}
+
+// parseIgnoreStickyQuery reads REST ?ignore_sticky= (P4.141).
+// Absent → default true (WP schema). Present but invalid → ok=false.
+// When false, sticky posts are prepended (StickyFirst); when true, no prepend.
+func parseIgnoreStickyQuery(r *http.Request) (ignore bool, ok bool) {
+	if r == nil {
+		return true, true
+	}
+	q := r.URL.Query()
+	if !q.Has("ignore_sticky") {
+		return true, true // WP default
+	}
+	raw := strings.TrimSpace(q.Get("ignore_sticky"))
+	if raw == "" || !wp.RestIsBoolean(raw) {
+		return true, false
+	}
+	return wp.RestSanitizeBoolean(raw), true
+}
+
+// writeRESTInvalidBooleanParams emits rest_invalid_param for bad boolean query args (P4.141).
+func writeRESTInvalidBooleanParams(w http.ResponseWriter, keys []string) {
+	params := map[string]any{}
+	details := map[string]any{}
+	for _, k := range keys {
+		msg := k + " is not of type boolean."
+		params[k] = msg
+		details[k] = map[string]any{
+			"code":    "rest_invalid_type",
+			"message": msg,
+			"data":    map[string]any{"param": k},
+		}
+	}
+	msg := "Invalid parameter(s): " + strings.Join(keys, ", ")
+	w.Header().Set("Allow", "GET")
+	writeJSON(w, http.StatusBadRequest, map[string]any{
+		"code":    "rest_invalid_param",
+		"message": msg,
+		"data": map[string]any{
+			"status":  400,
+			"params":  params,
+			"details": details,
+		},
+	})
 }
 
 func getPostByID(c *wp.Context, postType string, id int64, edit bool) (*Post, error) {

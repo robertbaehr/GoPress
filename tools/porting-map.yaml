@@ -8650,3 +8650,18 @@ wp-login.php#language-switcher-post
   task: P5.125
   api: n/a
   notes: "P5.125 — anchor/flex/colors/midSize/className unit coverage"
+
+# P4.141: REST posts sticky/ignore_sticky query deepen.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#sticky-query
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.141
+  api: exported
+  notes: "P4.141 — sticky/ignore_sticky present-but-invalid → rest_invalid_param; ignore_sticky=false StickyFirst; schema default true"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#sticky-query#tests
+  go: internal/rest/posts_test.go
+  status: partial
+  task: P4.141
+  api: n/a
+  notes: "P4.141 — invalid sticky/ignore_sticky + ignore_sticky=false prepend coverage"
