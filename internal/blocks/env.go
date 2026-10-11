@@ -190,15 +190,19 @@ type NavLink struct {
 	Parent int64
 }
 
-// CommentItem is a comment row for core/comment-template (P5.19 / P5.90).
+// CommentItem is a comment row for core/comment-template (P5.19 / P5.90 / P3.116).
 type CommentItem struct {
-	ID          int64
-	Parent      int64
-	Author      string
-	AuthorEmail string
-	AuthorURL   string
-	Content     string
-	Date        string
+	ID           int64
+	Parent       int64
+	Author       string
+	AuthorEmail  string
+	AuthorURL    string
+	Content      string
+	Date         string
+	UserID       int64  // registered commenter (P3.116 get_comment_class)
+	UserNicename string // for comment-author-{nicename}
+	PostAuthor   int64  // post author for bypostauthor
+	Type         string // comment|trackback|pingback
 }
 
 func (e *Env) ensure() *Env {

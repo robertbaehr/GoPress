@@ -50,7 +50,8 @@ func TestRenderCommentTemplateOrderAndClasses(t *testing.T) {
 		`id="comment-2"`,
 		`id="comment-1"`,
 		`class="comment even thread-even depth-1"`,
-		`class="comment odd thread-odd depth-1"`,
+		// P3.116: odd comments also get alt / thread-alt (get_comment_class).
+		`class="comment odd alt thread-odd thread-alt depth-1"`,
 		`<ol>`,
 		`depth-2`,
 		`Alice`,
@@ -114,5 +115,24 @@ func TestCommentTemplatePagesRoots(t *testing.T) {
 <!-- /wp:comments-pagination -->`)
 	if !strings.Contains(nav, "wp-block-comments-pagination") || !strings.Contains(nav, "cpage=2") {
 		t.Fatalf("nav=%q", nav)
+	}
+}
+
+func TestRenderCommentTemplateByuserClasses(t *testing.T) {
+	env := &blocks.Env{
+		ListComments: func(postID int64) []blocks.CommentItem {
+			return []blocks.CommentItem{
+				{ID: 10, Author: "Admin", UserID: 1, UserNicename: "admin", PostAuthor: 1, Content: "By author"},
+				{ID: 11, Author: "Guest", Content: "Anon"},
+			}
+		},
+	}
+	env.SetCurrentPost(&blocks.QueryPost{ID: 1, Title: "Post", Link: "/?p=1"})
+	out := blocks.RenderWith(env, `<!-- wp:comment-template /-->`)
+	if !strings.Contains(out, `byuser`) || !strings.Contains(out, `comment-author-admin`) || !strings.Contains(out, `bypostauthor`) {
+		t.Fatalf("expected byuser/bypostauthor classes: %q", out)
+	}
+	if !strings.Contains(out, `class="comment odd alt thread-odd thread-alt depth-1"`) {
+		t.Fatalf("expected second comment odd/alt classes: %q", out)
 	}
 }

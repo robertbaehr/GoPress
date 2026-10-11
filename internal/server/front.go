@@ -4932,15 +4932,29 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 				return nil
 			}
 			out := make([]blocks.CommentItem, 0, len(rows))
+			var postAuthor int64
+			if p, err := wp.GetPostByID(c, postID); err == nil && p != nil {
+				postAuthor = p.Author
+			}
 			for _, cm := range rows {
+				nicename := ""
+				if cm.UserID > 0 {
+					if u, err := c.GetUserBy("id", cm.UserID); err == nil && u != nil {
+						nicename = u.Nicename
+					}
+				}
 				out = append(out, blocks.CommentItem{
-					ID:          cm.ID,
-					Parent:      cm.Parent,
-					Author:      cm.Author,
-					AuthorEmail: cm.AuthorEmail,
-					AuthorURL:   cm.AuthorURL,
-					Content:     wp.KsesPostFiltered(c, cm.Content),
-					Date:        cm.Date,
+					ID:           cm.ID,
+					Parent:       cm.Parent,
+					Author:       cm.Author,
+					AuthorEmail:  cm.AuthorEmail,
+					AuthorURL:    cm.AuthorURL,
+					Content:      wp.KsesPostFiltered(c, cm.Content),
+					Date:         cm.Date,
+					UserID:       cm.UserID,
+					UserNicename: nicename,
+					PostAuthor:   postAuthor,
+					Type:         cm.Type,
 				})
 			}
 			return out
