@@ -12,9 +12,10 @@ var (
 	reFileObjectOpen = regexp.MustCompile(`(?is)<object\b([^>]*)>`)
 )
 
-// renderFile renders core/file (P5.52).
+// renderFile renders core/file (P5.52 / P5.114).
 // Prefers saved markup; synthesizes from href/fileName when empty; when
 // displayPreview is set, mirrors render_block_core_file interactive/object attrs.
+// P5.114: className/align/anchor polish on the file wrapper.
 func (e *Env) renderFile(block Block) string {
 	e = e.ensure()
 	out := e.renderSaved(block)
@@ -27,7 +28,7 @@ func (e *Env) renderFile(block Block) string {
 	if attrBool(block.Attrs, "displayPreview") {
 		out = applyFilePreviewAttrs(out, block.Attrs)
 	}
-	return out
+	return applyMediaFigureAttrs(out, "wp-block-file", block.Attrs)
 }
 
 func synthesizeFileBlock(attrs map[string]any) string {

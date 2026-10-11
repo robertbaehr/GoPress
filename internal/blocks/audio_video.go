@@ -13,8 +13,9 @@ var (
 	reVideoOpen = regexp.MustCompile(`(?is)(<video\b)([^>]*)(>)`)
 )
 
-// renderAudio renders core/audio (P5.53).
+// renderAudio renders core/audio (P5.53 / P5.114).
 // Prefers saved markup; synthesizes a figure/audio player from src/id attrs.
+// P5.114: className/align/anchor polish on the figure root.
 func (e *Env) renderAudio(block Block) string {
 	e = e.ensure()
 	out := e.renderSaved(block)
@@ -24,12 +25,13 @@ func (e *Env) renderAudio(block Block) string {
 	if strings.TrimSpace(out) == "" || !reAudioTag.MatchString(out) {
 		return ""
 	}
-	return out
+	return applyMediaFigureAttrs(out, "wp-block-audio", block.Attrs)
 }
 
-// renderVideo renders core/video (P5.53).
+// renderVideo renders core/video (P5.53 / P5.114).
 // Prefers saved markup; synthesizes from src/id; applies width/height + aspect-ratio
-// from block attrs when present (subset of render_block_core_video).
+// from block attrs or attachment metadata (subset of render_block_core_video).
+// P5.114: className/align/anchor polish; metadata dimensions when attrs omit them.
 func (e *Env) renderVideo(block Block) string {
 	e = e.ensure()
 	out := e.renderSaved(block)
@@ -39,7 +41,8 @@ func (e *Env) renderVideo(block Block) string {
 	if strings.TrimSpace(out) == "" || !reVideoTag.MatchString(out) {
 		return ""
 	}
-	return applyVideoDimensions(out, block.Attrs)
+	out = applyVideoDimensions(out, block.Attrs, e)
+	return applyMediaFigureAttrs(out, "wp-block-video", block.Attrs)
 }
 
 func synthesizeAudioBlock(e *Env, attrs map[string]any) string {
@@ -136,9 +139,19 @@ func writeBoolAttr(b *strings.Builder, name string, on bool) {
 }
 
 // applyVideoDimensions injects width/height and aspect-ratio style onto the first <video>.
-func applyVideoDimensions(content string, attrs map[string]any) string {
+// Prefers explicit block attrs; falls back to attachment metadata via Env (P5.114).
+func applyVideoDimensions(content string, attrs map[string]any, e *Env) string {
 	w, wok := attrInt(attrs, "width")
 	h, hok := attrInt(attrs, "height")
+	if (!wok || !hok || w <= 0 || h <= 0) && e != nil && e.GetAttachmentDimensions != nil {
+		id := attrInt64(attrs, "id")
+		if id > 0 {
+			if mw, mh := e.GetAttachmentDimensions(id); mw > 0 && mh > 0 {
+				w, h = mw, mh
+				wok, hok = true, true
+			}
+		}
+	}
 	if !wok || !hok || w <= 0 || h <= 0 {
 		return content
 	}
@@ -167,6 +180,32 @@ func applyVideoDimensions(content string, attrs map[string]any) string {
 	b.WriteString(close)
 	b.WriteString(rest)
 	return b.String()
+}
+
+// applyMediaFigureAttrs polishes className/align/anchor on audio/video/file roots (P5.114).
+func applyMediaFigureAttrs(htmlFragment, blockClass string, attrs map[string]any) string {
+	out := htmlFragment
+	if strings.TrimSpace(out) == "" {
+		return out
+	}
+	if blockClass != "" {
+		out = addRootClass(out, blockClass)
+	}
+	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
+		cls := "align" + sanitizeClassToken(align)
+		if !hasRootClass(out, cls) {
+			out = addRootClass(out, cls)
+		}
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		for _, part := range strings.Fields(cn) {
+			out = addRootClass(out, part)
+		}
+	}
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
+		out = ensureRootAttribute(out, "id", anchor)
+	}
+	return out
 }
 
 var reHTMLAttr = regexp.MustCompile(`(?i)\s([a-z_:][\w:.-]*)\s*=\s*("([^"]*)"|'([^']*)'|([^\s>]+))`)

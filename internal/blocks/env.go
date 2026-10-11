@@ -59,6 +59,8 @@ type Env struct {
 
 	// GetAttachmentURL resolves attachment IDs for core/image and core/gallery (P5.48).
 	GetAttachmentURL func(id int64) string
+	// GetAttachmentDimensions returns width/height from attachment metadata (P5.114 / core/video).
+	GetAttachmentDimensions func(id int64) (width, height int)
 	// AdjacentPost returns prev/next post for post-navigation-link (type previous|next).
 	// taxonomy is the in_same_term taxonomy slug when set (empty = unrestricted).
 	AdjacentPost func(postID int64, previous bool, taxonomy string) *QueryPost
