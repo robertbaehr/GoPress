@@ -86,7 +86,9 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/heading":
 		out = e.renderHeading(block)
 	case "core/table":
+		// P5.148: coerce align enum before applySupports; fontSize/gradient polish.
 		out = e.renderTable(block)
+		return applySupports(out, sanitizeTableBlockAttrs(block.Attrs), name)
 	case "core/html":
 		out = e.renderHTML(block)
 	case "core/shortcode":
