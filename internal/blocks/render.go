@@ -123,7 +123,9 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/pullquote":
 		out = e.renderPullquote(block)
 	case "core/buttons":
+		// P5.155: coerce align enum before applySupports; fontSize/gradient polish.
 		out = e.renderButtons(block)
+		return applySupports(out, sanitizeButtonsBlockAttrs(block.Attrs), name)
 	case "core/button":
 		out = e.renderButton(block)
 	case "core/audio":
