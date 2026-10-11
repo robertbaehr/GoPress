@@ -141,12 +141,12 @@ func MediaHandleUpload(c *Context, filename string, r io.Reader, size int64, pos
 		if alt != "" {
 			_, _, _ = c.Meta.AddMetadata(MetaPost, id, "_wp_attachment_image_alt", alt, true)
 		}
-		// P8.25: generate attachment metadata (width/height/image_meta) for images.
+		// P8.25 / P8.39: generate + wp_update_attachment_metadata for images.
 		if strings.HasPrefix(strings.ToLower(moved.Type), "image/") {
 			meta := GenerateAttachmentMetadata(c, id, moved.File)
 			if meta != nil {
 				meta["file"] = rel
-				_ = StoreAttachmentMetadata(c, id, meta)
+				_ = WPUpdateAttachmentMetadata(c, id, meta)
 			}
 		}
 	}

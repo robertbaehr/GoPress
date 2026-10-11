@@ -135,7 +135,7 @@ func MediaHandleSideload(c *Context, file SideloadFile, postID int64, desc strin
 			meta := GenerateAttachmentMetadata(c, id, moved.File)
 			if meta != nil {
 				meta["file"] = rel
-				_ = StoreAttachmentMetadata(c, id, meta)
+				_ = WPUpdateAttachmentMetadata(c, id, meta)
 			}
 		}
 	}

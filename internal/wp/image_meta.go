@@ -287,3 +287,49 @@ func StoreAttachmentMetadata(c *Context, attachmentID int64, meta map[string]any
 	_, _, _, err = c.Meta.UpdateMetadata(MetaPost, attachmentID, "_wp_attachment_metadata", serialized, "")
 	return err
 }
+
+// WPUpdateAttachmentMetadata is wp_update_attachment_metadata (P8.39).
+// Applies the wp_update_attachment_metadata filter; empty/nil data deletes the
+// meta key (PHP if ( $data )). Returns false when the attachment is missing
+// or the write fails; true on success.
+func WPUpdateAttachmentMetadata(c *Context, attachmentID int64, data map[string]any) bool {
+	if c == nil || c.Meta == nil || attachmentID <= 0 {
+		return false
+	}
+	post, err := GetPostByID(c, attachmentID)
+	if err != nil || post == nil {
+		return false
+	}
+	if c.Hooks != nil {
+		filtered := c.Hooks.ApplyFilters("wp_update_attachment_metadata", data, post.ID)
+		switch t := filtered.(type) {
+		case map[string]any:
+			data = t
+		case nil:
+			data = nil
+		default:
+			// Non-map truthy values are unexpected; treat as no-op keep.
+		}
+	}
+	if !attachmentMetadataTruthy(data) {
+		ok, err := c.Meta.DeleteMetadata(MetaPost, post.ID, "_wp_attachment_metadata", "")
+		return err == nil && ok
+	}
+	if err := StoreAttachmentMetadata(c, post.ID, data); err != nil {
+		return false
+	}
+	return true
+}
+
+// attachmentMetadataTruthy mirrors PHP if ( $data ) for metadata maps (P8.39).
+// nil or empty maps are falsy; non-empty maps are truthy.
+func attachmentMetadataTruthy(data map[string]any) bool {
+	return data != nil && len(data) > 0
+}
+
+// GenerateAndUpdateAttachmentMetadata generates metadata then persists via
+// wp_update_attachment_metadata (P8.39).
+func GenerateAndUpdateAttachmentMetadata(c *Context, attachmentID int64, file string) bool {
+	meta := GenerateAttachmentMetadata(c, attachmentID, file)
+	return WPUpdateAttachmentMetadata(c, attachmentID, meta)
+}
