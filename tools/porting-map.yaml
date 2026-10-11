@@ -11690,3 +11690,11 @@ wp-login.php#language-switcher-post
   task: P8.47
   api: n/a
   notes: "P8.47 — add srcset/sizes, HTTPS upgrade, src dimensions"
+
+# P10.210: expand diff corpus after P5.150–P8.47 stack.
+- prefix: tests/corpus#p10.210
+  go: tests/corpus
+  status: partial
+  task: P10.210
+  api: n/a
+  notes: "P10.210 — group/meta_query/media-grid/http-validate/canonical/srcset toppers; 2767 cases; headers-safe; drop set-cookie admin cases"

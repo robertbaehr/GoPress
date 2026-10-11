@@ -1254,3 +1254,44 @@
   body: null
   compare: headers
   nonce: null
+
+
+# P10.210: ajax toppers — media/upload heartbeat (headers-safe).
+
+- id: ajax-p10210-101
+  role: admin
+  method: POST
+  path: /wp-admin/admin-ajax.php
+  headers:
+    Content-Type: application/x-www-form-urlencoded
+  body: action=heartbeat&screen_id=upload
+  compare: headers
+  nonce: null
+
+- id: ajax-p10210-102
+  role: anon
+  method: POST
+  path: /wp-admin/admin-ajax.php
+  headers:
+    Content-Type: application/x-www-form-urlencoded
+  body: action=heartbeat&screen_id=media
+  compare: headers
+  nonce: null
+
+- id: ajax-p10210-103
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=async-upload
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10210-104
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=attachment
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
