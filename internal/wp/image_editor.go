@@ -236,9 +236,17 @@ func (e *ImageEditor) Save(destPath string) (string, int, int, error) {
 	return out, w, h, nil
 }
 
-// MakeIntermediateSize is image_make_intermediate_size (P8.30).
-// Returns metadata bag {file,width,height,mime-type} or nil on failure.
+// MakeIntermediateSize is image_make_intermediate_size without hooks (P8.30).
+// Returns metadata bag {file,width,height,mime-type[,filesize]} or nil on failure.
 func MakeIntermediateSize(file string, width, height int, crop bool) map[string]any {
+	return MakeIntermediateSizeCtx(nil, file, width, height, crop)
+}
+
+// MakeIntermediateSizeCtx is image_make_intermediate_size (P8.30 / P8.40).
+// Applies the image_make_intermediate_size filter to the saved path (basename
+// of the filtered path becomes the `file` key), and records filesize when
+// the saved file is readable.
+func MakeIntermediateSizeCtx(c *Context, file string, width, height int, crop bool) map[string]any {
 	if width <= 0 && height <= 0 {
 		return nil
 	}
@@ -253,6 +261,14 @@ func MakeIntermediateSize(file string, width, height int, crop bool) map[string]
 	if err != nil || path == "" {
 		return nil
 	}
+	filteredPath := path
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("image_make_intermediate_size", path); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				filteredPath = s
+			}
+		}
+	}
 	mime := "image/jpeg"
 	switch ed.format {
 	case "png":
@@ -260,12 +276,17 @@ func MakeIntermediateSize(file string, width, height int, crop bool) map[string]
 	case "gif":
 		mime = "image/gif"
 	}
-	return map[string]any{
-		"file":      filepath.Base(path),
+	meta := map[string]any{
+		"file":      filepath.Base(filteredPath),
 		"width":     w,
 		"height":    h,
 		"mime-type": mime,
 	}
+	// Prefer filesize of the real saved path (filter may only rename the basename).
+	if st, err := os.Stat(path); err == nil {
+		meta["filesize"] = int(st.Size())
+	}
+	return meta
 }
 
 // ResizeImage generates an intermediate file for size (P2.10 / P8.30).
@@ -273,6 +294,17 @@ func ResizeImage(srcPath string, size ImageSize) (string, error) {
 	meta := MakeIntermediateSize(srcPath, size.Width, size.Height, size.Crop)
 	if meta == nil {
 		return "", fmt.Errorf("wp: ResizeImage: failed for %q", srcPath)
+	}
+	file, _ := meta["file"].(string)
+	dir := filepath.Dir(srcPath)
+	return filepath.Join(dir, file), nil
+}
+
+// ResizeImageCtx is ResizeImage with image_make_intermediate_size filter (P8.40).
+func ResizeImageCtx(c *Context, srcPath string, size ImageSize) (string, error) {
+	meta := MakeIntermediateSizeCtx(c, srcPath, size.Width, size.Height, size.Crop)
+	if meta == nil {
+		return "", fmt.Errorf("wp: ResizeImageCtx: failed for %q", srcPath)
 	}
 	file, _ := meta["file"].(string)
 	dir := filepath.Dir(srcPath)

@@ -9260,3 +9260,18 @@ wp-login.php#language-switcher-post
   task: P3.123
   api: n/a
   notes: "P3.123 — autop / capital_P / more / CDATA coverage"
+
+# P8.40: image_make_intermediate_size filter + filesize.
+- prefix: wp-includes/media.php#image_make_intermediate_size
+  go: internal/wp/image_editor.go
+  status: partial
+  task: P8.40
+  api: image_make_intermediate_size
+  notes: "P8.40 — MakeIntermediateSizeCtx filter on path; filesize; ResizeImageCtx"
+
+- prefix: wp-includes/media.php#image_make_intermediate_size#tests
+  go: internal/wp/make_intermediate_p8_40_test.go
+  status: partial
+  task: P8.40
+  api: n/a
+  notes: "P8.40 — filter basename / filesize / zero-dims coverage"
