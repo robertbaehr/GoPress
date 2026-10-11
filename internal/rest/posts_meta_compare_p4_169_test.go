@@ -11,12 +11,12 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// P4.169: meta_compare=IN rejected; BETWEEN accepted as enum.
+// P4.169: meta_compare=XOR rejected; BETWEEN accepted as enum (P4.171 added IN).
 func TestPostsMetaCompareBetweenEnumP4169(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
 
-	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?meta_compare=IN&per_page=1", nil)
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?meta_compare=XOR&per_page=1", nil)
 	rec := httptest.NewRecorder()
 	rc := c.ForRequest(rec, req)
 	(&rest.Server{}).Handle(rec, req, rc)

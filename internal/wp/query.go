@@ -585,12 +585,13 @@ func appendDateQueryFilters(where []string, vals []any, args QueryArgs) ([]strin
 	return where, vals
 }
 
-// appendMetaQueryFilters applies WP_Query meta_key/meta_value/meta_compare/meta_type (P4.166–P4.170).
+// appendMetaQueryFilters applies WP_Query meta_key/meta_value/meta_compare/meta_type (P4.166–P4.171).
 // Emits EXISTS/NOT EXISTS against postmeta. idCol is "ID" or "p.ID".
 // P4.167: NOT LIKE, >, >=, <, <= numeric/string compares.
 // P4.168: REGEXP / NOT REGEXP / RLIKE / NOT RLIKE against meta_value.
 // P4.169: BETWEEN / NOT BETWEEN (meta_value "low,high" or "low high").
 // P4.170: meta_type CAST (NUMERIC→SIGNED, etc.) on value comparisons.
+// P4.171: IN / NOT IN (meta_value comma- or space-separated list).
 func appendMetaQueryFilters(c *Context, where []string, vals []any, args QueryArgs, idCol string) ([]string, []any) {
 	key := strings.TrimSpace(args.MetaKey)
 	if key == "" || c == nil || c.DB == nil {
@@ -648,6 +649,25 @@ func appendMetaQueryFilters(c *Context, where []string, vals []any, args QueryAr
 		}
 		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND "+valExpr+" "+compare+" %s AND %s)")
 		vals = append(vals, key, low, high)
+	case "IN", "NOT IN":
+		parts := splitMetaInValues(args.MetaValue)
+		if len(parts) == 0 {
+			// Degenerate empty list: equality / inequality on raw string.
+			op := "="
+			if compare == "NOT IN" {
+				op = "!="
+			}
+			where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND "+valExpr+" "+op+" %s)")
+			vals = append(vals, key, args.MetaValue)
+			break
+		}
+		ph := make([]string, len(parts))
+		vals = append(vals, key)
+		for i, p := range parts {
+			ph[i] = "%s"
+			vals = append(vals, p)
+		}
+		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND "+valExpr+" "+compare+" ("+strings.Join(ph, ", ")+"))")
 	default: // "="
 		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND "+valExpr+" = %s)")
 		vals = append(vals, key, args.MetaValue)
@@ -675,9 +695,19 @@ func metaTypeCastSQL(metaType string) string {
 
 // splitMetaBetweenValue parses WP_Query BETWEEN meta_value "low,high" or "low high" (P4.169).
 func splitMetaBetweenValue(raw string) (low, high string, ok bool) {
+	parts := splitMetaInValues(raw)
+	if len(parts) < 2 {
+		return "", "", false
+	}
+	return parts[0], parts[1], true
+}
+
+// splitMetaInValues parses WP_Query IN/NOT IN meta_value lists (P4.171).
+// Accepts comma-separated ("a,b,c") or whitespace-separated ("a b c") tokens.
+func splitMetaInValues(raw string) []string {
 	raw = strings.TrimSpace(raw)
 	if raw == "" {
-		return "", "", false
+		return nil
 	}
 	var parts []string
 	if strings.Contains(raw, ",") {
@@ -687,13 +717,9 @@ func splitMetaBetweenValue(raw string) (low, high string, ok bool) {
 				parts = append(parts, p)
 			}
 		}
-	} else {
-		parts = strings.Fields(raw)
+		return parts
 	}
-	if len(parts) < 2 {
-		return "", "", false
-	}
-	return parts[0], parts[1], true
+	return strings.Fields(raw)
 }
 
 // orderByClause maps QueryArgs.OrderBy/Order onto SQL (P4.83 / P4.94 / P4.131).
