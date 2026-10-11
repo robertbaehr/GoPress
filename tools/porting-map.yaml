@@ -1155,6 +1155,21 @@ wp-login.php#language-switcher-post
   task: P7.35
   api: n/a
 
+# P7.111: deepen nav-menus.php edit screen (selector, create, counts, caps).
+- prefix: wp-admin/nav-menus.php#edit
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.111
+  api: n/a
+  notes: "P7.111 — edit_theme_options gate; select-menu-to-edit; create menu; item counts; locations notice"
+
+- prefix: wp-admin/nav-menus.php#create
+  go: internal/admin/admin_test.go
+  status: partial
+  task: P7.111
+  api: n/a
+  notes: "P7.111 — unit coverage for selector chrome and create-menu redirect"
+
 # P2.30: wp_parse_args.
 - prefix: wp-includes/functions.php#wp_parse_args
   go: internal/wp/parse_args.go

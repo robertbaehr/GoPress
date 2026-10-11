@@ -3837,8 +3837,14 @@ func (h *Handler) serveSiteEditor(w http.ResponseWriter, r *http.Request, c *wp.
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveNavMenus is a classic menus admin stub (P7.9) with location save (P7.35).
+// serveNavMenus is a classic menus admin stub (P7.9 / P7.35 / P7.111).
+// P7.111: edit_theme_options gate, menu selector, create-menu form, item counts,
+// and theme-location count notice on the Edit Menus screen.
 func (h *Handler) serveNavMenus(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "edit_theme_options") {
+		http.Error(w, "Sorry, you are not allowed to edit theme options on this site.\n", http.StatusForbidden)
+		return
+	}
 	blogname := optionString(c, "blogname", "GoPress")
 	menus, err := listNavMenus(c)
 	if err != nil {
@@ -3846,26 +3852,78 @@ func (h *Handler) serveNavMenus(w http.ResponseWriter, r *http.Request, c *wp.Co
 		return
 	}
 	note := ""
-	locationsScreen := r.URL.Query().Get("action") == "locations" || r.Method == http.MethodPost
+	action := strings.TrimSpace(r.URL.Query().Get("action"))
+	if action == "" {
+		action = strings.TrimSpace(r.FormValue("action"))
+	}
+	locationsScreen := action == "locations"
 	if r.Method == http.MethodPost {
 		_ = r.ParseForm()
-		// Save theme menu location assignments (nav-menus.php Manage Locations, P7.35).
-		registered := wp.RegisteredNavMenus(c)
-		for loc := range registered {
-			raw := strings.TrimSpace(r.Form.Get("menu-locations[" + loc + "]"))
-			id, _ := strconv.ParseInt(raw, 10, 64)
-			if err := wp.SetNavMenuLocation(c, loc, id); err != nil {
-				note = "Failed to save menu locations: " + err.Error()
-				break
+		postAction := strings.TrimSpace(r.Form.Get("action"))
+		if postAction == "" {
+			postAction = action
+		}
+		if postAction == "locations" || r.Form.Get("nav-menu-locations") != "" {
+			// Save theme menu location assignments (nav-menus.php Manage Locations, P7.35).
+			registered := wp.RegisteredNavMenus(c)
+			for loc := range registered {
+				raw := strings.TrimSpace(r.Form.Get("menu-locations[" + loc + "]"))
+				id, _ := strconv.ParseInt(raw, 10, 64)
+				if err := wp.SetNavMenuLocation(c, loc, id); err != nil {
+					note = "Failed to save menu locations: " + err.Error()
+					break
+				}
+			}
+			if note == "" {
+				note = "Menu locations updated."
+				locationsScreen = true
+			}
+		} else if postAction == "update" || r.Form.Get("menu-name") != "" {
+			// Create a new menu when menu=0 (P7.111 subset of update-nav_menu).
+			name := strings.TrimSpace(r.Form.Get("menu-name"))
+			if name == "" {
+				note = "Please enter a valid menu name."
+			} else {
+				slug := wp.SanitizeTitle(name)
+				if slug == "" {
+					slug = "menu"
+				}
+				slug, err := uniqueAdminTermSlug(c, slug)
+				if err != nil {
+					http.Error(w, "menus: "+err.Error()+"\n", http.StatusInternalServerError)
+					return
+				}
+				id, err := insertAdminTerm(c, "nav_menu", name, slug, "", 0)
+				if err != nil {
+					note = "Could not create menu: " + err.Error()
+				} else {
+					http.Redirect(w, r, "/wp-admin/nav-menus.php?menu="+strconv.FormatInt(id, 10)+"&message=1", http.StatusFound)
+					return
+				}
 			}
 		}
-		if note == "" {
-			note = "Menu locations updated."
-			locationsScreen = true
+		menus, err = listNavMenus(c)
+		if err != nil {
+			http.Error(w, "menus: "+err.Error()+"\n", http.StatusInternalServerError)
+			return
 		}
+	}
+	if r.URL.Query().Get("message") == "1" && note == "" {
+		note = "Menu created."
 	}
 	locs := wp.GetNavMenuLocations(c)
 	registered := wp.RegisteredNavMenus(c)
+	selectedID, _ := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("menu")), 10, 64)
+	if selectedID == 0 && len(menus) > 0 && !locationsScreen {
+		selectedID = menus[0].ID
+	}
+	var selected *navMenuTerm
+	for i := range menus {
+		if menus[i].ID == selectedID {
+			selected = &menus[i]
+			break
+		}
+	}
 
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
@@ -3875,11 +3933,26 @@ func (h *Handler) serveNavMenus(w http.ResponseWriter, r *http.Request, c *wp.Co
 	b.WriteString("<body class=\"wp-admin wp-core-ui nav-menus-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap\" id=\"menu-management\">\n")
-	b.WriteString("<h1>Menus</h1>\n")
+	b.WriteString("<h1 class=\"wp-heading-inline\">Menus</h1>\n")
+	b.WriteString("<a href=\"/wp-admin/nav-menus.php?action=edit&amp;menu=0\" class=\"page-title-action\">Add New Menu</a>\n")
+	b.WriteString("<hr class=\"wp-header-end\">\n")
 	if note != "" {
 		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p>")
 		b.WriteString(html.EscapeString(note))
 		b.WriteString("</p></div>\n")
+	}
+	if nLoc := len(registered); nLoc > 0 && !locationsScreen {
+		b.WriteString("<div class=\"manage-menus\">\n")
+		b.WriteString("<span class=\"menu-locations-count\">Your theme supports ")
+		b.WriteString(strconv.Itoa(nLoc))
+		if nLoc == 1 {
+			b.WriteString(" menu</span>")
+		} else {
+			b.WriteString(" menus</span>")
+		}
+		b.WriteString(". Select which menu appears in each location. ")
+		b.WriteString("<a href=\"/wp-admin/nav-menus.php?action=locations\">Manage Locations</a>\n")
+		b.WriteString("</div>\n")
 	}
 	b.WriteString("<h2 class=\"nav-tab-wrapper wp-clearfix\">\n")
 	editClass, locClass := " nav-tab-active", ""
@@ -3897,6 +3970,7 @@ func (h *Handler) serveNavMenus(w http.ResponseWriter, r *http.Request, c *wp.Co
 	if locationsScreen {
 		b.WriteString("<div id=\"menu-locations-wrap\">\n")
 		b.WriteString("<form method=\"post\" action=\"/wp-admin/nav-menus.php?action=locations\">\n")
+		b.WriteString("<input type=\"hidden\" name=\"action\" value=\"locations\" />\n")
 		b.WriteString("<table class=\"widefat fixed\" id=\"menu-locations-table\">\n")
 		b.WriteString("<thead><tr><th scope=\"col\">Theme Location</th><th scope=\"col\">Assigned Menu</th></tr></thead>\n")
 		b.WriteString("<tbody class=\"menu-locations\">\n")
@@ -3919,24 +3993,63 @@ func (h *Handler) serveNavMenus(w http.ResponseWriter, r *http.Request, c *wp.Co
 		b.WriteString("<p class=\"button-controls wp-clearfix\">")
 		b.WriteString("<input type=\"submit\" name=\"nav-menu-locations\" id=\"nav-menu-locations\" class=\"button button-primary left\" value=\"Save Changes\">")
 		b.WriteString("</p>\n</form>\n</div>\n")
+	} else if selectedID == 0 && (action == "edit" || len(menus) == 0) {
+		// Create menu form (P7.111).
+		b.WriteString("<div class=\"manage-menus\">\n")
+		b.WriteString("<form id=\"add-nav-menu\" method=\"post\" action=\"/wp-admin/nav-menus.php?action=edit&amp;menu=0\">\n")
+		b.WriteString("<input type=\"hidden\" name=\"action\" value=\"update\" />\n")
+		b.WriteString("<label class=\"menu-name-label\" for=\"menu-name\"><span>Menu Name</span></label>\n")
+		b.WriteString("<input name=\"menu-name\" id=\"menu-name\" type=\"text\" class=\"regular-text menu-item-textbox\" value=\"\" />\n")
+		b.WriteString("<input type=\"submit\" name=\"save_menu\" id=\"save_menu_header\" class=\"button button-primary menu-save\" value=\"Create Menu\" />\n")
+		b.WriteString("</form>\n</div>\n")
 	} else {
-		b.WriteString("<p>GoPress nav-menus stub (P7.9) — drag-and-drop editor lands later.</p>\n")
-		b.WriteString("<div id=\"nav-menus-frame\" class=\"wp-clearfix\">\n")
-		b.WriteString("<ul class=\"menu\">\n")
-		if len(menus) == 0 {
-			b.WriteString("<li class=\"no-items\">No menus found.</li>\n")
-		} else {
+		b.WriteString("<div class=\"manage-menus\">\n")
+		if len(menus) > 0 {
+			b.WriteString("<form method=\"get\" action=\"/wp-admin/nav-menus.php\">\n")
+			b.WriteString("<input type=\"hidden\" name=\"action\" value=\"edit\" />\n")
+			b.WriteString("<label class=\"selected-menu\" for=\"select-menu-to-edit\">Select a menu to edit:</label>\n")
+			b.WriteString("<select name=\"menu\" id=\"select-menu-to-edit\">\n")
 			for _, m := range menus {
-				b.WriteString("<li class=\"menu-item\" data-menu-id=\"")
+				b.WriteString("<option value=\"")
 				b.WriteString(strconv.FormatInt(m.ID, 10))
-				b.WriteString("\"><strong>")
+				b.WriteString("\"")
+				if m.ID == selectedID {
+					b.WriteString(" selected=\"selected\"")
+				}
+				b.WriteString(">")
 				b.WriteString(html.EscapeString(m.Name))
-				b.WriteString("</strong> <span class=\"menu-slug\">")
-				b.WriteString(html.EscapeString(m.Slug))
-				b.WriteString("</span></li>\n")
+				b.WriteString("</option>\n")
 			}
+			b.WriteString("</select>\n")
+			b.WriteString("<span class=\"submit-btn\"><input type=\"submit\" class=\"button-secondary\" value=\"Select\" /></span>\n")
+			b.WriteString("<span class=\"add-new-menu-action\"> or <a href=\"/wp-admin/nav-menus.php?action=edit&amp;menu=0\">create a new menu</a>.</span>\n")
+			b.WriteString("</form>\n")
 		}
-		b.WriteString("</ul>\n</div>\n")
+		b.WriteString("</div>\n")
+		b.WriteString("<div id=\"nav-menus-frame\" class=\"wp-clearfix\">\n")
+		b.WriteString("<div id=\"menu-settings-column\" class=\"metabox-holder\">\n")
+		b.WriteString("<div class=\"accordion-container\">\n")
+		b.WriteString("<p>GoPress nav-menus stub (P7.9/P7.111) — drag-and-drop editor lands later.</p>\n")
+		b.WriteString("</div>\n</div>\n")
+		b.WriteString("<div id=\"menu-management-liquid\">\n")
+		if selected != nil {
+			b.WriteString("<div id=\"menu-to-edit\" class=\"menu\" data-menu-id=\"")
+			b.WriteString(strconv.FormatInt(selected.ID, 10))
+			b.WriteString("\">\n")
+			b.WriteString("<h3>")
+			b.WriteString(html.EscapeString(selected.Name))
+			b.WriteString("</h3>\n")
+			b.WriteString("<p class=\"menu-slug\"><code>")
+			b.WriteString(html.EscapeString(selected.Slug))
+			b.WriteString("</code></p>\n")
+			b.WriteString("<p class=\"menu-item-count\">")
+			b.WriteString(strconv.FormatInt(selected.Count, 10))
+			b.WriteString(" menu items</p>\n")
+			b.WriteString("</div>\n")
+		} else if len(menus) == 0 {
+			b.WriteString("<p class=\"no-menus\">No menus found. <a href=\"/wp-admin/nav-menus.php?action=edit&amp;menu=0\">Create a new menu</a>.</p>\n")
+		}
+		b.WriteString("</div>\n</div>\n")
 	}
 	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
@@ -3972,16 +4085,17 @@ func writeNavMenuLocationRow(b *strings.Builder, loc, desc string, menus []navMe
 }
 
 type navMenuTerm struct {
-	ID   int64
-	Name string
-	Slug string
+	ID    int64
+	Name  string
+	Slug  string
+	Count int64
 }
 
 func listNavMenus(c *wp.Context) ([]navMenuTerm, error) {
 	if c == nil || c.DB == nil {
 		return nil, nil
 	}
-	q := "SELECT t.term_id, t.name, t.slug FROM " + c.DB.Terms() + " t " +
+	q := "SELECT t.term_id, t.name, t.slug, tt.count FROM " + c.DB.Terms() + " t " +
 		"INNER JOIN " + c.DB.TermTaxonomy() + " tt ON t.term_id = tt.term_id " +
 		"WHERE tt.taxonomy = %s ORDER BY t.name ASC LIMIT 50"
 	sqlStr, args, err := c.DB.Prepare(q, "nav_menu")
@@ -3995,10 +4109,12 @@ func listNavMenus(c *wp.Context) ([]navMenuTerm, error) {
 	out := make([]navMenuTerm, 0, len(rows))
 	for _, row := range rows {
 		id, _ := strconv.ParseInt(fmt.Sprint(row["term_id"]), 10, 64)
+		count, _ := strconv.ParseInt(fmt.Sprint(row["count"]), 10, 64)
 		out = append(out, navMenuTerm{
-			ID:   id,
-			Name: fmt.Sprint(row["name"]),
-			Slug: fmt.Sprint(row["slug"]),
+			ID:    id,
+			Name:  fmt.Sprint(row["name"]),
+			Slug:  fmt.Sprint(row["slug"]),
+			Count: count,
 		})
 	}
 	return out, nil

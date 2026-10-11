@@ -1983,6 +1983,52 @@ func TestNavMenusLocationsSave(t *testing.T) {
 	}
 }
 
+func TestNavMenusEditSelectorAndCreate(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	h := &admin.Handler{}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/nav-menus.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !h.Handle(rec, req, rc, "/wp-admin/nav-menus.php") {
+		t.Fatal("GET edit not handled")
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`id="select-menu-to-edit"`,
+		"menu-locations-count",
+		"Add New Menu",
+		"menu-item-count",
+		"Fixture Classic Menu",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in %q", want, body[:min(1200, len(body))])
+		}
+	}
+
+	form := url.Values{}
+	form.Set("action", "update")
+	form.Set("menu-name", "Agent Nav Menu")
+	form.Set("save_menu", "Create Menu")
+	req = httptest.NewRequest(http.MethodPost, "/wp-admin/nav-menus.php?action=edit&menu=0", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	rc = c.ForRequest(rec, req)
+	if !h.Handle(rec, req, rc, "/wp-admin/nav-menus.php") {
+		t.Fatal("POST create not handled")
+	}
+	if rec.Code != http.StatusFound {
+		t.Fatalf("create status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	loc := rec.Header().Get("Location")
+	if !strings.Contains(loc, "/wp-admin/nav-menus.php?menu=") || !strings.Contains(loc, "message=1") {
+		t.Fatalf("redirect=%q", loc)
+	}
+}
+
 func TestEditPostsColumnToggleScreenOptions(t *testing.T) {
 	c := bootOrSkip(t)
 	ck := loginCookie(t, c)
