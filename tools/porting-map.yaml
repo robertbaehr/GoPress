@@ -10440,3 +10440,17 @@ wp-login.php#language-switcher-post
   task: P5.140
   api: n/a
   notes: "P5.140 — fontSize/anchor when post; empty without post"
+
+# P4.156: REST posts tags_exclude integer-array validation.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#tags_exclude#integer
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.156
+  api: tags_exclude
+  notes: "P4.156 — invalid integer → rest_invalid_param / rest_invalid_type; tags_exclude[]= empty fails"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#tags_exclude#integer#tests
+  go: internal/rest/posts_tags_exclude_p4_156_test.go
+  status: partial
+  task: P4.156
+  api: n/a
+  notes: "P4.156 — notint/empty-array/valid coverage"

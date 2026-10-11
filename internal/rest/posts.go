@@ -694,9 +694,10 @@ func parsePostsTags(r *http.Request) []int64 {
 	return parsePostsTermIDs(r, "tags")
 }
 
-// parsePostsTagsExclude reads REST ?tags_exclude= (tax_query NOT IN, P4.136).
-func parsePostsTagsExclude(r *http.Request) []int64 {
-	return parsePostsTermIDs(r, "tags_exclude")
+// parsePostsTagsExclude reads REST ?tags_exclude= (tax_query NOT IN, P4.136 / P4.156).
+// Present but non-integer → ok=false (rest_invalid_param / rest_invalid_type).
+func parsePostsTagsExclude(r *http.Request) ([]int64, bool) {
+	return parsePostsStrictTermIDs(r, "tags_exclude")
 }
 
 // parsePostsTaxRelation reads REST ?tax_relation=AND|OR (P4.136). Empty → AND.
