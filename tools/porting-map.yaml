@@ -11998,3 +11998,23 @@ wp-login.php#language-switcher-post
   task: P2.149
   api: n/a
   notes: "P2.149 — nil/value/fallback/blocked RemoteGet response code coverage"
+
+# P3.147: front feed_links alternate EscURL + feed_content_type.
+- prefix: wp-includes/general-template.php#feed_links
+  go: internal/server/front.go
+  status: partial
+  task: P3.147
+  api: n/a
+  notes: "P3.147 — feed_content_type type attr; EscURL on feed/comments/extra hrefs"
+- prefix: wp-includes/feed.php#feed_content_type
+  go: internal/wp/feed_links.go
+  status: partial
+  task: P3.147
+  api: exported
+  notes: "P3.147 — FeedContentType/GetFeedLink/FeedAlternateLinkHTML + filters"
+- prefix: wp-includes/general-template.php#feed_links#tests
+  go: internal/wp/feed_links_p3_147_test.go
+  status: partial
+  task: P3.147
+  api: n/a
+  notes: "P3.147 — content type, get_feed_link, EscURL alternate HTML"
