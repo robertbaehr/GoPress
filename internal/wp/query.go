@@ -603,7 +603,8 @@ func orderByClause(args QueryArgs, aliased bool) (string, []any) {
 	case "id":
 		return idCol + " " + dir, nil
 	case "slug", "post_name", "name":
-		return nameCol + " " + dir, nil
+		// P4.160: post_name primary; ID secondary for stable ties (REST orderby=slug).
+		return nameCol + " " + dir + ", " + idCol + " " + dir, nil
 	case "menu_order":
 		// P4.94: REST pages orderby=menu_order (page-attributes).
 		return menuCol + " " + dir, nil
