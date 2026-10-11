@@ -11754,3 +11754,17 @@ wp-login.php#language-switcher-post
   task: P7.152
   api: n/a
   notes: "P7.152 — save title/caption/description/alt coverage"
+
+# P2.147: wp_safe_remote_get (HttpValidateURL then RemoteGet).
+- prefix: wp-includes/http.php#wp_safe_remote_get
+  go: internal/wp/http.go
+  status: partial
+  task: P2.147
+  api: exported
+  notes: "P2.147 — SafeRemoteGet validates via HttpValidateURL then RemoteGet"
+- prefix: wp-includes/http.php#wp_safe_remote_get#tests
+  go: internal/wp/safe_remote_get_p2_147_test.go
+  status: partial
+  task: P2.147
+  api: n/a
+  notes: "P2.147 — reject unsafe URLs; BlockExternal; validated proceed"

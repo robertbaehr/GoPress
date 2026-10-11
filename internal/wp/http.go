@@ -61,3 +61,16 @@ func RemoteGet(c *Context, rawURL string) (*HTTPResponse, error) {
 		Headers:    resp.Header.Clone(),
 	}, nil
 }
+
+// SafeRemoteGet mirrors wp_safe_remote_get (P2.147).
+// Validates the URL with HttpValidateURL (reject_unsafe_urls) before RemoteGet.
+func SafeRemoteGet(c *Context, rawURL string) (*HTTPResponse, error) {
+	validated := HttpValidateURL(c, rawURL)
+	if validated == "" {
+		return nil, &HTTPError{
+			Code:    "http_request_failed",
+			Message: "A valid URL was not provided.",
+		}
+	}
+	return RemoteGet(c, validated)
+}
