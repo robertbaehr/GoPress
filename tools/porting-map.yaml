@@ -426,8 +426,16 @@ wp-login.php#language-switcher-post
 - prefix: wp-includes/post-template.php#get_the_password_form
   go: internal/wp/post_password.go
   status: partial
-  task: P6.15
+  task: P3.110
   api: exported
+  notes: "P3.110 — invalid-password alert + required + the_password_form filter; P6.15 base"
+
+- prefix: wp-includes/post-template.php#the_password_form_incorrect_password
+  go: internal/wp/post_password.go
+  status: partial
+  task: P3.110
+  api: exported
+  notes: "P3.110 — the_password_form_incorrect_password when referer matches + cookie set"
 
 - prefix: wp-login.php#resetpass
   go: internal/login/login.go
