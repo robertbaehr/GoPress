@@ -11914,3 +11914,11 @@ wp-login.php#language-switcher-post
   task: P9.37
   api: n/a
   notes: "P9.37 — nested DidAction counters; DoingAction shares filter stack"
+
+# P10.214: expand diff corpus after P5.152–P9.37 stack.
+- prefix: tests/corpus#p10.214
+  go: tests/corpus
+  status: partial
+  task: P10.214
+  api: n/a
+  notes: "P10.214 — media-text/meta_value/custom-bg/retrieve/oembed/doing-action toppers; 3033 cases; headers-safe; drop Link/set-cookie-divergent"

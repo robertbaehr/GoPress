@@ -2194,3 +2194,189 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.214: login toppers after stack.
+
+- id: login-p10214-001
+  role: anon
+  method: GET
+  path: /wp-login.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10214-002
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10214-003
+  role: anon
+  method: GET
+  path: /wp-login.php?action=login
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10214-004
+  role: anon
+  method: GET
+  path: /wp-login.php?redirect_to=%2Fwp-admin%2Fcustom-background.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10214-005
+  role: anon
+  method: GET
+  path: /wp-login.php?redirect_to=%2Fwp-admin%2Fthemes.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10214-006
+  role: anon
+  method: GET
+  path: /wp-login.php?redirect_to=%2Fwp-admin%2Fupload.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10214-007
+  role: anon
+  method: GET
+  path: /wp-login.php?redirect_to=%2Fsample-page%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10214-008
+  role: anon
+  method: GET
+  path: /wp-login.php?redirect_to=%2F%3Fs%3Doembed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10214-009
+  role: anon
+  method: GET
+  path: /wp-login.php?action=rp
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10214-010
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=confirm
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+# P10.214b: replacement headers-safe toppers after drop.
+
+- id: login-p10214b-001
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword&redirect_to=%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10214b-002
+  role: anon
+  method: GET
+  path: /wp-login.php?interim-login=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10214b-003
+  role: anon
+  method: GET
+  path: /wp-login.php?redirect_to=%2Fwp-admin%2Findex.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10214b-004
+  role: anon
+  method: GET
+  path: /wp-login.php?redirect_to=%2Fwp-admin%2Fedit.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10214b-006
+  role: anon
+  method: GET
+  path: /wp-login.php?registration=disabled
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+# P10.214c: safe toppers after second drop.
+
+- id: login-p10214c-001
+  role: anon
+  method: GET
+  path: /wp-login.php?redirect_to=%2Fwp-admin%2Fcustom-background.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10214c-002
+  role: anon
+  method: GET
+  path: /wp-login.php?redirect_to=%2F%3Fs%3Dmedia-text
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10214c-003
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword&redirect_to=%2Fwp-admin%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10214c-004
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=confirm
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10214c-005
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=registered
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
