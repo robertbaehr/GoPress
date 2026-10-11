@@ -1031,10 +1031,10 @@ func (f *Front) renderAuthorArchiveBlockTemplate(w http.ResponseWriter, c *wp.Co
 		if display == "" {
 			display = user.Login
 		}
-		slug := nicename
 		// feed_links_extra author: "%1$s %2$s Posts by %3$s Feed"
 		extraTitle = html.EscapeString(blogname) + " &raquo; Posts by " + html.EscapeString(display) + " Feed"
-		extraHref = home + "/author/" + slug + "/feed/"
+		// P3.149: author feed via get_author_feed_link.
+		extraHref = wp.GetAuthorFeedLink(c, home, user.ID, "")
 		restPath = "/wp/v2/users/" + strconv.FormatInt(user.ID, 10)
 	}
 	writeFrontHeadLinks(&b, c, home, blogname, "", restPath, "", extraTitle, extraHref, "", wp.SiteIconMetaTags(c))
