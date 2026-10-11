@@ -19,11 +19,15 @@ type PrivacyRequest struct {
 	File      string // optional export filename
 }
 
-// PrivacyRequestsTable mirrors WP_Privacy_Requests_Table columns (P8.10).
+// PrivacyRequestsTable mirrors WP_Privacy_Requests_Table columns (P8.10 / P7.150).
 type PrivacyRequestsTable struct {
 	RequestType string // export_personal_data | remove_personal_data
 	AdminURL    string
 	Rows        []PrivacyRequest
+	// OrderBy is requester|requested (sortable columns, P7.150).
+	OrderBy string
+	// Order is ASC|DESC (P7.150).
+	Order string
 }
 
 // Columns returns column titles keyed by name (get_columns).
@@ -47,7 +51,7 @@ func (t PrivacyRequestsTable) RenderHTMLWithFilter(filterStatus string) string {
 	return t.RenderHTMLWithFilterSearch(filterStatus, "")
 }
 
-// RenderHTMLWithFilterSearch emits views + optional search box + table (P7.97 / P7.144).
+// RenderHTMLWithFilterSearch emits views + optional search box + bulk form + table (P7.97 / P7.144 / P7.150).
 // search filters requester email (case-insensitive substring; WP_List_Table::search_box).
 func (t PrivacyRequestsTable) RenderHTMLWithFilterSearch(filterStatus, search string) string {
 	cols := t.Columns()
@@ -58,6 +62,30 @@ func (t PrivacyRequestsTable) RenderHTMLWithFilterSearch(filterStatus, search st
 	if t.RequestType == "remove_personal_data" || t.RequestType == "export_personal_data" {
 		b.WriteString(t.renderSearchBoxHTML(filterStatus, search))
 	}
+	// P7.150: bulk actions form (WP_Privacy_Requests_Table::get_bulk_actions).
+	adminURL := t.AdminURL
+	if adminURL == "" {
+		if t.RequestType == "export_personal_data" {
+			adminURL = "/wp-admin/export-personal-data.php"
+		} else {
+			adminURL = "/wp-admin/erase-personal-data.php"
+		}
+	}
+	b.WriteString(`<form method="post" action="`)
+	b.WriteString(html.EscapeString(adminURL))
+	b.WriteString(`" id="posts-filter" class="privacy-requests-bulk-form">` + "\n")
+	b.WriteString(`<input type="hidden" name="_wpnonce" value="bulk-privacy_requests">` + "\n")
+	b.WriteString(`<div class="tablenav top">` + "\n")
+	b.WriteString(`<div class="alignleft actions bulkactions">` + "\n")
+	b.WriteString(`<label for="bulk-action-selector-top" class="screen-reader-text">Select bulk action</label>` + "\n")
+	b.WriteString(`<select name="action" id="bulk-action-selector-top">` + "\n")
+	b.WriteString(`<option value="-1">Bulk actions</option>` + "\n")
+	b.WriteString(`<option value="resend">Resend confirmation requests</option>` + "\n")
+	b.WriteString(`<option value="complete">Mark requests as completed</option>` + "\n")
+	b.WriteString(`<option value="delete">Delete requests</option>` + "\n")
+	b.WriteString("</select>\n")
+	b.WriteString(`<input type="submit" id="doaction" class="button action" value="Apply">` + "\n")
+	b.WriteString("</div>\n</div>\n")
 	b.WriteString(`<table class="wp-list-table widefat fixed striped table-view-list privacy-requests requests-table">` + "\n")
 	b.WriteString("<thead><tr>\n")
 	for _, key := range order {
@@ -68,13 +96,16 @@ func (t PrivacyRequestsTable) RenderHTMLWithFilterSearch(filterStatus, search st
 		b.WriteString(`">`)
 		if key == "cb" {
 			b.WriteString(cols[key])
+		} else if key == "email" || key == "created_timestamp" {
+			// P7.150: sortable columns (get_sortable_columns).
+			b.WriteString(t.renderSortableColumnHTML(key, cols[key], filterStatus, search))
 		} else {
 			b.WriteString(html.EscapeString(cols[key]))
 		}
 		b.WriteString("</th>\n")
 	}
 	b.WriteString("</tr></thead>\n<tbody id=\"the-list\">\n")
-	rows := t.filteredRowsSearch(filterStatus, search)
+	rows := t.sortedRows(t.filteredRowsSearch(filterStatus, search))
 	if len(rows) == 0 {
 		b.WriteString(`<tr class="no-items"><td class="colspanchange" colspan="5">No requests found.</td></tr>` + "\n")
 	}
@@ -117,7 +148,90 @@ func (t PrivacyRequestsTable) RenderHTMLWithFilterSearch(filterStatus, search st
 		b.WriteString(`</td></tr>` + "\n")
 	}
 	b.WriteString("</tbody>\n</table>\n")
+	b.WriteString("</form>\n")
 	return b.String()
+}
+
+// renderSortableColumnHTML emits a sortable column header link (P7.150).
+func (t PrivacyRequestsTable) renderSortableColumnHTML(key, label, filterStatus, search string) string {
+	orderby := "requester"
+	if key == "created_timestamp" {
+		orderby = "requested"
+	}
+	nextOrder := "asc"
+	if strings.EqualFold(t.OrderBy, orderby) && strings.EqualFold(t.Order, "asc") {
+		nextOrder = "desc"
+	} else if strings.EqualFold(t.OrderBy, orderby) && strings.EqualFold(t.Order, "desc") {
+		nextOrder = "asc"
+	} else if orderby == "requested" && t.OrderBy == "" {
+		// Initial sort is requested DESC; first click → ASC (WP get_sortable_columns).
+		nextOrder = "asc"
+	}
+	adminURL := t.AdminURL
+	if adminURL == "" {
+		adminURL = "/wp-admin/erase-personal-data.php"
+	}
+	href := adminURL + "?orderby=" + orderby + "&order=" + nextOrder
+	if filterStatus != "" {
+		href += "&filter-status=" + filterStatus
+	}
+	if search != "" {
+		href += "&s=" + search
+	}
+	cls := "sortable"
+	if strings.EqualFold(t.OrderBy, orderby) {
+		if strings.EqualFold(t.Order, "asc") {
+			cls = "sorted asc"
+		} else {
+			cls = "sorted desc"
+		}
+	}
+	return `<a href="` + html.EscapeString(href) + `"><span>` + html.EscapeString(label) +
+		`</span><span class="sorting-indicators"><span class="sorting-indicator ` + cls + `"></span></span></a>`
+}
+
+func (t PrivacyRequestsTable) sortedRows(rows []PrivacyRequest) []PrivacyRequest {
+	if len(rows) < 2 {
+		return rows
+	}
+	orderby := strings.ToLower(strings.TrimSpace(t.OrderBy))
+	asc := strings.EqualFold(strings.TrimSpace(t.Order), "ASC")
+	if orderby == "" {
+		return rows
+	}
+	out := make([]PrivacyRequest, len(rows))
+	copy(out, rows)
+	less := func(i, j int) bool {
+		switch orderby {
+		case "requester", "email":
+			a := strings.ToLower(out[i].Email)
+			b := strings.ToLower(out[j].Email)
+			if a == b {
+				return out[i].ID < out[j].ID
+			}
+			if asc {
+				return a < b
+			}
+			return a > b
+		case "requested", "created_timestamp":
+			if out[i].Requested.Equal(out[j].Requested) {
+				return out[i].ID < out[j].ID
+			}
+			if asc {
+				return out[i].Requested.Before(out[j].Requested)
+			}
+			return out[i].Requested.After(out[j].Requested)
+		default:
+			return out[i].ID < out[j].ID
+		}
+	}
+	// Simple insertion sort (tables are small).
+	for i := 1; i < len(out); i++ {
+		for j := i; j > 0 && less(j, j-1); j-- {
+			out[j], out[j-1] = out[j-1], out[j]
+		}
+	}
+	return out
 }
 
 // renderViewsHTML emits WP_Privacy_Requests_Table::get_views links (P7.97).
@@ -277,12 +391,15 @@ func privacyStatusLabel(status string) string {
 	}
 }
 
-// renderExportPrivacyRequestsTable builds the export-personal-data list table (P8.10 / P7.98 / P7.145).
+// renderExportPrivacyRequestsTable builds the export-personal-data list table (P8.10 / P7.98 / P7.145 / P7.150).
 // filterStatus is the filter-status query arg; search is ?s= requester filter (P7.145).
-func renderExportPrivacyRequestsTable(c *wp.Context, pendingEmail, filterStatus, search string) string {
+// orderby/order are sortable column query args (P7.150).
+func renderExportPrivacyRequestsTable(c *wp.Context, pendingEmail, filterStatus, search, orderby, order string) string {
 	table := PrivacyRequestsTable{
 		RequestType: "export_personal_data",
 		AdminURL:    "/wp-admin/export-personal-data.php",
+		OrderBy:     orderby,
+		Order:       order,
 	}
 	seen := map[string]bool{}
 	if c != nil {
@@ -328,12 +445,15 @@ func renderExportPrivacyRequestsTable(c *wp.Context, pendingEmail, filterStatus,
 	return table.RenderHTMLWithFilterSearch(filterStatus, search)
 }
 
-// renderErasePrivacyRequestsTable lists stored user_request rows (P8.10 / P8.21 / P7.97 / P7.144).
+// renderErasePrivacyRequestsTable lists stored user_request rows (P8.10 / P8.21 / P7.97 / P7.144 / P7.150).
 // filterStatus is the filter-status query arg; search is ?s= requester filter (P7.144).
-func renderErasePrivacyRequestsTable(c *wp.Context, pendingEmail, filterStatus, search string) string {
+// orderby/order are sortable column query args (P7.150).
+func renderErasePrivacyRequestsTable(c *wp.Context, pendingEmail, filterStatus, search, orderby, order string) string {
 	table := PrivacyRequestsTable{
 		RequestType: "remove_personal_data",
 		AdminURL:    "/wp-admin/erase-personal-data.php",
+		OrderBy:     orderby,
+		Order:       order,
 	}
 	seen := map[string]bool{}
 	if c != nil {

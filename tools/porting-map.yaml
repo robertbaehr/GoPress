@@ -11498,3 +11498,23 @@ wp-login.php#language-switcher-post
   task: P4.165
   api: n/a
   notes: "P4.165 — inclusive boundary retain coverage"
+
+# P7.150: deepen privacy requests table bulk actions + sortable columns.
+- prefix: wp-admin/includes/class-wp-privacy-requests-table.php#bulk
+  go: internal/admin/privacy_requests_table.go
+  status: partial
+  task: P7.150
+  api: n/a
+  notes: "P7.150 — bulk actions form resend/complete/delete; sortable requester/requested headers"
+- prefix: wp-admin/includes/class-wp-privacy-requests-table.php#bulk#process
+  go: internal/admin/privacy_bulk.go
+  status: partial
+  task: P7.150
+  api: n/a
+  notes: "P7.150 — process_bulk_action + DeleteUserRequest/ResendUserRequestConfirmation"
+- prefix: wp-admin/includes/class-wp-privacy-requests-table.php#bulk#tests
+  go: internal/admin/privacy_requests_p7_150_test.go
+  status: partial
+  task: P7.150
+  api: n/a
+  notes: "P7.150 — bulk UI + complete/delete coverage"
