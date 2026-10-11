@@ -223,23 +223,63 @@ func (h *Hooks) ApplyFiltersDeprecated(hookName string, args []any, version, rep
 	return h.ApplyFiltersRefArray(hookName, args)
 }
 
-// DoActionDeprecated mirrors do_action_deprecated (P9.33).
-// No-op when no callbacks are registered on hookName.
+// DoActionDeprecated mirrors do_action_deprecated (P9.33 / P9.34).
+// No-op when no callbacks are registered on hookName (has_action).
+// Nil/empty args still fire DoActionRefArray when callbacks exist (P9.34).
 func (h *Hooks) DoActionDeprecated(hookName string, args []any, version, replacement, message string) {
 	if h == nil || !h.HasAction(hookName) {
 		return
 	}
 	h.DeprecatedHook(hookName, version, replacement, message)
+	if args == nil {
+		args = []any{}
+	}
 	h.DoActionRefArray(hookName, args)
 }
 
-// DeprecatedHook mirrors _deprecated_hook (P9.33).
-// Fires deprecated_hook_run; error triggering (WP_DEBUG) is out of scope.
+// LastDeprecatedHookNotice is the most recent notice text from DeprecatedHook
+// when deprecated_hook_trigger_error is truthy (P9.34). Empty when suppressed.
+var LastDeprecatedHookNotice string
+
+// DeprecatedHook mirrors _deprecated_hook (P9.33 / P9.34).
+// Fires deprecated_hook_run; when deprecated_hook_trigger_error allows,
+// records a WP-style notice in LastDeprecatedHookNotice (no process abort).
 func (h *Hooks) DeprecatedHook(hookName, version, replacement, message string) {
 	if h == nil {
 		return
 	}
 	h.DoAction("deprecated_hook_run", hookName, replacement, version, message)
+	// P9.34: honor deprecated_hook_trigger_error (default true; WP_DEBUG gate omitted).
+	trigger := true
+	if v := h.ApplyFilters("deprecated_hook_trigger_error", trigger); v != nil {
+		switch t := v.(type) {
+		case bool:
+			trigger = t
+		case int:
+			trigger = t != 0
+		case string:
+			trigger = t != "" && t != "0" && !strings.EqualFold(t, "false")
+		}
+	}
+	if !trigger {
+		LastDeprecatedHookNotice = ""
+		return
+	}
+	LastDeprecatedHookNotice = DeprecatedHookNotice(hookName, version, replacement, message)
+}
+
+// DeprecatedHookNotice builds the _deprecated_hook user-facing message (P9.34).
+func DeprecatedHookNotice(hookName, version, replacement, message string) string {
+	extra := ""
+	if strings.TrimSpace(message) != "" {
+		extra = " " + message
+	}
+	if strings.TrimSpace(replacement) != "" {
+		return "Hook " + hookName + " is deprecated since version " + version +
+			"! Use " + replacement + " instead." + extra
+	}
+	return "Hook " + hookName + " is deprecated since version " + version +
+		" with no alternative available." + extra
 }
 
 // DidAction returns how many times tag has been fired via DoAction /
