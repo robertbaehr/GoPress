@@ -3639,6 +3639,13 @@ wp-login.php#language-switcher-post
   task: P3.39
   api: n/a
 
+- prefix: wp-includes/general-template.php#feed_links-p3.117
+  go: internal/server/front.go
+  status: partial
+  task: P3.117
+  api: n/a
+  notes: "P3.117 — feed_links_show_posts_feed / feed_links_show_comments_feed + feed_links_args"
+
 # P3.47: get_the_generator / wp_generator (meta + feeds; export as GoPress/version).
 - prefix: wp-includes/general-template.php#get_the_generator
   go: internal/wp/generator.go
