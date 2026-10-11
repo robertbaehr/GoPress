@@ -7202,3 +7202,18 @@ wp-login.php#language-switcher-post
   task: P4.127
   api: n/a
   notes: "P4.127 — unit coverage for namespace indexes, HEAD, rest_route, unknown"
+
+# P7.112: widgets.php Appearance → Widgets stub (editor/REST gone).
+- prefix: wp-admin/widgets.php
+  go: internal/admin/widgets.go
+  status: partial
+  task: P7.112
+  api: n/a
+  notes: "P7.112 — edit_theme_options gate; widgets-block-editor notice; Site Editor/Themes links; X-GoPress-Widgets"
+
+- prefix: internal/admin/widgets_test.go
+  go: internal/admin/widgets_test.go
+  status: done
+  task: P7.112
+  api: n/a
+  notes: "P7.112 — unit coverage for widgets stub and login redirect"
