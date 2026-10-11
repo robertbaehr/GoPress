@@ -230,6 +230,9 @@ func (c *Context) MapMetaCap(cap string, userID int64, args ...int64) []string {
 	case "edit_comment":
 		// P3.158: map_meta_cap('edit_comment') → edit_post for the comment's post.
 		return c.mapEditComment(userID, args...)
+	case "edit_term":
+		// P3.161: subset — categories/tags UI uses manage_categories.
+		return []string{"manage_categories"}
 	case "edit_user":
 		return c.mapEditUser(userID, args...)
 	case "delete_user":
