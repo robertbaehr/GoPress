@@ -10932,3 +10932,23 @@ wp-login.php#language-switcher-post
   task: P4.160
   api: n/a
   notes: "P4.160 — slug asc/desc include + pages + name reject + array-form"
+
+# P7.145: deepen export-personal-data search box + privacy-tools.
+- prefix: wp-admin/export-personal-data.php#search
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.145
+  api: n/a
+  notes: "P7.145 — Search Requests box (?s=), privacy-tools marker, hr before table"
+- prefix: wp-admin/export-personal-data.php#search#table
+  go: internal/admin/privacy_requests_table.go
+  status: partial
+  task: P7.145
+  api: n/a
+  notes: "P7.145 — export_personal_data search box + RenderHTMLWithFilterSearch"
+- prefix: wp-admin/export-personal-data.php#search#tests
+  go: internal/admin/export_personal_data_p7_145_test.go
+  status: partial
+  task: P7.145
+  api: n/a
+  notes: "P7.145 — search hit/miss + privacy-tools marker coverage"
