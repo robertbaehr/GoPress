@@ -4925,6 +4925,21 @@ wp-login.php#language-switcher-post
   api: internal
   notes: "P5.84 — has-child submenu container + chevron icon"
 
+# P5.118: deepen core/template-part wrapper attrs + area tags + theme gate.
+- prefix: wp-includes/blocks/template-part.php#p5.118
+  go: internal/blocks/render.go
+  status: partial
+  task: P5.118
+  api: internal
+  notes: "P5.118 — className/anchor on wrapper; area→area_tag (header/footer/div); theme mismatch empty; applySupports path"
+
+- prefix: wp-includes/blocks/template-part.php#p5.118#tests
+  go: internal/blocks/template_part_test.go
+  status: partial
+  task: P5.118
+  api: n/a
+  notes: "P5.118 — className/anchor/area/theme unit coverage"
+
 # P5.117: deepen core/navigation layout + submenu context.
 - prefix: wp-includes/blocks/navigation.php#p5.117
   go: internal/blocks/navigation.go

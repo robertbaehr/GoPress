@@ -129,7 +129,8 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/embed":
 		out = e.renderEmbed(block)
 	case "core/template-part":
-		return e.renderTemplatePart(block)
+		// P5.118: assign to out so applySupports can attach colors/typography.
+		out = e.renderTemplatePart(block)
 	case "core/navigation":
 		out = e.renderNavigation(block)
 	case "core/navigation-link":
@@ -263,6 +264,12 @@ func (e *Env) renderTemplatePart(block Block) string {
 	if slug == "" || e.LoadTemplatePart == nil {
 		return ""
 	}
+	// P5.118: theme mismatch → empty (render_block_core_template_part requires
+	// attributes.theme === get_stylesheet(); injected default is twentytwentyfive).
+	if theme := strings.TrimSpace(attrString(block.Attrs, "theme")); theme != "" &&
+		!strings.EqualFold(theme, "twentytwentyfive") {
+		return ""
+	}
 	if e.seenPart == nil {
 		e.seenPart = map[string]bool{}
 	}
@@ -278,10 +285,25 @@ func (e *Env) renderTemplatePart(block Block) string {
 	}
 	inner := e.Render(content)
 	tag := templatePartTag(block)
+	classes := []string{"wp-block-template-part"}
+	// P5.118: className on wrapper (get_block_wrapper_attributes); applySupports
+	// may add it again idempotently via addRootClass.
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		classes = append(classes, strings.Fields(cn)...)
+	}
 	var b strings.Builder
 	b.WriteString("<")
 	b.WriteString(tag)
-	b.WriteString(` class="wp-block-template-part">`)
+	b.WriteString(` class="`)
+	b.WriteString(html.EscapeString(strings.Join(classes, " ")))
+	b.WriteString(`"`)
+	// P5.118: anchor → id (not covered by applySupports).
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		b.WriteString(` id="`)
+		b.WriteString(html.EscapeString(anchor))
+		b.WriteString(`"`)
+	}
+	b.WriteString(`>`)
 	b.WriteString(inner)
 	b.WriteString("</")
 	b.WriteString(tag)
@@ -296,12 +318,15 @@ func templatePartTag(block Block) string {
 			return tn
 		}
 	}
+	// P5.118: area → area_tag from get_allowed_block_template_part_areas.
 	if area, ok := block.Attrs["area"].(string); ok {
 		switch strings.ToLower(strings.TrimSpace(area)) {
 		case "header":
 			return "header"
 		case "footer":
 			return "footer"
+		case "uncategorized", "sidebar", "navigation-overlay", "general":
+			return "div"
 		}
 	}
 	// WP defaults the wrapping tag from the part slug when tagName/area unset (P5.16).
