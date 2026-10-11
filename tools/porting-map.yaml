@@ -8762,3 +8762,25 @@ wp-login.php#language-switcher-post
   task: P10.161
   api: n/a
   notes: "P10.161 — summarize query-pagination/sticky/ignore_sticky/site-editor/json_encode/enqueue/did_filter + 1295 corpus"
+
+# P5.126: deepen core/post-terms + core/post-author.
+- prefix: wp-includes/blocks/post-terms.php#p5.126
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.126
+  api: internal
+  notes: "P5.126 — anchor id; text/background colors; block.json separator default ', '"
+
+- prefix: wp-includes/blocks/post-author.php#p5.126
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.126
+  api: internal
+  notes: "P5.126 — showAvatar default true; anchor; text/background colors; noreferrer noopener on _blank"
+
+- prefix: wp-includes/blocks/post-terms.php#p5.126#tests
+  go: internal/blocks/post_terms_author_p5_126_test.go
+  status: partial
+  task: P5.126
+  api: n/a
+  notes: "P5.126 — post-terms/post-author polish unit coverage"
