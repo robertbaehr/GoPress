@@ -369,18 +369,26 @@ func KsesSplit(content string, allowed AllowedHTML, protocols []string) string {
 	return ksesSanitize(content, allowed, protoSet)
 }
 
-// KsesFiltered is wp_kses with the pre_kses hook (P2.108).
+// KsesHook applies the pre_kses filter (wp_kses_hook, P2.131).
+// Passes content, allowed HTML, and allowed protocols to the filter.
+func KsesHook(c *Context, content string, allowed AllowedHTML, protocols []string) string {
+	if c == nil || c.Hooks == nil {
+		return content
+	}
+	filtered := c.Hooks.ApplyFilters("pre_kses", content, allowed, protocols)
+	if s, ok := filtered.(string); ok {
+		return s
+	}
+	return content
+}
+
+// KsesFiltered is wp_kses with the pre_kses hook (P2.108 / P2.131).
 func KsesFiltered(c *Context, content string, allowed AllowedHTML, protocols []string) string {
 	loadKsesAllowed()
 	if protocols == nil {
 		protocols = append([]string(nil), ksesProtos...)
 	}
-	if c != nil && c.Hooks != nil {
-		filtered := c.Hooks.ApplyFilters("pre_kses", content, allowed, protocols)
-		if s, ok := filtered.(string); ok {
-			content = s
-		}
-	}
+	content = KsesHook(c, content, allowed, protocols)
 	return ksesRun(content, allowed, protocols)
 }
 

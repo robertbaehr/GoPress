@@ -9967,3 +9967,17 @@ wp-login.php#language-switcher-post
   task: P7.136
   api: n/a
   notes: "P7.136 — editor coffee fixture scheme on dashboard"
+
+# P2.131: wp_kses_hook.
+- prefix: wp-includes/kses.php#wp_kses_hook
+  go: internal/wp/kses.go
+  status: partial
+  task: P2.131
+  api: wp_kses_hook
+  notes: "P2.131 — KsesHook applies pre_kses; KsesFiltered routes through it"
+- prefix: wp-includes/kses.php#wp_kses_hook#tests
+  go: internal/wp/kses_hook_p2_131_test.go
+  status: partial
+  task: P2.131
+  api: n/a
+  notes: "P2.131 — pre_kses via KsesHook + KsesFiltered composition"
