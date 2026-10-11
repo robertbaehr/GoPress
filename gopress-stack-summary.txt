@@ -1,4 +1,4 @@
-GoPress stack tip cursor/p10-220-status-refresh-ddf1 / db1167c7e190eb9f6a021a91fce7d4ebdf9e38bb
+GoPress stack tip cursor/p10-220-status-refresh-ddf1 / ab580453cff4f6e7d532943914b1de62a915e6f4
 
 cursor/p5-158-video-attrs-ddf1 → baa087118de8
 cursor/p2-153-remote-request-ddf1 → 69c5745a1068
@@ -7,7 +7,7 @@ cursor/p8-51-attachment-is-ddf1 → c8830410da09
 cursor/p4-174-rest-posts-meta-type-key-ddf1 → f4f9b1997b27
 cursor/p7-159-credits-chrome-ddf1 → f87c8eade3b5
 
-cursor/p10-220-status-refresh-ddf1 → db1167c7e190
+cursor/p10-220-status-refresh-ddf1 → ab580453cff4
 
 make diff: 100.0% (3162/3162 strict matches, 0 allowlisted, 0 failed) — carried from P10.218
 make check: ok (lint + go test -p 1 ./...)
