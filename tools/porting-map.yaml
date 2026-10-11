@@ -8881,3 +8881,11 @@ wp-login.php#language-switcher-post
   task: P10.162
   api: n/a
   notes: "P10.162 — parent invalid/array + post-terms/author block-types + front/login/ajax toppers; 1325 cases"
+
+# P10.163: STATUS/PORTING refresh after P5.126–P10.162.
+- prefix: docs/STATUS.md#p10.163
+  go: docs/STATUS.md
+  status: partial
+  task: P10.163
+  api: n/a
+  notes: "P10.163 — summarize post-terms/author, parent validate, block-editor, parse_list, language_attributes, attachment metadata + 1325 corpus"
