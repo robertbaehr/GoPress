@@ -66,3 +66,27 @@ func TestRenderTemplatePartCycleGuard(t *testing.T) {
 		t.Fatalf("cycle not guarded: %q", out)
 	}
 }
+
+func TestRenderTemplatePartClassNameAnchorArea(t *testing.T) {
+	// P5.118: className / anchor / area tag + theme mismatch.
+	env := &blocks.Env{
+		LoadTemplatePart: func(slug string) (string, bool) {
+			return `<!-- wp:paragraph --><p>Part</p><!-- /wp:paragraph -->`, true
+		},
+	}
+	out := blocks.RenderWith(env, `<!-- wp:template-part {"slug":"sidebar","area":"uncategorized","className":"site-aside","anchor":"site-aside","theme":"twentytwentyfive"} /-->`)
+	if !strings.Contains(out, `<div class="wp-block-template-part site-aside" id="site-aside">`) {
+		t.Fatalf("wrapper attrs: %q", out)
+	}
+	if !strings.Contains(out, `<p class="wp-block-paragraph">Part</p>`) {
+		t.Fatalf("missing inner: %q", out)
+	}
+	out = blocks.RenderWith(env, `<!-- wp:template-part {"slug":"header","area":"header","theme":"twentytwentyfive"} /-->`)
+	if !strings.Contains(out, `<header class="wp-block-template-part">`) {
+		t.Fatalf("area=header tag: %q", out)
+	}
+	out = blocks.RenderWith(env, `<!-- wp:template-part {"slug":"header","theme":"other-theme"} /-->`)
+	if out != "" {
+		t.Fatalf("theme mismatch should be empty: %q", out)
+	}
+}
