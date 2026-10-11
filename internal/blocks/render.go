@@ -178,7 +178,9 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/home-link":
 		return e.renderHomeLink(block)
 	case "core/loginout":
-		return e.renderLoginout(block)
+		// P5.164: coerce align enum before applySupports (left|center|right).
+		out = e.renderLoginout(block)
+		return applySupports(out, sanitizeLoginoutBlockAttrs(block.Attrs), name)
 	case "core/page-list":
 		// Standalone page-list (outside navigation): wrap as a simple list (P5.94).
 		items := e.renderPageList(block)

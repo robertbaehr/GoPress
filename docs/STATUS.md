@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.225)
 
+- P5.164 `core/loginout` align coerce left|center|right
 - P8.57 `AttachmentURLToPostID` (`attachment_url_to_postid`)
 - P3.157 `GetPreviewPostLink` (`preview_post_link`)
 - P2.159 `SendNosniffHeader` / `AdminHeaders` (`admin_referrer_policy`)
