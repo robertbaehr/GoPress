@@ -734,11 +734,11 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	b.WriteString("\t\t</form>\n\n")
 	if !interim {
 		b.WriteString("\t\t\t\t\t<p id=\"nav\">\n")
-		// P6.64: Register + login_link_separator before lost-password when registration open (WP login form).
+		// P6.64 / P6.67: Register (`register` filter) + login_link_separator before lost-password.
 		if usersCanRegister(c) {
-			b.WriteString("\t\t\t\t<a class=\"wp-login-register\" href=\"")
-			b.WriteString(html.EscapeString(loginURL + "?action=register"))
-			b.WriteString("\">Register</a>\n")
+			b.WriteString("\t\t\t\t")
+			b.WriteString(registerHTMLLink(c, loginURL+"?action=register"))
+			b.WriteString("\n")
 			b.WriteString(html.EscapeString(loginLinkSeparator(c)))
 			b.WriteString("\n")
 		}
@@ -1095,13 +1095,13 @@ func (h *Handler) serveLostPassword(w http.ResponseWriter, r *http.Request, c *w
 	b.WriteString("\t\t\t<a class=\"wp-login-log-in\" href=\"")
 	b.WriteString(html.EscapeString(loginURL))
 	b.WriteString("\">Log in</a>\n")
-	// P6.64: login_link_separator + Register when users_can_register (WP lostpassword nav).
+	// P6.64 / P6.67: login_link_separator + Register (`register` filter) when open.
 	if usersCanRegister(c) {
 		b.WriteString(html.EscapeString(loginLinkSeparator(c)))
 		b.WriteString("\n")
-		b.WriteString("\t\t\t<a class=\"wp-login-register\" href=\"")
-		b.WriteString(html.EscapeString(loginURL + "?action=register"))
-		b.WriteString("\">Register</a>\n")
+		b.WriteString("\t\t\t")
+		b.WriteString(registerHTMLLink(c, loginURL+"?action=register"))
+		b.WriteString("\n")
 	}
 	b.WriteString("\t\t\t\t\t</p>\n")
 	writeLoginBackToBlog(&b, c, home, blogname)
@@ -1183,6 +1183,20 @@ func lostPasswordHTMLLink(c *wp.Context, href string) string {
 	link := `<a class="wp-login-lost-password" href="` + html.EscapeString(href) + `">Lost your password?</a>`
 	if c != nil && c.Hooks != nil {
 		if v := c.Hooks.ApplyFilters("lost_password_html_link", link); v != nil {
+			if s, ok := v.(string); ok {
+				return s
+			}
+		}
+	}
+	return link
+}
+
+// registerHTMLLink builds the Register nav anchor and applies register (P6.67).
+// href is EscURL'd; link text is fixed. Documented in general-template.php.
+func registerHTMLLink(c *wp.Context, href string) string {
+	link := `<a class="wp-login-register" href="` + html.EscapeString(href) + `">Register</a>`
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("register", link); v != nil {
 			if s, ok := v.(string); ok {
 				return s
 			}
