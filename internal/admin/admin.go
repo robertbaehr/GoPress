@@ -3379,6 +3379,14 @@ func (h *Handler) serveCommentModerate(w http.ResponseWriter, r *http.Request, c
 		}
 	}
 	cid, _ := strconv.ParseInt(strings.TrimSpace(r.URL.Query().Get("c")), 10, 64)
+	// P7.119: editedcomment posts comment_ID (edit-form-comment.php).
+	if cid <= 0 {
+		_ = r.ParseForm()
+		cid, _ = strconv.ParseInt(strings.TrimSpace(r.FormValue("comment_ID")), 10, 64)
+		if cid <= 0 {
+			cid, _ = strconv.ParseInt(strings.TrimSpace(r.FormValue("c")), 10, 64)
+		}
+	}
 	if cid <= 0 {
 		http.Redirect(w, r, "/wp-admin/edit-comments.php?error=1", http.StatusFound)
 		return
@@ -3400,6 +3408,16 @@ func (h *Handler) serveCommentModerate(w http.ResponseWriter, r *http.Request, c
 	// P7.65: reply form on comment.php?action=replyto.
 	if action == "replyto" || action == "replytocomment" {
 		h.serveCommentReply(w, r, c, cm, cid)
+		return
+	}
+
+	// P7.119: edit form POST (editedcomment) + GET editcomment.
+	if action == "editedcomment" || (action == "editcomment" && r.Method == http.MethodPost) {
+		h.serveCommentEdited(w, r, c, cm, cid)
+		return
+	}
+	if action == "editcomment" || action == "" {
+		h.serveCommentEditForm(w, r, c, cm, cid)
 		return
 	}
 
@@ -3426,33 +3444,30 @@ func (h *Handler) serveCommentModerate(w http.ResponseWriter, r *http.Request, c
 		}
 	}
 
-	heading := "Edit Comment"
+	heading := "Moderate Comment"
 	caution := ""
 	button := ""
 	formAction := ""
 	switch action {
 	case "approve":
-		heading = "Moderate Comment"
 		caution = "You are about to approve the following comment:"
 		button = "Approve comment"
 		formAction = "approvecomment"
 	case "spam":
-		heading = "Moderate Comment"
 		caution = "You are about to mark the following comment as spam:"
 		button = "Mark as spam"
 		formAction = "spamcomment"
 	case "trash":
-		heading = "Moderate Comment"
 		caution = "You are about to move the following comment to the Trash:"
 		button = "Move to Trash"
 		formAction = "trashcomment"
 	case "delete":
-		heading = "Moderate Comment"
 		caution = "You are about to delete the following comment:"
 		button = "Permanently delete comment"
 		formAction = "deletecomment"
 	default:
-		action = "editcomment"
+		h.serveCommentEditForm(w, r, c, cm, cid)
+		return
 	}
 
 	var b strings.Builder
@@ -3492,24 +3507,107 @@ func (h *Handler) serveCommentModerate(w http.ResponseWriter, r *http.Request, c
 		b.WriteString("\" /> ")
 		b.WriteString("<a class=\"button\" href=\"/wp-admin/edit-comments.php\">Cancel</a></p>\n")
 		b.WriteString("</form>\n")
-	} else {
-		b.WriteString("<p class=\"submit\">")
-		b.WriteString(`<a class="button" href="/wp-admin/comment.php?action=approve&amp;c=`)
-		b.WriteString(strconv.FormatInt(cid, 10))
-		b.WriteString(`">Approve</a> `)
-		b.WriteString(`<a class="button" href="/wp-admin/comment.php?action=spam&amp;c=`)
-		b.WriteString(strconv.FormatInt(cid, 10))
-		b.WriteString(`">Spam</a> `)
-		b.WriteString(`<a class="button" href="/wp-admin/comment.php?action=trash&amp;c=`)
-		b.WriteString(strconv.FormatInt(cid, 10))
-		b.WriteString(`">Trash</a> `)
-		b.WriteString(`<a class="button button-primary" href="/wp-admin/comment.php?action=replyto&amp;c=`)
-		b.WriteString(strconv.FormatInt(cid, 10))
-		b.WriteString(`">Reply</a> `)
-		b.WriteString(`<a class="button" href="/wp-admin/edit-comments.php">Back to Comments</a>`)
-		b.WriteString("</p>\n")
 	}
 	writeAdminPage(w, c, newAdminChrome(c, heading, "comment-php"), b.String())
+}
+
+// serveCommentEditForm renders edit-form-comment.php fields (P7.119).
+func (h *Handler) serveCommentEditForm(w http.ResponseWriter, r *http.Request, c *wp.Context, cm *adminComment, cid int64) {
+	if cm.Approved == "trash" {
+		http.Error(w, "This comment is in the Trash. Please move it out of the Trash if you want to edit it.\n", http.StatusForbidden)
+		return
+	}
+	var b strings.Builder
+	b.WriteString("<h1>Edit Comment</h1>\n")
+	b.WriteString("<p class=\"description\">GoPress comment.php edit form (P7.119).</p>\n")
+	b.WriteString("<form name=\"post\" action=\"/wp-admin/comment.php\" method=\"post\" id=\"post\">\n")
+	b.WriteString("<input type=\"hidden\" name=\"action\" value=\"editedcomment\" />\n")
+	b.WriteString("<input type=\"hidden\" name=\"comment_ID\" value=\"")
+	b.WriteString(strconv.FormatInt(cid, 10))
+	b.WriteString("\" />\n")
+	b.WriteString("<input type=\"hidden\" name=\"comment_post_ID\" value=\"")
+	b.WriteString(strconv.FormatInt(cm.PostID, 10))
+	b.WriteString("\" />\n")
+	b.WriteString("<div id=\"namediv\" class=\"stuffbox\"><div class=\"inside\">\n")
+	b.WriteString("<h2 class=\"edit-comment-author\">Author</h2>\n")
+	b.WriteString("<table class=\"form-table editcomment\" role=\"presentation\"><tbody>\n")
+	b.WriteString("<tr><td class=\"first\"><label for=\"name\">Name</label></td><td>")
+	b.WriteString("<input type=\"text\" name=\"newcomment_author\" size=\"30\" value=\"")
+	b.WriteString(html.EscapeString(cm.Author))
+	b.WriteString("\" id=\"name\" /></td></tr>\n")
+	b.WriteString("<tr><td class=\"first\"><label for=\"email\">Email</label></td><td>")
+	b.WriteString("<input type=\"text\" name=\"newcomment_author_email\" size=\"30\" class=\"code\" value=\"")
+	b.WriteString(html.EscapeString(cm.Email))
+	b.WriteString("\" id=\"email\" /></td></tr>\n")
+	b.WriteString("<tr><td class=\"first\"><label for=\"newcomment_author_url\">URL</label></td><td>")
+	b.WriteString("<input type=\"text\" id=\"newcomment_author_url\" name=\"newcomment_author_url\" size=\"30\" class=\"code\" value=\"")
+	b.WriteString(html.EscapeString(cm.URL))
+	b.WriteString("\" /></td></tr>\n")
+	b.WriteString("</tbody></table></div></div>\n")
+	b.WriteString("<div id=\"postdiv\" class=\"postarea\">\n")
+	b.WriteString("<h2 class=\"edit-comment-content\">Comment</h2>\n")
+	b.WriteString("<textarea rows=\"10\" cols=\"40\" name=\"content\" id=\"content\">")
+	b.WriteString(html.EscapeString(cm.Content))
+	b.WriteString("</textarea>\n</div>\n")
+	b.WriteString("<div id=\"submitdiv\" class=\"stuffbox\"><div class=\"inside\">\n")
+	b.WriteString("<h2>Status</h2>\n<p>")
+	b.WriteString(html.EscapeString(commentApprovedLabel(cm.Approved)))
+	b.WriteString("</p>\n")
+	b.WriteString("<p class=\"submit\">")
+	b.WriteString("<input type=\"submit\" name=\"save\" id=\"save\" class=\"button button-primary\" value=\"Update\" /> ")
+	b.WriteString(`<a class="button" href="/wp-admin/comment.php?action=approve&amp;c=`)
+	b.WriteString(strconv.FormatInt(cid, 10))
+	b.WriteString(`">Approve</a> `)
+	b.WriteString(`<a class="button" href="/wp-admin/comment.php?action=spam&amp;c=`)
+	b.WriteString(strconv.FormatInt(cid, 10))
+	b.WriteString(`">Spam</a> `)
+	b.WriteString(`<a class="button" href="/wp-admin/comment.php?action=trash&amp;c=`)
+	b.WriteString(strconv.FormatInt(cid, 10))
+	b.WriteString(`">Trash</a> `)
+	b.WriteString(`<a class="button" href="/wp-admin/comment.php?action=replyto&amp;c=`)
+	b.WriteString(strconv.FormatInt(cid, 10))
+	b.WriteString(`">Reply</a> `)
+	b.WriteString(`<a class="button" href="/wp-admin/edit-comments.php">Cancel</a>`)
+	b.WriteString("</p>\n</div></div>\n</form>\n")
+	writeAdminPage(w, c, newAdminChrome(c, "Edit Comment", "comment-php"), b.String())
+}
+
+// serveCommentEdited handles editedcomment POST (edit_comment / wp_update_comment, P7.119).
+func (h *Handler) serveCommentEdited(w http.ResponseWriter, r *http.Request, c *wp.Context, cm *adminComment, cid int64) {
+	if r.Method != http.MethodPost {
+		http.Redirect(w, r, "/wp-admin/comment.php?action=editcomment&c="+strconv.FormatInt(cid, 10), http.StatusFound)
+		return
+	}
+	if cm.Approved == "trash" {
+		http.Error(w, "This comment is in the Trash. Please move it out of the Trash if you want to edit it.\n", http.StatusForbidden)
+		return
+	}
+	_ = r.ParseForm()
+	author := strings.TrimSpace(r.Form.Get("newcomment_author"))
+	email := strings.TrimSpace(r.Form.Get("newcomment_author_email"))
+	url := strings.TrimSpace(r.Form.Get("newcomment_author_url"))
+	content := strings.TrimSpace(r.Form.Get("content"))
+	if content == "" {
+		content = strings.TrimSpace(r.Form.Get("comment_content"))
+	}
+	upd := wp.CommentUpdate{
+		Author:      &author,
+		AuthorEmail: &email,
+		AuthorURL:   &url,
+		Content:     &content,
+	}
+	if err := wp.UpdateComment(c, cid, upd); err != nil {
+		http.Error(w, "edit: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	postID := cm.PostID
+	if v := strings.TrimSpace(r.Form.Get("comment_post_ID")); v != "" {
+		if n, err := strconv.ParseInt(v, 10, 64); err == nil && n > 0 {
+			postID = n
+		}
+	}
+	loc := "/wp-admin/edit-comments.php?p=" + strconv.FormatInt(postID, 10) + "#comment-" + strconv.FormatInt(cid, 10)
+	http.Redirect(w, r, loc, http.StatusFound)
 }
 
 // serveCommentReply renders and handles the reply form on comment.php (P7.65).
@@ -3584,6 +3682,7 @@ type adminComment struct {
 	ID       int64
 	Author   string
 	Email    string
+	URL      string
 	Content  string
 	Approved string
 	PostID   int64
@@ -3594,7 +3693,7 @@ func loadAdminComment(c *wp.Context, id int64) (*adminComment, error) {
 		return nil, nil
 	}
 	q, args, err := c.DB.Prepare(
-		"SELECT comment_ID, comment_author, comment_author_email, comment_content, comment_approved, comment_post_ID "+
+		"SELECT comment_ID, comment_author, comment_author_email, comment_author_url, comment_content, comment_approved, comment_post_ID "+
 			"FROM "+c.DB.Comments()+" WHERE comment_ID = %d LIMIT 1",
 		id,
 	)
@@ -3612,6 +3711,7 @@ func loadAdminComment(c *wp.Context, id int64) (*adminComment, error) {
 		ID:       asInt64(row["comment_ID"]),
 		Author:   asString(row["comment_author"]),
 		Email:    asString(row["comment_author_email"]),
+		URL:      asString(row["comment_author_url"]),
 		Content:  asString(row["comment_content"]),
 		Approved: asString(row["comment_approved"]),
 		PostID:   asInt64(row["comment_post_ID"]),
