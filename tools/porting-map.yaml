@@ -6991,3 +6991,18 @@ wp-login.php#language-switcher-post
   task: P7.110
   api: n/a
   notes: "P7.110 — dashboard deepen unit coverage"
+
+# P2.105: deepen wp_parse_str PHP key munging + amp/NUL.
+- prefix: wp-includes/formatting.php#wp_parse_str-p2-105
+  go: internal/wp/parse_str.go
+  status: partial
+  task: P2.105
+  api: exported
+  notes: "P2.105 — '.'/' ' → '_'; &amp; separators; strip NUL; nested key segments"
+
+- prefix: internal/wp/parse_str_test.go#p2-105
+  go: internal/wp/parse_str_test.go
+  status: partial
+  task: P2.105
+  api: n/a
+  notes: "P2.105 — unit coverage for key munging and amp/NUL"
