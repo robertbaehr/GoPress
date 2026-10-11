@@ -347,6 +347,60 @@ func TestHooksHasActionFuncPriority(t *testing.T) {
 	}
 }
 
+// P9.31: current_filter / current_action / doing_filter / CurrentFilters stack.
+func TestHooksCurrentFilterAndDoingFilterP931(t *testing.T) {
+	h := wp.NewHooks()
+	if h.CurrentFilter() != "" || h.CurrentAction() != "" || h.DoingFilter("") {
+		t.Fatal("empty stack should be idle")
+	}
+	if h.CurrentFilters() != nil {
+		t.Fatal("CurrentFilters empty")
+	}
+
+	h.AddAction("outer", func(args ...any) {
+		if h.CurrentFilter() != "outer" || h.CurrentAction() != "outer" {
+			t.Errorf("CurrentFilter=%q", h.CurrentFilter())
+		}
+		if !h.DoingAction("outer") || !h.DoingFilter("") {
+			t.Error("expected doing outer")
+		}
+		stack := h.CurrentFilters()
+		if len(stack) != 1 || stack[0] != "outer" {
+			t.Errorf("stack=%v", stack)
+		}
+		_ = h.ApplyFiltersRefArray("inner", []any{"v"})
+		if h.CurrentFilter() != "outer" {
+			t.Errorf("after nested CurrentFilter=%q", h.CurrentFilter())
+		}
+	}, 10, 0)
+	h.AddFilter("inner", func(value any, args ...any) any {
+		if h.CurrentFilter() != "inner" {
+			t.Errorf("inner CurrentFilter=%q", h.CurrentFilter())
+		}
+		if !h.DoingFilter("outer") || !h.DoingAction("outer") {
+			t.Error("outer should remain on stack")
+		}
+		stack := h.CurrentFilters()
+		if len(stack) != 2 || stack[0] != "outer" || stack[1] != "inner" {
+			t.Errorf("nested stack=%v", stack)
+		}
+		return value
+	}, 10, 1)
+
+	h.DoAction("outer")
+	if h.CurrentFilter() != "" || h.DoingFilter("outer") || h.DoingFilter("") {
+		t.Fatal("stack should clear after DoAction")
+	}
+	if h.CurrentFilters() != nil {
+		t.Fatal("CurrentFilters after clear")
+	}
+
+	var nilH *wp.Hooks
+	if nilH.CurrentFilter() != "" || nilH.CurrentFilters() != nil || nilH.DoingFilter("") {
+		t.Fatal("nil Hooks current_filter helpers")
+	}
+}
+
 // P9.30: remove_all_filters / remove_all_actions.
 func TestHooksRemoveAllFilters(t *testing.T) {
 	h := wp.NewHooks()

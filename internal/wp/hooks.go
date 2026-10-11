@@ -348,7 +348,7 @@ func (h *Hooks) hasFunc(tag string, id uintptr, priorityExact int) (int, bool) {
 	return 0, false
 }
 
-// CurrentFilter returns the innermost tag being run, or "".
+// CurrentFilter returns the innermost tag being run, or "" (current_filter, P9.31).
 func (h *Hooks) CurrentFilter() string {
 	if h == nil {
 		return ""
@@ -361,12 +361,28 @@ func (h *Hooks) CurrentFilter() string {
 	return h.current[len(h.current)-1]
 }
 
-// CurrentAction is an alias of CurrentFilter (WordPress shares one stack).
+// CurrentAction is an alias of CurrentFilter (current_action; WP shares one stack).
 func (h *Hooks) CurrentAction() string {
 	return h.CurrentFilter()
 }
 
-// DoingFilter reports whether tag is on the current-filter stack.
+// CurrentFilters returns a copy of the nested current_filter stack
+// (outermost first), mirroring the $wp_current_filter global (P9.31).
+func (h *Hooks) CurrentFilters() []string {
+	if h == nil {
+		return nil
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if len(h.current) == 0 {
+		return nil
+	}
+	out := make([]string, len(h.current))
+	copy(out, h.current)
+	return out
+}
+
+// DoingFilter reports whether tag is on the current-filter stack (doing_filter).
 // If tag is empty, reports whether any filter/action is running.
 func (h *Hooks) DoingFilter(tag string) bool {
 	if h == nil {
@@ -385,7 +401,7 @@ func (h *Hooks) DoingFilter(tag string) bool {
 	return false
 }
 
-// DoingAction is an alias of DoingFilter.
+// DoingAction is an alias of DoingFilter (doing_action).
 func (h *Hooks) DoingAction(tag string) bool {
 	return h.DoingFilter(tag)
 }
