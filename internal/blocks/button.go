@@ -15,21 +15,46 @@ var (
 	reButtonEmptyInner  = regexp.MustCompile(`(?is)<(a|button)\b[^>]*>(?:\s|<!--.*?-->)*</(a|button)>`)
 )
 
-// renderButtons renders core/buttons (P5.56 / P5.111).
+// renderButtons renders core/buttons (P5.56 / P5.111 / P5.155).
 // Prefers saved markup; when the wrapper is missing, wraps rendered inner buttons.
 // P5.111: className/align/anchor + flex layout justification polish.
+// P5.155: coerce align wide|full; fontSize + gradient preset polish.
 func (e *Env) renderButtons(block Block) string {
 	e = e.ensure()
+	attrs := sanitizeButtonsBlockAttrs(block.Attrs)
+	block.Attrs = attrs
 	out := e.renderSaved(block)
 	if strings.TrimSpace(out) == "" {
 		out = synthesizeButtonsBlock(e, block)
 	} else if !reButtonsTag.MatchString(out) {
-		out = wrapButtonsInner(block.Attrs, out)
+		out = wrapButtonsInner(attrs, out)
 	}
 	if strings.TrimSpace(out) == "" {
 		return ""
 	}
-	return applyButtonsAttrs(out, block.Attrs)
+	return applyButtonsAttrs(out, attrs)
+}
+
+// sanitizeButtonsBlockAttrs coerces core/buttons supports.align to the block.json set (P5.155).
+// Allowed: wide, full. Other align values (incl. none/left/center/right) are dropped.
+func sanitizeButtonsBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "wide", "full":
+		// keep empty; wide/full pass through
+	case "none":
+		delete(out, "align")
+	default:
+		delete(out, "align")
+	}
+	return out
 }
 
 // renderButton renders core/button (P5.56 / P5.111).
@@ -94,6 +119,13 @@ func buttonsClassFromAttrs(attrs map[string]any) string {
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		class += " " + html.EscapeString(cn)
 	}
+	// P5.155: typography.fontSize + color.gradients presets on synthesize.
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		class += " has-" + sanitizeClassToken(fs) + "-font-size"
+	}
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		class += " has-background has-" + sanitizeClassToken(g) + "-gradient-background"
+	}
 	return class
 }
 
@@ -153,6 +185,14 @@ func applyButtonsAttrs(htmlFragment string, attrs map[string]any) string {
 		for _, part := range strings.Fields(cn) {
 			out = addRootClass(out, part)
 		}
+	}
+	// P5.155: typography.fontSize + color.gradients presets on saved/synthesized markup.
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		out = addRootClass(out, "has-"+sanitizeClassToken(fs)+"-font-size")
+	}
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		out = addRootClass(out, "has-background")
+		out = addRootClass(out, "has-"+sanitizeClassToken(g)+"-gradient-background")
 	}
 	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
 		out = ensureRootAttribute(out, "id", anchor)
