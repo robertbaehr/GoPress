@@ -6,11 +6,12 @@ import (
 	"strings"
 )
 
-// ResourceHintsHTML mirrors wp_resource_hints() markup (P3.137 / P3.138 / P3.139).
+// ResourceHintsHTML mirrors wp_resource_hints() markup (P3.137 / P3.138 / P3.139 / P3.140).
 // Default dns-prefetch hosts come from DependenciesUniqueHosts (empty until
 // remote script/style enqueue is wired). Filters wp_resource_hints per relation.
 // P3.138: bare hostnames, case-insensitive dns-prefetch host dedupe.
 // P3.139: case-insensitive scheme+host preconnect dedupe; crossorigin preserved.
+// P3.140: prefetch/prerender http(s)-only; case-insensitive href dedupe; as/type/pr.
 func ResourceHintsHTML(c *Context) string {
 	hints := map[string][]any{
 		"dns-prefetch": dependenciesUniqueHostsAny(c),
@@ -41,6 +42,7 @@ func ResourceHintsHTML(c *Context) string {
 		order := make([]string, 0)
 		seenHosts := map[string]bool{}      // P3.138: case-insensitive host dedupe for dns-prefetch
 		seenPreconnect := map[string]bool{} // P3.139: scheme+host (lower) dedupe
+		seenPrefetch := map[string]bool{}   // P3.140: case-insensitive href dedupe
 		for _, item := range urls {
 			atts := map[string]string{}
 			href := ""
@@ -121,6 +123,22 @@ func ResourceHintsHTML(c *Context) string {
 				if href == "" {
 					continue
 				}
+			}
+			// P3.140: prefetch/prerender — WP esc_url(..., array('http','https')).
+			if relation == "prefetch" || relation == "prerender" {
+				parsed, err := url.Parse(href)
+				if err != nil || parsed == nil {
+					continue
+				}
+				scheme := strings.ToLower(parsed.Scheme)
+				if scheme != "http" && scheme != "https" {
+					continue
+				}
+				pfKey := strings.ToLower(href)
+				if seenPrefetch[pfKey] {
+					continue
+				}
+				seenPrefetch[pfKey] = true
 			}
 			if _, seen := unique[href]; seen {
 				continue

@@ -11196,3 +11196,17 @@ wp-login.php#language-switcher-post
   task: P2.142
   api: n/a
   notes: "P2.142 — words, characters modes, locale default type"
+
+# P3.140: deepen front prefetch resource hints.
+- prefix: wp-includes/general-template.php#wp_resource_hints#prefetch
+  go: internal/wp/resource_hints.go
+  status: partial
+  task: P3.140
+  api: n/a
+  notes: "P3.140 — prefetch/prerender http(s)-only; case-insensitive href dedupe; as/type/pr attrs"
+- prefix: wp-includes/general-template.php#wp_resource_hints#prefetch#tests
+  go: internal/wp/resource_hints_p3_140_test.go
+  status: partial
+  task: P3.140
+  api: n/a
+  notes: "P3.140 — prefetch dedupe + attrs + non-http reject"
