@@ -41,9 +41,7 @@ func AttachmentURLToPostID(c *Context, rawURL string) int64 {
 			path = strings.Replace(path, img.Scheme, base.Scheme, 1)
 		}
 		prefix := strings.TrimRight(uploads.Baseurl, "/") + "/"
-		if strings.HasPrefix(path, prefix) {
-			path = strings.TrimPrefix(path, prefix)
-		}
+		path = strings.TrimPrefix(path, prefix)
 	}
 	path = strings.TrimPrefix(path, "/")
 	var postID int64
