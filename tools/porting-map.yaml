@@ -10786,3 +10786,17 @@ wp-login.php#language-switcher-post
   task: P10.195
   api: n/a
   notes: "P10.195 — summarize separator attrs, sticky_posts, privacy-guide accordion, strip_all_tags deep, emoji filters, login_enqueue_scripts, corpus 2142"
+
+# P5.143: deepen core/code fontSize / gradient / align enum.
+- prefix: wp-includes/blocks/code#attrs
+  go: internal/blocks/code_preformatted.go
+  status: partial
+  task: P5.143
+  api: n/a
+  notes: "P5.143 — align wide-only coerce; gradient preset + fontSize polish; sanitize before applySupports"
+- prefix: wp-includes/blocks/code#attrs#tests
+  go: internal/blocks/code_attrs_p5_143_test.go
+  status: partial
+  task: P5.143
+  api: n/a
+  notes: "P5.143 — full→drop, wide keep, saved gradient/fontSize coverage"
