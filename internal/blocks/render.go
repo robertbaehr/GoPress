@@ -66,7 +66,9 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/image":
 		out = e.renderImage(block)
 	case "core/gallery":
+		// P5.153: coerce align enum before applySupports; gradient polish.
 		out = e.renderGallery(block)
+		return applySupports(out, sanitizeGalleryBlockAttrs(block.Attrs), name)
 	case "core/cover":
 		// P5.151: coerce align enum before applySupports; fontSize/sizeSlug/alt polish.
 		out = e.renderCover(block)

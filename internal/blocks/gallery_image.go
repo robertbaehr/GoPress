@@ -142,13 +142,16 @@ func hasRootClassPrefix(htmlFragment, prefix string) bool {
 	return false
 }
 
-// renderGallery renders core/gallery (P5.48 / P5.110).
+// renderGallery renders core/gallery (P5.48 / P5.110 / P5.153).
 // Applies data-id backcompat onto nested image blocks, ensures gallery
 // wrapper classes (columns / is-cropped), and can build from ids attrs.
 // P5.110: className/align/anchor polish; linkTo/sizeSlug/linkTarget on
 // synthesized ids galleries; fixedHeight class when enabled.
+// P5.153: coerce align left|center|right|wide|full; gradient polish; sanitize before supports.
 func (e *Env) renderGallery(block Block) string {
 	e = e.ensure()
+	attrs := sanitizeGalleryBlockAttrs(block.Attrs)
+	block.Attrs = attrs
 	block = applyGalleryDataIDBackcompat(block)
 
 	out := e.renderSaved(block)
@@ -158,8 +161,30 @@ func (e *Env) renderGallery(block Block) string {
 	if strings.TrimSpace(out) == "" {
 		return ""
 	}
-	out = ensureGalleryWrapperClasses(out, block.Attrs)
-	return applyGalleryAttrs(out, block.Attrs)
+	out = ensureGalleryWrapperClasses(out, attrs)
+	return applyGalleryAttrs(out, attrs)
+}
+
+// sanitizeGalleryBlockAttrs coerces core/gallery supports.align to the block.json set (P5.153).
+// Allowed: left, center, right, wide, full (align: true). Other align values (incl. none) are dropped.
+func sanitizeGalleryBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "left", "center", "right", "wide", "full":
+		// keep
+	case "none":
+		delete(out, "align")
+	default:
+		delete(out, "align")
+	}
+	return out
 }
 
 func applyGalleryDataIDBackcompat(block Block) Block {
@@ -441,12 +466,16 @@ func galleryClassFromAttrs(attrs map[string]any, columns int, cropped bool) stri
 		class += " align" + sanitizeClassToken(align)
 	}
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
-		class += " " + cn
+		class += " " + html.EscapeString(cn)
+	}
+	// P5.153: color.gradients presets on synthesize.
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		class += " has-background has-" + sanitizeClassToken(g) + "-gradient-background"
 	}
 	return class
 }
 
-// applyGalleryAttrs polishes className/align/anchor on gallery wrappers (P5.110).
+// applyGalleryAttrs polishes className/align/anchor/gradient on gallery wrappers (P5.110 / P5.153).
 func applyGalleryAttrs(htmlStr string, attrs map[string]any) string {
 	out := htmlStr
 	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
@@ -459,6 +488,11 @@ func applyGalleryAttrs(htmlStr string, attrs map[string]any) string {
 	}
 	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
 		out = ensureRootAttribute(out, "id", anchor)
+	}
+	// P5.153: color.gradients preset → has-{slug}-gradient-background.
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		out = addRootClass(out, "has-background")
+		out = addRootClass(out, "has-"+sanitizeClassToken(g)+"-gradient-background")
 	}
 	return out
 }
