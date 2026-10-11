@@ -64,6 +64,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 	exclude := parsePostsExclude(r)
 	// P4.131: WP REST validates orderby=relevance / orderby=include prerequisites.
 	if orderby == "relevance" && search == "" {
+		w.Header().Set("Allow", "GET")
 		writeJSON(w, http.StatusBadRequest, map[string]any{
 			"code":    "rest_no_search_term_defined",
 			"message": "You need to define a search term to order by relevance.",
@@ -72,6 +73,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		return
 	}
 	if orderby == "include" && len(include) == 0 {
+		w.Header().Set("Allow", "GET")
 		writeJSON(w, http.StatusBadRequest, map[string]any{
 			"code":    "rest_orderby_include_missing_include",
 			"message": "You need to define an include parameter to order by include.",

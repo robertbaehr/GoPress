@@ -3769,11 +3769,8 @@ func (f *Front) tryAttachmentFileRedirect(w http.ResponseWriter, c *wp.Context, 
 	if strings.TrimSpace(url) == "" {
 		return false
 	}
-	if c != nil && c.Req != nil {
-		w.Header().Set("X-Redirect-By", "WordPress")
-		http.Redirect(w, c.Req, url, http.StatusMovedPermanently)
-		return true
-	}
+	// Match WP redirect_canonical headers (UTF-8 charset; avoid net/http's utf-8).
+	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
 	w.Header().Set("Location", url)
 	w.Header().Set("X-Redirect-By", "WordPress")
 	w.WriteHeader(http.StatusMovedPermanently)
