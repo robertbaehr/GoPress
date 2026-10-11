@@ -143,7 +143,12 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		return
 	}
 	tags := parsePostsTags(r)
-	tagsExclude := parsePostsTagsExclude(r)
+	// P4.156: strict tags_exclude integer-array validation (rest_invalid_type).
+	tagsExclude, tagsExOK := parsePostsTagsExclude(r)
+	if !tagsExOK {
+		writeRESTInvalidIntegerArrayParams(w, []string{"tags_exclude"})
+		return
+	}
 	taxRelation := parsePostsTaxRelation(r)
 	slugs := parsePostsSlug(r)
 	include := parsePostsInclude(r)
