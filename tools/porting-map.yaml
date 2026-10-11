@@ -10593,6 +10593,26 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P7.142 — pending/confirm/dismiss coverage"
 
+# P3.135: front rsd_link (EditURI) via site_url xmlrpc.php?rsd rpc.
+- prefix: wp-includes/general-template.php#rsd_link
+  go: internal/wp/rsd_link.go
+  status: partial
+  task: P3.135
+  api: rsd_link
+  notes: "P3.135 — RsdLink; site_url(xmlrpc.php?rsd, rpc) + EscURL; front head wired"
+- prefix: wp-includes/general-template.php#rsd_link#tests
+  go: internal/wp/rsd_link_p3_135_test.go
+  status: partial
+  task: P3.135
+  api: n/a
+  notes: "P3.135 — unit + site_url filter; front head EditURI"
+- prefix: wp-includes/general-template.php#rsd_link#front
+  go: internal/server/front.go
+  status: partial
+  task: P3.135
+  api: rsd_link
+  notes: "P3.135 — writeFrontHeadLinks uses wp.RsdLink"
+
 # P2.137: is_utf8_charset + wp_check_invalid_utf8 non-UTF-8 passthrough.
 - prefix: wp-includes/functions.php#is_utf8_charset
   go: internal/wp/check_invalid_utf8.go
