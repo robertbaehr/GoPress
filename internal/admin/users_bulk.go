@@ -213,7 +213,7 @@ func (h *Handler) serveUsersDeleteConfirm(w http.ResponseWriter, r *http.Request
 	b.WriteString("</ul></fieldset>\n")
 	b.WriteString(`<p class="submit"><input type="submit" name="submit" id="submit" class="button button-primary" value="Confirm Deletion"></p>` + "\n")
 	b.WriteString("</form>\n")
-	writeAdminPage(w, c, newAdminChrome(c, "Users", "users-php"), b.String())
+	writeAdminPage(w, r, c, newAdminChrome(c, "Users", "users-php"), b.String())
 }
 
 func (h *Handler) serveUsersList(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -317,7 +317,7 @@ func (h *Handler) serveUsersList(w http.ResponseWriter, r *http.Request, c *wp.C
 	b.WriteString(usersRoleChangeControls(c, "bottom"))
 	b.WriteString(`</div>` + "\n")
 	b.WriteString("</form>\n")
-	writeAdminPage(w, c, newAdminChrome(c, "Users", "users-php"), b.String())
+	writeAdminPage(w, r, c, newAdminChrome(c, "Users", "users-php"), b.String())
 }
 
 // usersRoleChangeControls emits the Change role to… select + Change button (P7.84).

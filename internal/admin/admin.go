@@ -282,7 +282,7 @@ func (h *Handler) renderDashboard(w http.ResponseWriter, r *http.Request, c *wp.
 </div>
 </div>
 `, adminNoticesHTML(c), html.EscapeString(blogname), welcomeHTML, rightNowHTML, siteHealthHTML, recentPublishedHTML, recentCommentsHTML, quickDraftFormHTML(c, noticeHTML))
-	writeAdminPage(w, c, ch, inner)
+	writeAdminPage(w, r, c, ch, inner)
 }
 
 func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -664,7 +664,7 @@ func (h *Handler) serveEditPosts(w http.ResponseWriter, r *http.Request, c *wp.C
 	// P7.66 / P7.68: inline Quick Edit + Bulk Edit form stubs (hidden; JS wires).
 	b.WriteString(postQuickEditStubHTML(postType))
 	_ = blogname
-	writeAdminPage(w, c, newAdminChrome(c, heading, "edit-php"), b.String())
+	writeAdminPage(w, r, c, newAdminChrome(c, heading, "edit-php"), b.String())
 }
 
 // writeEditPostsBulkOptions emits <option>s for edit.php bulk actions (P7.74 / P7.76).
@@ -1016,7 +1016,7 @@ func (h *Handler) serveEditTags(w http.ResponseWriter, r *http.Request, c *wp.Co
 	}
 	b.WriteString("</tbody>\n</table>\n")
 	b.WriteString("</div>\n</div>\n</div>\n")
-	writeAdminPage(w, c, newAdminChrome(c, heading, screen), b.String())
+	writeAdminPage(w, r, c, newAdminChrome(c, heading, screen), b.String())
 }
 
 type adminTerm struct {
@@ -1302,7 +1302,7 @@ func (h *Handler) serveOptionsGeneral(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString("</table>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Save Changes\"></p>\n")
 	b.WriteString("</form>\n")
-	writeAdminPage(w, c, newAdminChrome(c, "General Settings", "options-general-php"), b.String())
+	writeAdminPage(w, r, c, newAdminChrome(c, "General Settings", "options-general-php"), b.String())
 }
 
 // serveOptionsPHP handles /wp-admin/options.php saves (P7.48 writing / P7.49 reading / P7.50 discussion / P7.51 media / P7.105 general).
@@ -2422,7 +2422,7 @@ func (h *Handler) servePlugins(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString("</tbody>\n</table>\n")
 	writePluginsBulkNav(&b, "bottom")
 	b.WriteString("</form>\n")
-	writeAdminPage(w, c, newAdminChrome(c, "Plugins", "plugins-php"), b.String())
+	writeAdminPage(w, r, c, newAdminChrome(c, "Plugins", "plugins-php"), b.String())
 }
 
 // writePluginsStatusViews emits WP_Plugins_List_Table::get_views subset (P7.86).
@@ -2632,7 +2632,7 @@ func (h *Handler) serveProfile(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString("</table>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Update Profile\" /></p>\n")
 	b.WriteString("</form>\n</div>\n")
-	writeAdminPage(w, c, newAdminChrome(c, "Profile", "profile-php"), b.String())
+	writeAdminPage(w, r, c, newAdminChrome(c, "Profile", "profile-php"), b.String())
 }
 
 func mediaLibraryMode(c *wp.Context) string {
@@ -3385,7 +3385,7 @@ func (h *Handler) serveEditComments(w http.ResponseWriter, r *http.Request, c *w
 	b.WriteString(`<input type="submit" id="doaction2" class="button action" value="Apply" />`)
 	b.WriteString(`</div></div></form>` + "\n")
 	_ = blogname
-	writeAdminPage(w, c, newAdminChrome(c, "Comments", "edit-comments-php"), b.String())
+	writeAdminPage(w, r, c, newAdminChrome(c, "Comments", "edit-comments-php"), b.String())
 }
 
 // parseEditCommentStatus reads ?comment_status= for edit-comments.php views (P7.83).
@@ -3646,7 +3646,7 @@ func (h *Handler) serveCommentModerate(w http.ResponseWriter, r *http.Request, c
 		b.WriteString("<a class=\"button\" href=\"/wp-admin/edit-comments.php\">Cancel</a></p>\n")
 		b.WriteString("</form>\n")
 	}
-	writeAdminPage(w, c, newAdminChrome(c, heading, "comment-php"), b.String())
+	writeAdminPage(w, r, c, newAdminChrome(c, heading, "comment-php"), b.String())
 }
 
 // serveCommentEditForm renders edit-form-comment.php fields (P7.119).
@@ -3707,7 +3707,7 @@ func (h *Handler) serveCommentEditForm(w http.ResponseWriter, r *http.Request, c
 	b.WriteString(`">Reply</a> `)
 	b.WriteString(`<a class="button" href="/wp-admin/edit-comments.php">Cancel</a>`)
 	b.WriteString("</p>\n</div></div>\n</form>\n")
-	writeAdminPage(w, c, newAdminChrome(c, "Edit Comment", "comment-php"), b.String())
+	writeAdminPage(w, r, c, newAdminChrome(c, "Edit Comment", "comment-php"), b.String())
 }
 
 // serveCommentEdited handles editedcomment POST (edit_comment / wp_update_comment, P7.119).
@@ -3813,7 +3813,7 @@ func (h *Handler) serveCommentReply(w http.ResponseWriter, r *http.Request, c *w
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"replyto-comment\" id=\"replybtn\" class=\"button button-primary\" value=\"Reply to Comment\" /> ")
 	b.WriteString(`<a class="button" href="/wp-admin/edit-comments.php">Cancel</a></p>` + "\n")
 	b.WriteString("</form>\n")
-	writeAdminPage(w, c, newAdminChrome(c, "Reply to Comment", "comment-php"), b.String())
+	writeAdminPage(w, r, c, newAdminChrome(c, "Reply to Comment", "comment-php"), b.String())
 }
 
 type adminComment struct {

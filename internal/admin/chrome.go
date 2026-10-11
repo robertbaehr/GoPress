@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"html"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -35,7 +36,8 @@ func newAdminChrome(c *wp.Context, title, screen string) adminChrome {
 	}
 	return adminChrome{
 		Title:     title,
-		BodyClass: "wp-admin wp-core-ui no-js " + screen + " admin-bar admin-color-" + scheme + " locale-en-us",
+		// P7.137: auto-fold is the WP default when user setting "unfold" is unset.
+		BodyClass: "wp-admin wp-core-ui no-js " + screen + " auto-fold admin-bar admin-color-" + scheme + " locale-en-us",
 		Blogname:  blogname,
 		Screen:    screen,
 		UserLogin: login,
@@ -217,11 +219,58 @@ func adminMenuHTML(screen string) string {
 		b.WriteString(html.EscapeString(it.label))
 		b.WriteString("</div></a></li>\n")
 	}
+	// P7.137: collapse-menu control (_wp_menu_output tail).
+	b.WriteString("<li id=\"collapse-menu\" class=\"hide-if-no-js\">")
+	b.WriteString("<button type=\"button\" id=\"collapse-button\" aria-label=\"Collapse Main Menu\" aria-expanded=\"true\">")
+	b.WriteString("<span class=\"collapse-button-icon\" aria-hidden=\"true\"></span>")
+	b.WriteString("<span class=\"collapse-button-label\">Collapse Menu</span>")
+	b.WriteString("</button></li>\n")
 	return b.String()
 }
 
+// applyAdminMenuFold adds body class "folded" when user setting mfold=f (P7.137).
+// Inserts before auto-fold to match admin-header.php class order.
+func applyAdminMenuFold(ch *adminChrome, r *http.Request, c *wp.Context) {
+	if ch == nil {
+		return
+	}
+	if getUserSetting(r, c, "mfold") != "f" {
+		return
+	}
+	if strings.Contains(" "+ch.BodyClass+" ", " folded ") {
+		return
+	}
+	if i := strings.Index(ch.BodyClass, " auto-fold"); i >= 0 {
+		ch.BodyClass = ch.BodyClass[:i] + " folded" + ch.BodyClass[i:]
+		return
+	}
+	ch.BodyClass += " folded"
+}
+
+// getUserSetting reads a WP user UI setting from the wp-settings-{uid} cookie (P7.137).
+func getUserSetting(r *http.Request, c *wp.Context, name string) string {
+	if r == nil || name == "" {
+		return ""
+	}
+	uid := int64(0)
+	if c != nil && c.CurrentUser != nil {
+		uid = c.CurrentUser.ID
+	}
+	ck, err := r.Cookie(fmt.Sprintf("wp-settings-%d", uid))
+	if err != nil || ck == nil || ck.Value == "" || ck.Value == "deleted" {
+		return ""
+	}
+	// Cookie value is a query-string of settings (mfold=f&editor=…).
+	vals, err := url.ParseQuery(ck.Value)
+	if err != nil {
+		return ""
+	}
+	return strings.TrimSpace(vals.Get(name))
+}
+
 // writeAdminPage emits a full wp-admin document with shared chrome around innerHTML.
-func writeAdminPage(w http.ResponseWriter, c *wp.Context, ch adminChrome, innerHTML string) {
+func writeAdminPage(w http.ResponseWriter, r *http.Request, c *wp.Context, ch adminChrome, innerHTML string) {
+	applyAdminMenuFold(&ch, r, c)
 	writeAdminSettingsCookies(w, c)
 	var b strings.Builder
 	b.WriteString(ch.openHTML())
