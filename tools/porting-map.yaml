@@ -7170,5 +7170,13 @@ wp-login.php#language-switcher-post
   status: partial
   task: P10.130
   api: n/a
-  notes: "P10.130 — statuses OPTIONS/HEAD/context + gallery block-types + search robots headers"
+  notes: "P10.130 — statuses OPTIONS/HEAD/context + gallery block-types + search robots; 693/693"
+
+# P10.131: STATUS/PORTING refresh after P5.110–P10.130.
+- prefix: docs/STATUS.md#p10-131
+  go: docs/STATUS.md
+  status: partial
+  task: P10.131
+  api: n/a
+  notes: "P10.131 — summarize gallery, statuses REST, nav-menus, is_email, robots, theme supports, 693 corpus"
 
