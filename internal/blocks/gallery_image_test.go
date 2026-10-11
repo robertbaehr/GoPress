@@ -175,6 +175,50 @@ func TestRenderGalleryClassNameAlignAnchorLinkTo(t *testing.T) {
 	}
 }
 
+func TestRenderImageClassNameAnchorSizeSlugRounded(t *testing.T) {
+	env := &blocks.Env{
+		GetAttachmentURL: func(id int64) string {
+			if id == 11 {
+				return "http://example.test/r.jpg"
+			}
+			return ""
+		},
+	}
+	out := env.Render(`<!-- wp:image {"id":11,"sizeSlug":"medium","className":"my-img is-style-rounded","anchor":"hero-img","align":"left"} /-->`)
+	for _, want := range []string{
+		`id="hero-img"`,
+		`wp-block-image`,
+		`size-medium`,
+		`alignleft`,
+		`my-img`,
+		`is-style-rounded`,
+		`src="http://example.test/r.jpg"`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
+
+func TestRenderImageSavedPolishClassNameAnchorSize(t *testing.T) {
+	env := &blocks.Env{}
+	markup := `<!-- wp:image {"sizeSlug":"thumbnail","className":"extra-img","anchor":"img-1","width":"120","style":{"border":{"radius":"999px"}}} -->
+<figure class="wp-block-image"><img src="http://example.test/a.jpg" alt="A"/></figure>
+<!-- /wp:image -->`
+	out := env.Render(markup)
+	for _, want := range []string{
+		`id="img-1"`,
+		`extra-img`,
+		`size-thumbnail`,
+		`is-resized`,
+		`is-style-rounded`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+}
+
 func TestRenderGallerySavedPolishClassNameAnchor(t *testing.T) {
 	env := &blocks.Env{}
 	markup := `<!-- wp:gallery {"columns":3,"className":"extra-g","anchor":"g2","align":"full"} -->
