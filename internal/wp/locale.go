@@ -8,6 +8,9 @@ package wp
 type Locale struct {
 	// Code is the locale identifier (e.g. "en_US"). Empty means site default.
 	Code string
+	// WordCountType is the locale word-count mode (P2.141). Empty → words.
+	// Valid: words | characters_excluding_spaces | characters_including_spaces.
+	WordCountType string
 }
 
 // NewLocale returns a Locale stub. code may be empty.
