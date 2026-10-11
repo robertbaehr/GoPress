@@ -217,21 +217,27 @@ func parsePage(r *http.Request) int {
 	return page
 }
 
-// parsePostsOffset returns REST ?offset= when present (P4.92).
-// ok is false when the param is absent or non-numeric; negative values become 0.
-func parsePostsOffset(r *http.Request) (offset int, ok bool) {
-	v := strings.TrimSpace(r.URL.Query().Get("offset"))
-	if v == "" {
-		return 0, false
+// parsePostsOffset validates REST ?offset= (P4.92 / P4.139).
+// Absent → useOffset=false, valid=true.
+// Present but non-integer (incl. empty/float) → valid=false (rest_invalid_param).
+// Negative integers are accepted (valid) but clamped to 0 for WP_Query.
+func parsePostsOffset(r *http.Request) (offset int, useOffset bool, valid bool) {
+	if r == nil {
+		return 0, false, true
 	}
+	q := r.URL.Query()
+	if !q.Has("offset") {
+		return 0, false, true
+	}
+	v := strings.TrimSpace(q.Get("offset"))
 	n, err := strconv.Atoi(v)
 	if err != nil {
-		return 0, false
+		return 0, false, false
 	}
 	if n < 0 {
 		n = 0
 	}
-	return n, true
+	return n, true, true
 }
 
 func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, offsetOverride int, useOffset bool) ([]Post, error) {

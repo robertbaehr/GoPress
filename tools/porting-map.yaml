@@ -2517,6 +2517,20 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P4.92 — unit coverage for offset vs page and X-WP-Total"
 
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#offset-validate
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.139
+  api: exported
+  notes: "P4.139 — reject non-integer ?offset= with rest_invalid_param; negative clamped to 0"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#offset-validate-test
+  go: internal/rest/posts_test.go
+  status: partial
+  task: P4.139
+  api: n/a
+  notes: "P4.139 — unit coverage for offset type validation on posts/pages"
+
 # P4.91: REST GET /wp/v2/posts?after=&before=&modified_after=&modified_before=.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#after
   go: internal/rest/posts.go

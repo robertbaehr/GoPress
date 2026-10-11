@@ -1516,6 +1516,40 @@ func TestPostsOffset(t *testing.T) {
 	}
 }
 
+func TestPostsOffsetValidation(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	// P4.139: non-integer offset → rest_invalid_param (matches WP schema type=integer).
+	for _, path := range []string{
+		"/wp-json/wp/v2/posts?offset=abc&per_page=1",
+		"/wp-json/wp/v2/posts?offset=1.5&per_page=1",
+		"/wp-json/wp/v2/posts?offset=&per_page=1",
+		"/wp-json/wp/v2/posts?offset=true&per_page=1",
+		"/wp-json/wp/v2/pages?offset=xyz&per_page=1",
+	} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		rec := httptest.NewRecorder()
+		rc := c.ForRequest(rec, req)
+		(&rest.Server{}).Handle(rec, req, rc)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("%s: status=%d body=%s", path, rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "rest_invalid_param") || !strings.Contains(rec.Body.String(), "offset") {
+			t.Fatalf("%s: expected rest_invalid_param offset: %s", path, rec.Body.String())
+		}
+	}
+
+	// Negative offset is a valid integer; WP_Query clamps/ignores → 200.
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?offset=-5&per_page=1", nil)
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("offset=-5 status=%d body=%s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestPostsPerPageValidation(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
