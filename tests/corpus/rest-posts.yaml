@@ -4964,3 +4964,12 @@
   body: null
   compare: headers
   nonce: null
+
+- id: rest-p10134-types-page-context-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types/page?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
