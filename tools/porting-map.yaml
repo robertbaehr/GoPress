@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P5.161: core/social-links align coerce + gradient/anchor.
+- prefix: wp-includes/blocks/social-links#align
+  go: internal/blocks/social_links.go
+  status: partial
+  task: P5.161
+  api: n/a
+  notes: "P5.161 — align left|center|right coerce; gradient/anchor polish"
+- prefix: wp-includes/blocks/social-links#align#tests
+  go: internal/blocks/social_links_attrs_p5_161_test.go
+  status: partial
+  task: P5.161
+  api: n/a
+  notes: "P5.161 — align drop wide/full; gradient + anchor"
+
 # P8.54: original image path/URL helpers.
 - prefix: wp-includes/post.php#wp_get_original_image_path
   go: internal/wp/original_image.go
