@@ -2335,51 +2335,86 @@ func (e *Env) renderCommentTemplate(block Block) string {
 }
 
 func (e *Env) writeCommentTemplateItems(b *strings.Builder, items []CommentItem, byParent map[int64][]CommentItem, depth int, threadEven bool) {
+	e.writeCommentTemplateItemsState(b, items, byParent, depth, 0, 0)
+}
+
+// writeCommentTemplateItemsState applies get_comment_class parity (P3.116).
+// Returns updated alt/threadAlt so nested walks continue the WP globals.
+func (e *Env) writeCommentTemplateItemsState(b *strings.Builder, items []CommentItem, byParent map[int64][]CommentItem, depth, alt, threadAlt int) (int, int) {
 	e = e.ensure()
-	for i, cm := range items {
-		even := i%2 == 0
-		parity := "odd"
-		if even {
-			parity = "even"
-		}
-		threadParity := "thread-odd"
-		if threadEven == even || depth > 1 {
-			if even {
-				threadParity = "thread-even"
-			} else {
-				threadParity = "thread-odd"
-			}
-		} else {
-			if threadEven {
-				threadParity = "thread-even"
-			} else {
-				threadParity = "thread-odd"
-			}
-		}
-		if depth == 1 {
-			if even {
-				threadParity = "thread-even"
-			} else {
-				threadParity = "thread-odd"
-			}
-		}
+	for _, cm := range items {
+		var classes []string
+		classes, alt, threadAlt = commentTemplateClasses(cm, depth, alt, threadAlt, cm.PostAuthor)
 		b.WriteString(`<li id="comment-`)
 		b.WriteString(strconv.FormatInt(cm.ID, 10))
-		b.WriteString(`" class="comment `)
-		b.WriteString(parity)
-		b.WriteString(` `)
-		b.WriteString(threadParity)
-		b.WriteString(` depth-`)
-		b.WriteString(strconv.Itoa(depth))
+		b.WriteString(`" class="`)
+		b.WriteString(html.EscapeString(strings.Join(classes, " ")))
 		b.WriteString(`">`)
 		b.WriteString(e.renderCommentTemplateItemBody(cm))
 		if kids := byParent[cm.ID]; len(kids) > 0 && depth < 10 {
 			b.WriteString(`<ol>`)
-			e.writeCommentTemplateItems(b, kids, byParent, depth+1, threadEven)
+			alt, threadAlt = e.writeCommentTemplateItemsState(b, kids, byParent, depth+1, alt, threadAlt)
 			b.WriteString(`</ol>`)
 		}
 		b.WriteString(`</li>`)
 	}
+	return alt, threadAlt
+}
+
+// commentTemplateClasses mirrors get_comment_class for core/comment-template (P3.116).
+func commentTemplateClasses(cm CommentItem, depth, alt, threadAlt int, postAuthor int64) ([]string, int, int) {
+	ctype := strings.TrimSpace(cm.Type)
+	if ctype == "" {
+		ctype = "comment"
+	}
+	classes := []string{ctype}
+	if cm.UserID > 0 {
+		classes = append(classes, "byuser")
+		nicename := strings.TrimSpace(cm.UserNicename)
+		if nicename == "" {
+			nicename = strconv.FormatInt(cm.UserID, 10)
+		}
+		// Keep class-safe nicename (sanitize_html_class subset).
+		nicename = sanitizeCommentAuthorClass(nicename, cm.UserID)
+		classes = append(classes, "comment-author-"+nicename)
+		if postAuthor > 0 && cm.UserID == postAuthor {
+			classes = append(classes, "bypostauthor")
+		}
+	}
+	if alt%2 != 0 {
+		classes = append(classes, "odd", "alt")
+	} else {
+		classes = append(classes, "even")
+	}
+	alt++
+	if depth == 1 {
+		if threadAlt%2 != 0 {
+			classes = append(classes, "thread-odd", "thread-alt")
+		} else {
+			classes = append(classes, "thread-even")
+		}
+		threadAlt++
+	}
+	if depth <= 0 {
+		depth = 1
+	}
+	classes = append(classes, "depth-"+strconv.Itoa(depth))
+	return classes, alt, threadAlt
+}
+
+func sanitizeCommentAuthorClass(classname string, userID int64) string {
+	var b strings.Builder
+	for _, r := range classname {
+		switch {
+		case r >= 'A' && r <= 'Z', r >= 'a' && r <= 'z', r >= '0' && r <= '9', r == '_', r == '-':
+			b.WriteRune(r)
+		}
+	}
+	out := b.String()
+	if out == "" {
+		return strconv.FormatInt(userID, 10)
+	}
+	return out
 }
 
 func (e *Env) renderCommentTemplateItemBody(cm CommentItem) string {
