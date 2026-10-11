@@ -1880,13 +1880,20 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P2.109 — unit coverage for quoted '>' in attributes"
 
-# P2.50: wp_basename (locale-independent basename).
+# P2.50 / P2.113: wp_basename (locale-independent basename).
 - prefix: wp-includes/formatting.php#wp_basename
   go: internal/wp/basename.go
   status: partial
-  task: P2.50
+  task: P2.113
   api: exported
-  notes: "P2.50 — Basename via urlencode/replace/basename/urldecode"
+  notes: "P2.113 — Basename via urlencode/replace/basename/urldecode; PHP 8+ keep when suffix==base; P2.50 base"
+
+- prefix: wp-includes/formatting.php#wp_basename#tests
+  go: internal/wp/basename_test.go
+  status: partial
+  task: P2.113
+  api: n/a
+  notes: "P2.113 — separators/query/case-sensitive suffix + full-suffix keep vectors"
 
 # P2.51: wp_is_uuid (UUID / UUID v4 validation).
 - prefix: wp-includes/functions.php#wp_is_uuid

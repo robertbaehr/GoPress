@@ -21,6 +21,20 @@ func TestBasename(t *testing.T) {
 		{`path%5Cto%5Cfile`, "", `path%5Cto%5Cfile`},
 		{"café/naïve.txt", "", "naïve.txt"},
 		{"a b/c d.txt", "", "c d.txt"},
+		// P2.113 deepen: separators, query, PHP 8+ full-suffix keep.
+		{"//", "", ""},
+		{"///", "", ""},
+		{".", "", "."},
+		{"..", "", ".."},
+		{"foo/bar.php", ".php", "bar"},
+		{"foo/bar.php", ".PHP", "bar.php"}, // case-sensitive suffix
+		{"foo/bar.php", "bar.php", "bar.php"},
+		{"a/b.jpg?x=1", "", "b.jpg?x=1"},
+		{`foo\bar\baz.txt`, ".txt", "baz"},
+		{"foo/./bar", "", "bar"},
+		{" ", "", " "},
+		{"a/b/c.", ".", "c"},
+		{"a/b/c.", "", "c."},
 	}
 	for _, tc := range cases {
 		got := wp.Basename(tc.path, tc.suffix)
