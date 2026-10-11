@@ -231,6 +231,15 @@ func GetAttachmentMetadata(c *Context, attachmentID int64) (map[string]any, bool
 	return getAttachmentMetadata(c, attachmentID, false)
 }
 
+// AttachmentDimensions returns width/height from attachment metadata (P5.114).
+func AttachmentDimensions(c *Context, attachmentID int64) (width, height int) {
+	meta, ok := GetAttachmentMetadata(c, attachmentID)
+	if !ok || meta == nil {
+		return 0, 0
+	}
+	return anyToInt(meta["width"]), anyToInt(meta["height"])
+}
+
 // GetAttachmentMetadataUnfiltered is wp_get_attachment_metadata( $id, true ).
 func GetAttachmentMetadataUnfiltered(c *Context, attachmentID int64) (map[string]any, bool) {
 	return getAttachmentMetadata(c, attachmentID, true)

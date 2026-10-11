@@ -97,3 +97,52 @@ func TestAudioVideoEmptyWithoutSrc(t *testing.T) {
 		t.Fatalf("empty video should render empty: %q", out)
 	}
 }
+
+func TestAudioBlockClassNameAlignAnchor(t *testing.T) {
+	src := `<!-- wp:audio {"src":"https://example.com/a.mp3","className":"is-style-wide","align":"wide","anchor":"theme-song"} /-->`
+	out := blocks.Render(src)
+	if !strings.Contains(out, "is-style-wide") || !strings.Contains(out, "alignwide") {
+		t.Fatalf("expected className/align: %q", out)
+	}
+	if !strings.Contains(out, `id="theme-song"`) {
+		t.Fatalf("expected anchor id: %q", out)
+	}
+}
+
+func TestVideoBlockDimensionsFromAttachmentMetadata(t *testing.T) {
+	env := &blocks.Env{
+		GetAttachmentURL: func(id int64) string {
+			if id == 55 {
+				return "https://example.com/clip.mp4"
+			}
+			return ""
+		},
+		GetAttachmentDimensions: func(id int64) (int, int) {
+			if id == 55 {
+				return 1920, 1080
+			}
+			return 0, 0
+		},
+	}
+	src := `<!-- wp:video {"id":55} -->
+<figure class="wp-block-video"><video controls src="https://example.com/clip.mp4"></video></figure>
+<!-- /wp:video -->`
+	out := blocks.RenderWith(env, src)
+	if !strings.Contains(out, `width="1920"`) || !strings.Contains(out, `height="1080"`) {
+		t.Fatalf("expected metadata dimensions: %q", out)
+	}
+	if !strings.Contains(out, `aspect-ratio: 1920 / 1080;`) {
+		t.Fatalf("expected aspect-ratio from metadata: %q", out)
+	}
+}
+
+func TestVideoBlockClassNameAlignAnchor(t *testing.T) {
+	src := `<!-- wp:video {"src":"https://example.com/v.mp4","className":"hero-clip","align":"full","anchor":"hero-video"} /-->`
+	out := blocks.Render(src)
+	if !strings.Contains(out, "hero-clip") || !strings.Contains(out, "alignfull") {
+		t.Fatalf("expected className/align: %q", out)
+	}
+	if !strings.Contains(out, `id="hero-video"`) {
+		t.Fatalf("expected anchor: %q", out)
+	}
+}

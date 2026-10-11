@@ -68,3 +68,14 @@ func TestFileBlockSynthesizeWithPreview(t *testing.T) {
 		t.Fatalf("expected preview object + interactive: %q", out)
 	}
 }
+
+func TestFileBlockClassNameAlignAnchor(t *testing.T) {
+	src := `<!-- wp:file {"href":"https://example.com/a.pdf","fileName":"a.pdf","className":"is-style-outline","align":"center","anchor":"download-pack"} /-->`
+	out := blocks.Render(src)
+	if !strings.Contains(out, "is-style-outline") || !strings.Contains(out, "aligncenter") {
+		t.Fatalf("expected className/align: %q", out)
+	}
+	if !strings.Contains(out, `id="download-pack"`) {
+		t.Fatalf("expected anchor: %q", out)
+	}
+}

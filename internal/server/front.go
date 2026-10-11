@@ -4512,6 +4512,9 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 		GetAttachmentURL: func(id int64) string {
 			return wp.GetAttachmentURL(c, id)
 		},
+		GetAttachmentDimensions: func(id int64) (width, height int) {
+			return wp.AttachmentDimensions(c, id)
+		},
 		LoadTemplatePart: func(slug string) (string, bool) {
 			return wp.ResolveTemplatePart(c, slug)
 		},

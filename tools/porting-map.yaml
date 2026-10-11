@@ -4089,20 +4089,34 @@ wp-login.php#language-switcher-post
   api: internal
   notes: "P5.52 — renderFile synthesize + displayPreview interactive/object attrs"
 
-# P5.53: core/audio + core/video synthesize and video dimensions.
+# P5.53 / P5.114: core/audio + core/video synthesize, dimensions, polish.
 - prefix: wp-includes/blocks/audio
   go: internal/blocks/audio_video.go
   status: partial
-  task: P5.53
+  task: P5.114
   api: internal
-  notes: "P5.53 — renderAudio synthesize from src/id attrs"
+  notes: "P5.114 — className/align/anchor polish on P5.53 audio synthesize"
 
 - prefix: wp-includes/blocks/video.php
   go: internal/blocks/audio_video.go
   status: partial
-  task: P5.53
+  task: P5.114
   api: internal
-  notes: "P5.53 — renderVideo synthesize + width/height aspect-ratio"
+  notes: "P5.114 — attachment metadata dimensions + className/align/anchor on P5.53 video"
+
+- prefix: wp-includes/blocks/audio#test
+  go: internal/blocks/audio_video_test.go
+  status: partial
+  task: P5.114
+  api: n/a
+  notes: "P5.114 — unit coverage for audio/video polish + metadata dimensions"
+
+- prefix: wp-includes/blocks/file#polish
+  go: internal/blocks/file.go
+  status: partial
+  task: P5.114
+  api: internal
+  notes: "P5.114 — className/align/anchor polish on P5.52 file wrapper"
 
 # P5.54 / P5.108: core/cover synthesize + useFeaturedImage + polish.
 - prefix: wp-includes/blocks/cover.php
