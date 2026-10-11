@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P7.164: import.php pagenow chrome.
+- prefix: wp-admin/import.php#pagenow
+  go: internal/admin/import_wxr.go
+  status: partial
+  task: P7.164
+  api: n/a
+  notes: "P7.164 — import.php pagenow/adminpage + admin_body_class + locale"
+- prefix: wp-admin/import.php#pagenow#tests
+  go: internal/admin/import_chrome_p7_164_test.go
+  status: partial
+  task: P7.164
+  api: n/a
+  notes: "P7.164 — pagenow chrome + folded body class"
+
 # P8.56: get_attached_file filter + unfiltered variant.
 - prefix: wp-includes/post.php#get_attached_file
   go: internal/wp/media.go
