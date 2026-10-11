@@ -7937,3 +7937,25 @@ wp-login.php#language-switcher-post
   task: P10.147
   api: n/a
   notes: "P10.147 — summarize template-part, status[]/register_rest_field, comment edit, mkdir_p, site_icon, 1069 corpus"
+
+# P5.119: deepen core/post-template + query-pagination polish.
+- prefix: wp-includes/blocks/post-template.php#p5.119
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.119
+  api: internal
+  notes: "P5.119 — post-template className; query-pagination has-link-color/className; paginationArrow none|arrow|chevron; showLabel + aria-label"
+
+- prefix: wp-includes/blocks/query-pagination.php#p5.119
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.119
+  api: internal
+  notes: "P5.119 — wrapper classes + arrow/showLabel context for previous/next"
+
+- prefix: wp-includes/blocks/query-pagination.php#p5.119#tests
+  go: internal/blocks/query_pagination_polish_test.go
+  status: partial
+  task: P5.119
+  api: n/a
+  notes: "P5.119 — className/arrow/showLabel unit coverage"

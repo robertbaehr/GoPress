@@ -165,6 +165,11 @@ type Env struct {
 	// MaxPages is max_num_pages for inherit query pagination (P5.44).
 	MaxPages int
 
+	// paginationArrow / showLabel are context from enclosing core/query-pagination (P5.119).
+	// Empty paginationArrow means "arrow" (legacy default when unset).
+	paginationArrow string
+	showLabel       *bool // nil → true
+
 	// socialCtx is context from an enclosing core/social-links block (P5.50).
 	socialCtx socialLinksCtx
 }

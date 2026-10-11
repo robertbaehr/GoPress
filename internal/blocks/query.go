@@ -285,9 +285,9 @@ func (e *Env) renderPostTemplate(block Block) string {
 	return b.String()
 }
 
-// postTemplateClass builds core/post-template wrapper classes (P5.85).
+// postTemplateClass builds core/post-template wrapper classes (P5.85 / P5.119).
 // Honors align, legacy displayLayout flex columns, layout.grid columnCount,
-// and has-link-color from style.elements.link.color.text.
+// has-link-color from style.elements.link.color.text, and className.
 func postTemplateClass(block Block) string {
 	parts := []string{"wp-block-post-template"}
 	if align, ok := block.Attrs["align"].(string); ok && strings.TrimSpace(align) != "" {
@@ -324,6 +324,10 @@ func postTemplateClass(block Block) string {
 				}
 			}
 		}
+	}
+	// P5.119: className like get_block_wrapper_attributes.
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		parts = append(parts, cn)
 	}
 	return strings.Join(parts, " ")
 }
@@ -1411,6 +1415,15 @@ func (e *Env) renderComments(block Block) string {
 
 func (e *Env) renderQueryPagination(block Block) string {
 	e = e.ensure()
+	// P5.119: provide paginationArrow / showLabel context to inner blocks.
+	prevArrow, prevShow := e.paginationArrow, e.showLabel
+	e.paginationArrow = paginationArrowFromAttrs(block.Attrs)
+	e.showLabel = showLabelPtrFromAttrs(block.Attrs)
+	defer func() {
+		e.paginationArrow = prevArrow
+		e.showLabel = prevShow
+	}()
+
 	inner := e.renderSaved(block)
 	if strings.TrimSpace(inner) == "" {
 		// Synthesize previous/numbers/next when inner dynamic blocks are empty (P5.44).
@@ -1421,11 +1434,90 @@ func (e *Env) renderQueryPagination(block Block) string {
 	if strings.TrimSpace(inner) == "" {
 		return ""
 	}
-	classes := "wp-block-query-pagination"
-	if align, ok := block.Attrs["align"].(string); ok && align != "" {
-		classes += " align" + align
-	}
+	classes := queryPaginationWrapperClasses(block.Attrs)
 	return `<nav aria-label="Pagination" class="` + html.EscapeString(classes) + `">` + inner + `</nav>`
+}
+
+// queryPaginationWrapperClasses mirrors get_block_wrapper_attributes for query-pagination (P5.119).
+func queryPaginationWrapperClasses(attrs map[string]any) string {
+	parts := []string{"wp-block-query-pagination"}
+	if align, ok := attrs["align"].(string); ok && strings.TrimSpace(align) != "" {
+		parts = append(parts, "align"+strings.TrimSpace(align))
+	}
+	if hasLinkColorAttr(attrs) {
+		parts = append(parts, "has-link-color")
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		parts = append(parts, cn)
+	}
+	return strings.Join(parts, " ")
+}
+
+// paginationArrowFromAttrs reads paginationArrow (none|arrow|chevron); empty → "arrow" (P5.119).
+func paginationArrowFromAttrs(attrs map[string]any) string {
+	a := strings.ToLower(strings.TrimSpace(attrString(attrs, "paginationArrow")))
+	switch a {
+	case "none", "arrow", "chevron":
+		return a
+	}
+	return "arrow" // legacy GoPress default when unset (tests + pre-P5.119 markup)
+}
+
+func showLabelPtrFromAttrs(attrs map[string]any) *bool {
+	if attrs == nil {
+		return nil
+	}
+	if _, ok := attrs["showLabel"]; !ok {
+		return nil
+	}
+	v := attrBool(attrs, "showLabel")
+	return &v
+}
+
+func (e *Env) queryPaginationShowLabel() bool {
+	e = e.ensure()
+	if e.showLabel != nil {
+		return *e.showLabel
+	}
+	return true
+}
+
+func (e *Env) queryPaginationArrow() string {
+	e = e.ensure()
+	if e.paginationArrow != "" {
+		return e.paginationArrow
+	}
+	return "arrow"
+}
+
+// queryPaginationArrowHTML mirrors get_query_pagination_arrow (P5.119).
+func queryPaginationArrowHTML(arrowKind string, isNext bool) string {
+	arrowKind = strings.ToLower(strings.TrimSpace(arrowKind))
+	if arrowKind == "" || arrowKind == "none" {
+		return ""
+	}
+	var glyph string
+	switch arrowKind {
+	case "chevron":
+		if isNext {
+			glyph = "»"
+		} else {
+			glyph = "«"
+		}
+	case "arrow":
+		if isNext {
+			glyph = "→"
+		} else {
+			glyph = "←"
+		}
+	default:
+		return ""
+	}
+	typ := "previous"
+	if isNext {
+		typ = "next"
+	}
+	return `<span class="wp-block-query-pagination-` + typ + `-arrow is-arrow-` + html.EscapeString(arrowKind) + `" aria-hidden="true">` + glyph + `</span>`
 }
 
 func (e *Env) queryPaginationPage() int {
@@ -1472,14 +1564,38 @@ func (e *Env) renderQueryPaginationPrevious(block Block) string {
 	if page <= 1 {
 		return ""
 	}
-	label := "Previous Page"
+	labelText := "Previous Page"
 	if l, ok := block.Attrs["label"].(string); ok && strings.TrimSpace(l) != "" {
-		label = strings.TrimSpace(l)
+		labelText = strings.TrimSpace(l)
+	}
+	showLabel := e.queryPaginationShowLabel()
+	if block.Attrs != nil {
+		if _, ok := block.Attrs["showLabel"]; ok {
+			showLabel = attrBool(block.Attrs, "showLabel")
+		}
+	}
+	arrowKind := e.queryPaginationArrow()
+	// Standalone / synthesize: read arrow from this block's attrs when parent context unset.
+	if e.paginationArrow == "" && block.Attrs != nil {
+		if _, ok := block.Attrs["paginationArrow"]; ok {
+			arrowKind = paginationArrowFromAttrs(block.Attrs)
+		}
+	}
+	label := ""
+	if showLabel {
+		label = html.EscapeString(labelText)
+	}
+	arrow := queryPaginationArrowHTML(arrowKind, false)
+	if arrow != "" {
+		label = arrow + label
 	}
 	href := queryPaginationPageURL(e.queryPaginationHome(), page-1)
-	return `<a href="` + html.EscapeString(href) + `" class="wp-block-query-pagination-previous">` +
-		`<span class="wp-block-query-pagination-previous-arrow is-arrow-arrow" aria-hidden="true">←</span>` +
-		html.EscapeString(label) + `</a>`
+	aria := ""
+	if !showLabel {
+		aria = ` aria-label="` + html.EscapeString(labelText) + `"`
+	}
+	return `<a href="` + html.EscapeString(href) + `" class="wp-block-query-pagination-previous"` + aria + `>` +
+		label + `</a>`
 }
 
 func (e *Env) renderQueryPaginationNext(block Block) string {
@@ -1489,14 +1605,37 @@ func (e *Env) renderQueryPaginationNext(block Block) string {
 	if page >= max {
 		return ""
 	}
-	label := "Next Page"
+	labelText := "Next Page"
 	if l, ok := block.Attrs["label"].(string); ok && strings.TrimSpace(l) != "" {
-		label = strings.TrimSpace(l)
+		labelText = strings.TrimSpace(l)
+	}
+	showLabel := e.queryPaginationShowLabel()
+	if block.Attrs != nil {
+		if _, ok := block.Attrs["showLabel"]; ok {
+			showLabel = attrBool(block.Attrs, "showLabel")
+		}
+	}
+	arrowKind := e.queryPaginationArrow()
+	if e.paginationArrow == "" && block.Attrs != nil {
+		if _, ok := block.Attrs["paginationArrow"]; ok {
+			arrowKind = paginationArrowFromAttrs(block.Attrs)
+		}
+	}
+	label := ""
+	if showLabel {
+		label = html.EscapeString(labelText)
+	}
+	arrow := queryPaginationArrowHTML(arrowKind, true)
+	if arrow != "" {
+		label = label + arrow
 	}
 	href := queryPaginationPageURL(e.queryPaginationHome(), page+1)
-	return `<a href="` + html.EscapeString(href) + `" class="wp-block-query-pagination-next">` +
-		html.EscapeString(label) +
-		`<span class="wp-block-query-pagination-next-arrow is-arrow-arrow" aria-hidden="true">→</span></a>`
+	aria := ""
+	if !showLabel {
+		aria = ` aria-label="` + html.EscapeString(labelText) + `"`
+	}
+	return `<a href="` + html.EscapeString(href) + `" class="wp-block-query-pagination-next"` + aria + `>` +
+		label + `</a>`
 }
 
 func (e *Env) renderQueryPaginationNumbers(block Block) string {
