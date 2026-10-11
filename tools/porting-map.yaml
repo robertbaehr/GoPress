@@ -7644,3 +7644,11 @@ wp-login.php#language-switcher-post
   task: P10.139
   api: n/a
   notes: "P10.139 — summarize audio/video/file, footnotes meta, theme-editor, filetype normalize, cpage, bindings, 840 corpus"
+
+# P10.140: expand diff corpus after P5.115–P8.35.
+- prefix: tests/corpus#p10.140
+  go: tests/corpus/rest-posts.yaml
+  status: partial
+  task: P10.140
+  api: n/a
+  notes: "P10.140 — +orderby validation/aliases, attachment redirects, embed block-types; 840→902"
