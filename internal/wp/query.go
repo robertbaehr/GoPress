@@ -137,7 +137,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		where = append(where, clause)
 		vals = append(vals, cvals...)
 	}
-	if clause, cvals := searchFilterSQL(args.Search, args.SearchColumns); clause != "" {
+	if clause, cvals := searchFilterSQL(c, args.Search, args.SearchColumns); clause != "" {
 		where = append(where, clause)
 		vals = append(vals, cvals...)
 	}
@@ -310,7 +310,7 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 		where = append(where, clause)
 		vals = append(vals, cvals...)
 	}
-	if clause, cvals := searchFilterSQL(args.Search, args.SearchColumns); clause != "" {
+	if clause, cvals := searchFilterSQL(c, args.Search, args.SearchColumns); clause != "" {
 		where = append(where, clause)
 		vals = append(vals, cvals...)
 	}
@@ -971,40 +971,198 @@ func lastPathSegment(path string) string {
 	return parts[len(parts)-1]
 }
 
-// searchFilterSQL builds the Search LIKE clause (P3.21 / P4.135).
+// Default English stopwords for WP_Query search (P4.163).
+// Matches the translator-comment list in WP_Query::get_search_stopwords.
+var defaultSearchStopwords = map[string]bool{
+	"about": true, "an": true, "are": true, "as": true, "at": true, "be": true,
+	"by": true, "com": true, "for": true, "from": true, "how": true, "in": true,
+	"is": true, "it": true, "of": true, "on": true, "or": true, "that": true,
+	"the": true, "this": true, "to": true, "was": true, "what": true, "when": true,
+	"where": true, "who": true, "will": true, "with": true, "www": true,
+}
+
+// searchFilterSQL builds the Search LIKE clause (P3.21 / P4.135 / P4.163).
 // columns may be post_title, post_content, post_excerpt; invalid names ignored.
 // Empty columns → all three (WP default).
-func searchFilterSQL(term string, columns []string) (string, []any) {
+// P4.163: WP_Query search semantics — term split, stopwords, quoted phrases,
+// exclusion prefix "-", AND across terms, OR across columns; post_search_columns filter.
+func searchFilterSQL(c *Context, term string, columns []string) (string, []any) {
 	term = strings.TrimSpace(term)
 	if term == "" {
 		return "", nil
 	}
+	// WP: strip line breaks from <input /> fields.
+	term = strings.ReplaceAll(term, "\r", "")
+	term = strings.ReplaceAll(term, "\n", "")
+	term = strings.TrimSpace(term)
+	if term == "" {
+		return "", nil
+	}
+
+	defaultCols := []string{"post_title", "post_excerpt", "post_content"}
 	allowed := map[string]bool{
-		"post_title":   true,
-		"post_content": true,
-		"post_excerpt": true,
+		"post_title": true, "post_content": true, "post_excerpt": true,
 	}
 	var cols []string
 	seen := map[string]bool{}
-	for _, c := range columns {
-		c = strings.TrimSpace(c)
-		if !allowed[c] || seen[c] {
+	for _, col := range columns {
+		col = strings.TrimSpace(col)
+		if !allowed[col] || seen[col] {
 			continue
 		}
-		seen[c] = true
-		cols = append(cols, c)
+		seen[col] = true
+		cols = append(cols, col)
 	}
 	if len(cols) == 0 {
-		cols = []string{"post_title", "post_excerpt", "post_content"}
+		cols = append([]string{}, defaultCols...)
 	}
-	like := "%" + db.EscapeLike(term) + "%"
-	parts := make([]string, len(cols))
-	vals := make([]any, len(cols))
-	for i, c := range cols {
-		parts[i] = c + " LIKE %s"
-		vals[i] = like
+	// P4.163: post_search_columns filter (WP 6.2+).
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("post_search_columns", cols, term); v != nil {
+			switch t := v.(type) {
+			case []string:
+				cols = t
+			case []any:
+				cols = nil
+				for _, item := range t {
+					if s, ok := item.(string); ok {
+						cols = append(cols, s)
+					}
+				}
+			}
+		}
 	}
-	return "(" + strings.Join(parts, " OR ") + ")", vals
+	seen = map[string]bool{}
+	var filtered []string
+	for _, col := range cols {
+		col = strings.TrimSpace(col)
+		if !allowed[col] || seen[col] {
+			continue
+		}
+		seen[col] = true
+		filtered = append(filtered, col)
+	}
+	if len(filtered) == 0 {
+		filtered = append([]string{}, defaultCols...)
+	}
+	cols = filtered
+
+	terms := parseSearchTerms(term)
+	if len(terms) == 0 {
+		return "", nil
+	}
+
+	exclusionPrefix := "-"
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("wp_query_search_exclusion_prefix", exclusionPrefix); v != nil {
+			if s, ok := v.(string); ok {
+				exclusionPrefix = s
+			}
+		}
+	}
+
+	var andParts []string
+	var vals []any
+	for _, t := range terms {
+		exclude := exclusionPrefix != "" && strings.HasPrefix(t, exclusionPrefix)
+		likeOp := "LIKE"
+		andorOp := "OR"
+		termBody := t
+		if exclude {
+			likeOp = "NOT LIKE"
+			andorOp = "AND"
+			termBody = t[len(exclusionPrefix):]
+		}
+		like := "%" + db.EscapeLike(termBody) + "%"
+		colParts := make([]string, len(cols))
+		for i, col := range cols {
+			colParts[i] = "(" + col + " " + likeOp + " %s)"
+			vals = append(vals, like)
+		}
+		andParts = append(andParts, "("+strings.Join(colParts, " "+andorOp+" ")+")")
+	}
+	return "(" + strings.Join(andParts, " AND ") + ")", vals
+}
+
+// parseSearchTerms splits s into WP_Query search terms (P4.163).
+// Quoted phrases stay together; stopwords and single a-z/- tokens are dropped;
+// empty/too-many terms fall back to the whole sentence.
+func parseSearchTerms(s string) []string {
+	s = strings.TrimSpace(s)
+	if s == "" {
+		return nil
+	}
+	matches := splitSearchRawTerms(s)
+	if len(matches) == 0 {
+		return []string{s}
+	}
+	checked := parseSearchTermsChecked(matches)
+	if len(checked) == 0 || len(checked) > 9 {
+		return []string{s}
+	}
+	return checked
+}
+
+// splitSearchRawTerms mirrors WP_Query preg_match_all without RE2 lookbehind (P4.163).
+// Delimiters are whitespace, comma, and plus; quoted spans stay intact.
+func splitSearchRawTerms(s string) []string {
+	var parts []string
+	i := 0
+	n := len(s)
+	for i < n {
+		for i < n && (s[i] == ' ' || s[i] == '\t' || s[i] == ',' || s[i] == '+') {
+			i++
+		}
+		if i >= n {
+			break
+		}
+		if s[i] == '"' {
+			j := i + 1
+			for j < n && s[j] != '"' {
+				j++
+			}
+			if j < n {
+				parts = append(parts, s[i:j+1])
+				i = j + 1
+			} else {
+				parts = append(parts, s[i:])
+				break
+			}
+			continue
+		}
+		j := i
+		for j < n && s[j] != ' ' && s[j] != '\t' && s[j] != ',' && s[j] != '+' {
+			j++
+		}
+		parts = append(parts, s[i:j])
+		i = j
+	}
+	return parts
+}
+
+func parseSearchTermsChecked(terms []string) []string {
+	var checked []string
+	for _, term := range terms {
+		if len(term) >= 2 && term[0] == '"' && term[len(term)-1] == '"' {
+			term = strings.Trim(term, `"'`)
+		} else {
+			term = strings.Trim(term, `"' `)
+		}
+		if term == "" {
+			continue
+		}
+		if len(term) == 1 {
+			r := term[0]
+			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') || r == '-' {
+				continue
+			}
+		}
+		if defaultSearchStopwords[strings.ToLower(term)] {
+			continue
+		}
+		checked = append(checked, term)
+	}
+	return checked
 }
 
 func rowString(v any) string {
