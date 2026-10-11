@@ -7,13 +7,13 @@ import (
 
 // AdminNoticeArgs mirrors wp_get_admin_notice $args (P7.131).
 type AdminNoticeArgs struct {
-	Type               string
-	Dismissible        bool
-	ID                 string
-	AdditionalClasses  []string
-	Attributes         map[string]string
-	ParagraphWrap      *bool // nil → true (WP default)
-	SkipParagraphWrap  bool  // convenience when ParagraphWrap pointer is awkward
+	Type              string
+	Dismissible       bool
+	ID                string
+	AdditionalClasses []string
+	Attributes        map[string]string
+	ParagraphWrap     *bool // nil → true (WP default)
+	SkipParagraphWrap bool  // convenience when ParagraphWrap pointer is awkward
 }
 
 func (a AdminNoticeArgs) paragraphWrap() bool {
