@@ -8904,3 +8904,18 @@ wp-login.php#language-switcher-post
   task: P5.127
   api: n/a
   notes: "P5.127 — circular halt / quiet / missing ref coverage"
+
+# P4.143: REST posts slug[]= empty + slug[N]= indexed forms.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#slug
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.143
+  api: slug
+  notes: "P4.143 — empty slug[]=/slug[0]= → zero results; indexed slug[N]= order"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#slug#tests
+  go: internal/rest/posts_test.go
+  status: partial
+  task: P4.143
+  api: n/a
+  notes: "P4.143 — empty array / indexed / scalar-empty coverage"
