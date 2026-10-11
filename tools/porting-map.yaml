@@ -11961,6 +11961,20 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P9.37 — nested DidAction counters; DoingAction shares filter stack"
 
+# P9.38: HasFilterPriority + RemoveAction/RemoveFilter package helpers.
+- prefix: wp-includes/plugin.php#has_filter_priority
+  go: internal/wp/has_action.go
+  status: partial
+  task: P9.38
+  api: n/a
+  notes: "P9.38 — HasFilterPriority; RemoveAction/RemoveFilter Context helpers"
+- prefix: wp-includes/plugin.php#has_filter_priority#tests
+  go: internal/wp/has_filter_priority_p9_38_test.go
+  status: partial
+  task: P9.38
+  api: n/a
+  notes: "P9.38 — priority lookup; remove once; nil/empty guards"
+
 # P10.214: expand diff corpus after P5.152–P9.37 stack.
 - prefix: tests/corpus#p10.214
   go: tests/corpus
