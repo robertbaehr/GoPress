@@ -545,7 +545,8 @@ type AttachmentImageSrc struct {
 }
 
 // ImageDownsize returns src/width/height/is_intermediate for an attachment size
-// (image_downsize subset, P8.32). ok false when no image URL is available.
+// (image_downsize subset, P8.32 / P8.44). ok false when no image URL is available.
+// P8.44: thumb→thumbnail alias; ImageGetIntermediateSize; non-image sizes.full preview.
 func ImageDownsize(c *Context, attachmentID int64, size string) (AttachmentImageSrc, bool) {
 	var out AttachmentImageSrc
 	if c == nil || attachmentID <= 0 {
@@ -554,6 +555,10 @@ func ImageDownsize(c *Context, attachmentID int64, size string) (AttachmentImage
 	size = strings.TrimSpace(size)
 	if size == "" {
 		size = "medium"
+	}
+	// P8.44: WP accepts 'thumb' as an alias for 'thumbnail'.
+	if size == "thumb" {
+		size = "thumbnail"
 	}
 	// image_downsize filter short-circuit.
 	if c.Hooks != nil {
@@ -592,26 +597,112 @@ func ImageDownsize(c *Context, attachmentID int64, size string) (AttachmentImage
 	}
 	isIntermediate := false
 	imgURL := fullURL
-	if size != "full" && ok {
-		if sizes, okSizes := meta["sizes"].(map[string]any); okSizes {
-			if sz, okSz := sizes[size].(map[string]any); okSz {
-				file := strings.TrimSpace(fmt.Sprint(sz["file"]))
-				if file != "" {
-					base := path.Base(fullURL)
-					imgURL = strings.Replace(fullURL, base, path.Base(file), 1)
-					width = anyToInt(sz["width"])
-					height = anyToInt(sz["height"])
-					isIntermediate = true
-				}
+	imgURLBasename := path.Base(fullURL)
+
+	// P8.44: non-image attachments use sizes.full preview (e.g. PDF *-pdf.jpg).
+	// ImageGetIntermediateSize intentionally skips "full", so read sizes bag directly.
+	// Use mime-only check (not AttachmentIsImage) to avoid GetAttachmentImageSrc recursion.
+	if !attachmentMimeIsImage(c, attachmentID) {
+		fullSz := attachmentSizeEntry(meta, "full")
+		if fullSz == nil {
+			return out, false
+		}
+		file := strings.TrimSpace(fmt.Sprint(fullSz["file"]))
+		if file == "" {
+			return out, false
+		}
+		imgURL = strings.Replace(fullURL, imgURLBasename, path.Base(file), 1)
+		imgURLBasename = path.Base(file)
+		width = anyToInt(fullSz["width"])
+		height = anyToInt(fullSz["height"])
+	}
+
+	// Try registered intermediate size (image_get_intermediate_size).
+	if size != "full" {
+		if intermediate := ImageGetIntermediateSize(c, attachmentID, size); intermediate != nil {
+			file := strings.TrimSpace(fmt.Sprint(intermediate["file"]))
+			if file != "" {
+				imgURL = strings.Replace(imgURL, imgURLBasename, path.Base(file), 1)
+				width = anyToInt(intermediate["width"])
+				height = anyToInt(intermediate["height"])
+				isIntermediate = true
+			}
+		} else if size == "thumbnail" && ok {
+			// P8.44: legacy meta['thumb'] fallback when no sizes.thumbnail.
+			if thumb := strings.TrimSpace(fmt.Sprint(meta["thumb"])); thumb != "" && thumb != "<nil>" {
+				imgURL = strings.Replace(imgURL, imgURLBasename, path.Base(thumb), 1)
+				isIntermediate = true
+				// Dimensions unknown without file probe; leave width/height if set.
 			}
 		}
 	}
+
 	if width == 0 && height == 0 && ok {
 		width = anyToInt(meta["width"])
 		height = anyToInt(meta["height"])
 	}
 	out = AttachmentImageSrc{URL: imgURL, Width: width, Height: height, Resized: isIntermediate}
 	return out, out.URL != ""
+}
+
+// attachmentMimeIsImage reports image/* mime from the posts table (P8.44).
+// Empty/unknown mime is treated as image so existing image attachments keep working.
+func attachmentMimeIsImage(c *Context, attachmentID int64) bool {
+	if c == nil || c.DB == nil || attachmentID <= 0 {
+		return true
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT post_mime_type FROM "+c.DB.Posts()+" WHERE ID = %d AND post_type = %s LIMIT 1",
+		attachmentID, "attachment",
+	)
+	if err != nil {
+		return true
+	}
+	row, err := c.DB.GetRow(q, args...)
+	if err != nil || row == nil {
+		return true
+	}
+	mime := strings.ToLower(strings.TrimSpace(fmt.Sprint(row["post_mime_type"])))
+	if mime == "" || mime == "<nil>" {
+		return true
+	}
+	return strings.HasPrefix(mime, "image/")
+}
+
+// attachmentSizeEntry reads meta["sizes"][name] as map[string]any (P8.44).
+func attachmentSizeEntry(meta map[string]any, name string) map[string]any {
+	if meta == nil || name == "" {
+		return nil
+	}
+	sizesRaw, ok := meta["sizes"]
+	if !ok || sizesRaw == nil {
+		return nil
+	}
+	var sizes map[string]any
+	switch t := sizesRaw.(type) {
+	case map[string]any:
+		sizes = t
+	case map[any]any:
+		if m, ok := phpValueToStringMap(t); ok {
+			sizes = m
+		}
+	}
+	if sizes == nil {
+		return nil
+	}
+	entry, ok := sizes[name]
+	if !ok || entry == nil {
+		return nil
+	}
+	switch t := entry.(type) {
+	case map[string]any:
+		return t
+	case map[any]any:
+		if m, ok := phpValueToStringMap(t); ok {
+			return m
+		}
+	}
+	return nil
 }
 
 // GetAttachmentImageSrc is wp_get_attachment_image_src (P8.32).
