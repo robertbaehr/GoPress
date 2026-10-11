@@ -66,9 +66,6 @@ func adminBarUserPref(c *Context) bool {
 		return true
 	}
 	raw := c.Meta.GetMetadata(MetaUser, c.CurrentUser.ID, "show_admin_bar_front", true)
-	if raw == nil {
-		return true
-	}
 	switch v := raw.(type) {
 	case string:
 		if v == "" {
