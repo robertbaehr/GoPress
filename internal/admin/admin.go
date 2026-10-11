@@ -5725,9 +5725,11 @@ func insertAutoDraft(c *wp.Context, author int64, postType string) (int64, error
 	return id, nil
 }
 
-// writePostEditorShell emits the classic post editor stub (P7.24 / P7.120 / P7.121).
+// writePostEditorShell emits the post editor stub (P7.24 / P7.120 / P7.121 / P7.127).
 // isNew selects Add New heading + Publish button vs Edit + Update.
 // message is an optional admin notice (e.g. "Post updated.").
+// P7.127: block-editor chrome (#editor, block-editor-page, settings stub) wraps the
+// classic form so unit/corpus probes that expect id="title" keep working.
 func (h *Handler) writePostEditorShell(w http.ResponseWriter, c *wp.Context, post *wp.Post, isNew bool) {
 	h.writePostEditorShellMsg(w, c, post, isNew, "")
 }
@@ -5742,38 +5744,69 @@ func (h *Handler) writePostEditorShellMsg(w http.ResponseWriter, c *wp.Context, 
 	submit := "Update"
 	addNewLabel := "Add New"
 	addNewHref := "/wp-admin/post-new.php"
-	bodyClass := "wp-admin wp-core-ui post-php post-type-" + post.Type
+	pageNow := "post"
+	bodyClass := "wp-admin wp-core-ui block-editor-page post-php post-type-" + post.Type + " is-fullscreen-mode"
 	if isNew {
 		heading = "Add New Post"
 		submit = "Publish"
-		bodyClass = "wp-admin wp-core-ui post-new-php post-type-" + post.Type
+		pageNow = "post-new"
+		bodyClass = "wp-admin wp-core-ui block-editor-page post-new-php post-type-" + post.Type + " is-fullscreen-mode"
 	}
 	if post.Type == "page" {
 		addNewHref = "/wp-admin/post-new.php?post_type=page"
 		if isNew {
 			heading = "Add New Page"
+			pageNow = "page"
 		} else {
 			heading = "Edit Page"
+			pageNow = "page"
+		}
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("admin_body_class", ""); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				bodyClass += " " + strings.TrimSpace(s)
+			}
 		}
 	}
 	nonce := ""
+	restNonce := ""
 	if c != nil {
 		nonce = c.CreateNonce("update-post_" + strconv.FormatInt(post.ID, 10))
+		restNonce = c.CreateNonce("wp_rest")
 	}
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	settingsJSON, _ := wp.WPJSONEncode(map[string]any{
+		"postId":   post.ID,
+		"postType": post.Type,
+		"status":   post.Status,
+		"siteUrl":  home + "/",
+		"isNew":    isNew,
+	})
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n")
 	b.WriteString("<title>")
 	b.WriteString(html.EscapeString(heading))
 	b.WriteString(" &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n")
+	b.WriteString("<script>var ajaxurl = \"/wp-admin/admin-ajax.php\", pagenow = \"")
+	b.WriteString(html.EscapeString(pageNow))
+	b.WriteString("\";</script>\n")
 	b.WriteString("<script>var wpApiSettings = {\"root\":\"/wp-json/\",\"nonce\":\"")
-	b.WriteString(html.EscapeString(c.CreateNonce("wp_rest")))
-	b.WriteString("\"};</script>\n</head>\n")
+	b.WriteString(html.EscapeString(restNonce))
+	b.WriteString("\"};</script>\n")
+	b.WriteString("<script>window.__gopressBlockEditorSettings = ")
+	b.WriteString(settingsJSON)
+	b.WriteString(";</script>\n</head>\n")
 	b.WriteString("<body class=\"")
 	b.WriteString(html.EscapeString(bodyClass))
 	b.WriteString("\">\n")
 	b.WriteString(adminNoticesHTML(c))
+	// P7.127: block editor mount point (Gutenberg #editor / edit-post layout).
+	b.WriteString("<div id=\"editor\" class=\"block-editor__container\" role=\"region\" aria-label=\"Editor\">\n")
+	b.WriteString("<div class=\"edit-post-layout\">\n")
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1 class=\"wp-heading-inline\">")
 	b.WriteString(html.EscapeString(heading))
@@ -5826,7 +5859,6 @@ func (h *Handler) writePostEditorShellMsg(w http.ResponseWriter, c *wp.Context, 
 		b.WriteString("<span id=\"sample-permalink\"><a href=\"/?p=")
 		b.WriteString(strconv.FormatInt(post.ID, 10))
 		b.WriteString("\">")
-		home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 		b.WriteString(html.EscapeString(home))
 		b.WriteString("/?p=")
 		b.WriteString(strconv.FormatInt(post.ID, 10))
@@ -5846,9 +5878,9 @@ func (h *Handler) writePostEditorShellMsg(w http.ResponseWriter, c *wp.Context, 
 	b.WriteString("</textarea>\n")
 	b.WriteString("</div>\n")
 	if isNew {
-		b.WriteString("<p class=\"description\">GoPress post-new stub (P7.120).</p>\n")
+		b.WriteString("<p class=\"description\">GoPress post-new / block editor stub (P7.120 / P7.127).</p>\n")
 	} else {
-		b.WriteString("<p class=\"description\">GoPress post editor (P7.121).</p>\n")
+		b.WriteString("<p class=\"description\">GoPress post / block editor stub (P7.121 / P7.127).</p>\n")
 	}
 	b.WriteString("</div>\n")
 	// P7.121: excerpt metabox.
@@ -5876,7 +5908,9 @@ func (h *Handler) writePostEditorShellMsg(w http.ResponseWriter, c *wp.Context, 
 	b.WriteString(html.EscapeString(submit))
 	b.WriteString("\" /></div>\n")
 	b.WriteString("<div class=\"clear\"></div>\n</div>\n</div>\n</div>\n</div>\n</div>\n")
-	b.WriteString("</div>\n</div>\n</div>\n</form>\n</div>\n</body>\n</html>\n")
+	b.WriteString("</div>\n</div>\n</div>\n</form>\n</div>\n")
+	b.WriteString("<noscript><p>The block editor requires JavaScript.</p></noscript>\n")
+	b.WriteString("</div>\n</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
 
