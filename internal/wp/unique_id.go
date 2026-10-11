@@ -1,6 +1,10 @@
 package wp
 
-import "sync"
+import (
+	"crypto/md5"
+	"encoding/hex"
+	"sync"
+)
 
 // Process-wide counters for wp_unique_id / wp_unique_prefixed_id (P2.39).
 var (
@@ -28,6 +32,17 @@ func UniquePrefixedID(prefix string) string {
 	n := uniquePrefixed[prefix]
 	uniqueIDMu.Unlock()
 	return prefix + itoaPositive(n)
+}
+
+// UniqueIDFromValues returns prefix + first 8 hex chars of md5(json(data))
+// (wp_unique_id_from_values, P2.104). Empty data still hashes to a stable id.
+func UniqueIDFromValues(data any, prefix string) string {
+	serialized, ok := WPJSONEncode(data)
+	if !ok {
+		serialized = ""
+	}
+	sum := md5.Sum([]byte(serialized))
+	return prefix + hex.EncodeToString(sum[:])[:8]
 }
 
 func itoaPositive(n int) string {

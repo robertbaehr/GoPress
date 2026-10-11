@@ -1506,7 +1506,7 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P2.88 — json tags / map[string]string / int keys / present nil values"
 
-# P2.39: wp_unique_id / wp_unique_prefixed_id.
+# P2.39 / P2.104: wp_unique_id / wp_unique_prefixed_id / wp_unique_id_from_values.
 - prefix: wp-includes/functions.php#wp_unique_id
   go: internal/wp/unique_id.go
   status: done
@@ -1518,6 +1518,20 @@ wp-login.php#language-switcher-post
   status: done
   task: P2.39
   api: exported
+
+- prefix: wp-includes/functions.php#wp_unique_id_from_values
+  go: internal/wp/unique_id.go
+  status: done
+  task: P2.104
+  api: exported
+  notes: "P2.104 — md5(json)[:8] + optional prefix"
+
+- prefix: wp-includes/functions.php#wp_unique_id_from_values#test
+  go: internal/wp/unique_id_test.go
+  status: done
+  task: P2.104
+  api: n/a
+  notes: "P2.104 — unit coverage for stable hash ids"
 
 # P2.41: wp_normalize_path / wp_is_stream.
 - prefix: wp-includes/functions.php#wp_normalize_path
