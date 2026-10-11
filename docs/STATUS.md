@@ -51,6 +51,7 @@ make check
 ## Recent stack (through P10.211)
 
 - P10.211 STATUS/PORTING refresh after P5.150–P10.210
+- P10.212 Diff corpus expand (2806/2806 match) + cover/attachment/prev-next/headertitle/safe-remote toppers; dropped Link/set-cookie/meta_key-divergent cases
 - P10.210 Diff corpus expand (2767/2767 match) + group/meta_query/media-grid/http-validate/canonical/srcset toppers; dropped set-cookie admin cases
 - P8.47 `wp_calculate_image_srcset` HTTPS baseurl + `ImageAddSrcsetAndSizes` / `ImageSrcGetDimensions`
 - P3.144 Front `CanonicalTagHTML` / `RelCanonicalForRequest` page/cpage

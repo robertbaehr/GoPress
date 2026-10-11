@@ -2165,3 +2165,32 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.212: login toppers after headertitle deepen.
+
+- id: login-p10212-001
+  role: anon
+  method: GET
+  path: /wp-login.php?redirect_to=%2Fwp-admin%2Fpost.php%3Fpost%3D5%26action%3Dedit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10212-002
+  role: anon
+  method: GET
+  path: /wp-login.php?action=login&redirect_to=%2Fwp-admin%2Fupload.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10212-003
+  role: anon
+  method: GET
+  path: /wp-login.php?redirect_to=%2Fcategory%2Funcategorized%2Fpage%2F2%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

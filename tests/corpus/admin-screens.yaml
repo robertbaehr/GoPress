@@ -1333,3 +1333,23 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.212: admin toppers — attachment list route without set-cookie drift (headers).
+
+- id: admin-p10212-004
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_type=attachment&mode=list
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10212-005
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_status=draft
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
