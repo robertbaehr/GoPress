@@ -129,7 +129,9 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/button":
 		out = e.renderButton(block)
 	case "core/audio":
+		// P5.157: coerce align enum before applySupports; fontSize/gradient polish.
 		out = e.renderAudio(block)
+		return applySupports(out, sanitizeAudioBlockAttrs(block.Attrs), name)
 	case "core/video":
 		out = e.renderVideo(block)
 	case "core/file":
