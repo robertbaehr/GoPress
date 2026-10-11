@@ -1837,8 +1837,17 @@ func TestProfileUpdateDisplayName(t *testing.T) {
 		t.Fatalf("admin: %v", err)
 	}
 	original := user.DisplayName
+	origURL := user.URL
 	t.Cleanup(func() {
 		_ = c.UpdateDisplayName(user.ID, original)
+		u := origURL
+		_ = c.UpdateUser(wp.UserUpdate{ID: user.ID, URL: &u})
+		if c.Meta != nil {
+			_, _, _, _ = c.Meta.UpdateMetadata(wp.MetaUser, user.ID, "first_name", "", "")
+			_, _, _, _ = c.Meta.UpdateMetadata(wp.MetaUser, user.ID, "last_name", "", "")
+			_, _, _, _ = c.Meta.UpdateMetadata(wp.MetaUser, user.ID, "nickname", "", "")
+			_, _, _, _ = c.Meta.UpdateMetadata(wp.MetaUser, user.ID, "description", "", "")
+		}
 	})
 
 	req := httptest.NewRequest(http.MethodGet, "/wp-admin/profile.php", nil)
@@ -1852,6 +1861,22 @@ func TestProfileUpdateDisplayName(t *testing.T) {
 	if !strings.Contains(body, `method="post"`) || !strings.Contains(body, `name="_wpnonce"`) {
 		t.Fatalf("expected POST form with nonce: %q", body[:min(500, len(body))])
 	}
+	// P7.109: Name / Contact / About sections.
+	for _, want := range []string{
+		`id="profile-page"`,
+		`id="first_name"`,
+		`id="last_name"`,
+		`id="nickname"`,
+		`id="url"`,
+		`id="description"`,
+		"<h2>Name</h2>",
+		"<h2>Contact Info</h2>",
+		"<h2>About Yourself</h2>",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in profile GET", want)
+		}
+	}
 	nonceStart := strings.Index(body, `name="_wpnonce" value="`)
 	if nonceStart < 0 {
 		t.Fatal("nonce not found")
@@ -1864,6 +1889,12 @@ func TestProfileUpdateDisplayName(t *testing.T) {
 	form := url.Values{}
 	form.Set("_wpnonce", nonce)
 	form.Set("display_name", wantName)
+	form.Set("email", user.Email)
+	form.Set("first_name", "Ada")
+	form.Set("last_name", "Lovelace")
+	form.Set("nickname", "ada")
+	form.Set("url", "https://example.test/ada")
+	form.Set("description", "Mathematician")
 	req = httptest.NewRequest(http.MethodPost, "/wp-admin/profile.php", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
 	req.AddCookie(ck)
@@ -1884,6 +1915,15 @@ func TestProfileUpdateDisplayName(t *testing.T) {
 	}
 	if fresh.DisplayName != wantName {
 		t.Fatalf("display_name=%q want %q", fresh.DisplayName, wantName)
+	}
+	if fresh.URL != "https://example.test/ada" {
+		t.Fatalf("url=%q", fresh.URL)
+	}
+	if metaString(c, user.ID, "first_name") != "Ada" || metaString(c, user.ID, "nickname") != "ada" {
+		t.Fatalf("usermeta first/nickname not saved")
+	}
+	if metaString(c, user.ID, "description") != "Mathematician" {
+		t.Fatalf("description=%q", metaString(c, user.ID, "description"))
 	}
 }
 

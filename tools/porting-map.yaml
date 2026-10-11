@@ -5714,8 +5714,16 @@ wp-login.php#language-switcher-post
 - prefix: wp-admin/profile.php
   go: internal/admin/admin.go
   status: partial
-  task: P7.28
+  task: P7.109
   api: n/a
+  notes: "P7.109 — Name/Contact/About fields; first/last/nickname/url/description save"
+
+- prefix: wp-admin/profile.php#test
+  go: internal/admin/admin_test.go
+  status: partial
+  task: P7.109
+  api: n/a
+  notes: "P7.109 — unit coverage for profile field save"
 
 # P8.15: send personal data export completion email (wp_mail stub).
 - prefix: wp-admin/includes/privacy-tools.php#wp_privacy_send_personal_data_export_email

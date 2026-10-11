@@ -2492,14 +2492,16 @@ func handlePluginAction(r *http.Request, c *wp.Context) (string, error) {
 }
 
 func (h *Handler) serveProfile(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	// P7.28 / P7.109: profile.php Name / Contact / About fields + usermeta.
 	if c == nil || c.CurrentUser == nil {
 		http.Error(w, "Unauthorized\n", http.StatusUnauthorized)
 		return
 	}
+	userID := c.CurrentUser.ID
 	updated := false
 	if r.Method == http.MethodPost {
 		_ = r.ParseForm()
-		if c.VerifyNonce(r.FormValue("_wpnonce"), "update-user_"+strconv.FormatInt(c.CurrentUser.ID, 10)) == 0 {
+		if c.VerifyNonce(r.FormValue("_wpnonce"), "update-user_"+strconv.FormatInt(userID, 10)) == 0 {
 			http.Error(w, "Invalid nonce\n", http.StatusForbidden)
 			return
 		}
@@ -2507,21 +2509,46 @@ func (h *Handler) serveProfile(w http.ResponseWriter, r *http.Request, c *wp.Con
 		if displayName == "" {
 			displayName = c.CurrentUser.Login
 		}
-		if err := c.UpdateDisplayName(c.CurrentUser.ID, displayName); err != nil {
+		email := strings.TrimSpace(r.FormValue("email"))
+		urlVal := strings.TrimSpace(r.FormValue("url"))
+		desc := strings.TrimSpace(r.FormValue("description"))
+		upd := wp.UserUpdate{ID: userID, DisplayName: &displayName, URL: &urlVal, Description: &desc}
+		if email != "" {
+			upd.Email = &email
+		}
+		if err := c.UpdateUser(upd); err != nil {
 			http.Error(w, "profile: "+err.Error()+"\n", http.StatusInternalServerError)
 			return
+		}
+		if c.Meta != nil {
+			for _, key := range []string{"first_name", "last_name", "nickname"} {
+				val := strings.TrimSpace(r.FormValue(key))
+				_, _, _, _ = c.Meta.UpdateMetadata(wp.MetaUser, userID, key, val, "")
+			}
 		}
 		updated = true
 	}
 
 	user := c.CurrentUser
-	login := user.Login
-	email := user.Email
-	display := user.DisplayName
-	nonce := c.CreateNonce("update-user_" + strconv.FormatInt(user.ID, 10))
+	if fresh, err := c.GetUserBy("id", userID); err == nil && fresh != nil {
+		user = fresh
+		c.CurrentUser = fresh
+	}
+	firstName, lastName, nickname, desc := "", "", "", ""
+	if c.Meta != nil {
+		firstName = asString(c.Meta.GetMetadata(wp.MetaUser, userID, "first_name", true))
+		lastName = asString(c.Meta.GetMetadata(wp.MetaUser, userID, "last_name", true))
+		nickname = asString(c.Meta.GetMetadata(wp.MetaUser, userID, "nickname", true))
+		desc = asString(c.Meta.GetMetadata(wp.MetaUser, userID, "description", true))
+	}
+	if nickname == "" {
+		nickname = user.Login
+	}
+	nonce := c.CreateNonce("update-user_" + strconv.FormatInt(userID, 10))
 
 	var b strings.Builder
-	b.WriteString("<h1>Profile</h1>\n")
+	b.WriteString("<div class=\"wrap\" id=\"profile-page\">\n")
+	b.WriteString("<h1 class=\"wp-heading-inline\">Profile</h1>\n")
 	if updated {
 		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p><strong>Profile updated.</strong></p></div>\n")
 	}
@@ -2529,20 +2556,44 @@ func (h *Handler) serveProfile(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString("<input type=\"hidden\" id=\"_wpnonce\" name=\"_wpnonce\" value=\"")
 	b.WriteString(html.EscapeString(nonce))
 	b.WriteString("\" />\n")
-	b.WriteString("<h2>Personal Options</h2>\n")
+	b.WriteString("<input type=\"hidden\" name=\"user_id\" id=\"user_id\" value=\"")
+	b.WriteString(strconv.FormatInt(userID, 10))
+	b.WriteString("\" />\n")
+	b.WriteString("<h2>Name</h2>\n")
 	b.WriteString("<table class=\"form-table\" role=\"presentation\">\n")
-	b.WriteString("<tr><th><label for=\"user_login\">Username</label></th><td><input type=\"text\" name=\"user_login\" id=\"user_login\" value=\"")
-	b.WriteString(html.EscapeString(login))
-	b.WriteString("\" disabled=\"disabled\" class=\"regular-text\"></td></tr>\n")
-	b.WriteString("<tr><th><label for=\"email\">Email</label></th><td><input type=\"email\" name=\"email\" id=\"email\" value=\"")
-	b.WriteString(html.EscapeString(email))
-	b.WriteString("\" class=\"regular-text\"></td></tr>\n")
-	b.WriteString("<tr><th><label for=\"display_name\">Display name</label></th><td><input type=\"text\" name=\"display_name\" id=\"display_name\" value=\"")
-	b.WriteString(html.EscapeString(display))
-	b.WriteString("\" class=\"regular-text\"></td></tr>\n")
+	b.WriteString("<tr class=\"user-user-login-wrap\"><th><label for=\"user_login\">Username</label></th><td><input type=\"text\" name=\"user_login\" id=\"user_login\" value=\"")
+	b.WriteString(html.EscapeString(user.Login))
+	b.WriteString("\" disabled=\"disabled\" class=\"regular-text\" /> <span class=\"description\">Usernames cannot be changed.</span></td></tr>\n")
+	b.WriteString("<tr class=\"user-first-name-wrap\"><th><label for=\"first_name\">First Name</label></th><td><input type=\"text\" name=\"first_name\" id=\"first_name\" value=\"")
+	b.WriteString(html.EscapeString(firstName))
+	b.WriteString("\" class=\"regular-text\" /></td></tr>\n")
+	b.WriteString("<tr class=\"user-last-name-wrap\"><th><label for=\"last_name\">Last Name</label></th><td><input type=\"text\" name=\"last_name\" id=\"last_name\" value=\"")
+	b.WriteString(html.EscapeString(lastName))
+	b.WriteString("\" class=\"regular-text\" /></td></tr>\n")
+	b.WriteString("<tr class=\"user-nickname-wrap\"><th><label for=\"nickname\">Nickname <span class=\"description\">(required)</span></label></th><td><input type=\"text\" name=\"nickname\" id=\"nickname\" value=\"")
+	b.WriteString(html.EscapeString(nickname))
+	b.WriteString("\" class=\"regular-text\" /></td></tr>\n")
+	b.WriteString("<tr class=\"user-display-name-wrap\"><th><label for=\"display_name\">Display name publicly as</label></th><td><input type=\"text\" name=\"display_name\" id=\"display_name\" value=\"")
+	b.WriteString(html.EscapeString(user.DisplayName))
+	b.WriteString("\" class=\"regular-text\" /></td></tr>\n")
 	b.WriteString("</table>\n")
-	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Update Profile\"></p>\n")
-	b.WriteString("</form>\n")
+	b.WriteString("<h2>Contact Info</h2>\n")
+	b.WriteString("<table class=\"form-table\" role=\"presentation\">\n")
+	b.WriteString("<tr class=\"user-email-wrap\"><th><label for=\"email\">Email <span class=\"description\">(required)</span></label></th><td><input type=\"email\" name=\"email\" id=\"email\" value=\"")
+	b.WriteString(html.EscapeString(user.Email))
+	b.WriteString("\" class=\"regular-text ltr\" /></td></tr>\n")
+	b.WriteString("<tr class=\"user-url-wrap\"><th><label for=\"url\">Website</label></th><td><input type=\"url\" name=\"url\" id=\"url\" value=\"")
+	b.WriteString(html.EscapeString(user.URL))
+	b.WriteString("\" class=\"regular-text code\" /></td></tr>\n")
+	b.WriteString("</table>\n")
+	b.WriteString("<h2>About Yourself</h2>\n")
+	b.WriteString("<table class=\"form-table\" role=\"presentation\">\n")
+	b.WriteString("<tr class=\"user-description-wrap\"><th><label for=\"description\">Biographical Info</label></th><td><textarea name=\"description\" id=\"description\" rows=\"5\" cols=\"30\">")
+	b.WriteString(html.EscapeString(desc))
+	b.WriteString("</textarea><p class=\"description\">Share a little biographical information to fill out your profile. This may be shown publicly.</p></td></tr>\n")
+	b.WriteString("</table>\n")
+	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Update Profile\" /></p>\n")
+	b.WriteString("</form>\n</div>\n")
 	writeAdminPage(w, c, newAdminChrome(c, "Profile", "profile-php"), b.String())
 }
 
