@@ -9283,3 +9283,11 @@ wp-login.php#language-switcher-post
   task: P10.168
   api: n/a
   notes: "P10.168 — posts context embed/invalid/edit-forbidden + freeform/html + help/front/login/ajax toppers; >1400 cases"
+
+# P10.169: STATUS/PORTING refresh after P5.129–P10.168.
+- prefix: docs/STATUS.md#p10.169
+  go: docs/STATUS.md
+  status: partial
+  task: P10.169
+  api: n/a
+  notes: "P10.169 — summarize freeform, posts context, help tabs, filter_kses, the_content, make_intermediate + 1433 corpus"
