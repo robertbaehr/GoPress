@@ -37,6 +37,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 	case "/wp-admin/post.php":
 		h.requireLogin(w, r, c, h.servePostEdit)
 		return true
+	case "/wp-admin/post-new.php":
+		h.requireLogin(w, r, c, h.servePostNew)
+		return true
 	case "/wp-admin/options-general.php":
 		h.requireLogin(w, r, c, h.serveOptionsGeneral)
 		return true
@@ -5209,6 +5212,181 @@ func (h *Handler) serveUpdatePHPGone(w http.ResponseWriter, r *http.Request, c *
 	writeHTML(w, http.StatusForbidden, b.String())
 }
 
+// servePostNew renders post-new.php Add New shell (P7.120).
+// Creates an auto-draft and shows the classic editor stub (WP get_default_post_to_edit).
+func (h *Handler) servePostNew(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if c == nil || c.CurrentUser == nil {
+		http.Error(w, "Unauthorized\n", http.StatusUnauthorized)
+		return
+	}
+	postType := strings.TrimSpace(r.URL.Query().Get("post_type"))
+	if postType == "" {
+		postType = "post"
+	}
+	switch postType {
+	case "post", "page":
+		// ok
+	case "attachment":
+		http.Redirect(w, r, "/wp-admin/media-new.php", http.StatusFound)
+		return
+	default:
+		http.Error(w, "Invalid post type.\n", http.StatusBadRequest)
+		return
+	}
+	if !c.UserCan(c.CurrentUser, "edit_posts") && !c.UserCan(c.CurrentUser, "create_posts") {
+		http.Error(w, "Sorry, you are not allowed to create posts as this user.\n", http.StatusForbidden)
+		return
+	}
+	id, err := insertAutoDraft(c, c.CurrentUser.ID, postType)
+	if err != nil {
+		http.Error(w, "post-new: "+err.Error()+"\n", http.StatusInternalServerError)
+		return
+	}
+	post, err := wp.GetPostByID(c, id)
+	if err != nil || post == nil {
+		http.Error(w, "Could not load auto-draft.\n", http.StatusInternalServerError)
+		return
+	}
+	h.writePostEditorShell(w, c, post, true)
+}
+
+// insertAutoDraft creates a WP-style auto-draft for post-new.php (P7.120).
+func insertAutoDraft(c *wp.Context, author int64, postType string) (int64, error) {
+	if c == nil || c.DB == nil {
+		return 0, fmt.Errorf("nil DB")
+	}
+	if postType == "" {
+		postType = "post"
+	}
+	now := time.Now().UTC().Format("2006-01-02 15:04:05")
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	guid := home + "/?p=0"
+	q, args, err := c.DB.Prepare(
+		"INSERT INTO "+c.DB.Posts()+
+			" (post_author, post_date, post_date_gmt, post_content, post_title, post_excerpt, post_status, "+
+			"comment_status, ping_status, post_password, post_name, to_ping, pinged, post_modified, post_modified_gmt, "+
+			"post_content_filtered, post_parent, guid, menu_order, post_type, post_mime_type, comment_count) VALUES "+
+			"(%d, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %d, %s, %d, %s, %s, %d)",
+		author, now, now, "", "Auto Draft", "", "auto-draft",
+		"open", "open", "", "", "", "", now, now,
+		"", 0, guid, 0, postType, "", 0,
+	)
+	if err != nil {
+		return 0, err
+	}
+	res, err := c.DB.Exec(q, args...)
+	if err != nil {
+		return 0, err
+	}
+	id, err := res.LastInsertId()
+	if err != nil {
+		return 0, err
+	}
+	uq, uargs, uerr := c.DB.Prepare(
+		"UPDATE "+c.DB.Posts()+" SET guid = %s WHERE ID = %d",
+		fmt.Sprintf("%s/?p=%d", home, id), id,
+	)
+	if uerr == nil {
+		_, _ = c.DB.Exec(uq, uargs...)
+	}
+	return id, nil
+}
+
+// writePostEditorShell emits the classic post editor stub (P7.24 / P7.120).
+// isNew selects Add New heading + Publish button vs Edit + Update.
+func (h *Handler) writePostEditorShell(w http.ResponseWriter, c *wp.Context, post *wp.Post, isNew bool) {
+	if post == nil {
+		http.Error(w, "Invalid post ID.\n", http.StatusBadRequest)
+		return
+	}
+	blogname := optionString(c, "blogname", "GoPress")
+	heading := "Edit Post"
+	submit := "Update"
+	bodyClass := "wp-admin wp-core-ui post-php"
+	if isNew {
+		heading = "Add New Post"
+		submit = "Publish"
+		bodyClass = "wp-admin wp-core-ui post-new-php"
+	}
+	if post.Type == "page" {
+		if isNew {
+			heading = "Add New Page"
+		} else {
+			heading = "Edit Page"
+		}
+	}
+	var b strings.Builder
+	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<title>")
+	b.WriteString(html.EscapeString(heading))
+	b.WriteString(" &lsaquo; ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(" &#8212; WordPress</title>\n")
+	b.WriteString("<script>var wpApiSettings = {\"root\":\"/wp-json/\",\"nonce\":\"")
+	b.WriteString(html.EscapeString(c.CreateNonce("wp_rest")))
+	b.WriteString("\"};</script>\n</head>\n")
+	b.WriteString("<body class=\"")
+	b.WriteString(bodyClass)
+	b.WriteString("\">\n")
+	b.WriteString(adminNoticesHTML(c))
+	b.WriteString("<div class=\"wrap\">\n")
+	b.WriteString("<h1 class=\"wp-heading-inline\">")
+	b.WriteString(html.EscapeString(heading))
+	b.WriteString("</h1>\n")
+	b.WriteString("<form name=\"post\" action=\"/wp-admin/post.php\" method=\"post\" id=\"post\">\n")
+	b.WriteString("<input type=\"hidden\" id=\"post_ID\" name=\"post_ID\" value=\"")
+	b.WriteString(strconv.FormatInt(post.ID, 10))
+	b.WriteString("\" />\n")
+	b.WriteString("<input type=\"hidden\" id=\"post_type\" name=\"post_type\" value=\"")
+	b.WriteString(html.EscapeString(post.Type))
+	b.WriteString("\" />\n")
+	b.WriteString("<input type=\"hidden\" id=\"original_post_status\" name=\"original_post_status\" value=\"")
+	b.WriteString(html.EscapeString(post.Status))
+	b.WriteString("\" />\n")
+	b.WriteString("<div id=\"poststuff\">\n")
+	b.WriteString("<div id=\"post-body\" class=\"metabox-holder columns-2\">\n")
+	b.WriteString("<div id=\"post-body-content\">\n")
+	b.WriteString("<div id=\"titlediv\"><div id=\"titlewrap\">\n")
+	b.WriteString("<label class=\"screen-reader-text\" id=\"title-prompt-text\" for=\"title\">Add title</label>\n")
+	b.WriteString("<input type=\"text\" name=\"post_title\" size=\"30\" value=\"")
+	if !isNew {
+		b.WriteString(html.EscapeString(post.Title))
+	}
+	b.WriteString("\" id=\"title\" spellcheck=\"true\" autocomplete=\"off\" />\n")
+	b.WriteString("</div></div>\n")
+	b.WriteString("<div id=\"postdivrich\" class=\"postarea wp-editor-expand\">\n")
+	b.WriteString("<div id=\"wp-content-editor-container\" class=\"wp-editor-container\">\n")
+	b.WriteString("<textarea class=\"wp-editor-area\" style=\"height:300px\" autocomplete=\"off\" cols=\"40\" name=\"content\" id=\"content\">")
+	if !isNew {
+		b.WriteString(html.EscapeString(post.Content))
+	}
+	b.WriteString("</textarea>\n")
+	b.WriteString("</div>\n")
+	if isNew {
+		b.WriteString("<p class=\"description\">GoPress post-new stub (P7.120) — save/publish lands later.</p>\n")
+	} else {
+		b.WriteString("<p class=\"description\">GoPress post editor stub (P7.24) — save/publish lands later.</p>\n")
+	}
+	b.WriteString("</div>\n</div>\n")
+	b.WriteString("<div id=\"postbox-container-1\" class=\"postbox-container\">\n")
+	b.WriteString("<div id=\"submitdiv\" class=\"postbox\">\n")
+	b.WriteString("<div class=\"postbox-header\"><h2 class=\"hndle\">Publish</h2></div>\n")
+	b.WriteString("<div class=\"inside\">\n")
+	b.WriteString("<div class=\"submitbox\" id=\"submitpost\">\n")
+	b.WriteString("<div id=\"minor-publishing\"><div id=\"misc-publishing-actions\">\n")
+	b.WriteString("<div class=\"misc-pub-section misc-pub-post-status\">Status: <span id=\"post-status-display\"><strong>")
+	b.WriteString(html.EscapeString(displayPostStatus(post.Status)))
+	b.WriteString("</strong></span></div>\n")
+	b.WriteString("</div></div>\n")
+	b.WriteString("<div id=\"major-publishing-actions\">\n")
+	b.WriteString("<div id=\"publishing-action\"><input type=\"submit\" name=\"publish\" id=\"publish\" class=\"button button-primary button-large\" value=\"")
+	b.WriteString(html.EscapeString(submit))
+	b.WriteString("\" /></div>\n")
+	b.WriteString("<div class=\"clear\"></div>\n</div>\n</div>\n</div>\n</div>\n</div>\n")
+	b.WriteString("</div>\n</div>\n</div>\n</form>\n</div>\n</body>\n</html>\n")
+	writeHTML(w, http.StatusOK, b.String())
+}
+
 // servePostEdit renders the classic post.php?action=edit stub shell (P7.24 / P7.32).
 // Also handles Quick Draft save (action=post-quickdraft-save, P7.55) and
 // trash/untrash (P7.74).
@@ -5252,69 +5430,7 @@ func (h *Handler) servePostEdit(w http.ResponseWriter, r *http.Request, c *wp.Co
 		h.serveAttachmentEdit(w, r, c, post)
 		return
 	}
-	blogname := optionString(c, "blogname", "GoPress")
-	heading := "Edit Post"
-	if post.Type == "page" {
-		heading = "Edit Page"
-	}
-	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
-	b.WriteString("<title>")
-	b.WriteString(html.EscapeString(heading))
-	b.WriteString(" &lsaquo; ")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n")
-	b.WriteString("<script>var wpApiSettings = {\"root\":\"/wp-json/\",\"nonce\":\"")
-	b.WriteString(html.EscapeString(c.CreateNonce("wp_rest")))
-	b.WriteString("\"};</script>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui post-php\">\n")
-	b.WriteString(adminNoticesHTML(c))
-	b.WriteString("<div class=\"wrap\">\n")
-	b.WriteString("<h1 class=\"wp-heading-inline\">")
-	b.WriteString(html.EscapeString(heading))
-	b.WriteString("</h1>\n")
-	b.WriteString("<form name=\"post\" action=\"/wp-admin/post.php\" method=\"post\" id=\"post\">\n")
-	b.WriteString("<input type=\"hidden\" id=\"post_ID\" name=\"post_ID\" value=\"")
-	b.WriteString(strconv.FormatInt(post.ID, 10))
-	b.WriteString("\" />\n")
-	b.WriteString("<input type=\"hidden\" id=\"post_type\" name=\"post_type\" value=\"")
-	b.WriteString(html.EscapeString(post.Type))
-	b.WriteString("\" />\n")
-	b.WriteString("<input type=\"hidden\" id=\"original_post_status\" name=\"original_post_status\" value=\"")
-	b.WriteString(html.EscapeString(post.Status))
-	b.WriteString("\" />\n")
-	b.WriteString("<div id=\"poststuff\">\n")
-	b.WriteString("<div id=\"post-body\" class=\"metabox-holder columns-2\">\n")
-	b.WriteString("<div id=\"post-body-content\">\n")
-	b.WriteString("<div id=\"titlediv\"><div id=\"titlewrap\">\n")
-	b.WriteString("<label class=\"screen-reader-text\" id=\"title-prompt-text\" for=\"title\">Add title</label>\n")
-	b.WriteString("<input type=\"text\" name=\"post_title\" size=\"30\" value=\"")
-	b.WriteString(html.EscapeString(post.Title))
-	b.WriteString("\" id=\"title\" spellcheck=\"true\" autocomplete=\"off\" />\n")
-	b.WriteString("</div></div>\n")
-	b.WriteString("<div id=\"postdivrich\" class=\"postarea wp-editor-expand\">\n")
-	b.WriteString("<div id=\"wp-content-editor-container\" class=\"wp-editor-container\">\n")
-	b.WriteString("<textarea class=\"wp-editor-area\" style=\"height:300px\" autocomplete=\"off\" cols=\"40\" name=\"content\" id=\"content\">")
-	b.WriteString(html.EscapeString(post.Content))
-	b.WriteString("</textarea>\n")
-	b.WriteString("</div>\n")
-	b.WriteString("<p class=\"description\">GoPress post editor stub (P7.24) — save/publish lands later.</p>\n")
-	b.WriteString("</div>\n</div>\n")
-	b.WriteString("<div id=\"postbox-container-1\" class=\"postbox-container\">\n")
-	b.WriteString("<div id=\"submitdiv\" class=\"postbox\">\n")
-	b.WriteString("<div class=\"postbox-header\"><h2 class=\"hndle\">Publish</h2></div>\n")
-	b.WriteString("<div class=\"inside\">\n")
-	b.WriteString("<div class=\"submitbox\" id=\"submitpost\">\n")
-	b.WriteString("<div id=\"minor-publishing\"><div id=\"misc-publishing-actions\">\n")
-	b.WriteString("<div class=\"misc-pub-section misc-pub-post-status\">Status: <span id=\"post-status-display\"><strong>")
-	b.WriteString(html.EscapeString(displayPostStatus(post.Status)))
-	b.WriteString("</strong></span></div>\n")
-	b.WriteString("</div></div>\n")
-	b.WriteString("<div id=\"major-publishing-actions\">\n")
-	b.WriteString("<div id=\"publishing-action\"><input type=\"submit\" name=\"publish\" id=\"publish\" class=\"button button-primary button-large\" value=\"Update\" /></div>\n")
-	b.WriteString("<div class=\"clear\"></div>\n</div>\n</div>\n</div>\n</div>\n</div>\n")
-	b.WriteString("</div>\n</div>\n</div>\n</form>\n</div>\n</body>\n</html>\n")
-	writeHTML(w, http.StatusOK, b.String())
+	h.writePostEditorShell(w, c, post, false)
 }
 
 // serveAttachmentEdit is the attachment / media edit screen stub (P7.32).

@@ -86,6 +86,7 @@ func TestAdminRedirectsAnonymous(t *testing.T) {
 		"/wp-admin/nav-menus.php",
 		"/wp-admin/customize.php",
 		"/wp-admin/post.php?post=1&action=edit",
+		"/wp-admin/post-new.php",
 		"/wp-admin/revision.php",
 	} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
@@ -127,6 +128,7 @@ func TestAdminScreensLoggedIn(t *testing.T) {
 		{"/wp-admin/site-editor.php", "Site Editor"},
 		{"/wp-admin/nav-menus.php", "menu-management"},
 		{"/wp-admin/post.php?post=1&action=edit", `id="title"`},
+		{"/wp-admin/post-new.php", `post-new-php`},
 		{"/wp-admin/revision.php?revision=1", "Compare Revisions"},
 		{"/wp-admin/", "At a Glance"},
 		{"/wp-admin/", "dashboard_secondary"},
