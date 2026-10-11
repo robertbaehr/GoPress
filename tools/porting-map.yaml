@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P8.56: get_attached_file filter + unfiltered variant.
+- prefix: wp-includes/post.php#get_attached_file
+  go: internal/wp/media.go
+  status: partial
+  task: P8.56
+  api: n/a
+  notes: "P8.56 — get_attached_file filter + GetAttachedFileUnfiltered"
+- prefix: wp-includes/post.php#get_attached_file#tests
+  go: internal/wp/get_attached_file_p8_56_test.go
+  status: partial
+  task: P8.56
+  api: n/a
+  notes: "P8.56 — filter replace vs unfiltered"
+
 # P2.158: status_header / get_status_header_desc.
 - prefix: wp-includes/functions.php#get_status_header_desc
   go: internal/wp/status_header.go

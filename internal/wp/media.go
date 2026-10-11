@@ -339,7 +339,17 @@ func phpValueToStringMap(v any) (map[string]any, bool) {
 }
 
 // GetAttachedFile returns the filesystem path for an attachment (_wp_attached_file).
+// Applies get_attached_file filter (P8.56). Prefer GetAttachedFileUnfiltered to skip it.
 func GetAttachedFile(c *Context, attachmentID int64) string {
+	return getAttachedFile(c, attachmentID, false)
+}
+
+// GetAttachedFileUnfiltered is get_attached_file( $id, true ) (P8.56).
+func GetAttachedFileUnfiltered(c *Context, attachmentID int64) string {
+	return getAttachedFile(c, attachmentID, true)
+}
+
+func getAttachedFile(c *Context, attachmentID int64, unfiltered bool) string {
 	if c == nil || c.Meta == nil || attachmentID <= 0 {
 		return ""
 	}
@@ -348,14 +358,23 @@ func GetAttachedFile(c *Context, attachmentID int64) string {
 	if file == "" {
 		return ""
 	}
-	if strings.HasPrefix(file, "/") || (len(file) > 2 && file[1] == ':') {
+	if !(strings.HasPrefix(file, "/") || (len(file) > 2 && file[1] == ':')) {
+		uploads := GetUploadDir(c)
+		if uploads.Basedir != "" {
+			file = uploads.Basedir + "/" + file
+		}
+	}
+	if unfiltered {
 		return file
 	}
-	uploads := GetUploadDir(c)
-	if uploads.Basedir == "" {
-		return file
+	if c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("get_attached_file", file, attachmentID); v != nil {
+			if s, ok := v.(string); ok {
+				return s
+			}
+		}
 	}
-	return uploads.Basedir + "/" + file
+	return file
 }
 
 // AttachmentPagesEnabled reports whether attachment pages are enabled
