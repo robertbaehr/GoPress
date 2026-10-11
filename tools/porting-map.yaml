@@ -1,4 +1,18 @@
 
+# P3.152: get_comments_pagenum_link pretty/query + filter.
+- prefix: wp-includes/link-template.php#get_comments_pagenum_link
+  go: internal/wp/comments_pagenum_link.go
+  status: partial
+  task: P3.152
+  api: GetCommentsPagenumLink
+  notes: "P3.152 — comment-page-N / cpage; default_comments_page newest omit; filter"
+- prefix: wp-includes/link-template.php#get_comments_pagenum_link#tests
+  go: internal/wp/comments_pagenum_link_p3_152_test.go
+  status: partial
+  task: P3.152
+  api: n/a
+  notes: "P3.152 — pretty, newest omit, filter, empty"
+
 # P2.154: wp_is_using_https / home / site URL HTTPS detection.
 - prefix: wp-includes/https-detection.php#using-https
   go: internal/wp/https_detection.go
