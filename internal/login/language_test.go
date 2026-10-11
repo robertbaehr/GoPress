@@ -131,6 +131,9 @@ func TestWriteLoginHTMLSetsLangCookie(t *testing.T) {
 			if !ck.HttpOnly {
 				t.Fatal("expected HttpOnly wp_lang cookie")
 			}
+			if ck.Path != "/" {
+				t.Fatalf("path=%q", ck.Path)
+			}
 		}
 	}
 	if !found {
@@ -145,4 +148,62 @@ func TestWriteLoginHTMLSetsLangCookie(t *testing.T) {
 			t.Fatal("empty wp_lang cookie")
 		}
 	}
+}
+
+func TestWriteLoginHTMLSetsEmptyLangCookieWhenPresent(t *testing.T) {
+	// P6.49: isset($_GET['wp_lang']) sets cookie even when empty.
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?wp_lang=", nil)
+	rec := httptest.NewRecorder()
+	writeLoginHTML(rec, req, "ok", false, nil)
+	found := false
+	for _, ck := range rec.Result().Cookies() {
+		if ck.Name == "wp_lang" {
+			found = true
+			if ck.Value != "" {
+				t.Fatalf("expected empty value, got %q", ck.Value)
+			}
+		}
+	}
+	if !found {
+		t.Fatal("missing wp_lang Set-Cookie for empty present param")
+	}
+}
+
+func TestLoginCookiePath(t *testing.T) {
+	if got := loginCookiePath(""); got != "/" {
+		t.Fatalf("empty=%q", got)
+	}
+	if got := loginCookiePath("http://example.test"); got != "/" {
+		t.Fatalf("root=%q", got)
+	}
+	if got := loginCookiePath("http://example.test/"); got != "/" {
+		t.Fatalf("root slash=%q", got)
+	}
+	if got := loginCookiePath("http://example.test/blog"); got != "/blog" {
+		t.Fatalf("subdir=%q", got)
+	}
+	if got := loginCookiePath("http://example.test/blog/"); got != "/blog" {
+		t.Fatalf("subdir slash=%q", got)
+	}
+}
+
+func TestWriteLoginHTMLLangCookieUsesHomePath(t *testing.T) {
+	c := &wp.Context{Options: wp.NewOptions(nil, nil)}
+	c.Options.Cache.Set("home", "http://example.test/wp", "options")
+	c.Options.Cache.Set("siteurl", "http://example.test/wp", "options")
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?wp_lang=de_DE", nil)
+	rec := httptest.NewRecorder()
+	writeLoginHTML(rec, req, "ok", false, c)
+	for _, ck := range rec.Result().Cookies() {
+		if ck.Name == "wp_lang" {
+			if ck.Path != "/wp" {
+				t.Fatalf("COOKIEPATH path=%q want /wp", ck.Path)
+			}
+			if ck.Value != "de_DE" {
+				t.Fatalf("value=%q", ck.Value)
+			}
+			return
+		}
+	}
+	t.Fatal("missing wp_lang cookie")
 }

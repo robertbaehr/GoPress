@@ -8033,3 +8033,18 @@ wp-login.php#language-switcher-post
   task: P3.113
   api: internal
   notes: "P3.113 — block template html lang/charset/name/url + comments feed via BlogInfo"
+
+# P6.49: login wp_lang cookie isset + COOKIEPATH.
+- prefix: wp-login.php#wp_lang_cookie#p6.49
+  go: internal/login/login.go
+  status: partial
+  task: P6.49
+  api: internal
+  notes: "P6.49 — set wp_lang when isset($_GET[wp_lang]) incl empty; Path=COOKIEPATH from home"
+
+- prefix: wp-login.php#wp_lang_cookie#p6.49#tests
+  go: internal/login/language_test.go
+  status: partial
+  task: P6.49
+  api: n/a
+  notes: "P6.49 — empty present param + subdirectory COOKIEPATH coverage"
