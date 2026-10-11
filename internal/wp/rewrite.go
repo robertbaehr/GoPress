@@ -340,6 +340,10 @@ func (c *Context) ParseRequest(rules RewriteRules) *ParseResult {
 		if paged := atoiScope(res.QueryVars["paged"]); paged > 0 {
 			c.Scope.Paged = paged
 		}
+		// Multipage content page (P3.105): pretty /2/ or ?page=N on singular.
+		if page := atoiScope(res.QueryVars["page"]); page > 0 {
+			c.Scope.Page = page
+		}
 		c.Scope.mu.Unlock()
 		// P3.80: show_on_front / page_on_front / page_for_posts conditionals.
 		ApplyFrontPageDisplay(c, res)

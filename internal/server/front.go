@@ -4233,10 +4233,10 @@ func writeFrontHeadLinks(b *strings.Builder, home, blogname, permalink, restPath
 	b.WriteString("\" />\n")
 	b.WriteString(wp.MetaGeneratorXHTML())
 	b.WriteString("\n")
-	// P3.42: rel=canonical (wp_get_canonical_url / rel_canonical) on singular.
+	// P3.42 / P3.105: rel=canonical (wp_get_canonical_url / rel_canonical) on singular.
 	if permalink != "" {
 		b.WriteString("<link rel=\"canonical\" href=\"")
-		b.WriteString(html.EscapeString(permalink))
+		b.WriteString(wp.EscURL(permalink))
 		b.WriteString("\" />\n")
 	}
 	if shortlink != "" {

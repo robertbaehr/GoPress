@@ -2,6 +2,8 @@ package wp_test
 
 import (
 	"context"
+	"net/http"
+	"net/http/httptest"
 	"os"
 	"strings"
 	"testing"
@@ -87,6 +89,42 @@ func TestGetCanonicalURLFilterAndPagedLink(t *testing.T) {
 	}
 	link := wp.RelCanonicalLinkPaged(c, 1, 2, 3)
 	if !strings.Contains(link, `rel="canonical"`) || !strings.Contains(link, "canonical-filtered") {
+		t.Fatalf("link=%q", link)
+	}
+}
+
+func TestCanonicalPageFromPrettyPath(t *testing.T) {
+	// P3.105: rewrite Scope.Page from /postname/2/ feeds rel=canonical.
+	if os.Getenv("GOPRESS_SKIP_DB") != "" {
+		t.Skip("GOPRESS_SKIP_DB set")
+	}
+	c, err := wp.Boot(context.Background(), testBootConfig())
+	if err != nil {
+		t.Skipf("Boot unavailable: %v", err)
+	}
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/2024/06/15/hello-world/2/", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	rules, err := c.LoadRewriteRules()
+	if err != nil {
+		t.Fatalf("rules: %v", err)
+	}
+	parsed := c.ParseRequest(rules)
+	if parsed == nil || parsed.QueryVars["page"] != "2" {
+		t.Fatalf("expected page=2 from rewrite, got %#v", parsed)
+	}
+	page, cpage := wp.CanonicalPageFromRequest(c)
+	if page != 2 || cpage != 0 {
+		t.Fatalf("page=%d cpage=%d", page, cpage)
+	}
+	canon := wp.GetCanonicalURL(c, 1, page, cpage)
+	if !strings.Contains(canon, "/hello-world/2/") {
+		t.Fatalf("canonical=%q", canon)
+	}
+	link := wp.RelCanonicalLinkPaged(c, 1, page, cpage)
+	if !strings.Contains(link, `href="`) || !strings.Contains(link, "/hello-world/2/") {
 		t.Fatalf("link=%q", link)
 	}
 }

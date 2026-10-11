@@ -8,9 +8,9 @@ import (
 )
 
 // GetCanonicalURL returns the canonical URL for a published post
-// (wp_get_canonical_url subset, P3.42 / P3.101). page/cpage mirror query vars for
-// multipage content and comment pagination when > 1 / > 0 respectively.
-// Applies the get_canonical_url filter.
+// (wp_get_canonical_url subset, P3.42 / P3.101 / P3.105). page/cpage mirror
+// query vars for multipage content and comment pagination when > 1 / > 0
+// respectively. Applies the get_canonical_url filter.
 func GetCanonicalURL(c *Context, postID int64, page, cpage int) string {
 	if postID <= 0 {
 		return ""
@@ -60,28 +60,34 @@ func RelCanonicalLink(c *Context, postID int64) string {
 	return RelCanonicalLinkPaged(c, postID, 0, 0)
 }
 
-// RelCanonicalLinkPaged is rel_canonical with page/cpage (P3.101).
+// RelCanonicalLinkPaged is rel_canonical with page/cpage (P3.101 / P3.105).
+// Href is passed through EscURL like PHP esc_url().
 func RelCanonicalLinkPaged(c *Context, postID int64, page, cpage int) string {
 	url := GetCanonicalURL(c, postID, page, cpage)
 	if url == "" {
 		return ""
 	}
-	return `<link rel="canonical" href="` + htmlEscapeAttr(url) + `" />` + "\n"
+	return `<link rel="canonical" href="` + EscURL(url) + `" />` + "\n"
 }
 
-// CanonicalPageFromRequest reads page/cpage query vars for singular canonical (P3.101).
+// CanonicalPageFromRequest reads page/cpage for singular canonical (P3.101 / P3.105).
+// Prefers rewrite Scope.Page (pretty /N/), then request query vars.
 func CanonicalPageFromRequest(c *Context) (page, cpage int) {
+	if c != nil && c.Scope != nil {
+		c.Scope.mu.Lock()
+		page = c.Scope.Page
+		c.Scope.mu.Unlock()
+	}
 	if c == nil || c.Req == nil {
-		return 0, 0
+		return page, 0
 	}
 	q := c.Req.URL.Query()
-	if v := strings.TrimSpace(q.Get("page")); v != "" {
-		if n, err := strconv.Atoi(v); err == nil && n > 0 {
-			page = n
-		}
-	}
 	if page == 0 {
-		// Pretty /2/ is often in path; Scope may carry it later — query only here.
+		if v := strings.TrimSpace(q.Get("page")); v != "" {
+			if n, err := strconv.Atoi(v); err == nil && n > 0 {
+				page = n
+			}
+		}
 	}
 	if v := strings.TrimSpace(q.Get("cpage")); v != "" {
 		if n, err := strconv.Atoi(v); err == nil && n > 0 {

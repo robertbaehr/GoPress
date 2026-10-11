@@ -247,6 +247,9 @@ type RequestScope struct {
 
 	// Paged is the main query page number (1-based; 0 means unset → page 1).
 	Paged int
+	// Page is multipage content pagination (<!--nextpage--> /page/N or /N/, P3.105).
+	// Distinct from Paged (archive pagination). 0 means unset → page 1.
+	Page int
 }
 
 // NewRequestScope returns an empty scope.
