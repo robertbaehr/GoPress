@@ -1841,3 +1841,50 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.182: shortlink / singular / front headers after stack.
+
+- id: front-p10182-001-hello-world-shortlink
+  role: anon
+  method: GET
+  path: /2024/06/15/hello-world/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10182-002-sample-page-shortlink
+  role: anon
+  method: GET
+  path: /sample-page/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10182-003-home-headers
+  role: anon
+  method: GET
+  path: /
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10182-004-feed-headers
+  role: anon
+  method: GET
+  path: /feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10182-005-robots-headers
+  role: anon
+  method: GET
+  path: /robots.txt
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

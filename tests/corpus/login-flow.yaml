@@ -1213,3 +1213,50 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.182: login header chrome after P6.55.
+
+- id: login-p10182-001-login
+  role: anon
+  method: GET
+  path: /wp-login.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10182-002-lostpassword
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10182-003-register
+  role: anon
+  method: GET
+  path: /wp-login.php?action=register
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10182-004-checkemail-confirm
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=confirm
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10182-005-interim
+  role: anon
+  method: GET
+  path: /wp-login.php?interim-login=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

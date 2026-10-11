@@ -10110,3 +10110,11 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P6.55 — filter overrides + default logo"
 
+
+# P10.182: expand diff corpus after P5.136–P6.55.
+- prefix: tests/corpus#p10.182
+  go: tests/corpus
+  status: partial
+  task: P10.182
+  api: n/a
+  notes: "P10.182 — author_exclude/featured-image/shortlink/login/admin/ajax headers; grow past 1704"
