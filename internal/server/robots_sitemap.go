@@ -43,6 +43,8 @@ func serveRobotsTXT(w http.ResponseWriter, c *wp.Context) {
 		output += "\nSitemap: " + home + "/wp-sitemap.xml\n"
 	}
 	w.Header().Set("Content-Type", "text/plain; charset=utf-8")
+	// P3.132: clear X-Pingback / Link rel=pingback before robots discovery Link.
+	wp.ClearPingbackHeaders(w)
 	if home != "" {
 		w.Header().Set("Link", fmt.Sprintf(`<%s/wp-json/>; rel="https://api.w.org/"`, home))
 	}
