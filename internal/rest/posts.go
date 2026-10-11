@@ -668,36 +668,63 @@ var knownPostFormats = map[string]bool{
 	"audio":    true,
 }
 
-// parsePostsFormat reads REST ?format= (post_format tax_query, P4.96).
+// postsFormatEnumMessage is the WP rest_not_in_enum message for format[i] (P4.154).
+func postsFormatEnumMessage(i int) string {
+	return "format[" + strconv.Itoa(i) + "] is not one of standard, aside, chat, gallery, link, image, quote, status, video, and audio."
+}
+
+// parsePostsFormat reads REST ?format= (post_format tax_query, P4.96 / P4.154).
+// Accepts comma-separated values and/or format[]= array keys.
+// P4.154: invalid enum tokens → errMsg for rest_invalid_param / rest_not_in_enum
+// (WP schema items.enum; case-sensitive). Empty scalar tokens are skipped before
+// indexing; format[]= empty contributes an empty enum token (WP 400).
 // Returns post-format-* slugs plus whether standard (NOT EXISTS) is requested.
-func parsePostsFormat(r *http.Request) (formatIn []string, includeStandard bool) {
+func parsePostsFormat(r *http.Request) (formatIn []string, includeStandard bool, errMsg string) {
 	if r == nil {
-		return nil, false
+		return nil, false, ""
 	}
 	q := r.URL.Query()
-	vals, ok := q["format"]
-	if !ok {
-		return nil, false
+	scalarVals, hasScalar := q["format"]
+	arrayVals, hasArray := q["format[]"]
+	if !hasScalar && !hasArray {
+		return nil, false, ""
+	}
+	var tokens []string
+	add := func(raw string, keepEmpty bool) {
+		if keepEmpty && raw == "" {
+			tokens = append(tokens, "")
+			return
+		}
+		for _, part := range strings.Split(raw, ",") {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			tokens = append(tokens, part)
+		}
+	}
+	for _, v := range scalarVals {
+		add(v, false)
+	}
+	for _, v := range arrayVals {
+		add(v, true)
 	}
 	seen := map[string]bool{}
-	add := func(raw string) {
-		raw = strings.ToLower(strings.TrimSpace(raw))
-		if raw == "" || !knownPostFormats[raw] || seen[raw] {
-			return
+	for i, raw := range tokens {
+		if !knownPostFormats[raw] {
+			return nil, false, postsFormatEnumMessage(i)
+		}
+		if seen[raw] {
+			continue
 		}
 		seen[raw] = true
 		if raw == "standard" {
 			includeStandard = true
-			return
+			continue
 		}
 		formatIn = append(formatIn, "post-format-"+raw)
 	}
-	for _, v := range vals {
-		for _, part := range strings.Split(v, ",") {
-			add(part)
-		}
-	}
-	return formatIn, includeStandard
+	return formatIn, includeStandard, ""
 }
 
 // parsePostsInclude reads REST ?include= / include[]= (maps to post__in, P4.90 / P4.137).
