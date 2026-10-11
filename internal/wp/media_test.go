@@ -159,6 +159,45 @@ func TestResizeImageStub(t *testing.T) {
 	}
 }
 
+func TestAttachmentImageSrcAndHTML(t *testing.T) {
+	// P8.32: wp_get_attachment_image_src / wp_get_attachment_image.
+	c := mediaBoot(t)
+	src, ok := wp.GetAttachmentImageSrc(c, 5, "thumbnail", false)
+	if !ok {
+		t.Fatal("expected thumbnail src")
+	}
+	if !strings.Contains(src.URL, "sample-photo-a-150x150") || src.Width != 150 || src.Height != 150 || !src.Resized {
+		t.Fatalf("src=%+v", src)
+	}
+	full, ok := wp.GetAttachmentImageSrc(c, 5, "full", false)
+	if !ok || !strings.Contains(full.URL, "sample-photo-a.jpg") || full.Resized {
+		t.Fatalf("full=%+v", full)
+	}
+	if u := wp.GetAttachmentImageURL(c, 5, "medium", false); !strings.Contains(u, "300x225") {
+		t.Fatalf("medium url=%q", u)
+	}
+	html := wp.GetAttachmentImage(c, 5, "thumbnail", false, nil)
+	for _, want := range []string{
+		`<img src="`,
+		"sample-photo-a-150x150",
+		`class="attachment-thumbnail size-thumbnail"`,
+		`width="150"`,
+		`height="150"`,
+		`loading="lazy"`,
+		`decoding="async"`,
+	} {
+		if !strings.Contains(html, want) {
+			t.Fatalf("missing %q in %q", want, html)
+		}
+	}
+	html = wp.GetAttachmentImage(c, 5, "thumbnail", false, map[string]string{
+		"class": "custom", "alt": "A", "loading": "eager",
+	})
+	if !strings.Contains(html, `class="custom"`) || !strings.Contains(html, `alt="A"`) || !strings.Contains(html, `loading="eager"`) {
+		t.Fatalf("attr html=%q", html)
+	}
+}
+
 func TestGetAttachmentMetadata(t *testing.T) {
 	c := mediaBoot(t)
 	meta, ok := wp.GetAttachmentMetadata(c, 5)
