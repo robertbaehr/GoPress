@@ -4584,11 +4584,12 @@ wp-login.php#language-switcher-post
   task: P5.42
   api: internal
 
-- prefix: wp-includes/blocks/tag-cloud.php
+- prefix: wp-includes/blocks/tag-cloud.php#p5.42
   go: internal/blocks/widget_blocks.go
   status: partial
   task: P5.42
   api: internal
+  notes: "P5.42 — initial tag-cloud block; superseded detail in P5.82"
 
 - prefix: wp-includes/blocks/search.php
   go: internal/blocks/widget_blocks.go
@@ -8056,3 +8057,12 @@ wp-login.php#language-switcher-post
   task: P10.148
   api: n/a
   notes: "P10.148 — search_columns / query-pagination block-types / wp_lang / front toppers; 1092/1092 match"
+
+# P10.149: STATUS/PORTING refresh after P5.119–P10.148.
+- prefix: docs/STATUS.md#p10.149
+  go: docs/STATUS.md
+  status: partial
+  task: P10.149
+  api: n/a
+  notes: "P10.149 — summarize post-template/pagination, search_columns, post-new, unique_filename siblings, bloginfo, wp_lang COOKIEPATH, 1092 corpus"
+
