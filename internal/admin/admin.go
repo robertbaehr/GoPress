@@ -207,6 +207,10 @@ func (h *Handler) requireLogin(w http.ResponseWriter, r *http.Request, c *wp.Con
 }
 
 func (h *Handler) serveDashboard(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	// P7.135: ?welcome=0 dismisses the welcome panel.
+	if handleWelcomePanelDismiss(w, r, c) {
+		return
+	}
 	h.renderDashboard(w, r, c, "")
 }
 
@@ -225,12 +229,15 @@ func (h *Handler) renderDashboard(w http.ResponseWriter, r *http.Request, c *wp.
 	// P7.56: Activity widget lists recent comments from the DB.
 	// P7.57: Site Health Status widget (wp_dashboard_site_health).
 	// P7.110: At a Glance deepen + Recently Published list.
+	// P7.135: Welcome panel (wp_welcome_panel).
 	recentCommentsHTML := activityRecentCommentsHTML(c, 5)
 	recentPublishedHTML := activityRecentlyPublishedHTML(c, 5)
 	siteHealthHTML := siteHealthDashboardWidgetHTML(c)
 	rightNowHTML := dashboardRightNowHTML(c)
+	welcomeHTML := welcomePanelHTML(c)
 	inner := fmt.Sprintf(`%s<h1>Dashboard</h1>
 <p>%s</p>
+%s
 <div id="dashboard-widgets-wrap">
 <div id="dashboard-widgets" class="metabox-holder">
 <div id="postbox-container-1" class="postbox-container">
@@ -274,7 +281,7 @@ func (h *Handler) renderDashboard(w http.ResponseWriter, r *http.Request, c *wp.
 </div>
 </div>
 </div>
-`, adminNoticesHTML(c), html.EscapeString(blogname), rightNowHTML, siteHealthHTML, recentPublishedHTML, recentCommentsHTML, quickDraftFormHTML(c, noticeHTML))
+`, adminNoticesHTML(c), html.EscapeString(blogname), welcomeHTML, rightNowHTML, siteHealthHTML, recentPublishedHTML, recentCommentsHTML, quickDraftFormHTML(c, noticeHTML))
 	writeAdminPage(w, c, ch, inner)
 }
 

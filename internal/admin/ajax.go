@@ -66,6 +66,9 @@ func (h *Handler) serveAdminAjax(w http.ResponseWriter, r *http.Request, c *wp.C
 	case "hidden-columns":
 		// P7.80: wp_ajax_hidden_columns — persist manage{page}columnshidden.
 		h.ajaxHiddenColumns(w, r, c, loggedIn)
+	case "update-welcome-panel":
+		// P7.135: wp_ajax_update_welcome_panel.
+		h.ajaxUpdateWelcomePanel(w, r, c, loggedIn)
 	default:
 		// Unknown / privileged-without-nopriv → "0" (WP admin-ajax.php).
 		w.WriteHeader(http.StatusBadRequest)
