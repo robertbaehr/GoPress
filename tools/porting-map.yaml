@@ -2531,6 +2531,21 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P4.90 — sticky=true intersects include; sticky=false merges exclude"
 
+# P4.137: deepen include/exclude with PHP array query forms.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#include-array
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.137
+  api: exported
+  notes: "P4.137 — include[]=/exclude[]= via parsePostsTermIDs + comma/repeated merge"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#include-array.tests
+  go: internal/rest/posts_test.go
+  status: partial
+  task: P4.137
+  api: n/a
+  notes: "P4.137 — include[]/exclude[] unit coverage"
+
 # P4.89 / P4.133: REST GET /wp/v2/posts?slug= filter (post_name__in).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#slug
   go: internal/rest/posts.go

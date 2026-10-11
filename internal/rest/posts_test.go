@@ -826,6 +826,70 @@ func TestPostsIncludeExcludeQueryParams(t *testing.T) {
 	}
 }
 
+// P4.137: include[]= / exclude[]= PHP array query forms.
+func TestPostsIncludeExcludeArrayQueryParams(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?include[]=1&include[]=13&per_page=10", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("include[] status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var hits []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &hits); err != nil {
+		t.Fatal(err)
+	}
+	if len(hits) != 2 {
+		t.Fatalf("include[]=1&include[]=13 want 2 got %d", len(hits))
+	}
+	seen := map[int64]bool{}
+	for _, p := range hits {
+		seen[p.ID] = true
+	}
+	if !seen[1] || !seen[13] {
+		t.Fatalf("expected IDs 1 and 13 from include[], got %+v", seen)
+	}
+	if rec.Header().Get("X-WP-Total") != "2" {
+		t.Fatalf("expected X-WP-Total=2, got %q", rec.Header().Get("X-WP-Total"))
+	}
+
+	// Combined comma + array form, with dedupe.
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?include=1&include[]=1&include[]=13&per_page=10", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("include mix status=%d", rec.Code)
+	}
+	var mix []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &mix); err != nil {
+		t.Fatal(err)
+	}
+	if len(mix) != 2 {
+		t.Fatalf("deduped include mix want 2 got %d", len(mix))
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?exclude[]=1&exclude[]=13&per_page=50", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("exclude[] status=%d", rec.Code)
+	}
+	var excl []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &excl); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range excl {
+		if p.ID == 1 || p.ID == 13 {
+			t.Fatalf("exclude[] still returned post %d", p.ID)
+		}
+	}
+}
+
 func TestPostsAuthorQueryParam(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()

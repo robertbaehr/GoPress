@@ -432,12 +432,12 @@ func parsePostsFormat(r *http.Request) (formatIn []string, includeStandard bool)
 	return formatIn, includeStandard
 }
 
-// parsePostsInclude reads REST ?include= (maps to post__in, P4.90).
+// parsePostsInclude reads REST ?include= / include[]= (maps to post__in, P4.90 / P4.137).
 func parsePostsInclude(r *http.Request) []int64 {
 	return parsePostsTermIDs(r, "include")
 }
 
-// parsePostsExclude reads REST ?exclude= (maps to post__not_in, P4.90).
+// parsePostsExclude reads REST ?exclude= / exclude[]= (maps to post__not_in, P4.90 / P4.137).
 func parsePostsExclude(r *http.Request) []int64 {
 	return parsePostsTermIDs(r, "exclude")
 }
@@ -652,6 +652,8 @@ func sanitizeRESTStatusKey(s string) string {
 	return b.String()
 }
 
+// parsePostsTermIDs parses comma-separated / repeated / PHP-array ID query params
+// (P4.90 / P4.137). Accepts key=1,2, repeated ?key=, and key[]=1&key[]=2.
 func parsePostsTermIDs(r *http.Request, key string) []int64 {
 	if r == nil || key == "" {
 		return nil
@@ -681,7 +683,14 @@ func parsePostsTermIDs(r *http.Request, key string) []int64 {
 		for _, v := range vals {
 			add(v)
 		}
-	} else {
+	}
+	// PHP array form: include[]=1&include[]=13 (rest_sanitize_array / WP_REST_Request).
+	if vals, ok := q[key+"[]"]; ok {
+		for _, v := range vals {
+			add(v)
+		}
+	}
+	if len(out) == 0 {
 		add(q.Get(key))
 	}
 	return out
