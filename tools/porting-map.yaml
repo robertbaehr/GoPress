@@ -11308,3 +11308,17 @@ wp-login.php#language-switcher-post
   task: P2.143
   api: n/a
   notes: "P2.143 — byte length, UTF-8 codepoints, blog_charset Ctx"
+
+# P3.141: deepen front modulepreload resource hints.
+- prefix: wp-includes/general-template.php#wp_resource_hints#modulepreload
+  go: internal/wp/resource_hints.go
+  status: partial
+  task: P3.141
+  api: n/a
+  notes: "P3.141 — modulepreload http(s)-only; case-insensitive href dedupe; as/type/id/crossorigin"
+- prefix: wp-includes/general-template.php#wp_resource_hints#modulepreload#tests
+  go: internal/wp/resource_hints_p3_141_test.go
+  status: partial
+  task: P3.141
+  api: n/a
+  notes: "P3.141 — modulepreload dedupe + attrs + non-http reject; default empty"
