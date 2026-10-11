@@ -73,17 +73,42 @@ func (h *Handler) serveAbout(w http.ResponseWriter, r *http.Request, c *wp.Conte
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveCredits is the About → Credits screen stub (P7.94).
+// serveCredits is the About → Credits screen stub (P7.94 / P7.159).
+// P7.159: pagenow/adminpage chrome, locale body class, admin_body_class,
+// data-tab wrap attr, X-GoPress-Credits header.
 func (h *Handler) serveCredits(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
+	tabParam := ""
+	if r != nil {
+		tabParam = wp.SanitizeKey(strings.TrimSpace(r.URL.Query().Get("tab")))
+	}
+	bodyClass := "wp-admin wp-core-ui about-php credits-php locale-en-us"
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("admin_body_class", ""); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				bodyClass += " " + strings.TrimSpace(s)
+			}
+		}
+	}
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n")
 	b.WriteString("<title>Credits &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui about-php credits-php\">\n")
+	b.WriteString(" &#8212; WordPress</title>\n")
+	b.WriteString("<script>var ajaxurl = \"/wp-admin/admin-ajax.php\", pagenow = \"credits\", typenow = \"\", adminpage = \"credits-php\";</script>\n")
+	b.WriteString("</head>\n")
+	b.WriteString("<body class=\"")
+	b.WriteString(html.EscapeString(bodyClass))
+	b.WriteString("\">\n")
 	b.WriteString(adminNoticesHTML(c))
-	b.WriteString("<div class=\"wrap about__container\">\n")
+	b.WriteString("<div class=\"wrap about__container\"")
+	if tabParam != "" {
+		b.WriteString(` data-tab="`)
+		b.WriteString(html.EscapeString(tabParam))
+		b.WriteString(`"`)
+	}
+	b.WriteString(">\n")
 	b.WriteString("<div class=\"about__header\">\n")
 	b.WriteString("<div class=\"about__header-title\"><h1>Contributors</h1></div>\n")
 	b.WriteString("<div class=\"about__header-text\">Created by a worldwide team of passionate individuals</div>\n")
@@ -95,6 +120,7 @@ func (h *Handler) serveCredits(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString("<a href=\"https://make.wordpress.org/contribute/\">Get involved in WordPress.</a></p>\n")
 	b.WriteString("<p class=\"description\">GoPress credits stub (P7.94) — remote wp_credits() lists land later.</p>\n")
 	b.WriteString("</div>\n</div>\n</div>\n</body>\n</html>\n")
+	w.Header().Set("X-GoPress-Credits", "stub")
 	writeHTML(w, http.StatusOK, b.String())
 }
 
