@@ -568,6 +568,8 @@ func TestLostPasswordFormGET(t *testing.T) {
 func TestLoginPOSTSuccess(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
+	// Keep admin_email_check from intercepting this baseline success path (P6.47).
+	_, _ = c.Options.UpdateOption("admin_email_lifespan", fmt.Sprintf("%d", time.Now().Unix()+3600), "yes")
 
 	form := url.Values{}
 	form.Set("log", "admin")
@@ -594,6 +596,57 @@ func TestLoginPOSTSuccess(t *testing.T) {
 	}
 	if !loggedIn {
 		t.Fatalf("expected logged_in cookie, got %#v", cookies)
+	}
+}
+
+func TestLoginPOSTRedirectsAdminEmailConfirmWhenDue(t *testing.T) {
+	// P6.47: expired admin_email_lifespan → confirm_admin_email after signon.
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	_, _ = c.Options.UpdateOption("admin_email_lifespan", "1", "yes")
+
+	form := url.Values{}
+	form.Set("log", "admin")
+	form.Set("pwd", "password")
+	form.Set("redirect_to", "/wp-admin/")
+	req := httptest.NewRequest(http.MethodPost, "/wp-login.php", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	loc := rec.Header().Get("Location")
+	if !strings.Contains(loc, "action=confirm_admin_email") {
+		t.Fatalf("Location=%q want confirm_admin_email", loc)
+	}
+	if !strings.Contains(loc, "redirect_to=") {
+		t.Fatalf("Location=%q missing redirect_to", loc)
+	}
+}
+
+func TestLoginPOSTSkipsAdminEmailConfirmWhenIntervalZero(t *testing.T) {
+	// P6.47: admin_email_check_interval=0 disables the post-login gate.
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	_, _ = c.Options.UpdateOption("admin_email_lifespan", "1", "yes")
+	c.Hooks.AddFilter("admin_email_check_interval", func(v any, _ ...any) any { return 0 }, 10, 1)
+
+	form := url.Values{}
+	form.Set("log", "admin")
+	form.Set("pwd", "password")
+	form.Set("redirect_to", "/wp-admin/")
+	req := httptest.NewRequest(http.MethodPost, "/wp-login.php", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	if loc := rec.Header().Get("Location"); loc != "/wp-admin/" {
+		t.Fatalf("Location=%q", loc)
 	}
 }
 
@@ -1183,7 +1236,8 @@ func TestConfirmActionMissingParams(t *testing.T) {
 func TestConfirmActionValidKey(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
-	reqRow, err := wp.CreateUserRequest(c, "confirm-action@example.com", "export_personal_data", "pending")
+	email := fmt.Sprintf("confirm-action-%d@example.com", time.Now().UnixNano())
+	reqRow, err := wp.CreateUserRequest(c, email, "export_personal_data", "pending")
 	if err != nil {
 		t.Fatalf("create: %v", err)
 	}

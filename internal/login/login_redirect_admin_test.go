@@ -1,11 +1,13 @@
 package login_test
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/robertbaehr/GoPress/internal/login"
 )
@@ -13,6 +15,7 @@ import (
 func TestLoginDefaultRedirectAdmin(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
+	_, _ = c.Options.UpdateOption("admin_email_lifespan", fmt.Sprintf("%d", time.Now().Unix()+3600), "yes")
 
 	form := url.Values{}
 	form.Set("log", "admin")
@@ -35,6 +38,7 @@ func TestLoginDefaultRedirectAdmin(t *testing.T) {
 func TestLoginRedirectFilter(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
+	_, _ = c.Options.UpdateOption("admin_email_lifespan", fmt.Sprintf("%d", time.Now().Unix()+3600), "yes")
 
 	c.Hooks.AddFilter("login_redirect", func(value any, args ...any) any {
 		return "/sample-page/"

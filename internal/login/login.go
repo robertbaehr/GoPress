@@ -1348,7 +1348,47 @@ func (h *Handler) servePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	redirectTo = applyLoginRedirectFilter(c, redirectTo, requestedRedirect, user)
 	redirectTo = adjustDefaultAdminLoginRedirect(c, redirectTo, homeForRedirect, user)
 	redirectTo = sanitizeRedirect(redirectTo, homeForRedirect)
+	// P6.47: when admin email verification is due, send manage_options users
+	// through confirm_admin_email (wp-login.php post-signon gate).
+	redirectTo = maybeAdminEmailConfirmRedirect(c, redirectTo, homeForRedirect, user)
 	http.Redirect(w, r, redirectTo, http.StatusFound)
+}
+
+// maybeAdminEmailConfirmRedirect wraps redirect_to with action=confirm_admin_email
+// when the administration email check interval has elapsed (P6.47).
+func maybeAdminEmailConfirmRedirect(c *wp.Context, redirectTo, home string, user *wp.User) string {
+	if c == nil || user == nil || !c.UserCan(user, "manage_options") {
+		return redirectTo
+	}
+	checkInterval := int64(6 * 30 * 24 * 60 * 60) // ~6 months
+	if c.Hooks != nil {
+		checkInterval = filterIntervalSeconds(c.Hooks.ApplyFilters("admin_email_check_interval", checkInterval), checkInterval)
+	}
+	if checkInterval <= 0 {
+		return redirectTo
+	}
+	lifespan := int64(0)
+	if raw := optionString(c, "admin_email_lifespan", "0"); raw != "" {
+		if n, err := strconv.ParseInt(strings.TrimSpace(raw), 10, 64); err == nil {
+			lifespan = n
+		}
+	}
+	if time.Now().Unix() <= lifespan {
+		return redirectTo
+	}
+	loginURL := strings.TrimRight(home, "/") + "/wp-login.php"
+	if home == "" {
+		loginURL = "/wp-login.php"
+	}
+	u, err := url.Parse(loginURL)
+	if err != nil {
+		return redirectTo
+	}
+	q := u.Query()
+	q.Set("action", "confirm_admin_email")
+	q.Set("redirect_to", redirectTo)
+	u.RawQuery = q.Encode()
+	return u.String()
 }
 
 const testCookieName = "wordpress_test_cookie"
