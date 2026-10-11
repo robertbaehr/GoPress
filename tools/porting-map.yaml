@@ -9447,3 +9447,18 @@ wp-login.php#language-switcher-post
   task: P5.131
   api: n/a
   notes: "P5.131 — attr paths + hash mismatch/match still empty"
+
+# P4.147: REST posts/pages ?_fields sparse projection.
+- prefix: wp-includes/rest-api.php#rest_filter_response_fields
+  go: internal/rest/response_fields.go
+  status: partial
+  task: P4.147
+  api: rest_filter_response_fields
+  notes: "P4.147 — nested dotted fields; collection + item posts/pages"
+
+- prefix: wp-includes/rest-api.php#rest_filter_response_fields#tests
+  go: internal/rest/response_fields_p4_147_test.go
+  status: partial
+  task: P4.147
+  api: n/a
+  notes: "P4.147 — id,title / title.rendered / _links opt-in"
