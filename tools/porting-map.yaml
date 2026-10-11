@@ -9537,3 +9537,11 @@ wp-login.php#language-switcher-post
   task: P10.172
   api: n/a
   notes: "P10.172 — posts _fields json + legacy-widget block-types + front/login/ajax toppers; >1500 cases"
+
+# P10.173: STATUS/PORTING refresh after P5.131–P10.172.
+- prefix: docs/STATUS.md#p10.173
+  go: docs/STATUS.md
+  status: partial
+  task: P10.173
+  api: n/a
+  notes: "P10.173 — summarize legacy-widget, _fields, glance version/theme, kses_hair, wp_title, remove_all_filters + 1515 corpus"
