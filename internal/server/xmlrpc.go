@@ -6,6 +6,8 @@ import (
 	"regexp"
 	"strconv"
 	"strings"
+
+	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
 var reXMLRPCMethodName = regexp.MustCompile(`(?is)<methodName>\s*([^<\s]+)\s*</methodName>`)
@@ -17,8 +19,8 @@ var reXMLRPCMethodName = regexp.MustCompile(`(?is)<methodName>\s*([^<\s]+)\s*</m
 func serveXMLRPCGone(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("X-Robots-Tag", "noindex")
 	w.Header().Set("Allow", "GET, POST")
-	// P3.98 / P3.41: never advertise X-Pingback from the XML-RPC endpoint.
-	w.Header().Del("X-Pingback")
+	// P3.131 / P3.98 / P3.41: never advertise pingback discovery from xmlrpc.php.
+	wp.ClearPingbackHeaders(w)
 	method := http.MethodGet
 	if r != nil {
 		method = r.Method
