@@ -427,6 +427,31 @@ func PrependAttachment(c *Context, attachmentID int64, content string) string {
 	return p + "\n" + content
 }
 
+// GetAttachmentCaption returns the attachment caption (wp_get_attachment_caption, P8.49).
+// Uses post_excerpt for attachment posts; empty string when missing/non-attachment.
+// Honors the wp_get_attachment_caption filter.
+func GetAttachmentCaption(c *Context, postID int64) string {
+	if c == nil || postID <= 0 {
+		return ""
+	}
+	post, err := GetPost(c, QueryArgs{P: postID, PostType: "attachment", PostStatus: "inherit"})
+	if err != nil || post == nil {
+		return ""
+	}
+	if post.Type != "" && post.Type != "attachment" {
+		return ""
+	}
+	caption := post.Excerpt
+	if c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("wp_get_attachment_caption", caption, post.ID); v != nil {
+			if s, ok := v.(string); ok {
+				return s
+			}
+		}
+	}
+	return caption
+}
+
 // GetAttachmentURL returns the public URL for an attachment (wp_get_attachment_url, P8.42).
 func GetAttachmentURL(c *Context, attachmentID int64) string {
 	if c == nil || attachmentID <= 0 {
