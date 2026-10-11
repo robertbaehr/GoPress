@@ -40,6 +40,9 @@ type Hooks struct {
 	// actionCounts tracks how many times each tag has been fired (did_action, P9.27).
 	actionCounts map[string]int
 
+	// filterCounts tracks how many times each tag has been applied (did_filter, P9.28).
+	filterCounts map[string]int
+
 	// noticeCapture collects HTML during CaptureAdminNotices (P9.7).
 	noticeCapture *strings.Builder
 }
@@ -58,6 +61,7 @@ func NewHooks() *Hooks {
 	return &Hooks{
 		byTag:        make(map[string][]callback),
 		actionCounts: make(map[string]int),
+		filterCounts: make(map[string]int),
 	}
 }
 
@@ -137,10 +141,12 @@ func (h *Hooks) DoActionRefArray(tag string, args []any) {
 }
 
 // ApplyFilters runs filter (and action) callbacks for tag, threading value through.
+// Increments did_filter (P9.28) even when no callbacks are registered.
 func (h *Hooks) ApplyFilters(tag string, value any, args ...any) any {
 	if h == nil {
 		return value
 	}
+	h.bumpFilter(tag)
 	cbs, _ := h.begin(tag)
 	defer h.end()
 	for _, cb := range cbs {
@@ -149,9 +155,9 @@ func (h *Hooks) ApplyFilters(tag string, value any, args ...any) any {
 	return value
 }
 
-// ApplyFiltersRefArray mirrors apply_filters_ref_array (P9.27).
+// ApplyFiltersRefArray mirrors apply_filters_ref_array (P9.27 / P9.28).
 // args[0] is the filtered value; remaining elements are extra filter args.
-// Empty args returns nil.
+// Empty args returns nil (does not bump did_filter).
 func (h *Hooks) ApplyFiltersRefArray(tag string, args []any) any {
 	if h == nil {
 		if len(args) == 0 {
@@ -176,6 +182,17 @@ func (h *Hooks) DidAction(tag string) int {
 	return h.actionCounts[tag]
 }
 
+// DidFilter returns how many times tag has been applied via ApplyFilters /
+// ApplyFiltersRefArray (did_filter, P9.28).
+func (h *Hooks) DidFilter(tag string) int {
+	if h == nil {
+		return 0
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.filterCounts[tag]
+}
+
 func (h *Hooks) bumpAction(tag string) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
@@ -183,6 +200,15 @@ func (h *Hooks) bumpAction(tag string) {
 		h.actionCounts = make(map[string]int)
 	}
 	h.actionCounts[tag]++
+}
+
+func (h *Hooks) bumpFilter(tag string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.filterCounts == nil {
+		h.filterCounts = make(map[string]int)
+	}
+	h.filterCounts[tag]++
 }
 
 // RemoveAction removes an action previously added with the same fn and priority.
