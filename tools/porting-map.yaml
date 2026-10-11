@@ -27,6 +27,20 @@
 
 
 
+# P4.182: orderby meta_value + meta_type SIGNED.
+- prefix: wp-includes/class-wp-query.php#meta_type_signed
+  go: internal/wp/query.go
+  status: partial
+  task: P4.182
+  api: n/a
+  notes: "P4.182 — orderby=meta_value + meta_type=SIGNED CAST coverage"
+- prefix: wp-includes/class-wp-query.php#meta_type_signed#tests
+  go: internal/wp/query_orderby_meta_signed_p4_182_test.go
+  status: partial
+  task: P4.182
+  api: n/a
+  notes: "P4.182 — numeric ASC for signed meta values (20 before 100)"
+
 # P7.169: plugin-install.php pagenow chrome.
 - prefix: wp-admin/plugin-install.php#pagenow
   go: internal/admin/plugin_install.go
