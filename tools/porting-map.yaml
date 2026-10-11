@@ -13,6 +13,21 @@
 
 
 
+
+# P2.162: wp_get_default_extension_for_mime_type.
+- prefix: wp-includes/functions.php#wp_get_default_extension_for_mime_type
+  go: internal/wp/default_ext_mime_p2_162.go
+  status: partial
+  task: P2.162
+  api: n/a
+  notes: "P2.162 — GetDefaultExtensionForMimeType first ext via mime map order"
+- prefix: wp-includes/functions.php#wp_get_default_extension_for_mime_type#tests
+  go: internal/wp/default_ext_mime_p2_162_test.go
+  status: partial
+  task: P2.162
+  api: n/a
+  notes: "P2.162 — jpeg→jpg; png/pdf; unknown empty"
+
 # P6.71: validate_password_reset action.
 - prefix: wp-login.php#validate_password_reset
   go: internal/login/login.go
