@@ -3886,6 +3886,28 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P3.108 — front singular cpage slice integration"
 
+# P3.109: attachment pages disabled → redirect to file; prepend_attachment when enabled.
+- prefix: wp-includes/canonical.php#attachment-pages
+  go: internal/server/front.go
+  status: partial
+  task: P3.109
+  api: internal
+  notes: "P3.109 — wp_attachment_pages_enabled=0 → 301 to wp_get_attachment_url + X-Redirect-By"
+
+- prefix: wp-includes/post-template.php#prepend_attachment
+  go: internal/wp/media.go
+  status: partial
+  task: P3.109
+  api: exported
+  notes: "P3.109 — PrependAttachment / GetAttachmentLink medium image; AttachmentPagesEnabled"
+
+- prefix: wp-includes/canonical.php#attachment-pages#tests
+  go: internal/server/front_test.go
+  status: partial
+  task: P3.109
+  api: n/a
+  notes: "P3.109 — redirect when disabled; HTML page when enabled"
+
 - prefix: wp-includes/feed-rss2.php#slash_comments#test
   go: internal/server/feed_slash_comments_test.go
   status: partial
