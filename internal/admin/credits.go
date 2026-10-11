@@ -8,7 +8,9 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// serveAbout is the About → What's New screen stub (P7.95).
+// serveAbout is the About → What's New screen stub (P7.95 / P7.158).
+// P7.158: pagenow/adminpage chrome, locale body class, admin_body_class,
+// data-version wrap attr, X-GoPress-About-Version header.
 func (h *Handler) serveAbout(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
 	displayVersion := strings.SplitN(wp.Version, "-", 2)[0]
@@ -16,14 +18,40 @@ func (h *Handler) serveAbout(w http.ResponseWriter, r *http.Request, c *wp.Conte
 	if parts := strings.SplitN(displayVersion, ".", 3); len(parts) >= 2 {
 		displayMajor = parts[0] + "." + parts[1]
 	}
+	tabParam := ""
+	if r != nil {
+		tabParam = wp.SanitizeKey(strings.TrimSpace(r.URL.Query().Get("tab")))
+	}
+	bodyClass := "wp-admin wp-core-ui about-php locale-en-us"
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("admin_body_class", ""); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				bodyClass += " " + strings.TrimSpace(s)
+			}
+		}
+	}
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n")
 	b.WriteString("<title>About &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui about-php\">\n")
+	b.WriteString(" &#8212; WordPress</title>\n")
+	b.WriteString("<script>var ajaxurl = \"/wp-admin/admin-ajax.php\", pagenow = \"about\", typenow = \"\", adminpage = \"about-php\";</script>\n")
+	b.WriteString("</head>\n")
+	b.WriteString("<body class=\"")
+	b.WriteString(html.EscapeString(bodyClass))
+	b.WriteString("\">\n")
 	b.WriteString(adminNoticesHTML(c))
-	b.WriteString("<div class=\"wrap about__container\">\n")
+	b.WriteString("<div class=\"wrap about__container\"")
+	b.WriteString(` data-version="`)
+	b.WriteString(html.EscapeString(displayVersion))
+	b.WriteString(`"`)
+	if tabParam != "" {
+		b.WriteString(` data-tab="`)
+		b.WriteString(html.EscapeString(tabParam))
+		b.WriteString(`"`)
+	}
+	b.WriteString(">\n")
 	b.WriteString("<div class=\"about__header\">\n")
 	b.WriteString("<div class=\"about__header-title\"><h1>WordPress ")
 	b.WriteString(html.EscapeString(displayVersion))
@@ -41,6 +69,7 @@ func (h *Handler) serveAbout(w http.ResponseWriter, r *http.Request, c *wp.Conte
 	b.WriteString("<div class=\"return-to-dashboard\">\n")
 	b.WriteString("<a href=\"index.php\">Go to Dashboard &rarr; Home</a>\n")
 	b.WriteString("</div>\n</div>\n</body>\n</html>\n")
+	w.Header().Set("X-GoPress-About-Version", displayVersion)
 	writeHTML(w, http.StatusOK, b.String())
 }
 
