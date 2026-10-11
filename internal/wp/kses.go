@@ -130,6 +130,29 @@ func KsesPostFiltered(c *Context, data string) string {
 	return KsesFiltered(c, data, allowed, nil)
 }
 
+// FilterKses is wp_filter_kses (P2.125): expects slashed data; unslash → kses
+// with current_filter() allow list → slash. Without a current filter, uses "data".
+func FilterKses(c *Context, data string) string {
+	ctx := "data"
+	if c != nil && c.Hooks != nil {
+		if cur := c.Hooks.CurrentFilter(); cur != "" {
+			ctx = cur
+		}
+	}
+	unslashed := UnslashString(data)
+	allowed := AllowedHTMLFiltered(c, ctx)
+	cleaned := KsesFiltered(c, unslashed, allowed, nil)
+	return SlashString(cleaned)
+}
+
+// FilterPostKses is wp_filter_post_kses (P2.125): expects slashed data; unslash →
+// kses('post') → slash.
+func FilterPostKses(c *Context, data string) string {
+	unslashed := UnslashString(data)
+	cleaned := KsesPostFiltered(c, unslashed)
+	return SlashString(cleaned)
+}
+
 // KsesPostDeep is wp_kses_post_deep (P2.108): recursively sanitize strings with KsesPost.
 func KsesPostDeep(data any) any {
 	switch v := data.(type) {
