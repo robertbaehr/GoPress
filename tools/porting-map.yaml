@@ -3696,6 +3696,27 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P3.117 — feed_links_show_posts_feed / feed_links_show_comments_feed + feed_links_args"
 
+- prefix: wp-includes/general-template.php#wp_footer
+  go: internal/wp/footer.go
+  status: partial
+  task: P3.118
+  api: exported
+  notes: "P3.118 — Footer / PrintFooterScripts; default wp_footer→wp_print_footer_scripts"
+
+- prefix: wp-includes/general-template.php#wp_footer#front
+  go: internal/server/front.go
+  status: partial
+  task: P3.118
+  api: n/a
+  notes: "P3.118 — writeFrontDocumentClose fires wp_footer before </body> on block templates"
+
+- prefix: wp-includes/general-template.php#wp_footer#tests
+  go: internal/wp/footer_test.go
+  status: partial
+  task: P3.118
+  api: n/a
+  notes: "P3.118 — unit + front coverage for wp_footer / wp_print_footer_scripts"
+
 # P3.47: get_the_generator / wp_generator (meta + feeds; export as GoPress/version).
 - prefix: wp-includes/general-template.php#get_the_generator
   go: internal/wp/generator.go

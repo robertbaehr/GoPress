@@ -669,7 +669,7 @@ func (f *Front) renderSearchBlockTemplate(w http.ResponseWriter, c *wp.Context, 
 	b.WriteString("<div class=\"wp-site-blocks\">")
 	b.WriteString(safe)
 	b.WriteString("</div>\n")
-	b.WriteString("</body>\n</html>\n")
+	writeFrontDocumentClose(&b, c)
 
 	setFrontAPILink(w, c)
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
@@ -852,7 +852,7 @@ func (f *Front) renderDateArchiveBlockTemplate(w http.ResponseWriter, c *wp.Cont
 	b.WriteString("<div class=\"wp-site-blocks\">")
 	b.WriteString(safe)
 	b.WriteString("</div>\n")
-	b.WriteString("</body>\n</html>\n")
+	writeFrontDocumentClose(&b, c)
 
 	setFrontAPILink(w, c)
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
@@ -1042,7 +1042,7 @@ func (f *Front) renderAuthorArchiveBlockTemplate(w http.ResponseWriter, c *wp.Co
 	b.WriteString("<div class=\"wp-site-blocks\">")
 	b.WriteString(safe)
 	b.WriteString("</div>\n")
-	b.WriteString("</body>\n</html>\n")
+	writeFrontDocumentClose(&b, c)
 
 	setFrontAPILink(w, c)
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
@@ -1194,7 +1194,7 @@ func (f *Front) renderCategoryArchiveBlockTemplate(w http.ResponseWriter, c *wp.
 	b.WriteString("<div class=\"wp-site-blocks\">")
 	b.WriteString(safe)
 	b.WriteString("</div>\n")
-	b.WriteString("</body>\n</html>\n")
+	writeFrontDocumentClose(&b, c)
 
 	setFrontAPILink(w, c)
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
@@ -1407,7 +1407,7 @@ func (f *Front) renderTagArchiveBlockTemplate(w http.ResponseWriter, c *wp.Conte
 	b.WriteString("<div class=\"wp-site-blocks\">")
 	b.WriteString(safe)
 	b.WriteString("</div>\n")
-	b.WriteString("</body>\n</html>\n")
+	writeFrontDocumentClose(&b, c)
 
 	setFrontAPILink(w, c)
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
@@ -1799,7 +1799,7 @@ func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, templa
 	b.WriteString("<div class=\"wp-site-blocks\">")
 	b.WriteString(safe)
 	b.WriteString("</div>\n")
-	b.WriteString("</body>\n</html>\n")
+	writeFrontDocumentClose(&b, c)
 
 	setFrontAPILink(w, c)
 	w.Header().Set("Content-Type", "text/html; charset="+charset)
@@ -1976,7 +1976,7 @@ func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context
 	b.WriteString(safe)
 	b.WriteString("</div>\n")
 	// trackback_rdf() / xmlns:trackback is intentionally omitted (P3.46): trackbacks are gone.
-	b.WriteString("</body>\n</html>\n")
+	writeFrontDocumentClose(&b, c)
 
 	setFrontSingularLinks(w, c, post)
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
@@ -3993,7 +3993,7 @@ func (f *Front) render404BlockTemplate(w http.ResponseWriter, c *wp.Context, tem
 	b.WriteString("<div class=\"wp-site-blocks\">")
 	b.WriteString(safe)
 	b.WriteString("</div>\n")
-	b.WriteString("</body>\n</html>\n")
+	writeFrontDocumentClose(&b, c)
 
 	setFrontAPILink(w, c)
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
@@ -4034,7 +4034,7 @@ func (f *Front) render404Shim(w http.ResponseWriter, c *wp.Context) {
 	b.WriteString(html.EscapeString(home))
 	b.WriteString(`">Home</a></p>`)
 	b.WriteString("\n</main>\n")
-	b.WriteString("</body>\n</html>\n")
+	writeFrontDocumentClose(&b, c)
 
 	setFrontAPILink(w, c)
 	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
@@ -4216,6 +4216,15 @@ func hooksFor(c *wp.Context) *wp.Hooks {
 		return nil
 	}
 	return c.Hooks
+}
+
+// writeFrontDocumentClose fires wp_footer then closes body/html (P3.118).
+func writeFrontDocumentClose(b *strings.Builder, c *wp.Context) {
+	if b == nil {
+		return
+	}
+	wp.Footer(c)
+	b.WriteString("</body>\n</html>\n")
 }
 
 // termArchiveFeedLink builds feed_links_extra title/href for category or tag archives (P3.103).
