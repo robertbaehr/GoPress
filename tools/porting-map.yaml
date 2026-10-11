@@ -11849,6 +11849,20 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P6.61 — sanitize/get/determine filter coverage"
 
+# P6.62: login_title filter on <title> in login_header.
+- prefix: wp-login.php#login_title
+  go: internal/login/login.go
+  status: partial
+  task: P6.62
+  api: n/a
+  notes: "P6.62 — login_title filter; echo title without re-escape after filter"
+- prefix: wp-login.php#login_title#tests
+  go: internal/login/login_title_p6_62_test.go
+  status: partial
+  task: P6.62
+  api: n/a
+  notes: "P6.62 — filter replace + default title shape"
+
 # P10.212: expand diff corpus after P5.151–P6.60 stack.
 - prefix: tests/corpus#p10.212
   go: tests/corpus
