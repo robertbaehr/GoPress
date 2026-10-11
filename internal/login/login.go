@@ -415,7 +415,6 @@ func (h *Handler) serveRegisterForm(w http.ResponseWriter, r *http.Request, c *w
 
 	var b strings.Builder
 	writeLoginHead(&b, c, home, blogname, "Registration Form", "register")
-	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Registration Form</h1>\n")
 	b.WriteString("\t\t\t<div id=\"login\">\n")
 	writeLoginLogo(&b, c)
 	// P6.51: login_message filter (WP login_header).
@@ -525,7 +524,6 @@ func (h *Handler) serveCheckEmail(w http.ResponseWriter, r *http.Request, c *wp.
 	}
 	var b strings.Builder
 	writeLoginHead(&b, c, home, blogname, "Check your email", "checkemail")
-	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Check your email</h1>\n")
 	b.WriteString("\t\t\t<div id=\"login\">\n")
 	writeLoginLogo(&b, c)
 	// P6.51: login_message runs in login_header; checkemail passes notice via WP_Error message data.
@@ -620,7 +618,6 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		extraClass = "interim-login"
 	}
 	writeLoginHead(&b, c, home, blogname, "Log In", "login", extraClass)
-	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Log In</h1>\n")
 	b.WriteString("\t\t\t<div id=\"login\">\n")
 	writeLoginLogo(&b, c)
 	b.WriteString("\t\n")
@@ -934,7 +931,6 @@ func (h *Handler) serveResetPassDone(w http.ResponseWriter, r *http.Request, c *
 	loginURL := home + "/wp-login.php"
 	var b strings.Builder
 	writeLoginHead(&b, c, home, blogname, "Password Reset", "resetpass")
-	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Password Reset</h1>\n")
 	b.WriteString("\t\t\t<div id=\"login\">\n")
 	writeLoginLogo(&b, c)
 	doneMsg := `<p class="message reset-pass">Your password has been reset. <a href="` + html.EscapeString(loginURL) + `">Log in</a></p>` + "\n"
@@ -957,7 +953,6 @@ func (h *Handler) serveResetPassForm(w http.ResponseWriter, r *http.Request, c *
 
 	var b strings.Builder
 	writeLoginHead(&b, c, home, blogname, "Reset Password", "resetpass")
-	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Reset Password</h1>\n")
 	b.WriteString("\t\t\t<div id=\"login\">\n")
 	writeLoginLogo(&b, c)
 	if formErr != "" {
@@ -1054,7 +1049,6 @@ func (h *Handler) serveLostPassword(w http.ResponseWriter, r *http.Request, c *w
 
 	var b strings.Builder
 	writeLoginHead(&b, c, home, blogname, "Lost Password", "lostpassword")
-	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Lost Password</h1>\n")
 	b.WriteString("\t\t\t<div id=\"login\">\n")
 	writeLoginLogo(&b, c)
 	// P6.51: WP always shows the info message via login_header + login_message filter.
@@ -1246,6 +1240,14 @@ func writeLoginHead(b *strings.Builder, c *wp.Context, home, blogname, title, ac
 	// P6.55: do_action( 'login_header' ) after body open (WP login_header).
 	if c != nil && c.Hooks != nil {
 		c.Hooks.DoAction("login_header")
+	}
+	// P6.63: screen-reader <h1> when title non-empty and action != confirm_admin_email
+	// (WP login_header: if ( 'confirm_admin_email' !== $action && ! empty( $title ) )).
+	if action != "confirm_admin_email" && !phpEmptyString(title) {
+		b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">")
+		// WP echoes $title without esc_html.
+		b.WriteString(title)
+		b.WriteString("</h1>\n")
 	}
 }
 
