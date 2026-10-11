@@ -11964,3 +11964,23 @@ wp-login.php#language-switcher-post
   task: P4.169
   api: n/a
   notes: "P4.169 — BETWEEN/NOT BETWEEN filters + expanded enum message"
+
+# P7.154: custom-header.php admin + theme_mod helpers.
+- prefix: wp-admin/custom-header.php
+  go: internal/admin/custom_header.go
+  status: partial
+  task: P7.154
+  api: n/a
+  notes: "P7.154 — edit_theme_options gate; header-text-color save; image display stub"
+- prefix: wp-includes/theme.php#custom-header
+  go: internal/wp/custom_header.go
+  status: partial
+  task: P7.154
+  api: n/a
+  notes: "P7.154 — Get/SetHeaderImage/TextColor; HasHeaderImage; HasCustomHeader body class"
+- prefix: wp-admin/custom-header.php#tests
+  go: internal/admin/custom_header_p7_154_test.go
+  status: partial
+  task: P7.154
+  api: n/a
+  notes: "P7.154 — login redirect, text color save nonce, body class with support"
