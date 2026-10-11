@@ -2698,8 +2698,10 @@ func mediaViewSwitcher(mode string) string {
 
 func renderMediaGrid(blogname string, items []mediaRow, c *wp.Context, r *http.Request) string {
 	search := ""
+	mimeFilter := ""
 	if r != nil {
 		search = strings.TrimSpace(r.URL.Query().Get("s"))
+		mimeFilter = strings.TrimSpace(r.URL.Query().Get("attachment-filter"))
 	}
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
@@ -2709,8 +2711,11 @@ func renderMediaGrid(blogname string, items []mediaRow, c *wp.Context, r *http.R
 	b.WriteString("<body class=\"wp-admin wp-core-ui upload-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString(mediaBulkDeletedNotice(r))
+	// P7.151: data-filter mirrors attachment-filter for media grid JS hooks.
 	b.WriteString(`<div class="wrap" id="wp-media-grid" data-search="`)
 	b.WriteString(html.EscapeString(search))
+	b.WriteString(`" data-filter="`)
+	b.WriteString(html.EscapeString(mimeFilter))
 	b.WriteString(`">` + "\n")
 	b.WriteString("<h1 class=\"wp-heading-inline\">Media Library</h1>\n")
 	b.WriteString("<a class=\"page-title-action\" href=\"/wp-admin/media-new.php\">Add Media File</a>\n")
@@ -2719,6 +2724,8 @@ func renderMediaGrid(blogname string, items []mediaRow, c *wp.Context, r *http.R
 	b.WriteString(mediaLibrarySearchForm("grid", r))
 	b.WriteString("<div class=\"notice notice-error hide-if-js\"><p>The grid view for the Media Library requires JavaScript. ")
 	b.WriteString(`<a href="/wp-admin/upload.php?mode=list">Switch to the list view</a>.</p></div>` + "\n")
+	// P7.151: attachments-browser wrapper matches WP media grid chrome.
+	b.WriteString(`<div class="media-frame wp-core-ui mode-grid mode-edit attachments-browser">` + "\n")
 	b.WriteString("<ul class=\"attachments ui-sortable ui-sortable-disabled\" tabindex=\"-1\">\n")
 	if len(items) == 0 {
 		b.WriteString("<li class=\"no-media\">No media items found.</li>\n")
@@ -2728,15 +2735,45 @@ func renderMediaGrid(blogname string, items []mediaRow, c *wp.Context, r *http.R
 		b.WriteString(strconv.FormatInt(m.ID, 10))
 		b.WriteString(`" data-id="`)
 		b.WriteString(strconv.FormatInt(m.ID, 10))
-		b.WriteString(`"><div class="attachment-preview"><div class="thumbnail"><div class="filename"><div>`)
+		b.WriteString(`" data-type="`)
+		b.WriteString(html.EscapeString(mediaTypeFromMime(m.Mime)))
+		b.WriteString(`" data-mime="`)
+		b.WriteString(html.EscapeString(m.Mime))
+		b.WriteString(`"><div class="attachment-preview type-`)
+		b.WriteString(html.EscapeString(mediaTypeFromMime(m.Mime)))
+		b.WriteString(`"><div class="thumbnail">`)
+		// P7.151: image thumbnails when attachment URL resolves.
+		if strings.HasPrefix(strings.ToLower(m.Mime), "image/") {
+			if url := wp.GetAttachmentURL(c, m.ID); url != "" {
+				b.WriteString(`<div class="centered"><img src="`)
+				b.WriteString(html.EscapeString(url))
+				b.WriteString(`" alt="" /></div>`)
+			}
+		}
+		b.WriteString(`<div class="filename"><div>`)
 		b.WriteString(html.EscapeString(m.Title))
 		b.WriteString(`</div></div></div></div>`)
 		b.WriteString(`<a class="edit" href="/wp-admin/post.php?post=`)
 		b.WriteString(strconv.FormatInt(m.ID, 10))
 		b.WriteString(`&amp;action=edit">Edit</a></li>` + "\n")
 	}
-	b.WriteString("</ul>\n</div>\n</body>\n</html>\n")
+	b.WriteString("</ul>\n</div>\n</div>\n</body>\n</html>\n")
 	return b.String()
+}
+
+// mediaTypeFromMime returns the WP attachment type token (image/audio/video/file) (P7.151).
+func mediaTypeFromMime(mime string) string {
+	mime = strings.ToLower(strings.TrimSpace(mime))
+	switch {
+	case strings.HasPrefix(mime, "image/"):
+		return "image"
+	case strings.HasPrefix(mime, "audio/"):
+		return "audio"
+	case strings.HasPrefix(mime, "video/"):
+		return "video"
+	default:
+		return "file"
+	}
 }
 
 func renderMediaList(blogname string, items []mediaRow, c *wp.Context, r *http.Request) string {
