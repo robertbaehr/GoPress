@@ -19,6 +19,21 @@
 
 
 
+
+# P9.47: is_plugin_inactive.
+- prefix: wp-admin/includes/plugin.php#is_plugin_inactive
+  go: internal/plugins/plugin.go
+  status: partial
+  task: P9.47
+  api: n/a
+  notes: "P9.47 — IsPluginInactive inverse of IsPluginActive"
+- prefix: wp-admin/includes/plugin.php#is_plugin_inactive#tests
+  go: internal/plugins/is_plugin_inactive_p9_47_test.go
+  status: partial
+  task: P9.47
+  api: n/a
+  notes: "P9.47 — active/inactive/missing coverage"
+
 # P4.181: orderby meta_value + meta_type TIME.
 - prefix: wp-includes/class-wp-query.php#meta_type_time
   go: internal/wp/query.go
