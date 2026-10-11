@@ -1922,8 +1922,9 @@ func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context
 	b.WriteString(" &#8211; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString("</title>\n")
+	page, cpage := wp.CanonicalPageFromRequest(c)
 	perm := singularPermalink(home, post)
-	if canon := wp.GetCanonicalURL(c, post.ID, 0, 0); canon != "" {
+	if canon := wp.GetCanonicalURL(c, post.ID, page, cpage); canon != "" {
 		perm = canon
 	}
 	restPath := "/wp/v2/posts/" + strconv.FormatInt(post.ID, 10)

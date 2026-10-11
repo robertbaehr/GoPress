@@ -2565,18 +2565,20 @@ wp-login.php#language-switcher-post
   task: P3.40
   api: exported
 
-# P3.42: rel=canonical / wp_get_canonical_url in singular head.
+# P3.42 / P3.101: rel=canonical / wp_get_canonical_url deepen.
 - prefix: wp-includes/link-template.php#wp_get_canonical_url
   go: internal/wp/canonical.go
   status: partial
-  task: P3.42
+  task: P3.101
   api: exported
+  notes: "P3.101 — get_canonical_url filter; attachment inherit; page/cpage; CanonicalPageFromRequest"
 
 - prefix: wp-includes/link-template.php#rel_canonical
   go: internal/wp/canonical.go
   status: partial
-  task: P3.42
+  task: P3.101
   api: exported
+  notes: "P3.101 — RelCanonicalLinkPaged; front singular uses request page/cpage"
 
 
 # P3.87: paginate_links subset for archive/query pagination.
