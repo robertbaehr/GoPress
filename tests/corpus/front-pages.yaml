@@ -738,3 +738,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.124: front headers after stacked deepen.
+- id: front-p10124-search-sample
+  role: anon
+  method: GET
+  path: /?s=sample
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10124-search-photo
+  role: anon
+  method: GET
+  path: /?s=photo
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10124-robots-query
+  role: anon
+  method: GET
+  path: /robots.txt?foo=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
