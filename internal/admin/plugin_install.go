@@ -11,19 +11,33 @@ import (
 // servePluginInstall is the Plugins → Add Plugins stub (plugin-install.php, P7.19 / P7.114).
 // Directory installs from wordpress.org remain out of scope; this screen gates on
 // install_plugins (or activate_plugins) and points editors at the local Plugins screen.
+// P7.169: pagenow/adminpage chrome, locale body class, admin_body_class.
 func (h *Handler) servePluginInstall(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	_ = r
 	blogname := optionString(c, "blogname", "GoPress")
 	canInstall := c != nil && c.CurrentUser != nil &&
 		(c.UserCan(c.CurrentUser, "install_plugins") || c.UserCan(c.CurrentUser, "activate_plugins"))
 
+	bodyClass := "wp-admin wp-core-ui plugin-install-php locale-en-us"
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("admin_body_class", ""); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				bodyClass += " " + strings.TrimSpace(s)
+			}
+		}
+	}
+
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n")
 	b.WriteString("<title>Add Plugins &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui plugin-install-php\">\n")
+	b.WriteString(" &#8212; WordPress</title>\n")
+	b.WriteString("<script>var ajaxurl = \"/wp-admin/admin-ajax.php\", pagenow = \"plugin-install\", typenow = \"\", adminpage = \"plugin-install-php\";</script>\n")
+	b.WriteString("</head>\n")
+	b.WriteString("<body class=\"")
+	b.WriteString(html.EscapeString(bodyClass))
+	b.WriteString("\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1>Add Plugins</h1>\n")

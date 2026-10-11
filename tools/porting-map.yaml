@@ -26,6 +26,21 @@
 
 
 
+
+# P7.169: plugin-install.php pagenow chrome.
+- prefix: wp-admin/plugin-install.php#pagenow
+  go: internal/admin/plugin_install.go
+  status: partial
+  task: P7.169
+  api: n/a
+  notes: "P7.169 — plugin-install.php pagenow/adminpage + admin_body_class + locale"
+- prefix: wp-admin/plugin-install.php#pagenow#tests
+  go: internal/admin/plugin_install_chrome_p7_169_test.go
+  status: partial
+  task: P7.169
+  api: n/a
+  notes: "P7.169 — pagenow chrome + folded body class"
+
 # P5.168: core/latest-posts align coerce.
 - prefix: wp-includes/blocks/latest-posts#align
   go: internal/blocks/widget_blocks.go
