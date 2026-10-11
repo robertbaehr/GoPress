@@ -1213,3 +1213,44 @@
   compare: headers
   nonce: null
 
+
+# P10.208: ajax toppers (headers-safe).
+
+- id: ajax-p10208-001
+  role: admin
+  method: POST
+  path: /wp-admin/admin-ajax.php
+  headers:
+    Content-Type: application/x-www-form-urlencoded
+  body: action=heartbeat&screen_id=dashboard
+  compare: headers
+  nonce: null
+
+- id: ajax-p10208-002
+  role: anon
+  method: POST
+  path: /wp-admin/admin-ajax.php
+  headers:
+    Content-Type: application/x-www-form-urlencoded
+  body: action=heartbeat
+  compare: headers
+  nonce: null
+
+- id: ajax-p10208-003
+  role: admin
+  method: POST
+  path: /wp-admin/admin-ajax.php
+  headers:
+    Content-Type: application/x-www-form-urlencoded
+  body: action=wp-compression-test
+  compare: headers
+  nonce: null
+
+- id: ajax-p10208-005
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=rest-nonce
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

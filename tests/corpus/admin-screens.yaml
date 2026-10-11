@@ -1294,3 +1294,32 @@
   compare: headers
   nonce: null
 
+
+# P10.208: admin toppers — privacy requests + safe screens (headers).
+
+- id: admin-p10208-012
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_status=publish
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10208-013
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_type=page
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10208-015
+  role: admin
+  method: GET
+  path: /wp-admin/users.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

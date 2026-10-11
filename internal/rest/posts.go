@@ -1064,57 +1064,26 @@ func writeRESTInvalidIntegerArrayParams(w http.ResponseWriter, keys []string) {
 	})
 }
 
-// parsePostsAfter reads REST ?after= (ISO8601 → MySQL datetime, P4.91 / P4.140 / P4.165).
+// parsePostsAfterTyped reads REST ?after= (ISO8601 → MySQL datetime, P4.91 / P4.140 / P4.165).
 // Present but invalid/empty → ok=false (rest_invalid_param / rest_invalid_date).
 // typeErr is true when after[]= / after[N]= is present (rest_invalid_type / not string).
-func parsePostsAfter(r *http.Request) (string, bool) {
-	v, ok, _ := parsePostsAfterTyped(r)
-	return v, ok
-}
-
-// parsePostsAfterTyped is like parsePostsAfter with array-form type detection (P4.165).
 func parsePostsAfterTyped(r *http.Request) (value string, ok bool, typeErr bool) {
 	return parseRESTDateTimeQueryTyped(r, "after")
 }
 
-// parsePostsBefore reads REST ?before= (ISO8601 → MySQL datetime, P4.91 / P4.140 / P4.165).
-func parsePostsBefore(r *http.Request) (string, bool) {
-	v, ok, _ := parsePostsBeforeTyped(r)
-	return v, ok
-}
-
-// parsePostsBeforeTyped is like parsePostsBefore with array-form type detection (P4.165).
+// parsePostsBeforeTyped reads REST ?before= (ISO8601 → MySQL datetime, P4.91 / P4.140 / P4.165).
 func parsePostsBeforeTyped(r *http.Request) (value string, ok bool, typeErr bool) {
 	return parseRESTDateTimeQueryTyped(r, "before")
 }
 
-// parsePostsModifiedAfter reads REST ?modified_after= (P4.95 / P4.140 / P4.165).
-func parsePostsModifiedAfter(r *http.Request) (string, bool) {
-	v, ok, _ := parsePostsModifiedAfterTyped(r)
-	return v, ok
-}
-
-// parsePostsModifiedAfterTyped is like parsePostsModifiedAfter with array-form type detection (P4.165).
+// parsePostsModifiedAfterTyped reads REST ?modified_after= (P4.95 / P4.140 / P4.165).
 func parsePostsModifiedAfterTyped(r *http.Request) (value string, ok bool, typeErr bool) {
 	return parseRESTDateTimeQueryTyped(r, "modified_after")
 }
 
-// parsePostsModifiedBefore reads REST ?modified_before= (P4.95 / P4.140 / P4.165).
-func parsePostsModifiedBefore(r *http.Request) (string, bool) {
-	v, ok, _ := parsePostsModifiedBeforeTyped(r)
-	return v, ok
-}
-
-// parsePostsModifiedBeforeTyped is like parsePostsModifiedBefore with array-form type detection (P4.165).
+// parsePostsModifiedBeforeTyped reads REST ?modified_before= (P4.95 / P4.140 / P4.165).
 func parsePostsModifiedBeforeTyped(r *http.Request) (value string, ok bool, typeErr bool) {
 	return parseRESTDateTimeQueryTyped(r, "modified_before")
-}
-
-// parseRESTDateTimeQuery parses an ISO8601 / MySQL datetime query arg to MySQL form.
-// Absent → ("", true). Present but empty/unparseable → ("", false) (P4.140).
-func parseRESTDateTimeQuery(r *http.Request, key string) (string, bool) {
-	v, ok, _ := parseRESTDateTimeQueryTyped(r, key)
-	return v, ok
 }
 
 // parseRESTDateTimeQueryTyped parses date-time query args with string-type enforcement (P4.165).
