@@ -7921,3 +7921,11 @@ wp-login.php#language-switcher-post
   task: P10.145
   api: n/a
   notes: "P10.145 — summarize navigation layout, slug[], link-manager stub, basename, custom logo, ImageEditor.Rotate, 1035 corpus"
+
+# P10.146: expand diff corpus after P5.118–P9.26.
+- prefix: tests/corpus#p10.146
+  go: tests/corpus
+  status: partial
+  task: P10.146
+  api: n/a
+  notes: "P10.146 — status[]/template-part/comment-edit/site-icon toppers; keep 100% match"

@@ -262,3 +262,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.146 safe toppers (comment edit form headers).
+- id: admin-p10146-001-comment-edit
+  role: admin
+  method: GET
+  path: /wp-admin/comment.php?action=editcomment&c=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10146-002-edit-comments
+  role: admin
+  method: GET
+  path: /wp-admin/edit-comments.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10146-003-dashboard
+  role: admin
+  method: GET
+  path: /wp-admin/index.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
