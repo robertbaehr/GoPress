@@ -2444,7 +2444,7 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 		if p.CommentCount > 0 || p.CommentStatus == "open" {
 			// P3.72: wfw:commentRss via get_post_comments_feed_link (rss2).
 			b.WriteString("\t\t\t\t\t<wfw:commentRss>")
-			b.WriteString(xmlEscape(postCommentsFeedLink(link, "rss2")))
+			b.WriteString(xmlEscape(wp.GetPostCommentsFeedLink(c, link, "rss2")))
 			b.WriteString("</wfw:commentRss>\n")
 			b.WriteString("\t\t\t<slash:comments>")
 			b.WriteString(strconv.FormatInt(p.CommentCount, 10))
@@ -2609,7 +2609,7 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 			b.WriteString("\" />\n")
 			b.WriteString("\t\t\t<link rel=\"replies\" type=\"application/atom+xml\" href=\"")
 			// P3.72: get_post_comments_feed_link( …, 'atom' ).
-			b.WriteString(xmlEscape(postCommentsFeedLink(link, "atom")))
+			b.WriteString(xmlEscape(wp.GetPostCommentsFeedLink(c, link, "atom")))
 			b.WriteString("\" thr:count=\"")
 			b.WriteString(strconv.FormatInt(p.CommentCount, 10))
 			b.WriteString("\" />\n")
@@ -3554,18 +3554,10 @@ func feedAtomCommentsHTMLLink(permalink string) string {
 	return permalink + "#comments"
 }
 
-// postCommentsFeedLink builds get_post_comments_feed_link for pretty permalinks (P3.72).
-// Default/rss2 → {permalink}/feed/; other feeds → {permalink}/feed/{feed}/.
+// postCommentsFeedLink builds get_post_comments_feed_link for pretty permalinks (P3.72 / P3.148).
+// Delegates to wp.GetPostCommentsFeedLink (filter + default rss2).
 func postCommentsFeedLink(permalink, feed string) string {
-	base := strings.TrimRight(strings.TrimSpace(permalink), "/")
-	if base == "" {
-		return ""
-	}
-	feed = strings.ToLower(strings.TrimSpace(feed))
-	if feed == "" || feed == "rss2" || feed == "rss" {
-		return base + "/feed/"
-	}
-	return base + "/feed/" + feed + "/"
+	return wp.GetPostCommentsFeedLink(nil, permalink, feed)
 }
 
 func feedCommentCount(c *wp.Context, postID int64) int64 {
