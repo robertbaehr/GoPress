@@ -626,7 +626,7 @@ func (f *Front) renderSearchBlockTemplate(w http.ResponseWriter, c *wp.Context, 
 	env := blockRenderEnv(c)
 	env.SearchQuery = term
 	body := blocks.RenderWith(env, template)
-	safe := wp.ProcessInteractivityHTML(wp.KsesPost(body))
+	safe := wp.ProcessInteractivityHTML(wp.KsesPostFiltered(c, body))
 
 	bodyClasses := "search wp-embed-responsive"
 	if term != "" {
@@ -820,7 +820,7 @@ func (f *Front) renderDateArchiveBlockTemplate(w http.ResponseWriter, c *wp.Cont
 	env := blockRenderEnv(c)
 	env.ArchiveTitle = archiveTitle
 	body := blocks.RenderWith(env, template)
-	safe := wp.ProcessInteractivityHTML(wp.KsesPost(body))
+	safe := wp.ProcessInteractivityHTML(wp.KsesPostFiltered(c, body))
 	safe = ensureMainSkipTarget(safe)
 
 	bodyClasses := dateArchiveBodyClass(year, month, day) + " wp-embed-responsive"
@@ -985,7 +985,7 @@ func (f *Front) renderAuthorArchiveBlockTemplate(w http.ResponseWriter, c *wp.Co
 	env := blockRenderEnv(c)
 	env.ArchiveTitle = archiveTitle
 	body := blocks.RenderWith(env, template)
-	safe := wp.ProcessInteractivityHTML(wp.KsesPost(body))
+	safe := wp.ProcessInteractivityHTML(wp.KsesPostFiltered(c, body))
 	safe = ensureMainSkipTarget(safe)
 
 	nicename := ""
@@ -1154,7 +1154,7 @@ func (f *Front) renderCategoryArchiveBlockTemplate(w http.ResponseWriter, c *wp.
 	// P5.76: expose term fields for core/term-description (+ term-data bindings).
 	env.TermContext = termBindingContext("category", term)
 	body := blocks.RenderWith(env, template)
-	safe := wp.ProcessInteractivityHTML(wp.KsesPost(body))
+	safe := wp.ProcessInteractivityHTML(wp.KsesPostFiltered(c, body))
 	safe = ensureMainSkipTarget(safe)
 
 	bodyClasses := "archive category wp-embed-responsive"
@@ -1367,7 +1367,7 @@ func (f *Front) renderTagArchiveBlockTemplate(w http.ResponseWriter, c *wp.Conte
 	// P5.76: expose term fields for core/term-description (+ term-data bindings).
 	env.TermContext = termBindingContext("post_tag", term)
 	body := blocks.RenderWith(env, template)
-	safe := wp.ProcessInteractivityHTML(wp.KsesPost(body))
+	safe := wp.ProcessInteractivityHTML(wp.KsesPostFiltered(c, body))
 	safe = ensureMainSkipTarget(safe)
 
 	bodyClasses := "archive tag wp-embed-responsive"
@@ -1743,7 +1743,7 @@ func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, templa
 		return c != nil && c.Scope != nil && c.Scope.Paged > 1
 	}
 	body := blocks.RenderWith(env, template)
-	safe := wp.ProcessInteractivityHTML(wp.KsesPost(body))
+	safe := wp.ProcessInteractivityHTML(wp.KsesPostFiltered(c, body))
 
 	bodyClasses := "home blog wp-embed-responsive"
 	paged := 1
@@ -1902,7 +1902,7 @@ func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context
 		return commentFormSlot
 	}
 	body := blocks.RenderWith(env, template)
-	safe := wp.ProcessInteractivityHTML(wp.KsesPost(body))
+	safe := wp.ProcessInteractivityHTML(wp.KsesPostFiltered(c, body))
 	safe = strings.Replace(safe, commentFormSlot, commentFormHTML(c, post), 1)
 	safe = ensureMainSkipTarget(safe)
 
@@ -1974,7 +1974,7 @@ func (f *Front) renderSingularShim(w http.ResponseWriter, c *wp.Context, post *s
 		}
 		// the_content: blocks → shortcodes → texturize (P5.11).
 		content = wp.TheContent(c, content)
-		safeContent = wp.ProcessInteractivityHTML(wp.KsesPost(content))
+		safeContent = wp.ProcessInteractivityHTML(wp.KsesPostFiltered(c, content))
 	}
 
 	bodyClass := "singular"
@@ -2047,7 +2047,7 @@ func (f *Front) renderEmbed(w http.ResponseWriter, c *wp.Context, vars map[strin
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	perm := singularPermalink(home, post)
 	excerpt := wp.TheContent(c, post.Content)
-	excerpt = wp.ProcessInteractivityHTML(wp.KsesPost(excerpt))
+	excerpt = wp.ProcessInteractivityHTML(wp.KsesPostFiltered(c, excerpt))
 	// Keep embed payloads small.
 	if len(excerpt) > 400 {
 		excerpt = excerpt[:400] + "&hellip;"
@@ -3889,7 +3889,7 @@ func (f *Front) render404BlockTemplate(w http.ResponseWriter, c *wp.Context, tem
 	stylesheet := activeStylesheet(c)
 	env := blockRenderEnv(c)
 	body := blocks.RenderWith(env, template)
-	safe := wp.ProcessInteractivityHTML(wp.KsesPost(body))
+	safe := wp.ProcessInteractivityHTML(wp.KsesPostFiltered(c, body))
 	safe = ensureMainSkipTarget(safe)
 
 	bodyClasses := "error404 wp-embed-responsive"
@@ -4733,8 +4733,8 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			}
 			return asMetaString(c.Meta.GetMetadata(wp.MetaPost, postID, "footnotes", true))
 		},
-		// P5.98: footnotes content sanitized like wp_kses_post.
-		SanitizeHTML: wp.KsesPost,
+		// P5.98 / P2.108: footnotes content sanitized like wp_kses_post (+ hooks).
+		SanitizeHTML: func(html string) string { return wp.KsesPostFiltered(c, html) },
 		GetPostMeta: func(postID int64, key string) string {
 			if c == nil || c.Meta == nil || postID <= 0 || key == "" {
 				return ""
@@ -4859,7 +4859,7 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 					Author:      cm.Author,
 					AuthorEmail: cm.AuthorEmail,
 					AuthorURL:   cm.AuthorURL,
-					Content:     wp.KsesPost(cm.Content),
+					Content:     wp.KsesPostFiltered(c, cm.Content),
 					Date:        cm.Date,
 				})
 			}

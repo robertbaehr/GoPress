@@ -529,9 +529,17 @@ wp-login.php#language-switcher-post
 
 - prefix: wp-includes/kses.php
   go: internal/wp/kses.go
-  status: done
-  task: P1.11
+  status: partial
+  task: P2.108
   api: exported
+  notes: "P2.108 — KsesPostFiltered (pre_kses + wp_kses_allowed_html), KsesPostDeep; goldens still via KsesPost"
+
+- prefix: wp-includes/kses.php#wp_kses_post_deep
+  go: internal/wp/kses.go
+  status: partial
+  task: P2.108
+  api: exported
+  notes: "P2.108 — recursive string sanitize over maps/slices"
 
 - prefix: wp-includes/interactivity-api/
   go: internal/wp/interactivity.go
