@@ -911,14 +911,33 @@ func parsePostsSlug(r *http.Request) []string {
 	return out
 }
 
-// parsePostsStatus reads REST ?status= (maps to WP_Query post_status, P4.88 / P4.134).
+// postsRESTStatusEnum is the WP posts collection status items.enum (P4.151).
+var postsRESTStatusEnum = []string{
+	"publish", "future", "draft", "pending", "private", "trash", "auto-draft",
+	"inherit", "request-pending", "request-confirmed", "request-failed",
+	"request-completed", "any",
+}
+
+var postsRESTStatusEnumSet = func() map[string]bool {
+	m := make(map[string]bool, len(postsRESTStatusEnum))
+	for _, s := range postsRESTStatusEnum {
+		m[s] = true
+	}
+	return m
+}()
+
+// postsRESTStatusEnumMessage matches WP rest_not_in_enum for status[0] (P4.151).
+const postsRESTStatusEnumMessage = "status[0] is not one of publish, future, draft, pending, private, trash, auto-draft, inherit, request-pending, request-confirmed, request-failed, request-completed, and any."
+
+// parsePostsStatus reads REST ?status= (maps to WP_Query post_status, P4.88 / P4.134 / P4.151).
 // Default is publish. Non-publish values (incl. "any") require edit_posts (editors).
 // Accepts comma-separated values, repeated ?status=, and PHP-style status[]= arrays.
-// Tokens are sanitize_key'd (lowercase a-z0-9_-). Returns http status + message on
-// forbidden (0 on success).
-func parsePostsStatus(r *http.Request, c *wp.Context) (statuses []string, code int, message string) {
+// Tokens are sanitize_key'd (lowercase a-z0-9_-).
+// On forbidden: forbiddenCode is 401/403 (caller wraps as rest_invalid_param).
+// On bad enum (editors): enumInvalid is true.
+func parsePostsStatus(r *http.Request, c *wp.Context) (statuses []string, forbiddenCode int, enumInvalid bool) {
 	if r == nil {
-		return []string{"publish"}, 0, ""
+		return []string{"publish"}, 0, false
 	}
 	var raw []string
 	add := func(v string) {
@@ -942,7 +961,7 @@ func parsePostsStatus(r *http.Request, c *wp.Context) (statuses []string, code i
 		}
 	}
 	if len(raw) == 0 {
-		return []string{"publish"}, 0, ""
+		return []string{"publish"}, 0, false
 	}
 	// Dedupe while preserving order.
 	seen := map[string]bool{}
@@ -958,15 +977,62 @@ func parsePostsStatus(r *http.Request, c *wp.Context) (statuses []string, code i
 		if s == "publish" {
 			continue
 		}
+		// P4.151 / sanitize_post_statuses: capability check before enum validate.
 		if !canEditPosts(c) {
 			code := http.StatusUnauthorized
 			if c != nil && c.CurrentUser != nil {
 				code = http.StatusForbidden
 			}
-			return nil, code, "Status is forbidden."
+			return nil, code, false
+		}
+		if !postsRESTStatusEnumSet[s] {
+			return nil, 0, true
 		}
 	}
-	return out, 0, ""
+	return out, 0, false
+}
+
+// writeRESTInvalidPostsStatus emits rest_invalid_param for status query errors (P4.151).
+// Mirrors WP: outer 400 rest_invalid_param wrapping rest_forbidden_status or rest_not_in_enum.
+func writeRESTInvalidPostsStatus(w http.ResponseWriter, forbiddenCode int, enumInvalid bool) {
+	w.Header().Set("Allow", "GET")
+	if enumInvalid {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_invalid_param",
+			"message": "Invalid parameter(s): status",
+			"data": map[string]any{
+				"status": 400,
+				"params": map[string]any{
+					"status": postsRESTStatusEnumMessage,
+				},
+				"details": map[string]any{
+					"status": map[string]any{
+						"code":    "rest_not_in_enum",
+						"message": postsRESTStatusEnumMessage,
+						"data":    nil,
+					},
+				},
+			},
+		})
+		return
+	}
+	writeJSON(w, http.StatusBadRequest, map[string]any{
+		"code":    "rest_invalid_param",
+		"message": "Invalid parameter(s): status",
+		"data": map[string]any{
+			"status": 400,
+			"params": map[string]any{
+				"status": "Status is forbidden.",
+			},
+			"details": map[string]any{
+				"status": map[string]any{
+					"code":    "rest_forbidden_status",
+					"message": "Status is forbidden.",
+					"data":    map[string]any{"status": forbiddenCode},
+				},
+			},
+		},
+	})
 }
 
 // sanitizeRESTStatusKey mirrors sanitize_key for REST post status tokens (P4.134).
