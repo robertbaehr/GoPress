@@ -62,6 +62,23 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 	slugs := parsePostsSlug(r)
 	include := parsePostsInclude(r)
 	exclude := parsePostsExclude(r)
+	// P4.131: WP REST validates orderby=relevance / orderby=include prerequisites.
+	if orderby == "relevance" && search == "" {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_no_search_term_defined",
+			"message": "You need to define a search term to order by relevance.",
+			"data":    map[string]any{"status": 400},
+		})
+		return
+	}
+	if orderby == "include" && len(include) == 0 {
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_orderby_include_missing_include",
+			"message": "You need to define an include parameter to order by include.",
+			"data":    map[string]any{"status": 400},
+		})
+		return
+	}
 	// P4.96: format= post_format filter (posts only).
 	var formatIn []string
 	var formatStandard bool

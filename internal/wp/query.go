@@ -52,7 +52,9 @@ type QueryArgs struct {
 	PostIn []int64
 	// PostNotIn excludes these IDs (post__not_in; REST sticky=false, P4.82).
 	PostNotIn []int64
-	// OrderBy is a WP_Query orderby alias: date (default), title, id, slug, menu_order (P4.83/P4.94).
+	// OrderBy is a WP_Query orderby alias: date (default), title, id, slug,
+	// menu_order, author, modified, parent, include, include_slugs, relevance
+	// (P4.83 / P4.94 / P4.131).
 	OrderBy string
 	// Order is ASC or DESC (default DESC) (P4.83).
 	Order string
@@ -441,9 +443,11 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "post_parent", "p.post_parent")
 	}
 
+	orderSQL, orderVals := orderByClause(args, aliased)
+	vals = append(vals, orderVals...)
 	q := "SELECT " + selectPostColumns(aliased) + " FROM " +
 		from + " WHERE " + whereSQL +
-		" ORDER BY " + orderByClause(args.OrderBy, args.Order, aliased)
+		" ORDER BY " + orderSQL
 	if limit >= 0 {
 		q += " LIMIT %d"
 		vals = append(vals, limit)
@@ -605,47 +609,81 @@ func appendDateQueryFilters(where []string, vals []any, args QueryArgs) ([]strin
 	return where, vals
 }
 
-// orderByClause maps QueryArgs.OrderBy/Order onto SQL (P4.83 / P4.94).
-// Supported orderby: date (default), title, id, slug, menu_order.
-// Order: ASC|DESC (default DESC).
-func orderByClause(orderby, order string, aliased bool) string {
-	col := orderByPostDate(aliased)
-	switch strings.ToLower(strings.TrimSpace(orderby)) {
-	case "title":
-		if aliased {
-			col = "p.post_title"
-		} else {
-			col = "post_title"
-		}
-	case "id":
-		if aliased {
-			col = "p.ID"
-		} else {
-			col = "ID"
-		}
-	case "slug", "post_name", "name":
-		if aliased {
-			col = "p.post_name"
-		} else {
-			col = "post_name"
-		}
-	case "menu_order":
-		// P4.94: REST pages orderby=menu_order (page-attributes).
-		if aliased {
-			col = "p.menu_order"
-		} else {
-			col = "menu_order"
-		}
-	case "date", "post_date", "":
-		// default
-	default:
-		// Unknown aliases fall back to date (safe default).
-	}
+// orderByClause maps QueryArgs.OrderBy/Order onto SQL (P4.83 / P4.94 / P4.131).
+// Supported orderby: date (default), title, id, slug, menu_order, author,
+// modified, parent, include (FIELD post__in), include_slugs (FIELD post_name__in),
+// relevance (title then date when searching).
+// Order: ASC|DESC (default DESC). Extra Prepare args are returned for FIELD lists.
+func orderByClause(args QueryArgs, aliased bool) (string, []any) {
+	orderby := strings.ToLower(strings.TrimSpace(args.OrderBy))
 	dir := "DESC"
-	if strings.EqualFold(strings.TrimSpace(order), "ASC") {
+	if strings.EqualFold(strings.TrimSpace(args.Order), "ASC") {
 		dir = "ASC"
 	}
-	return col + " " + dir
+	idCol := "ID"
+	titleCol := "post_title"
+	nameCol := "post_name"
+	authorCol := "post_author"
+	modifiedCol := "post_modified"
+	parentCol := "post_parent"
+	menuCol := "menu_order"
+	dateCol := orderByPostDate(aliased)
+	if aliased {
+		idCol = "p.ID"
+		titleCol = "p.post_title"
+		nameCol = "p.post_name"
+		authorCol = "p.post_author"
+		modifiedCol = "p.post_modified"
+		parentCol = "p.post_parent"
+		menuCol = "p.menu_order"
+	}
+	switch orderby {
+	case "title":
+		return titleCol + " " + dir, nil
+	case "id":
+		return idCol + " " + dir, nil
+	case "slug", "post_name", "name":
+		return nameCol + " " + dir, nil
+	case "menu_order":
+		// P4.94: REST pages orderby=menu_order (page-attributes).
+		return menuCol + " " + dir, nil
+	case "author":
+		return authorCol + " " + dir + ", " + idCol + " " + dir, nil
+	case "modified", "post_modified":
+		return modifiedCol + " " + dir + ", " + idCol + " " + dir, nil
+	case "parent":
+		return parentCol + " " + dir + ", " + idCol + " " + dir, nil
+	case "include":
+		if len(args.PostIn) == 0 {
+			return dateCol + " " + dir, nil
+		}
+		parts := make([]string, len(args.PostIn))
+		vals := make([]any, len(args.PostIn))
+		for i, id := range args.PostIn {
+			parts[i] = "%d"
+			vals[i] = id
+		}
+		return "FIELD(" + idCol + ", " + strings.Join(parts, ", ") + ")", vals
+	case "include_slugs":
+		if len(args.NameIn) == 0 {
+			return dateCol + " " + dir, nil
+		}
+		parts := make([]string, len(args.NameIn))
+		vals := make([]any, len(args.NameIn))
+		for i, slug := range args.NameIn {
+			parts[i] = "%s"
+			vals[i] = slug
+		}
+		return "FIELD(" + nameCol + ", " + strings.Join(parts, ", ") + ")", vals
+	case "relevance":
+		// Without FULLTEXT, approximate WP search relevance: title then date.
+		return titleCol + " ASC, " + dateCol + " DESC, " + idCol + " ASC", nil
+	case "date", "post_date", "":
+		return dateCol + " " + dir, nil
+	default:
+		// Unknown aliases fall back to date (safe default).
+		return dateCol + " " + dir, nil
+	}
 }
 
 // postStatusSQL builds a post_status WHERE fragment (P4.88).

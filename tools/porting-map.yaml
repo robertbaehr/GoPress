@@ -2451,6 +2451,28 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P4.83 — GetPosts ORDER BY title/date/id/slug + ASC|DESC"
 
+# P4.131: REST posts orderby author|modified|parent|include|include_slugs|relevance.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#orderby-p4.131
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.131
+  api: exported
+  notes: "P4.131 — orderby author/modified/parent/include/include_slugs/relevance + 400 when relevance lacks search or include lacks include"
+
+- prefix: wp-includes/class-wp-query.php#orderby-p4.131
+  go: internal/wp/query.go
+  status: partial
+  task: P4.131
+  api: exported
+  notes: "P4.131 — FIELD(post__in)/FIELD(post_name__in) + author/modified/parent/relevance ORDER BY"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#orderby-p4.131#tests
+  go: internal/rest/posts_test.go
+  status: partial
+  task: P4.131
+  api: n/a
+  notes: "P4.131 — include order, include_slugs order, relevance/include validation"
+
 # P4.81: REST POST /wp/v2/media create fields (title, alt_text, caption, description, post).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-attachments-controller.php#create_item
   go: internal/rest/media.go

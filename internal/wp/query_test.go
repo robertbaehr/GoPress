@@ -234,4 +234,27 @@ func TestGetPostsOrderBy(t *testing.T) {
 			t.Fatalf("menu_order ASC broken: %d then %d", byMenu[i-1].MenuOrder, byMenu[i].MenuOrder)
 		}
 	}
+
+	// P4.131: include preserves post__in order via FIELD().
+	byIncl, err := wp.GetPosts(c, wp.QueryArgs{
+		PostsPerPage: 10,
+		PostIn:       []int64{13, 1},
+		OrderBy:      "include",
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(byIncl) != 2 || byIncl[0].ID != 13 || byIncl[1].ID != 1 {
+		t.Fatalf("include order want [13,1], got %+v", byIncl)
+	}
+
+	byMod, err := wp.GetPosts(c, wp.QueryArgs{PostsPerPage: 5, OrderBy: "modified", Order: "DESC"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for i := 1; i < len(byMod); i++ {
+		if byMod[i-1].Modified < byMod[i].Modified {
+			t.Fatalf("modified DESC broken: %q then %q", byMod[i-1].Modified, byMod[i].Modified)
+		}
+	}
 }

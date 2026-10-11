@@ -266,12 +266,14 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 	return out, nil
 }
 
-// parsePostsOrderby accepts REST orderby=title|date|id|slug|menu_order (P4.83 / P4.94).
-// Default date.
+// parsePostsOrderby accepts REST orderby aliases (P4.83 / P4.94 / P4.131).
+// Default date. Unknown values fall back to date (collection enum rejects others
+// at the schema layer when OPTIONS is consulted).
 func parsePostsOrderby(r *http.Request) string {
 	v := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("orderby")))
 	switch v {
-	case "title", "date", "id", "slug", "menu_order":
+	case "title", "date", "id", "slug", "menu_order",
+		"author", "modified", "parent", "include", "include_slugs", "relevance":
 		return v
 	case "":
 		return "date"
