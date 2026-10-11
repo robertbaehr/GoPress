@@ -37,6 +37,9 @@ type Hooks struct {
 	// current is the nested current_filter / current_action stack (top at end).
 	current []string
 
+	// actionCounts tracks how many times each tag has been fired (did_action, P9.27).
+	actionCounts map[string]int
+
 	// noticeCapture collects HTML during CaptureAdminNotices (P9.7).
 	noticeCapture *strings.Builder
 }
@@ -53,7 +56,8 @@ type callback struct {
 // NewHooks returns an empty registry.
 func NewHooks() *Hooks {
 	return &Hooks{
-		byTag: make(map[string][]callback),
+		byTag:        make(map[string][]callback),
+		actionCounts: make(map[string]int),
 	}
 }
 
@@ -110,15 +114,26 @@ func (h *Hooks) add(tag string, priority, acceptedArgs int, id uintptr, action A
 }
 
 // DoAction runs all callbacks for tag (actions and filters; filter returns discarded).
+// Increments the did_action counter for tag (P9.27).
 func (h *Hooks) DoAction(tag string, args ...any) {
 	if h == nil {
 		return
 	}
+	h.bumpAction(tag)
 	cbs, _ := h.begin(tag)
 	defer h.end()
 	for _, cb := range cbs {
 		callAction(cb, args)
 	}
+}
+
+// DoActionRefArray mirrors do_action_ref_array — unpacks args and runs DoAction (P9.27).
+// Pointer / mutable values in args can be mutated by callbacks (Go ref semantics).
+func (h *Hooks) DoActionRefArray(tag string, args []any) {
+	if h == nil {
+		return
+	}
+	h.DoAction(tag, args...)
 }
 
 // ApplyFilters runs filter (and action) callbacks for tag, threading value through.
@@ -132,6 +147,42 @@ func (h *Hooks) ApplyFilters(tag string, value any, args ...any) any {
 		value = callFilter(cb, value, args)
 	}
 	return value
+}
+
+// ApplyFiltersRefArray mirrors apply_filters_ref_array (P9.27).
+// args[0] is the filtered value; remaining elements are extra filter args.
+// Empty args returns nil.
+func (h *Hooks) ApplyFiltersRefArray(tag string, args []any) any {
+	if h == nil {
+		if len(args) == 0 {
+			return nil
+		}
+		return args[0]
+	}
+	if len(args) == 0 {
+		return nil
+	}
+	return h.ApplyFilters(tag, args[0], args[1:]...)
+}
+
+// DidAction returns how many times tag has been fired via DoAction /
+// DoActionRefArray (did_action, P9.27).
+func (h *Hooks) DidAction(tag string) int {
+	if h == nil {
+		return 0
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return h.actionCounts[tag]
+}
+
+func (h *Hooks) bumpAction(tag string) {
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	if h.actionCounts == nil {
+		h.actionCounts = make(map[string]int)
+	}
+	h.actionCounts[tag]++
 }
 
 // RemoveAction removes an action previously added with the same fn and priority.
