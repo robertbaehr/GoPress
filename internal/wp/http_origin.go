@@ -70,6 +70,29 @@ func GetAllowedHTTPOrigins(c *Context) []string {
 	return out
 }
 
+// SendOriginHeaders writes CORS origin headers when the request Origin is allowed
+// (send_origin_headers, P2.157). Returns the allowed origin string, or "" when denied.
+// For OPTIONS: sets 403 via ResponseWriter when denied (no process exit).
+func SendOriginHeaders(c *Context) string {
+	origin := GetHTTPOrigin(c)
+	allowed := IsAllowedHTTPOrigin(c, origin)
+	method := ""
+	if c != nil && c.Req != nil {
+		method = strings.ToUpper(strings.TrimSpace(c.Req.Method))
+	}
+	if allowed != "" {
+		if c != nil && c.Res != nil {
+			c.Res.Header().Set("Access-Control-Allow-Origin", allowed)
+			c.Res.Header().Set("Access-Control-Allow-Credentials", "true")
+		}
+		return allowed
+	}
+	if method == "OPTIONS" && c != nil && c.Res != nil {
+		c.Res.WriteHeader(403)
+	}
+	return ""
+}
+
 // IsAllowedHTTPOrigin reports whether origin is authorized (is_allowed_http_origin, P2.156).
 // Empty originArg uses GetHTTPOrigin. Applies allowed_http_origin filter.
 // Returns the origin string when allowed, else "".

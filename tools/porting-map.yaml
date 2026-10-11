@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P2.157: send_origin_headers CORS helper.
+- prefix: wp-includes/http.php#send_origin_headers
+  go: internal/wp/http_origin.go
+  status: partial
+  task: P2.157
+  api: n/a
+  notes: "P2.157 — SendOriginHeaders ACAO/ACAC; OPTIONS 403 when denied"
+- prefix: wp-includes/http.php#send_origin_headers#tests
+  go: internal/wp/http_origin_p2_157_test.go
+  status: partial
+  task: P2.157
+  api: n/a
+  notes: "P2.157 — allowed headers + denied OPTIONS 403"
+
 # P6.66: Remember Me help text + enable_login_autofocus.
 - prefix: wp-login.php#login_remember_me_help_text
   go: internal/login/login.go
