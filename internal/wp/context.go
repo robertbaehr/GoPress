@@ -236,6 +236,9 @@ type RequestScope struct {
 	IsCron bool
 	// IsLogin marks wp-login.php requests (is_login, P2.68).
 	IsLogin bool
+	// ShowAdminBar is the request-local show_admin_bar() preference (P7.128).
+	// nil means unset → derive from login + user option.
+	ShowAdminBar *bool
 	// RESTDispatching counts nested rest.Server dispatches (is_dispatching).
 	RESTDispatching int
 	IsFeed          bool

@@ -12,8 +12,11 @@ func GetBodyClass(c *Context, classes string) string {
 	parts := splitBodyClasses(classes)
 	if c != nil && c.CurrentUser != nil {
 		parts = appendBodyClassUnique(parts, "logged-in")
-		parts = appendBodyClassUnique(parts, "admin-bar")
-		parts = appendBodyClassUnique(parts, "no-customize-support")
+		// P7.128: admin-bar class follows is_admin_bar_showing().
+		if IsAdminBarShowing(c) {
+			parts = appendBodyClassUnique(parts, "admin-bar")
+			parts = appendBodyClassUnique(parts, "no-customize-support")
+		}
 	}
 	if HasCustomLogo(c) {
 		parts = appendBodyClassUnique(parts, "wp-custom-logo")
