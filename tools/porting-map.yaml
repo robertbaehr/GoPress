@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P6.68: wp_logout action after cookie clear.
+- prefix: wp-includes/pluggable.php#wp_logout
+  go: internal/login/login.go
+  status: partial
+  task: P6.68
+  api: n/a
+  notes: "P6.68 — do_action wp_logout with pre-clear user ID after ClearAuthCookies"
+- prefix: wp-includes/pluggable.php#wp_logout#tests
+  go: internal/login/wp_logout_p6_68_test.go
+  status: partial
+  task: P6.68
+  api: n/a
+  notes: "P6.68 — fires with admin ID; anonymous → 0; CurrentUser nil during action"
+
 # P10.225: STATUS/PORTING refresh after P6.67–P9.43 stack.
 - prefix: docs/STATUS.md#p10-225
   go: docs/STATUS.md
