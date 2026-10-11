@@ -184,6 +184,8 @@ func generateAttachmentMetadata(c *Context, attachmentID int64, file, context st
 		} else {
 			out["image_meta"] = emptyImageMetaMap()
 		}
+		// P8.37: scale oversized originals to *-scaled.* (big_image_size_threshold).
+		file = maybeScaleBigImage(c, attachmentID, file, out)
 	} else {
 		out["file"] = rel
 		// P8.34: application/pdf → Ghostscript preview JPEG + fallback sizes.
@@ -192,8 +194,11 @@ func generateAttachmentMetadata(c *Context, attachmentID int64, file, context st
 		}
 	}
 	// P8.26: always capture filesize when the file exists (WP 6.0+).
-	if fs := Filesize(file); fs > 0 {
-		out["filesize"] = fs
+	// Prefer scaled path filesize when maybeScaleBigImage already set it.
+	if out["filesize"] == nil {
+		if fs := Filesize(file); fs > 0 {
+			out["filesize"] = fs
+		}
 	}
 
 	if c != nil && c.Hooks != nil {
