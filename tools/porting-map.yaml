@@ -12201,6 +12201,20 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P10.216 — gallery/meta_compare/custom-header/response-code/feed-link/image-src toppers; 3162 cases; headers-safe; drop set-cookie/Link/status-divergent"
 
+# P5.156: deepen core/file fontSize/gradient; coerce align enum.
+- prefix: wp-includes/blocks/file
+  go: internal/blocks/file.go
+  status: partial
+  task: P5.156
+  api: n/a
+  notes: "P5.156 — coerce align left|center|right|wide|full; drop none/bogus; fontSize/gradient polish; sanitize before applySupports"
+- prefix: wp-includes/blocks/file#tests
+  go: internal/blocks/file_attrs_p5_156_test.go
+  status: partial
+  task: P5.156
+  api: n/a
+  notes: "P5.156 — align coerce, saved fontSize/gradient coverage"
+
 # P5.155: deepen core/buttons fontSize/gradient; coerce align wide|full.
 - prefix: wp-includes/blocks/buttons
   go: internal/blocks/button.go
