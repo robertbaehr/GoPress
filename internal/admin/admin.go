@@ -1243,19 +1243,26 @@ func displayPostDateLabel(status string) string {
 	}
 }
 
-// saveGeneralOptions persists Settings → General fields (P7.105).
+// saveGeneralOptions persists Settings → General fields (P7.105 / P7.142).
+// P7.142: email changes go through new_admin_email confirmation (not immediate).
 func saveGeneralOptions(c *wp.Context, r *http.Request) {
 	if c == nil || c.Options == nil || r == nil {
 		return
 	}
-	for _, key := range []string{"blogname", "blogdescription", "admin_email", "date_format", "time_format", "start_of_week", "timezone_string"} {
+	for _, key := range []string{"blogname", "blogdescription", "date_format", "time_format", "start_of_week", "timezone_string"} {
 		if _, ok := r.Form[key]; ok {
 			_, _ = c.Options.UpdateOption(key, strings.TrimSpace(r.Form.Get(key)), "yes")
 		}
 	}
+	// P7.142: prefer new_admin_email (WP general settings); accept legacy admin_email.
+	if _, ok := r.Form["new_admin_email"]; ok {
+		updateOptionNewAdminEmail(c, r.Form.Get("new_admin_email"))
+	} else if _, ok := r.Form["admin_email"]; ok {
+		updateOptionNewAdminEmail(c, r.Form.Get("admin_email"))
+	}
 }
 
-// serveOptionsGeneral is the Settings → General screen stub (P7 / P7.105).
+// serveOptionsGeneral is the Settings → General screen stub (P7 / P7.105 / P7.142).
 func (h *Handler) serveOptionsGeneral(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	// P7.105: manage_options gate (mirrors options-general.php wp_die).
 	if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "manage_options") {
@@ -1269,10 +1276,15 @@ func (h *Handler) serveOptionsGeneral(w http.ResponseWriter, r *http.Request, c 
 	timeFormat := optionString(c, "time_format", "g:i a")
 	startOfWeek := optionString(c, "start_of_week", "1")
 	timezoneString := optionString(c, "timezone_string", "")
+	topPending, inlinePending := adminEmailPendingNoticeHTML(c)
 	var b strings.Builder
 	b.WriteString("<h1>General Settings</h1>\n")
-	if r.URL.Query().Get("settings-updated") == "true" {
+	if r.URL.Query().Get("settings-updated") == "true" || r.URL.Query().Get("updated") == "true" {
 		b.WriteString(wp.FormatSettingsSavedNotice(c) + "\n")
+	}
+	// P7.142: pending new_admin_email confirmation notice.
+	if topPending != "" {
+		b.WriteString(topPending + "\n")
 	}
 	b.WriteString("<form method=\"post\" action=\"options.php\">\n")
 	b.WriteString("<input type=\"hidden\" name=\"option_page\" value=\"general\" />\n")
@@ -1285,10 +1297,16 @@ func (h *Handler) serveOptionsGeneral(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString("<td><input name=\"blogdescription\" type=\"text\" id=\"blogdescription\" value=\"")
 	b.WriteString(html.EscapeString(blogdescription))
 	b.WriteString("\" class=\"regular-text\"></td>\n</tr>\n")
-	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"admin_email\">Administration Email Address</label></th>\n")
-	b.WriteString("<td><input name=\"admin_email\" type=\"email\" id=\"admin_email\" value=\"")
+	// P7.142: new_admin_email field (confirmation required before admin_email updates).
+	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"new_admin_email\">Administration Email Address</label></th>\n")
+	b.WriteString("<td><input name=\"new_admin_email\" type=\"email\" id=\"new_admin_email\" aria-describedby=\"new-admin-email-description\" value=\"")
 	b.WriteString(html.EscapeString(adminEmail))
-	b.WriteString("\" class=\"regular-text ltr\"></td>\n</tr>\n")
+	b.WriteString("\" class=\"regular-text ltr\" />\n")
+	b.WriteString("<p class=\"description\" id=\"new-admin-email-description\">This address is used for admin purposes. If you change this, an email will be sent to your new address to confirm it. <strong>The new address will not become active until confirmed.</strong></p>\n")
+	if inlinePending != "" {
+		b.WriteString(inlinePending + "\n")
+	}
+	b.WriteString("</td>\n</tr>\n")
 	b.WriteString("<tr>\n<th scope=\"row\"><label for=\"timezone_string\">Timezone</label></th>\n")
 	b.WriteString("<td><input name=\"timezone_string\" type=\"text\" id=\"timezone_string\" value=\"")
 	b.WriteString(html.EscapeString(timezoneString))
@@ -1312,8 +1330,13 @@ func (h *Handler) serveOptionsGeneral(w http.ResponseWriter, r *http.Request, c 
 }
 
 // serveOptionsPHP handles /wp-admin/options.php saves (P7.48 writing / P7.49 reading / P7.50 discussion / P7.51 media / P7.105 general).
+// P7.142: GET adminhash / dismiss=new_admin_email confirmation paths.
 func (h *Handler) serveOptionsPHP(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	if r.Method != http.MethodPost {
+		// P7.142: confirm / dismiss new admin email before the generic redirect.
+		if handleAdminEmailVerifyGET(w, r, c) {
+			return
+		}
 		http.Redirect(w, r, "/wp-admin/options-general.php", http.StatusFound)
 		return
 	}
