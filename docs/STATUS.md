@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.223)
 
+- P8.55 `UpdateAttachedFile` / `RelativeUploadPath`
 - P3.155 `GetEditPostLink`
 - P2.157 `SendOriginHeaders` CORS helper
 - P6.66 `login_remember_me_help_text` + `enable_login_autofocus`
