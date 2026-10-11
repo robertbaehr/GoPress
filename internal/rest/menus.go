@@ -237,7 +237,7 @@ func (s *Server) serveMenuItems(w http.ResponseWriter, r *http.Request, c *wp.Co
 	}
 	perPage := parsePerPage(r, 100)
 	page := parsePage(r)
-	total, err := countPosts(c, "nav_menu_item", nil, "", 0, nil, nil, nil, nil, nil, nil, nil, nil, "", "", "", "", nil, false)
+	total, err := countPosts(c, "nav_menu_item", nil, "", nil, nil, nil, nil, nil, nil, nil, nil, nil, nil, "", "", "", "", nil, false)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",

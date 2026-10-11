@@ -213,7 +213,7 @@ func parsePostsOffset(r *http.Request) (offset int, ok bool) {
 	return n, true
 }
 
-func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, author int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, offsetOverride int, useOffset bool) ([]Post, error) {
+func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, authorIn, authorNotIn []int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, offsetOverride int, useOffset bool) ([]Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -237,7 +237,8 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 		OrderBy:            orderby,
 		Order:              order,
 		Search:             search,
-		Author:             author,
+		AuthorIn:           authorIn,
+		AuthorNotIn:        authorNotIn,
 		CategoryIn:         categoryIn,
 		TagIn:              tagIn,
 		NameIn:             slugs,
@@ -299,25 +300,15 @@ func parsePostsSearch(r *http.Request) string {
 	return strings.TrimSpace(r.URL.Query().Get("search"))
 }
 
-// parsePostsAuthor reads REST ?author= (maps to WP_Query author / author__in, P4.85).
-// Accepts a single integer or the first value of a repeated/comma list.
-func parsePostsAuthor(r *http.Request) int64 {
-	if r == nil {
-		return 0
-	}
-	raw := strings.TrimSpace(r.URL.Query().Get("author"))
-	if raw == "" {
-		return 0
-	}
-	// WP allows author[]=1&author[]=2; net/http Get returns the first.
-	if i := strings.IndexByte(raw, ','); i >= 0 {
-		raw = strings.TrimSpace(raw[:i])
-	}
-	n, err := strconv.ParseInt(raw, 10, 64)
-	if err != nil || n <= 0 {
-		return 0
-	}
-	return n
+// parsePostsAuthor reads REST ?author= (maps to WP_Query author__in, P4.85 / P4.132).
+// Accepts comma-separated IDs and/or repeated query values.
+func parsePostsAuthor(r *http.Request) []int64 {
+	return parsePostsTermIDs(r, "author")
+}
+
+// parsePostsAuthorExclude reads REST ?author_exclude= (author__not_in, P4.132).
+func parsePostsAuthorExclude(r *http.Request) []int64 {
+	return parsePostsTermIDs(r, "author_exclude")
 }
 
 // parsePostsCategories reads REST ?categories= (maps to tax_query category term_id IN, P4.86).
@@ -595,7 +586,7 @@ func parsePostsTermIDs(r *http.Request, key string) []int64 {
 	return out
 }
 
-func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, author int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool) (int, error) {
+func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, authorIn, authorNotIn []int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
@@ -607,7 +598,8 @@ func countPosts(c *wp.Context, postType string, stickyFilter *bool, search strin
 		PostStatus:         "publish",
 		PostStatuses:       statuses,
 		Search:             search,
-		Author:             author,
+		AuthorIn:           authorIn,
+		AuthorNotIn:        authorNotIn,
 		CategoryIn:         categoryIn,
 		TagIn:              tagIn,
 		NameIn:             slugs,
