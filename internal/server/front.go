@@ -3997,8 +3997,9 @@ func pathEscapeSearch(term string) string {
 	return url.PathEscape(strings.TrimSpace(term))
 }
 
-// writeArchiveRelLinks emits <link rel="prev|next"> on paginated archives (P3.43).
+// writeArchiveRelLinks emits <link rel="prev|next"> on paginated archives (P3.43 / P3.107).
 // Not used on the blog home (corpus front-home) — only is_archive()-style views.
+// P3.107: search archives preserve ?s= on paged prev/next (WP /page/2/?s=term).
 func writeArchiveRelLinks(b *strings.Builder, c *wp.Context, home string) {
 	if b == nil || c == nil || c.Scope == nil {
 		return
@@ -4008,7 +4009,8 @@ func writeArchiveRelLinks(b *strings.Builder, c *wp.Context, home string) {
 	}
 	base := wp.ArchiveBaseFromRequest(c, home)
 	paged, maxPages := mainQueryPagination(c)
-	b.WriteString(wp.ArchiveRelPrevNextHTML(base, paged, maxPages))
+	q := wp.ArchiveSearchQuerySuffix(c)
+	b.WriteString(wp.ArchiveRelPrevNextHTMLQuery(base, paged, maxPages, q))
 }
 
 // frontRobotsMetaTag returns the <meta name='robots' …> line (wp_robots, P3.44 / P3.90 / P3.104).

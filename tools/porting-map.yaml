@@ -2700,12 +2700,27 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P3.102 — unit coverage for add_args and filter"
 
-# P3.43: archive pagination <link rel="prev|next">.
+# P3.43 / P3.107: archive pagination <link rel="prev|next">.
 - prefix: wp-includes/link-template.php#get_pagenum_link
   go: internal/wp/archive_rel.go
   status: partial
-  task: P3.43
+  task: P3.107
   api: exported
+  notes: "P3.107 — search archives preserve ?s= on paged prev/next; P3.43 base"
+
+- prefix: wp-includes/link-template.php#get_pagenum_link#search
+  go: internal/wp/archive_rel.go
+  status: partial
+  task: P3.107
+  api: exported
+  notes: "P3.107 — ArchiveSearchQuerySuffix + ArchiveRelPrevNextHTMLQuery"
+
+- prefix: wp-includes/link-template.php#get_pagenum_link#tests
+  go: internal/wp/archive_rel_test.go
+  status: partial
+  task: P3.107
+  api: exported
+  notes: "P3.107 — unit coverage for search query suffix on prev/next"
 
 # P3.44: blog_public=0 → robots.txt Disallow:/ + meta noindex,nofollow.
 - prefix: wp-includes/functions.php#do_robots
