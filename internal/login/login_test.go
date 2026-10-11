@@ -100,7 +100,6 @@ func TestLoginNoCacheHeaders(t *testing.T) {
 	}
 }
 
-
 func TestLoginFormTopFilter(t *testing.T) {
 	// P6.52: login_form_top filter injects markup into wp-login.php form.
 	c := bootOrSkip(t)
