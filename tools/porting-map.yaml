@@ -9061,3 +9061,25 @@ wp-login.php#language-switcher-post
   task: P7.129
   api: n/a
   notes: "P7.129 — screen options UI + save coverage"
+
+# P2.124: deepen wp_unslash / map_deep container walks.
+- prefix: wp-includes/formatting.php#wp_unslash
+  go: internal/wp/slash.go
+  status: partial
+  task: P2.124
+  api: wp_unslash
+  notes: "P2.124 — MapDeep backbone; map[string][]string / []map[string]any / map[string][]any; Unslash via stripslashes_from_strings_only"
+
+- prefix: wp-includes/formatting.php#map_deep
+  go: internal/wp/slash.go
+  status: partial
+  task: P2.124
+  api: map_deep
+  notes: "P2.124 — MapDeep recursive walker"
+
+- prefix: wp-includes/formatting.php#wp_unslash#tests
+  go: internal/wp/slash_test.go
+  status: partial
+  task: P2.124
+  api: n/a
+  notes: "P2.124 — nested map/slice unslash + MapDeep coverage"
