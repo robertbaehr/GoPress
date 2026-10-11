@@ -209,6 +209,7 @@ func writeRESTInvalidPostsContext(w http.ResponseWriter) {
 }
 
 // writeRESTForbiddenPostsContext emits rest_forbidden_context (P4.145).
+// WP omits Allow on this 401/403 (unlike invalid-param responses).
 func writeRESTForbiddenPostsContext(w http.ResponseWriter, c *wp.Context, item bool) {
 	status := http.StatusUnauthorized
 	if c != nil && c.CurrentUser != nil {
@@ -218,7 +219,6 @@ func writeRESTForbiddenPostsContext(w http.ResponseWriter, c *wp.Context, item b
 	if item {
 		msg = "Sorry, you are not allowed to edit this post."
 	}
-	w.Header().Set("Allow", "GET")
 	writeJSON(w, status, map[string]any{
 		"code":    "rest_forbidden_context",
 		"message": msg,
