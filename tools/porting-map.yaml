@@ -10592,3 +10592,29 @@ wp-login.php#language-switcher-post
   task: P7.142
   api: n/a
   notes: "P7.142 — pending/confirm/dismiss coverage"
+
+# P2.137: is_utf8_charset + wp_check_invalid_utf8 non-UTF-8 passthrough.
+- prefix: wp-includes/functions.php#is_utf8_charset
+  go: internal/wp/check_invalid_utf8.go
+  status: partial
+  task: P2.137
+  api: is_utf8_charset
+  notes: "P2.137 — IsUTF8Charset / BlogIsUTF8Charset; UTF-8|UTF8 case-insensitive"
+- prefix: wp-includes/compat.php#_is_utf8_charset
+  go: internal/wp/check_invalid_utf8.go
+  status: partial
+  task: P2.137
+  api: _is_utf8_charset
+  notes: "P2.137 — non-string false; no trim"
+- prefix: wp-includes/formatting.php#wp_check_invalid_utf8#charset
+  go: internal/wp/check_invalid_utf8.go
+  status: partial
+  task: P2.137
+  api: wp_check_invalid_utf8
+  notes: "P2.137 — CheckInvalidUTF8ForCharset/Ctx; non-UTF-8 blog_charset passthrough"
+- prefix: wp-includes/formatting.php#wp_check_invalid_utf8#charset#tests
+  go: internal/wp/check_invalid_utf8_p2_137_test.go
+  status: partial
+  task: P2.137
+  api: n/a
+  notes: "P2.137 — IsUTF8Charset + charset passthrough + Ctx blog_charset"
