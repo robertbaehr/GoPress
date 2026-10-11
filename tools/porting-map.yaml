@@ -9917,3 +9917,11 @@ wp-login.php#language-switcher-post
   task: P10.178
   api: n/a
   notes: "P10.178 — page-list-item/type json + nav embed + front/login/ajax/admin toppers; 1649 cases"
+
+# P10.179: STATUS/PORTING refresh after P5.134–P10.178.
+- prefix: docs/STATUS.md#p10.179
+  go: docs/STATUS.md
+  status: partial
+  task: P10.179
+  api: n/a
+  notes: "P10.179 — summarize page-list-item, REST type create, welcome panel, KsesSplit, feed_links_extra singular, CurrentFilters + 1649 corpus"
