@@ -6381,11 +6381,27 @@ func (h *Handler) savePostEdit(r *http.Request, c *wp.Context, post *wp.Post) (s
 	return "Post updated.", nil
 }
 
-// serveAttachmentEdit is the attachment / media edit screen stub (P7.32).
+// serveAttachmentEdit is the attachment / media edit screen (P7.32 / P7.152).
+// P7.152: POST action=editattachment persists title/caption/description/alt + nonce.
 func (h *Handler) serveAttachmentEdit(w http.ResponseWriter, r *http.Request, c *wp.Context, post *wp.Post) {
 	if post == nil {
 		http.Error(w, "Invalid post ID.\n", http.StatusBadRequest)
 		return
+	}
+	updated := false
+	if r.Method == http.MethodPost {
+		_ = r.ParseForm()
+		if action := r.FormValue("action"); action == "editattachment" || action == "edit" {
+			msg, err := h.saveAttachmentEdit(r, c, post)
+			if err != nil {
+				http.Error(w, "attachment edit: "+err.Error()+"\n", http.StatusBadRequest)
+				return
+			}
+			updated = msg != ""
+			if refreshed, err := wp.GetPostByID(c, post.ID); err == nil && refreshed != nil {
+				post = refreshed
+			}
+		}
 	}
 	alt := ""
 	if c != nil && c.Meta != nil {
@@ -6393,6 +6409,10 @@ func (h *Handler) serveAttachmentEdit(w http.ResponseWriter, r *http.Request, c 
 	}
 	url := wp.GetAttachmentURL(c, post.ID)
 	blogname := optionString(c, "blogname", "GoPress")
+	nonce := ""
+	if c != nil {
+		nonce = c.CreateNonce("update-post_" + strconv.FormatInt(post.ID, 10))
+	}
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>Edit Media &lsaquo; ")
@@ -6400,9 +6420,13 @@ func (h *Handler) serveAttachmentEdit(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
 	b.WriteString("<body class=\"wp-admin wp-core-ui post-php post-type-attachment\">\n")
 	b.WriteString(adminNoticesHTML(c))
+	if updated {
+		b.WriteString("<div id=\"message\" class=\"updated notice notice-success is-dismissible\"><p>Media file updated.</p></div>\n")
+	}
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1 class=\"wp-heading-inline\">Edit Media</h1>\n")
 	b.WriteString("<a href=\"/wp-admin/upload.php\" class=\"page-title-action\">Media Library</a>\n")
+	b.WriteString("<hr class=\"wp-header-end\">\n")
 	b.WriteString("<form name=\"post\" action=\"/wp-admin/post.php?post=")
 	b.WriteString(strconv.FormatInt(post.ID, 10))
 	b.WriteString("&amp;action=edit\" method=\"post\" id=\"post\">\n")
@@ -6411,6 +6435,9 @@ func (h *Handler) serveAttachmentEdit(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString("\" />\n")
 	b.WriteString("<input type=\"hidden\" id=\"post_type\" name=\"post_type\" value=\"attachment\" />\n")
 	b.WriteString("<input type=\"hidden\" name=\"action\" value=\"editattachment\" />\n")
+	b.WriteString("<input type=\"hidden\" id=\"_wpnonce\" name=\"_wpnonce\" value=\"")
+	b.WriteString(html.EscapeString(nonce))
+	b.WriteString("\" />\n")
 	b.WriteString("<div id=\"poststuff\">\n<div id=\"post-body\" class=\"metabox-holder columns-2\">\n")
 	b.WriteString("<div id=\"post-body-content\">\n")
 	if url != "" {
@@ -6440,7 +6467,7 @@ func (h *Handler) serveAttachmentEdit(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString(html.EscapeString(post.Content))
 	b.WriteString("</textarea></p>\n")
 	b.WriteString("</div>\n")
-	b.WriteString("<p class=\"description\">GoPress attachment editor stub (P7.32).</p>\n")
+	b.WriteString("<p class=\"description\">GoPress attachment editor (P7.152).</p>\n")
 	b.WriteString("</div>\n")
 	b.WriteString("<div id=\"postbox-container-1\" class=\"postbox-container\">\n")
 	b.WriteString("<div id=\"submitdiv\" class=\"postbox\">\n")
@@ -6451,6 +6478,43 @@ func (h *Handler) serveAttachmentEdit(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString("<div class=\"clear\"></div>\n</div></div></div></div></div>\n")
 	b.WriteString("</div></div></form>\n</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
+}
+
+// saveAttachmentEdit persists title/caption/description/alt from post.php (P7.152).
+func (h *Handler) saveAttachmentEdit(r *http.Request, c *wp.Context, post *wp.Post) (string, error) {
+	if c == nil || c.DB == nil || post == nil {
+		return "", fmt.Errorf("invalid state")
+	}
+	_ = r.ParseForm()
+	if c.VerifyNonce(r.FormValue("_wpnonce"), "update-post_"+strconv.FormatInt(post.ID, 10)) == 0 {
+		return "", fmt.Errorf("invalid nonce")
+	}
+	if !c.CurrentUserCan("edit_post", post.ID) && !c.UserCan(c.CurrentUser, "upload_files") {
+		return "", fmt.Errorf("forbidden")
+	}
+	title := r.FormValue("post_title")
+	content := r.FormValue("content")
+	excerpt := r.FormValue("excerpt")
+	now := time.Now().UTC().Format("2006-01-02 15:04:05")
+	q, args, err := c.DB.Prepare(
+		"UPDATE "+c.DB.Posts()+
+			" SET post_title = %s, post_content = %s, post_excerpt = %s, "+
+			"post_modified = %s, post_modified_gmt = %s WHERE ID = %d AND post_type = %s",
+		title, content, excerpt, now, now, post.ID, "attachment",
+	)
+	if err != nil {
+		return "", err
+	}
+	if _, err := c.DB.Exec(q, args...); err != nil {
+		return "", err
+	}
+	if c.Meta != nil {
+		alt := r.FormValue("_wp_attachment_image_alt")
+		if _, _, _, err := c.Meta.UpdateMetadata(wp.MetaPost, post.ID, "_wp_attachment_image_alt", alt, ""); err != nil {
+			return "", err
+		}
+	}
+	return "Media file updated.", nil
 }
 
 // serveUserEdit renders user-edit.php for another (or current) user (P7.47).
