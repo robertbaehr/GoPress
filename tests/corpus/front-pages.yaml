@@ -2350,3 +2350,131 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.194: front toppers after separator/sticky/emoji/login stack.
+
+- id: front-p10194-001-home
+  role: anon
+  method: GET
+  path: /
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10194-002-p1
+  role: anon
+  method: GET
+  path: /?p=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10194-003-page2
+  role: anon
+  method: GET
+  path: /?page_id=2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10194-004-search-sep
+  role: anon
+  method: GET
+  path: /?s=separator
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10194-005-search-sticky
+  role: anon
+  method: GET
+  path: /?s=sticky
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10194-006-author
+  role: anon
+  method: GET
+  path: /author/admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10194-007-category
+  role: anon
+  method: GET
+  path: /category/uncategorized/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10194-008-feed
+  role: anon
+  method: GET
+  path: /feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10194-009-atom
+  role: anon
+  method: GET
+  path: /feed/atom/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10194-010-comments-feed
+  role: anon
+  method: GET
+  path: /comments/feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10194-011-robots
+  role: anon
+  method: GET
+  path: /robots.txt
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10194-012-sitemap
+  role: anon
+  method: GET
+  path: /wp-sitemap.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10194-013-favicon
+  role: anon
+  method: GET
+  path: /favicon.ico
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10194-014-sample
+  role: anon
+  method: GET
+  path: /sample-page/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
