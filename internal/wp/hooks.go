@@ -119,12 +119,31 @@ func (h *Hooks) add(tag string, priority, acceptedArgs int, id uintptr, action A
 
 // DoAction runs all callbacks for tag (actions and filters; filter returns discarded).
 // Increments the did_action counter for tag (P9.27).
+// P9.32: when 'all' is registered, its callbacks run first while doing_filter(tag).
 func (h *Hooks) DoAction(tag string, args ...any) {
 	if h == nil {
 		return
 	}
 	h.bumpAction(tag)
-	cbs, _ := h.begin(tag)
+	hasAll := h.hasCallbacks("all")
+	if hasAll {
+		// WP: push tag before _wp_call_all_hook so doing_filter($tag) is true.
+		h.pushCurrent(tag)
+		allArgs := make([]any, 0, 1+len(args))
+		allArgs = append(allArgs, tag)
+		allArgs = append(allArgs, args...)
+		h.runAllHook(allArgs)
+	}
+	cbs := h.callbacksCopy(tag)
+	if len(cbs) == 0 {
+		if hasAll {
+			h.end()
+		}
+		return
+	}
+	if !hasAll {
+		h.pushCurrent(tag)
+	}
 	defer h.end()
 	for _, cb := range cbs {
 		callAction(cb, args)
@@ -142,12 +161,30 @@ func (h *Hooks) DoActionRefArray(tag string, args []any) {
 
 // ApplyFilters runs filter (and action) callbacks for tag, threading value through.
 // Increments did_filter (P9.28) even when no callbacks are registered.
+// P9.32: when 'all' is registered, its callbacks run first while doing_filter(tag).
 func (h *Hooks) ApplyFilters(tag string, value any, args ...any) any {
 	if h == nil {
 		return value
 	}
 	h.bumpFilter(tag)
-	cbs, _ := h.begin(tag)
+	hasAll := h.hasCallbacks("all")
+	if hasAll {
+		h.pushCurrent(tag)
+		allArgs := make([]any, 0, 2+len(args))
+		allArgs = append(allArgs, tag, value)
+		allArgs = append(allArgs, args...)
+		h.runAllHook(allArgs)
+	}
+	cbs := h.callbacksCopy(tag)
+	if len(cbs) == 0 {
+		if hasAll {
+			h.end()
+		}
+		return value
+	}
+	if !hasAll {
+		h.pushCurrent(tag)
+	}
 	defer h.end()
 	for _, cb := range cbs {
 		value = callFilter(cb, value, args)
@@ -382,8 +419,9 @@ func (h *Hooks) CurrentFilters() []string {
 	return out
 }
 
-// DoingFilter reports whether tag is on the current-filter stack (doing_filter).
-// If tag is empty, reports whether any filter/action is running.
+// DoingFilter reports whether tag is on the current-filter stack (doing_filter, P9.31 / P9.32).
+// If tag is empty, reports whether any filter/action is running (PHP null arity).
+// P9.32: during 'all' callbacks, the specific tag is on the stack (not "all").
 func (h *Hooks) DoingFilter(tag string) bool {
 	if h == nil {
 		return false
@@ -407,17 +445,48 @@ func (h *Hooks) DoingAction(tag string) bool {
 }
 
 func (h *Hooks) begin(tag string) ([]callback, bool) {
+	h.pushCurrent(tag)
+	list := h.callbacksCopy(tag)
+	return list, len(list) > 0
+}
+
+func (h *Hooks) pushCurrent(tag string) {
 	h.mu.Lock()
 	defer h.mu.Unlock()
 	h.current = append(h.current, tag)
+}
+
+func (h *Hooks) hasCallbacks(tag string) bool {
+	if h == nil {
+		return false
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	return len(h.byTag[tag]) > 0
+}
+
+func (h *Hooks) callbacksCopy(tag string) []callback {
+	if h == nil {
+		return nil
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
 	list := h.byTag[tag]
 	if len(list) == 0 {
-		return nil, false
+		return nil
 	}
 	// Copy so nested Add/Remove during DoAction/ApplyFilters is safe.
 	out := make([]callback, len(list))
 	copy(out, list)
-	return out, true
+	return out
+}
+
+// runAllHook mirrors _wp_call_all_hook / WP_Hook::do_all_hook (P9.32).
+// Callbacks receive hookArgs (tag first); return values are discarded.
+func (h *Hooks) runAllHook(hookArgs []any) {
+	for _, cb := range h.callbacksCopy("all") {
+		callAction(cb, hookArgs)
+	}
 }
 
 func (h *Hooks) end() {
