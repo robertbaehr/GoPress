@@ -1054,3 +1054,21 @@
   body: null
   compare: headers
   nonce: null
+
+- id: front-p10148-004-sample-page
+  role: anon
+  method: GET
+  path: /sample-page/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10148-005-robots
+  role: anon
+  method: GET
+  path: /robots.txt
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

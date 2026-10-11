@@ -8055,4 +8055,4 @@ wp-login.php#language-switcher-post
   status: partial
   task: P10.148
   api: n/a
-  notes: "P10.148 — search_columns / post-template+query-pagination block-types / post-new / wp_lang / front toppers; keep 100%"
+  notes: "P10.148 — search_columns / query-pagination block-types / wp_lang / front toppers; 1092/1092 match"

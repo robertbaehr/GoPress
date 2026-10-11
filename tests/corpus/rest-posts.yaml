@@ -7620,3 +7620,30 @@
   body: null
   compare: headers
   nonce: null
+
+- id: rest-p10148-013-posts-search-columns-excerpt
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?search=Hello&search_columns=post_excerpt&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10148-014-types-post
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types/post
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10148-015-statuses-publish
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/statuses/publish
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
