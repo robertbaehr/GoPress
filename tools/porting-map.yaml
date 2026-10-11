@@ -1,4 +1,18 @@
 
+# P5.160: deepen core/embed align coerce.
+- prefix: wp-includes/blocks/embed.php#attrs
+  go: internal/blocks/embed.go
+  status: partial
+  task: P5.160
+  api: n/a
+  notes: "P5.160 — coerce align left|center|right|wide|full; drop none/bogus; sanitize before applySupports"
+- prefix: wp-includes/blocks/embed.php#attrs#tests
+  go: internal/blocks/embed_attrs_p5_160_test.go
+  status: partial
+  task: P5.160
+  api: n/a
+  notes: "P5.160 — align coerce + anchor/className coverage"
+
 # P8.53: wp_mime_type_icon subset.
 - prefix: wp-includes/post.php#wp_mime_type_icon
   go: internal/wp/mime_type_icon.go

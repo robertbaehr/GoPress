@@ -161,7 +161,9 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/spacer":
 		out = e.renderSpacer(block)
 	case "core/embed":
+		// P5.160: coerce align enum before applySupports.
 		out = e.renderEmbed(block)
+		return applySupports(out, sanitizeEmbedBlockAttrs(block.Attrs), name)
 	case "core/template-part":
 		// P5.118: assign to out so applySupports can attach colors/typography.
 		out = e.renderTemplatePart(block)

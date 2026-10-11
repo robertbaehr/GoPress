@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.221)
 
+- P5.160 `core/embed` align coerce left|center|right|wide|full
 - P8.53 `MimeTypeIcon` (`wp_mime_type_icon` subset)
 - P3.153 `GetPostTypeArchiveLink` / `GetPostTypeArchiveFeedLink` (post)
 - P2.155 `GetHTTPOrigin` / `HttpSupports` (ssl subset)

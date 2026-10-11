@@ -9,15 +9,18 @@ import (
 
 var reEmbedFigureOpen = regexp.MustCompile(`(?is)^(\s*<figure\b)([^>]*)(>)`)
 
-// renderEmbed renders core/embed (P5.49 / P5.115).
+// renderEmbed renders core/embed (P5.49 / P5.115 / P5.160).
 // Honors providerNameSlug / type / align / className / anchor attrs (WP save.mjs
 // classnames + supports.anchor), keeps saved InnerHTML when present, and
 // synthesizes a figure fallback from url.
+// P5.160: coerce align left|center|right|wide|full; drop none/bogus before supports.
 func (e *Env) renderEmbed(block Block) string {
 	e = e.ensure()
-	urlStr := strings.TrimSpace(attrString(block.Attrs, "url"))
-	provider := strings.TrimSpace(attrString(block.Attrs, "providerNameSlug"))
-	typ := strings.TrimSpace(attrString(block.Attrs, "type"))
+	attrs := sanitizeEmbedBlockAttrs(block.Attrs)
+	block.Attrs = attrs
+	urlStr := strings.TrimSpace(attrString(attrs, "url"))
+	provider := strings.TrimSpace(attrString(attrs, "providerNameSlug"))
+	typ := strings.TrimSpace(attrString(attrs, "type"))
 	if provider == "" && urlStr != "" {
 		provider = inferEmbedProvider(urlStr)
 	}
@@ -30,15 +33,35 @@ func (e *Env) renderEmbed(block Block) string {
 
 	out := e.renderSaved(block)
 	if strings.TrimSpace(out) == "" {
-		out = synthesizeEmbedFigure(urlStr, attrString(block.Attrs, "caption"), typ, provider, block.Attrs)
+		out = synthesizeEmbedFigure(urlStr, attrString(attrs, "caption"), typ, provider, attrs)
 	}
 	if strings.TrimSpace(out) == "" {
 		return ""
 	}
-	out = ensureEmbedFigureClasses(out, typ, provider, block.Attrs)
+	out = ensureEmbedFigureClasses(out, typ, provider, attrs)
 	// P5.115: supports.anchor → id on the figure root.
-	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
 		out = ensureRootAttribute(out, "id", anchor)
+	}
+	return out
+}
+
+// sanitizeEmbedBlockAttrs coerces core/embed supports.align (P5.160).
+// Allowed: left, center, right, wide, full. Other values (incl. none) are dropped.
+func sanitizeEmbedBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "left", "center", "right", "wide", "full":
+		// keep
+	default:
+		delete(out, "align")
 	}
 	return out
 }
