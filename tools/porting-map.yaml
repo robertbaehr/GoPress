@@ -7929,3 +7929,11 @@ wp-login.php#language-switcher-post
   task: P10.146
   api: n/a
   notes: "P10.146 — template-part/comment-edit/site-icon toppers; 1069/1069 match"
+
+# P10.147: STATUS/PORTING refresh after P5.118–P10.146.
+- prefix: docs/STATUS.md#p10.147
+  go: docs/STATUS.md
+  status: partial
+  task: P10.147
+  api: n/a
+  notes: "P10.147 — summarize template-part, status[]/register_rest_field, comment edit, mkdir_p, site_icon, 1069 corpus"
