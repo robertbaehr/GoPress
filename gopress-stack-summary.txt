@@ -7,7 +7,7 @@ cursor/p2-147-wp-safe-remote-get-ddf1 → b1937a0a79798bceb4ad46797b4cf4f89f5f0f
 cursor/p3-145-front-prev-next-rel-ddf1 → ee2933b2b52182110e792ed7a7004f67124b52a1
 cursor/p6-60-login-headertitle-ddf1 → b19e776471bb12c92871eb1e60fc96877ef4c444
 cursor/p10-212-corpus-expand-ddf1 → be981f128e04e3b787e5cc1bceb8a096a353ae29
-cursor/p10-213-status-refresh-ddf1 → 862939f715d4662b123814b365892dea29f16436
+cursor/p10-213-status-refresh-ddf1 → 83480f58913ad6e37ae826478a816b732e099b17
 
 make diff: 100.0% (2806/2806 strict matches, 0 allowlisted, 0 failed)
 make check: ok (lint + go test -p 1 ./...)
