@@ -12227,6 +12227,20 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P3.147 — content type, get_feed_link, EscURL alternate HTML"
 
+# P8.50: wp_get_attachment_thumb_url via thumbnail image URL + filter.
+- prefix: wp-includes/post.php#wp_get_attachment_thumb_url
+  go: internal/wp/media.go
+  status: partial
+  task: P8.50
+  api: exported
+  notes: "P8.50 — GetAttachmentThumbURL thumbnail size; wp_get_attachment_thumb_url filter"
+- prefix: wp-includes/post.php#wp_get_attachment_thumb_url#tests
+  go: internal/wp/attachment_thumb_url_p8_50_test.go
+  status: partial
+  task: P8.50
+  api: n/a
+  notes: "P8.50 — thumb URL, filter replace, non-attachment empty"
+
 # P8.49: wp_get_attachment_caption from post_excerpt + filter.
 - prefix: wp-includes/post.php#wp_get_attachment_caption
   go: internal/wp/media.go
