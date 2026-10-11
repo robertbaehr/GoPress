@@ -10972,3 +10972,17 @@ wp-login.php#language-switcher-post
   task: P2.140
   api: n/a
   notes: "P2.140 — passthrough, length/more filters, GetTheExcerpt wiring"
+
+# P3.138: deepen front dns-prefetch bare hosts + dedupe.
+- prefix: wp-includes/general-template.php#wp_resource_hints#dns-prefetch
+  go: internal/wp/resource_hints.go
+  status: partial
+  task: P3.138
+  api: wp_resource_hints
+  notes: "P3.138 — bare hostname accept; case-insensitive dns-prefetch host dedupe; default empty"
+- prefix: wp-includes/general-template.php#wp_resource_hints#dns-prefetch#tests
+  go: internal/wp/resource_hints_p3_138_test.go
+  status: partial
+  task: P3.138
+  api: n/a
+  notes: "P3.138 — bare host + dedupe + invalid reject coverage"
