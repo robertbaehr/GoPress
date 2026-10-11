@@ -949,7 +949,8 @@ func (e *Env) renderSiteLogo(block Block) string {
 	return `<div class="` + html.EscapeString(strings.Join(classes, " ")) + `">` + inner + `</div>`
 }
 
-// renderReadMore renders core/read-more as a permalink link (P5.47 / P5.92).
+// renderReadMore renders core/read-more as a permalink link (P5.47 / P5.92 / P5.140).
+// P5.140: supports.anchor + typography.fontSize on the link wrapper.
 func (e *Env) renderReadMore(block Block) string {
 	e = e.ensure()
 	if e.currentPost == nil {
@@ -978,6 +979,10 @@ func (e *Env) renderReadMore(block Block) string {
 	if justify := strings.TrimSpace(attrString(block.Attrs, "justifyContent")); justify != "" {
 		classes = append(classes, "is-justified-"+sanitizeClassToken(justify))
 	}
+	// P5.140: supports.typography.fontSize → has-{slug}-font-size.
+	if fs := strings.TrimSpace(attrString(block.Attrs, "fontSize")); fs != "" {
+		classes = append(classes, "has-"+sanitizeClassToken(fs)+"-font-size")
+	}
 	// P5.92: className + has-link-color like get_block_wrapper_attributes.
 	if hasLinkColorAttr(block.Attrs) {
 		classes = append(classes, "has-link-color")
@@ -985,8 +990,13 @@ func (e *Env) renderReadMore(block Block) string {
 	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
 		classes = append(classes, cn)
 	}
+	idAttr := ""
+	// P5.140: supports.anchor → id on the link (block.json supports.anchor).
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		idAttr = ` id="` + html.EscapeString(anchor) + `"`
+	}
 	screenReader := ": " + title
-	return `<a class="` + html.EscapeString(strings.Join(classes, " ")) + `" href="` + html.EscapeString(link) +
+	return `<a class="` + html.EscapeString(strings.Join(classes, " ")) + `"` + idAttr + ` href="` + html.EscapeString(link) +
 		`" target="` + html.EscapeString(target) + `">` + html.EscapeString(moreText) +
 		`<span class="screen-reader-text">` + html.EscapeString(screenReader) + `</span></a>`
 }
