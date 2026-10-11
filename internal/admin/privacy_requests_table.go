@@ -44,10 +44,20 @@ func (t PrivacyRequestsTable) RenderHTML() string {
 
 // RenderHTMLWithFilter emits views + table; filterStatus is filter-status query (P7.97).
 func (t PrivacyRequestsTable) RenderHTMLWithFilter(filterStatus string) string {
+	return t.RenderHTMLWithFilterSearch(filterStatus, "")
+}
+
+// RenderHTMLWithFilterSearch emits views + optional search box + table (P7.97 / P7.144).
+// search filters requester email (case-insensitive substring; WP_List_Table::search_box).
+func (t PrivacyRequestsTable) RenderHTMLWithFilterSearch(filterStatus, search string) string {
 	cols := t.Columns()
 	order := []string{"cb", "email", "status", "created_timestamp", "next_steps"}
 	var b strings.Builder
 	b.WriteString(t.renderViewsHTML(filterStatus))
+	// P7.144: Search Requests box (erase-personal-data.php / WP_List_Table::search_box).
+	if t.RequestType == "remove_personal_data" {
+		b.WriteString(t.renderSearchBoxHTML(filterStatus, search))
+	}
 	b.WriteString(`<table class="wp-list-table widefat fixed striped table-view-list privacy-requests requests-table">` + "\n")
 	b.WriteString("<thead><tr>\n")
 	for _, key := range order {
@@ -64,7 +74,7 @@ func (t PrivacyRequestsTable) RenderHTMLWithFilter(filterStatus string) string {
 		b.WriteString("</th>\n")
 	}
 	b.WriteString("</tr></thead>\n<tbody id=\"the-list\">\n")
-	rows := t.filteredRows(filterStatus)
+	rows := t.filteredRowsSearch(filterStatus, search)
 	if len(rows) == 0 {
 		b.WriteString(`<tr class="no-items"><td class="colspanchange" colspan="5">No requests found.</td></tr>` + "\n")
 	}
@@ -174,17 +184,49 @@ func (t PrivacyRequestsTable) renderViewsHTML(current string) string {
 }
 
 func (t PrivacyRequestsTable) filteredRows(filterStatus string) []PrivacyRequest {
+	return t.filteredRowsSearch(filterStatus, "")
+}
+
+func (t PrivacyRequestsTable) filteredRowsSearch(filterStatus, search string) []PrivacyRequest {
 	filterStatus = normalizePrivacyFilterStatus(filterStatus)
-	if filterStatus == "" {
-		return t.Rows
-	}
+	search = strings.ToLower(strings.TrimSpace(search))
 	out := make([]PrivacyRequest, 0, len(t.Rows))
 	for _, row := range t.Rows {
-		if normalizePrivacyFilterStatus(row.Status) == filterStatus {
-			out = append(out, row)
+		if filterStatus != "" && normalizePrivacyFilterStatus(row.Status) != filterStatus {
+			continue
 		}
+		if search != "" && !strings.Contains(strings.ToLower(row.Email), search) {
+			continue
+		}
+		out = append(out, row)
 	}
 	return out
+}
+
+// renderSearchBoxHTML mirrors erase-personal-data.php search-form + search_box (P7.144).
+func (t PrivacyRequestsTable) renderSearchBoxHTML(filterStatus, search string) string {
+	adminURL := t.AdminURL
+	if adminURL == "" {
+		adminURL = "/wp-admin/erase-personal-data.php"
+	}
+	var b strings.Builder
+	b.WriteString(`<form class="search-form wp-clearfix" method="get" action="`)
+	b.WriteString(html.EscapeString(adminURL))
+	b.WriteString(`">` + "\n")
+	b.WriteString(`<p class="search-box">` + "\n")
+	b.WriteString(`<label class="screen-reader-text" for="request-search-input">Search Requests:</label>` + "\n")
+	b.WriteString(`<input type="search" id="request-search-input" name="s" value="`)
+	b.WriteString(html.EscapeString(search))
+	b.WriteString(`">` + "\n")
+	b.WriteString(`<input type="submit" id="search-submit" class="button" value="Search Requests">` + "\n")
+	b.WriteString("</p>\n")
+	if filterStatus != "" {
+		b.WriteString(`<input type="hidden" name="filter-status" value="`)
+		b.WriteString(html.EscapeString(filterStatus))
+		b.WriteString(`">` + "\n")
+	}
+	b.WriteString("</form>\n")
+	return b.String()
 }
 
 func normalizePrivacyFilterStatus(status string) string {
@@ -286,9 +328,9 @@ func renderExportPrivacyRequestsTable(c *wp.Context, pendingEmail, filterStatus 
 	return table.RenderHTMLWithFilter(filterStatus)
 }
 
-// renderErasePrivacyRequestsTable lists stored user_request rows (P8.10 / P8.21 / P7.97).
-// filterStatus is the filter-status query arg (request-pending, …).
-func renderErasePrivacyRequestsTable(c *wp.Context, pendingEmail, filterStatus string) string {
+// renderErasePrivacyRequestsTable lists stored user_request rows (P8.10 / P8.21 / P7.97 / P7.144).
+// filterStatus is the filter-status query arg; search is ?s= requester filter (P7.144).
+func renderErasePrivacyRequestsTable(c *wp.Context, pendingEmail, filterStatus, search string) string {
 	table := PrivacyRequestsTable{
 		RequestType: "remove_personal_data",
 		AdminURL:    "/wp-admin/erase-personal-data.php",
@@ -325,5 +367,5 @@ func renderErasePrivacyRequestsTable(c *wp.Context, pendingEmail, filterStatus s
 			NextSteps: "Waiting for confirmation",
 		})
 	}
-	return table.RenderHTMLWithFilter(filterStatus)
+	return table.RenderHTMLWithFilterSearch(filterStatus, search)
 }
