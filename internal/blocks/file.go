@@ -12,23 +12,62 @@ var (
 	reFileObjectOpen = regexp.MustCompile(`(?is)<object\b([^>]*)>`)
 )
 
-// renderFile renders core/file (P5.52 / P5.114).
+// renderFile renders core/file (P5.52 / P5.114 / P5.156).
 // Prefers saved markup; synthesizes from href/fileName when empty; when
 // displayPreview is set, mirrors render_block_core_file interactive/object attrs.
 // P5.114: className/align/anchor polish on the file wrapper.
+// P5.156: coerce align left|center|right|wide|full; gradient polish.
 func (e *Env) renderFile(block Block) string {
 	e = e.ensure()
+	attrs := sanitizeFileBlockAttrs(block.Attrs)
+	block.Attrs = attrs
 	out := e.renderSaved(block)
 	if strings.TrimSpace(out) == "" {
-		out = synthesizeFileBlock(block.Attrs)
+		out = synthesizeFileBlock(attrs)
 	}
 	if strings.TrimSpace(out) == "" {
 		return ""
 	}
-	if attrBool(block.Attrs, "displayPreview") {
-		out = applyFilePreviewAttrs(out, block.Attrs)
+	if attrBool(attrs, "displayPreview") {
+		out = applyFilePreviewAttrs(out, attrs)
 	}
-	return applyMediaFigureAttrs(out, "wp-block-file", block.Attrs)
+	out = applyMediaFigureAttrs(out, "wp-block-file", attrs)
+	return applyFileAttrs(out, attrs)
+}
+
+// sanitizeFileBlockAttrs coerces core/file supports.align to the block.json set (P5.156).
+// Allowed: left, center, right, wide, full (align: true). Other align values (incl. none) are dropped.
+func sanitizeFileBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "left", "center", "right", "wide", "full":
+		// keep
+	case "none":
+		delete(out, "align")
+	default:
+		delete(out, "align")
+	}
+	return out
+}
+
+// applyFileAttrs polishes gradient (and reinforces fontSize if present) on core/file (P5.156).
+func applyFileAttrs(htmlFragment string, attrs map[string]any) string {
+	out := htmlFragment
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		out = addRootClass(out, "has-background")
+		out = addRootClass(out, "has-"+sanitizeClassToken(g)+"-gradient-background")
+	}
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		out = addRootClass(out, "has-"+sanitizeClassToken(fs)+"-font-size")
+	}
+	return out
 }
 
 func synthesizeFileBlock(attrs map[string]any) string {
@@ -62,7 +101,28 @@ func synthesizeFileBlock(attrs map[string]any) string {
 	escHref := html.EscapeString(href)
 	escName := html.EscapeString(fileName)
 	var b strings.Builder
-	b.WriteString(`<div class="wp-block-file">`)
+	class := "wp-block-file"
+	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" && align != "none" {
+		class += " align" + sanitizeClassToken(align)
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		class += " " + html.EscapeString(cn)
+	}
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		class += " has-background has-" + sanitizeClassToken(g) + "-gradient-background"
+	}
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		class += " has-" + sanitizeClassToken(fs) + "-font-size"
+	}
+	b.WriteString(`<div`)
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
+		b.WriteString(` id="`)
+		b.WriteString(html.EscapeString(anchor))
+		b.WriteString(`"`)
+	}
+	b.WriteString(` class="`)
+	b.WriteString(class)
+	b.WriteString(`">`)
 	if displayPreview {
 		b.WriteString(`<object class="wp-block-file__embed" data="`)
 		b.WriteString(escHref)

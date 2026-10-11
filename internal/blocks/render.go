@@ -133,7 +133,9 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/video":
 		out = e.renderVideo(block)
 	case "core/file":
+		// P5.156: coerce align enum before applySupports; gradient/fontSize polish.
 		out = e.renderFile(block)
+		return applySupports(out, sanitizeFileBlockAttrs(block.Attrs), name)
 	case "core/freeform":
 		// Classic editor block (P5.68).
 		return e.renderFreeform(block)
