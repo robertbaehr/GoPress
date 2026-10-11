@@ -10742,3 +10742,17 @@ wp-login.php#language-switcher-post
   task: P2.138
   api: n/a
   notes: "P2.138 — quoted script/style attrs + deep map strip coverage"
+
+# P3.136: front emoji settings filters (emoji_url/ext/svg).
+- prefix: wp-includes/formatting.php#_print_emoji_detection_script#filters
+  go: internal/wp/emoji.go
+  status: partial
+  task: P3.136
+  api: emoji_url
+  notes: "P3.136 — EmojiSettingsCtx applies emoji_url/emoji_ext/emoji_svg_url/emoji_svg_ext; loader still skipped"
+- prefix: wp-includes/formatting.php#_print_emoji_detection_script#filters#tests
+  go: internal/wp/emoji_p3_136_test.go
+  status: partial
+  task: P3.136
+  api: n/a
+  notes: "P3.136 — filtered settings JSON coverage"
