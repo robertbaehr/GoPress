@@ -48,8 +48,33 @@ make check
 - `make diff` / `gopress-tools diff` reloads `tests/fixtures/site.sql` into `gopress_ref` and `gopress_go` unless `--skip-db`.
 - After e2e uploads or other writes, restart `gopress serve` (or omit `--skip-db`) so object-cache/options match the reloaded fixture. Stale process memory can make a green corpus look red.
 
-## Recent stack (through P10.217)
+## Recent stack (through P10.219)
 
+- P10.219 STATUS/PORTING refresh after P4.172–P7.158
+- P7.158 about.php pagenow/version chrome + `admin_body_class` + data-tab
+- P6.62 `login_title` filter on login `<title>`
+- P4.173 REST posts `meta_compare_key` NOT LIKE / != / EXISTS / NOT EXISTS
+- P8.50 `GetAttachmentThumbURL` (`wp_get_attachment_thumb_url`)
+- P5.157 `core/audio` fontSize/gradient attrs + align coerce
+- P3.150 `GetTermFeedLink` / `GetCategoryFeedLink` / `GetTagFeedLink`
+- P2.152 `RemoteRetrieveCookies` / `Cookie` / `CookieValue`
+- P9.38 `HasFilterPriority` + `RemoveAction` / `RemoveFilter` package helpers
+- P4.172 REST posts `meta_compare_key` = / LIKE
+- P5.156 `core/file` fontSize/gradient attrs + align coerce
+- P10.218 STATUS/PORTING refresh after P5.154–P7.157
+- P7.157 plugin-editor query chrome stub
+- P3.149 `GetAuthorFeedLink` / `GetAuthorPostsURL`
+- P2.151 `RemoteHead` / `SafeRemoteHead`
+- P8.49 `GetAttachmentCaption`
+- P7.156 theme-editor query chrome stub
+- P6.61 `DetermineLocale` / `SanitizeLocaleName` for login language switcher
+- P4.171 REST posts `meta_compare` IN / NOT IN
+- P3.148 `GetPostCommentsFeedLink`
+- P5.155 `core/buttons` fontSize/gradient attrs + align wide|full coerce
+- P2.150 `RemotePost` / `SafeRemotePost`
+- P7.155 Customizer messenger/theme/components deepen
+- P4.170 REST posts `meta_type` CAST filter
+- P5.154 `core/image` aspectRatio/scale/title/isDecorative + align coerce
 - P10.217 STATUS/PORTING refresh after P5.153–P10.216
 - P10.216 Diff corpus expand (3162/3162 match) + gallery/meta_compare/custom-header/feed-link/image-src toppers; replaced set-cookie/Link/status-divergent cases
 - P8.48 `GetAttachmentImageSrcAny` string|[w,h] + filter false clears
