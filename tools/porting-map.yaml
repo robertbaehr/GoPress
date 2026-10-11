@@ -12031,6 +12031,26 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P4.171 — enum/IN filter/space-separated coverage"
 
+# P4.172: REST posts meta_compare_key (= / LIKE on meta_key).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_compare_key
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.172
+  api: n/a
+  notes: "P4.172 — meta_compare_key string-type + =/LIKE enum; wired into QueryArgs"
+- prefix: wp-includes/class-wp-meta-query.php#compare_key
+  go: internal/wp/query.go
+  status: partial
+  task: P4.172
+  api: n/a
+  notes: "P4.172 — metaKeyCompareSQL; LIKE wraps meta_key with %; default ="
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_compare_key#tests
+  go: internal/rest/posts_meta_compare_key_p4_172_test.go
+  status: partial
+  task: P4.172
+  api: n/a
+  notes: "P4.172 — enum reject + LIKE filter EXISTS coverage"
+
 # P4.170: REST posts meta_type (WP_Query / WP_Meta_Query cast).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_type
   go: internal/rest/posts.go
