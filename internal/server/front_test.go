@@ -286,15 +286,16 @@ func TestFrontAttachmentByQueryID(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/?attachment_id=5", nil)
 	rec := httptest.NewRecorder()
 	srv.ServeHTTP(rec, req)
-	if rec.Code != http.StatusOK {
+	// P3.109: fixture has wp_attachment_pages_enabled=0 → 301 to file URL.
+	if rec.Code != http.StatusMovedPermanently {
 		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
 	}
-	body := rec.Body.String()
-	if !strings.Contains(body, "sample-photo-a") {
-		t.Fatalf("expected attachment title/url, got %q", body)
+	loc := rec.Header().Get("Location")
+	if !strings.Contains(loc, "sample-photo-a") || !strings.Contains(loc, "/wp-content/uploads/") {
+		t.Fatalf("Location=%q", loc)
 	}
-	if !strings.Contains(body, "attachment") || !strings.Contains(body, "type-attachment") {
-		t.Fatalf("expected attachment body/class, got %q", body)
+	if rec.Header().Get("X-Redirect-By") != "WordPress" {
+		t.Fatalf("X-Redirect-By=%q", rec.Header().Get("X-Redirect-By"))
 	}
 }
 
@@ -305,11 +306,36 @@ func TestFrontAttachmentByRewrite(t *testing.T) {
 	req := httptest.NewRequest(http.MethodGet, "/files/attachment/sample-photo-a/", nil)
 	rec := httptest.NewRecorder()
 	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusMovedPermanently {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	loc := rec.Header().Get("Location")
+	if !strings.Contains(loc, "sample-photo-a.jpg") {
+		t.Fatalf("Location=%q", loc)
+	}
+}
+
+func TestFrontAttachmentPageWhenEnabled(t *testing.T) {
+	c := testBoot(t)
+	if c.Options != nil {
+		if _, err := c.Options.UpdateOption("wp_attachment_pages_enabled", "1", "yes"); err != nil {
+			t.Fatalf("enable attachment pages: %v", err)
+		}
+		t.Cleanup(func() { _, _ = c.Options.UpdateOption("wp_attachment_pages_enabled", "0", "yes") })
+	}
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?attachment_id=5", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
 	}
-	if !strings.Contains(rec.Body.String(), "sample-photo-a") {
-		t.Fatalf("expected attachment, got %q", rec.Body.String())
+	body := rec.Body.String()
+	if !strings.Contains(body, `class="attachment"`) || !strings.Contains(body, "type-attachment") {
+		t.Fatalf("expected attachment page, got %q", body)
+	}
+	if !strings.Contains(body, "<img ") && !strings.Contains(body, "sample-photo-a") {
+		t.Fatalf("expected medium image or title link, got %q", body)
 	}
 }
 

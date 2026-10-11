@@ -357,6 +357,75 @@ func GetAttachedFile(c *Context, attachmentID int64) string {
 	return uploads.Basedir + "/" + file
 }
 
+// AttachmentPagesEnabled reports whether attachment pages are enabled
+// (option wp_attachment_pages_enabled, P3.109). Default is off on modern installs.
+func AttachmentPagesEnabled(c *Context) bool {
+	return optionBool(c, "wp_attachment_pages_enabled", false)
+}
+
+// GetAttachmentLink returns an HTML <a> wrapping the attachment image or title
+// (wp_get_attachment_link subset, P3.109). size defaults to thumbnail; permalink=false
+// links to the file URL.
+func GetAttachmentLink(c *Context, attachmentID int64, size string, permalink bool) string {
+	if attachmentID <= 0 {
+		return ""
+	}
+	if size == "" {
+		size = "thumbnail"
+	}
+	url := GetAttachmentURL(c, attachmentID)
+	if permalink {
+		if home := strings.TrimRight(HomeURL(c, "/", ""), "/"); home != "" {
+			url = fmt.Sprintf("%s/?attachment_id=%d", home, attachmentID)
+		}
+	}
+	if url == "" {
+		return ""
+	}
+	inner := GetAttachmentImage(c, attachmentID, size, false, nil)
+	if strings.TrimSpace(inner) == "" {
+		post, err := GetPost(c, QueryArgs{P: attachmentID, PostType: "attachment", PostStatus: "inherit"})
+		title := ""
+		if err == nil && post != nil {
+			title = post.Title
+		}
+		if title == "" {
+			title = url
+		}
+		inner = htmlEscapeAttr(title)
+	}
+	link := `<a href="` + htmlEscapeAttr(url) + `">` + inner + `</a>`
+	if c != nil && c.Hooks != nil {
+		filtered := c.Hooks.ApplyFilters("wp_get_attachment_link", link, attachmentID, size, permalink, false, false, "")
+		if s, ok := filtered.(string); ok {
+			link = s
+		}
+	}
+	return link
+}
+
+// PrependAttachment builds prepend_attachment HTML and prefixes content (P3.109).
+// Images use a medium-sized linked representation; non-images fall back to a title link.
+func PrependAttachment(c *Context, attachmentID int64, content string) string {
+	if attachmentID <= 0 {
+		return content
+	}
+	p := `<p class="attachment">` + GetAttachmentLink(c, attachmentID, "medium", false) + `</p>`
+	if c != nil && c.Hooks != nil {
+		filtered := c.Hooks.ApplyFilters("prepend_attachment", p)
+		if s, ok := filtered.(string); ok {
+			p = s
+		}
+	}
+	if strings.TrimSpace(p) == "" {
+		return content
+	}
+	if strings.TrimSpace(content) == "" {
+		return p
+	}
+	return p + "\n" + content
+}
+
 // GetAttachmentURL returns the public URL for an attachment (wp_get_attachment_url).
 func GetAttachmentURL(c *Context, attachmentID int64) string {
 	if c == nil || attachmentID <= 0 {

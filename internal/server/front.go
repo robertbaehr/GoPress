@@ -1851,6 +1851,12 @@ func (f *Front) renderSingular(w http.ResponseWriter, c *wp.Context, vars map[st
 		return
 	}
 
+	// P3.109: when attachment pages are disabled, redirect_canonical sends
+	// attachment requests to the media file URL (wp_attachment_pages_enabled=0).
+	if post.Type == "attachment" && f.tryAttachmentFileRedirect(w, c, post) {
+		return
+	}
+
 	// P5.17/P5.24: prefer block theme singular hierarchy when available.
 	// Attachments keep the shim until attachment-* templates land.
 	if post.Type == "page" || post.Type == "post" {
@@ -1968,11 +1974,9 @@ func (f *Front) renderSingularShim(w http.ResponseWriter, c *wp.Context, post *s
 		safeContent = wp.GetThePasswordForm(c, wpPost, "")
 	} else {
 		content := post.Content
-		if post.Type == "attachment" && content == "" {
-			if url := wp.GetAttachmentURL(c, post.ID); url != "" {
-				content = `<p class="attachment"><a href="` + html.EscapeString(url) + `">` +
-					html.EscapeString(post.Title) + `</a></p>`
-			}
+		if post.Type == "attachment" {
+			// P3.109: prepend_attachment subset — medium image linked to the file.
+			content = wp.PrependAttachment(c, post.ID, content)
 		}
 		// the_content: blocks → shortcodes → texturize (P5.11).
 		content = wp.TheContent(c, content)
@@ -3750,6 +3754,30 @@ func collapsePathSlashes(path string) string {
 		return "/"
 	}
 	return out
+}
+
+// tryAttachmentFileRedirect issues a 301 to the media file when attachment
+// pages are disabled (wp_attachment_pages_enabled=0, P3.109 / redirect_canonical).
+func (f *Front) tryAttachmentFileRedirect(w http.ResponseWriter, c *wp.Context, post *singularPost) bool {
+	if post == nil || post.Type != "attachment" {
+		return false
+	}
+	if wp.AttachmentPagesEnabled(c) {
+		return false
+	}
+	url := wp.GetAttachmentURL(c, post.ID)
+	if strings.TrimSpace(url) == "" {
+		return false
+	}
+	if c != nil && c.Req != nil {
+		w.Header().Set("X-Redirect-By", "WordPress")
+		http.Redirect(w, c.Req, url, http.StatusMovedPermanently)
+		return true
+	}
+	w.Header().Set("Location", url)
+	w.Header().Set("X-Redirect-By", "WordPress")
+	w.WriteHeader(http.StatusMovedPermanently)
+	return true
 }
 
 // absoluteCanonicalURL prefixes a site-relative redirect with home (P3.38).

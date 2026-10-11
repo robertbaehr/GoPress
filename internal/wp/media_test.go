@@ -198,6 +198,27 @@ func TestAttachmentImageSrcAndHTML(t *testing.T) {
 	}
 }
 
+func TestPrependAttachmentAndPagesOption(t *testing.T) {
+	c := mediaBoot(t)
+	if wp.AttachmentPagesEnabled(c) {
+		t.Fatal("fixture should have wp_attachment_pages_enabled=0")
+	}
+	html := wp.PrependAttachment(c, 5, "")
+	if !strings.Contains(html, `class="attachment"`) {
+		t.Fatalf("missing attachment wrapper: %q", html)
+	}
+	if !strings.Contains(html, "<img ") || !strings.Contains(html, "sample-photo-a") {
+		t.Fatalf("expected medium img link: %q", html)
+	}
+	if !strings.Contains(html, `<a href="`) {
+		t.Fatalf("expected file link: %q", html)
+	}
+	withBody := wp.PrependAttachment(c, 5, "<p>caption text</p>")
+	if !strings.Contains(withBody, "caption text") || !strings.HasPrefix(strings.TrimSpace(withBody), `<p class="attachment">`) {
+		t.Fatalf("prepend+content=%q", withBody)
+	}
+}
+
 func TestGetAttachmentMetadata(t *testing.T) {
 	c := mediaBoot(t)
 	meta, ok := wp.GetAttachmentMetadata(c, 5)
