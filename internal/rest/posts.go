@@ -494,38 +494,55 @@ func parsePostsSearch(r *http.Request) string {
 	return strings.TrimSpace(r.URL.Query().Get("search"))
 }
 
-// parsePostsSearchColumns reads REST ?search_columns= (P4.135).
-// Accepts comma-separated values and/or repeated query keys; keeps only
-// post_title, post_content, post_excerpt (WP enum).
-func parsePostsSearchColumns(r *http.Request) []string {
+// parsePostsSearchColumns reads REST ?search_columns= (P4.135 / P4.153).
+// Accepts comma-separated values and/or repeated query keys.
+// P4.153: invalid enum tokens → errMsg for rest_invalid_param / rest_not_in_enum
+// (WP schema items.enum). Empty tokens are skipped before indexing (WP).
+func parsePostsSearchColumns(r *http.Request) (cols []string, errMsg string) {
 	if r == nil {
-		return nil
+		return nil, ""
 	}
 	allowed := map[string]bool{
 		"post_title":   true,
 		"post_content": true,
 		"post_excerpt": true,
 	}
-	var out []string
-	seen := map[string]bool{}
-	add := func(raw string) {
+	var tokens []string
+	// keepEmpty: search_columns[]= contributes an empty enum token (WP 400);
+	// scalar search_columns= / comma gaps skip empties before indexing.
+	add := func(raw string, keepEmpty bool) {
+		if keepEmpty && raw == "" {
+			tokens = append(tokens, "")
+			return
+		}
 		for _, part := range strings.Split(raw, ",") {
 			part = strings.TrimSpace(part)
-			if !allowed[part] || seen[part] {
+			if part == "" {
 				continue
 			}
-			seen[part] = true
-			out = append(out, part)
+			tokens = append(tokens, part)
 		}
 	}
 	q := r.URL.Query()
 	for _, v := range q["search_columns"] {
-		add(v)
+		add(v, false)
 	}
 	for _, v := range q["search_columns[]"] {
-		add(v)
+		add(v, true)
 	}
-	return out
+	var out []string
+	seen := map[string]bool{}
+	for i, part := range tokens {
+		if !allowed[part] {
+			return nil, "search_columns[" + strconv.Itoa(i) + "] is not one of post_title, post_content, and post_excerpt."
+		}
+		if seen[part] {
+			continue
+		}
+		seen[part] = true
+		out = append(out, part)
+	}
+	return out, ""
 }
 
 // parsePostsAuthor reads REST ?author= (maps to WP_Query author__in, P4.85 / P4.132).

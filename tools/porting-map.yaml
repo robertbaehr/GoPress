@@ -10140,3 +10140,17 @@ wp-login.php#language-switcher-post
   task: P5.137
   api: n/a
   notes: "P5.137 — alignwide/fontSize/anchor when empty; hidden when posts"
+
+# P4.153: REST posts search_columns enum validation.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#search_columns#enum
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.153
+  api: search_columns
+  notes: "P4.153 — invalid enum → rest_invalid_param / rest_not_in_enum with index"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#search_columns#enum#tests
+  go: internal/rest/posts_search_columns_p4_153_test.go
+  status: partial
+  task: P4.153
+  api: n/a
+  notes: "P4.153 — bogus/mixed index/empty scalar coverage"
