@@ -48,8 +48,17 @@ make check
 - `make diff` / `gopress-tools diff` reloads `tests/fixtures/site.sql` into `gopress_ref` and `gopress_go` unless `--skip-db`.
 - After e2e uploads or other writes, restart `gopress serve` (or omit `--skip-db`) so object-cache/options match the reloaded fixture. Stale process memory can make a green corpus look red.
 
-## Recent stack (through P10.161)
+## Recent stack (through P10.163)
 
+- P10.163 STATUS/PORTING refresh after P5.126–P10.162
+- P10.162 Diff corpus expand (1325/1325 match) + parent invalid/array + post-terms/author toppers
+- P8.39 `wp_update_attachment_metadata` filter + empty delete; upload/sideload wire
+- P3.120 Front `language_attributes` / `get_language_attributes` / `is_rtl` stub
+- P2.122 `wp_parse_list` deepen + `ParseIDList` / `ParseSlugList`
+- P7.127 post.php/post-new.php block editor stub chrome
+- P4.142 REST pages `parent`/`parent_exclude` strict integer validation + `parent[]=`
+- P5.126 `core/post-terms` / `core/post-author` deepen (anchor/colors/defaults)
+- P10.161 STATUS/PORTING refresh after P5.125–P10.160
 - P10.161 STATUS/PORTING refresh after P5.125–P10.160
 - P10.160 Diff corpus expand (1295/1295 match) + sticky/ignore_sticky invalid + query-pagination / site-editor toppers
 - P9.28 `DidFilter` + `posts_results`/`the_posts` via `ApplyFiltersRefArray`
