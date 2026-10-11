@@ -842,7 +842,7 @@ func imageDownsizeByDimensions(c *Context, attachmentID int64, reqW, reqH int) (
 			if reqH > 0 && cand.Height > reqH {
 				continue
 			}
-			score := cand.Width*cand.Height
+			score := cand.Width * cand.Height
 			if score > bestScore {
 				best = cand
 				bestScore = score
