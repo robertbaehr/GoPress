@@ -11944,3 +11944,23 @@ wp-login.php#language-switcher-post
   task: P5.153
   api: n/a
   notes: "P5.153 — align coerce, saved gradient, className/anchor coverage"
+
+# P4.169: deepen REST posts meta_compare BETWEEN / NOT BETWEEN.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_compare
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.169
+  api: n/a
+  notes: "P4.169 — meta_compare BETWEEN / NOT BETWEEN enum + message"
+- prefix: wp-includes/class-wp-query.php#meta_compare#between
+  go: internal/wp/query.go
+  status: partial
+  task: P4.169
+  api: n/a
+  notes: "P4.169 — appendMetaQueryFilters BETWEEN / NOT BETWEEN (comma or space bounds)"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_compare#tests
+  go: internal/rest/posts_meta_compare_p4_169_test.go
+  status: partial
+  task: P4.169
+  api: n/a
+  notes: "P4.169 — BETWEEN/NOT BETWEEN filters + expanded enum message"

@@ -1100,9 +1100,9 @@ func parsePostsMetaValueTyped(r *http.Request) (value string, ok bool, typeErr b
 	return parseRESTStringQueryTyped(r, "meta_value", true)
 }
 
-// parsePostsMetaCompareTyped reads REST ?meta_compare= (WP_Query meta_compare, P4.166 / P4.167 / P4.168).
+// parsePostsMetaCompareTyped reads REST ?meta_compare= (WP_Query meta_compare, P4.166–P4.169).
 // Allowed: =, !=, LIKE, NOT LIKE, >, >=, <, <=, EXISTS, NOT EXISTS, REGEXP, NOT REGEXP,
-// RLIKE, NOT RLIKE (case-insensitive). Returns (value, ok, typeErr, enumErr).
+// RLIKE, NOT RLIKE, BETWEEN, NOT BETWEEN (case-insensitive). Returns (value, ok, typeErr, enumErr).
 // Absent → ("", true, false, "").
 func parsePostsMetaCompareTyped(r *http.Request) (value string, ok bool, typeErr bool, enumErr string) {
 	value, ok, typeErr = parseRESTStringQueryTyped(r, "meta_compare", true)
@@ -1111,16 +1111,16 @@ func parsePostsMetaCompareTyped(r *http.Request) (value string, ok bool, typeErr
 	}
 	switch strings.ToUpper(strings.TrimSpace(value)) {
 	case "=", "!=", "LIKE", "NOT LIKE", ">", ">=", "<", "<=", "EXISTS", "NOT EXISTS",
-		"REGEXP", "NOT REGEXP", "RLIKE", "NOT RLIKE":
+		"REGEXP", "NOT REGEXP", "RLIKE", "NOT RLIKE", "BETWEEN", "NOT BETWEEN":
 		return strings.ToUpper(strings.TrimSpace(value)), true, false, ""
 	default:
 		return "", false, false, postsMetaCompareEnumMessage()
 	}
 }
 
-// postsMetaCompareEnumMessage is the WP-style rest_not_in_enum message for meta_compare (P4.168).
+// postsMetaCompareEnumMessage is the WP-style rest_not_in_enum message for meta_compare (P4.169).
 func postsMetaCompareEnumMessage() string {
-	return "meta_compare is not one of =, !=, LIKE, NOT LIKE, >, >=, <, <=, EXISTS, NOT EXISTS, REGEXP, NOT REGEXP, RLIKE and NOT RLIKE."
+	return "meta_compare is not one of =, !=, LIKE, NOT LIKE, >, >=, <, <=, EXISTS, NOT EXISTS, REGEXP, NOT REGEXP, RLIKE, NOT RLIKE, BETWEEN and NOT BETWEEN."
 }
 
 // parsePostsMetaQueryReject returns true when meta_query / meta_query[] is present (P4.166).
