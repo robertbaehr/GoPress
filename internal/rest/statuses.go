@@ -82,6 +82,8 @@ func (s *Server) serveStatuses(w http.ResponseWriter, r *http.Request, c *wp.Con
 	canManage := canEditPosts(c)
 	w.Header().Set("Allow", "GET")
 	if r.Method == http.MethodHead {
+		// Match WP: HEAD still advertises JSON content type.
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -163,6 +165,7 @@ func (s *Server) serveStatusItem(w http.ResponseWriter, r *http.Request, c *wp.C
 	edit := context == "edit" && canManage
 	w.Header().Set("Allow", "GET")
 	if r.Method == http.MethodHead {
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusOK)
 		return
 	}
