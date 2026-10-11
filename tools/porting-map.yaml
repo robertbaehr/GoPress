@@ -9793,3 +9793,11 @@ wp-login.php#language-switcher-post
   task: P10.176
   api: n/a
   notes: "P10.176 — +44 cases (order invalid/json, social-link contexts, menu_order empty, front/login/ajax/admin toppers)"
+
+# P10.177: STATUS/PORTING refresh after P5.133–P10.176.
+- prefix: docs/STATUS.md#p10.177
+  go: docs/STATUS.md
+  status: partial
+  task: P10.177
+  api: n/a
+  notes: "P10.177 — summarize social-link services, REST order/menu_order, Quick Draft, KsesOneAttr, rel=home, login_site_html_link + 1595 corpus"
