@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P9.43: DoAction / ApplyFilters Context helpers.
+- prefix: wp-includes/plugin.php#do_action
+  go: internal/wp/has_action.go
+  status: partial
+  task: P9.43
+  api: n/a
+  notes: "P9.43 — DoAction / ApplyFilters Context helpers"
+- prefix: wp-includes/plugin.php#do_action#tests
+  go: internal/wp/do_action_filter_helpers_p9_43_test.go
+  status: partial
+  task: P9.43
+  api: n/a
+  notes: "P9.43 — fire/apply + nil guards"
+
 # P5.163: core/search align coerce left|center|right.
 - prefix: wp-includes/blocks/search#align
   go: internal/blocks/widget_blocks.go
