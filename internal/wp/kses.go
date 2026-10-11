@@ -33,10 +33,11 @@ type ksesAllowFile struct {
 }
 
 var (
-	ksesOnce     sync.Once
-	ksesDataHTML AllowedHTML
-	ksesPostHTML AllowedHTML
-	ksesProtos   []string
+	ksesOnce       sync.Once
+	ksesDataHTML   AllowedHTML
+	ksesPostHTML   AllowedHTML
+	ksesEntities   []string
+	ksesProtos     []string
 )
 
 func loadKsesAllowed() {
@@ -47,6 +48,7 @@ func loadKsesAllowed() {
 		}
 		ksesDataHTML = parseAllowedContext(raw.Data)
 		ksesPostHTML = parseAllowedContext(raw.Post)
+		ksesEntities = append([]string(nil), raw.Entities...)
 		ksesProtos = append([]string(nil), raw.Protocols...)
 	})
 }
@@ -112,10 +114,51 @@ func AllowedHTMLData() AllowedHTML {
 }
 
 // AllowedHTMLUserDescription returns the user_description context allow list.
-// WordPress aliases this to $allowedtags (same as data); golden allowed.json
-// has no extra tags beyond data for this context (P2.14).
+// WordPress starts from $allowedtags (data) and adds a[rel]/a[target]
+// for user_description / pre_user_description / pre_term_description (P2.14 / P2.126).
 func AllowedHTMLUserDescription() AllowedHTML {
-	return AllowedHTMLData()
+	base := AllowedHTMLData()
+	out := cloneAllowedHTML(base)
+	a := out["a"]
+	if a == nil {
+		a = AttrRule{}
+	} else {
+		a = cloneAttrRule(a)
+	}
+	a["rel"] = true
+	a["target"] = true
+	out["a"] = a
+	return out
+}
+
+// AllowedHTMLStrip returns the strip-context allow list (empty — remove all tags).
+func AllowedHTMLStrip() AllowedHTML {
+	return AllowedHTML{}
+}
+
+// AllowedEntities returns wp_kses_allowed_html('entities') — entity name list (P2.126).
+func AllowedEntities() []string {
+	loadKsesAllowed()
+	return append([]string(nil), ksesEntities...)
+}
+
+func cloneAllowedHTML(in AllowedHTML) AllowedHTML {
+	out := make(AllowedHTML, len(in))
+	for k, v := range in {
+		out[k] = cloneAttrRule(v)
+	}
+	return out
+}
+
+func cloneAttrRule(in AttrRule) AttrRule {
+	if in == nil {
+		return nil
+	}
+	out := make(AttrRule, len(in))
+	for k, v := range in {
+		out[k] = v
+	}
+	return out
 }
 
 // KsesPost sanitizes content with the post allow list (wp_kses_post).
@@ -204,18 +247,20 @@ func KsesUserDescription(data string) string {
 	return Kses(data, AllowedHTMLUserDescription(), nil)
 }
 
-// AllowedHTMLFiltered is wp_kses_allowed_html($context) with the filter (P2.108).
-// Known contexts: "post", "data", "user_description"; others return a copy of post.
+// AllowedHTMLFiltered is wp_kses_allowed_html($context) with the filter (P2.108 / P2.126).
+// Known contexts: post, data, user_description, pre_user_description,
+// pre_term_description, strip; unknown string contexts use post.
+// Note: the "entities" context returns a string list via AllowedEntities / KsesAllowedHTML.
 func AllowedHTMLFiltered(c *Context, context string) AllowedHTML {
 	context = strings.TrimSpace(strings.ToLower(context))
 	var base AllowedHTML
 	switch context {
 	case "data":
 		base = AllowedHTMLData()
-	case "user_description":
+	case "user_description", "pre_user_description", "pre_term_description":
 		base = AllowedHTMLUserDescription()
 	case "strip":
-		base = AllowedHTML{}
+		base = AllowedHTMLStrip()
 	default:
 		if context == "" {
 			context = "post"
@@ -226,13 +271,83 @@ func AllowedHTMLFiltered(c *Context, context string) AllowedHTML {
 		return base
 	}
 	filtered := c.Hooks.ApplyFilters("wp_kses_allowed_html", base, context)
+	var out AllowedHTML
+	switch m := filtered.(type) {
+	case AllowedHTML:
+		out = m
+	case map[string]AttrRule:
+		out = AllowedHTML(m)
+	default:
+		return base
+	}
+	// WP: if a filter allows input/select but not form, restore form attrs (P2.126).
+	if context == "post" {
+		out = ensurePostFormWhenInputsAllowed(out)
+	}
+	return out
+}
+
+// ensurePostFormWhenInputsAllowed mirrors wp_kses_allowed_html post-branch form restore.
+func ensurePostFormWhenInputsAllowed(tags AllowedHTML) AllowedHTML {
+	if tags == nil {
+		return tags
+	}
+	if _, hasForm := tags["form"]; hasForm {
+		return tags
+	}
+	_, hasInput := tags["input"]
+	_, hasSelect := tags["select"]
+	if !hasInput && !hasSelect {
+		return tags
+	}
+	out := cloneAllowedHTML(tags)
+	out["form"] = AttrRule{
+		"action": true, "accept": true, "accept-charset": true,
+		"enctype": true, "method": true, "name": true, "target": true,
+	}
+	return out
+}
+
+// KsesAllowedHTML is wp_kses_allowed_html with string or explicit map context (P2.126).
+// When context is AllowedHTML / map[string]AttrRule, filters as context "explicit".
+// When context is "entities", returns []string entity names.
+func KsesAllowedHTML(c *Context, context any) any {
+	switch v := context.(type) {
+	case AllowedHTML:
+		return filterAllowedHTMLExplicit(c, cloneAllowedHTML(v))
+	case map[string]AttrRule:
+		return filterAllowedHTMLExplicit(c, cloneAllowedHTML(AllowedHTML(v)))
+	case string:
+		ctx := strings.TrimSpace(strings.ToLower(v))
+		if ctx == "entities" {
+			ents := AllowedEntities()
+			if c != nil && c.Hooks != nil {
+				if filtered := c.Hooks.ApplyFilters("wp_kses_allowed_html", ents, "entities"); filtered != nil {
+					if s, ok := filtered.([]string); ok {
+						return s
+					}
+				}
+			}
+			return ents
+		}
+		return AllowedHTMLFiltered(c, ctx)
+	default:
+		return AllowedHTMLFiltered(c, "post")
+	}
+}
+
+func filterAllowedHTMLExplicit(c *Context, html AllowedHTML) AllowedHTML {
+	if c == nil || c.Hooks == nil {
+		return html
+	}
+	filtered := c.Hooks.ApplyFilters("wp_kses_allowed_html", html, "explicit")
 	if m, ok := filtered.(AllowedHTML); ok {
 		return m
 	}
 	if m, ok := filtered.(map[string]AttrRule); ok {
 		return AllowedHTML(m)
 	}
-	return base
+	return html
 }
 
 // Kses filters HTML content according to allowed tags/attrs (wp_kses subset).
