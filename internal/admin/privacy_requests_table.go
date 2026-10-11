@@ -54,8 +54,8 @@ func (t PrivacyRequestsTable) RenderHTMLWithFilterSearch(filterStatus, search st
 	order := []string{"cb", "email", "status", "created_timestamp", "next_steps"}
 	var b strings.Builder
 	b.WriteString(t.renderViewsHTML(filterStatus))
-	// P7.144: Search Requests box (erase-personal-data.php / WP_List_Table::search_box).
-	if t.RequestType == "remove_personal_data" {
+	// P7.144 / P7.145: Search Requests box (erase/export-personal-data.php / WP_List_Table::search_box).
+	if t.RequestType == "remove_personal_data" || t.RequestType == "export_personal_data" {
 		b.WriteString(t.renderSearchBoxHTML(filterStatus, search))
 	}
 	b.WriteString(`<table class="wp-list-table widefat fixed striped table-view-list privacy-requests requests-table">` + "\n")
@@ -199,11 +199,15 @@ func (t PrivacyRequestsTable) filteredRowsSearch(filterStatus, search string) []
 	return out
 }
 
-// renderSearchBoxHTML mirrors erase-personal-data.php search-form + search_box (P7.144).
+// renderSearchBoxHTML mirrors erase/export-personal-data.php search-form + search_box (P7.144 / P7.145).
 func (t PrivacyRequestsTable) renderSearchBoxHTML(filterStatus, search string) string {
 	adminURL := t.AdminURL
 	if adminURL == "" {
-		adminURL = "/wp-admin/erase-personal-data.php"
+		if t.RequestType == "export_personal_data" {
+			adminURL = "/wp-admin/export-personal-data.php"
+		} else {
+			adminURL = "/wp-admin/erase-personal-data.php"
+		}
 	}
 	var b strings.Builder
 	b.WriteString(`<form class="search-form wp-clearfix" method="get" action="`)
@@ -273,9 +277,9 @@ func privacyStatusLabel(status string) string {
 	}
 }
 
-// renderExportPrivacyRequestsTable builds the export-personal-data list table (P8.10 / P7.98).
-// filterStatus is the filter-status query arg (request-pending, …).
-func renderExportPrivacyRequestsTable(c *wp.Context, pendingEmail, filterStatus string) string {
+// renderExportPrivacyRequestsTable builds the export-personal-data list table (P8.10 / P7.98 / P7.145).
+// filterStatus is the filter-status query arg; search is ?s= requester filter (P7.145).
+func renderExportPrivacyRequestsTable(c *wp.Context, pendingEmail, filterStatus, search string) string {
 	table := PrivacyRequestsTable{
 		RequestType: "export_personal_data",
 		AdminURL:    "/wp-admin/export-personal-data.php",
@@ -321,7 +325,7 @@ func renderExportPrivacyRequestsTable(c *wp.Context, pendingEmail, filterStatus 
 			NextSteps: `<a class="export-personal-data-download" href="` + html.EscapeString(dl) + `">Download personal data</a>`,
 		})
 	}
-	return table.RenderHTMLWithFilter(filterStatus)
+	return table.RenderHTMLWithFilterSearch(filterStatus, search)
 }
 
 // renderErasePrivacyRequestsTable lists stored user_request rows (P8.10 / P8.21 / P7.97 / P7.144).

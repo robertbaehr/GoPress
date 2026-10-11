@@ -4926,10 +4926,12 @@ func (h *Handler) serveExportPersonalData(w http.ResponseWriter, r *http.Request
 		}
 	}
 	filterStatus := ""
+	search := ""
 	if r != nil {
 		filterStatus = strings.TrimSpace(r.URL.Query().Get("filter-status"))
+		search = strings.TrimSpace(r.URL.Query().Get("s"))
 	}
-	h.servePrivacyExportPage(w, r, c, note, downloadLinks, pendingEmail, filterStatus)
+	h.servePrivacyExportPage(w, r, c, note, downloadLinks, pendingEmail, filterStatus, search)
 }
 
 func (h *Handler) servePersonalDataExportDownload(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -4947,14 +4949,17 @@ func (h *Handler) servePersonalDataExportDownload(w http.ResponseWriter, r *http
 	http.ServeFile(w, r, full)
 }
 
-func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, r *http.Request, c *wp.Context, note, downloadLinks, pendingEmail, filterStatus string) {
+func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, r *http.Request, c *wp.Context, note, downloadLinks, pendingEmail, filterStatus, search string) {
 	_ = r
 	blogname := optionString(c, "blogname", "GoPress")
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>Export Personal Data &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
+	b.WriteString(" &#8212; WordPress</title>\n")
+	// P7.145: wp_enqueue_script( 'privacy-tools' ) marker.
+	b.WriteString("<script id=\"privacy-tools-js-extra\">/* privacy-tools */</script>\n")
+	b.WriteString("</head>\n")
 	b.WriteString("<body class=\"wp-admin wp-core-ui privacy-settings export-personal-data-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap nosubsub\" id=\"privacy-settings\">\n")
@@ -4990,7 +4995,8 @@ func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, r *http.Request,
 	b.WriteString("</td></tr>\n</table>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Send Request\"></p>\n")
 	b.WriteString("</div>\n</form>\n")
-	b.WriteString(renderExportPrivacyRequestsTable(c, pendingEmail, filterStatus))
+	b.WriteString("<hr />\n")
+	b.WriteString(renderExportPrivacyRequestsTable(c, pendingEmail, filterStatus, search))
 	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
