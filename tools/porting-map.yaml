@@ -9575,3 +9575,18 @@ wp-login.php#language-switcher-post
   task: P4.148
   api: n/a
   notes: "P4.148 — replies filter/all + pages up parent"
+
+# P7.133: dashboard Activity comment row actions.
+- prefix: wp-admin/includes/dashboard.php#wp_dashboard_recent_comments#p7.133
+  go: internal/admin/activity.go
+  status: partial
+  task: P7.133
+  api: _wp_dashboard_recent_comments_row
+  notes: "P7.133 — Approve/Unapprove/Reply/Edit/Spam/Trash + pending marker + nonces"
+
+- prefix: wp-admin/includes/dashboard.php#wp_dashboard_recent_comments#p7.133#tests
+  go: internal/admin/activity_p7_133_test.go
+  status: partial
+  task: P7.133
+  api: n/a
+  notes: "P7.133 — row actions + nonce query args on dashboard"
