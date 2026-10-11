@@ -25,6 +25,10 @@ func GetBodyClass(c *Context, classes string) string {
 	if HasCustomBackground(c) {
 		parts = appendBodyClassUnique(parts, "custom-background")
 	}
+	// P7.154: custom-header when theme supports + header image / non-default text color.
+	if HasCustomHeader(c) {
+		parts = appendBodyClassUnique(parts, "custom-header")
+	}
 	if c != nil && c.Hooks != nil {
 		filtered := c.Hooks.ApplyFilters("body_class", parts, []string{})
 		switch t := filtered.(type) {
