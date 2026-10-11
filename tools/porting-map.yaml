@@ -27,6 +27,20 @@
 
 
 
+# P2.164: self_admin_url.
+- prefix: wp-includes/link-template.php#self_admin_url
+  go: internal/wp/self_admin_url.go
+  status: partial
+  task: P2.164
+  api: n/a
+  notes: "P2.164 — SelfAdminURL single-site admin_url + self_admin_url filter"
+- prefix: wp-includes/link-template.php#self_admin_url#tests
+  go: internal/wp/self_admin_url_p2_164_test.go
+  status: partial
+  task: P2.164
+  api: n/a
+  notes: "P2.164 — base/path + filter coverage"
+
 # P6.73: retrieve_password_title / retrieve_password_message filters.
 - prefix: wp-includes/user.php#retrieve_password_filters
   go: internal/wp/password_reset.go
