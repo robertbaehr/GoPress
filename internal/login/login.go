@@ -461,9 +461,9 @@ func (h *Handler) serveRegisterForm(w http.ResponseWriter, r *http.Request, c *w
 	b.WriteString("\t\t\t")
 	b.WriteString(html.EscapeString(loginLinkSeparator(c)))
 	b.WriteString("\n")
-	b.WriteString("\t\t\t<a class=\"wp-login-lost-password\" href=\"")
-	b.WriteString(html.EscapeString(lostURL))
-	b.WriteString("\">Lost your password?</a>\n")
+	b.WriteString("\t\t\t")
+	b.WriteString(lostPasswordHTMLLink(c, lostURL))
+	b.WriteString("\n")
 	b.WriteString("\t\t</p>\n")
 	writeLoginBackToBlog(&b, c, home, blogname)
 	if link := wp.PrivacyPolicyPageLinkHTML(c); link != "" {
@@ -739,9 +739,9 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 			b.WriteString(html.EscapeString(loginLinkSeparator(c)))
 			b.WriteString("\n")
 		}
-		b.WriteString("\t\t\t\t<a class=\"wp-login-lost-password\" href=\"")
-		b.WriteString(html.EscapeString(loginURL + "?action=lostpassword"))
-		b.WriteString("\">Lost your password?</a>\t\t\t</p>\n")
+		b.WriteString("\t\t\t\t")
+		b.WriteString(lostPasswordHTMLLink(c, loginURL+"?action=lostpassword"))
+		b.WriteString("\t\t\t</p>\n")
 	}
 	b.WriteString("\t\t\t<script>\n")
 	b.WriteString("function wp_attempt_focus() {setTimeout( function() {try {d = document.getElementById( \"user_login\" );d.focus(); d.select();} catch( er ) {}}, 200);}\n")
@@ -1169,6 +1169,20 @@ func loginLinkSeparator(c *wp.Context) string {
 		}
 	}
 	return sep
+}
+
+// lostPasswordHTMLLink builds the lost-password nav anchor and applies
+// lost_password_html_link (P6.65). href is EscURL'd; link text is fixed.
+func lostPasswordHTMLLink(c *wp.Context, href string) string {
+	link := `<a class="wp-login-lost-password" href="` + html.EscapeString(href) + `">Lost your password?</a>`
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("lost_password_html_link", link); v != nil {
+			if s, ok := v.(string); ok {
+				return s
+			}
+		}
+	}
+	return link
 }
 
 // applyLoginMessage mirrors login_header's apply_filters( 'login_message', $message ) (P6.51).

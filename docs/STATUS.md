@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.222)
 
+- P6.65 `lost_password_html_link` filter on login nav
 - P10.222 STATUS/PORTING refresh after P6.64–P9.40
 - P9.40 `RemoveAllFilters` / `RemoveAllActions` Context helpers
 - P7.161 options-privacy.php pagenow chrome + `admin_body_class`
