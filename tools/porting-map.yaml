@@ -8680,3 +8680,18 @@ wp-login.php#language-switcher-post
   task: P7.126
   api: n/a
   notes: "P7.126 — redirect/chrome/invalid postType coverage"
+
+# P2.121: deepen wp_json_encode depth/flags/typed maps.
+- prefix: wp-includes/functions.php#wp_json_encode#p2.121
+  go: internal/wp/json_encode.go
+  status: partial
+  task: P2.121
+  api: exported
+  notes: "P2.121 — depth limit; JSON_PRETTY_PRINT; map[string]string/[]string/map[any]any walks"
+
+- prefix: wp-includes/functions.php#wp_json_encode#p2.121#tests
+  go: internal/wp/json_encode_test.go
+  status: partial
+  task: P2.121
+  api: n/a
+  notes: "P2.121 — depth/pretty/typed-map unit coverage"
