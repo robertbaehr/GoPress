@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -73,4 +74,40 @@ func SafeRemoteGet(c *Context, rawURL string) (*HTTPResponse, error) {
 		}
 	}
 	return RemoteGet(c, validated)
+}
+
+// RemoteRetrieveBody returns the response body string (wp_remote_retrieve_body, P2.148).
+// Nil response or error-shaped values yield "".
+func RemoteRetrieveBody(resp *HTTPResponse) string {
+	if resp == nil {
+		return ""
+	}
+	return resp.Body
+}
+
+// RemoteRetrieveResponseCode returns the HTTP status code (wp_remote_retrieve_response_code, P2.148).
+// Nil response yields 0 (WP returns empty string for bad input; Go uses 0).
+func RemoteRetrieveResponseCode(resp *HTTPResponse) int {
+	if resp == nil {
+		return 0
+	}
+	return resp.StatusCode
+}
+
+// RemoteRetrieveHeader returns a single header value (wp_remote_retrieve_header, P2.148).
+// Missing header or nil response → "".
+func RemoteRetrieveHeader(resp *HTTPResponse, header string) string {
+	if resp == nil || resp.Headers == nil || strings.TrimSpace(header) == "" {
+		return ""
+	}
+	return resp.Headers.Get(header)
+}
+
+// RemoteRetrieveHeaders returns the response header map (wp_remote_retrieve_headers, P2.148).
+// Nil response → nil.
+func RemoteRetrieveHeaders(resp *HTTPResponse) http.Header {
+	if resp == nil {
+		return nil
+	}
+	return resp.Headers
 }

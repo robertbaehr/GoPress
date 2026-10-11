@@ -11872,3 +11872,17 @@ wp-login.php#language-switcher-post
   task: P7.153
   api: n/a
   notes: "P7.153 — login redirect, color save nonce, body class with support"
+
+# P2.148: wp_remote_retrieve_body / response_code / header helpers.
+- prefix: wp-includes/http.php#wp_remote_retrieve_body
+  go: internal/wp/http.go
+  status: partial
+  task: P2.148
+  api: n/a
+  notes: "P2.148 — RemoteRetrieveBody/ResponseCode/Header/Headers nil-safe"
+- prefix: wp-includes/http.php#wp_remote_retrieve_body#tests
+  go: internal/wp/remote_retrieve_body_p2_148_test.go
+  status: partial
+  task: P2.148
+  api: n/a
+  notes: "P2.148 — nil/value/blocked RemoteGet retrieve coverage"
