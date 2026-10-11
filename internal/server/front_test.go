@@ -29,6 +29,29 @@ func testBoot(t *testing.T) *wp.Context {
 	return c
 }
 
+func TestFrontWpFooterFires(t *testing.T) {
+	c := testBoot(t)
+	var footer, printScripts int
+	c.Hooks.AddAction("wp_footer", func(_ ...any) { footer++ }, 10, 0)
+	c.Hooks.AddAction("wp_print_footer_scripts", func(_ ...any) { printScripts++ }, 10, 0)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	if footer == 0 {
+		t.Fatal("expected wp_footer to fire on front home")
+	}
+	if printScripts == 0 {
+		t.Fatal("expected wp_print_footer_scripts via default footer hooks")
+	}
+	if !strings.Contains(rec.Body.String(), "</body>") {
+		t.Fatal("expected closing body")
+	}
+}
+
 func TestFrontHeadFeedLinksShowFilters(t *testing.T) {
 	c := testBoot(t)
 	c.Hooks.AddFilter("feed_links_show_posts_feed", func(value any, _ ...any) any {
