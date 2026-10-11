@@ -7225,3 +7225,18 @@ wp-login.php#language-switcher-post
   task: P7.112
   api: n/a
   notes: "P7.112 — unit coverage for widgets stub and login redirect"
+
+# P3.105: front rel=canonical pretty /N/ page + EscURL.
+- prefix: wp-includes/link-template.php#rel_canonical
+  go: internal/wp/canonical.go
+  status: partial
+  task: P3.105
+  api: exported
+  notes: "P3.105 — Scope.Page from rewrite; CanonicalPageFromRequest; RelCanonicalLink EscURL; front head uses EscURL"
+
+- prefix: internal/wp/canonical_test.go#p3-105
+  go: internal/wp/canonical_test.go
+  status: done
+  task: P3.105
+  api: n/a
+  notes: "P3.105 — pretty /hello-world/2/ → page=2 canonical"
