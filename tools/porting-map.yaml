@@ -1941,6 +1941,21 @@ wp-login.php#language-switcher-post
   task: P2.48
   api: exported
 
+# P2.112: wp_trim_words.
+- prefix: wp-includes/formatting.php#wp_trim_words
+  go: internal/wp/trim_words.go
+  status: partial
+  task: P2.112
+  api: exported
+  notes: "P2.112 — strip tags; whitespace word split; more suffix; wp_trim_words filter"
+
+- prefix: wp-includes/formatting.php#wp_trim_words#tests
+  go: internal/wp/trim_words_test.go
+  status: partial
+  task: P2.112
+  api: n/a
+  notes: "P2.112 — unit + golden formatting vectors (num_words=5, &hellip;)"
+
 # P2.111: normalize_whitespace.
 - prefix: wp-includes/formatting.php#normalize_whitespace
   go: internal/wp/normalize_whitespace.go
