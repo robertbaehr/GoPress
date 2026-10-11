@@ -8048,3 +8048,11 @@ wp-login.php#language-switcher-post
   task: P6.49
   api: n/a
   notes: "P6.49 — empty present param + subdirectory COOKIEPATH coverage"
+
+# P10.148: expand diff corpus after P5.119–P6.49.
+- prefix: tests/corpus#p10.148
+  go: tests/corpus
+  status: partial
+  task: P10.148
+  api: n/a
+  notes: "P10.148 — search_columns / query-pagination block-types / wp_lang / front toppers; 1092/1092 match"
