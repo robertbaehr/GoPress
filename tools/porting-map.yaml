@@ -11518,3 +11518,17 @@ wp-login.php#language-switcher-post
   task: P7.150
   api: n/a
   notes: "P7.150 — bulk UI + complete/delete coverage"
+
+# P2.145: deepen wp_parse_url IPv6 brackets, empty URL, translate helper.
+- prefix: wp-includes/http.php#wp_parse_url#deep
+  go: internal/wp/parse_url.go
+  status: partial
+  task: P2.145
+  api: exported
+  notes: "P2.145 — IPv6 host brackets; empty URL path:\"\"; TranslatePHPURLConstantToKey"
+- prefix: wp-includes/http.php#wp_parse_url#deep#tests
+  go: internal/wp/parse_url_p2_145_test.go
+  status: partial
+  task: P2.145
+  api: n/a
+  notes: "P2.145 — IPv6, empty URL, colon query, port 0, translate keys"
