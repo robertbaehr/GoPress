@@ -12113,6 +12113,26 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P4.173 — expanded enum + NOT LIKE EXISTS exclude coverage"
 
+# P4.174: REST posts meta_type_key BINARY CAST on meta_key.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_type_key
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.174
+  api: n/a
+  notes: "P4.174 — meta_type_key string-type + BINARY enum; wired into QueryArgs"
+- prefix: wp-includes/class-wp-meta-query.php#type_key
+  go: internal/wp/query.go
+  status: partial
+  task: P4.174
+  api: n/a
+  notes: "P4.174 — CAST(meta_key AS BINARY) when meta_type_key=BINARY"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_type_key#tests
+  go: internal/rest/posts_meta_type_key_p4_174_test.go
+  status: partial
+  task: P4.174
+  api: n/a
+  notes: "P4.174 — CHAR reject + BINARY accept coverage"
+
 # P4.170: REST posts meta_type (WP_Query / WP_Meta_Query cast).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_type
   go: internal/rest/posts.go
