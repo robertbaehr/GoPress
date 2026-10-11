@@ -1101,10 +1101,10 @@ func parsePostsMetaValueTyped(r *http.Request) (value string, ok bool, typeErr b
 	return parseRESTStringQueryTyped(r, "meta_value", true)
 }
 
-// parsePostsMetaCompareTyped reads REST ?meta_compare= (WP_Query meta_compare, P4.166–P4.169).
+// parsePostsMetaCompareTyped reads REST ?meta_compare= (WP_Query meta_compare, P4.166–P4.171).
 // Allowed: =, !=, LIKE, NOT LIKE, >, >=, <, <=, EXISTS, NOT EXISTS, REGEXP, NOT REGEXP,
-// RLIKE, NOT RLIKE, BETWEEN, NOT BETWEEN (case-insensitive). Returns (value, ok, typeErr, enumErr).
-// Absent → ("", true, false, "").
+// RLIKE, NOT RLIKE, BETWEEN, NOT BETWEEN, IN, NOT IN (case-insensitive).
+// Returns (value, ok, typeErr, enumErr). Absent → ("", true, false, "").
 func parsePostsMetaCompareTyped(r *http.Request) (value string, ok bool, typeErr bool, enumErr string) {
 	value, ok, typeErr = parseRESTStringQueryTyped(r, "meta_compare", true)
 	if typeErr || !ok || value == "" {
@@ -1112,16 +1112,16 @@ func parsePostsMetaCompareTyped(r *http.Request) (value string, ok bool, typeErr
 	}
 	switch strings.ToUpper(strings.TrimSpace(value)) {
 	case "=", "!=", "LIKE", "NOT LIKE", ">", ">=", "<", "<=", "EXISTS", "NOT EXISTS",
-		"REGEXP", "NOT REGEXP", "RLIKE", "NOT RLIKE", "BETWEEN", "NOT BETWEEN":
+		"REGEXP", "NOT REGEXP", "RLIKE", "NOT RLIKE", "BETWEEN", "NOT BETWEEN", "IN", "NOT IN":
 		return strings.ToUpper(strings.TrimSpace(value)), true, false, ""
 	default:
 		return "", false, false, postsMetaCompareEnumMessage()
 	}
 }
 
-// postsMetaCompareEnumMessage is the WP-style rest_not_in_enum message for meta_compare (P4.169).
+// postsMetaCompareEnumMessage is the WP-style rest_not_in_enum message for meta_compare (P4.171).
 func postsMetaCompareEnumMessage() string {
-	return "meta_compare is not one of =, !=, LIKE, NOT LIKE, >, >=, <, <=, EXISTS, NOT EXISTS, REGEXP, NOT REGEXP, RLIKE, NOT RLIKE, BETWEEN and NOT BETWEEN."
+	return "meta_compare is not one of =, !=, LIKE, NOT LIKE, >, >=, <, <=, EXISTS, NOT EXISTS, REGEXP, NOT REGEXP, RLIKE, NOT RLIKE, BETWEEN, NOT BETWEEN, IN and NOT IN."
 }
 
 // parsePostsMetaTypeTyped reads REST ?meta_type= (WP_Query meta_type, P4.170).
