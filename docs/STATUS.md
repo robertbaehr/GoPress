@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.224)
 
+- P3.156 `GetDeletePostLink`
 - P6.67 `register` filter on Register nav link
 - P10.224 STATUS/PORTING refresh after P6.66–P9.42
 - P9.42 `AddAction` / `AddFilter` Context helpers
