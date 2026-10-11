@@ -99,22 +99,38 @@ func HandleUpload(c *Context, filename string, r io.Reader, size int64) (*Upload
 	return &UploadResult{File: abs, URL: url, Type: checked.Type}, nil
 }
 
-// MediaHandleUpload creates an attachment from an upload stream (media_handle_upload, P8.31).
+// MediaUploadPostData holds optional post_data overrides for media_handle_upload (P8.41).
+type MediaUploadPostData struct {
+	Title   string
+	Content string
+	Excerpt string
+}
+
+// MediaHandleUpload creates an attachment from an upload stream (media_handle_upload, P8.31 / P8.41).
 // postID becomes post_parent when > 0.
 func MediaHandleUpload(c *Context, filename string, r io.Reader, size int64, postID int64) (*UploadedFile, error) {
+	return MediaHandleUploadWith(c, filename, r, size, postID, nil)
+}
+
+// MediaHandleUploadWith is media_handle_upload with optional post_data (P8.41).
+func MediaHandleUploadWith(c *Context, filename string, r io.Reader, size int64, postID int64, postData *MediaUploadPostData) (*UploadedFile, error) {
 	moved, err := HandleUpload(c, filename, r, size)
 	if err != nil {
 		return nil, err
 	}
-	title := strings.TrimSuffix(filepath.Base(moved.File), filepath.Ext(moved.File))
-	title = strings.ReplaceAll(title, "-", " ")
-	title = strings.ReplaceAll(title, "_", " ")
+	// Basename without extension → sanitize_text_field (P8.41).
+	base := strings.TrimSuffix(filepath.Base(filename), filepath.Ext(filename))
+	if base == "" {
+		base = strings.TrimSuffix(filepath.Base(moved.File), filepath.Ext(moved.File))
+	}
+	title := SanitizeTextField(strings.ReplaceAll(strings.ReplaceAll(base, "-", " "), "_", " "))
 	content := ""
+	excerpt := ""
 	alt := ""
 	if strings.HasPrefix(strings.ToLower(moved.Type), "image/") {
 		if meta, ok := ReadImageMetadata(c, moved.File); ok && meta != nil {
 			if t := strings.TrimSpace(fmt.Sprint(meta["title"])); t != "" && t != "<nil>" && !isNumericSanitizeTitle(t) {
-				title = t
+				title = SanitizeTextField(t)
 			}
 			if cap := strings.TrimSpace(fmt.Sprint(meta["caption"])); cap != "" && cap != "<nil>" {
 				content = cap
@@ -124,16 +140,37 @@ func MediaHandleUpload(c *Context, filename string, r io.Reader, size int64, pos
 			}
 		}
 	}
+	if postData != nil {
+		if strings.TrimSpace(postData.Title) != "" {
+			title = SanitizeTextField(postData.Title)
+		}
+		if postData.Content != "" {
+			content = postData.Content
+		}
+		if postData.Excerpt != "" {
+			excerpt = postData.Excerpt
+		}
+	}
 
 	author := int64(0)
 	if c.CurrentUser != nil {
 		author = c.CurrentUser.ID
 	}
-	now := time.Now().UTC().Format("2006-01-02 15:04:05")
+	// P8.41: use parent post_date when attaching to a non-page post (media_handle_upload $time).
+	now := mediaUploadTime(c, postID)
 	id, err := insertAttachmentRowParent(c, author, now, title, SanitizeTitle(title), content, moved.Type, moved.URL, postID)
 	if err != nil {
 		_ = os.Remove(moved.File)
 		return nil, err
+	}
+	if excerpt != "" && c.DB != nil {
+		q, args, qerr := c.DB.Prepare(
+			"UPDATE "+c.DB.Posts()+" SET post_excerpt = %s WHERE ID = %d",
+			excerpt, id,
+		)
+		if qerr == nil {
+			_, _ = c.DB.Exec(q, args...)
+		}
 	}
 	rel := UploadFixedSubdir + "/" + filepath.Base(moved.File)
 	if c.Meta != nil {
@@ -158,6 +195,28 @@ func MediaHandleUpload(c *Context, filename string, r io.Reader, size int64, pos
 		MimeType: moved.Type,
 		Title:    title,
 	}, nil
+}
+
+// mediaUploadTime picks post_date for the attachment row (P8.41).
+// Matches media_handle_upload: use parent post_date when parent exists and
+// is not a page with a positive year; otherwise current_time('mysql').
+func mediaUploadTime(c *Context, postID int64) string {
+	now := time.Now().UTC().Format("2006-01-02 15:04:05")
+	if c == nil || c.DB == nil || postID <= 0 {
+		return now
+	}
+	post, err := GetPostByID(c, postID)
+	if err != nil || post == nil {
+		return now
+	}
+	if post.Type == "page" {
+		return now
+	}
+	date := strings.TrimSpace(post.Date)
+	if len(date) >= 4 && date[:4] > "0000" {
+		return date
+	}
+	return now
 }
 
 // SaveUploadedMedia writes file content under uploads/2024/06 and creates an attachment post.
