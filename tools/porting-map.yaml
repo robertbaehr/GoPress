@@ -10770,3 +10770,11 @@ wp-login.php#language-switcher-post
   task: P6.57
   api: n/a
   notes: "P6.57 — enqueue → head → header order coverage"
+
+# P10.194: expand diff corpus after P5.142–P6.57 stack.
+- prefix: tests/corpus#p10-194
+  go: tests/corpus/
+  status: partial
+  task: P10.194
+  api: n/a
+  notes: "P10.194 — sticky_posts/separator/privacy-guide/emoji/login-enqueue toppers; 2142 cases"

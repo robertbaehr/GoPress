@@ -940,3 +940,32 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.194: admin toppers after privacy-policy-guide deepen.
+
+- id: admin-p10194-001-dashboard
+  role: admin
+  method: GET
+  path: /wp-admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10194-005-edit
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10194-008-profile
+  role: admin
+  method: GET
+  path: /wp-admin/profile.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
