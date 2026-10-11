@@ -686,6 +686,10 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		writeLoginShakeJS(&b)
 	}
 	writeLoginScripts(&b, home, c)
+	// P6.45: login_footer fires for interim and standard login forms.
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("login_footer", "")
+	}
 	b.WriteString("\t</body>\n")
 	b.WriteString("\t</html>\n")
 	b.WriteString("\t")
@@ -1379,7 +1383,7 @@ func loginErrorHTML(_, msg, _, _ string) string {
 	return "<p><strong>Error:</strong> " + msg + "</p>"
 }
 
-// serveInterimLoginSuccess shows the interim modal success stub (P6.10 / P6.25).
+// serveInterimLoginSuccess shows the interim modal success stub (P6.10 / P6.25 / P6.45).
 // Auth cookies are already written by the caller. Body classes interim-login +
 // interim-login-success let wp-auth-check.js hide the iframe. When redirect_to
 // is present, offer Continue + top-level-only client redirect (P6.17) so the
@@ -1423,6 +1427,10 @@ func (h *Handler) serveInterimLoginSuccess(w http.ResponseWriter, r *http.Reques
 		b.WriteString("</script>\n")
 	}
 	b.WriteString("\t\t\t</div>\n")
+	// P6.45: login_footer action on interim success (WP always fires login_footer).
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("login_footer", "")
+	}
 	b.WriteString("\t</body>\n")
 	b.WriteString("\t</html>\n")
 	writeLoginHTML(w, r, b.String(), false, c)
@@ -1451,28 +1459,30 @@ func strconvQuoteJS(s string) string {
 	return b.String()
 }
 
+// isInterimLogin mirrors WP ! empty( $_REQUEST['interim-login'] ) (P6.22 / P6.45).
+// Any non-empty query or form value enables the interim modal chrome.
 func isInterimLogin(r *http.Request) bool {
 	if r == nil {
 		return false
 	}
-	if r.URL != nil {
-		v := r.URL.Query().Get("interim-login")
-		if v == "1" || strings.EqualFold(v, "true") {
+	if r.URL != nil && r.URL.Query().Get("interim-login") != "" {
+		return true
+	}
+	if r.Method == http.MethodPost {
+		if r.PostForm != nil && r.PostForm.Get("interim-login") != "" {
 			return true
 		}
-	}
-	// P6.22: honor interim-login from POST body (wp-login.php uses $_REQUEST).
-	if r.PostForm != nil {
-		v := r.PostForm.Get("interim-login")
-		if v == "1" || strings.EqualFold(v, "true") {
+		if r.Form != nil && r.FormValue("interim-login") != "" {
 			return true
 		}
+		// Parse once when form not yet loaded.
+		if r.PostForm == nil && r.Form == nil {
+			_ = r.ParseForm()
+			if r.FormValue("interim-login") != "" {
+				return true
+			}
+		}
 	}
-	if r.Form != nil {
-		v := r.FormValue("interim-login")
-		return v == "1" || strings.EqualFold(v, "true")
-	}
-	// Form may not be parsed yet for GET.
 	return false
 }
 

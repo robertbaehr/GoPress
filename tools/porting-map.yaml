@@ -1229,13 +1229,20 @@ wp-login.php#language-switcher-post
   task: P6.19
   api: n/a
 
-# P6.22: interim-login POST body + blank-target footer script.
+# P6.22 / P6.45: interim-login POST body + blank-target + any non-empty flag.
 - prefix: wp-login.php#interim-post
   go: internal/login/login.go
   status: partial
-  task: P6.22
+  task: P6.45
   api: n/a
-  notes: "P6.22 — POST-only interim-login; links target=_blank in interim form"
+  notes: "P6.45 — any non-empty interim-login REQUEST; login_footer action; P6.22 blank-target"
+
+- prefix: wp-login.php#interim-post#test
+  go: internal/login/login_test.go
+  status: partial
+  task: P6.45
+  api: n/a
+  notes: "P6.45 — unit coverage for non-empty flag + login_footer"
 
 # P6.28: login form shake on shake_error_codes (wp_shake_js).
 - prefix: wp-login.php#wp_shake_js

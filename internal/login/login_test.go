@@ -147,6 +147,44 @@ func TestInterimLoginForm(t *testing.T) {
 	}
 }
 
+func TestInterimLoginAnyNonEmptyFlag(t *testing.T) {
+	// P6.45: any non-empty interim-login REQUEST value enables interim chrome.
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?interim-login=yes", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "interim-login") || !strings.Contains(body, `name="interim-login" value="1"`) {
+		t.Fatalf("expected interim chrome for non-empty flag: %q", body[:min(500, len(body))])
+	}
+}
+
+func TestInterimLoginFooterAction(t *testing.T) {
+	// P6.45: login_footer action fires on interim form + success.
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	if c.Hooks == nil {
+		c.Hooks = wp.NewHooks()
+	}
+	fired := 0
+	c.Hooks.AddAction("login_footer", func(_ ...any) {
+		fired++
+	}, 10, 1)
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?interim-login=1", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if fired < 1 {
+		t.Fatalf("login_footer should fire on interim form, fired=%d", fired)
+	}
+}
+
 func TestInterimLoginMessagesFilter(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
