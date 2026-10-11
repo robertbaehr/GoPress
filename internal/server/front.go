@@ -4462,36 +4462,46 @@ func writeFrontHeadLinks(b *strings.Builder, c *wp.Context, home, blogname, perm
 			}
 		}
 	}
+	// P3.147: feed_links / feed_links_extra alternates via feed_content_type + EscURL.
+	feedType := wp.FeedContentType(c, "")
 	if showPostsFeed {
-		b.WriteString("<link rel=\"alternate\" type=\"application/rss+xml\" title=\"")
+		b.WriteString("<link rel=\"alternate\" type=\"")
+		b.WriteString(feedType)
+		b.WriteString("\" title=\"")
 		b.WriteString(formatFeedLinkTitleAttr(feedTitleFmt, blogname, sep))
 		b.WriteString("\" href=\"")
-		b.WriteString(html.EscapeString(home + "/feed/"))
+		b.WriteString(wp.EscURL(wp.GetFeedLink(c, home, "")))
 		b.WriteString("\" />\n")
 	}
 	if showCommentsFeed {
-		b.WriteString("<link rel=\"alternate\" type=\"application/rss+xml\" title=\"")
+		b.WriteString("<link rel=\"alternate\" type=\"")
+		b.WriteString(feedType)
+		b.WriteString("\" title=\"")
 		b.WriteString(formatFeedLinkTitleAttr(comsTitleFmt, blogname, sep))
 		b.WriteString("\" href=\"")
-		b.WriteString(html.EscapeString(home + "/comments/feed/"))
+		b.WriteString(wp.EscURL(wp.GetFeedLink(c, home, "comments_rss2")))
 		b.WriteString("\" />\n")
 	}
 	if permalink != "" && title != "" && showCommentsFeed {
-		b.WriteString("<link rel=\"alternate\" type=\"application/rss+xml\" title=\"")
+		b.WriteString("<link rel=\"alternate\" type=\"")
+		b.WriteString(feedType)
+		b.WriteString("\" title=\"")
 		b.WriteString(html.EscapeString(blogname))
 		b.WriteString(" ")
 		b.WriteString(sep)
 		b.WriteString(" ")
 		b.WriteString(html.EscapeString(title))
 		b.WriteString(" Comments Feed\" href=\"")
-		b.WriteString(html.EscapeString(strings.TrimRight(permalink, "/") + "/feed/"))
+		b.WriteString(wp.EscURL(strings.TrimRight(permalink, "/") + "/feed/"))
 		b.WriteString("\" />\n")
 	}
 	if extraFeedTitle != "" && extraFeedHref != "" {
-		b.WriteString("<link rel=\"alternate\" type=\"application/rss+xml\" title=\"")
+		b.WriteString("<link rel=\"alternate\" type=\"")
+		b.WriteString(feedType)
+		b.WriteString("\" title=\"")
 		b.WriteString(extraFeedTitle) // may include &#8220; entities like WP
 		b.WriteString("\" href=\"")
-		b.WriteString(html.EscapeString(extraFeedHref))
+		b.WriteString(wp.EscURL(extraFeedHref))
 		b.WriteString("\" />\n")
 	}
 	// P3.20 / P3.92 / P3.146: wp_oembed_add_discovery_links (EscURL hrefs + embeddable gate).
