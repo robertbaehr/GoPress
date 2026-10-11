@@ -4993,6 +4993,21 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P2.102 — GeneratePassword(length, special, extraSpecial); GeneratePasswordFiltered + random_password"
 
+# P2.103: wp_rand CSPRNG helper (either-order bounds + absint).
+- prefix: wp-includes/pluggable.php#wp_rand
+  go: internal/wp/rand.go
+  status: partial
+  task: P2.103
+  api: exported
+  notes: "P2.103 — Rand(min,max) CSPRNG; AbsInt; GeneratePassword uses Rand for picks"
+
+- prefix: wp-includes/pluggable.php#wp_rand#tests
+  go: internal/wp/rand_test.go
+  status: partial
+  task: P2.103
+  api: n/a
+  notes: "P2.103 — unit coverage for range/order/defaults"
+
 # P2.100: wp_salt unknown schemes + salt filter.
 - prefix: wp-includes/pluggable.php#wp_salt
   go: internal/wp/auth.go
