@@ -11560,3 +11560,19 @@ wp-login.php#language-switcher-post
   task: P9.36
   api: n/a
   notes: "P9.36 — nested stack, shared filter/action registry, nil context"
+
+# P10.208: expand diff corpus after P5.149–P9.36 stack.
+- prefix: tests/corpus#p10.208
+  go: tests/corpus
+  status: partial
+  task: P10.208
+  api: n/a
+  notes: "P10.208 — columns/date_query/privacy/parse_url/noindex/current_action toppers; 2694 cases; headers-safe; drop Link/set-cookie/status-divergent"
+
+# P10.209: STATUS/PORTING refresh after P5.149–P10.208.
+- prefix: docs/STATUS.md#p10.209
+  go: docs/STATUS.md
+  status: partial
+  task: P10.209
+  api: n/a
+  notes: "P10.209 — summarize columns attrs, date_query string-type, privacy bulk, parse_url deep, front noindex, current_action helpers, corpus 2694"
