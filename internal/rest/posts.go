@@ -1496,16 +1496,16 @@ func postFromWP(c *wp.Context, row wp.Post, home string, edit bool, sticky map[i
 		CommentStatus: row.CommentStatus,
 		PingStatus:    row.PingStatus,
 		// P4.158: sticky field via is_sticky (option + is_sticky filter).
-		Sticky:        stickyField(c, row.ID, sticky),
-		Template:      pageTemplate(c, row.ID),
-		Format:        format,
-		Meta:          postMetaFields(c, row.ID),
-		Categories:    cats,
-		Tags:          tags,
-		Parent:        row.Parent,
-		MenuOrder:     row.MenuOrder,
-		ClassList:     buildClassList(c, row, format, cats),
-		Links:         buildPostLinks(c, home, row, edit),
+		Sticky:     stickyField(c, row.ID, sticky),
+		Template:   pageTemplate(c, row.ID),
+		Format:     format,
+		Meta:       postMetaFields(c, row.ID),
+		Categories: cats,
+		Tags:       tags,
+		Parent:     row.Parent,
+		MenuOrder:  row.MenuOrder,
+		ClassList:  buildClassList(c, row, format, cats),
+		Links:      buildPostLinks(c, home, row, edit),
 	}
 	if edit {
 		titleRaw, contentRaw, excerptRaw, guidRaw := row.Title, row.Content, row.Excerpt, row.GUID
