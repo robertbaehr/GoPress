@@ -154,7 +154,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		writeRESTInvalidIntegerArrayParams(w, []string{"author_exclude"})
 		return
 	}
-	categories := parsePostsCategories(r, c)
+	categories, categoryOperator := parsePostsCategories(r, c)
 	// P4.155: strict categories_exclude integer-array validation (rest_invalid_type).
 	// P4.161: object form include_children expands hierarchical descendants.
 	categoriesExclude, catExOK := parsePostsCategoriesExclude(r, c)
@@ -162,14 +162,19 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		writeRESTInvalidIntegerArrayParams(w, []string{"categories_exclude"})
 		return
 	}
-	tags := parsePostsTags(r)
+	tags, tagOperator := parsePostsTags(r)
 	// P4.156: strict tags_exclude integer-array validation (rest_invalid_type).
 	tagsExclude, tagsExOK := parsePostsTagsExclude(r)
 	if !tagsExOK {
 		writeRESTInvalidIntegerArrayParams(w, []string{"tags_exclude"})
 		return
 	}
-	taxRelation := parsePostsTaxRelation(r)
+	// P4.164: strict tax_relation enum validation (rest_not_in_enum).
+	taxRelation, taxRelationErr := parsePostsTaxRelation(r)
+	if taxRelationErr != "" {
+		writeRESTInvalidOrderParams(w, map[string]string{"tax_relation": taxRelationErr})
+		return
+	}
 	slugs := parsePostsSlug(r)
 	include := parsePostsInclude(r)
 	exclude := parsePostsExclude(r)
@@ -277,7 +282,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		writeRESTInvalidPostsStatus(w, forbiddenCode, enumInvalid)
 		return
 	}
-	total, err := countPosts(c, postType, stickyFilter, search, searchColumns, authorIn, authorNotIn, categories, categoriesExclude, tags, tagsExclude, taxRelation, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, menuOrderFilter)
+	total, err := countPosts(c, postType, stickyFilter, search, searchColumns, authorIn, authorNotIn, categories, categoriesExclude, tags, tagsExclude, taxRelation, categoryOperator, tagOperator, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, menuOrderFilter)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",
@@ -286,7 +291,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		})
 		return
 	}
-	posts, err := listPostsPaged(c, postType, perPage, page, edit, stickyFilter, ignoreSticky, orderby, order, search, searchColumns, authorIn, authorNotIn, categories, categoriesExclude, tags, tagsExclude, taxRelation, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, offset, useOffset, menuOrderFilter)
+	posts, err := listPostsPaged(c, postType, perPage, page, edit, stickyFilter, ignoreSticky, orderby, order, search, searchColumns, authorIn, authorNotIn, categories, categoriesExclude, tags, tagsExclude, taxRelation, categoryOperator, tagOperator, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, offset, useOffset, menuOrderFilter)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",

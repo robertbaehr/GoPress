@@ -11366,3 +11366,23 @@ wp-login.php#language-switcher-post
   task: P5.148
   api: n/a
   notes: "P5.148 — align coerce, saved gradient/fontSize coverage"
+
+# P4.164: deepen REST tax_relation enum + categories/tags operator AND.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#tax_relation
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.164
+  api: n/a
+  notes: "P4.164 — tax_relation AND|OR enum → rest_not_in_enum; categories[operator]/tags[operator] AND"
+- prefix: wp-includes/class-wp-query.php#tax_query_operator
+  go: internal/wp/query.go
+  status: partial
+  task: P4.164
+  api: n/a
+  notes: "P4.164 — CategoryOperator/TagOperator AND → per-term EXISTS"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#tax_relation#tests
+  go: internal/rest/posts_tax_relation_p4_164_test.go
+  status: partial
+  task: P4.164
+  api: n/a
+  notes: "P4.164 — invalid enum, OR valid, categories operator AND"

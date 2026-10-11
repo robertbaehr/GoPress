@@ -330,7 +330,7 @@ func parsePostsOffset(r *http.Request) (offset int, useOffset bool, valid bool) 
 	return n, true, true
 }
 
-func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, ignoreSticky bool, orderby, order, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, offsetOverride int, useOffset bool, menuOrderFilter *int) ([]Post, error) {
+func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, ignoreSticky bool, orderby, order, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation, categoryOperator, tagOperator string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, offsetOverride int, useOffset bool, menuOrderFilter *int) ([]Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -362,6 +362,8 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 		TagIn:              tagIn,
 		TagNotIn:           tagNotIn,
 		TaxRelation:        taxRelation,
+		CategoryOperator:   categoryOperator,
+		TagOperator:        tagOperator,
 		NameIn:             slugs,
 		PostIn:             include,
 		PostNotIn:          exclude,
@@ -684,19 +686,20 @@ func parsePostsAuthorIDs(r *http.Request, key string) ([]int64, bool) {
 // Accepts comma-separated IDs and/or repeated query values.
 // P4.161: object form categories[terms]=…&categories[include_children]=true expands
 // hierarchical children (WP prepare_tax_query).
-func parsePostsCategories(r *http.Request, c *wp.Context) []int64 {
-	ids, includeChildren, ok := parsePostsTaxLimit(r, "categories", false)
+// P4.164: returns operator AND|IN from categories[operator] (default IN).
+func parsePostsCategories(r *http.Request, c *wp.Context) (ids []int64, operator string) {
+	termIDs, includeChildren, op, ok := parsePostsTaxLimit(r, "categories", false)
 	if !ok {
-		return nil
+		return nil, ""
 	}
-	return wp.ExpandTermIDsWithChildren(c, "category", ids, includeChildren)
+	return wp.ExpandTermIDsWithChildren(c, "category", termIDs, includeChildren), op
 }
 
 // parsePostsCategoriesExclude reads REST ?categories_exclude= (tax_query NOT IN, P4.136 / P4.155).
 // Present but non-integer → ok=false (rest_invalid_param / rest_invalid_type).
 // P4.161: object form with include_children expands hierarchical children.
 func parsePostsCategoriesExclude(r *http.Request, c *wp.Context) ([]int64, bool) {
-	ids, includeChildren, ok := parsePostsTaxLimit(r, "categories_exclude", true)
+	ids, includeChildren, _, ok := parsePostsTaxLimit(r, "categories_exclude", true)
 	if !ok {
 		return nil, false
 	}
@@ -765,29 +768,31 @@ func parsePostsStrictTermIDs(r *http.Request, key string) ([]int64, bool) {
 // parsePostsTags reads REST ?tags= (maps to tax_query post_tag term_id IN, P4.87).
 // Accepts comma-separated IDs and/or repeated query values.
 // P4.161: object form tags[terms]=… (include_children ignored — non-hierarchical).
-func parsePostsTags(r *http.Request) []int64 {
-	ids, _, ok := parsePostsTaxLimit(r, "tags", false)
+// P4.164: returns operator AND|IN from tags[operator] (default IN).
+func parsePostsTags(r *http.Request) (ids []int64, operator string) {
+	termIDs, _, op, ok := parsePostsTaxLimit(r, "tags", false)
 	if !ok {
-		return nil
+		return nil, ""
 	}
-	return ids
+	return termIDs, op
 }
 
 // parsePostsTagsExclude reads REST ?tags_exclude= (tax_query NOT IN, P4.136 / P4.156).
 // Present but non-integer → ok=false (rest_invalid_param / rest_invalid_type).
 // P4.161: object form tags_exclude[terms]=… (include_children ignored).
 func parsePostsTagsExclude(r *http.Request) ([]int64, bool) {
-	ids, _, ok := parsePostsTaxLimit(r, "tags_exclude", true)
+	ids, _, _, ok := parsePostsTaxLimit(r, "tags_exclude", true)
 	return ids, ok
 }
 
 // parsePostsTaxLimit parses REST taxonomy limit args as either a term ID list or
-// an advanced object {terms, include_children, operator} (P4.161).
+// an advanced object {terms, include_children, operator} (P4.161 / P4.164).
 // When object-form keys are present, they win over the simple list.
 // strict=true applies integer-array validation (rest_invalid_type).
-func parsePostsTaxLimit(r *http.Request, key string, strict bool) (ids []int64, includeChildren bool, ok bool) {
+// operator is AND when key[operator]=AND; otherwise empty (IN).
+func parsePostsTaxLimit(r *http.Request, key string, strict bool) (ids []int64, includeChildren bool, operator string, ok bool) {
 	if r == nil || key == "" {
-		return nil, false, true
+		return nil, false, "", true
 	}
 	q := r.URL.Query()
 	hasObject := q.Has(key+"[terms]") || q.Has(key+"[terms][]") ||
@@ -795,9 +800,9 @@ func parsePostsTaxLimit(r *http.Request, key string, strict bool) (ids []int64, 
 	if !hasObject {
 		if strict {
 			ids, ok = parsePostsStrictTermIDs(r, key)
-			return ids, false, ok
+			return ids, false, "", ok
 		}
-		return parsePostsTermIDs(r, key), false, true
+		return parsePostsTermIDs(r, key), false, "", true
 	}
 	// Object form: terms from categories[terms] / categories[terms][].
 	seen := map[int64]bool{}
@@ -834,12 +839,12 @@ func parsePostsTaxLimit(r *http.Request, key string, strict bool) (ids []int64, 
 	}
 	for _, v := range q[key+"[terms]"] {
 		if !addCSV(v, false) {
-			return nil, false, false
+			return nil, false, "", false
 		}
 	}
 	for _, v := range q[key+"[terms][]"] {
 		if !addCSV(v, true) {
-			return nil, false, false
+			return nil, false, "", false
 		}
 	}
 	if !anyToken {
@@ -847,22 +852,34 @@ func parsePostsTaxLimit(r *http.Request, key string, strict bool) (ids []int64, 
 	}
 	inc := strings.TrimSpace(strings.ToLower(q.Get(key + "[include_children]")))
 	includeChildren = inc == "1" || inc == "true"
-	return out, includeChildren, true
+	op := strings.ToUpper(strings.TrimSpace(q.Get(key + "[operator]")))
+	if op == "AND" {
+		operator = "AND"
+	}
+	return out, includeChildren, operator, true
 }
 
-// parsePostsTaxRelation reads REST ?tax_relation=AND|OR (P4.136). Empty → AND.
-func parsePostsTaxRelation(r *http.Request) string {
+// parsePostsTaxRelation reads REST ?tax_relation=AND|OR (P4.136 / P4.164).
+// Empty → ("", ""). Invalid present value → ("", rest_not_in_enum message).
+func parsePostsTaxRelation(r *http.Request) (relation string, errMsg string) {
 	if r == nil {
-		return ""
+		return "", ""
 	}
-	v := strings.ToUpper(strings.TrimSpace(r.URL.Query().Get("tax_relation")))
+	q := r.URL.Query()
+	if !q.Has("tax_relation") {
+		return "", ""
+	}
+	v := strings.ToUpper(strings.TrimSpace(q.Get("tax_relation")))
+	if v == "" {
+		return "", ""
+	}
 	if v == "OR" {
-		return "OR"
+		return "OR", ""
 	}
 	if v == "AND" {
-		return "AND"
+		return "AND", ""
 	}
-	return ""
+	return "", "tax_relation is not one of AND and OR."
 }
 
 // knownPostFormats mirrors get_post_format_slugs() (P4.96).
@@ -1410,7 +1427,7 @@ func parsePostsTermIDs(r *http.Request, key string) []int64 {
 	return out
 }
 
-func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, menuOrderFilter *int) (int, error) {
+func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, categoryNotIn, tagIn, tagNotIn []int64, taxRelation, categoryOperator, tagOperator string, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, menuOrderFilter *int) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
@@ -1430,6 +1447,8 @@ func countPosts(c *wp.Context, postType string, stickyFilter *bool, search strin
 		TagIn:              tagIn,
 		TagNotIn:           tagNotIn,
 		TaxRelation:        taxRelation,
+		CategoryOperator:   categoryOperator,
+		TagOperator:        tagOperator,
 		NameIn:             slugs,
 		PostIn:             include,
 		PostNotIn:          exclude,
