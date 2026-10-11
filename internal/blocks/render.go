@@ -72,7 +72,9 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderCover(block)
 		return applySupports(out, sanitizeCoverBlockAttrs(block.Attrs), name)
 	case "core/media-text":
+		// P5.152: coerce align enum before applySupports; fontSize/gradient polish.
 		out = e.renderMediaText(block)
+		return applySupports(out, sanitizeMediaTextBlockAttrs(block.Attrs), name)
 	case "core/columns":
 		// P5.149: coerce align enum before applySupports; fontSize/gradient polish.
 		out = e.renderColumns(block)
