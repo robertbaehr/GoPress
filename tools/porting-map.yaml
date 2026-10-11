@@ -10318,3 +10318,11 @@ wp-login.php#language-switcher-post
   task: P10.186
   api: n/a
   notes: "P10.186 — +56 headers-safe cases after drop of cookie/Link/status-sensitive toppers"
+
+# P10.187: STATUS/PORTING refresh after P5.138–P10.186.
+- prefix: docs/STATUS.md#p10.187
+  go: docs/STATUS.md
+  status: partial
+  task: P10.187
+  api: n/a
+  notes: "P10.187 — summarize comment-template attrs, format enum, update_nag, KsesNormalizeEntities, ClearPingback deepen, attachment-image attrs + 1865 corpus"
