@@ -11148,3 +11148,17 @@ wp-login.php#language-switcher-post
   task: P5.146
   api: n/a
   notes: "P5.146 — align coerce, saved gradient/fontSize/textAlign coverage"
+
+# P4.162: deepen REST posts ignore_sticky (array reject, post-only schema).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#ignore_sticky
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.162
+  api: n/a
+  notes: "P4.162 — ignore_sticky[] rest_invalid_type; sticky/ignore_sticky post-only; 0/1 StickyFirst; include skips prepend"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#ignore_sticky#tests
+  go: internal/rest/posts_ignore_sticky_p4_162_test.go
+  status: partial
+  task: P4.162
+  api: n/a
+  notes: "P4.162 — array invalid, numeric 0/1, include skip, pages ignore param"

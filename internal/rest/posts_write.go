@@ -95,19 +95,25 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		return
 	}
 	edit := restCtx == "edit"
-	// P4.141: strict sticky / ignore_sticky boolean validation (rest_invalid_type).
-	stickyFilter, stickyOK := parseStickyQuery(r)
-	ignoreSticky, ignoreOK := parseIgnoreStickyQuery(r)
-	var badBools []string
-	if !stickyOK {
-		badBools = append(badBools, "sticky")
-	}
-	if !ignoreOK {
-		badBools = append(badBools, "ignore_sticky")
-	}
-	if len(badBools) > 0 {
-		writeRESTInvalidBooleanParams(w, badBools)
-		return
+	// P4.141 / P4.162: sticky / ignore_sticky only registered for post (WP schema).
+	// Other types ignore the params (additional properties not validated).
+	var stickyFilter *bool
+	ignoreSticky := true
+	if postType == "post" {
+		var stickyOK, ignoreOK bool
+		stickyFilter, stickyOK = parseStickyQuery(r)
+		ignoreSticky, ignoreOK = parseIgnoreStickyQuery(r)
+		var badBools []string
+		if !stickyOK {
+			badBools = append(badBools, "sticky")
+		}
+		if !ignoreOK {
+			badBools = append(badBools, "ignore_sticky")
+		}
+		if len(badBools) > 0 {
+			writeRESTInvalidBooleanParams(w, badBools)
+			return
+		}
 	}
 	// P4.149 / P4.159: strict order / orderby enum + string-type validation.
 	orderby, orderbyOK, orderbyTypeErr := parsePostsOrderbyTyped(r, postType)
