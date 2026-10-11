@@ -10196,3 +10196,17 @@ wp-login.php#language-switcher-post
   task: P3.131
   api: n/a
   notes: "P3.131 — keeps api.w.org Link; drops pingback"
+
+# P9.32: doing_filter + 'all' hook.
+- prefix: wp-includes/plugin.php#doing_filter#all
+  go: internal/wp/hooks.go
+  status: partial
+  task: P9.32
+  api: doing_filter
+  notes: "P9.32 — run 'all' first with tag on stack (doing_filter true)"
+- prefix: wp-includes/plugin.php#doing_filter#all#tests
+  go: internal/wp/doing_filter_p9_32_test.go
+  status: partial
+  task: P9.32
+  api: n/a
+  notes: "P9.32 — all during ApplyFilters/DoAction; all not on stack"
