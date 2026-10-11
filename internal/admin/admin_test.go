@@ -224,6 +224,72 @@ func TestCustomizerRejectsExternalReturn(t *testing.T) {
 	}
 }
 
+func TestSiteEditorDeepensCapRedirectChrome(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+
+	// Legacy postType=page → redirect to ?p=/page
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/site-editor.php?postType=page", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("redirect status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	loc := rec.Header().Get("Location")
+	if !strings.Contains(loc, "p=%2Fpage") && !strings.Contains(loc, "p=/page") {
+		t.Fatalf("expected p=/page redirect, got %q", loc)
+	}
+
+	// path=/wp_global_styles → ?p=/styles
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/site-editor.php?path=/wp_global_styles", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusFound {
+		t.Fatalf("styles redirect status=%d", rec.Code)
+	}
+	loc = rec.Header().Get("Location")
+	if !strings.Contains(loc, "p=%2Fstyles") && !strings.Contains(loc, "p=/styles") {
+		t.Fatalf("expected p=/styles, got %q", loc)
+	}
+
+	// Direct ?p=/template chrome
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/site-editor.php?p=/template", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "is-fullscreen-mode") {
+		t.Fatalf("expected fullscreen body class: %q", body)
+	}
+	if !strings.Contains(body, `pagenow = "site-editor"`) {
+		t.Fatalf("expected pagenow: %q", body)
+	}
+	if !strings.Contains(body, `edit-site-path`) || !strings.Contains(body, "/template") {
+		t.Fatalf("expected path chrome: %q", body)
+	}
+	if !strings.Contains(body, "__gopressSiteEditorSettings") {
+		t.Fatalf("expected settings blob: %q", body)
+	}
+	if !strings.Contains(body, "requires JavaScript") {
+		t.Fatalf("expected noscript: %q", body)
+	}
+
+	// Invalid postType with p= set → 400
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/site-editor.php?p=/&postType=not-a-type", nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusBadRequest || !strings.Contains(rec.Body.String(), "Invalid post type") {
+		t.Fatalf("expected invalid post type, status=%d body=%q", rec.Code, rec.Body.String())
+	}
+}
+
 func TestCustomizerDeepensURLAutofocusChangeset(t *testing.T) {
 	c := bootOrSkip(t)
 	ck := loginCookie(t, c)
