@@ -11260,3 +11260,23 @@ wp-login.php#language-switcher-post
   task: P5.147
   api: n/a
   notes: "P5.147 — align coerce, saved gradient/fontSize/ordered attrs coverage"
+
+# P4.163: deepen REST/WP_Query search semantics (terms, stopwords, exclusion, columns filter).
+- prefix: wp-includes/class-wp-query.php#parse_search
+  go: internal/wp/query.go
+  status: partial
+  task: P4.163
+  api: n/a
+  notes: "P4.163 — term split/quoted phrases/stopwords/exclusion prefix; AND across terms; post_search_columns filter"
+- prefix: wp-includes/class-wp-query.php#parse_search#tests
+  go: internal/wp/search_semantics_p4_163_test.go
+  status: partial
+  task: P4.163
+  api: n/a
+  notes: "P4.163 — AND, stopwords fallback, exclusion, quoted phrase, columns filter"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#search-semantics#tests
+  go: internal/rest/posts_search_semantics_p4_163_test.go
+  status: partial
+  task: P4.163
+  api: n/a
+  notes: "P4.163 — REST search AND/exclusion/quoted phrase coverage"
