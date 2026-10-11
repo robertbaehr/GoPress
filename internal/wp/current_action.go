@@ -44,3 +44,21 @@ func CurrentFilters(c *Context) []string {
 	}
 	return c.Hooks.CurrentFilters()
 }
+
+// DidAction returns how many times tag has been fired via c.Hooks (did_action, P9.37).
+// Nil context/hooks → 0.
+func DidAction(c *Context, tag string) int {
+	if c == nil || c.Hooks == nil {
+		return 0
+	}
+	return c.Hooks.DidAction(tag)
+}
+
+// DidFilter returns how many times tag has been applied via c.Hooks (did_filter, P9.37).
+// Nil context/hooks → 0.
+func DidFilter(c *Context, tag string) int {
+	if c == nil || c.Hooks == nil {
+		return 0
+	}
+	return c.Hooks.DidFilter(tag)
+}

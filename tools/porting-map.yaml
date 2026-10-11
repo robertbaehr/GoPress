@@ -11900,3 +11900,17 @@ wp-login.php#language-switcher-post
   task: P3.146
   api: n/a
   notes: "P3.146 — EscURL amp, embeddable false empty, discovery coverage"
+
+# P9.37: deepen doing_action with DidAction/DidFilter package helpers.
+- prefix: wp-includes/plugin.php#doing_action
+  go: internal/wp/current_action.go
+  status: partial
+  task: P9.37
+  api: n/a
+  notes: "P9.37 — DidAction/DidFilter Context helpers; nested DoingAction stack"
+- prefix: wp-includes/plugin.php#doing_action#tests
+  go: internal/wp/doing_action_p9_37_test.go
+  status: partial
+  task: P9.37
+  api: n/a
+  notes: "P9.37 — nested DidAction counters; DoingAction shares filter stack"
