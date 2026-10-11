@@ -417,9 +417,8 @@ func (h *Handler) serveRegisterForm(w http.ResponseWriter, r *http.Request, c *w
 		b.WriteString(msg)
 	}
 	if errMsg != "" {
-		b.WriteString("\t\t<div id=\"login_error\">")
-		b.WriteString(errMsg)
-		b.WriteString("</div>\n")
+		// P6.53: login_errors + admin notice chrome on register form errors.
+		writeLoginErrorNotice(&b, c, errMsg)
 	}
 	b.WriteString("\t\t<form name=\"registerform\" id=\"registerform\" action=\"")
 	b.WriteString(html.EscapeString(actionURL))
@@ -634,9 +633,8 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		}
 	}
 	if errMsg != "" {
-		b.WriteString("\t\t<div id=\"login_error\">")
-		b.WriteString(errMsg)
-		b.WriteString("</div>\n")
+		// P6.53: login_errors filter + wp_admin_notice(type=error, id=login_error).
+		writeLoginErrorNotice(&b, c, errMsg)
 	} else if interim {
 		// P6.19 / P6.31: WP interim login shows session-expired info via login_messages.
 		msgInner := "<p>Your session has expired. Please log in to continue where you left off.</p>"
@@ -969,9 +967,8 @@ func (h *Handler) serveResetPassForm(w http.ResponseWriter, r *http.Request, c *
 	b.WriteString("\t\t\t<div id=\"login\">\n")
 	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
 	if formErr != "" {
-		b.WriteString("<div class=\"notice notice-error\" id=\"login_error\"><p><strong>Error:</strong> ")
-		b.WriteString(html.EscapeString(formErr))
-		b.WriteString("</p></div>\n")
+		// P6.53: login_errors on resetpass form errors.
+		writeLoginErrorNotice(&b, c, "<p><strong>Error:</strong> "+html.EscapeString(formErr)+"</p>")
 	} else {
 		// P6.41 / P6.51: reset-pass notice via login_message filter.
 		if msg := applyLoginMessage(c, `<div class="notice notice-info message reset-pass"><p>Enter your new password below or generate one.</p></div>`+"\n"); strings.TrimSpace(msg) != "" {
@@ -1061,9 +1058,8 @@ func (h *Handler) serveLostPassword(w http.ResponseWriter, r *http.Request, c *w
 		b.WriteString(msg)
 	}
 	if errMsg != "" {
-		b.WriteString("<div class=\"notice notice-error\" id=\"login_error\"><p><strong>Error:</strong> ")
-		b.WriteString(html.EscapeString(errMsg))
-		b.WriteString("</p></div>\n")
+		// P6.53: login_errors on lost-password validation messages.
+		writeLoginErrorNotice(&b, c, "<p><strong>Error:</strong> "+html.EscapeString(errMsg)+"</p>")
 	}
 	b.WriteString("\t\t")
 	b.WriteString("\t\t<form name=\"lostpasswordform\" id=\"lostpasswordform\" action=\"")
@@ -1120,6 +1116,40 @@ func applyLoginMessage(c *wp.Context, message string) string {
 		}
 	}
 	return message
+}
+
+// applyLoginErrors is the login_errors filter on displayed error markup (P6.53).
+func applyLoginErrors(c *wp.Context, errors string) string {
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("login_errors", errors); v != nil {
+			if s, ok := v.(string); ok {
+				return s
+			}
+		}
+	}
+	return errors
+}
+
+// writeLoginErrorNotice emits wp_admin_notice-shaped login_error markup (P6.53).
+// errInner is typically <p><strong>Error:</strong> …</p> (paragraph_wrap false).
+func writeLoginErrorNotice(b *strings.Builder, c *wp.Context, errInner string) {
+	if b == nil || strings.TrimSpace(errInner) == "" {
+		return
+	}
+	filtered := applyLoginErrors(c, errInner)
+	if strings.TrimSpace(filtered) == "" {
+		return
+	}
+	notice := wp.GetAdminNotice(c, filtered, wp.AdminNoticeArgs{
+		Type:              "error",
+		ID:                "login_error",
+		SkipParagraphWrap: true,
+	})
+	b.WriteString("\t\t")
+	b.WriteString(notice)
+	if !strings.HasSuffix(notice, "\n") {
+		b.WriteByte('\n')
+	}
 }
 
 func writeLoginHead(b *strings.Builder, home, blogname, title, action string, extraClasses ...string) {

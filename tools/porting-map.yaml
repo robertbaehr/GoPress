@@ -9401,3 +9401,18 @@ wp-login.php#language-switcher-post
   task: P3.124
   api: n/a
   notes: "P3.124 — custom/trim/password/filters/autop"
+
+# P6.53: login_errors filter + wp_admin_notice login_error chrome.
+- prefix: wp-login.php#login_errors
+  go: internal/login/login.go
+  status: partial
+  task: P6.53
+  api: login_errors
+  notes: "P6.53 — applyLoginErrors + writeLoginErrorNotice (notice-error id=login_error)"
+
+- prefix: wp-login.php#login_errors#tests
+  go: internal/login/login_errors_p6_53_test.go
+  status: partial
+  task: P6.53
+  api: n/a
+  notes: "P6.53 — filter rewrite + empty suppress"
