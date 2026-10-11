@@ -2,11 +2,12 @@ package wp
 
 import (
 	"html"
+	"net/url"
 	"strconv"
 	"strings"
 )
 
-// PaginateLinksArgs mirrors paginate_links() arguments (P3.87 subset).
+// PaginateLinksArgs mirrors paginate_links() arguments (P3.87 / P3.102 subset).
 // PrevNext defaults to true (WP); set NoPrevNext to disable.
 type PaginateLinksArgs struct {
 	Base             string
@@ -24,9 +25,13 @@ type PaginateLinksArgs struct {
 	AddFragment      string
 	BeforePageNumber string
 	AfterPageNumber  string
+	// AddArgs are query args appended to each page link (P3.102; WP add_args).
+	AddArgs map[string]string
+	// Hooks optionally applies the paginate_links filter per URL (P3.102).
+	Hooks *Hooks
 }
 
-// PaginateLinks builds archive pagination markup (paginate_links subset, P3.87).
+// PaginateLinks builds archive pagination markup (paginate_links subset, P3.87 / P3.102).
 // Returns "" when Total < 2.
 func PaginateLinks(args PaginateLinksArgs) string {
 	total := args.Total
@@ -72,7 +77,7 @@ func PaginateLinks(args PaginateLinksArgs) string {
 
 	var pageLinks []string
 	if prevNext && current > 1 {
-		link := pageLinkURL(base, format, current-1) + args.AddFragment
+		link := finalizePageLink(pageLinkURL(base, format, current-1), args)
 		pageLinks = append(pageLinks, `<a class="prev page-numbers" href="`+html.EscapeString(link)+`">`+prevText+`</a>`)
 	}
 
@@ -89,7 +94,7 @@ func PaginateLinks(args PaginateLinksArgs) string {
 			n > total-endSize ||
 			(n >= current-midSize && n <= current+midSize)
 		if inWindow {
-			link := pageLinkURL(base, format, n) + args.AddFragment
+			link := finalizePageLink(pageLinkURL(base, format, n), args)
 			pageLinks = append(pageLinks, `<a class="page-numbers" href="`+html.EscapeString(link)+`">`+
 				args.BeforePageNumber+strconv.Itoa(n)+args.AfterPageNumber+`</a>`)
 			dots = true
@@ -100,7 +105,7 @@ func PaginateLinks(args PaginateLinksArgs) string {
 	}
 
 	if prevNext && current < total {
-		link := pageLinkURL(base, format, current+1) + args.AddFragment
+		link := finalizePageLink(pageLinkURL(base, format, current+1), args)
 		pageLinks = append(pageLinks, `<a class="next page-numbers" href="`+html.EscapeString(link)+`">`+nextText+`</a>`)
 	}
 
@@ -110,6 +115,39 @@ func PaginateLinks(args PaginateLinksArgs) string {
 	default: // plain + array
 		return strings.Join(pageLinks, "\n")
 	}
+}
+
+func finalizePageLink(link string, args PaginateLinksArgs) string {
+	link = addQueryArgsToLink(link, args.AddArgs)
+	if args.Hooks != nil {
+		if v := args.Hooks.ApplyFilters("paginate_links", link); v != nil {
+			if s, ok := v.(string); ok {
+				link = s
+			}
+		}
+	}
+	return link + args.AddFragment
+}
+
+func addQueryArgsToLink(link string, args map[string]string) string {
+	if len(args) == 0 {
+		return link
+	}
+	vals := url.Values{}
+	for k, v := range args {
+		if strings.TrimSpace(k) == "" {
+			continue
+		}
+		vals.Set(k, v)
+	}
+	enc := vals.Encode()
+	if enc == "" {
+		return link
+	}
+	if strings.Contains(link, "?") {
+		return link + "&" + enc
+	}
+	return link + "?" + enc
 }
 
 func pageLinkURL(base, format string, page int) string {
