@@ -883,10 +883,10 @@
   nonce: null
 
 # P10.158: login_message-related toppers.
-- id: login-p10158-001-confirmaction
+- id: login-p10158-001-postpass
   role: anon
   method: GET
-  path: /wp-login.php?action=confirmaction
+  path: /wp-login.php?action=postpass
   headers: {}
   body: null
   compare: headers

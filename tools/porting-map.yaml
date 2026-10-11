@@ -8611,7 +8611,7 @@ wp-login.php#language-switcher-post
   status: partial
   task: P10.158
   api: n/a
-  notes: "P10.158 — after/before invalid date validation + search/calendar block + front/login/ajax toppers; 1265 cases"
+  notes: "P10.158 — after/before invalid date validation + search/calendar block + front/login/ajax toppers; 1265 cases (drop flaky author-feed Link + confirmaction cookie)"
 
 # P10.157: STATUS/PORTING refresh after P5.123–P10.156.
 - prefix: docs/STATUS.md#p10.157

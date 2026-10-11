@@ -1304,10 +1304,10 @@
   compare: headers
   nonce: null
 
-- id: front-p10158-002-author-admin-feed
+- id: front-p10158-002-feed-atom
   role: anon
   method: GET
-  path: /author/admin/feed/
+  path: /feed/atom/
   headers: {}
   body: null
   compare: headers
