@@ -2022,24 +2022,14 @@ func writeLanguageSwitcher(b *strings.Builder, r *http.Request, c *wp.Context, l
 	if !display {
 		return
 	}
-	selected := "en_US"
-	if c != nil && c.Options != nil {
-		if v := optionString(c, "WPLANG", ""); v != "" {
-			selected = v
-		}
-	}
-	// P6.23 / P6.30: prefer ?wp_lang=, then POST body wp_lang, then cookie.
+	// P6.61: selected via determine_locale (GET/cookie → get_locale + filters).
 	_ = r.ParseForm()
-	if q := r.URL.Query().Get("wp_lang"); q != "" {
-		selected = q
-	} else if r.Method == http.MethodPost {
+	selected := wp.DetermineLocale(c, r)
+	// P6.30: POST body wp_lang still wins for failed-login redisplay.
+	if r.Method == http.MethodPost {
 		if v := r.PostForm.Get("wp_lang"); v != "" {
-			selected = v
-		} else if ck, err := r.Cookie("wp_lang"); err == nil && ck != nil && ck.Value != "" {
-			selected = ck.Value
+			selected = wp.SanitizeLocaleName(v)
 		}
-	} else if ck, err := r.Cookie("wp_lang"); err == nil && ck != nil && ck.Value != "" {
-		selected = ck.Value
 	}
 	selectID := "language-switcher-locales"
 	selectName := "wp_lang"
