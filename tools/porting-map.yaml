@@ -10340,3 +10340,17 @@ wp-login.php#language-switcher-post
   task: P5.139
   api: n/a
   notes: "P5.139 — alignleft/anchor when email; empty without email"
+
+# P4.155: REST posts categories_exclude integer-array validation.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#categories_exclude#integer
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.155
+  api: categories_exclude
+  notes: "P4.155 — invalid integer → rest_invalid_param / rest_invalid_type; categories_exclude[]= empty fails"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#categories_exclude#integer#tests
+  go: internal/rest/posts_categories_exclude_p4_155_test.go
+  status: partial
+  task: P4.155
+  api: n/a
+  notes: "P4.155 — notint/empty-array/valid coverage"

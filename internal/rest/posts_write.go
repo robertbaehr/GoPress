@@ -136,7 +136,12 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		return
 	}
 	categories := parsePostsCategories(r)
-	categoriesExclude := parsePostsCategoriesExclude(r)
+	// P4.155: strict categories_exclude integer-array validation (rest_invalid_type).
+	categoriesExclude, catExOK := parsePostsCategoriesExclude(r)
+	if !catExOK {
+		writeRESTInvalidIntegerArrayParams(w, []string{"categories_exclude"})
+		return
+	}
 	tags := parsePostsTags(r)
 	tagsExclude := parsePostsTagsExclude(r)
 	taxRelation := parsePostsTaxRelation(r)

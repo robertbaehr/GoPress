@@ -623,9 +623,69 @@ func parsePostsCategories(r *http.Request) []int64 {
 	return parsePostsTermIDs(r, "categories")
 }
 
-// parsePostsCategoriesExclude reads REST ?categories_exclude= (tax_query NOT IN, P4.136).
-func parsePostsCategoriesExclude(r *http.Request) []int64 {
-	return parsePostsTermIDs(r, "categories_exclude")
+// parsePostsCategoriesExclude reads REST ?categories_exclude= (tax_query NOT IN, P4.136 / P4.155).
+// Present but non-integer → ok=false (rest_invalid_param / rest_invalid_type).
+func parsePostsCategoriesExclude(r *http.Request) ([]int64, bool) {
+	return parsePostsStrictTermIDs(r, "categories_exclude")
+}
+
+// parsePostsStrictTermIDs parses term ID query args with strict integer validation (P4.155).
+// Returns (nil, true) when absent or scalar-empty. Supports key=1,2, repeated ?key=, and key[]=.
+// Present but non-integer tokens → (nil, false). Positive IDs only.
+func parsePostsStrictTermIDs(r *http.Request, key string) ([]int64, bool) {
+	if r == nil || key == "" {
+		return nil, true
+	}
+	q := r.URL.Query()
+	scalarVals, hasScalar := q[key]
+	arrayVals, hasArray := q[key+"[]"]
+	if !hasScalar && !hasArray {
+		return nil, true
+	}
+	seen := map[int64]bool{}
+	var out []int64
+	anyToken := false
+	addCSV := func(raw string, arrayElem bool) bool {
+		// PHP ?categories_exclude[]= yields ['']; empty array elements fail integer validation.
+		if arrayElem && strings.TrimSpace(raw) == "" {
+			return false
+		}
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			return true
+		}
+		for _, part := range strings.Split(raw, ",") {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			anyToken = true
+			n, err := strconv.ParseInt(part, 10, 64)
+			if err != nil {
+				return false
+			}
+			if n <= 0 || seen[n] {
+				continue
+			}
+			seen[n] = true
+			out = append(out, n)
+		}
+		return true
+	}
+	for _, v := range scalarVals {
+		if !addCSV(v, false) {
+			return nil, false
+		}
+	}
+	for _, v := range arrayVals {
+		if !addCSV(v, true) {
+			return nil, false
+		}
+	}
+	if !anyToken {
+		return nil, true
+	}
+	return out, true
 }
 
 // parsePostsTags reads REST ?tags= (maps to tax_query post_tag term_id IN, P4.87).
