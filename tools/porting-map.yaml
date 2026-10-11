@@ -7052,6 +7052,21 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P2.105 — unit coverage for key munging and amp/NUL"
 
+# P2.106: is_email validation + is_email filter.
+- prefix: wp-includes/formatting.php#is_email
+  go: internal/wp/is_email.go
+  status: partial
+  task: P2.106
+  api: exported
+  notes: "P2.106 — IsEmail/IsEmailValid/IsEmailFiltered; local/domain checks; is_email filter contexts"
+
+- prefix: internal/wp/is_email_test.go#p2-106
+  go: internal/wp/is_email_test.go
+  status: partial
+  task: P2.106
+  api: n/a
+  notes: "P2.106 — unit coverage for valid/invalid addresses and filter override"
+
 # P3.103: feed_links_extra category/tag archives.
 - prefix: wp-includes/general-template.php#feed_links_extra-category-tag
   go: internal/server/front.go
