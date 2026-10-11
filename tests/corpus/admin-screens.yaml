@@ -969,3 +969,76 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.196: admin toppers (headers-safe only; privacy/tools Set-Cookie meta diverges).
+- id: admin-p10196-007-dashboard
+  role: admin
+  method: GET
+  path: /wp-admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10196-008-edit
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10196-010-profile
+  role: admin
+  method: GET
+  path: /wp-admin/profile.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10196-011-plugins
+  role: admin
+  method: GET
+  path: /wp-admin/plugins.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10196-012-users
+  role: admin
+  method: GET
+  path: /wp-admin/users.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10196-013-edit-pages
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_type=page
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10196-014-edit-comments
+  role: admin
+  method: GET
+  path: /wp-admin/edit-comments.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10196-015-options-general
+  role: admin
+  method: GET
+  path: /wp-admin/options-general.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

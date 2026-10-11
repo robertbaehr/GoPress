@@ -183,10 +183,6 @@ func (t PrivacyRequestsTable) renderViewsHTML(current string) string {
 	return b.String()
 }
 
-func (t PrivacyRequestsTable) filteredRows(filterStatus string) []PrivacyRequest {
-	return t.filteredRowsSearch(filterStatus, "")
-}
-
 func (t PrivacyRequestsTable) filteredRowsSearch(filterStatus, search string) []PrivacyRequest {
 	filterStatus = normalizePrivacyFilterStatus(filterStatus)
 	search = strings.ToLower(strings.TrimSpace(search))

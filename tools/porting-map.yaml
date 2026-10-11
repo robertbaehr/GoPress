@@ -10882,3 +10882,11 @@ wp-login.php#language-switcher-post
   task: P9.34
   api: n/a
   notes: "P9.34 — notice text, suppress filter, apply_filters_deprecated notice"
+
+# P10.196: expand diff corpus after P5.143–P9.34 stack.
+- prefix: tests/corpus#p10-196
+  go: tests/corpus/
+  status: partial
+  task: P10.196
+  api: n/a
+  notes: "P10.196 — code/modified-order/erase/resource-hints/deprecated toppers"

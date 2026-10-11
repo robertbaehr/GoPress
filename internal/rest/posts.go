@@ -394,15 +394,8 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 	return out, nil
 }
 
-// parsePostsOrderby accepts REST orderby aliases (P4.83 / P4.94 / P4.131 / P4.149 / P4.159).
-// Absent → ("date", true). Present but not in the post-type enum → ("", false).
-// P4.159: orderby[]= array form → ("", false, typeErr=true) via parsePostsOrderbyTyped.
-func parsePostsOrderby(r *http.Request, postType string) (string, bool) {
-	v, ok, _ := parsePostsOrderbyTyped(r, postType)
-	return v, ok
-}
-
-// parsePostsOrderbyTyped is parsePostsOrderby with array-form detection (P4.159).
+// parsePostsOrderbyTyped accepts REST orderby aliases (P4.83 / P4.94 / P4.131 / P4.149 / P4.159).
+// Absent → ("date", true, false). Present but not in the post-type enum → ("", false, false).
 // typeErr is true when orderby[]= is present (rest_invalid_type / not string).
 func parsePostsOrderbyTyped(r *http.Request, postType string) (val string, ok bool, typeErr bool) {
 	if r == nil {
@@ -432,14 +425,8 @@ func parsePostsOrderbyTyped(r *http.Request, postType string) (val string, ok bo
 	}
 }
 
-// parsePostsOrder accepts REST order=asc|desc (P4.83 / P4.149 / P4.159).
-// Absent → ("desc", true). Present but not asc|desc → ("", false).
-func parsePostsOrder(r *http.Request) (string, bool) {
-	v, ok, _ := parsePostsOrderTyped(r)
-	return v, ok
-}
-
-// parsePostsOrderTyped is parsePostsOrder with array-form detection (P4.159).
+// parsePostsOrderTyped accepts REST order=asc|desc (P4.83 / P4.149 / P4.159).
+// Absent → ("desc", true, false). Present but not asc|desc → ("", false, false).
 // typeErr is true when order[]= is present (rest_invalid_type / not string).
 func parsePostsOrderTyped(r *http.Request) (val string, ok bool, typeErr bool) {
 	if r == nil {
