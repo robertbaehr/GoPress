@@ -1,4 +1,4 @@
-GoPress stack tip cursor/p10-227-status-refresh-ddf1 / cf66b029f8aab2c173b3cd0b99cc50974fef0b39
+GoPress stack tip cursor/p10-227-status-refresh-ddf1 / 98d987b19a37953bc1f3e13e2b07d0df1e4f7cae
 
 cursor/p6-69-lostpassword-form-action-ddf1 → d89bd9e9344b
 cursor/p2-160-server-protocol-ddf1 → 4dd8b10a12d2
@@ -9,7 +9,7 @@ cursor/p7-166-privacy-policy-guide-chrome-ddf1 → 2f2ec37d7b1b
 cursor/p4-179-orderby-meta-datetime-ddf1 → da479cd048b5
 cursor/p9-45-plugin-basename-ddf1 → 07422e4aba02
 
-cursor/p10-227-status-refresh-ddf1 → cf66b029f8aa
+cursor/p10-227-status-refresh-ddf1 → 98d987b19a37
 
 make diff: 100.0% (3162/3162 strict matches, 0 allowlisted, 0 failed) — carried from P10.218
 make check: ok (lint + go test -p 1 ./...)
