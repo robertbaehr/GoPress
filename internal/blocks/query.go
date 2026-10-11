@@ -1145,18 +1145,20 @@ func humanTimeDiffLocal(from, to time.Time) string {
 }
 
 func showAvatarAttr(attrs map[string]any) bool {
+	// P5.126: block.json showAvatar default true when omitted.
 	if attrs == nil {
-		return false
+		return true
 	}
 	v, ok := attrs["showAvatar"]
 	if !ok {
-		return false
+		return true
 	}
 	switch t := v.(type) {
 	case bool:
 		return t
 	case string:
-		return t == "true" || t == "1"
+		s := strings.TrimSpace(strings.ToLower(t))
+		return s == "true" || s == "1"
 	default:
 		return false
 	}
@@ -1897,7 +1899,7 @@ func (e *Env) authorArchiveLink(postID int64) string {
 	return home + "/author/admin/"
 }
 
-// renderPostAuthor renders core/post-author (P5.43 / P5.88).
+// renderPostAuthor renders core/post-author (P5.43 / P5.88 / P5.126).
 func (e *Env) renderPostAuthor(block Block) string {
 	e = e.ensure()
 	if e.currentPost == nil || e.AuthorName == nil {
@@ -1914,11 +1916,15 @@ func (e *Env) renderPostAuthor(block Block) string {
 			if t, ok := block.Attrs["linkTarget"].(string); ok && strings.TrimSpace(t) != "" {
 				target = strings.TrimSpace(t)
 			}
-			nameHTML = `<a href="` + html.EscapeString(link) + `" target="` + html.EscapeString(target) + `">` + nameHTML + `</a>`
+			rel := ""
+			if target == "_blank" {
+				rel = ` rel="noreferrer noopener"`
+			}
+			nameHTML = `<a href="` + html.EscapeString(link) + `" target="` + html.EscapeString(target) + `"` + rel + `>` + nameHTML + `</a>`
 		}
 	}
 	var outer strings.Builder
-	// P5.88: optional avatar when showAvatar is set.
+	// P5.88 / P5.126: avatar when showAvatar is true (block.json default true).
 	if showAvatarAttr(block.Attrs) {
 		size := int64(48)
 		if s := attrInt64(block.Attrs, "avatarSize"); s > 0 {
@@ -1961,20 +1967,42 @@ func (e *Env) renderPostAuthor(block Block) string {
 	}
 	content.WriteString(`</div>`)
 	outer.WriteString(content.String())
+	classes := postAuthorWrapperClasses(block.Attrs)
+	idAttr := ""
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		idAttr = ` id="` + html.EscapeString(anchor) + `"`
+	}
+	return `<div` + idAttr + ` class="` + html.EscapeString(classes) + `">` + outer.String() + `</div>`
+}
+
+// postAuthorWrapperClasses mirrors get_block_wrapper_attributes for post-author (P5.126).
+func postAuthorWrapperClasses(attrs map[string]any) string {
 	classes := []string{"wp-block-post-author"}
-	if j := strings.TrimSpace(attrString(block.Attrs, "itemsJustification")); j != "" {
+	if j := strings.TrimSpace(attrString(attrs, "itemsJustification")); j != "" {
 		classes = append(classes, "items-justified-"+sanitizeClassToken(j))
 	}
-	if ta := strings.TrimSpace(attrString(block.Attrs, "textAlign")); ta != "" {
+	if ta := strings.TrimSpace(attrString(attrs, "textAlign")); ta != "" {
 		classes = append(classes, "has-text-align-"+sanitizeClassToken(ta))
 	}
-	if hasLinkColorAttr(block.Attrs) {
+	if hasLinkColorAttr(attrs) {
 		classes = append(classes, "has-link-color")
 	}
-	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+	if tc := strings.TrimSpace(attrString(attrs, "textColor")); tc != "" {
+		classes = append(classes, "has-text-color", "has-"+sanitizeClassToken(tc)+"-color")
+	}
+	if bg := strings.TrimSpace(attrString(attrs, "backgroundColor")); bg != "" {
+		classes = append(classes, "has-background", "has-"+sanitizeClassToken(bg)+"-background-color")
+	}
+	if hasCustomTextColor(attrs) {
+		classes = append(classes, "has-text-color")
+	}
+	if hasCustomBackgroundColor(attrs) {
+		classes = append(classes, "has-background")
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		classes = append(classes, cn)
 	}
-	return `<div class="` + html.EscapeString(strings.Join(classes, " ")) + `">` + outer.String() + `</div>`
+	return strings.Join(classes, " ")
 }
 
 func (e *Env) renderPostTerms(block Block) string {
@@ -1990,25 +2018,25 @@ func (e *Env) renderPostTerms(block Block) string {
 	if len(terms) == 0 {
 		return ""
 	}
-	classes := []string{"taxonomy-" + tax, "wp-block-post-terms"}
-	if ta := strings.TrimSpace(attrString(block.Attrs, "textAlign")); ta != "" {
-		classes = append(classes, "has-text-align-"+sanitizeClassToken(ta))
-	}
-	if hasLinkColorAttr(block.Attrs) {
-		classes = append(classes, "has-link-color")
-	}
-	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
-		classes = append(classes, cn)
-	}
+	classes := postTermsWrapperClasses(tax, block.Attrs)
 	var b strings.Builder
-	b.WriteString(`<div class="` + html.EscapeString(strings.Join(classes, " ")) + `">`)
+	b.WriteString(`<div`)
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		b.WriteString(` id="`)
+		b.WriteString(html.EscapeString(anchor))
+		b.WriteString(`"`)
+	}
+	b.WriteString(` class="`)
+	b.WriteString(html.EscapeString(classes))
+	b.WriteString(`">`)
 	// P5.88: optional prefix / suffix wrappers (render_block_core_post_terms).
 	if prefix := attrString(block.Attrs, "prefix"); strings.TrimSpace(prefix) != "" {
 		b.WriteString(`<span class="wp-block-post-terms__prefix">`)
 		b.WriteString(html.EscapeString(prefix))
 		b.WriteString(`</span>`)
 	}
-	sep := " "
+	// P5.126: block.json separator default ", ".
+	sep := ", "
 	if s, ok := block.Attrs["separator"].(string); ok {
 		sep = s
 	}
@@ -2029,6 +2057,33 @@ func (e *Env) renderPostTerms(block Block) string {
 	}
 	b.WriteString(`</div>`)
 	return b.String()
+}
+
+// postTermsWrapperClasses mirrors get_block_wrapper_attributes for post-terms (P5.126).
+func postTermsWrapperClasses(tax string, attrs map[string]any) string {
+	classes := []string{"taxonomy-" + tax, "wp-block-post-terms"}
+	if ta := strings.TrimSpace(attrString(attrs, "textAlign")); ta != "" {
+		classes = append(classes, "has-text-align-"+sanitizeClassToken(ta))
+	}
+	if hasLinkColorAttr(attrs) {
+		classes = append(classes, "has-link-color")
+	}
+	if tc := strings.TrimSpace(attrString(attrs, "textColor")); tc != "" {
+		classes = append(classes, "has-text-color", "has-"+sanitizeClassToken(tc)+"-color")
+	}
+	if bg := strings.TrimSpace(attrString(attrs, "backgroundColor")); bg != "" {
+		classes = append(classes, "has-background", "has-"+sanitizeClassToken(bg)+"-background-color")
+	}
+	if hasCustomTextColor(attrs) {
+		classes = append(classes, "has-text-color")
+	}
+	if hasCustomBackgroundColor(attrs) {
+		classes = append(classes, "has-background")
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		classes = append(classes, cn)
+	}
+	return strings.Join(classes, " ")
 }
 
 func (e *Env) renderCommentsTitle(block Block) string {
