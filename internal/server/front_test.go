@@ -52,6 +52,31 @@ func TestFrontWpFooterFires(t *testing.T) {
 	}
 }
 
+func TestFrontWpEnqueueScriptsFires(t *testing.T) {
+	c := testBoot(t)
+	var head, enqueue, styles, headScripts int
+	c.Hooks.AddAction("wp_head", func(_ ...any) { head++ }, 10, 0)
+	c.Hooks.AddAction("wp_enqueue_scripts", func(_ ...any) { enqueue++ }, 10, 0)
+	c.Hooks.AddAction("wp_print_styles", func(_ ...any) { styles++ }, 10, 0)
+	c.Hooks.AddAction("wp_print_head_scripts", func(_ ...any) { headScripts++ }, 10, 0)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	if head == 0 {
+		t.Fatal("expected wp_head to fire on front home")
+	}
+	if enqueue == 0 {
+		t.Fatal("expected wp_enqueue_scripts via default head hooks")
+	}
+	if styles == 0 || headScripts == 0 {
+		t.Fatalf("expected print_styles/print_head_scripts, styles=%d headScripts=%d", styles, headScripts)
+	}
+}
+
 func TestFrontHeadFeedLinksShowFilters(t *testing.T) {
 	c := testBoot(t)
 	c.Hooks.AddFilter("feed_links_show_posts_feed", func(value any, _ ...any) any {
