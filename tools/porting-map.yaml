@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P9.42: AddAction / AddFilter Context helpers.
+- prefix: wp-includes/plugin.php#add_action
+  go: internal/wp/has_action.go
+  status: partial
+  task: P9.42
+  api: n/a
+  notes: "P9.42 — AddAction / AddFilter Context helpers"
+- prefix: wp-includes/plugin.php#add_action#tests
+  go: internal/wp/add_hook_helpers_p9_42_test.go
+  status: partial
+  task: P9.42
+  api: n/a
+  notes: "P9.42 — register + HasAction/HasFilter + nil guards"
+
 # P4.177: MetaType UNSIGNED on orderby=meta_value; meta_value_num ignores MetaType.
 - prefix: wp-includes/class-wp-query.php#orderby_meta_unsigned
   go: internal/wp/query.go
