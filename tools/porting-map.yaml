@@ -7712,4 +7712,4 @@ wp-login.php#language-switcher-post
   status: partial
   task: P10.142
   api: n/a
-  notes: "P10.142 — author_exclude, heading/paragraph block-types, edit-tags search, rp_key login; 902→1021"
+  notes: "P10.142 — author_exclude, heading/paragraph block-types, edit-tags search, rp_key login; 902→1008"
