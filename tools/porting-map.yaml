@@ -10814,3 +10814,23 @@ wp-login.php#language-switcher-post
   task: P4.159
   api: n/a
   notes: "P4.159 — array-form invalid_type + modified asc/desc with include"
+
+# P7.144: deepen erase-personal-data search box + privacy-tools.
+- prefix: wp-admin/erase-personal-data.php#search
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.144
+  api: n/a
+  notes: "P7.144 — Search Requests box (?s=), privacy-tools marker, hr before table"
+- prefix: wp-admin/erase-personal-data.php#search#table
+  go: internal/admin/privacy_requests_table.go
+  status: partial
+  task: P7.144
+  api: n/a
+  notes: "P7.144 — RenderHTMLWithFilterSearch email substring filter"
+- prefix: wp-admin/erase-personal-data.php#search#tests
+  go: internal/admin/erase_personal_data_p7_144_test.go
+  status: partial
+  task: P7.144
+  api: n/a
+  notes: "P7.144 — search hit/miss + privacy-tools marker coverage"
