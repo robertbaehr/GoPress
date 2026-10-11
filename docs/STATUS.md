@@ -48,16 +48,18 @@ make check
 - `make diff` / `gopress-tools diff` reloads `tests/fixtures/site.sql` into `gopress_ref` and `gopress_go` unless `--skip-db`.
 - After e2e uploads or other writes, restart `gopress serve` (or omit `--skip-db`) so object-cache/options match the reloaded fixture. Stale process memory can make a green corpus look red.
 
-## Recent stack (through P10.123)
+## Recent stack (through P10.125)
 
+- P10.125 STATUS/PORTING refresh after P5.107–P10.124
+- P10.124 Diff corpus expand (617/617 match)
+- P8.32 `wp_get_attachment_image` / `image_downsize` from meta sizes
+- P3.101 Canonical `get_canonical_url` filter + page/cpage
+- P2.103 `wp_rand` CSPRNG + AbsInt
+- P7.108 Media library search / mime filter / date column
+- P4.123 REST settings OPTIONS/HEAD + readonly url + filters
+- P5.107 `core/group` className/anchor polish
 - P10.123 STATUS/PORTING refresh after P5.106–P10.122
 - P10.122 Diff corpus expand (591/591 match)
-- P9.23 `plugin_loaded` / `plugins_loaded` + `all_plugins` filter
-- P3.100 RSD discovery WP-API + Link header
-- P2.102 `wp_generate_password` extra chars + `random_password`
-- P7.107 edit-comments search + response/date columns
-- P4.122 REST search `orderby`/`order` + excerpt
-- P5.106 `core/columns` / `column` anchor/align polish
 - P10.121 STATUS/PORTING refresh after P5.105–P10.120
 - P10.120 Diff corpus expand (550/550 match)
 - P6.44 Login `checkemail` confirm/registered chrome

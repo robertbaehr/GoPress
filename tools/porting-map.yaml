@@ -6857,3 +6857,18 @@ wp-login.php#language-switcher-post
   task: P10.123
   api: n/a
   notes: "P10.123 — regenerate porting-status after stacked P5.106–P10.122"
+
+# P10.125: STATUS/PORTING refresh after P5.107–P10.124.
+- prefix: docs/STATUS.md#p10-125
+  go: docs/STATUS.md
+  status: partial
+  task: P10.125
+  api: n/a
+  notes: "P10.125 — STATUS/PORTING refresh after P5.107–P10.124 (617/617 corpus)"
+
+- prefix: PORTING.md#p10-125
+  go: PORTING.md
+  status: partial
+  task: P10.125
+  api: n/a
+  notes: "P10.125 — regenerate porting-status after stacked P5.107–P10.124"
