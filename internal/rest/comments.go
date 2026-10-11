@@ -291,7 +291,11 @@ func parseCommentsAuthorIDs(r *http.Request) []int64 {
 }
 
 func parseCommentsParentIDs(r *http.Request) []int64 {
-	return parsePostsParentIDs(r, "parent")
+	ids, ok := parsePostsParentIDs(r, "parent")
+	if !ok {
+		return nil
+	}
+	return ids
 }
 
 func parseCommentsInclude(r *http.Request) []int64 {

@@ -135,11 +135,23 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 	if postType == "post" {
 		formatIn, formatStandard = parsePostsFormat(r)
 	}
-	// P4.93: parent / parent_exclude for hierarchical types (pages).
+	// P4.93 / P4.142: parent / parent_exclude for hierarchical types (pages).
 	var parentIn, parentNotIn []int64
 	if postType == "page" {
-		parentIn = parsePostsParent(r)
-		parentNotIn = parsePostsParentExclude(r)
+		var parentOK, parentExOK bool
+		parentIn, parentOK = parsePostsParent(r)
+		parentNotIn, parentExOK = parsePostsParentExclude(r)
+		var badParents []string
+		if !parentOK {
+			badParents = append(badParents, "parent")
+		}
+		if !parentExOK {
+			badParents = append(badParents, "parent_exclude")
+		}
+		if len(badParents) > 0 {
+			writeRESTInvalidIntegerArrayParams(w, badParents)
+			return
+		}
 	}
 	// P4.140: strict date-time validation for after/before/modified_* (rest_invalid_date).
 	dateAfter, afterOK := parsePostsAfter(r)
