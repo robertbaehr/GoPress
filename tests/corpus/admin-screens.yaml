@@ -121,3 +121,13 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.126: profile.php chrome after P7.109.
+- id: admin-p10126-profile
+  role: admin
+  method: GET
+  path: /wp-admin/profile.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

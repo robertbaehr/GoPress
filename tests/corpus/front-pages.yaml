@@ -766,3 +766,22 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.126: front pagination after P3.102.
+- id: front-p10126-category-uncategorized-page-2
+  role: anon
+  method: GET
+  path: /category/uncategorized/page/2/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10126-sample-page
+  role: anon
+  method: GET
+  path: /sample-page/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
