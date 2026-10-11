@@ -162,11 +162,16 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		})
 		return
 	}
-	// P4.96: format= post_format filter (posts only).
+	// P4.96 / P4.154: format= post_format filter (posts only; strict enum).
 	var formatIn []string
 	var formatStandard bool
 	if postType == "post" {
-		formatIn, formatStandard = parsePostsFormat(r)
+		var formatErr string
+		formatIn, formatStandard, formatErr = parsePostsFormat(r)
+		if formatErr != "" {
+			writeRESTInvalidOrderParams(w, map[string]string{"format": formatErr})
+			return
+		}
 	}
 	// P4.93 / P4.142: parent / parent_exclude for hierarchical types (pages).
 	// P4.149: menu_order equality filter (pages / page-attributes only).

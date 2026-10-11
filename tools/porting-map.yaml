@@ -10240,3 +10240,17 @@ wp-login.php#language-switcher-post
   task: P5.138
   api: n/a
   notes: "P5.138 — alignwide/fontSize/anchor when comments; empty when none"
+
+# P4.154: REST posts format enum validation.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#format#enum
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.154
+  api: format
+  notes: "P4.154 — invalid enum → rest_invalid_param / rest_not_in_enum; format[]= support"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#format#enum#tests
+  go: internal/rest/posts_format_p4_154_test.go
+  status: partial
+  task: P4.154
+  api: n/a
+  notes: "P4.154 — bogus/mixed index/array/empty scalar coverage"
