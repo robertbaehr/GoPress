@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P7.166: privacy-policy-guide.php pagenow chrome.
+- prefix: wp-admin/privacy-policy-guide.php#pagenow
+  go: internal/admin/admin.go
+  status: partial
+  task: P7.166
+  api: n/a
+  notes: "P7.166 — privacy-policy-guide.php pagenow/adminpage + admin_body_class + locale"
+- prefix: wp-admin/privacy-policy-guide.php#pagenow#tests
+  go: internal/admin/privacy_policy_guide_chrome_p7_166_test.go
+  status: partial
+  task: P7.166
+  api: n/a
+  notes: "P7.166 — pagenow chrome + folded body class"
+
 # P5.165: core/calendar align coerce.
 - prefix: wp-includes/blocks/calendar#align
   go: internal/blocks/widget_blocks.go

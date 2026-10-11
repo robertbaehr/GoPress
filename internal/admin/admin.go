@@ -5780,16 +5780,29 @@ func (h *Handler) servePrivacyPolicyGuide(w http.ResponseWriter, r *http.Request
 		return
 	}
 	blogname := optionString(c, "blogname", "GoPress")
+	// P7.166: pagenow/adminpage chrome, locale body class, admin_body_class.
+	bodyClass := "wp-admin wp-core-ui js privacy-settings privacy-policy-guide-php locale-en-us"
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("admin_body_class", ""); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				bodyClass += " " + strings.TrimSpace(s)
+			}
+		}
+	}
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n")
 	b.WriteString("<title>Privacy Policy Guide &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n")
 	// P7.143: wp_enqueue_script( 'privacy-tools' ) marker (inline accordion/search below).
 	b.WriteString("<script id=\"privacy-tools-js-extra\">/* privacy-tools */</script>\n")
+	b.WriteString("<script>var ajaxurl = \"/wp-admin/admin-ajax.php\", pagenow = \"privacy-policy-guide\", typenow = \"\", adminpage = \"privacy-policy-guide-php\";</script>\n")
 	b.WriteString("</head>\n")
-	// P7.143: admin_body_class += privacy-settings (already on body).
-	b.WriteString("<body class=\"wp-admin wp-core-ui js privacy-settings privacy-policy-guide-php\">\n")
+	// P7.143 / P7.166: privacy-settings body + admin_body_class.
+	b.WriteString("<body class=\"")
+	b.WriteString(html.EscapeString(bodyClass))
+	b.WriteString("\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	// P8.14: warn when suggested privacy policy text has changed.
 	_ = wp.TextChangeCheck(c)
