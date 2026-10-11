@@ -8919,3 +8919,18 @@ wp-login.php#language-switcher-post
   task: P4.143
   api: n/a
   notes: "P4.143 — empty array / indexed / scalar-empty coverage"
+
+# P7.128: deepen admin bar (is_admin_bar_showing + search/comments/edit).
+- prefix: wp-includes/admin-bar.php#is_admin_bar_showing
+  go: internal/wp/admin_bar.go
+  status: partial
+  task: P7.128
+  api: is_admin_bar_showing
+  notes: "P7.128 — show_admin_bar filter; ajax/REST/login hide; search/comments/edit nodes"
+
+- prefix: wp-includes/admin-bar.php#is_admin_bar_showing#tests
+  go: internal/wp/admin_bar_test.go
+  status: partial
+  task: P7.128
+  api: n/a
+  notes: "P7.128 — filter/ajax/edit/search coverage"
