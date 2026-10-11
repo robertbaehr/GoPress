@@ -79,3 +79,52 @@ func FeedAlternateLinkHTML(c *Context, home, feed, titleAttr string) string {
 	}
 	return `<link rel="alternate" type="` + ctype + `" title="` + titleAttr + `" href="` + EscURL(href) + `" />` + "\n"
 }
+
+// GetPostCommentsFeedLink builds a post comments feed permalink (get_post_comments_feed_link, P3.148).
+// Pretty-permalink subset: {permalink}/feed/ or {permalink}/feed/{type}/ when type ≠ default rss2.
+// Applies the post_comments_feed_link filter.
+func GetPostCommentsFeedLink(c *Context, permalink, feed string) string {
+	base := strings.TrimRight(strings.TrimSpace(permalink), "/")
+	if base == "" {
+		return ""
+	}
+	feed = strings.ToLower(strings.TrimSpace(feed))
+	if feed == "" {
+		feed = "rss2"
+	}
+	out := ""
+	if feed == "rss2" || feed == "rss" {
+		out = base + "/feed/"
+	} else {
+		out = base + "/feed/" + feed + "/"
+	}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("post_comments_feed_link", out); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				return strings.TrimSpace(s)
+			}
+		}
+	}
+	return out
+}
+
+// PostCommentsFeedLinkHTML builds an <a href="…">Comments Feed</a> tag with EscURL (P3.148).
+// Mirrors post_comments_feed_link() display helper (anchor only; post_comments_feed_link_html filter).
+func PostCommentsFeedLinkHTML(c *Context, permalink, feed, linkText string) string {
+	url := GetPostCommentsFeedLink(c, permalink, feed)
+	if url == "" {
+		return ""
+	}
+	if strings.TrimSpace(linkText) == "" {
+		linkText = "Comments Feed"
+	}
+	link := `<a href="` + EscURL(url) + `">` + linkText + `</a>`
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("post_comments_feed_link_html", link, int64(0), feed); v != nil {
+			if s, ok := v.(string); ok {
+				return s
+			}
+		}
+	}
+	return link
+}

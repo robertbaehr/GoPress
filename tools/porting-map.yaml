@@ -6717,11 +6717,23 @@ wp-login.php#language-switcher-post
   notes: "P3.72 — wfw:commentRss from postCommentsFeedLink (rss2)"
 
 - prefix: wp-includes/link-template.php#get_post_comments_feed_link
-  go: internal/server/front.go
+  go: internal/wp/feed_links.go
   status: partial
-  task: P3.72
-  api: internal
-  notes: "P3.72 — postCommentsFeedLink pretty-permalink /feed/ and /feed/{type}/"
+  task: P3.148
+  api: exported
+  notes: "P3.148 — GetPostCommentsFeedLink pretty /feed/; post_comments_feed_link filter; front feeds wired"
+- prefix: wp-includes/link-template.php#post_comments_feed_link
+  go: internal/wp/feed_links.go
+  status: partial
+  task: P3.148
+  api: exported
+  notes: "P3.148 — PostCommentsFeedLinkHTML EscURL + post_comments_feed_link_html filter"
+- prefix: wp-includes/link-template.php#get_post_comments_feed_link#tests
+  go: internal/wp/post_comments_feed_link_p3_148_test.go
+  status: partial
+  task: P3.148
+  api: n/a
+  notes: "P3.148 — pretty paths, filter, EscURL HTML coverage"
 
 # P6.33: interim-login success <title> keeps &lsaquo; with empty login_header title.
 - prefix: wp-login.php#interim-login-title
