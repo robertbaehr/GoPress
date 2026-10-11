@@ -10068,3 +10068,17 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P7.137 — collapse chrome + folded class order"
 
+# P2.132: wp_kses_bad_protocol.
+- prefix: wp-includes/kses.php#wp_kses_bad_protocol
+  go: internal/wp/kses.go
+  status: partial
+  task: P2.132
+  api: wp_kses_bad_protocol
+  notes: "P2.132 — KsesBadProtocol exported; formatting ksesBadProtocol routes through it"
+- prefix: wp-includes/kses.php#wp_kses_bad_protocol#tests
+  go: internal/wp/kses_bad_protocol_p2_132_test.go
+  status: partial
+  task: P2.132
+  api: n/a
+  notes: "P2.132 — https short-circuit + javascript strip + custom allowlist"
+
