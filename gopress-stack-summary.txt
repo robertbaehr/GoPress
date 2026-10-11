@@ -1,4 +1,4 @@
-GoPress stack tip cursor/p10-223-status-refresh-ddf1 / 6a3223fa52252fce1a3204d39496c4e9e40ea0e1
+GoPress stack tip cursor/p10-223-status-refresh-ddf1 / f6af1470715a56ee258a97645bafd539f2300654
 
 cursor/p6-65-lost-password-html-link-ddf1 → 709403311e2c
 cursor/p4-176-orderby-meta-type-ddf1 → b0938a08d982
@@ -9,7 +9,7 @@ cursor/p5-161-social-links-align-ddf1 → 58ac00422ef4
 cursor/p7-162-tools-chrome-ddf1 → 6564581c290e
 cursor/p9-41-deprecated-hook-helpers-ddf1 → 94e49e9b3b78
 
-cursor/p10-223-status-refresh-ddf1 → 6a3223fa5225
+cursor/p10-223-status-refresh-ddf1 → f6af1470715a
 
 make diff: 100.0% (3162/3162 strict matches, 0 allowlisted, 0 failed) — carried from P10.218
 make check: ok (lint + go test -p 1 ./...)
