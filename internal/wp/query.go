@@ -54,6 +54,10 @@ type QueryArgs struct {
 	// TaxRelation is tax_query relation AND|OR across category/tag clauses (REST ?tax_relation=, P4.136).
 	// Empty defaults to AND.
 	TaxRelation string
+	// CategoryOperator is IN (default) or AND within CategoryIn terms (REST categories[operator], P4.164).
+	CategoryOperator string
+	// TagOperator is IN (default) or AND within TagIn terms (REST tags[operator], P4.164).
+	TagOperator string
 	// PostFormatIn is post_format term slugs with post-format- prefix (REST ?format=, P4.96).
 	PostFormatIn []string
 	// PostFormatStandard includes posts with no post_format term (format=standard, P4.96).
@@ -740,8 +744,9 @@ func postNameFilterSQL(name, pageName string, nameIn []string) (string, []any) {
 	return "post_name = %s", []any{lastPathSegment(slug)}
 }
 
-// appendTaxQueryFilters adds REST categories/tags include+exclude as EXISTS clauses (P4.136).
+// appendTaxQueryFilters adds REST categories/tags include+exclude as EXISTS clauses (P4.136 / P4.164).
 // tax_relation AND|OR joins the clauses (default AND). idCol is "ID" or "p.ID".
+// P4.164: CategoryOperator/TagOperator AND → one EXISTS per term (all must match).
 func appendTaxQueryFilters(c *Context, where []string, vals []any, args QueryArgs, idCol string) ([]string, []any) {
 	if c == nil || c.DB == nil {
 		return where, vals
@@ -770,6 +775,23 @@ func appendTaxQueryFilters(c *Context, where []string, vals []any, args QueryArg
 		sql := op + " (SELECT 1 FROM " + tr + " tr_tq INNER JOIN " + tt + " tt_tq ON tt_tq.term_taxonomy_id = tr_tq.term_taxonomy_id INNER JOIN " + terms + " t_tq ON t_tq.term_id = tt_tq.term_id WHERE tr_tq.object_id = " + idCol + " AND tt_tq.taxonomy = %s AND t_tq.term_id IN (" + strings.Join(ph, ",") + "))"
 		return sql, v
 	}
+	// termExistsAND emits AND-joined EXISTS for each term (WP tax_query operator=AND, P4.164).
+	termExistsAND := func(taxonomy string, ids []int64) (string, []any) {
+		if len(ids) == 0 {
+			return "", nil
+		}
+		if len(ids) == 1 {
+			return termExists(taxonomy, ids, false)
+		}
+		var andParts []string
+		var andVals []any
+		for _, id := range ids {
+			s, v := termExists(taxonomy, []int64{id}, false)
+			andParts = append(andParts, s)
+			andVals = append(andVals, v...)
+		}
+		return "(" + strings.Join(andParts, " AND ") + ")", andVals
+	}
 	var parts []string
 	var partVals []any
 	add := func(sql string, v []any) {
@@ -779,11 +801,21 @@ func appendTaxQueryFilters(c *Context, where []string, vals []any, args QueryArg
 		parts = append(parts, sql)
 		partVals = append(partVals, v...)
 	}
-	s, v := termExists("category", args.CategoryIn, false)
-	add(s, v)
-	s, v = termExists("post_tag", args.TagIn, false)
-	add(s, v)
-	s, v = termExists("category", args.CategoryNotIn, true)
+	if strings.EqualFold(strings.TrimSpace(args.CategoryOperator), "AND") {
+		s, v := termExistsAND("category", args.CategoryIn)
+		add(s, v)
+	} else {
+		s, v := termExists("category", args.CategoryIn, false)
+		add(s, v)
+	}
+	if strings.EqualFold(strings.TrimSpace(args.TagOperator), "AND") {
+		s, v := termExistsAND("post_tag", args.TagIn)
+		add(s, v)
+	} else {
+		s, v := termExists("post_tag", args.TagIn, false)
+		add(s, v)
+	}
+	s, v := termExists("category", args.CategoryNotIn, true)
 	add(s, v)
 	s, v = termExists("post_tag", args.TagNotIn, true)
 	add(s, v)
