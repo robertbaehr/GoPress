@@ -1,4 +1,4 @@
-// Password-protected post helpers (P6.15) — get_the_password_form / post_password_required subset.
+// Password-protected post helpers (P6.15 / P3.110) — get_the_password_form / post_password_required subset.
 package wp
 
 import (
@@ -30,6 +30,8 @@ func PostPasswordRequired(c *Context, r *http.Request, post *Post) bool {
 }
 
 // GetThePasswordForm returns the password form markup (get_the_password_form subset).
+// P3.110: invalid-password notice when referer matches permalink and a postpass
+// cookie is present; required input; the_password_form filter.
 func GetThePasswordForm(c *Context, post *Post, redirectTo string) string {
 	home := ""
 	if c != nil {
@@ -46,24 +48,69 @@ func GetThePasswordForm(c *Context, post *Post, redirectTo string) string {
 	if redirectTo == "" && post != nil {
 		redirectTo = postPermalinkForPassword(c, post)
 	}
+
+	invalidPassword := ""
+	invalidHTML := ""
+	aria := ""
+	formClass := "post-password-form"
+	if post != nil && post.ID > 0 && c != nil {
+		permalink := postPermalinkForPassword(c, post)
+		ref := GetRawReferer(c)
+		cookieName := "wp-postpass_" + c.CookieHash()
+		hasCookie := false
+		if c.Req != nil {
+			if ck, err := c.Req.Cookie(cookieName); err == nil && ck != nil && ck.Value != "" {
+				hasCookie = true
+			}
+		}
+		if hasCookie && ref != "" && permalink != "" && ref == permalink {
+			invalidPassword = "Invalid password."
+			if c.Hooks != nil {
+				filtered := c.Hooks.ApplyFilters("the_password_form_incorrect_password", invalidPassword, post)
+				if s, ok := filtered.(string); ok {
+					invalidPassword = s
+				}
+			}
+			errorID := "error-" + fieldID
+			invalidHTML = `<div class="post-password-form-invalid-password" role="alert"><p id="` +
+				html.EscapeString(errorID) + `">` + html.EscapeString(invalidPassword) + `</p></div>`
+			aria = ` aria-describedby="` + html.EscapeString(errorID) + `"`
+			formClass += " password-form-error"
+		}
+	}
+
 	var b strings.Builder
 	b.WriteString(`<form action="`)
 	b.WriteString(html.EscapeString(action))
-	b.WriteString(`" class="post-password-form" method="post">` + "\n")
-	b.WriteString(`<p>This content is password protected. To view it please enter your password below:</p>` + "\n")
-	b.WriteString(`<p><label for="`)
-	b.WriteString(html.EscapeString(fieldID))
-	b.WriteString(`">Password: <input name="post_password" id="`)
-	b.WriteString(html.EscapeString(fieldID))
-	b.WriteString(`" type="password" spellcheck="false" size="20" /></label>`)
+	b.WriteString(`" class="`)
+	b.WriteString(formClass)
+	b.WriteString(`" method="post">`)
 	if redirectTo != "" {
 		b.WriteString(`<input type="hidden" name="redirect_to" value="`)
 		b.WriteString(html.EscapeString(redirectTo))
 		b.WriteString(`" />`)
 	}
+	b.WriteString(invalidHTML)
+	b.WriteString("\n")
+	b.WriteString(`<p>This content is password-protected. To view it, please enter the password below.</p>` + "\n")
+	b.WriteString(`<p><label for="`)
+	b.WriteString(html.EscapeString(fieldID))
+	b.WriteString(`">Password: <input name="post_password" id="`)
+	b.WriteString(html.EscapeString(fieldID))
+	b.WriteString(`" type="password" spellcheck="false" required size="20"`)
+	b.WriteString(aria)
+	b.WriteString(` /></label>`)
 	b.WriteString(` <input type="submit" name="Submit" value="Enter" /></p>` + "\n")
 	b.WriteString("</form>\n")
-	return b.String()
+	out := b.String()
+
+	if c != nil && c.Hooks != nil {
+		filtered := c.Hooks.ApplyFilters("the_password_form", out, post, invalidPassword)
+		if s, ok := filtered.(string); ok {
+			return s
+		}
+	}
+	return out
 }
 
 func postPermalinkForPassword(c *Context, post *Post) string {
