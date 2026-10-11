@@ -9641,3 +9641,18 @@ wp-login.php#language-switcher-post
   task: P3.126
   api: n/a
   notes: "P3.126 — front/pre/separator/document filters + title-tag gate"
+
+# P8.41: deepen media_handle_upload post_data + parent date.
+- prefix: wp-admin/includes/media.php#media_handle_upload#p8.41
+  go: internal/wp/upload.go
+  status: partial
+  task: P8.41
+  api: media_handle_upload
+  notes: "P8.41 — MediaHandleUploadWith post_data; sanitize_text_field title; parent post_date"
+
+- prefix: wp-admin/includes/media.php#media_handle_upload#p8.41#tests
+  go: internal/wp/upload_p8_41_test.go
+  status: partial
+  task: P8.41
+  api: n/a
+  notes: "P8.41 — post_data title/excerpt + parent date + basename sanitize"
