@@ -1171,6 +1171,43 @@ func TestPostsAfterBeforeQueryParams(t *testing.T) {
 	}
 }
 
+func TestPostsAfterBeforeInvalidDateParams(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	// P4.140: present but invalid/empty date-time → rest_invalid_param + rest_invalid_date.
+	for _, path := range []string{
+		"/wp-json/wp/v2/posts?after=not-a-date",
+		"/wp-json/wp/v2/posts?before=",
+		"/wp-json/wp/v2/posts?modified_after=xyz",
+		"/wp-json/wp/v2/pages?after=2024-13-01",
+		"/wp-json/wp/v2/posts?after=bad&before=also-bad",
+	} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		rec := httptest.NewRecorder()
+		c = c.ForRequest(rec, req)
+		(&rest.Server{}).Handle(rec, req, c)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("%s: status=%d body=%s", path, rec.Code, rec.Body.String())
+		}
+		body := rec.Body.String()
+		if !strings.Contains(body, "rest_invalid_param") || !strings.Contains(body, "Invalid date.") {
+			t.Fatalf("%s: expected rest_invalid_param Invalid date: %s", path, body)
+		}
+		if !strings.Contains(body, "rest_invalid_date") {
+			t.Fatalf("%s: expected rest_invalid_date details: %s", path, body)
+		}
+	}
+	// Valid ISO8601 still works.
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?after=2024-02-01T00:00:00%2B00:00&per_page=1", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("valid after status=%d body=%s", rec.Code, rec.Body.String())
+	}
+}
+
 func TestPostsModifiedAfterBeforeQueryParams(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()

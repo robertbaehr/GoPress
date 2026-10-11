@@ -128,10 +128,29 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		parentIn = parsePostsParent(r)
 		parentNotIn = parsePostsParentExclude(r)
 	}
-	dateAfter := parsePostsAfter(r)
-	dateBefore := parsePostsBefore(r)
-	modifiedAfter := parsePostsModifiedAfter(r)
-	modifiedBefore := parsePostsModifiedBefore(r)
+	// P4.140: strict date-time validation for after/before/modified_* (rest_invalid_date).
+	dateAfter, afterOK := parsePostsAfter(r)
+	dateBefore, beforeOK := parsePostsBefore(r)
+	modifiedAfter, modAfterOK := parsePostsModifiedAfter(r)
+	modifiedBefore, modBeforeOK := parsePostsModifiedBefore(r)
+	var badDates []string
+	// Schema order from WP_REST_Posts_Controller::get_collection_params.
+	if !afterOK {
+		badDates = append(badDates, "after")
+	}
+	if !modAfterOK {
+		badDates = append(badDates, "modified_after")
+	}
+	if !beforeOK {
+		badDates = append(badDates, "before")
+	}
+	if !modBeforeOK {
+		badDates = append(badDates, "modified_before")
+	}
+	if len(badDates) > 0 {
+		writeRESTInvalidDateParams(w, badDates)
+		return
+	}
 	statuses, statusCode, statusMsg := parsePostsStatus(r, c)
 	if statusCode != 0 {
 		writeJSON(w, statusCode, map[string]any{
