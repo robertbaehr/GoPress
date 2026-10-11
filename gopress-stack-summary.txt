@@ -1,15 +1,14 @@
-GoPress stack tip cursor/p10-221-status-refresh-ddf1 / fe8c23d41275d3099bff7f6d13997982c8d819ed
+GoPress stack tip cursor/p10-222-status-refresh-ddf1 / ee907a61460c1f7924a4733ff0dd5a1a03f39a58
 
-cursor/p6-63-login-screen-reader-title-ddf1 → dea9e6def7e3
-cursor/p7-160-freedoms-chrome-ddf1 → bc1f250e83ef
-cursor/p2-154-https-detection-ddf1 → de698900ab28
-cursor/p3-152-comments-pagenum-link-ddf1 → e6ffeaae42b8
-cursor/p8-52-post-mime-type-ddf1 → 0e6d7b392a1a
-cursor/p5-159-pullquote-attrs-ddf1 → 3b9e2ebafcc7
-cursor/p4-175-rest-posts-orderby-meta-ddf1 → 26561df90ef3
-cursor/p9-39-do-action-ref-array-helpers-ddf1 → e9a83c70b369
+cursor/p6-64-login-footer-filter-ddf1 → 6f3c58662bf1
+cursor/p2-155-http-supports-ddf1 → 70a9e928be2d
+cursor/p3-153-post-type-archive-link-ddf1 → c3c12ab8dd8d
+cursor/p8-53-mime-type-icon-ddf1 → e71528775352
+cursor/p5-160-separator-attrs-ddf1 → 6a4d41ccf732
+cursor/p7-161-privacy-about-chrome-ddf1 → f7294ba7d204
+cursor/p9-40-remove-all-filters-helpers-ddf1 → aef1f9a19e61
 
-cursor/p10-221-status-refresh-ddf1 → fe8c23d41275
+cursor/p10-222-status-refresh-ddf1 → ee907a61460c
 
 make diff: 100.0% (3162/3162 strict matches, 0 allowlisted, 0 failed) — carried from P10.218
 make check: ok (lint + go test -p 1 ./...)
