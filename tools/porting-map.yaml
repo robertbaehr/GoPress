@@ -11344,3 +11344,11 @@ wp-login.php#language-switcher-post
   task: P10.204
   api: n/a
   notes: "P10.204 — list/search/site-health/strlen/modulepreload/sizes toppers; 2501 cases; headers-safe"
+
+# P10.205: STATUS/PORTING refresh after P5.147–P10.204.
+- prefix: docs/STATUS.md#p10.205
+  go: docs/STATUS.md
+  status: partial
+  task: P10.205
+  api: n/a
+  notes: "P10.205 — summarize list attrs, search semantics, site-health-info, StrLen, modulepreload, sizes attr, corpus 2501"
