@@ -691,6 +691,23 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	b.WriteString("\t\t\t\t\t</button>\n")
 	b.WriteString("\t\t\t\t</div>\n")
 	b.WriteString("\t\t\t</div>\n")
+	// P6.52: login_form action (plugins inject markup before Remember Me).
+	if c != nil && c.Hooks != nil {
+		var formExtra strings.Builder
+		c.Hooks.DoAction("login_form")
+		// Capture via filter-style injection: login_form_top is wp_login_form-only;
+		// on wp-login.php plugins typically echo from the login_form action. We also
+		// honor a login_form_top filter here so GoPress plugins can append HTML.
+		if v := c.Hooks.ApplyFilters("login_form_top", "", map[string]any{
+			"form_id":  "loginform",
+			"redirect": redirectTo,
+		}); v != nil {
+			if s, ok := v.(string); ok && s != "" {
+				formExtra.WriteString(s)
+			}
+		}
+		b.WriteString(formExtra.String())
+	}
 	b.WriteString("\t\t\t\t\t\t\t\t\t<p class=\"forgetmenot\">\n")
 	// P6.24: keep Remember Me checked after failed login (WP checked( $rememberme )).
 	rememberChecked := ""

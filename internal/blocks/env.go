@@ -59,6 +59,10 @@ type Env struct {
 	LoginURL   func(redirect string) string
 	LogoutURL  func(redirect string) string
 
+	// ApplyFilter runs a WP filter hook (login_form_top / middle / bottom, P6.52).
+	// When nil, filters are skipped (empty injection).
+	ApplyFilter func(tag string, value any, args ...any) any
+
 	// GetAttachmentURL resolves attachment IDs for core/image and core/gallery (P5.48).
 	GetAttachmentURL func(id int64) string
 	// GetAttachmentDimensions returns width/height from attachment metadata (P5.114 / core/video).
