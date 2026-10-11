@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P6.70: wp_login_failed action.
+- prefix: wp-includes/pluggable.php#wp_login_failed
+  go: internal/wp/auth_cookie.go
+  status: partial
+  task: P6.70
+  api: n/a
+  notes: "P6.70 — DoAction wp_login_failed on AuthError except empty_username/empty_password"
+- prefix: wp-includes/pluggable.php#wp_login_failed#tests
+  go: internal/login/wp_login_failed_p6_70_test.go
+  status: partial
+  task: P6.70
+  api: n/a
+  notes: "P6.70 — incorrect_password fires; empty_username skipped"
+
 # P10.227: STATUS/PORTING refresh after P6.69–P9.45 stack.
 - prefix: docs/STATUS.md#p10-227
   go: docs/STATUS.md

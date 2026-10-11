@@ -502,19 +502,29 @@ func (e *AuthError) Error() string {
 }
 
 // Login authenticates login/password, sets CurrentUser, and returns auth cookies.
+// On credential failures other than empty_username/empty_password, fires
+// wp_login_failed with the submitted login and *AuthError (P6.70).
 func (c *Context) Login(login, password string, remember, secure bool, now int64) (*AuthCookieSet, error) {
 	if c == nil || c.Users == nil {
 		return nil, fmt.Errorf("wp: Login: nil Context")
 	}
 	login = strings.TrimSpace(login)
+	fail := func(ae *AuthError) (*AuthCookieSet, error) {
+		if ae != nil && ae.Code != "empty_username" && ae.Code != "empty_password" {
+			if c.Hooks != nil {
+				c.Hooks.DoAction("wp_login_failed", login, ae)
+			}
+		}
+		return nil, ae
+	}
 	if login == "" && password == "" {
-		return nil, &AuthError{Code: "empty_username"}
+		return fail(&AuthError{Code: "empty_username"})
 	}
 	if login == "" {
-		return nil, &AuthError{Code: "empty_username"}
+		return fail(&AuthError{Code: "empty_username"})
 	}
 	if password == "" {
-		return nil, &AuthError{Code: "empty_password", Login: login}
+		return fail(&AuthError{Code: "empty_password", Login: login})
 	}
 	user, err := c.GetUserBy("login", login)
 	if err != nil {
@@ -528,10 +538,10 @@ func (c *Context) Login(login, password string, remember, secure bool, now int64
 		}
 	}
 	if user == nil {
-		return nil, &AuthError{Code: "invalid_username", Login: login}
+		return fail(&AuthError{Code: "invalid_username", Login: login})
 	}
 	if !user.CheckPassword(password) {
-		return nil, &AuthError{Code: "incorrect_password", Login: login}
+		return fail(&AuthError{Code: "incorrect_password", Login: login})
 	}
 	set, err := c.SetAuthCookie(user, remember, secure, now, "")
 	if err != nil {
