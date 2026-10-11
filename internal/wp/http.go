@@ -34,43 +34,14 @@ func (e *HTTPError) Error() string {
 // RemoteGet performs wp_remote_get.
 // When Config.BlockExternal is true, returns http_request_not_executed without dialing.
 func RemoteGet(c *Context, rawURL string) (*HTTPResponse, error) {
-	if rawURL == "" {
-		return nil, &HTTPError{Code: "http_request_failed", Message: "empty URL"}
-	}
-	if c != nil && c.Config != nil && c.Config.BlockExternal {
-		return nil, &HTTPError{
-			Code:    "http_request_not_executed",
-			Message: "User has blocked requests through HTTP.",
-		}
-	}
+	return remoteRequest(c, http.MethodGet, rawURL, "")
+}
 
-	client := &http.Client{Timeout: 15 * time.Second}
-	req, err := http.NewRequest(http.MethodGet, rawURL, nil)
-	if err != nil {
-		return nil, &HTTPError{Code: "http_request_failed", Message: err.Error()}
-	}
-	resp, err := client.Do(req)
-	if err != nil {
-		return nil, &HTTPError{Code: "http_request_failed", Message: err.Error()}
-	}
-	defer resp.Body.Close()
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
-	if err != nil {
-		return nil, &HTTPError{Code: "http_request_failed", Message: err.Error()}
-	}
-	status := strings.TrimSpace(resp.Status)
-	if i := strings.IndexByte(status, ' '); i >= 0 && i+1 < len(status) {
-		status = status[i+1:]
-	}
-	if status == "" {
-		status = http.StatusText(resp.StatusCode)
-	}
-	return &HTTPResponse{
-		StatusCode: resp.StatusCode,
-		Status:     status,
-		Body:       string(body),
-		Headers:    resp.Header.Clone(),
-	}, nil
+// RemotePost performs wp_remote_post (P2.150).
+// body is sent as the request body (WP $args['body'] string subset).
+// When Config.BlockExternal is true, returns http_request_not_executed without dialing.
+func RemotePost(c *Context, rawURL string, body string) (*HTTPResponse, error) {
+	return remoteRequest(c, http.MethodPost, rawURL, body)
 }
 
 // SafeRemoteGet mirrors wp_safe_remote_get (P2.147).
@@ -84,6 +55,67 @@ func SafeRemoteGet(c *Context, rawURL string) (*HTTPResponse, error) {
 		}
 	}
 	return RemoteGet(c, validated)
+}
+
+// SafeRemotePost mirrors wp_safe_remote_post (P2.150).
+// Validates the URL with HttpValidateURL (reject_unsafe_urls) before RemotePost.
+func SafeRemotePost(c *Context, rawURL string, body string) (*HTTPResponse, error) {
+	validated := HttpValidateURL(c, rawURL)
+	if validated == "" {
+		return nil, &HTTPError{
+			Code:    "http_request_failed",
+			Message: "A valid URL was not provided.",
+		}
+	}
+	return RemotePost(c, validated, body)
+}
+
+// remoteRequest is the shared dial path for RemoteGet / RemotePost.
+func remoteRequest(c *Context, method, rawURL, body string) (*HTTPResponse, error) {
+	if rawURL == "" {
+		return nil, &HTTPError{Code: "http_request_failed", Message: "empty URL"}
+	}
+	if c != nil && c.Config != nil && c.Config.BlockExternal {
+		return nil, &HTTPError{
+			Code:    "http_request_not_executed",
+			Message: "User has blocked requests through HTTP.",
+		}
+	}
+
+	client := &http.Client{Timeout: 15 * time.Second}
+	var bodyReader io.Reader
+	if method != http.MethodGet && method != http.MethodHead {
+		bodyReader = strings.NewReader(body)
+	}
+	req, err := http.NewRequest(method, rawURL, bodyReader)
+	if err != nil {
+		return nil, &HTTPError{Code: "http_request_failed", Message: err.Error()}
+	}
+	if method == http.MethodPost && body != "" && req.Header.Get("Content-Type") == "" {
+		req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	}
+	resp, err := client.Do(req)
+	if err != nil {
+		return nil, &HTTPError{Code: "http_request_failed", Message: err.Error()}
+	}
+	defer resp.Body.Close()
+	respBody, err := io.ReadAll(io.LimitReader(resp.Body, 1<<20))
+	if err != nil {
+		return nil, &HTTPError{Code: "http_request_failed", Message: err.Error()}
+	}
+	status := strings.TrimSpace(resp.Status)
+	if i := strings.IndexByte(status, ' '); i >= 0 && i+1 < len(status) {
+		status = status[i+1:]
+	}
+	if status == "" {
+		status = http.StatusText(resp.StatusCode)
+	}
+	return &HTTPResponse{
+		StatusCode: resp.StatusCode,
+		Status:     status,
+		Body:       string(respBody),
+		Headers:    resp.Header.Clone(),
+	}, nil
 }
 
 // RemoteRetrieveBody returns the response body string (wp_remote_retrieve_body, P2.148).
