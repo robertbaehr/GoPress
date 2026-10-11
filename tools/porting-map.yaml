@@ -10154,3 +10154,17 @@ wp-login.php#language-switcher-post
   task: P4.153
   api: n/a
   notes: "P4.153 — bogus/mixed index/empty scalar coverage"
+
+# P7.138: admin_footer_text / update_footer / in_admin_footer.
+- prefix: wp-admin/admin-footer.php#admin_footer_text
+  go: internal/admin/chrome.go
+  status: partial
+  task: P7.138
+  api: admin_footer_text
+  notes: "P7.138 — in_admin_footer + admin_footer_text + update_footer Version"
+- prefix: wp-admin/admin-footer.php#admin_footer_text#tests
+  go: internal/admin/admin_footer_text_p7_138_test.go
+  status: partial
+  task: P7.138
+  api: n/a
+  notes: "P7.138 — filter overrides + default Version thank-you"

@@ -143,8 +143,34 @@ func (ch adminChrome) closeHTMLWith(c *wp.Context) string {
 	b.WriteString("</div><!-- #wpbody -->\n")
 	b.WriteString("</div><!-- #wpcontent -->\n")
 	b.WriteString("<div id=\"wpfooter\" role=\"contentinfo\">\n")
-	b.WriteString("<p id=\"footer-left\" class=\"alignleft\"><span id=\"footer-thankyou\">Thank you for creating with <a href=\"https://wordpress.org/\">WordPress</a>.</span></p>\n")
-	b.WriteString("<p id=\"footer-upgrade\" class=\"alignright\">GoPress admin stub</p>\n")
+	// P7.138: in_admin_footer fires before footer-left (wp-admin/admin-footer.php).
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("in_admin_footer")
+	}
+	footerText := `<span id="footer-thankyou">Thank you for creating with <a href="https://wordpress.org/">WordPress</a>.</span>`
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("admin_footer_text", footerText); v != nil {
+			if s, ok := v.(string); ok {
+				footerText = s
+			}
+		}
+	}
+	b.WriteString("<p id=\"footer-left\" class=\"alignleft\">")
+	b.WriteString(footerText)
+	b.WriteString("</p>\n")
+	// P7.138: update_footer (core_update_footer prints Version at priority 10 in WP).
+	upgrade := "Version " + wp.Version
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("update_footer", upgrade); v != nil {
+			if s, ok := v.(string); ok {
+				upgrade = s
+			}
+		}
+	}
+	b.WriteString("<p id=\"footer-upgrade\" class=\"alignright\">")
+	b.WriteString(upgrade)
+	b.WriteString("</p>\n")
+	b.WriteString("<div class=\"clear\"></div>\n")
 	b.WriteString("</div><!-- #wpfooter -->\n")
 	b.WriteString("</div><!-- #wpwrap -->\n")
 	if c != nil {
