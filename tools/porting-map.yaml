@@ -11576,3 +11576,17 @@ wp-login.php#language-switcher-post
   task: P10.209
   api: n/a
   notes: "P10.209 — summarize columns attrs, date_query string-type, privacy bulk, parse_url deep, front noindex, current_action helpers, corpus 2694"
+
+# P5.150: deepen core/group fontSize / gradient / ariaLabel; coerce align enum.
+- prefix: wp-includes/blocks/group#attrs
+  go: internal/blocks/group.go
+  status: partial
+  task: P5.150
+  api: n/a
+  notes: "P5.150 — coerce align wide|full; gradient preset + fontSize + ariaLabel polish; sanitize before applySupports"
+- prefix: wp-includes/blocks/group#attrs#tests
+  go: internal/blocks/group_attrs_p5_150_test.go
+  status: partial
+  task: P5.150
+  api: n/a
+  notes: "P5.150 — align coerce, saved gradient/fontSize/ariaLabel coverage"

@@ -78,7 +78,9 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/column":
 		out = e.renderColumn(block)
 	case "core/group":
+		// P5.150: coerce align enum before applySupports; fontSize/gradient/ariaLabel polish.
 		out = e.renderGroup(block)
+		return applySupports(out, sanitizeGroupBlockAttrs(block.Attrs), name)
 	case "core/list":
 		// P5.147: coerce align enum before applySupports; fontSize/gradient polish.
 		out = e.renderList(block)
