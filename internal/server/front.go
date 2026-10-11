@@ -4088,23 +4088,16 @@ func writeArchiveRelLinks(b *strings.Builder, c *wp.Context, home string) {
 	b.WriteString(wp.ArchiveRelPrevNextHTMLQuery(base, paged, maxPages, q))
 }
 
-// frontRobotsMetaTag returns the <meta name='robots' …> line (wp_robots, P3.44 / P3.90 / P3.104).
+// frontRobotsMetaTag returns the <meta name='robots' …> line (wp_robots, P3.44 / P3.90 / P3.104 / P3.142).
 // Applies the wp_robots filter after default directives matching WP core callbacks:
 // noindex/nofollow when blog_public=0; wp_robots_no_robots (noindex+follow) on
 // search/embed when public; max-image-preview:large when public.
+// P3.142: accept map[string]string from filters; expose sensitive-page helper.
 func frontRobotsMetaTag(c *wp.Context) string {
 	robots := frontRobotsDirectives(c)
 	if c != nil && c.Hooks != nil {
 		if v := c.Hooks.ApplyFilters("wp_robots", robots); v != nil {
-			switch t := v.(type) {
-			case map[string]any:
-				robots = t
-			case map[string]bool:
-				robots = map[string]any{}
-				for k, val := range t {
-					robots[k] = val
-				}
-			}
+			robots = coerceRobotsFilterValue(v)
 		}
 	}
 	content := formatRobotsDirectives(robots)
@@ -4114,35 +4107,95 @@ func frontRobotsMetaTag(c *wp.Context) string {
 	return "<meta name='robots' content='" + html.EscapeString(content) + "' />\n"
 }
 
-// frontRobotsDirectives builds the default wp_robots directive map (P3.90 / P3.104).
+// coerceRobotsFilterValue normalizes wp_robots filter return values (P3.142).
+func coerceRobotsFilterValue(v any) map[string]any {
+	switch t := v.(type) {
+	case map[string]any:
+		return t
+	case map[string]bool:
+		out := map[string]any{}
+		for k, val := range t {
+			out[k] = val
+		}
+		return out
+	case map[string]string:
+		out := map[string]any{}
+		for k, val := range t {
+			out[k] = val
+		}
+		return out
+	default:
+		return map[string]any{}
+	}
+}
+
+// frontRobotsDirectives builds the default wp_robots directive map (P3.90 / P3.104 / P3.142).
 // Mirrors the default_filters.php callback order:
 // wp_robots_noindex → noindex_embeds → noindex_search → max_image_preview_large.
 func frontRobotsDirectives(c *wp.Context) map[string]any {
-	public := optionTruthy(c, "blog_public")
 	robots := map[string]any{}
-	// wp_robots_noindex → wp_robots_no_robots when blog_public=0.
-	if !public {
-		return wpRobotsNoRobots(robots, false)
-	}
-	// wp_robots_noindex_embeds / wp_robots_noindex_search → wp_robots_no_robots.
-	if c != nil && c.Scope != nil && (c.Scope.IsSearch || c.Scope.IsEmbed) {
-		robots = wpRobotsNoRobots(robots, true)
-	}
-	// wp_robots_max_image_preview_large when public.
-	robots["max-image-preview"] = "large"
+	robots = wpRobotsNoindex(c, robots)
+	robots = wpRobotsNoindexEmbeds(c, robots)
+	robots = wpRobotsNoindexSearch(c, robots)
+	robots = wpRobotsMaxImagePreviewLarge(c, robots)
 	return robots
 }
 
-// wpRobotsNoRobots mirrors wp_robots_no_robots() (P3.104).
-func wpRobotsNoRobots(robots map[string]any, public bool) map[string]any {
+// wpRobotsNoindex mirrors wp_robots_noindex() (P3.142).
+func wpRobotsNoindex(c *wp.Context, robots map[string]any) map[string]any {
+	if optionTruthy(c, "blog_public") {
+		return robots
+	}
+	return wpRobotsNoRobots(c, robots)
+}
+
+// wpRobotsNoindexEmbeds mirrors wp_robots_noindex_embeds() (P3.142).
+func wpRobotsNoindexEmbeds(c *wp.Context, robots map[string]any) map[string]any {
+	if c != nil && c.Scope != nil && c.Scope.IsEmbed {
+		return wpRobotsNoRobots(c, robots)
+	}
+	return robots
+}
+
+// wpRobotsNoindexSearch mirrors wp_robots_noindex_search() (P3.142).
+func wpRobotsNoindexSearch(c *wp.Context, robots map[string]any) map[string]any {
+	if c != nil && c.Scope != nil && c.Scope.IsSearch {
+		return wpRobotsNoRobots(c, robots)
+	}
+	return robots
+}
+
+// wpRobotsNoRobots mirrors wp_robots_no_robots() (P3.104 / P3.142).
+func wpRobotsNoRobots(c *wp.Context, robots map[string]any) map[string]any {
 	if robots == nil {
 		robots = map[string]any{}
 	}
 	robots["noindex"] = true
-	if public {
+	if optionTruthy(c, "blog_public") {
 		robots["follow"] = true
 	} else {
 		robots["nofollow"] = true
+	}
+	return robots
+}
+
+// wpRobotsSensitivePage mirrors wp_robots_sensitive_page() (P3.142).
+func wpRobotsSensitivePage(robots map[string]any) map[string]any {
+	if robots == nil {
+		robots = map[string]any{}
+	}
+	robots["noindex"] = true
+	robots["noarchive"] = true
+	return robots
+}
+
+// wpRobotsMaxImagePreviewLarge mirrors wp_robots_max_image_preview_large() (P3.142).
+func wpRobotsMaxImagePreviewLarge(c *wp.Context, robots map[string]any) map[string]any {
+	if robots == nil {
+		robots = map[string]any{}
+	}
+	if optionTruthy(c, "blog_public") {
+		robots["max-image-preview"] = "large"
 	}
 	return robots
 }
