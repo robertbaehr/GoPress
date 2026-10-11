@@ -541,9 +541,11 @@ func ksesSanitize(content string, allowed AllowedHTML, protoSet map[string]bool)
 			continue
 		}
 		full := m[0]
+		// P2.136: wp_kses_split2 starts with wp_kses_stripslashes on the chunk.
+		full = KsesStripslashes(full)
 		closing := m[1] != ""
 		elem := strings.ToLower(m[2])
-		attrStr := m[3]
+		attrStr := KsesStripslashes(m[3])
 		_ = m[4] // self-closing flag ignored in HTML serialization
 
 		rules, ok := allowed[elem]
@@ -916,6 +918,15 @@ var (
 	ksesDecodeEntityDec = regexp.MustCompile(`&#([0-9]+);`)
 	ksesDecodeEntityHex = regexp.MustCompile(`&#[Xx]([0-9A-Fa-f]+);`)
 )
+
+// KsesStripslashes is wp_kses_stripslashes (P2.136).
+// Converts quoted escaped double-quotes (\" → ") as WP's preg_replace does.
+func KsesStripslashes(content string) string {
+	if content == "" || !strings.Contains(content, `\"`) {
+		return content
+	}
+	return strings.ReplaceAll(content, `\"`, `"`)
+}
 
 // KsesDecodeEntities is wp_kses_decode_entities (P2.135).
 // Decodes numeric character references (decimal and hex) to bytes via PHP chr().

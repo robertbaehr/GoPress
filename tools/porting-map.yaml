@@ -10468,3 +10468,17 @@ wp-login.php#language-switcher-post
   task: P7.141
   api: n/a
   notes: "P7.141 — absent by default; injected insecure check; CheckBrowserVersion"
+
+# P2.136: wp_kses_stripslashes export.
+- prefix: wp-includes/kses.php#wp_kses_stripslashes
+  go: internal/wp/kses.go
+  status: partial
+  task: P2.136
+  api: wp_kses_stripslashes
+  notes: "P2.136 — KsesStripslashes \\\"→\"; wired into ksesSanitize tag chunks (split2)"
+- prefix: wp-includes/kses.php#wp_kses_stripslashes#tests
+  go: internal/wp/kses_stripslashes_p2_136_test.go
+  status: partial
+  task: P2.136
+  api: n/a
+  notes: "P2.136 — unit + wired KsesPost coverage"
