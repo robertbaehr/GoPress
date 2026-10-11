@@ -301,3 +301,48 @@ func TestHooksDidFilter(t *testing.T) {
 		t.Fatal("nil DidFilter")
 	}
 }
+
+// P9.29: has_filter / has_action with callback → priority.
+func TestHooksHasFilterFuncPriority(t *testing.T) {
+	h := wp.NewHooks()
+	fn := func(value any, args ...any) any { return value }
+	other := func(value any, args ...any) any { return value }
+
+	if _, ok := h.HasFilterFunc("t", fn, -1); ok {
+		t.Fatal("expected miss before add")
+	}
+	h.AddFilter("t", fn, 20, 1)
+	pri, ok := h.HasFilterFunc("t", fn, -1)
+	if !ok || pri != 20 {
+		t.Fatalf("HasFilterFunc any: pri=%d ok=%v", pri, ok)
+	}
+	if _, ok := h.HasFilterFunc("t", fn, 10); ok {
+		t.Fatal("exact priority 10 should miss")
+	}
+	if pri, ok := h.HasFilterFunc("t", fn, 20); !ok || pri != 20 {
+		t.Fatalf("exact 20: pri=%d ok=%v", pri, ok)
+	}
+	if _, ok := h.HasFilterFunc("t", other, -1); ok {
+		t.Fatal("other callback should miss")
+	}
+	if !h.HasFilter("t") {
+		t.Fatal("HasFilter bool still true")
+	}
+}
+
+func TestHooksHasActionFuncPriority(t *testing.T) {
+	h := wp.NewHooks()
+	fn := func(args ...any) {}
+	h.AddAction("a", fn, 5, 0)
+	pri, ok := h.HasActionFunc("a", fn, -1)
+	if !ok || pri != 5 {
+		t.Fatalf("HasActionFunc: pri=%d ok=%v", pri, ok)
+	}
+	if !h.HasAction("a") {
+		t.Fatal("HasAction bool")
+	}
+	var nilH *wp.Hooks
+	if _, ok := nilH.HasFilterFunc("x", func(value any, args ...any) any { return value }, -1); ok {
+		t.Fatal("nil HasFilterFunc")
+	}
+}
