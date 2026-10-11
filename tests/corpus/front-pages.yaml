@@ -2031,3 +2031,77 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.188: front toppers after rest-link / avatar / login-body stack.
+
+- id: front-p10188-001-home
+  role: anon
+  method: GET
+  path: /
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10188-002-hello
+  role: anon
+  method: GET
+  path: /?p=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10188-003-sample-page
+  role: anon
+  method: GET
+  path: /?page_id=2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10188-004-feed
+  role: anon
+  method: GET
+  path: /feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10188-005-comments-feed
+  role: anon
+  method: GET
+  path: /comments/feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10188-006-robots
+  role: anon
+  method: GET
+  path: /robots.txt
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10188-007-rsd
+  role: anon
+  method: GET
+  path: /rsd.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10188-008-sitemap
+  role: anon
+  method: GET
+  path: /wp-sitemap.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
