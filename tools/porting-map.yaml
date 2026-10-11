@@ -9127,3 +9127,11 @@ wp-login.php#language-switcher-post
   task: P9.29
   api: n/a
   notes: "P9.29 — HasFilterFunc/HasActionFunc coverage"
+
+# P10.166: expand diff corpus after P5.128–P9.29.
+- prefix: tests/corpus#p10.166
+  go: tests/corpus
+  status: partial
+  task: P10.166
+  api: n/a
+  notes: "P10.166 — core/pattern + modified_gmt fields + post-navigation + edit-comments/front/login/ajax toppers; 1394 cases"

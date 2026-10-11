@@ -1450,3 +1450,58 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.166: front toppers after adjacent-posts / pattern stack.
+- id: front-p10166-001-home
+  role: anon
+  method: GET
+  path: /
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10166-002-hello-world
+  role: anon
+  method: GET
+  path: /blog/uncategorized/hello-world/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10166-003-sample-page
+  role: anon
+  method: GET
+  path: /sample-page/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10166-004-feed
+  role: anon
+  method: GET
+  path: /feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10166-005-feed-atom
+  role: anon
+  method: GET
+  path: /feed/atom/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10166-006-search-pattern
+  role: anon
+  method: GET
+  path: /?s=pattern
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
