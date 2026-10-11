@@ -63,7 +63,7 @@ func stripScriptStyleBlocks(text, tag string) string {
 			r, _ := utf8.DecodeRuneInString(text[after:])
 			if r != '>' && r != '/' && !unicode.IsSpace(r) {
 				// e.g. <scripted — not a script tag
-				b.WriteString(text[i : after])
+				b.WriteString(text[i:after])
 				i = after
 				continue
 			}
