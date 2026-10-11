@@ -1,1 +1,0 @@
-match: 100.0% (1394/1394 strict matches, 0 allowlisted, 0 failed)

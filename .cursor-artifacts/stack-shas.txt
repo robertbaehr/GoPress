@@ -1,8 +1,0 @@
-22fbe60a718b  cursor/p5-113-image-block-ddf1  22fbe60a718bbc82e3ae9a0cff6e74798de5ca75
-a1bd5b808c73  cursor/p4-129-rest-comments-query-ddf1  a1bd5b808c73a12063c67e4d7cecb2d0c915aae4
-a874819b89ac  cursor/p7-114-plugin-install-ddf1  a874819b89ac46974c41a54158e987af989aff77
-ea52f036a348  cursor/p2-109-wp-html-split-ddf1  ea52f036a3480578e37fe22164c267ec333ac64a
-c576935bc758  cursor/p3-107-front-prev-next-ddf1  c576935bc7588d8e8f82e882fe4c81f27dd92cf2
-054c528f240b  cursor/p6-47-login-admin-email-confirm-ddf1  054c528f240b6fa3278e9cfc0ea45a56d49a0b5c
-0731815f8cd0  cursor/p10-136-corpus-expand-ddf1  0731815f8cd0dbbbb0eaeffb9d57387829637595
-258bff5262cb  cursor/p10-137-status-refresh-ddf1  258bff5262cb54ed940bf9b7aac2f4aa4dc267b3
