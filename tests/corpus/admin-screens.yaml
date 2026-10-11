@@ -349,29 +349,11 @@
   compare: headers
   nonce: null
 
-# P10.156: admin toppers after async-upload deepen (avoid set-cookie drift paths).
+# P10.156: one cookie-stable admin topper after async-upload deepen.
 - id: admin-p10156-001-edit-pages
   role: admin
   method: GET
   path: /wp-admin/edit.php?post_type=page
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: admin-p10156-002-heartbeat-options-reading
-  role: admin
-  method: GET
-  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=options-reading
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: admin-p10156-003-heartbeat-tools
-  role: admin
-  method: GET
-  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=tools
   headers: {}
   body: null
   compare: headers

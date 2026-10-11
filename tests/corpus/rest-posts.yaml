@@ -8533,3 +8533,30 @@
   body: null
   compare: headers
   nonce: null
+
+- id: rest-p10156-029-rest-route-query-block
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/query
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10156-030-rest-route-post-template-block
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/post-template
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10156-031-pages-offset-0-orderby-id
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?offset=0&per_page=1&orderby=id
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
