@@ -123,3 +123,71 @@ func TestBatchRequireAllValidate(t *testing.T) {
 		t.Fatal("expected error envelope, got null")
 	}
 }
+
+func TestBatchOPTIONSAndHEAD(t *testing.T) {
+	// P4.128: OPTIONS schema + HEAD Allow: POST.
+	c := bootOrSkip(t)
+	srv := &rest.Server{}
+	req := httptest.NewRequest(http.MethodOptions, "/wp-json/batch/v1", nil)
+	rec := httptest.NewRecorder()
+	srv.Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("OPTIONS status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if got := rec.Header().Get("Allow"); got != "POST" {
+		t.Fatalf("OPTIONS Allow=%q", got)
+	}
+	if !strings.Contains(rec.Body.String(), `"maxItems"`) || !strings.Contains(rec.Body.String(), `"validation"`) {
+		t.Fatalf("OPTIONS schema missing args: %s", rec.Body.String())
+	}
+	req = httptest.NewRequest(http.MethodHead, "/wp-json/batch/v1", nil)
+	rec = httptest.NewRecorder()
+	srv.Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("HEAD status=%d", rec.Code)
+	}
+	if got := rec.Header().Get("Allow"); got != "POST" {
+		t.Fatalf("HEAD Allow=%q", got)
+	}
+}
+
+func TestBatchMaxSizeFilterAndSubHeaders(t *testing.T) {
+	// P4.128: rest_get_max_batch_size + per-request headers forward.
+	c := bootOrSkip(t)
+	c.Hooks.AddFilter("rest_get_max_batch_size", func(value any, args ...any) any {
+		return 1
+	}, 10, 1)
+	srv := &rest.Server{}
+	body := `{"requests":[{"method":"POST","path":"/wp/v2/posts","body":{}},{"method":"POST","path":"/wp/v2/posts","body":{}}]}`
+	req := httptest.NewRequest(http.MethodPost, "/wp-json/batch/v1", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec := httptest.NewRecorder()
+	srv.Handle(rec, req, c)
+	if rec.Code != http.StatusBadRequest {
+		t.Fatalf("expected maxItems reject, status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "at most 1") {
+		t.Fatalf("expected filter-sized message: %s", rec.Body.String())
+	}
+
+	body = `{"requests":[{"method":"DELETE","path":"/wp/v2/posts/1?force=true","headers":{"X-GoPress-Batch":"1"},"body":{}}]}`
+	req = httptest.NewRequest(http.MethodPost, "/wp-json/batch/v1", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	rec = httptest.NewRecorder()
+	srv.Handle(rec, req, c)
+	if rec.Code != http.StatusMultiStatus {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var out struct {
+		Responses []struct {
+			Status int `json:"status"`
+		} `json:"responses"`
+	}
+	if err := json.Unmarshal(rec.Body.Bytes(), &out); err != nil {
+		t.Fatalf("json: %v", err)
+	}
+	if len(out.Responses) != 1 || out.Responses[0].Status < 400 {
+		// Anon delete should fail auth; path+query still dispatched.
+		t.Fatalf("expected auth error for delete with query: %+v body=%s", out.Responses, rec.Body.String())
+	}
+}
