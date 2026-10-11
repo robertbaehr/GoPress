@@ -20,6 +20,8 @@ type postWriteBody struct {
 	Author  *int64          `json:"author"`
 	// Sticky is optional; nil means leave sticky_posts unchanged (P4.97).
 	Sticky *bool `json:"sticky"`
+	// Meta is optional registered post meta (footnotes); nil means omit (P4.130).
+	Meta map[string]any `json:"meta"`
 }
 
 func (s *Server) servePostCollection(w http.ResponseWriter, r *http.Request, c *wp.Context, postType string) {
@@ -274,6 +276,14 @@ func (s *Server) createPost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 			return
 		}
 	}
+	if err := applyPostMetaWrite(c, id, body.Meta); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_post_meta",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 500},
+		})
+		return
+	}
 	post, err := getPostByIDAny(c, "post", id, true)
 	if err != nil || post == nil {
 		writeJSON(w, http.StatusCreated, map[string]any{"id": id})
@@ -387,6 +397,14 @@ func (s *Server) updatePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 			})
 			return
 		}
+	}
+	if err := applyPostMetaWrite(c, id, body.Meta); err != nil {
+		writeJSON(w, http.StatusInternalServerError, map[string]any{
+			"code":    "rest_post_meta",
+			"message": err.Error(),
+			"data":    map[string]any{"status": 500},
+		})
+		return
 	}
 	post, err := getPostByIDAny(c, "post", id, true)
 	if err != nil || post == nil {

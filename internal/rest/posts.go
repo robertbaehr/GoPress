@@ -751,7 +751,7 @@ func postFromWP(c *wp.Context, row wp.Post, home string, edit bool, sticky map[i
 		Sticky:        sticky[row.ID],
 		Template:      pageTemplate(c, row.ID),
 		Format:        format,
-		Meta:          map[string]any{"footnotes": ""},
+		Meta:          postMetaFields(c, row.ID),
 		Categories:    cats,
 		Tags:          tags,
 		Parent:        row.Parent,
@@ -948,6 +948,33 @@ func pageTemplate(c *wp.Context, postID int64) string {
 		return ""
 	}
 	return v
+}
+
+// postMetaFields returns registered REST post meta (footnotes subset, P4.130).
+func postMetaFields(c *wp.Context, postID int64) map[string]any {
+	out := map[string]any{"footnotes": ""}
+	if c == nil || c.Meta == nil || postID <= 0 {
+		return out
+	}
+	if v := asString(c.Meta.GetMetadata(wp.MetaPost, postID, "footnotes", true)); v != "" {
+		out["footnotes"] = v
+	}
+	return out
+}
+
+// applyPostMetaWrite updates registered post meta keys from a REST write body (P4.130).
+// Only footnotes is supported; omit means leave unchanged; empty string clears.
+func applyPostMetaWrite(c *wp.Context, postID int64, meta map[string]any) error {
+	if c == nil || c.Meta == nil || postID <= 0 || meta == nil {
+		return nil
+	}
+	if raw, ok := meta["footnotes"]; ok {
+		val := asString(raw)
+		if _, _, _, err := c.Meta.UpdateMetadata(wp.MetaPost, postID, "footnotes", val, ""); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func postFormat(c *wp.Context, postID int64, postType string) string {
