@@ -4698,6 +4698,21 @@ wp-login.php#language-switcher-post
   task: P5.49
   api: internal
 
+# P5.115: core/embed className/anchor polish + more provider inference.
+- prefix: wp-includes/blocks/embed#p5.115
+  go: internal/blocks/embed.go
+  status: partial
+  task: P5.115
+  api: internal
+  notes: "P5.115 — supports.anchor id; className already in figure classes; wordpress-tv/reddit/pinterest/amazon URL inference"
+
+- prefix: wp-includes/blocks/embed#p5.115#tests
+  go: internal/blocks/embed_test.go
+  status: partial
+  task: P5.115
+  api: internal
+  notes: "P5.115 — className/anchor + inferred wordpress-tv/reddit coverage"
+
 # P5.50: core/social-links + core/social-link server render.
 - prefix: wp-includes/blocks/social-link.php
   go: internal/blocks/social_links.go
