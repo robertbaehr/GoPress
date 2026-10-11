@@ -1,4 +1,12 @@
 
+# P10.222: STATUS/PORTING refresh after P6.64–P9.40 stack.
+- prefix: docs/STATUS.md#p10.222
+  go: docs/STATUS.md
+  status: partial
+  task: P10.222
+  api: n/a
+  notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
+
 # P9.40: RemoveAllFilters / RemoveAllActions Context helpers.
 - prefix: wp-includes/plugin.php#remove_all_filters
   go: internal/wp/has_action.go
