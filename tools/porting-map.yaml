@@ -4773,9 +4773,23 @@ wp-login.php#language-switcher-post
 - prefix: wp-admin/includes/image.php#wp_generate_attachment_metadata
   go: internal/wp/image_meta.go
   status: partial
-  task: P8.26
+  task: P8.34
   api: exported
-  notes: "P8.26 — filesize + create/update context; width/height/file/sizes/image_meta"
+  notes: "P8.34 — filesize + create/update; PDF Ghostscript preview + fallback_intermediate_image_sizes"
+
+- prefix: wp-admin/includes/image.php#wp_generate_attachment_metadata.pdf
+  go: internal/wp/pdf_preview.go
+  status: partial
+  task: P8.34
+  api: exported
+  notes: "P8.34 — renderPDFPreviewJPEG via gs; soft-crop thumbnail; UniqueFilename *-pdf.jpg"
+
+- prefix: wp-admin/includes/image.php#wp_generate_attachment_metadata.pdf#tests
+  go: internal/wp/pdf_preview_test.go
+  status: partial
+  task: P8.34
+  api: n/a
+  notes: "P8.34 — PDF preview + filter coverage"
 
 - prefix: wp-includes/functions.php#wp_filesize
   go: internal/wp/image_meta.go
