@@ -100,3 +100,50 @@ func TestCoverEmpty(t *testing.T) {
 		t.Fatalf("empty cover should render empty: %q", out)
 	}
 }
+
+func TestCoverClassNameAnchorPositionPolish(t *testing.T) {
+	// P5.108: className/anchor/align/contentPosition/isDark on synthesize + saved.
+	src := `<!-- wp:cover {"url":"https://example.com/h.jpg","dimRatio":40,"anchor":"hero","className":"my-cover","align":"full","contentPosition":"top left","isDark":false} /-->`
+	out := blocks.Render(src)
+	for _, want := range []string{
+		`id="hero"`,
+		"my-cover",
+		"alignfull",
+		"has-custom-content-position",
+		"is-position-top-left",
+		"is-light",
+		"has-background-dim-40",
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+
+	saved := `<!-- wp:cover {"anchor":"saved-c","className":"extra","contentPosition":"bottom center","isDark":false} -->
+<div class="wp-block-cover"><span aria-hidden="true" class="wp-block-cover__background has-background-dim"></span><div class="wp-block-cover__inner-container"><p>Hi</p></div></div>
+<!-- /wp:cover -->`
+	out = blocks.Render(saved)
+	if !strings.Contains(out, `id="saved-c"`) || !strings.Contains(out, "extra") {
+		t.Fatalf("saved polish: %q", out)
+	}
+	if !strings.Contains(out, "is-position-bottom-center") || !strings.Contains(out, "is-light") {
+		t.Fatalf("saved position/light: %q", out)
+	}
+}
+
+func TestCoverVideoSynthesize(t *testing.T) {
+	src := `<!-- wp:cover {"url":"https://example.com/v.mp4","backgroundType":"video","dimRatio":50,"poster":"https://example.com/p.jpg"} /-->`
+	out := blocks.Render(src)
+	if !strings.Contains(out, `wp-block-cover__video-background`) {
+		t.Fatalf("missing video bg: %q", out)
+	}
+	if !strings.Contains(out, `src="https://example.com/v.mp4"`) {
+		t.Fatalf("missing video src: %q", out)
+	}
+	if !strings.Contains(out, `poster="https://example.com/p.jpg"`) {
+		t.Fatalf("missing poster: %q", out)
+	}
+	if !strings.Contains(out, "autoplay") || !strings.Contains(out, "muted") {
+		t.Fatalf("expected autoplay muted: %q", out)
+	}
+}
