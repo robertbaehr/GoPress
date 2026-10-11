@@ -2625,13 +2625,20 @@ wp-login.php#language-switcher-post
   notes: "P3.101 — RelCanonicalLinkPaged; front singular uses request page/cpage"
 
 
-# P3.87: paginate_links subset for archive/query pagination.
+# P3.87 / P3.102: paginate_links subset for archive/query pagination.
 - prefix: wp-includes/general-template.php#paginate_links
   go: internal/wp/paginate_links.go
   status: partial
-  task: P3.87
+  task: P3.102
   api: exported
-  notes: "P3.87 — prev/next, end/mid window, dots, plain/list types; PaginateLinksPlain helper"
+  notes: "P3.102 — add_args query vars + paginate_links filter; P3.87 prev/next/dots/list"
+
+- prefix: wp-includes/general-template.php#paginate_links#test
+  go: internal/wp/paginate_links_test.go
+  status: partial
+  task: P3.102
+  api: n/a
+  notes: "P3.102 — unit coverage for add_args and filter"
 
 # P3.43: archive pagination <link rel="prev|next">.
 - prefix: wp-includes/link-template.php#get_pagenum_link
