@@ -7,6 +7,14 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P10.225: STATUS/PORTING refresh after P6.67–P9.43 stack.
+- prefix: docs/STATUS.md#p10-225
+  go: docs/STATUS.md
+  status: partial
+  task: P10.225
+  api: n/a
+  notes: "P10.225 — summarize register filter, delete post link, status header, attached file filter, import chrome, search align, DoAction helpers"
+
 # P9.43: DoAction / ApplyFilters Context helpers.
 - prefix: wp-includes/plugin.php#do_action
   go: internal/wp/has_action.go
