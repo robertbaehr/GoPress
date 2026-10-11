@@ -4088,11 +4088,12 @@ func writeArchiveRelLinks(b *strings.Builder, c *wp.Context, home string) {
 	b.WriteString(wp.ArchiveRelPrevNextHTMLQuery(base, paged, maxPages, q))
 }
 
-// frontRobotsMetaTag returns the <meta name='robots' …> line (wp_robots, P3.44 / P3.90 / P3.104 / P3.142).
+// frontRobotsMetaTag returns the <meta name='robots' …> line (wp_robots, P3.44 / P3.90 / P3.104 / P3.142 / P3.143).
 // Applies the wp_robots filter after default directives matching WP core callbacks:
 // noindex/nofollow when blog_public=0; wp_robots_no_robots (noindex+follow) on
 // search/embed when public; max-image-preview:large when public.
 // P3.142: accept map[string]string from filters; expose sensitive-page helper.
+// P3.143: replytocom / unapproved+moderation-hash → wp_robots_no_robots (default-filters.php).
 func frontRobotsMetaTag(c *wp.Context) string {
 	robots := frontRobotsDirectives(c)
 	if c != nil && c.Hooks != nil {
@@ -4129,16 +4130,39 @@ func coerceRobotsFilterValue(v any) map[string]any {
 	}
 }
 
-// frontRobotsDirectives builds the default wp_robots directive map (P3.90 / P3.104 / P3.142).
+// frontRobotsDirectives builds the default wp_robots directive map (P3.90 / P3.104 / P3.142 / P3.143).
 // Mirrors the default_filters.php callback order:
-// wp_robots_noindex → noindex_embeds → noindex_search → max_image_preview_large.
+// wp_robots_noindex → noindex_embeds → noindex_search → max_image_preview_large,
+// plus conditional wp_robots_no_robots for replytocom / unapproved preview (P3.143).
 func frontRobotsDirectives(c *wp.Context) map[string]any {
 	robots := map[string]any{}
 	robots = wpRobotsNoindex(c, robots)
 	robots = wpRobotsNoindexEmbeds(c, robots)
 	robots = wpRobotsNoindexSearch(c, robots)
 	robots = wpRobotsMaxImagePreviewLarge(c, robots)
+	// P3.143: default-filters.php conditional add_filter( 'wp_robots', 'wp_robots_no_robots' ).
+	if frontRobotsNeedsNoRobots(c) {
+		robots = wpRobotsNoRobots(c, robots)
+	}
 	return robots
+}
+
+// frontRobotsNeedsNoRobots mirrors the default-filters.php condition that hooks
+// wp_robots_no_robots for comment-reply and unapproved comment preview (P3.143).
+func frontRobotsNeedsNoRobots(c *wp.Context) bool {
+	if c == nil || c.Req == nil {
+		return false
+	}
+	q := c.Req.URL.Query()
+	// Comment reply link: ?replytocom=
+	if q.Has("replytocom") {
+		return true
+	}
+	// Unapproved comment preview: ?unapproved= & ?moderation-hash=
+	if q.Has("unapproved") && q.Has("moderation-hash") {
+		return true
+	}
+	return false
 }
 
 // wpRobotsNoindex mirrors wp_robots_noindex() (P3.142).
