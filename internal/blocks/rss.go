@@ -14,6 +14,8 @@ import (
 // the block at the site home/site URL shows the WP loop-prevention notice.
 func (e *Env) renderRSS(block Block) string {
 	e = e.ensure()
+	// P5.169: coerce supports.align before class assembly.
+	block.Attrs = sanitizeRSSBlockAttrs(block.Attrs)
 	feedURL := strings.TrimSpace(attrString(block.Attrs, "feedURL"))
 	if feedURL == "" {
 		return ""
@@ -123,6 +125,10 @@ func (e *Env) renderRSS(block Block) string {
 
 	var classes []string
 	classes = append(classes, "wp-block-rss")
+	// P5.169: supports.align true → left|center|right|wide|full.
+	if align := strings.TrimSpace(attrString(block.Attrs, "align")); align != "" {
+		classes = append(classes, "align"+sanitizeClassToken(align))
+	}
 	if layout == "grid" {
 		classes = append(classes, "is-grid", "columns-"+strconv.Itoa(columns))
 	}
@@ -137,6 +143,25 @@ func (e *Env) renderRSS(block Block) string {
 	}
 
 	return `<ul class="` + strings.Join(classes, " ") + `">` + items.String() + `</ul>`
+}
+
+// sanitizeRSSBlockAttrs coerces core/rss supports.align (P5.169).
+// Allowed: left, center, right, wide, full. Other values (incl. none) are dropped.
+func sanitizeRSSBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "left", "center", "right", "wide", "full":
+	default:
+		delete(out, "align")
+	}
+	return out
 }
 
 func rssFeedIsSiteRoot(feedURL string, e *Env) bool {
