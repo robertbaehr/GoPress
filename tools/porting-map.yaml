@@ -5229,10 +5229,18 @@ wp-login.php#language-switcher-post
   api: n/a
 
 - prefix: wp-admin/theme-install.php
-  go: internal/admin
-  status: out-of-scope
-  task: P7.18
+  go: internal/admin/theme_install.go
+  status: partial
+  task: P7.113
   api: n/a
+  notes: "P7.113 — Add Themes stub (install_themes/switch_themes gate); directory install remains out of scope"
+
+- prefix: wp-admin/theme-install.php#tests
+  go: internal/admin/theme_install_test.go
+  status: partial
+  task: P7.113
+  api: n/a
+  notes: "P7.113 — stub chrome + login redirect coverage"
 
 - prefix: wp-admin/theme-editor.php
   go: internal/admin/admin.go
