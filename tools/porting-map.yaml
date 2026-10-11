@@ -9672,3 +9672,17 @@ wp-login.php#language-switcher-post
   task: P10.175
   api: n/a
   notes: "P10.175 — summarize widget-group, _embed replies/up, Activity row actions, KsesAttr, GetDocumentTitle, MediaHandleUploadWith + 1551 corpus"
+
+# P5.133: deepen core/social-link service catalog (names + brand paths).
+- prefix: wp-includes/blocks/social-link.php#p5.133
+  go: internal/blocks/social_links.go
+  status: partial
+  task: P5.133
+  api: internal
+  notes: "P5.133 — +28 WP services (spotify/tumblr/vimeo/chain/feed/…); share name Share Icon"
+- prefix: wp-includes/blocks/social-link.php#p5.133#tests
+  go: internal/blocks/social_link_p5_133_test.go
+  status: partial
+  task: P5.133
+  api: n/a
+  notes: "P5.133 — unit coverage for extra services + share label"
