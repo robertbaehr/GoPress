@@ -963,3 +963,68 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.202: ajax toppers for import/tools/export/site-health screens.
+
+- id: ajax-p10202-001-heartbeat-import
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=import
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10202-002-heartbeat-tools
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=tools
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10202-003-heartbeat-export
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=export
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10202-004-heartbeat-site-health
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=site-health
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10202-005-heartbeat-dashboard
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=dashboard
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10202-006-heartbeat-edit-post
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=edit-post
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10202-007-heartbeat-plugins
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=plugins
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
