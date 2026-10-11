@@ -8095,3 +8095,25 @@ wp-login.php#language-switcher-post
   task: P5.120
   api: internal
   notes: "P5.120 — wire SiteLogoID from CustomLogoID"
+
+# P4.136: REST posts tax_query categories_exclude/tags_exclude/tax_relation.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#tax_query
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.136
+  api: exported
+  notes: "P4.136 — ?categories_exclude=/?tags_exclude=/?tax_relation=AND|OR; EXISTS tax clauses"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#tax_query#query
+  go: internal/wp/query.go
+  status: partial
+  task: P4.136
+  api: exported
+  notes: "P4.136 — CategoryNotIn/TagNotIn/TaxRelation + appendTaxQueryFilters EXISTS"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#tax_query#tests
+  go: internal/rest/posts_test.go
+  status: partial
+  task: P4.136
+  api: n/a
+  notes: "P4.136 — categories_exclude + tax_relation OR coverage"

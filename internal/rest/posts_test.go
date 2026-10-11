@@ -520,6 +520,47 @@ func TestPostsCategoriesQueryParam(t *testing.T) {
 	}
 }
 
+// P4.136: categories_exclude / tags_exclude / tax_relation.
+func TestPostsTaxQueryExcludeAndRelation(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?categories_exclude=1&per_page=100", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("categories_exclude status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var excl []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &excl); err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range excl {
+		for _, id := range p.Categories {
+			if id == 1 {
+				t.Fatalf("post %d still in category 1 after exclude", p.ID)
+			}
+		}
+	}
+
+	// tax_relation=OR with categories=1 should still return Uncategorized posts.
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?categories=1&tax_relation=OR&per_page=10", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("tax_relation status=%d", rec.Code)
+	}
+	var orHits []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &orHits); err != nil {
+		t.Fatal(err)
+	}
+	if len(orHits) == 0 {
+		t.Fatal("expected OR tax_relation hits for categories=1")
+	}
+}
+
 func TestPostsFormatQueryParam(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
