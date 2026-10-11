@@ -776,3 +776,41 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.192: corpus expand after spacer-attrs/menu_order/admin-email/utf8/rsd/image-downsize stack.
+
+- id: ajax-p10192-001-heartbeat-upload
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=upload
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10192-002-heartbeat-media
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=media
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10192-010-heartbeat
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10192-011-heartbeat-pages
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=edit-page
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

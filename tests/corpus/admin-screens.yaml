@@ -884,3 +884,59 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.192: corpus expand after spacer-attrs/menu_order/admin-email/utf8/rsd/image-downsize stack.
+
+- id: admin-p10192-001-options-general
+  role: admin
+  method: GET
+  path: /wp-admin/options-general.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10192-003-edit-pages
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_type=page
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10192-010-dashboard
+  role: admin
+  method: GET
+  path: /wp-admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10192-011-edit
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10192-012-plugins
+  role: admin
+  method: GET
+  path: /wp-admin/plugins.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10192-014-users
+  role: admin
+  method: GET
+  path: /wp-admin/users.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

@@ -2222,3 +2222,131 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.192: corpus expand after spacer-attrs/menu_order/admin-email/utf8/rsd/image-downsize stack.
+
+- id: front-p10192-001-sample-page
+  role: anon
+  method: GET
+  path: /sample-page/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10192-002-hello-world
+  role: anon
+  method: GET
+  path: /hello-world/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10192-003-sitemap-posts
+  role: anon
+  method: GET
+  path: /wp-sitemap-posts-post-1.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10192-004-feed-rss2
+  role: anon
+  method: GET
+  path: /feed/rss2/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10192-006-favicon
+  role: anon
+  method: GET
+  path: /favicon.ico
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10192-007-cron
+  role: anon
+  method: GET
+  path: /wp-cron.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10192-010-home
+  role: anon
+  method: GET
+  path: /
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10192-011-page-2
+  role: anon
+  method: GET
+  path: /page/2/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10192-012-feed
+  role: anon
+  method: GET
+  path: /feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10192-013-robots
+  role: anon
+  method: GET
+  path: /robots.txt
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10192-014-sitemap
+  role: anon
+  method: GET
+  path: /wp-sitemap.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10192-015-search
+  role: anon
+  method: GET
+  path: /?s=hello
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10192-016-comments-feed
+  role: anon
+  method: GET
+  path: /comments/feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10192-017-atom
+  role: anon
+  method: GET
+  path: /feed/atom/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

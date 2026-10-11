@@ -1472,3 +1472,41 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.192: corpus expand after spacer-attrs/menu_order/admin-email/utf8/rsd/image-downsize stack.
+
+- id: login-p10192-001-lostpassword
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10192-010-login
+  role: anon
+  method: GET
+  path: /wp-login.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10192-011-lostpassword-redirect
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword&redirect_to=/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10192-012-register
+  role: anon
+  method: GET
+  path: /wp-login.php?action=register
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

@@ -10593,6 +10593,14 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P7.142 — pending/confirm/dismiss coverage"
 
+# P10.192: expand diff corpus after spacer/menu_order/admin-email/utf8/rsd/downsize.
+- prefix: tests/corpus#p10.192
+  go: tests/corpus
+  status: partial
+  task: P10.192
+  api: n/a
+  notes: "P10.192 — +69 headers-safe REST/front/login/ajax/admin cases (2072 total)"
+
 # P8.44: image_downsize deepen (thumb alias, PDF sizes.full, intermediate size).
 - prefix: wp-includes/media.php#image_downsize
   go: internal/wp/media.go
