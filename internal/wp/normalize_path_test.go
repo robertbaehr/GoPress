@@ -34,6 +34,7 @@ func TestNormalizePathCached(t *testing.T) {
 }
 
 func TestIsStream(t *testing.T) {
+	wp.ResetStreamWrappersForTest()
 	if !wp.IsStream("https://example.com/x") {
 		t.Fatal("expected https stream")
 	}
@@ -49,6 +50,33 @@ func TestIsStream(t *testing.T) {
 	}
 	if wp.IsStream("File://tmp") {
 		t.Fatal("mixed-case File should not match")
+	}
+}
+
+// P2.116: RegisterStreamWrapper mirrors stream_wrapper_register for wp_is_stream.
+func TestRegisterStreamWrapper(t *testing.T) {
+	wp.ResetStreamWrappersForTest()
+	t.Cleanup(wp.ResetStreamWrappersForTest)
+	if wp.IsStream("s3://bucket/key") {
+		t.Fatal("s3 should be unregistered initially")
+	}
+	wp.RegisterStreamWrapper("s3")
+	if !wp.IsStream("s3://bucket/key") {
+		t.Fatal("expected s3 after register")
+	}
+	// Case-sensitive: S3 != s3.
+	if wp.IsStream("S3://bucket/key") {
+		t.Fatal("uppercase S3 should not match")
+	}
+	wp.UnregisterStreamWrapper("s3")
+	if wp.IsStream("s3://bucket/key") {
+		t.Fatal("s3 should be gone after unregister")
+	}
+	// NormalizePath must preserve registered wrappers.
+	wp.RegisterStreamWrapper("s3")
+	wp.ResetNormalizePathCacheForTest()
+	if got := wp.NormalizePath(`s3://bucket//a///b`); got != `s3://bucket/a/b` {
+		t.Fatalf("normalize registered stream=%q", got)
 	}
 }
 
