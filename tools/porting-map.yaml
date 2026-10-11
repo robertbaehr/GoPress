@@ -12105,6 +12105,20 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P7.154 — login redirect, text color save nonce, body class with support"
 
+# P2.152: wp_remote_retrieve_cookies / cookie / cookie_value.
+- prefix: wp-includes/http.php#wp_remote_retrieve_cookies
+  go: internal/wp/http.go
+  status: partial
+  task: P2.152
+  api: n/a
+  notes: "P2.152 — HTTPCookie; RemoteRetrieveCookies/Cookie/CookieValue; Set-Cookie parse"
+- prefix: wp-includes/http.php#wp_remote_retrieve_cookies#tests
+  go: internal/wp/remote_retrieve_cookies_p2_152_test.go
+  status: partial
+  task: P2.152
+  api: n/a
+  notes: "P2.152 — nil-safe; name lookup; copy isolation; blocked path"
+
 # P2.151: wp_remote_head / wp_safe_remote_head.
 - prefix: wp-includes/http.php#wp_remote_head
   go: internal/wp/http.go
