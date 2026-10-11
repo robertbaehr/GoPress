@@ -822,6 +822,21 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P8.36 — 90/180 dims swap + unsupported angle"
 
+# P8.38: WP_Image_Editor::flip (horizontal / vertical axis).
+- prefix: wp-includes/class-wp-image-editor.php#flip
+  go: internal/wp/image_editor.go
+  status: partial
+  task: P8.38
+  api: exported
+  notes: "P8.38 — ImageEditor.Flip(horz, vert); GD-compatible axis naming"
+
+- prefix: wp-includes/class-wp-image-editor.php#flip#tests
+  go: internal/wp/image_editor_test.go
+  status: partial
+  task: P8.38
+  api: n/a
+  notes: "P8.38 — Flip none/horz/vert/both preserves dimensions + Save"
+
 # P2.21: wp_check_password covers $wp$ / phpass; application passwords reuse it.
 # P4.110: introspect + AuthenticatedAppPasswordUUID + last_used recording.
 - prefix: wp-includes/class-wp-application-passwords.php

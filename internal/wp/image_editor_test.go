@@ -86,6 +86,45 @@ func TestImageEditorCrop(t *testing.T) {
 	}
 }
 
+func TestImageEditorFlip(t *testing.T) {
+	dir := t.TempDir()
+	src := filepath.Join(dir, "flip-src.png")
+	writeTestPNG(t, src, 30, 20)
+
+	ed, err := wp.GetImageEditor(src)
+	if err != nil {
+		t.Fatalf("GetImageEditor: %v", err)
+	}
+	if err := ed.Flip(false, false); err != nil {
+		t.Fatalf("Flip none: %v", err)
+	}
+	w, h := ed.Size()
+	if w != 30 || h != 20 {
+		t.Fatalf("Size=%dx%d", w, h)
+	}
+	if err := ed.Flip(true, false); err != nil {
+		t.Fatalf("Flip horz: %v", err)
+	}
+	w, h = ed.Size()
+	if w != 30 || h != 20 {
+		t.Fatalf("after horz Size=%dx%d", w, h)
+	}
+	if err := ed.Flip(false, true); err != nil {
+		t.Fatalf("Flip vert: %v", err)
+	}
+	if err := ed.Flip(true, true); err != nil {
+		t.Fatalf("Flip both: %v", err)
+	}
+	w, h = ed.Size()
+	if w != 30 || h != 20 {
+		t.Fatalf("after both Size=%dx%d", w, h)
+	}
+	dest := filepath.Join(dir, "flip-out.png")
+	if _, _, _, err := ed.Save(dest); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+}
+
 func TestImageEditorRotate(t *testing.T) {
 	dir := t.TempDir()
 	src := filepath.Join(dir, "rot-src.png")
