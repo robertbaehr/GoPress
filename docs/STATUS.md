@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.222)
 
+- P7.162 tools.php pagenow chrome + `admin_body_class`
 - P5.161 `core/social-links` align coerce + gradient/anchor
 - P8.54 `GetOriginalImagePath` / `GetOriginalImageURL`
 - P3.154 `GetYearLink` / `GetMonthLink` / `GetDayLink`

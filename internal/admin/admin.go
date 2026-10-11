@@ -5063,13 +5063,26 @@ func (h *Handler) serveTools(w http.ResponseWriter, r *http.Request, c *wp.Conte
 	canImport := c != nil && c.CurrentUser != nil && c.UserCan(c.CurrentUser, "import")
 	canManageTerms := c != nil && c.CurrentUser != nil &&
 		(c.UserCan(c.CurrentUser, "manage_categories") || c.UserCan(c.CurrentUser, "manage_terms"))
+	// P7.162: pagenow/adminpage chrome, locale body class, admin_body_class.
+	bodyClass := "wp-admin wp-core-ui tools-php locale-en-us"
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("admin_body_class", ""); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				bodyClass += " " + strings.TrimSpace(s)
+			}
+		}
+	}
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n")
 	b.WriteString("<title>Tools &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui tools-php\">\n")
+	b.WriteString(" &#8212; WordPress</title>\n")
+	b.WriteString("<script>var ajaxurl = \"/wp-admin/admin-ajax.php\", pagenow = \"tools\", typenow = \"\", adminpage = \"tools-php\";</script>\n")
+	b.WriteString("</head>\n")
+	b.WriteString("<body class=\"")
+	b.WriteString(html.EscapeString(bodyClass))
+	b.WriteString("\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1>Tools</h1>\n")
