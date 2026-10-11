@@ -776,12 +776,20 @@ wp-login.php#language-switcher-post
   task: P4.39
   api: exported
 
-# P4.40 / P4.63: REST settings GET/write with richer WP field schema.
+# P4.40 / P4.63 / P4.123: REST settings GET/write + OPTIONS/HEAD schema.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-settings-controller.php
   go: internal/rest/settings.go
   status: partial
-  task: P4.63
+  task: P4.123
   api: exported
+  notes: "P4.123 — OPTIONS schema; HEAD; readonly url; rest_pre_get/update_setting filters"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-settings-controller.php#tests
+  go: internal/rest/settings_test.go
+  status: partial
+  task: P4.123
+  api: n/a
+  notes: "P4.123 — OPTIONS/HEAD/readonly/filter unit coverage"
 
 - prefix: wp-includes/rest-api/
   go: internal/rest

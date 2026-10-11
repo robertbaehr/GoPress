@@ -146,3 +146,111 @@ func TestSettingsUpdateAdmin(t *testing.T) {
 		t.Fatalf("option blogname=%v", got)
 	}
 }
+
+func TestSettingsOPTIONSSchemaAndHEAD(t *testing.T) {
+	// P4.123: OPTIONS is public schema; HEAD requires manage_options.
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodOptions, "/wp-json/wp/v2/settings", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("OPTIONS status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if allow := rec.Header().Get("Allow"); !strings.Contains(allow, "OPTIONS") || !strings.Contains(allow, "GET") {
+		t.Fatalf("Allow=%q", allow)
+	}
+	var schema map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &schema); err != nil {
+		t.Fatal(err)
+	}
+	if schema["title"] != "settings" {
+		t.Fatalf("schema title=%v", schema["title"])
+	}
+	props, _ := schema["properties"].(map[string]any)
+	if props == nil || props["title"] == nil || props["url"] == nil {
+		t.Fatalf("schema properties missing: %v", props)
+	}
+
+	req = httptest.NewRequest(http.MethodHead, "/wp-json/wp/v2/settings", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusUnauthorized {
+		t.Fatalf("anon HEAD status=%d", rec.Code)
+	}
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Skipf("admin unavailable: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("SetAuthCookie: %v", err)
+	}
+	req = httptest.NewRequest(http.MethodHead, "/wp-json/wp/v2/settings", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("admin HEAD status=%d", rec.Code)
+	}
+	if rec.Body.Len() != 0 {
+		t.Fatalf("HEAD body should be empty, got %q", rec.Body.String())
+	}
+}
+
+func TestSettingsReadonlyURLAndPreFilters(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Skipf("admin unavailable: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("SetAuthCookie: %v", err)
+	}
+	origURL := c.Options.GetOption("siteurl", "")
+	defer func() { _, _ = c.Options.UpdateOption("siteurl", origURL, "") }()
+
+	body := `{"url":"http://evil.example"}`
+	req := httptest.NewRequest(http.MethodPost, "/wp-json/wp/v2/settings", strings.NewReader(body))
+	req.Header.Set("Content-Type", "application/json")
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	if got := c.Options.GetOption("siteurl", ""); got != origURL {
+		t.Fatalf("url should be readonly: got %v want %v", got, origURL)
+	}
+
+	c.Hooks.AddFilter("rest_pre_get_setting", func(value any, args ...any) any {
+		if len(args) > 0 && args[0] == "title" {
+			return "Filtered Title"
+		}
+		return value
+	}, 10, 3)
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/settings", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("GET status=%d", rec.Code)
+	}
+	var settings map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &settings); err != nil {
+		t.Fatal(err)
+	}
+	if settings["title"] != "Filtered Title" {
+		t.Fatalf("title=%v", settings["title"])
+	}
+}
