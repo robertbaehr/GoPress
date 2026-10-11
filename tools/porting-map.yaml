@@ -13,13 +13,13 @@
   api: n/a
   notes: "P7.158 — chrome + tab query + body class filter coverage"
 
-# P7.95: about.php What's New screen stub.
+# P7.95: about.php What's New screen stub (deepened by P7.158).
 - prefix: wp-admin/about.php
   go: internal/admin/credits.go
   status: partial
-  task: P7.95
+  task: P7.158
   api: n/a
-  notes: "P7.95 — about__container + What's New tab; version header; return-to-dashboard"
+  notes: "P7.95/P7.158 — about__container + What's New tab; version header; return-to-dashboard; pagenow chrome"
 
 # P7.96: network.php Create a Network stub (multisite Tier 2 out of scope).
 - prefix: wp-admin/network.php
@@ -12380,3 +12380,17 @@ wp-login.php#language-switcher-post
   task: P5.154
   api: n/a
   notes: "P5.154 — align coerce, saved aspect/scale/decorative coverage"
+
+# P10.219: STATUS/PORTING refresh after P4.172–P7.158.
+- prefix: docs/STATUS.md#p10.219
+  go: docs/STATUS.md
+  status: partial
+  task: P10.219
+  api: n/a
+  notes: "P10.219 — summarize meta_compare_key/HasFilterPriority/cookies/term-feed/audio/thumb/login_title/about chrome stack"
+- prefix: gopress-stack-summary.txt#p10.219
+  go: gopress-stack-summary.txt
+  status: partial
+  task: P10.219
+  api: n/a
+  notes: "P10.219 — freeze tip SHAs after make check"
