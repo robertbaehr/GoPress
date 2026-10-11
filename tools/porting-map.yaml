@@ -5601,6 +5601,21 @@ wp-login.php#language-switcher-post
   task: P4.58
   api: exported
 
+# P4.126: deepen statuses OPTIONS/HEAD + context validation + schema.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-post-statuses-controller.php#options
+  go: internal/rest/statuses.go
+  status: partial
+  task: P4.126
+  api: exported
+  notes: "P4.126 — OPTIONS schema + HEAD; Allow GET; context view/embed/edit; rest_prepare_status"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-post-statuses-controller.php#schema
+  go: internal/rest/statuses_test.go
+  status: partial
+  task: P4.126
+  api: internal
+  notes: "P4.126 — unit coverage for OPTIONS/HEAD and invalid context"
+
 # P4.59: GET /wp/v2/themes (+ single stylesheet).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-themes-controller.php
   go: internal/rest/themes.go

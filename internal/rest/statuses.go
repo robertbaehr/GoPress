@@ -7,7 +7,7 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// PostStatus is a wp/v2 statuses object (P4.58).
+// PostStatus is a wp/v2 statuses object (P4.58 / P4.126).
 type PostStatus struct {
 	Name         string         `json:"name"`
 	Private      *bool          `json:"private,omitempty"`
@@ -44,12 +44,21 @@ func builtinStatusDefs() []statusDef {
 }
 
 func (s *Server) serveStatuses(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	if r.Method != http.MethodGet {
+	// P4.126: OPTIONS returns public item schema; Allow matches WP oracle (GET).
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Allow", "GET")
+		writeJSON(w, http.StatusOK, postStatusItemSchema())
+		return
+	}
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
 			"data":    map[string]any{"status": 405},
 		})
+		return
+	}
+	if !validatePostStatusContext(w, r) {
 		return
 	}
 	context := r.URL.Query().Get("context")
@@ -61,6 +70,7 @@ func (s *Server) serveStatuses(w http.ResponseWriter, r *http.Request, c *wp.Con
 		if c != nil && c.CurrentUser != nil {
 			status = http.StatusForbidden
 		}
+		w.Header().Set("Allow", "GET")
 		writeJSON(w, status, map[string]any{
 			"code":    "rest_cannot_view",
 			"message": "Sorry, you are not allowed to manage post statuses.",
@@ -70,6 +80,11 @@ func (s *Server) serveStatuses(w http.ResponseWriter, r *http.Request, c *wp.Con
 	}
 	edit := context == "edit" && canEditPosts(c)
 	canManage := canEditPosts(c)
+	w.Header().Set("Allow", "GET")
+	if r.Method == http.MethodHead {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
 	out := map[string]PostStatus{}
 	for _, def := range builtinStatusDefs() {
 		if !statusReadable(def, canManage) {
@@ -81,12 +96,20 @@ func (s *Server) serveStatuses(w http.ResponseWriter, r *http.Request, c *wp.Con
 }
 
 func (s *Server) serveStatusItem(w http.ResponseWriter, r *http.Request, c *wp.Context, slug string) {
-	if r.Method != http.MethodGet {
+	if r.Method == http.MethodOptions {
+		w.Header().Set("Allow", "GET")
+		writeJSON(w, http.StatusOK, postStatusItemSchema())
+		return
+	}
+	if r.Method != http.MethodGet && r.Method != http.MethodHead {
 		writeJSON(w, http.StatusMethodNotAllowed, map[string]any{
 			"code":    "rest_no_route",
 			"message": "No route was found matching the URL and request method.",
 			"data":    map[string]any{"status": 405},
 		})
+		return
+	}
+	if !validatePostStatusContext(w, r) {
 		return
 	}
 	slug = strings.TrimSpace(strings.ToLower(slug))
@@ -99,6 +122,7 @@ func (s *Server) serveStatusItem(w http.ResponseWriter, r *http.Request, c *wp.C
 		}
 	}
 	if found == nil {
+		w.Header().Set("Allow", "GET")
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"code":    "rest_status_invalid",
 			"message": "Invalid status.",
@@ -116,6 +140,7 @@ func (s *Server) serveStatusItem(w http.ResponseWriter, r *http.Request, c *wp.C
 		if c != nil && c.CurrentUser != nil {
 			status = http.StatusForbidden
 		}
+		w.Header().Set("Allow", "GET")
 		writeJSON(w, status, map[string]any{
 			"code":    "rest_cannot_read_status",
 			"message": "Cannot view status.",
@@ -128,6 +153,7 @@ func (s *Server) serveStatusItem(w http.ResponseWriter, r *http.Request, c *wp.C
 		if c != nil && c.CurrentUser != nil {
 			status = http.StatusForbidden
 		}
+		w.Header().Set("Allow", "GET")
 		writeJSON(w, status, map[string]any{
 			"code":    "rest_cannot_read_status",
 			"message": "Cannot view status.",
@@ -136,7 +162,19 @@ func (s *Server) serveStatusItem(w http.ResponseWriter, r *http.Request, c *wp.C
 		return
 	}
 	edit := context == "edit" && canManage
-	writeJSON(w, http.StatusOK, prepareStatus(c, *found, edit))
+	w.Header().Set("Allow", "GET")
+	if r.Method == http.MethodHead {
+		w.WriteHeader(http.StatusOK)
+		return
+	}
+	st := prepareStatus(c, *found, edit)
+	if c != nil && c.Hooks != nil {
+		filtered := c.Hooks.ApplyFilters("rest_prepare_status", st, found.Slug, r)
+		if m, ok := filtered.(PostStatus); ok {
+			st = m
+		}
+	}
+	writeJSON(w, http.StatusOK, st)
 }
 
 func statusReadable(def statusDef, canManage bool) bool {
@@ -170,4 +208,46 @@ func prepareStatus(c *wp.Context, def statusDef, edit bool) PostStatus {
 		st.ShowInList = &show
 	}
 	return st
+}
+
+func validatePostStatusContext(w http.ResponseWriter, r *http.Request) bool {
+	ctx := strings.TrimSpace(r.URL.Query().Get("context"))
+	if ctx == "" {
+		return true
+	}
+	switch ctx {
+	case "view", "embed", "edit":
+		return true
+	default:
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_invalid_param",
+			"message": "Invalid parameter(s): context",
+			"data": map[string]any{
+				"status": 400,
+				"params": map[string]any{
+					"context": "context is not one of view, embed, edit.",
+				},
+			},
+		})
+		return false
+	}
+}
+
+// postStatusItemSchema is the public REST schema for /wp/v2/statuses (P4.126).
+func postStatusItemSchema() map[string]any {
+	return map[string]any{
+		"$schema": "http://json-schema.org/draft-04/schema#",
+		"title":   "status",
+		"type":    "object",
+		"properties": map[string]any{
+			"name":          map[string]any{"description": "The title for the status.", "type": "string", "context": []any{"embed", "view", "edit"}, "readonly": true},
+			"private":       map[string]any{"description": "Whether posts with this status should be private.", "type": "boolean", "context": []any{"edit"}, "readonly": true},
+			"protected":     map[string]any{"description": "Whether posts with this status should be protected.", "type": "boolean", "context": []any{"edit"}, "readonly": true},
+			"public":        map[string]any{"description": "Whether posts of this status should be shown in the front end of the site.", "type": "boolean", "context": []any{"view", "edit"}, "readonly": true},
+			"queryable":     map[string]any{"description": "Whether posts with this status should be publicly-queryable.", "type": "boolean", "context": []any{"view", "edit"}, "readonly": true},
+			"show_in_list":  map[string]any{"description": "Whether to include posts in the edit listing for their post type.", "type": "boolean", "context": []any{"edit"}, "readonly": true},
+			"slug":          map[string]any{"description": "An alphanumeric identifier for the status.", "type": "string", "context": []any{"embed", "view", "edit"}, "readonly": true},
+			"date_floating": map[string]any{"description": "Whether posts of this status may have floating published dates.", "type": "boolean", "context": []any{"view", "edit"}, "readonly": true},
+		},
+	}
 }
