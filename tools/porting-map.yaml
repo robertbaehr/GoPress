@@ -11698,3 +11698,11 @@ wp-login.php#language-switcher-post
   task: P10.210
   api: n/a
   notes: "P10.210 — group/meta_query/media-grid/http-validate/canonical/srcset toppers; 2767 cases; headers-safe; drop set-cookie admin cases"
+
+# P10.211: STATUS/PORTING refresh after P5.150–P10.210.
+- prefix: docs/STATUS.md#p10.211
+  go: docs/STATUS.md
+  status: partial
+  task: P10.211
+  api: n/a
+  notes: "P10.211 — summarize group attrs, meta_query, media-grid, HttpValidateURL, canonical tag, srcset helpers, corpus 2767"
