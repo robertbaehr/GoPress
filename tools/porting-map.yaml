@@ -10182,3 +10182,17 @@ wp-login.php#language-switcher-post
   task: P2.133
   api: n/a
   notes: "P2.133 — controls / \\0 remove / keep"
+
+# P3.131: ClearPingbackHeaders on front + xmlrpc.
+- prefix: wp-includes/class-wp.php#X-Pingback#clear
+  go: internal/wp/pingback.go
+  status: partial
+  task: P3.131
+  api: ClearPingbackHeaders
+  notes: "P3.131 — Del X-Pingback + strip Link rel=pingback; front+xmlrpc"
+- prefix: wp-includes/class-wp.php#X-Pingback#clear#tests
+  go: internal/wp/pingback_header_p3_131_test.go
+  status: partial
+  task: P3.131
+  api: n/a
+  notes: "P3.131 — keeps api.w.org Link; drops pingback"
