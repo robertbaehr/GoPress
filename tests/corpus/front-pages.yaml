@@ -1700,3 +1700,50 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.176: corpus expand after social-link/order/quick-draft/kses-one-attr/rel-home/login-footer stack.
+
+- id: front-p10176-001-feed-withoutcomments
+  role: anon
+  method: GET
+  path: /feed/?withoutcomments=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10176-002-search-wordpress
+  role: anon
+  method: GET
+  path: /?s=wordpress
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10176-003-sample-page-preview-false
+  role: anon
+  method: GET
+  path: /sample-page/?preview=false
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10176-004-robots
+  role: anon
+  method: GET
+  path: /robots.txt
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10176-005-sitemap
+  role: anon
+  method: GET
+  path: /wp-sitemap.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

@@ -489,3 +489,32 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.176: corpus expand after social-link/order/quick-draft/kses-one-attr/rel-home/login-footer stack.
+
+- id: admin-p10176-001-dashboard
+  role: admin
+  method: GET
+  path: /wp-admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10176-002-edit-posts
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10176-003-plugins
+  role: admin
+  method: GET
+  path: /wp-admin/plugins.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
