@@ -78,3 +78,50 @@ func TestUploadMediaListMode(t *testing.T) {
 		t.Fatalf("list mode should not render grid: %q", trunc(body, 400))
 	}
 }
+
+func TestUploadMediaSearchAndDateColumn(t *testing.T) {
+	// P7.108: search box, mime filter, date column.
+	c := bootOrSkip(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/upload.php?mode=list&s=nonexistent-xyz&attachment-filter=image", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/upload.php") {
+		t.Fatal("upload.php not handled")
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`id="media-search-input"`,
+		`name="s"`,
+		`value="nonexistent-xyz"`,
+		`id="attachment-filter"`,
+		`selected="selected">Images`,
+		`column-date`,
+		"No media items found.",
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in %q", want, trunc(body, 900))
+		}
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-admin/upload.php?mode=grid&s=hello", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec = httptest.NewRecorder()
+	rc = c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/upload.php") {
+		t.Fatal("grid not handled")
+	}
+	body = rec.Body.String()
+	if !strings.Contains(body, `data-search="hello"`) || !strings.Contains(body, `id="media-search-input"`) {
+		t.Fatalf("grid search: %q", trunc(body, 600))
+	}
+}

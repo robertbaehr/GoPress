@@ -2579,6 +2579,10 @@ func mediaViewSwitcher(mode string) string {
 }
 
 func renderMediaGrid(blogname string, items []mediaRow, c *wp.Context, r *http.Request) string {
+	search := ""
+	if r != nil {
+		search = strings.TrimSpace(r.URL.Query().Get("s"))
+	}
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>Media Library &lsaquo; ")
@@ -2587,11 +2591,14 @@ func renderMediaGrid(blogname string, items []mediaRow, c *wp.Context, r *http.R
 	b.WriteString("<body class=\"wp-admin wp-core-ui upload-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString(mediaBulkDeletedNotice(r))
-	b.WriteString("<div class=\"wrap\" id=\"wp-media-grid\" data-search=\"\">\n")
+	b.WriteString(`<div class="wrap" id="wp-media-grid" data-search="`)
+	b.WriteString(html.EscapeString(search))
+	b.WriteString(`">` + "\n")
 	b.WriteString("<h1 class=\"wp-heading-inline\">Media Library</h1>\n")
 	b.WriteString("<a class=\"page-title-action\" href=\"/wp-admin/media-new.php\">Add Media File</a>\n")
 	b.WriteString(mediaViewSwitcher("grid"))
 	b.WriteString("<hr class=\"wp-header-end\">\n")
+	b.WriteString(mediaLibrarySearchForm("grid", r))
 	b.WriteString("<div class=\"notice notice-error hide-if-js\"><p>The grid view for the Media Library requires JavaScript. ")
 	b.WriteString(`<a href="/wp-admin/upload.php?mode=list">Switch to the list view</a>.</p></div>` + "\n")
 	b.WriteString("<ul class=\"attachments ui-sortable ui-sortable-disabled\" tabindex=\"-1\">\n")
@@ -2615,6 +2622,12 @@ func renderMediaGrid(blogname string, items []mediaRow, c *wp.Context, r *http.R
 }
 
 func renderMediaList(blogname string, items []mediaRow, c *wp.Context, r *http.Request) string {
+	search := ""
+	mimeFilter := ""
+	if r != nil {
+		search = strings.TrimSpace(r.URL.Query().Get("s"))
+		mimeFilter = strings.TrimSpace(r.URL.Query().Get("attachment-filter"))
+	}
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>Media Library &lsaquo; ")
@@ -2628,7 +2641,7 @@ func renderMediaList(blogname string, items []mediaRow, c *wp.Context, r *http.R
 	b.WriteString("<a class=\"page-title-action\" href=\"/wp-admin/media-new.php\">Add New Media File</a>\n")
 	b.WriteString(mediaViewSwitcher("list"))
 	b.WriteString("<hr class=\"wp-header-end\">\n")
-	b.WriteString(`<form method="post" action="/wp-admin/upload.php?mode=list" id="posts-filter">` + "\n")
+	b.WriteString(`<form method="get" action="/wp-admin/upload.php" id="posts-filter">` + "\n")
 	b.WriteString(mediaBulkNonceField(c))
 	b.WriteString(`<input type="hidden" name="mode" value="list" />` + "\n")
 	b.WriteString(`<div class="tablenav top"><div class="alignleft actions bulkactions">`)
@@ -2637,15 +2650,32 @@ func renderMediaList(blogname string, items []mediaRow, c *wp.Context, r *http.R
 	b.WriteString(`<option value="-1">Bulk actions</option>`)
 	b.WriteString(`<option value="delete">Delete permanently</option>`)
 	b.WriteString(`</select> `)
-	b.WriteString(`<input type="submit" id="doaction" class="button action" value="Apply" />`)
-	b.WriteString(`</div></div>` + "\n")
+	b.WriteString(`<input type="submit" id="doaction" class="button action" value="Apply" formmethod="post" formaction="/wp-admin/upload.php?mode=list" />`)
+	b.WriteString(`</div>`)
+	b.WriteString(`<div class="alignleft actions">`)
+	b.WriteString(`<label for="attachment-filter" class="screen-reader-text">Filter by type</label>`)
+	b.WriteString(`<select name="attachment-filter" id="attachment-filter">`)
+	b.WriteString(mediaMimeFilterOptions(mimeFilter))
+	b.WriteString(`</select> `)
+	b.WriteString(`<input type="submit" name="filter_action" id="post-query-submit" class="button" value="Filter" />`)
+	b.WriteString(`</div>`)
+	b.WriteString(`<p class="search-box">`)
+	b.WriteString(`<label class="screen-reader-text" for="media-search-input">Search Media:</label>`)
+	b.WriteString(`<input type="search" id="media-search-input" name="s" value="`)
+	b.WriteString(html.EscapeString(search))
+	b.WriteString(`" /> `)
+	b.WriteString(`<input type="submit" id="search-submit" class="button" value="Search Media" />`)
+	b.WriteString(`</p></div>` + "\n")
 	b.WriteString("<table class=\"wp-list-table widefat fixed striped media\">\n")
 	b.WriteString("<thead><tr>")
 	b.WriteString(`<td id="cb" class="manage-column column-cb check-column"><input id="cb-select-all-1" type="checkbox" /></td>`)
-	b.WriteString("<th scope=\"col\" class=\"column-title\">File</th><th scope=\"col\" class=\"column-mime\">Type</th></tr></thead>\n")
+	b.WriteString("<th scope=\"col\" class=\"column-title\">File</th>")
+	b.WriteString("<th scope=\"col\" class=\"column-mime\">Type</th>")
+	b.WriteString("<th scope=\"col\" class=\"column-date\">Date</th>")
+	b.WriteString("</tr></thead>\n")
 	b.WriteString("<tbody id=\"the-list\">\n")
 	if len(items) == 0 {
-		b.WriteString("<tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"3\">No media items found.</td></tr>\n")
+		b.WriteString("<tr class=\"no-items\"><td class=\"colspanchange\" colspan=\"4\">No media items found.</td></tr>\n")
 	}
 	for _, m := range items {
 		b.WriteString("<tr id=\"post-")
@@ -2662,6 +2692,8 @@ func renderMediaList(blogname string, items []mediaRow, c *wp.Context, r *http.R
 		b.WriteString(strconv.FormatInt(m.ID, 10))
 		b.WriteString("&amp;action=edit\">Edit</a></span></div></td><td class=\"column-mime\">")
 		b.WriteString(html.EscapeString(m.Mime))
+		b.WriteString(`</td><td class="date column-date">`)
+		b.WriteString(html.EscapeString(m.Date))
 		b.WriteString("</td></tr>\n")
 	}
 	b.WriteString("</tbody>\n</table>\n")
@@ -2671,9 +2703,61 @@ func renderMediaList(blogname string, items []mediaRow, c *wp.Context, r *http.R
 	b.WriteString(`<option value="-1">Bulk actions</option>`)
 	b.WriteString(`<option value="delete">Delete permanently</option>`)
 	b.WriteString(`</select> `)
-	b.WriteString(`<input type="submit" id="doaction2" class="button action" value="Apply" />`)
+	b.WriteString(`<input type="submit" id="doaction2" class="button action" value="Apply" formmethod="post" formaction="/wp-admin/upload.php?mode=list" />`)
 	b.WriteString(`</div></div>` + "\n")
 	b.WriteString("</form>\n</div>\n</body>\n</html>\n")
+	return b.String()
+}
+
+// mediaLibrarySearchForm is the grid-mode search box (P7.108).
+func mediaLibrarySearchForm(mode string, r *http.Request) string {
+	search := ""
+	mimeFilter := ""
+	if r != nil {
+		search = strings.TrimSpace(r.URL.Query().Get("s"))
+		mimeFilter = strings.TrimSpace(r.URL.Query().Get("attachment-filter"))
+	}
+	if mode == "" {
+		mode = "grid"
+	}
+	var b strings.Builder
+	b.WriteString(`<form method="get" action="/wp-admin/upload.php" class="search-form media-search-form">` + "\n")
+	b.WriteString(`<input type="hidden" name="mode" value="`)
+	b.WriteString(html.EscapeString(mode))
+	b.WriteString(`" />` + "\n")
+	b.WriteString(`<label for="attachment-filter" class="screen-reader-text">Filter by type</label>`)
+	b.WriteString(`<select name="attachment-filter" id="attachment-filter">`)
+	b.WriteString(mediaMimeFilterOptions(mimeFilter))
+	b.WriteString(`</select> `)
+	b.WriteString(`<p class="search-box">`)
+	b.WriteString(`<label class="screen-reader-text" for="media-search-input">Search Media:</label>`)
+	b.WriteString(`<input type="search" id="media-search-input" name="s" value="`)
+	b.WriteString(html.EscapeString(search))
+	b.WriteString(`" /> `)
+	b.WriteString(`<input type="submit" id="search-submit" class="button" value="Search Media" />`)
+	b.WriteString(`</p></form>` + "\n")
+	return b.String()
+}
+
+func mediaMimeFilterOptions(current string) string {
+	opts := []struct{ v, label string }{
+		{"", "All media items"},
+		{"image", "Images"},
+		{"audio", "Audio"},
+		{"video", "Video"},
+	}
+	var b strings.Builder
+	for _, o := range opts {
+		b.WriteString(`<option value="`)
+		b.WriteString(html.EscapeString(o.v))
+		b.WriteString(`"`)
+		if o.v == current {
+			b.WriteString(` selected="selected"`)
+		}
+		b.WriteString(`>`)
+		b.WriteString(html.EscapeString(o.label))
+		b.WriteString(`</option>`)
+	}
 	return b.String()
 }
 
@@ -6346,6 +6430,7 @@ type mediaRow struct {
 	ID    int64
 	Title string
 	Mime  string
+	Date  string // post_date (P7.108)
 }
 
 type commentRow struct {
@@ -6366,22 +6451,44 @@ type userRow struct {
 	Posts int64
 }
 
-func recentMedia(c *wp.Context, limit int) ([]mediaRow, error) {
+// recentMedia lists attachments (P7.42 / P7.108).
+// search matches title/guid; mimeFilter is attachment-filter (image|audio|video|…).
+func recentMedia(c *wp.Context, limit int, search, mimeFilter string) ([]mediaRow, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
 	if limit <= 0 {
 		limit = 20
 	}
-	q, args, err := c.DB.Prepare(
-		"SELECT ID, post_title, post_mime_type FROM "+c.DB.Posts()+
-			" WHERE post_type = %s ORDER BY post_date DESC LIMIT %d",
-		"attachment", limit,
-	)
+	search = strings.TrimSpace(search)
+	mimeFilter = strings.TrimSpace(mimeFilter)
+	sql := "SELECT ID, post_title, post_mime_type, post_date FROM " + c.DB.Posts() +
+		" WHERE post_type = %s"
+	args := []any{"attachment"}
+	if search != "" {
+		like := "%" + search + "%"
+		sql += " AND (post_title LIKE %s OR guid LIKE %s)"
+		args = append(args, like, like)
+	}
+	switch mimeFilter {
+	case "image", "audio", "video":
+		sql += " AND post_mime_type LIKE %s"
+		args = append(args, mimeFilter+"/%")
+	case "":
+		// all
+	default:
+		if strings.Contains(mimeFilter, "/") {
+			sql += " AND post_mime_type = %s"
+			args = append(args, mimeFilter)
+		}
+	}
+	sql += " ORDER BY post_date DESC LIMIT %d"
+	args = append(args, limit)
+	q, prepared, err := c.DB.Prepare(sql, args...)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := c.DB.GetResults(q, args...)
+	rows, err := c.DB.GetResults(q, prepared...)
 	if err != nil {
 		return nil, err
 	}
@@ -6391,6 +6498,7 @@ func recentMedia(c *wp.Context, limit int) ([]mediaRow, error) {
 			ID:    asInt64(row["ID"]),
 			Title: asString(row["post_title"]),
 			Mime:  asString(row["post_mime_type"]),
+			Date:  asString(row["post_date"]),
 		})
 	}
 	return out, nil

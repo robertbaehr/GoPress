@@ -10,14 +10,16 @@ import (
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// serveUpload lists media and handles bulk delete on list view (P7.61 / P7.85).
+// serveUpload lists media and handles bulk delete on list view (P7.61 / P7.85 / P7.108).
 func (h *Handler) serveUpload(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	if r.Method == http.MethodPost {
 		h.handleMediaBulk(w, r, c)
 		return
 	}
 	blogname := optionString(c, "blogname", "GoPress")
-	items, err := recentMedia(c, 20)
+	search := strings.TrimSpace(r.URL.Query().Get("s"))
+	mimeFilter := strings.TrimSpace(r.URL.Query().Get("attachment-filter"))
+	items, err := recentMedia(c, 20, search, mimeFilter)
 	if err != nil {
 		http.Error(w, "media: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
