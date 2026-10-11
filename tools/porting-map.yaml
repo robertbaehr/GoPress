@@ -9024,3 +9024,18 @@ wp-login.php#language-switcher-post
   task: P5.128
   api: n/a
   notes: "P5.128 — circular halt / quiet / missing slug coverage"
+
+# P4.144: REST posts modified_gmt zero-date shim.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#modified_gmt
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.144
+  api: modified_gmt
+  notes: "P4.144 — zero post_modified_gmt shimmed from post_modified via timezone/gmt_offset"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#modified_gmt#tests
+  go: internal/rest/posts_test.go
+  status: partial
+  task: P4.144
+  api: n/a
+  notes: "P4.144 — zero GMT shim + both-zero empty coverage"
