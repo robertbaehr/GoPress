@@ -59,6 +59,7 @@ make check
 - P5.158 `core/video` fontSize/gradient attrs + align coerce
 - P10.219 STATUS/PORTING refresh after P4.172–P7.158
 - P7.158 about.php pagenow/version chrome + `admin_body_class` + data-tab
+- P2.154 `IsUsingHTTPS` / `IsHomeURLUsingHTTPS` / `IsSiteURLUsingHTTPS`
 - P7.160 freedoms.php pagenow/version chrome + `admin_body_class` + data-tab
 - P6.63 login screen-reader `<h1>` from `login_header` title (skip empty / `confirm_admin_email`)
 - P6.62 `login_title` filter on login `<title>`

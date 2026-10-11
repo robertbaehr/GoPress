@@ -1,4 +1,18 @@
 
+# P2.154: wp_is_using_https / home / site URL HTTPS detection.
+- prefix: wp-includes/https-detection.php#using-https
+  go: internal/wp/https_detection.go
+  status: partial
+  task: P2.154
+  api: IsUsingHTTPS
+  notes: "P2.154 — IsUsingHTTPS/IsHomeURLUsingHTTPS/IsSiteURLUsingHTTPS"
+- prefix: wp-includes/https-detection.php#using-https#tests
+  go: internal/wp/https_detection_p2_154_test.go
+  status: partial
+  task: P2.154
+  api: n/a
+  notes: "P2.154 — http fixture; both https; site_url filter"
+
 # P7.160: deepen freedoms.php pagenow chrome stub.
 - prefix: wp-admin/freedoms.php#chrome
   go: internal/admin/credits.go
