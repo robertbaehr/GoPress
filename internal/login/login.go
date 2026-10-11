@@ -1206,11 +1206,18 @@ func writeLoginHead(b *strings.Builder, c *wp.Context, home, blogname, title, ac
 	b.WriteString("\t<meta http-equiv=\"Content-Type\" content=\"text/html; charset=UTF-8\" />\n")
 	// WP login_header: sprintf( '%1$s &lsaquo; %2$s &#8212; WordPress', $title, $blogname ).
 	// Empty $title (interim success, P6.33) still keeps the &lsaquo; separator.
+	// P6.62: login_title filter; WP echoes without esc_html.
+	loginTitle := html.EscapeString(title) + " &lsaquo; " + html.EscapeString(blogname) + " &#8212; WordPress"
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("login_title", loginTitle, title); v != nil {
+			if s, ok := v.(string); ok {
+				loginTitle = s
+			}
+		}
+	}
 	b.WriteString("\t<title>")
-	b.WriteString(html.EscapeString(title))
-	b.WriteString(" &lsaquo; ")
-	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n")
+	b.WriteString(loginTitle)
+	b.WriteString("</title>\n")
 	b.WriteString("\t<meta name='robots' content='max-image-preview:large, noindex, noarchive' />\n")
 	b.WriteString("<link rel='stylesheet' href='")
 	b.WriteString(html.EscapeString(styles))
