@@ -6923,3 +6923,26 @@ wp-login.php#language-switcher-post
   task: P10.125
   api: n/a
   notes: "P10.125 — regenerate porting-status after stacked P5.107–P10.124"
+
+# P10.126: expand diff corpus after P5.108–P6.45.
+- prefix: tests/corpus#p10-126
+  go: tests/corpus
+  status: partial
+  task: P10.126
+  api: n/a
+  notes: "P10.126 — block-types context, interim flags, profile/heartbeat, front/search; 635 cases"
+
+# P10.127: STATUS/PORTING refresh after P5.108–P10.126.
+- prefix: docs/STATUS.md#p10-127
+  go: docs/STATUS.md
+  status: partial
+  task: P10.127
+  api: n/a
+  notes: "P10.127 — STATUS/PORTING refresh after P5.108–P10.126 (635/635 corpus)"
+
+- prefix: PORTING.md#p10-127
+  go: PORTING.md
+  status: partial
+  task: P10.127
+  api: n/a
+  notes: "P10.127 — regenerate porting-status after stacked P5.108–P10.126"
