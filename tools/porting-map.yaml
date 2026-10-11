@@ -10728,3 +10728,17 @@ wp-login.php#language-switcher-post
   task: P7.143
   api: n/a
   notes: "P7.143 — collapsed accordion + enqueue marker coverage"
+
+# P2.138: deepen wp_strip_all_tags quote-aware script/style + deep walk.
+- prefix: wp-includes/formatting.php#wp_strip_all_tags#deep
+  go: internal/wp/strip_all_tags.go
+  status: partial
+  task: P2.138
+  api: wp_strip_all_tags
+  notes: "P2.138 — quote-aware script/style open tags; WPStripAllTagsDeep via MapDeep"
+- prefix: wp-includes/formatting.php#wp_strip_all_tags#deep#tests
+  go: internal/wp/strip_all_tags_p2_138_test.go
+  status: partial
+  task: P2.138
+  api: n/a
+  notes: "P2.138 — quoted script/style attrs + deep map strip coverage"
