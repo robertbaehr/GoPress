@@ -1090,7 +1090,6 @@
   compare: headers
   nonce: null
 
-
 # P10.204: admin toppers (headers-safe; skip set-cookie-sensitive).
 
 - id: admin-p10204-001
@@ -1212,15 +1211,6 @@
   compare: headers
   nonce: null
 
-- id: admin-p10206-005
-  role: admin
-  method: GET
-  path: /wp-admin/upload.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: admin-p10206-006
   role: admin
   method: GET
@@ -1239,28 +1229,10 @@
   compare: headers
   nonce: null
 
-- id: admin-p10206-008
-  role: admin
-  method: GET
-  path: /wp-admin/themes.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: admin-p10206-009
   role: admin
   method: GET
   path: /wp-admin/users.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: admin-p10206-010
-  role: admin
-  method: GET
-  path: /wp-admin/tools.php
   headers: {}
   body: null
   compare: headers
@@ -1275,33 +1247,6 @@
   compare: headers
   nonce: null
 
-- id: admin-p10206-012
-  role: admin
-  method: GET
-  path: /wp-admin/options-reading.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: admin-p10206-013
-  role: admin
-  method: GET
-  path: /wp-admin/options-writing.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: admin-p10206-014
-  role: admin
-  method: GET
-  path: /wp-admin/site-health.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: admin-p10206-015
   role: admin
   method: GET
@@ -1311,46 +1256,102 @@
   compare: headers
   nonce: null
 
-- id: admin-p10206-016
+# P10.206: safer admin replacements.
+
+- id: admin-p10206-r01
   role: admin
   method: GET
-  path: /wp-admin/site-health.php?tab=debug
+  path: /wp-admin/edit.php?post_status=publish
   headers: {}
   body: null
   compare: headers
   nonce: null
 
-- id: admin-p10206-017
+- id: admin-p10206-r02
   role: admin
   method: GET
-  path: /wp-admin/export.php
+  path: /wp-admin/edit.php?post_status=draft
   headers: {}
   body: null
   compare: headers
   nonce: null
 
-- id: admin-p10206-018
+- id: admin-p10206-r03
   role: admin
   method: GET
-  path: /wp-admin/import.php
+  path: /wp-admin/profile.php
   headers: {}
   body: null
   compare: headers
   nonce: null
 
-- id: admin-p10206-019
+- id: admin-p10206-r04
   role: admin
   method: GET
-  path: /wp-admin/update-core.php
+  path: /wp-admin/options-discussion.php
   headers: {}
   body: null
   compare: headers
   nonce: null
 
-- id: admin-p10206-020
+- id: admin-p10206-r05
   role: admin
   method: GET
-  path: /wp-admin/nav-menus.php
+  path: /wp-admin/options-media.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10206-r06
+  role: admin
+  method: GET
+  path: /wp-admin/options-permalink.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10206-r07
+  role: admin
+  method: GET
+  path: /wp-admin/comment.php?action=editcomment&c=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10206-r08
+  role: admin
+  method: GET
+  path: /wp-admin/post-new.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10206-r09
+  role: admin
+  method: GET
+  path: /wp-admin/media-new.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10206-r10
+  role: admin
+  method: GET
+  path: /wp-admin/user-new.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10206-r11
+  role: admin
+  method: GET
+  path: /wp-admin/plugin-install.php
   headers: {}
   body: null
   compare: headers

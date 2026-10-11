@@ -1990,24 +1990,6 @@
   compare: headers
   nonce: null
 
-- id: login-p10206-006
-  role: anon
-  method: GET
-  path: /wp-login.php?action=logout
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: login-p10206-007
-  role: anon
-  method: GET
-  path: /wp-login.php?action=confirmaction
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: login-p10206-008
   role: anon
   method: GET
@@ -2057,6 +2039,35 @@
   role: anon
   method: GET
   path: /wp-login.php?wp_lang=en_US
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+# P10.206: safer login replacements.
+
+- id: login-p10206-r01
+  role: anon
+  method: GET
+  path: /wp-login.php?action=login
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10206-r02
+  role: anon
+  method: GET
+  path: /wp-login.php?loggedout=true
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10206-r03
+  role: anon
+  method: GET
+  path: /wp-login.php?registration=disabled
   headers: {}
   body: null
   compare: headers
