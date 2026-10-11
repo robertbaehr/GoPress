@@ -1615,3 +1615,41 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.172: corpus expand after legacy-widget/_fields/glance/kses-hair/wp_title/remove_all_filters.
+
+- id: front-p10172-001-sample-preview-false
+  role: anon
+  method: GET
+  path: /sample-page/?preview=false
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10172-002-hello-preview-false
+  role: anon
+  method: GET
+  path: /2024/06/15/hello-world/?preview=false
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10172-003-feed-rdf
+  role: anon
+  method: GET
+  path: /feed/rdf/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10172-004-head-feed-atom
+  role: anon
+  method: HEAD
+  path: /feed/atom/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

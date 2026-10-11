@@ -369,3 +369,32 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.172: corpus expand after legacy-widget/_fields/glance/kses-hair/wp_title/remove_all_filters.
+
+- id: ajax-p10172-001-heartbeat-edit
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10172-002-heartbeat-plugins
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=plugins
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10172-003-heartbeat-themes
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=themes
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
