@@ -1938,7 +1938,11 @@ func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context
 		restPath = "/wp/v2/pages/" + strconv.FormatInt(post.ID, 10)
 	}
 	shortlink := wp.GetShortlink(c, post.ID, "post", 0)
-	writeFrontHeadLinks(&b, c, home, blogname, perm, restPath, post.Title, "", "", shortlink, wp.SiteIconMetaTags(c))
+	// P3.128: singular feed_links_extra post comments alternate (gated; not the
+	// legacy title+permalink path). Pass empty title so writeFrontHeadLinks
+	// does not double-emit.
+	extraTitle, extraHref := singularCommentsFeedLink(c, home, blogname, perm, post)
+	writeFrontHeadLinks(&b, c, home, blogname, perm, restPath, "", extraTitle, extraHref, shortlink, wp.SiteIconMetaTags(c))
 	b.WriteString(wp.EmojiHeadHTML())
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
@@ -4203,7 +4207,7 @@ func formatRobotsDirectives(robots map[string]any) string {
 // writeFrontHeadLinks emits wp_head discovery links (feeds, api.w.org, oEmbed, canonical).
 // Stylesheet <link> tags are omitted: the HTML normalizer strips them, and TT5 enqueues
 // styles as inline <style> which we also normalize away (P5.19).
-// extraFeedTitle/Href implement feed_links_extra for author/search/category/tag (P3.39 / P3.103).
+// extraFeedTitle/Href implement feed_links_extra for author/search/category/tag/singular (P3.39 / P3.103 / P3.128).
 
 func hooksFor(c *wp.Context) *wp.Hooks {
 	if c == nil {
@@ -4219,6 +4223,49 @@ func writeFrontDocumentClose(b *strings.Builder, c *wp.Context) {
 	}
 	wp.Footer(c)
 	b.WriteString("</body>\n</html>\n")
+}
+
+// singularCommentsFeedLink builds feed_links_extra for singular post comments (P3.128).
+// Mirrors feed_links_extra(): feed_links_extra_show_post_comments_feed +
+// comments_open || pings_open || comment_count > 0.
+func singularCommentsFeedLink(c *wp.Context, home, blogname, permalink string, post *singularPost) (title, href string) {
+	if post == nil || home == "" || permalink == "" || strings.TrimSpace(post.Title) == "" {
+		return "", ""
+	}
+	hooks := hooksFor(c)
+	showComments := feedLinksShow(hooks, "feed_links_show_comments_feed", true)
+	showPost := feedLinksShow(hooks, "feed_links_extra_show_post_comments_feed", showComments)
+	if !showPost {
+		return "", ""
+	}
+	openComments := strings.EqualFold(strings.TrimSpace(post.CommentStatus), "open")
+	openPings := strings.EqualFold(strings.TrimSpace(post.PingStatus), "open")
+	if !openComments && !openPings && post.CommentCount <= 0 {
+		return "", ""
+	}
+	sep := "&raquo;"
+	singleFmt := "%1$s %2$s %3$s Comments Feed"
+	if hooks != nil {
+		args := map[string]any{
+			"separator":   sep,
+			"singletitle": singleFmt,
+		}
+		if v := hooks.ApplyFilters("feed_links_extra_args", args); v != nil {
+			if m, ok := v.(map[string]any); ok {
+				if s, ok := m["separator"].(string); ok && s != "" {
+					sep = s
+				}
+				if s, ok := m["singletitle"].(string); ok && s != "" {
+					singleFmt = s
+				}
+			}
+		}
+	}
+	title = strings.ReplaceAll(singleFmt, "%1$s", html.EscapeString(blogname))
+	title = strings.ReplaceAll(title, "%2$s", sep)
+	title = strings.ReplaceAll(title, "%3$s", html.EscapeString(post.Title))
+	href = strings.TrimRight(permalink, "/") + "/feed/"
+	return title, href
 }
 
 // termArchiveFeedLink builds feed_links_extra title/href for category or tag archives (P3.103).
@@ -4494,6 +4541,10 @@ type singularPost struct {
 	Password         string
 	FeaturedImageURL string
 	FeaturedImageAlt string
+	// P3.128: feed_links_extra singular comments feed gates.
+	CommentStatus string
+	PingStatus    string
+	CommentCount  int64
 }
 
 func loadSingularPost(c *wp.Context, vars map[string]string) (*singularPost, error) {
@@ -4557,6 +4608,9 @@ func singularFromQuery(c *wp.Context, args wp.QueryArgs) (*singularPost, error) 
 		Password:         p.Password,
 		FeaturedImageURL: thumbURL,
 		FeaturedImageAlt: alt,
+		CommentStatus:    p.CommentStatus,
+		PingStatus:       p.PingStatus,
+		CommentCount:     feedCommentCount(c, p.ID),
 	}, nil
 }
 

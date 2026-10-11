@@ -9881,3 +9881,17 @@ wp-login.php#language-switcher-post
   task: P2.130
   api: n/a
   notes: "P2.130 — allow/strip + Kses/KsesSplit parity"
+
+# P3.128: feed_links_extra singular post comments feed.
+- prefix: wp-includes/general-template.php#feed_links_extra-singular
+  go: internal/server/front.go
+  status: partial
+  task: P3.128
+  api: feed_links_extra
+  notes: "P3.128 — singular comments feed via open/pings/count + show_post_comments_feed filter"
+- prefix: wp-includes/general-template.php#feed_links_extra-singular#tests
+  go: internal/server/feed_links_extra_p3_128_test.go
+  status: partial
+  task: P3.128
+  api: n/a
+  notes: "P3.128 — hello-world shows; home-static hides; filter off"
