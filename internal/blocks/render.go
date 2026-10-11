@@ -47,8 +47,8 @@ func (e *Env) RenderBlock(block Block) string {
 	var out string
 	switch name {
 	case "":
-		// Freeform / classic HTML.
-		return block.InnerHTML
+		// Freeform / classic HTML (P5.129 — same content-attr path as core/freeform).
+		return e.renderFreeform(block)
 	case "core/paragraph":
 		out = e.renderParagraph(block)
 	case "core/quote":
