@@ -164,6 +164,41 @@ func CompleteUserRequest(c *Context, id int64) error {
 	return err
 }
 
+// DeleteUserRequest force-deletes a user_request post (P7.150 / bulk delete).
+func DeleteUserRequest(c *Context, id int64) error {
+	if c == nil || c.DB == nil || id <= 0 {
+		return fmt.Errorf("wp: DeleteUserRequest: invalid state")
+	}
+	q, args, err := c.DB.Prepare(
+		"DELETE FROM "+c.DB.Posts()+" WHERE ID = %d AND post_type = %s",
+		id, "user_request",
+	)
+	if err != nil {
+		return err
+	}
+	_, err = c.DB.Exec(q, args...)
+	return err
+}
+
+// ResendUserRequestConfirmation resets a request to pending (P7.150 / bulk resend stub).
+// Mirrors _wp_privacy_resend_request success path without sending mail.
+func ResendUserRequestConfirmation(c *Context, id int64) error {
+	if c == nil || c.DB == nil || id <= 0 {
+		return fmt.Errorf("wp: ResendUserRequestConfirmation: invalid state")
+	}
+	now := time.Now().UTC().Format("2006-01-02 15:04:05")
+	q, args, err := c.DB.Prepare(
+		"UPDATE "+c.DB.Posts()+" SET post_status = %s, post_modified = %s, post_modified_gmt = %s "+
+			"WHERE ID = %d AND post_type = %s",
+		"request-pending", now, now, id, "user_request",
+	)
+	if err != nil {
+		return err
+	}
+	_, err = c.DB.Exec(q, args...)
+	return err
+}
+
 // FindOpenUserRequestID returns the newest pending/confirmed request ID for email+action.
 func FindOpenUserRequestID(c *Context, email, actionName string) int64 {
 	rows, err := ListUserRequests(c, actionName, 50)

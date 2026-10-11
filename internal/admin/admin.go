@@ -5094,6 +5094,15 @@ func (h *Handler) serveExportPersonalData(w http.ResponseWriter, r *http.Request
 	pendingEmail := ""
 	if r.Method == http.MethodPost {
 		_ = r.ParseForm()
+		// P7.150: bulk resend/complete/delete on privacy requests table.
+		if bulkNote := processPrivacyRequestsBulkAction(r, c); bulkNote != "" {
+			note = bulkNote
+			filterStatus := strings.TrimSpace(r.URL.Query().Get("filter-status"))
+			search := strings.TrimSpace(r.URL.Query().Get("s"))
+			orderby, order := privacyListSortFromRequest(r)
+			h.servePrivacyExportPage(w, r, c, note, downloadLinks, pendingEmail, filterStatus, search, orderby, order)
+			return
+		}
 		email := strings.TrimSpace(r.Form.Get("username_or_email_for_privacy_request"))
 		if email == "" {
 			email = strings.TrimSpace(r.Form.Get("username"))
@@ -5175,11 +5184,13 @@ func (h *Handler) serveExportPersonalData(w http.ResponseWriter, r *http.Request
 	}
 	filterStatus := ""
 	search := ""
+	orderby, order := "", ""
 	if r != nil {
 		filterStatus = strings.TrimSpace(r.URL.Query().Get("filter-status"))
 		search = strings.TrimSpace(r.URL.Query().Get("s"))
+		orderby, order = privacyListSortFromRequest(r)
 	}
-	h.servePrivacyExportPage(w, r, c, note, downloadLinks, pendingEmail, filterStatus, search)
+	h.servePrivacyExportPage(w, r, c, note, downloadLinks, pendingEmail, filterStatus, search, orderby, order)
 }
 
 func (h *Handler) servePersonalDataExportDownload(w http.ResponseWriter, r *http.Request, c *wp.Context) {
@@ -5197,7 +5208,7 @@ func (h *Handler) servePersonalDataExportDownload(w http.ResponseWriter, r *http
 	http.ServeFile(w, r, full)
 }
 
-func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, r *http.Request, c *wp.Context, note, downloadLinks, pendingEmail, filterStatus, search string) {
+func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, r *http.Request, c *wp.Context, note, downloadLinks, pendingEmail, filterStatus, search, orderby, order string) {
 	_ = r
 	blogname := optionString(c, "blogname", "GoPress")
 	var b strings.Builder
@@ -5244,7 +5255,7 @@ func (h *Handler) servePrivacyExportPage(w http.ResponseWriter, r *http.Request,
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Send Request\"></p>\n")
 	b.WriteString("</div>\n</form>\n")
 	b.WriteString("<hr />\n")
-	b.WriteString(renderExportPrivacyRequestsTable(c, pendingEmail, filterStatus, search))
+	b.WriteString(renderExportPrivacyRequestsTable(c, pendingEmail, filterStatus, search, orderby, order))
 	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
@@ -5270,6 +5281,15 @@ func (h *Handler) serveErasePersonalData(w http.ResponseWriter, r *http.Request,
 	pendingEmail := ""
 	if r.Method == http.MethodPost {
 		_ = r.ParseForm()
+		// P7.150: bulk resend/complete/delete on privacy requests table.
+		if bulkNote := processPrivacyRequestsBulkAction(r, c); bulkNote != "" {
+			note = bulkNote
+			filterStatus := strings.TrimSpace(r.URL.Query().Get("filter-status"))
+			search := strings.TrimSpace(r.URL.Query().Get("s"))
+			orderby, order := privacyListSortFromRequest(r)
+			h.servePrivacyErasePage(w, r, c, note, pendingEmail, filterStatus, search, orderby, order)
+			return
+		}
 		email := strings.TrimSpace(r.Form.Get("username_or_email_for_privacy_request"))
 		if email == "" {
 			email = strings.TrimSpace(r.Form.Get("username"))
@@ -5341,14 +5361,16 @@ func (h *Handler) serveErasePersonalData(w http.ResponseWriter, r *http.Request,
 	}
 	filterStatus := ""
 	search := ""
+	orderby, order := "", ""
 	if r != nil {
 		filterStatus = strings.TrimSpace(r.URL.Query().Get("filter-status"))
 		search = strings.TrimSpace(r.URL.Query().Get("s"))
+		orderby, order = privacyListSortFromRequest(r)
 	}
-	h.servePrivacyErasePage(w, r, c, note, pendingEmail, filterStatus, search)
+	h.servePrivacyErasePage(w, r, c, note, pendingEmail, filterStatus, search, orderby, order)
 }
 
-func (h *Handler) servePrivacyErasePage(w http.ResponseWriter, r *http.Request, c *wp.Context, note, pendingEmail, filterStatus, search string) {
+func (h *Handler) servePrivacyErasePage(w http.ResponseWriter, r *http.Request, c *wp.Context, note, pendingEmail, filterStatus, search, orderby, order string) {
 	_ = r
 	blogname := optionString(c, "blogname", "GoPress")
 	var b strings.Builder
@@ -5394,7 +5416,7 @@ func (h *Handler) servePrivacyErasePage(w http.ResponseWriter, r *http.Request, 
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"submit\" id=\"submit\" class=\"button button-primary\" value=\"Send Request\"></p>\n")
 	b.WriteString("</div>\n</form>\n")
 	b.WriteString("<hr />\n")
-	b.WriteString(renderErasePrivacyRequestsTable(c, pendingEmail, filterStatus, search))
+	b.WriteString(renderErasePrivacyRequestsTable(c, pendingEmail, filterStatus, search, orderby, order))
 	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
