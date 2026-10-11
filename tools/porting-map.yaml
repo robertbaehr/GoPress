@@ -1,4 +1,18 @@
 
+# P7.160: deepen freedoms.php pagenow chrome stub.
+- prefix: wp-admin/freedoms.php#chrome
+  go: internal/admin/credits.go
+  status: partial
+  task: P7.160
+  api: n/a
+  notes: "P7.160 — pagenow/adminpage; locale body; admin_body_class; data-tab; X-GoPress-Freedoms"
+- prefix: wp-admin/freedoms.php#chrome#tests
+  go: internal/admin/freedoms_chrome_p7_160_test.go
+  status: partial
+  task: P7.160
+  api: n/a
+  notes: "P7.160 — chrome + tab query + privacy-notice redirect coverage"
+
 # P7.159: deepen credits.php pagenow chrome stub.
 - prefix: wp-admin/credits.php#chrome
   go: internal/admin/credits.go
