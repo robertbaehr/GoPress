@@ -1077,3 +1077,14 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.172: corpus expand after legacy-widget/_fields/glance/kses-hair/wp_title/remove_all_filters.
+
+- id: login-p10172-001-registration-disabled
+  role: anon
+  method: GET
+  path: /wp-login.php?registration=disabled
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

@@ -9529,3 +9529,11 @@ wp-login.php#language-switcher-post
   task: P9.30
   api: n/a
   notes: "P9.30 — priority slice + full clear + nil"
+
+# P10.172: expand diff corpus after P5.131–P9.30.
+- prefix: tests/corpus#p10.172
+  go: tests/corpus
+  status: partial
+  task: P10.172
+  api: n/a
+  notes: "P10.172 — posts _fields json + legacy-widget block-types + front/login/ajax toppers; >1500 cases"
