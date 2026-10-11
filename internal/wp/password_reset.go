@@ -176,21 +176,35 @@ func RetrievePassword(c *Context, userLogin string) error {
 	home = strings.TrimRight(home, "/")
 	resetURL := home + "/wp-login.php?action=rp&key=" + key + "&login=" + user.Login
 
-	var msg strings.Builder
-	msg.WriteString("Someone has requested a password reset for the following account:\r\n\r\n")
-	msg.WriteString("Site Name: ")
-	msg.WriteString(siteName)
-	msg.WriteString("\r\n\r\n")
-	msg.WriteString("Username: ")
-	msg.WriteString(user.Login)
-	msg.WriteString("\r\n\r\n")
-	msg.WriteString("If this was a mistake, ignore this email and nothing will happen.\r\n\r\n")
-	msg.WriteString("To reset your password, visit the following address:\r\n\r\n")
-	msg.WriteString(resetURL)
-	msg.WriteString("\r\n")
-
+	var msgBuilder strings.Builder
+	msgBuilder.WriteString("Someone has requested a password reset for the following account:\r\n\r\n")
+	msgBuilder.WriteString("Site Name: ")
+	msgBuilder.WriteString(siteName)
+	msgBuilder.WriteString("\r\n\r\n")
+	msgBuilder.WriteString("Username: ")
+	msgBuilder.WriteString(user.Login)
+	msgBuilder.WriteString("\r\n\r\n")
+	msgBuilder.WriteString("If this was a mistake, ignore this email and nothing will happen.\r\n\r\n")
+	msgBuilder.WriteString("To reset your password, visit the following address:\r\n\r\n")
+	msgBuilder.WriteString(resetURL)
+	msgBuilder.WriteString("\r\n")
+	message := msgBuilder.String()
 	subject := fmt.Sprintf("[%s] Password Reset", siteName)
-	ok, err := Mail(c, []string{user.Email}, subject, msg.String(), nil)
+
+	// P6.73: retrieve_password_title / retrieve_password_message filters.
+	if c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("retrieve_password_title", subject, user.Login, user); v != nil {
+			if s, ok := v.(string); ok {
+				subject = s
+			}
+		}
+		if v := c.Hooks.ApplyFilters("retrieve_password_message", message, key, user.Login, user); v != nil {
+			if s, ok := v.(string); ok {
+				message = s
+			}
+		}
+	}
+	ok, err := Mail(c, []string{user.Email}, subject, message, nil)
 	if err != nil {
 		return err
 	}
