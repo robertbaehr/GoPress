@@ -31,6 +31,32 @@ func TestIndexAllowAndAPILink(t *testing.T) {
 	}
 }
 
+func TestCollectionLinkRestRouteUsesWPJSONPath(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "http://127.0.0.1:8082/?rest_route=/wp/v2/comments&per_page=1&orderby=post", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	link := rec.Header().Get("Link")
+	if !strings.Contains(link, `/wp-json/wp/v2/comments?`) {
+		t.Fatalf("Link missing /wp-json path: %q", link)
+	}
+	if !strings.Contains(link, `rest_route=%2Fwp%2Fv2%2Fcomments`) {
+		t.Fatalf("Link missing encoded rest_route: %q", link)
+	}
+	if !strings.Contains(link, `rel="next"`) {
+		t.Fatalf("Link missing next: %q", link)
+	}
+	if strings.Contains(link, `/?rest_route=`) {
+		t.Fatalf("Link should not use bare /?rest_route form: %q", link)
+	}
+}
+
 func TestPostsCollectionHeaders(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()

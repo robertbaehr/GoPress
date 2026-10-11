@@ -71,8 +71,40 @@ func collectionURL(r *http.Request, c *wp.Context) *url.URL {
 		u.Host = r.Host
 	}
 	// Preserve original query param order; drop page so withPage can append it.
-	u.RawQuery = stripQueryParam(u.RawQuery, "page")
+	raw := stripQueryParam(u.RawQuery, "page")
+	// Plain-permalink REST (?rest_route=) still paginates with /wp-json{route} URLs,
+	// while keeping rest_route in the query (URL-encoded), matching WP rest_url()/add_query_arg.
+	if rr := strings.TrimSpace(r.URL.Query().Get("rest_route")); rr != "" {
+		if !strings.HasPrefix(rr, "/") {
+			rr = "/" + rr
+		}
+		u.Path = "/wp-json" + rr
+		u.RawPath = ""
+		raw = encodeRestRouteQuery(raw)
+	}
+	u.RawQuery = raw
 	return &u
+}
+
+// encodeRestRouteQuery URL-encodes the rest_route query value (slashes → %2F) like WP.
+func encodeRestRouteQuery(raw string) string {
+	if raw == "" || !strings.Contains(raw, "rest_route=") {
+		return raw
+	}
+	parts := strings.Split(raw, "&")
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if p == "" {
+			continue
+		}
+		k, v, ok := strings.Cut(p, "=")
+		if k == "rest_route" && ok {
+			out = append(out, k+"="+url.QueryEscape(v))
+			continue
+		}
+		out = append(out, p)
+	}
+	return strings.Join(out, "&")
 }
 
 func stripQueryParam(raw, key string) string {
