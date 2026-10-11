@@ -1,4 +1,18 @@
 
+# P8.53: wp_mime_type_icon subset.
+- prefix: wp-includes/post.php#wp_mime_type_icon
+  go: internal/wp/mime_type_icon.go
+  status: partial
+  task: P8.53
+  api: MimeTypeIcon
+  notes: "P8.53 — MimeTypeIcon mime/ID → includes/images/media; icon_dir_uri + filter"
+- prefix: wp-includes/post.php#wp_mime_type_icon#tests
+  go: internal/wp/mime_type_icon_p8_53_test.go
+  status: partial
+  task: P8.53
+  api: n/a
+  notes: "P8.53 — audio mime; attachment id; default; filter"
+
 # P3.153: get_post_type_archive_link / feed_link (post type).
 - prefix: wp-includes/link-template.php#get_post_type_archive_link
   go: internal/wp/post_type_archive_link.go
