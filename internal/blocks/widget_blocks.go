@@ -545,6 +545,25 @@ func sanitizeArchivesBlockAttrs(attrs map[string]any) map[string]any {
 	return out
 }
 
+// sanitizeLatestPostsBlockAttrs coerces core/latest-posts supports.align (P5.168).
+// Allowed: left, center, right, wide, full. Other values (incl. none) are dropped.
+func sanitizeLatestPostsBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "left", "center", "right", "wide", "full":
+	default:
+		delete(out, "align")
+	}
+	return out
+}
+
 // archivesDropdownScript mirrors block_core_archives_build_dropdown_script (P5.122).
 func archivesDropdownScript(dropdownID string, e *Env) string {
 	home := "/"
@@ -576,6 +595,8 @@ func archivesDropdownScript(dropdownID string, e *Env) string {
 
 func (e *Env) renderLatestPosts(block Block) string {
 	e = e.ensure()
+	// P5.168: coerce supports.align before class assembly.
+	block.Attrs = sanitizeLatestPostsBlockAttrs(block.Attrs)
 	n := 5
 	if v, ok := attrInt(block.Attrs, "postsToShow"); ok && v > 0 {
 		n = v
@@ -628,6 +649,10 @@ func (e *Env) renderLatestPosts(block Block) string {
 	}
 	// P5.123: grid layout + has-dates/has-author + wrapper supports.
 	classes := []string{"wp-block-latest-posts__list"}
+	// P5.168: supports.align true → left|center|right|wide|full.
+	if align := strings.TrimSpace(attrString(block.Attrs, "align")); align != "" {
+		classes = append(classes, "align"+sanitizeClassToken(align))
+	}
 	layoutType := "default"
 	if strings.EqualFold(strings.TrimSpace(attrString(block.Attrs, "postLayout")), "grid") {
 		layoutType = "grid"
