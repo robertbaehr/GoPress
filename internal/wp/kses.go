@@ -897,6 +897,8 @@ func ksesBadProtocolOnceWith(content string, protoSet map[string]bool) string {
 	if strings.Contains(scheme, "/") || strings.Contains(scheme, "?") {
 		return content
 	}
+	// P2.135: wp_kses_bad_protocol_once2 decodes entities before scrubbing.
+	scheme = KsesDecodeEntities(scheme)
 	scheme = strings.ToLower(ksesNoNull(strings.Map(func(r rune) rune {
 		if unicode.IsSpace(r) {
 			return -1
@@ -907,4 +909,41 @@ func ksesBadProtocolOnceWith(content string, protoSet map[string]bool) string {
 		return scheme + ":" + rest
 	}
 	return rest
+}
+
+// ksesDecodeEntityDec / ksesDecodeEntityHex match WP _wp_kses_decode_entities_chr*.
+var (
+	ksesDecodeEntityDec = regexp.MustCompile(`&#([0-9]+);`)
+	ksesDecodeEntityHex = regexp.MustCompile(`&#[Xx]([0-9A-Fa-f]+);`)
+)
+
+// KsesDecodeEntities is wp_kses_decode_entities (P2.135).
+// Decodes numeric character references (decimal and hex) to bytes via PHP chr().
+func KsesDecodeEntities(content string) string {
+	if content == "" {
+		return content
+	}
+	content = ksesDecodeEntityDec.ReplaceAllStringFunc(content, func(m string) string {
+		sub := ksesDecodeEntityDec.FindStringSubmatch(m)
+		if len(sub) < 2 {
+			return m
+		}
+		n, err := strconv.ParseUint(sub[1], 10, 64)
+		if err != nil {
+			return m
+		}
+		return string(rune(n % 256))
+	})
+	content = ksesDecodeEntityHex.ReplaceAllStringFunc(content, func(m string) string {
+		sub := ksesDecodeEntityHex.FindStringSubmatch(m)
+		if len(sub) < 2 {
+			return m
+		}
+		n, err := strconv.ParseUint(sub[1], 16, 64)
+		if err != nil {
+			return m
+		}
+		return string(rune(n % 256))
+	})
+	return content
 }

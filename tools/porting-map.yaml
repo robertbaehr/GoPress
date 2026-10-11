@@ -10368,3 +10368,17 @@ wp-login.php#language-switcher-post
   task: P7.140
   api: n/a
   notes: "P7.140 — absent by default; injected unacceptable check; UpdatePHPURL"
+
+# P2.135: wp_kses_decode_entities export.
+- prefix: wp-includes/kses.php#wp_kses_decode_entities
+  go: internal/wp/kses.go
+  status: partial
+  task: P2.135
+  api: wp_kses_decode_entities
+  notes: "P2.135 — KsesDecodeEntities decimal/hex; wired into ksesBadProtocolOnceWith"
+- prefix: wp-includes/kses.php#wp_kses_decode_entities#tests
+  go: internal/wp/kses_decode_entities_p2_135_test.go
+  status: partial
+  task: P2.135
+  api: n/a
+  notes: "P2.135 — decimal/hex decode + bad-protocol entity scheme coverage"
