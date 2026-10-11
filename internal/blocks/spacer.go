@@ -1,7 +1,6 @@
 package blocks
 
 import (
-	"fmt"
 	"html"
 	"regexp"
 	"strings"
@@ -9,16 +8,18 @@ import (
 
 var reSpacerTag = regexp.MustCompile(`(?i)wp-block-spacer\b`)
 
-// renderSpacer renders core/spacer (P5.59).
+// renderSpacer renders core/spacer (P5.59 / P5.112).
 // Prefers saved markup; synthesizes height/width (default height 100px);
 // normalizes unitless numeric lengths to px; honors className.
+// P5.112: anchor + className polish on saved and synthesized markup.
 func (e *Env) renderSpacer(block Block) string {
 	e = e.ensure()
 	out := e.renderSaved(block)
 	if strings.TrimSpace(out) != "" && reSpacerTag.MatchString(out) {
-		return out
+		return applySpacerAttrs(out, block.Attrs)
 	}
-	return synthesizeSpacerBlock(block.Attrs)
+	out = synthesizeSpacerBlock(block.Attrs)
+	return applySpacerAttrs(out, block.Attrs)
 }
 
 func synthesizeSpacerBlock(attrs map[string]any) string {
@@ -44,7 +45,19 @@ func synthesizeSpacerBlock(attrs map[string]any) string {
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		class += " " + html.EscapeString(cn)
 	}
-	return fmt.Sprintf(`<div style="%s" aria-hidden="true" class="%s"></div>`, style, class)
+	var b strings.Builder
+	b.WriteString(`<div`)
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
+		b.WriteString(` id="`)
+		b.WriteString(html.EscapeString(anchor))
+		b.WriteString(`"`)
+	}
+	b.WriteString(` style="`)
+	b.WriteString(style)
+	b.WriteString(`" aria-hidden="true" class="`)
+	b.WriteString(class)
+	b.WriteString(`"></div>`)
+	return b.String()
 }
 
 // normalizeCSSLength appends px to bare numeric lengths (WP spacer attrs).
@@ -61,4 +74,22 @@ func normalizeCSSLength(v string) string {
 	}
 	// Digits / decimal / sign only → treat as px.
 	return v + "px"
+}
+
+// applySpacerAttrs polishes className/anchor on spacer roots (P5.112).
+func applySpacerAttrs(htmlFragment string, attrs map[string]any) string {
+	out := htmlFragment
+	if strings.TrimSpace(out) == "" {
+		return out
+	}
+	out = addRootClass(out, "wp-block-spacer")
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		for _, part := range strings.Fields(cn) {
+			out = addRootClass(out, part)
+		}
+	}
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
+		out = ensureRootAttribute(out, "id", anchor)
+	}
+	return out
 }
