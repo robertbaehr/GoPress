@@ -9867,3 +9867,17 @@ wp-login.php#language-switcher-post
   task: P7.135
   api: n/a
   notes: "P7.135 — dashboard markup, dismiss, ajax update"
+
+# P2.130: wp_kses_split.
+- prefix: wp-includes/kses.php#wp_kses_split
+  go: internal/wp/kses.go
+  status: partial
+  task: P2.130
+  api: wp_kses_split
+  notes: "P2.130 — KsesSplit public API; Kses routes through split"
+- prefix: wp-includes/kses.php#wp_kses_split#tests
+  go: internal/wp/kses_split_p2_130_test.go
+  status: partial
+  task: P2.130
+  api: n/a
+  notes: "P2.130 — allow/strip + Kses/KsesSplit parity"
