@@ -452,6 +452,97 @@ func GetAttachmentCaption(c *Context, postID int64) string {
 	return caption
 }
 
+// AttachmentIs reports whether an attachment is of a given type (wp_attachment_is, P8.51).
+// type may be "image", "audio", "video", or a file extension. Uses mime prefix first,
+// then CheckFiletype extension matching (import mime uses audio/video extension lists).
+func AttachmentIs(c *Context, typ string, attachmentID int64) bool {
+	typ = strings.ToLower(strings.TrimSpace(typ))
+	if c == nil || attachmentID <= 0 || typ == "" {
+		return false
+	}
+	file := GetAttachedFile(c, attachmentID)
+	if strings.TrimSpace(file) == "" {
+		return false
+	}
+	mime := ""
+	if c.DB != nil {
+		q, args, err := c.DB.Prepare(
+			"SELECT post_mime_type FROM "+c.DB.Posts()+" WHERE ID = %d AND post_type = %s LIMIT 1",
+			attachmentID, "attachment",
+		)
+		if err == nil {
+			if row, err := c.DB.GetRow(q, args...); err == nil && row != nil {
+				mime = strings.ToLower(strings.TrimSpace(fmt.Sprint(row["post_mime_type"])))
+				if mime == "<nil>" {
+					mime = ""
+				}
+			}
+		}
+	}
+	if mime != "" && strings.HasPrefix(mime, typ+"/") {
+		return true
+	}
+	ft := CheckFiletype(c, file, nil)
+	ext := strings.ToLower(strings.TrimSpace(ft.Ext))
+	if ext == "" {
+		return false
+	}
+	if mime != "import" {
+		return typ == ext
+	}
+	switch typ {
+	case "image":
+		for _, e := range []string{"jpg", "jpeg", "jpe", "gif", "png", "webp", "avif", "heic"} {
+			if ext == e {
+				return true
+			}
+		}
+		return false
+	case "audio":
+		for _, e := range AudioExtensions(c) {
+			if ext == e {
+				return true
+			}
+		}
+		return false
+	case "video":
+		for _, e := range VideoExtensions(c) {
+			if ext == e {
+				return true
+			}
+		}
+		return false
+	default:
+		return typ == ext
+	}
+}
+
+// AudioExtensions returns supported audio formats (wp_get_audio_extensions, P8.51).
+func AudioExtensions(c *Context) []string {
+	exts := []string{"mp3", "ogg", "flac", "m4a", "wav"}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("wp_audio_extensions", exts); v != nil {
+			if list, ok := v.([]string); ok && len(list) > 0 {
+				return list
+			}
+		}
+	}
+	return exts
+}
+
+// VideoExtensions returns supported video formats (wp_get_video_extensions, P8.51).
+func VideoExtensions(c *Context) []string {
+	exts := []string{"mp4", "m4v", "webm", "ogv", "flv"}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("wp_video_extensions", exts); v != nil {
+			if list, ok := v.([]string); ok && len(list) > 0 {
+				return list
+			}
+		}
+	}
+	return exts
+}
+
 // GetAttachmentThumbURL returns the thumbnail URL (wp_get_attachment_thumb_url, P8.50).
 // Uses GetAttachmentImageURL(..., "thumbnail", false); empty when missing.
 // Honors the wp_get_attachment_thumb_url filter.

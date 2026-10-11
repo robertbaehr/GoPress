@@ -24,27 +24,16 @@ func CustomLogoID(c *Context) int64 {
 	return anyToInt64(c.Options.GetOption("site_logo", 0))
 }
 
-// AttachmentIsImage reports whether an attachment is an image (wp_attachment_is_image subset).
+// AttachmentIsImage reports whether an attachment is an image (wp_attachment_is_image, P8.51).
+// Delegates to AttachmentIs("image", …); falls back to resolvable image src when mime/file missing.
 func AttachmentIsImage(c *Context, attachmentID int64) bool {
+	if AttachmentIs(c, "image", attachmentID) {
+		return true
+	}
 	if c == nil || attachmentID <= 0 {
 		return false
 	}
-	if c.DB != nil {
-		row, err := c.DB.GetRow(
-			"SELECT post_mime_type FROM "+c.DB.Posts()+" WHERE ID = %d AND post_type = %s LIMIT 1",
-			attachmentID, "attachment",
-		)
-		if err == nil && row != nil {
-			mime := strings.ToLower(strings.TrimSpace(fmt.Sprint(row["post_mime_type"])))
-			if strings.HasPrefix(mime, "image/") {
-				return true
-			}
-			if mime != "" && mime != "<nil>" {
-				return false
-			}
-		}
-	}
-	// Fallback: resolvable image src.
+	// Fallback: resolvable image src when attached file / mime unavailable.
 	_, ok := GetAttachmentImageSrc(c, attachmentID, "full", false)
 	return ok
 }
