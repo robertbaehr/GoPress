@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P6.65: lost_password_html_link filter on login nav.
+- prefix: wp-login.php#lost_password_html_link
+  go: internal/login/login.go
+  status: partial
+  task: P6.65
+  api: n/a
+  notes: "P6.65 — lost_password_html_link filter on login/register nav lost-password link"
+- prefix: wp-login.php#lost_password_html_link#tests
+  go: internal/login/lost_password_html_link_p6_65_test.go
+  status: partial
+  task: P6.65
+  api: n/a
+  notes: "P6.65 — filter replace + default link"
+
 # P9.40: RemoveAllFilters / RemoveAllActions Context helpers.
 - prefix: wp-includes/plugin.php#remove_all_filters
   go: internal/wp/has_action.go
