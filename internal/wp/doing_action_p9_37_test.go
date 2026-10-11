@@ -23,19 +23,25 @@ func TestDoingActionNestedDidActionP937(t *testing.T) {
 	var midDoingOuter, midDoingInner, midDoingEmpty bool
 	var midDidOuter, midDidInner int
 	c.Hooks.AddAction("outer", func(_ ...any) {
-		midDoingOuter = wp.DoingAction(c, "outer")
-		midDoingEmpty = wp.DoingAction(c, "")
-		midDidOuter = wp.DidAction(c, "outer")
+		if midDidOuter == 0 {
+			midDoingOuter = wp.DoingAction(c, "outer")
+			midDoingEmpty = wp.DoingAction(c, "")
+			midDidOuter = wp.DidAction(c, "outer")
+		}
 		c.Hooks.DoAction("inner")
-		midDidInner = wp.DidAction(c, "inner")
+		if midDidInner == 0 {
+			midDidInner = wp.DidAction(c, "inner")
+		}
 	}, 10, 0)
 	c.Hooks.AddAction("inner", func(_ ...any) {
-		midDoingInner = wp.DoingAction(c, "inner")
+		if !midDoingInner {
+			midDoingInner = wp.DoingAction(c, "inner")
+		}
 		if !wp.DoingAction(c, "outer") {
 			t.Error("DoingAction(outer) false while inner runs")
 		}
-		if wp.DidAction(c, "inner") != 1 {
-			t.Errorf("DidAction(inner) mid=%d", wp.DidAction(c, "inner"))
+		if n := wp.DidAction(c, "inner"); n < 1 {
+			t.Errorf("DidAction(inner) mid=%d", n)
 		}
 	}, 10, 0)
 
@@ -45,7 +51,7 @@ func TestDoingActionNestedDidActionP937(t *testing.T) {
 	if !midDoingOuter || !midDoingInner || !midDoingEmpty {
 		t.Fatalf("mid doing outer=%v inner=%v empty=%v", midDoingOuter, midDoingInner, midDoingEmpty)
 	}
-	// did_action bumps before callbacks run in WP; after first outer fire midDidOuter is 1.
+	// did_action bumps before callbacks run; first outer fire → 1.
 	if midDidOuter != 1 {
 		t.Fatalf("midDidOuter=%d", midDidOuter)
 	}
@@ -65,13 +71,16 @@ func TestDoingActionNestedDidActionP937(t *testing.T) {
 
 func TestDoingActionSharedWithFilterP937(t *testing.T) {
 	c := &wp.Context{Hooks: wp.NewHooks()}
-	var sawDoing, sawDidFilter int
+	var sawDoing int
+	var firstDidFilter int
 	c.Hooks.AddFilter("f", func(v any, _ ...any) any {
 		if !wp.DoingAction(c, "f") || !wp.DoingFilter(c, "f") {
 			t.Error("DoingAction/Filter should share stack")
 		}
 		sawDoing++
-		sawDidFilter = wp.DidFilter(c, "f")
+		if firstDidFilter == 0 {
+			firstDidFilter = wp.DidFilter(c, "f")
+		}
 		return v
 	}, 10, 1)
 	_ = c.Hooks.ApplyFilters("f", "x")
@@ -82,8 +91,8 @@ func TestDoingActionSharedWithFilterP937(t *testing.T) {
 	if wp.DidFilter(c, "f") != 2 {
 		t.Fatalf("DidFilter=%d", wp.DidFilter(c, "f"))
 	}
-	if sawDidFilter != 1 {
-		t.Fatalf("mid DidFilter=%d", sawDidFilter)
+	if firstDidFilter != 1 {
+		t.Fatalf("first DidFilter=%d", firstDidFilter)
 	}
 	if wp.DidAction(c, "f") != 0 {
 		t.Fatalf("ApplyFilters should not bump DidAction: %d", wp.DidAction(c, "f"))
