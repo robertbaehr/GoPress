@@ -8298,3 +8298,11 @@ wp-login.php#language-switcher-post
   task: P10.152
   api: n/a
   notes: "P10.152 — include[]/exclude[] + loginout + front/login/admin toppers; 1167 cases"
+
+# P10.153: STATUS/PORTING refresh after P5.121–P10.152.
+- prefix: docs/STATUS.md#p10.153
+  go: docs/STATUS.md
+  status: partial
+  task: P10.153
+  api: n/a
+  notes: "P10.153 — summarize loginout/include[]/revision/filesize/post_class/do_action_ref + 1167 corpus"
