@@ -8307,6 +8307,43 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P10.153 — summarize loginout/include[]/revision/filesize/post_class/do_action_ref + 1167 corpus"
 
+# P6.50: deepen login shake via shake_error_codes filter.
+- prefix: wp-login.php#shake_error_codes
+  go: internal/login/login.go
+  status: partial
+  task: P6.50
+  api: n/a
+  notes: "P6.50 — shake_error_codes filter on default list; loginShouldShake(c, code)"
+
+- prefix: internal/login/login_test.go#p6.50
+  go: internal/login/login_test.go
+  status: partial
+  task: P6.50
+  api: n/a
+  notes: "P6.50 — filter remove incorrect_password / add test_cookie coverage"
+
+# P3.116: deepen get_comment_class / comment-template classes.
+- prefix: wp-includes/comment-template.php#get_comment_class
+  go: internal/wp/comment_class.go
+  status: partial
+  task: P3.116
+  api: exported
+  notes: "P3.116 — GetCommentClass/BuildCommentClass; byuser/bypostauthor/alt; comment_class filter"
+
+- prefix: wp-includes/blocks/comment-template.php#p3.116
+  go: internal/blocks/query.go
+  status: partial
+  task: P3.116
+  api: internal
+  notes: "P3.116 — comment-template uses get_comment_class parity (alt/thread-alt/byuser)"
+
+- prefix: internal/wp/comment_class_test.go#p3.116
+  go: internal/wp/comment_class_test.go
+  status: partial
+  task: P3.116
+  api: n/a
+  notes: "P3.116 — BuildCommentClass + GetCommentClass filter coverage"
+
 # P2.118: deepen WP_Http::is_ip_address + rest_is_ip_address.
 - prefix: wp-includes/class-wp-http.php#is_ip_address.p2.118
   go: internal/wp/is_ip_address.go
