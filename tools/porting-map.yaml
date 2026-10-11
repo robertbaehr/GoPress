@@ -10898,3 +10898,17 @@ wp-login.php#language-switcher-post
   task: P10.197
   api: n/a
   notes: "P10.197 — summarize code attrs, orderby string-type, erase search, html_excerpt, resource_hints, deprecated notices, corpus 2216"
+
+# P5.144: deepen core/preformatted fontSize / gradient; drop align.
+- prefix: wp-includes/blocks/preformatted#attrs
+  go: internal/blocks/code_preformatted.go
+  status: partial
+  task: P5.144
+  api: n/a
+  notes: "P5.144 — drop unsupported align; gradient preset + fontSize polish; sanitize before applySupports"
+- prefix: wp-includes/blocks/preformatted#attrs#tests
+  go: internal/blocks/preformatted_attrs_p5_144_test.go
+  status: partial
+  task: P5.144
+  api: n/a
+  notes: "P5.144 — align drop, saved gradient/fontSize coverage"

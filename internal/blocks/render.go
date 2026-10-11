@@ -95,7 +95,9 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderCode(block)
 		return applySupports(out, sanitizeCodeBlockAttrs(block.Attrs), name)
 	case "core/preformatted":
+		// P5.144: drop unsupported align before applySupports; fontSize/gradient polish.
 		out = e.renderPreformatted(block)
+		return applySupports(out, sanitizePreformattedBlockAttrs(block.Attrs), name)
 	case "core/verse":
 		out = e.renderVerse(block)
 	case "core/pullquote":

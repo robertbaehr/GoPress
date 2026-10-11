@@ -99,19 +99,38 @@ func synthesizeCodeBlock(attrs map[string]any) string {
 	return b.String()
 }
 
-// renderPreformatted renders core/preformatted (P5.62 / P5.101).
+// renderPreformatted renders core/preformatted (P5.62 / P5.101 / P5.144).
 // Prefers saved markup; synthesizes <pre> from content; honors className/anchor.
-// Color/typography/spacing land via applySupports on the caller.
+// P5.144: drop unsupported align; gradient preset + fontSize polish.
+// Color/typography/spacing land via applySupports on the caller (sanitized attrs).
 func (e *Env) renderPreformatted(block Block) string {
 	e = e.ensure()
+	attrs := sanitizePreformattedBlockAttrs(block.Attrs)
 	out := e.renderSaved(block)
 	if strings.TrimSpace(out) != "" && rePreformattedTag.MatchString(out) {
-		return polishPreformattedMarkup(out, block.Attrs)
+		return polishPreformattedMarkup(out, attrs)
 	}
-	return synthesizePreformattedBlock(block.Attrs)
+	return synthesizePreformattedBlock(attrs)
 }
 
-// polishPreformattedMarkup ensures wp-block-preformatted + className/anchor on saved HTML (P5.101).
+// sanitizePreformattedBlockAttrs drops supports.align (not in block.json) before
+// synthesize/polish/supports (P5.144).
+func sanitizePreformattedBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	if strings.TrimSpace(attrString(out, "align")) != "" {
+		delete(out, "align")
+	}
+	return out
+}
+
+// polishPreformattedMarkup ensures wp-block-preformatted + className/anchor/gradient/fontSize
+// on saved HTML (P5.101 / P5.144).
 func polishPreformattedMarkup(out string, attrs map[string]any) string {
 	out = addRootClass(out, "wp-block-preformatted")
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
@@ -122,6 +141,15 @@ func polishPreformattedMarkup(out string, attrs map[string]any) string {
 	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
 		out = ensureRootAttribute(out, "id", anchor)
 	}
+	// P5.144: typography.fontSize preset class (also via applySupports).
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		out = addRootClass(out, "has-"+sanitizeClassToken(fs)+"-font-size")
+	}
+	// P5.144: color.gradients preset → has-{slug}-gradient-background.
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		out = addRootClass(out, "has-background")
+		out = addRootClass(out, "has-"+sanitizeClassToken(g)+"-gradient-background")
+	}
 	return out
 }
 
@@ -130,6 +158,12 @@ func synthesizePreformattedBlock(attrs map[string]any) string {
 	class := "wp-block-preformatted"
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		class += " " + html.EscapeString(cn)
+	}
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		class += " has-" + sanitizeClassToken(fs) + "-font-size"
+	}
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		class += " has-background has-" + sanitizeClassToken(g) + "-gradient-background"
 	}
 	var b strings.Builder
 	b.WriteString(`<pre class="`)
