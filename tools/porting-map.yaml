@@ -10889,4 +10889,12 @@ wp-login.php#language-switcher-post
   status: partial
   task: P10.196
   api: n/a
-  notes: "P10.196 — code/modified-order/erase/resource-hints/deprecated toppers"
+  notes: "P10.196 — code/modified-order/erase/resource-hints/deprecated toppers; 2216 cases"
+
+# P10.197: STATUS/PORTING refresh after P5.143–P10.196.
+- prefix: docs/STATUS.md#p10.197
+  go: docs/STATUS.md
+  status: partial
+  task: P10.197
+  api: n/a
+  notes: "P10.197 — summarize code attrs, orderby string-type, erase search, html_excerpt, resource_hints, deprecated notices, corpus 2216"
