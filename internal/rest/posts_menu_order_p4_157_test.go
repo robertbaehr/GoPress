@@ -10,9 +10,10 @@ import (
 	"testing"
 
 	"github.com/robertbaehr/GoPress/internal/rest"
+	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
-// P4.157: menu_order[]= and empty menu_order= → rest_invalid_type.
+// P4.157: menu_order[]= / empty / float / encoded + → rest_invalid_type.
 func TestPagesMenuOrderInvalidFormsP4157(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
@@ -21,7 +22,7 @@ func TestPagesMenuOrderInvalidFormsP4157(t *testing.T) {
 		"/wp-json/wp/v2/pages?menu_order[]=1&per_page=1",
 		"/wp-json/wp/v2/pages?menu_order=&per_page=1",
 		"/wp-json/wp/v2/pages?menu_order=1.5&per_page=1",
-		"/wp-json/wp/v2/pages?menu_order=+1&per_page=1",
+		"/wp-json/wp/v2/pages?menu_order=%2B1&per_page=1",
 	} {
 		req := httptest.NewRequest(http.MethodGet, path, nil)
 		rec := httptest.NewRecorder()
@@ -36,7 +37,7 @@ func TestPagesMenuOrderInvalidFormsP4157(t *testing.T) {
 	}
 }
 
-// P4.157: create page + update post with menu_order write.
+// P4.157: create page (response menu_order) + post write verified via DB.
 func TestCreatePageAndUpdatePostMenuOrderP4157(t *testing.T) {
 	c := bootOrSkip(t)
 	t.Cleanup(func() { _ = c.DB.Close() })
@@ -95,8 +96,9 @@ func TestCreatePageAndUpdatePostMenuOrderP4157(t *testing.T) {
 			_, _ = c.DB.Exec(q, args...)
 		}
 	})
-	if post.MenuOrder != 7 {
-		t.Fatalf("post menu_order=%d want 7", post.MenuOrder)
+	// Posts omit menu_order in JSON (no page-attributes); verify DB write.
+	if mo := readMenuOrderDB(t, c, post.ID); mo != 7 {
+		t.Fatalf("post db menu_order=%d want 7", mo)
 	}
 
 	req = httptest.NewRequest(http.MethodPut, fmt.Sprintf("/wp-json/wp/v2/posts/%d", post.ID), bytes.NewBufferString(`{"menu_order":99}`))
@@ -108,11 +110,28 @@ func TestCreatePageAndUpdatePostMenuOrderP4157(t *testing.T) {
 	if rec.Code != http.StatusOK {
 		t.Fatalf("update status=%d body=%s", rec.Code, rec.Body.String())
 	}
-	var updated rest.Post
-	if err := json.Unmarshal(rec.Body.Bytes(), &updated); err != nil {
-		t.Fatal(err)
+	if mo := readMenuOrderDB(t, c, post.ID); mo != 99 {
+		t.Fatalf("updated db menu_order=%d want 99", mo)
 	}
-	if updated.MenuOrder != 99 {
-		t.Fatalf("updated menu_order=%d want 99", updated.MenuOrder)
+}
+
+func readMenuOrderDB(t *testing.T, c *wp.Context, id int64) int {
+	t.Helper()
+	q, args, err := c.DB.Prepare("SELECT menu_order AS n FROM "+c.DB.Posts()+" WHERE ID = %d", id)
+	if err != nil {
+		t.Fatalf("prepare: %v", err)
 	}
+	rows, err := c.DB.Query(q, args...)
+	if err != nil {
+		t.Fatalf("query: %v", err)
+	}
+	defer rows.Close()
+	if !rows.Next() {
+		t.Fatalf("no row for id=%d", id)
+	}
+	var mo int
+	if err := rows.Scan(&mo); err != nil {
+		t.Fatalf("scan: %v", err)
+	}
+	return mo
 }
