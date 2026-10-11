@@ -9491,3 +9491,185 @@
   body: null
   compare: headers
   nonce: null
+
+
+# P10.168: expand after freeform/context/help/kses/the_content/intermediate stack.
+- id: rest-p10168-001-posts-context-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts/1?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10168-002-posts-collection-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?context=embed&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10168-003-pages-context-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages/2?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10168-004-pages-collection-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?context=embed&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10168-005-posts-context-bogus
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?context=bogus
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10168-006-posts-item-context-bogus
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts/1?context=bogus
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10168-007-pages-context-bogus
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?context=bogus
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10168-008-posts-context-edit-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?context=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10168-009-posts-item-context-edit-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts/1?context=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10168-010-pages-item-context-edit-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages/2?context=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10168-011-block-types-freeform-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/freeform?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10168-012-block-types-html
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/html
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10168-013-rest-route-posts-embed
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/posts&context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10168-014-comments-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/comments?per_page=1&context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10168-015-media-per-page-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/media?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10168-016-search-hello
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?search=hello&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10168-017-settings-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/settings
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10168-018-types-post-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types/post?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10168-019-posts-context-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts/1?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10168-020-sitemap
+  role: anon
+  method: GET
+  path: /wp-sitemap.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

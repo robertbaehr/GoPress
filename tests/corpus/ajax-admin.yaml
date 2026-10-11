@@ -313,3 +313,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.168: ajax toppers after stack.
+- id: ajax-p10168-001-heartbeat
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10168-002-heartbeat-edit-post
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=edit-post
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10168-003-heartbeat-edit-page
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=edit-page
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
