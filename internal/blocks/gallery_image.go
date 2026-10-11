@@ -14,7 +14,7 @@ var (
 	reFigureOpen      = regexp.MustCompile(`(?is)^(\s*<figure\b)([^>]*)(>)`)
 )
 
-// renderImage renders core/image (P5.48 / P5.65 / P5.113).
+// renderImage renders core/image (P5.48 / P5.65 / P5.113 / P5.154).
 // Mirrors render_block_core_image subset: require <img>, honor data-id for
 // gallery nesting, drop empty figcaptions when caption attr is empty, and
 // synthesize markup from attrs when no saved HTML is present.
@@ -22,8 +22,12 @@ var (
 // title/isDecorative/linkClass on synthesize and light saved-markup polish.
 // P5.113: className/anchor/sizeSlug polish on saved and synthesized markup;
 // is-resized when width/height present; rounded border style class.
+// P5.154: coerce align left|center|right|wide|full; aspectRatio/scale/title/
+// isDecorative polish on saved markup; sanitize before applySupports.
 func (e *Env) renderImage(block Block) string {
 	e = e.ensure()
+	attrs := sanitizeImageBlockAttrs(block.Attrs)
+	block.Attrs = attrs
 	block = galleryImageDataIDBackcompat(block, false)
 
 	out := e.renderSaved(block)
@@ -38,15 +42,37 @@ func (e *Env) renderImage(block Block) string {
 		out = injectDataIDOnIMG(out, dataID)
 	}
 
-	caption := strings.TrimSpace(attrString(block.Attrs, "caption"))
+	caption := strings.TrimSpace(attrString(attrs, "caption"))
 	if caption == "" {
 		out = reEmptyFigcaption.ReplaceAllString(out, "")
 	}
 
-	return applyImageAttrs(out, block.Attrs)
+	return applyImageAttrs(out, attrs)
 }
 
-// applyImageAttrs polishes className/align/sizeSlug/anchor/is-resized on image roots (P5.113).
+// sanitizeImageBlockAttrs coerces core/image supports.align to the block.json set (P5.154).
+// Allowed: left, center, right, wide, full. Other align values (incl. none) are dropped.
+func sanitizeImageBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "left", "center", "right", "wide", "full":
+		// keep
+	case "none":
+		delete(out, "align")
+	default:
+		delete(out, "align")
+	}
+	return out
+}
+
+// applyImageAttrs polishes className/align/sizeSlug/anchor/is-resized on image roots (P5.113 / P5.154).
 func applyImageAttrs(htmlFragment string, attrs map[string]any) string {
 	out := htmlFragment
 	if strings.TrimSpace(out) == "" {
@@ -83,7 +109,77 @@ func applyImageAttrs(htmlFragment string, attrs map[string]any) string {
 	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
 		out = ensureRootAttribute(out, "id", anchor)
 	}
+	// P5.154: polish aspectRatio/scale/title/isDecorative on saved <img>.
+	out = polishImageIMGAttrs(out, attrs)
 	return out
+}
+
+var reImgTag = regexp.MustCompile(`(?is)<img\b([^>]*)(/?)>`)
+
+// polishImageIMGAttrs applies aspectRatio/scale/title/isDecorative onto the first <img> (P5.154).
+func polishImageIMGAttrs(htmlFragment string, attrs map[string]any) string {
+	if attrs == nil || !reImgTag.MatchString(htmlFragment) {
+		return htmlFragment
+	}
+	decorative := attrBool(attrs, "isDecorative")
+	aspect := strings.TrimSpace(attrString(attrs, "aspectRatio"))
+	scale := strings.TrimSpace(attrString(attrs, "scale"))
+	title := strings.TrimSpace(attrString(attrs, "title"))
+	if !decorative && aspect == "" && scale == "" && title == "" {
+		return htmlFragment
+	}
+	return reImgTag.ReplaceAllStringFunc(htmlFragment, func(tag string) string {
+		m := reImgTag.FindStringSubmatch(tag)
+		if len(m) < 2 {
+			return tag
+		}
+		inner := m[1]
+		selfClose := ""
+		if len(m) > 2 {
+			selfClose = m[2]
+		}
+		if decorative {
+			// Clear alt; set role=presentation (WP isDecorative).
+			if re := regexp.MustCompile(`(?i)\salt\s*=\s*("[^"]*"|'[^']*')`); re.MatchString(inner) {
+				inner = re.ReplaceAllString(inner, ` alt=""`)
+			} else {
+				inner += ` alt=""`
+			}
+			if !regexp.MustCompile(`(?i)\brole\s*=`).MatchString(inner) {
+				inner += ` role="presentation"`
+			}
+			// Drop title when decorative.
+			inner = regexp.MustCompile(`(?i)\s+title\s*=\s*("[^"]*"|'[^']*')`).ReplaceAllString(inner, "")
+		} else if title != "" && !regexp.MustCompile(`(?i)\btitle\s*=`).MatchString(inner) {
+			inner += ` title="` + html.EscapeString(title) + `"`
+		}
+		var styleParts []string
+		if aspect != "" {
+			styleParts = append(styleParts, "aspect-ratio:"+sanitizeCSSToken(aspect))
+		}
+		if scale != "" {
+			styleParts = append(styleParts, "object-fit:"+sanitizeCSSToken(scale))
+		}
+		if len(styleParts) > 0 {
+			extra := strings.Join(styleParts, ";")
+			reStyle := regexp.MustCompile(`(?i)\sstyle\s*=\s*("([^"]*)"|'([^']*)')`)
+			if sm := reStyle.FindStringSubmatch(inner); len(sm) >= 2 {
+				existing := sm[2]
+				if existing == "" {
+					existing = sm[3]
+				}
+				merged := strings.TrimSpace(existing)
+				if merged != "" && !strings.HasSuffix(merged, ";") {
+					merged += ";"
+				}
+				merged += extra
+				inner = reStyle.ReplaceAllString(inner, ` style="`+html.EscapeString(merged)+`"`)
+			} else {
+				inner += ` style="` + html.EscapeString(extra) + `"`
+			}
+		}
+		return `<img` + inner + selfClose + `>`
+	})
 }
 
 func imageHasRoundedBorder(attrs map[string]any) bool {
