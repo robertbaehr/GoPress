@@ -1,8 +1,7 @@
-// oEmbed discovery links (P3.20 / P3.92) — subset of wp_oembed_add_discovery_links.
+// oEmbed discovery links (P3.20 / P3.92 / P3.146) — subset of wp_oembed_add_discovery_links.
 package wp
 
 import (
-	"html"
 	"net/url"
 	"strings"
 )
@@ -48,22 +47,36 @@ func OEmbedDiscoveryLinks(home, permalink string) string {
 }
 
 // OEmbedDiscoveryLinksWithHooks builds discovery links and applies
-// oembed_discovery_links (P3.92).
+// oembed_discovery_links (P3.92 / P3.146).
+// P3.146: EscURL on href attributes (esc_url(get_oembed_endpoint_url(...))).
 func OEmbedDiscoveryLinksWithHooks(h *Hooks, home, permalink string) string {
+	return OEmbedDiscoveryLinksEmbeddable(h, home, permalink, true)
+}
+
+// OEmbedDiscoveryLinksEmbeddable builds discovery links when embeddable is true
+// (is_singular && is_post_embeddable gate, P3.146). Non-embeddable → "".
+func OEmbedDiscoveryLinksEmbeddable(h *Hooks, home, permalink string, embeddable bool) string {
 	home = strings.TrimRight(strings.TrimSpace(home), "/")
 	permalink = strings.TrimSpace(permalink)
-	if home == "" || permalink == "" {
+	if !embeddable || home == "" || permalink == "" {
 		return ""
 	}
-	jsonURL := GetOEmbedEndpointURLWithHooks(h, home, permalink, "json")
-	xmlURL := GetOEmbedEndpointURLWithHooks(h, home, permalink, "xml")
+	jsonURL := EscURL(GetOEmbedEndpointURLWithHooks(h, home, permalink, "json"))
+	xmlURL := EscURL(GetOEmbedEndpointURLWithHooks(h, home, permalink, "xml"))
+	if jsonURL == "" && xmlURL == "" {
+		return ""
+	}
 	var b strings.Builder
-	b.WriteString("<link rel=\"alternate\" title=\"oEmbed (JSON)\" type=\"application/json+oembed\" href=\"")
-	b.WriteString(html.EscapeString(jsonURL))
-	b.WriteString("\" />\n")
-	b.WriteString("<link rel=\"alternate\" title=\"oEmbed (XML)\" type=\"text/xml+oembed\" href=\"")
-	b.WriteString(html.EscapeString(xmlURL))
-	b.WriteString("\" />\n")
+	if jsonURL != "" {
+		b.WriteString("<link rel=\"alternate\" title=\"oEmbed (JSON)\" type=\"application/json+oembed\" href=\"")
+		b.WriteString(jsonURL)
+		b.WriteString("\" />\n")
+	}
+	if xmlURL != "" {
+		b.WriteString("<link rel=\"alternate\" title=\"oEmbed (XML)\" type=\"text/xml+oembed\" href=\"")
+		b.WriteString(xmlURL)
+		b.WriteString("\" />\n")
+	}
 	out := b.String()
 	if h != nil {
 		filtered := h.ApplyFilters("oembed_discovery_links", out)

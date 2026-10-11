@@ -4494,8 +4494,9 @@ func writeFrontHeadLinks(b *strings.Builder, c *wp.Context, home, blogname, perm
 		b.WriteString(html.EscapeString(extraFeedHref))
 		b.WriteString("\" />\n")
 	}
-	// P3.20 / P3.92: wp_oembed_add_discovery_links (+ oembed_discovery_links filter).
-	b.WriteString(wp.OEmbedDiscoveryLinksWithHooks(hooks, home, permalink))
+	// P3.20 / P3.92 / P3.146: wp_oembed_add_discovery_links (EscURL hrefs + embeddable gate).
+	// Front head only passes a singular permalink; embeddable=true mirrors is_post_embeddable.
+	b.WriteString(wp.OEmbedDiscoveryLinksEmbeddable(hooks, home, permalink, permalink != ""))
 	b.WriteString("<link rel=\"https://api.w.org/\" href=\"")
 	b.WriteString(html.EscapeString(home + "/wp-json/"))
 	b.WriteString("\" />\n")
