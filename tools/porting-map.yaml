@@ -8695,3 +8695,32 @@ wp-login.php#language-switcher-post
   task: P2.121
   api: n/a
   notes: "P2.121 — depth/pretty/typed-map unit coverage"
+
+# P3.119: front wp_enqueue_scripts / wp_head print hooks.
+- prefix: wp-includes/general-template.php#wp_head#p3.119
+  go: internal/wp/enqueue.go
+  status: partial
+  task: P3.119
+  api: exported
+  notes: "P3.119 — Head/EnqueueScripts/PrintStyles/PrintHeadScripts + default-filters priorities"
+
+- prefix: wp-includes/default-filters.php#wp_enqueue_scripts#p3.119
+  go: internal/wp/boot.go
+  status: partial
+  task: P3.119
+  api: n/a
+  notes: "P3.119 — RegisterDefaultHeadHooks from Boot"
+
+- prefix: wp-includes/general-template.php#wp_head#p3.119#front
+  go: internal/server/front.go
+  status: partial
+  task: P3.119
+  api: n/a
+  notes: "P3.119 — writeFrontHeadLinks fires wp.Head before discovery links"
+
+- prefix: wp-includes/general-template.php#wp_head#p3.119#tests
+  go: internal/wp/enqueue_test.go
+  status: partial
+  task: P3.119
+  api: n/a
+  notes: "P3.119 — head hook order + front fire coverage"

@@ -95,6 +95,7 @@ func Boot(ctx context.Context, cfg *config.Config) (*Context, error) {
 
 	// P3.118: wp_footer → wp_print_footer_scripts (default-filters.php).
 	RegisterDefaultFooterHooks(c)
+	RegisterDefaultHeadHooks(c)
 
 	// WP_DEBUG / WP_DEBUG_DISPLAY / WP_DEBUG_LOG (P2.83).
 	ApplyDebugMode(c)
