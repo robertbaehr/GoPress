@@ -4075,20 +4075,27 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P5.109 — unit coverage for className/anchor/align and href wrap"
 
-# P5.56: polish core/buttons + core/button (empty, synthesize, width).
+# P5.56 / P5.111: polish core/buttons + core/button (empty, synthesize, width, attrs).
 - prefix: wp-includes/blocks/button.php
   go: internal/blocks/button.go
   status: partial
-  task: P5.56
+  task: P5.111
   api: internal
-  notes: "P5.56 — empty button → ''; synthesize text/url; style.dimensions.width classes"
+  notes: "P5.111 — className/anchor/fontSize/color/legacy width; P5.56 empty/synthesize/dimensions.width"
 
 - prefix: wp-includes/blocks/buttons
   go: internal/blocks/button.go
   status: partial
-  task: P5.56
+  task: P5.111
   api: internal
-  notes: "P5.56 — synthesize flex buttons wrapper from inner button blocks"
+  notes: "P5.111 — className/align/anchor + flex justify/orientation; P5.56 synthesize wrapper"
+
+- prefix: internal/blocks/button_test.go
+  go: internal/blocks/button_test.go
+  status: done
+  task: P5.111
+  api: n/a
+  notes: "P5.111 — unit coverage for buttons/button attr polish"
 
 # P5.58 / P5.107: polish core/group (synthesize, tagName, layout, className/anchor).
 - prefix: wp-includes/blocks/group

@@ -50,3 +50,41 @@ func TestRenderButtonsSynthesize(t *testing.T) {
 		t.Fatalf("missing button link class: %q", out)
 	}
 }
+
+func TestRenderButtonsClassNameAlignAnchorLayout(t *testing.T) {
+	src := `<!-- wp:buttons {"anchor":"cta","align":"wide","className":"my-btns","layout":{"type":"flex","justifyContent":"center","orientation":"vertical"}} -->
+<!-- wp:button {"text":"Go","url":"/go","anchor":"go-btn","className":"is-style-outline","fontSize":"small","backgroundColor":"vivid-cyan-blue","textColor":"white","width":50} /-->
+<!-- /wp:buttons -->`
+	out := blocks.Render(src)
+	want := []string{
+		`id="cta"`,
+		"alignwide",
+		"my-btns",
+		"is-content-justification-center",
+		"is-vertical",
+		`id="go-btn"`,
+		"is-style-outline",
+		"has-small-font-size",
+		"has-vivid-cyan-blue-background-color",
+		"has-white-color",
+		"has-custom-width",
+		"wp-block-button__width-50",
+	}
+	for _, w := range want {
+		if !strings.Contains(out, w) {
+			t.Fatalf("missing %q in %q", w, out)
+		}
+	}
+}
+
+func TestRenderButtonSavedClassNameAnchor(t *testing.T) {
+	src := `<!-- wp:button {"anchor":"saved-btn","className":"is-style-outline","fontSize":"large"} -->
+<div class="wp-block-button"><a class="wp-block-button__link wp-element-button" href="/x">Saved</a></div>
+<!-- /wp:button -->`
+	out := blocks.Render(src)
+	for _, w := range []string{`id="saved-btn"`, "is-style-outline", "has-large-font-size", "Saved"} {
+		if !strings.Contains(out, w) {
+			t.Fatalf("missing %q in %q", w, out)
+		}
+	}
+}
