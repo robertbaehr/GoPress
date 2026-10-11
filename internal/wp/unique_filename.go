@@ -1,4 +1,4 @@
-// wp_unique_filename (P2.54) — subset of wp-includes/functions.php.
+// wp_unique_filename (P2.54 / P2.115) — subset of wp-includes/functions.php.
 package wp
 
 import (
@@ -14,6 +14,8 @@ var reImageSubsizeName = regexp.MustCompile(`(?i)-(?:\d+x\d+|scaled|rotated)$`)
 // UniqueFilename returns a unique filename within dir (wp_unique_filename).
 // Sanitizes the name, lowercases the extension when needed, forces a numeric
 // suffix for names that look like image sub-sizes, and increments until free.
+// P2.115: also avoid collisions with existing *-NxN / *-scaled / *-rotated files
+// (_wp_check_existing_file_names).
 func UniqueFilename(dir, filename string) string {
 	// P2.80: normalize dir separators (wp_normalize_path).
 	if dir != "" {
@@ -63,9 +65,30 @@ func UniqueFilename(dir, filename string) string {
 		number = newNumStr
 	}
 
+	// Change the extension to lowercase if needed.
 	if lcFilename != "" {
 		filename = lcFilename
 	}
+
+	// P2.115: prevent collisions with existing dimension-like sibling names
+	// (photo.jpg vs photo-150x150.jpg), mirroring _wp_check_existing_file_names.
+	files := listDirNames(dir)
+	if len(files) > 0 {
+		count := len(files)
+		i := 0
+		for i <= count && checkExistingFileNames(filename, files) {
+			newNumber := 1
+			if number != "" {
+				n, _ := strconv.Atoi(number)
+				newNumber = n + 1
+			}
+			newNumStr := strconv.Itoa(newNumber)
+			filename = replaceNumberSuffix(filename, number, newNumStr, strings.ToLower(filepath.Ext(filename)))
+			number = newNumStr
+			i++
+		}
+	}
+
 	return filename
 }
 
@@ -100,4 +123,40 @@ func fileExists(dir, name string) bool {
 	}
 	_, err := os.Stat(path)
 	return err == nil
+}
+
+func listDirNames(dir string) []string {
+	if dir == "" {
+		return nil
+	}
+	entries, err := os.ReadDir(dir)
+	if err != nil {
+		return nil
+	}
+	out := make([]string, 0, len(entries))
+	for _, e := range entries {
+		name := e.Name()
+		if name == "." || name == ".." {
+			continue
+		}
+		out = append(out, name)
+	}
+	return out
+}
+
+// checkExistingFileNames mirrors _wp_check_existing_file_names (P2.115).
+// True when files contains fname-(NxN|scaled|rotated).ext matching filename.
+func checkExistingFileNames(filename string, files []string) bool {
+	ext := filepath.Ext(filename)
+	fname := strings.TrimSuffix(filename, ext)
+	if fname == "" {
+		return false
+	}
+	re := regexp.MustCompile(`(?i)^` + regexp.QuoteMeta(fname) + `-(?:\d+x\d+|scaled|rotated)` + regexp.QuoteMeta(ext) + `$`)
+	for _, f := range files {
+		if re.MatchString(f) {
+			return true
+		}
+	}
+	return false
 }
