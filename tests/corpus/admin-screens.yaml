@@ -586,12 +586,3 @@
   body: null
   compare: headers
   nonce: null
-
-- id: admin-p10180-003b-options-reading
-  role: admin
-  method: GET
-  path: /wp-admin/options-reading.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null

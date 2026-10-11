@@ -11355,3 +11355,12 @@
   body: null
   compare: headers
   nonce: null
+
+- id: rest-p10180-036-block-types-paragraph-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/paragraph?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
