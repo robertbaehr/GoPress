@@ -8597,6 +8597,14 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P5.122 — archives dropdown + calendar empty/wrapper unit coverage"
 
+# P10.159: STATUS/PORTING refresh after P5.124–P10.158.
+- prefix: docs/STATUS.md#p10.159
+  go: docs/STATUS.md
+  status: partial
+  task: P10.159
+  api: n/a
+  notes: "P10.159 — summarize search/after-before/customize/validate_boolean/wp_footer/login_message + 1265 corpus"
+
 # P10.158: expand diff corpus after P5.124–P6.51.
 - prefix: tests/corpus#p10.158
   go: tests/corpus
