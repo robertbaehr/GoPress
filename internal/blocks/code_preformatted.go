@@ -12,21 +12,43 @@ var (
 	reVerseTag        = regexp.MustCompile(`(?i)wp-block-verse\b`)
 )
 
-// renderCode renders core/code (P5.62 / P5.102).
+// renderCode renders core/code (P5.62 / P5.102 / P5.143).
 // Prefers saved markup; synthesizes <pre><code> from content; honors align/className/anchor.
-// Color/typography/spacing land via applySupports on the caller.
+// P5.143: align enum coerce (wide only), gradient preset + fontSize polish.
+// Color/typography/spacing land via applySupports on the caller (sanitized attrs).
 func (e *Env) renderCode(block Block) string {
 	e = e.ensure()
+	attrs := sanitizeCodeBlockAttrs(block.Attrs)
 	out := e.renderSaved(block)
 	if strings.TrimSpace(out) != "" && reCodeTag.MatchString(out) {
-		return polishCodeMarkup(out, block.Attrs)
+		return polishCodeMarkup(out, attrs)
 	}
-	return synthesizeCodeBlock(block.Attrs)
+	return synthesizeCodeBlock(attrs)
 }
 
-// polishCodeMarkup ensures wp-block-code + className/anchor on saved HTML (P5.102).
+// sanitizeCodeBlockAttrs coerces core/code supports.align to the block.json enum (P5.143).
+// Only "wide" is allowed; other align values are dropped before synthesize/polish/supports.
+func sanitizeCodeBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	if align != "" && align != "wide" {
+		delete(out, "align")
+	}
+	return out
+}
+
+// polishCodeMarkup ensures wp-block-code + className/anchor/gradient/fontSize on saved HTML (P5.102 / P5.143).
 func polishCodeMarkup(out string, attrs map[string]any) string {
 	out = addRootClass(out, "wp-block-code")
+	if align := strings.TrimSpace(attrString(attrs, "align")); align == "wide" {
+		out = addRootClass(out, "alignwide")
+	}
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		for _, part := range strings.Fields(cn) {
 			out = addRootClass(out, part)
@@ -35,17 +57,32 @@ func polishCodeMarkup(out string, attrs map[string]any) string {
 	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
 		out = ensureRootAttribute(out, "id", anchor)
 	}
+	// P5.143: typography.fontSize preset class (also via applySupports).
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		out = addRootClass(out, "has-"+sanitizeClassToken(fs)+"-font-size")
+	}
+	// P5.143: color.gradients preset → has-{slug}-gradient-background.
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		out = addRootClass(out, "has-background")
+		out = addRootClass(out, "has-"+sanitizeClassToken(g)+"-gradient-background")
+	}
 	return out
 }
 
 func synthesizeCodeBlock(attrs map[string]any) string {
 	content := attrString(attrs, "content")
 	class := "wp-block-code"
-	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
-		class += " align" + sanitizeClassToken(align)
+	if align := strings.TrimSpace(attrString(attrs, "align")); align == "wide" {
+		class += " alignwide"
 	}
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		class += " " + html.EscapeString(cn)
+	}
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		class += " has-" + sanitizeClassToken(fs) + "-font-size"
+	}
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		class += " has-background has-" + sanitizeClassToken(g) + "-gradient-background"
 	}
 	var b strings.Builder
 	b.WriteString(`<pre class="`)

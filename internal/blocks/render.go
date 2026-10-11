@@ -91,7 +91,9 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/details":
 		out = e.renderDetails(block)
 	case "core/code":
+		// P5.143: coerce align enum before applySupports (wide only).
 		out = e.renderCode(block)
+		return applySupports(out, sanitizeCodeBlockAttrs(block.Attrs), name)
 	case "core/preformatted":
 		out = e.renderPreformatted(block)
 	case "core/verse":
