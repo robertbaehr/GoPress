@@ -10482,3 +10482,23 @@ wp-login.php#language-switcher-post
   task: P2.136
   api: n/a
   notes: "P2.136 — unit + wired KsesPost coverage"
+
+# P3.134: front wlwmanifest deepen (Link header; head link gone).
+- prefix: wp-includes/wlwmanifest.xml#rest-link
+  go: internal/server/wlwmanifest.go
+  status: partial
+  task: P3.134
+  api: wlwmanifest_link
+  notes: "P3.134 — ClearPingbackHeaders + RestOutputLinkHeader on stub; WlwmanifestLink no-op"
+- prefix: wp-includes/wlwmanifest.xml#rest-link#tests
+  go: internal/server/wlwmanifest_p3_134_test.go
+  status: partial
+  task: P3.134
+  api: n/a
+  notes: "P3.134 — api.w.org Link on stub; front head omits wlwmanifest"
+- prefix: wp-includes/deprecated.php#wlwmanifest_link
+  go: internal/wp/wlwmanifest_link.go
+  status: partial
+  task: P3.134
+  api: wlwmanifest_link
+  notes: "P3.134 — WlwmanifestLink empty (WP 6.3 removed head link)"
