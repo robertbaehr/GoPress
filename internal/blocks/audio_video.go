@@ -13,19 +13,58 @@ var (
 	reVideoOpen = regexp.MustCompile(`(?is)(<video\b)([^>]*)(>)`)
 )
 
-// renderAudio renders core/audio (P5.53 / P5.114).
+// renderAudio renders core/audio (P5.53 / P5.114 / P5.157).
 // Prefers saved markup; synthesizes a figure/audio player from src/id attrs.
 // P5.114: className/align/anchor polish on the figure root.
+// P5.157: coerce align left|center|right|wide|full; fontSize/gradient polish.
 func (e *Env) renderAudio(block Block) string {
 	e = e.ensure()
+	attrs := sanitizeAudioBlockAttrs(block.Attrs)
+	block.Attrs = attrs
 	out := e.renderSaved(block)
 	if strings.TrimSpace(out) == "" {
-		out = synthesizeAudioBlock(e, block.Attrs)
+		out = synthesizeAudioBlock(e, attrs)
 	}
 	if strings.TrimSpace(out) == "" || !reAudioTag.MatchString(out) {
 		return ""
 	}
-	return applyMediaFigureAttrs(out, "wp-block-audio", block.Attrs)
+	out = applyMediaFigureAttrs(out, "wp-block-audio", attrs)
+	return applyAudioAttrs(out, attrs)
+}
+
+// sanitizeAudioBlockAttrs coerces core/audio supports.align to the block.json set (P5.157).
+// Allowed: left, center, right, wide, full. Other align values (incl. none) are dropped.
+func sanitizeAudioBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "left", "center", "right", "wide", "full":
+		// keep
+	case "none":
+		delete(out, "align")
+	default:
+		delete(out, "align")
+	}
+	return out
+}
+
+// applyAudioAttrs polishes gradient and fontSize on core/audio (P5.157).
+func applyAudioAttrs(htmlFragment string, attrs map[string]any) string {
+	out := htmlFragment
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		out = addRootClass(out, "has-background")
+		out = addRootClass(out, "has-"+sanitizeClassToken(g)+"-gradient-background")
+	}
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		out = addRootClass(out, "has-"+sanitizeClassToken(fs)+"-font-size")
+	}
+	return out
 }
 
 // renderVideo renders core/video (P5.53 / P5.114).
