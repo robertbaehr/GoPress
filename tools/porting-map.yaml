@@ -1926,6 +1926,21 @@ wp-login.php#language-switcher-post
   task: P2.48
   api: exported
 
+# P2.111: normalize_whitespace.
+- prefix: wp-includes/formatting.php#normalize_whitespace
+  go: internal/wp/normalize_whitespace.go
+  status: partial
+  task: P2.111
+  api: exported
+  notes: "P2.111 — trim; CR→LF; collapse \\n+ and [ \\t]+"
+
+- prefix: wp-includes/formatting.php#normalize_whitespace#tests
+  go: internal/wp/normalize_whitespace_test.go
+  status: partial
+  task: P2.111
+  api: n/a
+  notes: "P2.111 — unit + golden formatting vectors"
+
 # P3.28: legacy Windows Live Writer manifest stub.
 - prefix: wp-includes/wlwmanifest.xml
   go: internal/server/wlwmanifest.go
