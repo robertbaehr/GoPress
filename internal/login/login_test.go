@@ -447,6 +447,10 @@ func TestInterimLoginFormKeepsRedirectTo(t *testing.T) {
 func TestRegisterDisabledRedirect(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
+	// Force disabled even if a prior test left users_can_register=1 in the shared fixture DB.
+	orig := c.Options.GetOption("users_can_register", 0)
+	_, _ = c.Options.UpdateOption("users_can_register", "0", "yes")
+	t.Cleanup(func() { _, _ = c.Options.UpdateOption("users_can_register", orig, "yes") })
 
 	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?action=register", nil)
 	rec := httptest.NewRecorder()
