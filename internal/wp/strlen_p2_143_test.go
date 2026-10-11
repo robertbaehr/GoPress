@@ -1,6 +1,7 @@
 package wp_test
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/robertbaehr/GoPress/internal/wp"
@@ -45,6 +46,13 @@ func TestMBStrLenUTF8P2143(t *testing.T) {
 
 func TestMBStrLenCtxBlogCharsetP2143(t *testing.T) {
 	c := testBootQuery(t)
+	prev := c.Options.GetOption("blog_charset", "UTF-8")
+	t.Cleanup(func() {
+		_, _ = c.Options.UpdateOption("blog_charset", fmt.Sprint(prev), "yes")
+	})
+	if _, err := c.Options.UpdateOption("blog_charset", "UTF-8", "yes"); err != nil {
+		t.Fatal(err)
+	}
 	if wp.MBStrLenCtx(c, "✏", "") != 1 {
 		t.Fatal("default UTF-8 blog_charset")
 	}
