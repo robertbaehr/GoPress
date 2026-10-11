@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.226)
 
+- P5.165 `core/calendar` align coerce left|center|right|wide|full
 - P8.58 `GetAttachedMedia` (`get_attached_media`)
 - P3.158 `GetEditCommentLink` + `edit_comment` meta cap
 - P2.160 `GetServerProtocol` (`wp_get_server_protocol`)

@@ -209,6 +209,25 @@ func (e *Env) renderSearch(block Block) string {
 	return b.String()
 }
 
+// sanitizeCalendarBlockAttrs coerces core/calendar supports.align (P5.165).
+// Allowed: left, center, right, wide, full. Other values (incl. none) are dropped.
+func sanitizeCalendarBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "left", "center", "right", "wide", "full":
+	default:
+		delete(out, "align")
+	}
+	return out
+}
+
 // sanitizeSearchBlockAttrs coerces core/search supports.align (P5.163).
 // Allowed: left, center, right. Other values (incl. wide/full/none) are dropped.
 func sanitizeSearchBlockAttrs(attrs map[string]any) map[string]any {
@@ -296,18 +315,23 @@ func (e *Env) renderCalendar(block Block) string {
 	}
 
 	// P5.122: wrapper + table color classes (get_block_wrapper_attributes subset).
+	attrs := sanitizeCalendarBlockAttrs(block.Attrs)
 	wrapClasses := []string{"wp-block-calendar"}
 	tableClasses := []string{"wp-calendar-table"}
-	if hasLinkColorAttr(block.Attrs) {
+	// P5.165: supports.align (true → left|center|right|wide|full).
+	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
+		wrapClasses = append(wrapClasses, "align"+sanitizeClassToken(align))
+	}
+	if hasLinkColorAttr(attrs) {
 		tableClasses = append(tableClasses, "has-link-color")
 	}
-	if bg := strings.TrimSpace(attrString(block.Attrs, "backgroundColor")); bg != "" {
+	if bg := strings.TrimSpace(attrString(attrs, "backgroundColor")); bg != "" {
 		tableClasses = append(tableClasses, "has-background", "has-"+bg+"-background-color")
 	}
-	if tc := strings.TrimSpace(attrString(block.Attrs, "textColor")); tc != "" {
+	if tc := strings.TrimSpace(attrString(attrs, "textColor")); tc != "" {
 		tableClasses = append(tableClasses, "has-text-color", "has-"+tc+"-color")
 	}
-	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		wrapClasses = append(wrapClasses, cn)
 	}
 
@@ -315,7 +339,7 @@ func (e *Env) renderCalendar(block Block) string {
 	b.WriteString(`<div class="`)
 	b.WriteString(html.EscapeString(strings.Join(wrapClasses, " ")))
 	b.WriteString(`"`)
-	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
 		b.WriteString(` id="`)
 		b.WriteString(html.EscapeString(anchor))
 		b.WriteString(`"`)

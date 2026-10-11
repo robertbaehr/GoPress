@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P5.165: core/calendar align coerce.
+- prefix: wp-includes/blocks/calendar#align
+  go: internal/blocks/widget_blocks.go
+  status: partial
+  task: P5.165
+  api: n/a
+  notes: "P5.165 — calendar align left|center|right|wide|full coerce"
+- prefix: wp-includes/blocks/calendar#align#tests
+  go: internal/blocks/calendar_attrs_p5_165_test.go
+  status: partial
+  task: P5.165
+  api: n/a
+  notes: "P5.165 — drop none/bogus"
+
 # P8.58: get_attached_media.
 - prefix: wp-includes/media.php#get_attached_media
   go: internal/wp/attached_media.go
