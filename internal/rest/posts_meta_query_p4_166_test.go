@@ -66,7 +66,8 @@ func TestPostsMetaCompareInvalidEnumP4166(t *testing.T) {
 // P4.166: scalar meta_key+meta_value filters via EXISTS.
 func TestPostsMetaKeyValueFilterP4166(t *testing.T) {
 	c := bootOrSkip(t)
-	defer c.DB.Close()
+	// Close after Cleanup so DeletePost still has a live DB handle.
+	t.Cleanup(func() { _ = c.DB.Close() })
 
 	createBody := `{"title":"Meta Query Target","content":"Body","status":"publish","slug":"gopress-meta-query-target","meta":{"footnotes":"mq-marker-p4166"}}`
 	req := httptest.NewRequest(http.MethodPost, "/wp-json/wp/v2/posts", strings.NewReader(createBody))
@@ -92,7 +93,9 @@ func TestPostsMetaKeyValueFilterP4166(t *testing.T) {
 	}
 	t.Cleanup(func() {
 		if created.ID > 0 {
-			_ = wp.DeletePost(c, created.ID)
+			if err := wp.DeletePost(c, created.ID); err != nil {
+				t.Errorf("cleanup DeletePost(%d): %v", created.ID, err)
+			}
 		}
 	})
 
