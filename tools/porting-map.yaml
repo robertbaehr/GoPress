@@ -11006,3 +11006,11 @@ wp-login.php#language-switcher-post
   task: P8.45
   api: n/a
   notes: "P8.45 — medium srcset, thumbnail empty, max width filter"
+
+# P10.198: expand diff corpus after P5.144–P8.45 stack.
+- prefix: tests/corpus#p10-198
+  go: tests/corpus/
+  status: partial
+  task: P10.198
+  api: n/a
+  notes: "P10.198 — preformatted/slug-order/export/trim-excerpt/dns-prefetch/srcset toppers; 2271 cases; dropped set-cookie admin"
