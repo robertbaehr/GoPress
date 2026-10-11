@@ -11810,3 +11810,11 @@ wp-login.php#language-switcher-post
   task: P10.212
   api: n/a
   notes: "P10.212 — cover/attachment/prev-next/headertitle/safe-remote toppers; 2806 cases; headers-safe; drop meta_key/Link/set-cookie-divergent"
+
+# P10.213: STATUS/PORTING refresh after P5.151–P10.212.
+- prefix: docs/STATUS.md#p10.213
+  go: docs/STATUS.md
+  status: partial
+  task: P10.213
+  api: n/a
+  notes: "P10.213 — summarize cover attrs, meta_key compares, attachment edit, SafeRemoteGet, prev/next rel, headertitle, corpus 2806"
