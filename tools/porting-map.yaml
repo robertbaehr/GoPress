@@ -8754,3 +8754,11 @@ wp-login.php#language-switcher-post
   task: P10.160
   api: n/a
   notes: "P10.160 — sticky/ignore_sticky invalid + query-pagination/site-editor/front/login/ajax toppers; 1295 cases"
+
+# P10.161: STATUS/PORTING refresh after P5.125–P10.160.
+- prefix: docs/STATUS.md#p10.161
+  go: docs/STATUS.md
+  status: partial
+  task: P10.161
+  api: n/a
+  notes: "P10.161 — summarize query-pagination/sticky/ignore_sticky/site-editor/json_encode/enqueue/did_filter + 1295 corpus"
