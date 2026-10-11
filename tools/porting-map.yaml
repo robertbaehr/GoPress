@@ -9291,3 +9291,18 @@ wp-login.php#language-switcher-post
   task: P10.169
   api: n/a
   notes: "P10.169 — summarize freeform, posts context, help tabs, filter_kses, the_content, make_intermediate + 1433 corpus"
+
+# P5.130: deepen core/missing recovery attrs + InnerContent join.
+- prefix: wp-includes/blocks/missing#render
+  go: internal/blocks/missing.go
+  status: partial
+  task: P5.130
+  api: core/missing
+  notes: "P5.130 — typed empty/null/whitespace originalContent fallthrough; InnerContent join; undelimited order"
+
+- prefix: wp-includes/blocks/missing#tests
+  go: internal/blocks/missing_p5_130_test.go
+  status: partial
+  task: P5.130
+  api: n/a
+  notes: "P5.130 — empty/null/whitespace attrs, InnerContent join, self-closing, prefer OC over OUD"
