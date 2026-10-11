@@ -5513,13 +5513,27 @@ func (h *Handler) serveOptionsPrivacy(w http.ResponseWriter, r *http.Request, c 
 	blogname := optionString(c, "blogname", "GoPress")
 	selected := wp.PrivacyPolicyPageID(c)
 	pages := listPrivacyPolicyPages(c)
+	// P7.161: pagenow/adminpage chrome, locale body class, admin_body_class.
+	bodyClass := "wp-admin wp-core-ui privacy-settings locale-en-us"
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("admin_body_class", ""); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				bodyClass += " " + strings.TrimSpace(s)
+			}
+		}
+	}
 
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n")
 	b.WriteString("<title>Privacy &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui privacy-settings\">\n")
+	b.WriteString(" &#8212; WordPress</title>\n")
+	b.WriteString("<script>var ajaxurl = \"/wp-admin/admin-ajax.php\", pagenow = \"privacy\", typenow = \"\", adminpage = \"options-privacy-php\";</script>\n")
+	b.WriteString("</head>\n")
+	b.WriteString("<body class=\"")
+	b.WriteString(html.EscapeString(bodyClass))
+	b.WriteString("\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	// P8.14: warn when suggested privacy policy text has changed.
 	_ = wp.TextChangeCheck(c)
@@ -5579,6 +5593,7 @@ func (h *Handler) serveOptionsPrivacy(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString("<input type=\"submit\" name=\"submit\" id=\"set-page\" class=\"button button-primary\" value=\"Use This Page\" />\n")
 	b.WriteString("</form>\n</td>\n</tr>\n</table>\n")
 	b.WriteString("</div>\n</body>\n</html>\n")
+	w.Header().Set("X-GoPress-Privacy", "stub")
 	writeHTML(w, http.StatusOK, b.String())
 }
 
