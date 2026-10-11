@@ -4093,27 +4093,182 @@ func handleThemeAction(r *http.Request, c *wp.Context, absPath string) (string, 
 	return "activated=true", nil
 }
 
+// serveSiteEditor is the site-editor.php stub (P7.5 / P7.126).
+// Mirrors bootstrap: edit_theme_options gate, legacy URL redirects to ?p=,
+// fullscreen body class, and a lightweight edit-site chrome shell.
 func (h *Handler) serveSiteEditor(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if c == nil || c.CurrentUser == nil || !c.UserCan(c.CurrentUser, "edit_theme_options") {
+		http.Error(w, "Sorry, you are not allowed to edit theme options on this site.\n", http.StatusForbidden)
+		return
+	}
+	// P7.126: map old site-editor query args onto ?p= permalinks.
+	if r != nil {
+		if loc := siteEditorRedirectionURL(r); loc != "" {
+			w.Header().Set("Location", loc)
+			w.Header().Set("X-Redirect-By", "WordPress")
+			w.WriteHeader(http.StatusFound)
+			return
+		}
+	}
+
 	blogname := optionString(c, "blogname", "GoPress")
 	stylesheet := optionString(c, "stylesheet", "twentytwentytwo")
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "/")), "/")
+	pPath := "/"
+	postType := ""
+	postID := ""
+	if r != nil {
+		q := r.URL.Query()
+		if v := strings.TrimSpace(q.Get("p")); v != "" {
+			pPath = v
+		}
+		postType = wp.SanitizeKey(strings.TrimSpace(q.Get("postType")))
+		postID = strings.TrimSpace(q.Get("postId"))
+		// Invalid postType without postId → WP wp_die("Invalid post type.") (after redirects).
+		if postType != "" && postID == "" {
+			known := map[string]bool{
+				"page": true, "wp_template": true, "wp_template_part": true,
+				"wp_block": true, "wp_navigation": true, "wp_global_styles": true,
+			}
+			if !known[postType] {
+				http.Error(w, "Invalid post type.\n", http.StatusBadRequest)
+				return
+			}
+		}
+	}
+
+	bodyClass := "wp-admin wp-core-ui block-editor-page site-editor is-fullscreen-mode"
+	if c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("admin_body_class", ""); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				bodyClass += " " + strings.TrimSpace(s)
+			}
+		}
+	}
+
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n")
 	b.WriteString("<title>Editor &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n")
+	b.WriteString("<script>var ajaxurl = \"/wp-admin/admin-ajax.php\", pagenow = \"site-editor\";</script>\n")
 	b.WriteString("<script>var wpApiSettings = {\"root\":\"/wp-json/\",\"nonce\":\"")
 	b.WriteString(html.EscapeString(c.CreateNonce("wp_rest")))
-	b.WriteString("\"};</script>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui block-editor-page site-editor\">\n")
+	b.WriteString("\"};</script>\n")
+	// P7.126: minimal editor settings blob for stub initializeEditor parity.
+	settingsJSON, _ := wp.WPJSONEncode(map[string]any{
+		"siteUrl":      home + "/",
+		"postsPerPage": optionString(c, "posts_per_page", "10"),
+		"stylesheet":   stylesheet,
+		"path":         pPath,
+	})
+	b.WriteString("<script>window.__gopressSiteEditorSettings = ")
+	b.WriteString(settingsJSON)
+	b.WriteString(";</script>\n</head>\n")
+	b.WriteString("<body class=\"")
+	b.WriteString(html.EscapeString(bodyClass))
+	b.WriteString("\">\n")
 	b.WriteString(adminNoticesHTML(c))
-	b.WriteString("<div id=\"site-editor\" class=\"edit-site\">\n")
+	b.WriteString("<div id=\"site-editor\" class=\"edit-site\" role=\"region\" aria-label=\"Editor\">\n")
 	b.WriteString("<h1>Site Editor</h1>\n")
 	b.WriteString("<p>Editing theme: ")
 	b.WriteString(html.EscapeString(stylesheet))
 	b.WriteString("</p>\n")
-	b.WriteString("<p>GoPress site editor stub (P7.5) — full block canvas lands later.</p>\n")
+	if pPath != "/" {
+		b.WriteString("<p class=\"edit-site-path\">Path: ")
+		b.WriteString(html.EscapeString(pPath))
+		b.WriteString("</p>\n")
+	}
+	if postType != "" {
+		b.WriteString("<p class=\"edit-site-post-type\">Post type: ")
+		b.WriteString(html.EscapeString(postType))
+		b.WriteString("</p>\n")
+	}
+	b.WriteString("<p>GoPress site editor stub (P7.5 / P7.126) — full block canvas lands later.</p>\n")
+	b.WriteString("<noscript><p>The site editor requires JavaScript.</p></noscript>\n")
 	b.WriteString("</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
+}
+
+// siteEditorRedirectionURL maps legacy site-editor.php query strings to ?p= (P7.126).
+// Returns "" when no redirect is needed (already has p=, or no QUERY_STRING).
+func siteEditorRedirectionURL(r *http.Request) string {
+	if r == nil || r.URL == nil {
+		return ""
+	}
+	q := r.URL.Query()
+	if q.Get("p") != "" || r.URL.RawQuery == "" {
+		return ""
+	}
+	postType := strings.TrimSpace(q.Get("postType"))
+	postID := strings.TrimSpace(q.Get("postId"))
+	path := strings.TrimSpace(q.Get("path"))
+	canvas := strings.TrimSpace(q.Get("canvas"))
+
+	setP := func(p string, drop ...string) string {
+		nq := r.URL.Query()
+		for _, k := range drop {
+			nq.Del(k)
+		}
+		nq.Set("p", p)
+		return "/wp-admin/site-editor.php?" + nq.Encode()
+	}
+
+	if postType == "wp_navigation" && postID != "" {
+		return setP("/wp_navigation/"+postID, "postType", "postId")
+	}
+	if postType == "wp_navigation" && postID == "" {
+		return setP("/navigation", "postType")
+	}
+	if path == "/wp_global_styles" {
+		return setP("/styles", "path")
+	}
+	if postType == "page" && (canvas == "" || postID == "") {
+		return setP("/page", "postType")
+	}
+	if postType == "page" && postID != "" {
+		return setP("/page/"+postID, "postType", "postId")
+	}
+	if postType == "wp_template" && (canvas == "" || postID == "") {
+		return setP("/template", "postType")
+	}
+	if postType == "wp_template" && postID != "" {
+		return setP("/wp_template/"+postID, "postType", "postId")
+	}
+	if postType == "wp_block" && (canvas == "" || postID == "") {
+		return setP("/pattern", "postType")
+	}
+	if postType == "wp_block" && postID != "" {
+		return setP("/wp_block/"+postID, "postType", "postId")
+	}
+	if postType == "wp_template_part" && (canvas == "" || postID == "") {
+		return setP("/pattern")
+	}
+	if postType == "wp_template_part" && postID != "" {
+		return setP("/wp_template_part/"+postID, "postType", "postId")
+	}
+	if path == "/wp_template_part/all" {
+		nq := r.URL.Query()
+		nq.Del("path")
+		nq.Set("p", "/pattern")
+		nq.Set("postType", "wp_template_part")
+		return "/wp-admin/site-editor.php?" + nq.Encode()
+	}
+	if path == "/page" {
+		return setP("/page", "path")
+	}
+	if path == "/wp_template" {
+		return setP("/template", "path")
+	}
+	if path == "/patterns" {
+		return setP("/pattern", "path")
+	}
+	if path == "/navigation" {
+		return setP("/navigation", "path")
+	}
+	// Any other legacy query string → home path.
+	return setP("/")
 }
 
 // serveNavMenus is a classic menus admin stub (P7.9 / P7.35 / P7.111).
