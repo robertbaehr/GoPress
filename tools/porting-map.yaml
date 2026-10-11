@@ -11104,3 +11104,17 @@ wp-login.php#language-switcher-post
   task: P3.139
   api: n/a
   notes: "P3.139 — preconnect dedupe + crossorigin + bare host"
+
+# P6.58: login_init + login_form_{action} hooks.
+- prefix: wp-login.php#login_init
+  go: internal/login/login.go
+  status: partial
+  task: P6.58
+  api: n/a
+  notes: "P6.58 — login_init then login_form_{action}; default action=login; checkemail override"
+- prefix: wp-login.php#login_init#tests
+  go: internal/login/login_init_p6_58_test.go
+  status: partial
+  task: P6.58
+  api: n/a
+  notes: "P6.58 — init/form_login before enqueue; lostpassword form action"
