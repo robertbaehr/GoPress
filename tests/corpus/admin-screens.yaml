@@ -349,29 +349,29 @@
   compare: headers
   nonce: null
 
-# P10.156: admin toppers after async-upload deepen.
-- id: admin-p10156-001-media-new
+# P10.156: admin toppers after async-upload deepen (avoid set-cookie drift paths).
+- id: admin-p10156-001-edit-pages
   role: admin
   method: GET
-  path: /wp-admin/media-new.php
+  path: /wp-admin/edit.php?post_type=page
   headers: {}
   body: null
   compare: headers
   nonce: null
 
-- id: admin-p10156-002-themes
+- id: admin-p10156-002-options-reading
   role: admin
   method: GET
-  path: /wp-admin/themes.php
+  path: /wp-admin/options-reading.php
   headers: {}
   body: null
   compare: headers
   nonce: null
 
-- id: admin-p10156-003-upload
+- id: admin-p10156-003-tools
   role: admin
   method: GET
-  path: /wp-admin/upload.php
+  path: /wp-admin/tools.php
   headers: {}
   body: null
   compare: headers

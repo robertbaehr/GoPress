@@ -1267,10 +1267,10 @@
   compare: headers
   nonce: null
 
-- id: front-p10156-003-robots-head
+- id: front-p10156-003-sample-page
   role: anon
-  method: HEAD
-  path: /robots.txt
+  method: GET
+  path: /sample-page/
   headers: {}
   body: null
   compare: headers

@@ -8480,19 +8480,55 @@
   compare: headers
   nonce: null
 
-- id: rest-p10156-023-posts-offset-abc-head
+- id: rest-p10156-023-posts-offset-1-orderby-id
   role: anon
-  method: HEAD
-  path: /wp-json/wp/v2/posts?offset=abc&per_page=1
+  method: GET
+  path: /wp-json/wp/v2/posts?offset=1&per_page=1&orderby=id&order=asc
   headers: {}
   body: null
   compare: headers
   nonce: null
 
-- id: rest-p10156-024-posts-offset-0-head
+- id: rest-p10156-024-rest-route-posts-offset-0
   role: anon
-  method: HEAD
-  path: /wp-json/wp/v2/posts?offset=0&per_page=1
+  method: GET
+  path: /?rest_route=/wp/v2/posts&offset=0&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10156-025-query-block-type
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/query
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10156-026-post-template-block-type
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/post-template
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10156-027-post-title-block-type
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/post-title
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10156-028-latest-posts-context-edit
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/latest-posts?context=edit
   headers: {}
   body: null
   compare: headers
