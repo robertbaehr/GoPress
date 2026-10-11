@@ -4707,6 +4707,35 @@ wp-login.php#language-switcher-post
   task: P5.45
   api: internal
 
+# P3.111: get_custom_logo / has_custom_logo front helpers.
+- prefix: wp-includes/general-template.php#get_custom_logo
+  go: internal/wp/custom_logo.go
+  status: partial
+  task: P3.111
+  api: exported
+  notes: "P3.111 — theme_mod custom_logo + site_logo fallback; unlink-homepage-logo; get_custom_logo filters"
+
+- prefix: wp-includes/general-template.php#has_custom_logo
+  go: internal/wp/custom_logo.go
+  status: partial
+  task: P3.111
+  api: exported
+  notes: "P3.111 — HasCustomLogo via AttachmentIsImage"
+
+- prefix: wp-includes/general-template.php#get_custom_logo#tests
+  go: internal/wp/custom_logo_test.go
+  status: partial
+  task: P3.111
+  api: n/a
+  notes: "P3.111 — HTML/filter/unlink/site_logo fallback coverage"
+
+- prefix: wp-includes/general-template.php#get_custom_logo#front
+  go: internal/server/front.go
+  status: partial
+  task: P3.111
+  api: internal
+  notes: "P3.111 — SiteLogoURL resolves CustomLogoID (theme_mod then site_logo)"
+
 
 # P5.46 / P5.91: core/avatar, post-author-name, post-author-biography.
 - prefix: wp-includes/blocks/avatar.php
