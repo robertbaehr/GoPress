@@ -11336,3 +11336,11 @@ wp-login.php#language-switcher-post
   task: P8.46
   api: n/a
   notes: "P8.46 — meta size resolve, name filter, auto prefix / eager skip"
+
+# P10.204: expand diff corpus after P5.147–P8.46 stack.
+- prefix: tests/corpus#p10.204
+  go: tests/corpus/
+  status: partial
+  task: P10.204
+  api: n/a
+  notes: "P10.204 — list/search/site-health/strlen/modulepreload/sizes toppers; 2525 cases; headers-safe"

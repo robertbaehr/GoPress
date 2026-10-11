@@ -1090,3 +1090,140 @@
   compare: headers
   nonce: null
 
+
+# P10.204: admin toppers (headers-safe; skip set-cookie-sensitive).
+
+- id: admin-p10204-001
+  role: admin
+  method: GET
+  path: /wp-admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10204-002
+  role: admin
+  method: GET
+  path: /wp-admin/index.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10204-003
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10204-004
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_type=page
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10204-005
+  role: admin
+  method: GET
+  path: /wp-admin/upload.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10204-006
+  role: admin
+  method: GET
+  path: /wp-admin/edit-comments.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10204-007
+  role: admin
+  method: GET
+  path: /wp-admin/plugins.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10204-008
+  role: admin
+  method: GET
+  path: /wp-admin/users.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10204-009
+  role: admin
+  method: GET
+  path: /wp-admin/profile.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10204-010
+  role: admin
+  method: GET
+  path: /wp-admin/options-general.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10204-011
+  role: admin
+  method: GET
+  path: /wp-admin/options-writing.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10204-012
+  role: admin
+  method: GET
+  path: /wp-admin/options-reading.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10204-013
+  role: admin
+  method: GET
+  path: /wp-admin/options-discussion.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10204-014
+  role: admin
+  method: GET
+  path: /wp-admin/options-media.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10204-015
+  role: admin
+  method: GET
+  path: /wp-admin/options-permalink.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
