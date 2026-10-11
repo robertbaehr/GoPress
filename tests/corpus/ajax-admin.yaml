@@ -199,3 +199,13 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.128: heartbeat screen after dashboard deepen.
+- id: ajax-p10128-heartbeat-dashboard-main
+  role: admin
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=dashboard
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

@@ -785,3 +785,22 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.128: front headers after P3.103 feed links deepen.
+- id: front-p10128-search-media
+  role: anon
+  method: GET
+  path: /?s=media
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10128-feed
+  role: anon
+  method: GET
+  path: /feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
