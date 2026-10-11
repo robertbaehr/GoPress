@@ -8498,10 +8498,18 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P5.122 — archives dropdown + calendar empty/wrapper unit coverage"
 
+# P10.157: STATUS/PORTING refresh after P5.123–P10.156.
+- prefix: docs/STATUS.md#p10.157
+  go: docs/STATUS.md
+  status: partial
+  task: P10.157
+  api: n/a
+  notes: "P10.157 — summarize latest-posts/offset/async-upload/sanitize_title/feed_links/Flip + 1240 corpus"
+
 # P10.156: expand diff corpus after P5.123–P8.38.
 - prefix: tests/corpus#p10.156
   go: tests/corpus
   status: partial
   task: P10.156
   api: n/a
-  notes: "P10.156 — offset validation + latest-posts/comments + front/login/admin toppers; grow past 1200"
+  notes: "P10.156 — offset validation + latest-posts/comments + front/login/admin toppers; 1240 cases"
