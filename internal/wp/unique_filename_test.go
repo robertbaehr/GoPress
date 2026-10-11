@@ -67,3 +67,29 @@ func TestUniqueFilenameSanitizes(t *testing.T) {
 		t.Fatalf("expected lowercase ext, got %q", got)
 	}
 }
+
+func TestUniqueFilenameAvoidsDimensionSibling(t *testing.T) {
+	dir := t.TempDir()
+	// Existing sub-size should force photo.jpg → photo-1.jpg even when photo.jpg is free.
+	if err := os.WriteFile(filepath.Join(dir, "photo-150x150.jpg"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got := wp.UniqueFilename(dir, "photo.jpg")
+	if got != "photo-1.jpg" {
+		t.Fatalf("got %q want photo-1.jpg", got)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "hero-scaled.png"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got = wp.UniqueFilename(dir, "hero.png")
+	if got != "hero-1.png" {
+		t.Fatalf("got %q want hero-1.png", got)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "shot-rotated.webp"), []byte("x"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	got = wp.UniqueFilename(dir, "shot.webp")
+	if got != "shot-1.webp" {
+		t.Fatalf("got %q want shot-1.webp", got)
+	}
+}
