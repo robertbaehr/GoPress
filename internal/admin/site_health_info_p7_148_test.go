@@ -46,7 +46,7 @@ func TestSiteHealthInfoAccordionP7148(t *testing.T) {
 		`data-clipboard-text=`,
 		`### WordPress ###`,
 		`Active Theme`,
-		`P7.148`,
+		`P7.149`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("missing %q in body (len=%d)", want, len(body))
