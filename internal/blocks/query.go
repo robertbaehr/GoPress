@@ -405,7 +405,7 @@ func (e *Env) renderPattern(block Block) string {
 }
 
 // renderSyncedPattern renders core/block (synced pattern / reusable block) with
-// pattern override context from the content|overrides attribute (P5.25).
+// pattern override context from the content|overrides attribute (P5.25 / P5.127).
 func (e *Env) renderSyncedPattern(block Block) string {
 	e = e.ensure()
 	ref := attrInt64(block.Attrs, "ref")
@@ -415,7 +415,11 @@ func (e *Env) renderSyncedPattern(block Block) string {
 	if e.seenBlock == nil {
 		e.seenBlock = map[int64]bool{}
 	}
+	// P5.127: match render_block_core_block $seen_refs — debug halt when WP_DEBUG_DISPLAY.
 	if e.seenBlock[ref] {
+		if e.DebugDisplay {
+			return "[block rendering halted]"
+		}
 		return ""
 	}
 	e.seenBlock[ref] = true
