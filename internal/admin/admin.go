@@ -4956,25 +4956,64 @@ func listPrivacyPolicyPages(c *wp.Context) []wp.Post {
 	return out
 }
 
-// serveRevisionCompare is the wp-admin/revision.php compare screen stub (P7.33).
+// serveRevisionCompare is the wp-admin/revision.php compare screen (P7.33 / P7.122).
+// P7.122: edit_posts gate, load revision/parent, heading with parent title,
+// Title/Content field rows, edit-post return link. Restore remains later.
 func (h *Handler) serveRevisionCompare(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	if c == nil || !c.UserCan(c.CurrentUser, "edit_posts") {
+		writeHTML(w, http.StatusForbidden, "<!DOCTYPE html><html><body><h1>You need a higher level of permission.</h1><p>Sorry, you are not allowed to compare revisions.</p></body></html>")
+		return
+	}
 	blogname := optionString(c, "blogname", "GoPress")
-	revisionID := strings.TrimSpace(r.URL.Query().Get("revision"))
-	from := strings.TrimSpace(r.URL.Query().Get("from"))
-	to := strings.TrimSpace(r.URL.Query().Get("to"))
+	revisionID := parsePositiveInt64(r.URL.Query().Get("revision"))
+	fromID := parsePositiveInt64(r.URL.Query().Get("from"))
+	toID := parsePositiveInt64(r.URL.Query().Get("to"))
 	action := strings.TrimSpace(r.URL.Query().Get("action"))
 	if action == "" {
 		action = "view"
 	}
+	if revisionID == 0 {
+		revisionID = toID
+	}
+
+	var rev, parent *wp.Post
+	if revisionID > 0 {
+		if row, err := wp.GetPostByID(c, revisionID); err == nil && row != nil && row.Type == "revision" {
+			rev = row
+			if row.Parent > 0 {
+				if p, err := wp.GetPostByID(c, row.Parent); err == nil && p != nil {
+					parent = p
+				}
+			}
+		}
+	}
+	if parent == nil && fromID > 0 {
+		if row, err := wp.GetPostByID(c, fromID); err == nil && row != nil && row.Type != "revision" {
+			parent = row
+		}
+	}
+
+	heading := "Compare Revisions"
+	if parent != nil && strings.TrimSpace(parent.Title) != "" {
+		heading = "Compare Revisions of &#8220;" + html.EscapeString(parent.Title) + "&#8221;"
+	}
+
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>Revisions &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui revisions-php\">\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui js revisions-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap\">\n")
-	b.WriteString("<h1>Compare Revisions</h1>\n")
+	b.WriteString("<h1 class=\"long-header\">")
+	b.WriteString(heading)
+	b.WriteString("</h1>\n")
+	if parent != nil {
+		b.WriteString("<a class=\"button\" href=\"post.php?post=")
+		b.WriteString(strconv.FormatInt(parent.ID, 10))
+		b.WriteString("&amp;action=edit\">Return to editor</a>\n")
+	}
 	b.WriteString("<div id=\"revisions\" class=\"revisions\">\n")
 	b.WriteString("<div class=\"revisions-control-frame\">\n")
 	b.WriteString("<div class=\"revisions-controls\">\n")
@@ -4986,28 +5025,63 @@ func (h *Handler) serveRevisionCompare(w http.ResponseWriter, r *http.Request, c
 	b.WriteString("<div class=\"revisions-diff\">\n")
 	b.WriteString("<table class=\"diff\">\n")
 	b.WriteString("<col class=\"content diffsplit left\" /><col class=\"content diffsplit middle\" /><col class=\"content diffsplit right\" />\n")
-	b.WriteString("<tbody><tr><td colspan=\"3\"><p class=\"description\">GoPress revision compare stub (P7.33) — restore lands later.</p></td></tr></tbody>\n")
-	b.WriteString("</table>\n</div>\n</div>\n")
-	if revisionID != "" || from != "" || to != "" {
-		b.WriteString("<p class=\"revisions-meta\">")
-		b.WriteString("action=")
-		b.WriteString(html.EscapeString(action))
-		if revisionID != "" {
-			b.WriteString(" revision=")
-			b.WriteString(html.EscapeString(revisionID))
-		}
-		if from != "" {
-			b.WriteString(" from=")
-			b.WriteString(html.EscapeString(from))
-		}
-		if to != "" {
-			b.WriteString(" to=")
-			b.WriteString(html.EscapeString(to))
-		}
-		b.WriteString("</p>\n")
+	b.WriteString("<tbody>\n")
+	if rev != nil && parent != nil {
+		writeRevisionDiffRow(&b, "Title", parent.Title, rev.Title)
+		writeRevisionDiffRow(&b, "Content", parent.Content, rev.Content)
+	} else {
+		b.WriteString("<tr><td colspan=\"3\"><p class=\"description\">GoPress revision compare stub (P7.122) — select a revision to compare. Restore lands later.</p></td></tr>\n")
 	}
+	b.WriteString("</tbody>\n</table>\n</div>\n</div>\n")
+	b.WriteString("<p class=\"revisions-meta\">")
+	b.WriteString("action=")
+	b.WriteString(html.EscapeString(action))
+	if revisionID > 0 {
+		b.WriteString(" revision=")
+		b.WriteString(strconv.FormatInt(revisionID, 10))
+	}
+	if fromID > 0 {
+		b.WriteString(" from=")
+		b.WriteString(strconv.FormatInt(fromID, 10))
+	}
+	if toID > 0 {
+		b.WriteString(" to=")
+		b.WriteString(strconv.FormatInt(toID, 10))
+	}
+	if rev != nil {
+		b.WriteString(" revision_title=")
+		b.WriteString(html.EscapeString(rev.Title))
+		if rev.Date != "" {
+			b.WriteString(" revision_date=")
+			b.WriteString(html.EscapeString(rev.Date))
+		}
+	}
+	b.WriteString("</p>\n")
 	b.WriteString("</div>\n</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
+}
+
+func writeRevisionDiffRow(b *strings.Builder, field, left, right string) {
+	b.WriteString("<tr><th colspan=\"3\">")
+	b.WriteString(html.EscapeString(field))
+	b.WriteString("</th></tr>\n")
+	b.WriteString("<tr><td>")
+	b.WriteString(html.EscapeString(left))
+	b.WriteString("</td><td></td><td>")
+	b.WriteString(html.EscapeString(right))
+	b.WriteString("</td></tr>\n")
+}
+
+func parsePositiveInt64(raw string) int64 {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return 0
+	}
+	n, err := strconv.ParseInt(raw, 10, 64)
+	if err != nil || n <= 0 {
+		return 0
+	}
+	return n
 }
 
 // servePrivacyPolicyGuide is the Privacy Policy Guide screen stub (P8.7 / P7.93).
