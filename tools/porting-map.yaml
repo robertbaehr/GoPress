@@ -16,6 +16,21 @@
 
 
 
+
+# P5.167: core/categories align coerce.
+- prefix: wp-includes/blocks/categories#align
+  go: internal/blocks/categories.go
+  status: partial
+  task: P5.167
+  api: n/a
+  notes: "P5.167 — categories align left|center|right|wide|full coerce"
+- prefix: wp-includes/blocks/categories#align#tests
+  go: internal/blocks/categories_attrs_p5_167_test.go
+  status: partial
+  task: P5.167
+  api: n/a
+  notes: "P5.167 — drop none/bogus"
+
 # P8.60: wp_constrain_dimensions.
 - prefix: wp-includes/media.php#wp_constrain_dimensions
   go: internal/wp/constrain_dimensions.go

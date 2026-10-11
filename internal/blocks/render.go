@@ -282,7 +282,9 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderTagCloud(block)
 	case "core/categories":
 		// P5.81: taxonomy term list (dropdown deferred).
+		// P5.167: coerce align enum before applySupports.
 		out = e.renderCategories(block)
+		return applySupports(out, sanitizeCategoriesBlockAttrs(block.Attrs), name)
 	case "core/read-more":
 		out = e.renderReadMore(block)
 	case "core/more":

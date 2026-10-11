@@ -19,6 +19,8 @@ type CategoryItem struct {
 // Dropdown mode is deferred; list markup matches render_block_core_categories.
 func (e *Env) renderCategories(block Block) string {
 	e = e.ensure()
+	// P5.167: coerce supports.align before class assembly.
+	block.Attrs = sanitizeCategoriesBlockAttrs(block.Attrs)
 	taxonomy := strings.TrimSpace(attrString(block.Attrs, "taxonomy"))
 	if taxonomy == "" {
 		taxonomy = "category"
@@ -58,9 +60,18 @@ func (e *Env) renderCategories(block Block) string {
 		return ""
 	}
 
+	classes := []string{
+		"wp-block-categories-list",
+		"wp-block-categories",
+		"wp-block-categories-taxonomy-" + taxonomy,
+	}
+	// P5.167: supports.align true → left|center|right|wide|full.
+	if align := strings.TrimSpace(attrString(block.Attrs, "align")); align != "" {
+		classes = append(classes, "align"+sanitizeClassToken(align))
+	}
 	var b strings.Builder
-	b.WriteString(`<ul class="wp-block-categories-list wp-block-categories wp-block-categories-taxonomy-`)
-	b.WriteString(html.EscapeString(taxonomy))
+	b.WriteString(`<ul class="`)
+	b.WriteString(html.EscapeString(strings.Join(classes, " ")))
 	b.WriteString(`">`)
 	if showHierarchy && !topLevelOnly {
 		writeCategoryTree(&b, filtered, 0, showCounts)
@@ -71,6 +82,25 @@ func (e *Env) renderCategories(block Block) string {
 	}
 	b.WriteString(`</ul>`)
 	return b.String()
+}
+
+// sanitizeCategoriesBlockAttrs coerces core/categories supports.align (P5.167).
+// Allowed: left, center, right, wide, full. Other values (incl. none) are dropped.
+func sanitizeCategoriesBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "left", "center", "right", "wide", "full":
+	default:
+		delete(out, "align")
+	}
+	return out
 }
 
 func writeCategoryTree(b *strings.Builder, items []CategoryItem, parent int64, showCounts bool) {
