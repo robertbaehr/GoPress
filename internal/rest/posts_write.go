@@ -109,9 +109,20 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		writeRESTInvalidBooleanParams(w, badBools)
 		return
 	}
-	// P4.149: strict order / orderby enum validation (rest_not_in_enum).
-	orderby, orderbyOK := parsePostsOrderby(r, postType)
-	order, orderOK := parsePostsOrder(r)
+	// P4.149 / P4.159: strict order / orderby enum + string-type validation.
+	orderby, orderbyOK, orderbyTypeErr := parsePostsOrderbyTyped(r, postType)
+	order, orderOK, orderTypeErr := parsePostsOrderTyped(r)
+	var badStringTypes []string
+	if orderbyTypeErr {
+		badStringTypes = append(badStringTypes, "orderby")
+	}
+	if orderTypeErr {
+		badStringTypes = append(badStringTypes, "order")
+	}
+	if len(badStringTypes) > 0 {
+		writeRESTInvalidStringParams(w, badStringTypes)
+		return
+	}
 	badOrder := map[string]string{}
 	if !orderOK {
 		badOrder["order"] = "order is not one of asc and desc."
