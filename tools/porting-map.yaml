@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P3.156: get_delete_post_link helper.
+- prefix: wp-includes/link-template.php#get_delete_post_link
+  go: internal/wp/delete_post_link.go
+  status: partial
+  task: P3.156
+  api: n/a
+  notes: "P3.156 — GetDeletePostLink trash/delete + nonce + filter"
+- prefix: wp-includes/link-template.php#get_delete_post_link#tests
+  go: internal/wp/delete_post_link_p3_156_test.go
+  status: partial
+  task: P3.156
+  api: n/a
+  notes: "P3.156 — trash vs force delete; anon deny"
+
 # P6.67: register filter on Register nav link.
 - prefix: wp-includes/general-template.php#register
   go: internal/login/login.go
