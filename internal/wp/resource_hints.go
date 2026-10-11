@@ -6,21 +6,23 @@ import (
 	"strings"
 )
 
-// ResourceHintsHTML mirrors wp_resource_hints() markup (P3.137 / P3.138 / P3.139 / P3.140).
+// ResourceHintsHTML mirrors wp_resource_hints() markup (P3.137–P3.141).
 // Default dns-prefetch hosts come from DependenciesUniqueHosts (empty until
 // remote script/style enqueue is wired). Filters wp_resource_hints per relation.
 // P3.138: bare hostnames, case-insensitive dns-prefetch host dedupe.
 // P3.139: case-insensitive scheme+host preconnect dedupe; crossorigin preserved.
 // P3.140: prefetch/prerender http(s)-only; case-insensitive href dedupe; as/type/pr.
+// P3.141: modulepreload http(s)-only; case-insensitive href dedupe; as/type/id/crossorigin.
 func ResourceHintsHTML(c *Context) string {
 	hints := map[string][]any{
-		"dns-prefetch": dependenciesUniqueHostsAny(c),
-		"preconnect":   nil,
-		"prefetch":     nil,
-		"prerender":    nil,
+		"dns-prefetch":  dependenciesUniqueHostsAny(c),
+		"preconnect":    nil,
+		"prefetch":      nil,
+		"prerender":     nil,
+		"modulepreload": nil, // P3.141: script modules style (default empty)
 	}
 	var b strings.Builder
-	for _, relation := range []string{"dns-prefetch", "preconnect", "prefetch", "prerender"} {
+	for _, relation := range []string{"dns-prefetch", "preconnect", "prefetch", "prerender", "modulepreload"} {
 		urls := hints[relation]
 		if urls == nil {
 			urls = []any{}
@@ -42,7 +44,7 @@ func ResourceHintsHTML(c *Context) string {
 		order := make([]string, 0)
 		seenHosts := map[string]bool{}      // P3.138: case-insensitive host dedupe for dns-prefetch
 		seenPreconnect := map[string]bool{} // P3.139: scheme+host (lower) dedupe
-		seenPrefetch := map[string]bool{}   // P3.140: case-insensitive href dedupe
+		seenPrefetch := map[string]bool{}   // P3.140/P3.141: case-insensitive href dedupe
 		for _, item := range urls {
 			atts := map[string]string{}
 			href := ""
@@ -124,8 +126,8 @@ func ResourceHintsHTML(c *Context) string {
 					continue
 				}
 			}
-			// P3.140: prefetch/prerender — WP esc_url(..., array('http','https')).
-			if relation == "prefetch" || relation == "prerender" {
+			// P3.140/P3.141: prefetch/prerender/modulepreload — http(s) only.
+			if relation == "prefetch" || relation == "prerender" || relation == "modulepreload" {
 				parsed, err := url.Parse(href)
 				if err != nil || parsed == nil {
 					continue
@@ -222,7 +224,8 @@ func scalarString(v any) (string, bool) {
 
 func resourceHintAttrKeys(atts map[string]string) []string {
 	// PHP array order: string URLs set rel then href; attr maps keep href first, append rel.
-	allowed := map[string]bool{"as": true, "crossorigin": true, "href": true, "pr": true, "rel": true, "type": true}
+	// P3.141: id allowed for modulepreload (script modules).
+	allowed := map[string]bool{"as": true, "crossorigin": true, "href": true, "id": true, "pr": true, "rel": true, "type": true}
 	extra := 0
 	for k := range atts {
 		if k != "rel" && k != "href" && allowed[k] {
@@ -238,7 +241,7 @@ func resourceHintAttrKeys(atts map[string]string) []string {
 		}
 		return keys
 	}
-	for _, k := range []string{"href", "as", "crossorigin", "pr", "type", "rel"} {
+	for _, k := range []string{"href", "as", "crossorigin", "id", "pr", "type", "rel"} {
 		if _, ok := atts[k]; ok && allowed[k] {
 			keys = append(keys, k)
 		}
