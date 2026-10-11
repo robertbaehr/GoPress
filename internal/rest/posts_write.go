@@ -293,7 +293,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		writeRESTInvalidDateParams(w, badDates)
 		return
 	}
-	// P4.166: meta_key/meta_value/meta_compare string-type; meta_query object rejected.
+	// P4.166/P4.170: meta_key/meta_value/meta_compare/meta_type string-type; meta_query object rejected.
 	if parsePostsMetaQueryReject(r) {
 		writeRESTInvalidStringParams(w, []string{"meta_query"})
 		return
@@ -301,6 +301,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 	metaKey, _, metaKeyTypeErr := parsePostsMetaKeyTyped(r)
 	metaValue, _, metaValueTypeErr := parsePostsMetaValueTyped(r)
 	metaCompare, metaCompareOK, metaCompareTypeErr, metaCompareEnumErr := parsePostsMetaCompareTyped(r)
+	metaType, metaTypeOK, metaTypeTypeErr, metaTypeEnumErr := parsePostsMetaTypeTyped(r)
 	var badMetaTypes []string
 	if metaKeyTypeErr {
 		badMetaTypes = append(badMetaTypes, "meta_key")
@@ -310,6 +311,9 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 	}
 	if metaCompareTypeErr {
 		badMetaTypes = append(badMetaTypes, "meta_compare")
+	}
+	if metaTypeTypeErr {
+		badMetaTypes = append(badMetaTypes, "meta_type")
 	}
 	if len(badMetaTypes) > 0 {
 		writeRESTInvalidStringParams(w, badMetaTypes)
@@ -323,13 +327,21 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		writeRESTInvalidOrderParams(w, map[string]string{"meta_compare": msg})
 		return
 	}
+	if metaTypeEnumErr != "" || !metaTypeOK {
+		msg := metaTypeEnumErr
+		if msg == "" {
+			msg = postsMetaTypeEnumMessage()
+		}
+		writeRESTInvalidOrderParams(w, map[string]string{"meta_type": msg})
+		return
+	}
 	statuses, forbiddenCode, enumInvalid := parsePostsStatus(r, c)
 	if forbiddenCode != 0 || enumInvalid {
 		// P4.151: WP wraps status sanitize errors as rest_invalid_param.
 		writeRESTInvalidPostsStatus(w, forbiddenCode, enumInvalid)
 		return
 	}
-	total, err := countPosts(c, postType, stickyFilter, search, searchColumns, authorIn, authorNotIn, categories, categoriesExclude, tags, tagsExclude, taxRelation, categoryOperator, tagOperator, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, menuOrderFilter, metaKey, metaValue, metaCompare)
+	total, err := countPosts(c, postType, stickyFilter, search, searchColumns, authorIn, authorNotIn, categories, categoriesExclude, tags, tagsExclude, taxRelation, categoryOperator, tagOperator, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, menuOrderFilter, metaKey, metaValue, metaCompare, metaType)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",
@@ -338,7 +350,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		})
 		return
 	}
-	posts, err := listPostsPaged(c, postType, perPage, page, edit, stickyFilter, ignoreSticky, orderby, order, search, searchColumns, authorIn, authorNotIn, categories, categoriesExclude, tags, tagsExclude, taxRelation, categoryOperator, tagOperator, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, offset, useOffset, menuOrderFilter, metaKey, metaValue, metaCompare)
+	posts, err := listPostsPaged(c, postType, perPage, page, edit, stickyFilter, ignoreSticky, orderby, order, search, searchColumns, authorIn, authorNotIn, categories, categoriesExclude, tags, tagsExclude, taxRelation, categoryOperator, tagOperator, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, offset, useOffset, menuOrderFilter, metaKey, metaValue, metaCompare, metaType)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",
