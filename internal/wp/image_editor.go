@@ -88,6 +88,19 @@ func (e *ImageEditor) Crop(srcX, srcY, srcW, srcH, dstW, dstH int, srcAbs bool) 
 	return nil
 }
 
+// Flip mirrors the image (WP_Image_Editor::flip, P8.38).
+// horz flips along the horizontal axis (upside-down); vert along the vertical axis (left-right).
+func (e *ImageEditor) Flip(horz, vert bool) error {
+	if e == nil || e.img == nil {
+		return fmt.Errorf("wp: ImageEditor.Flip: nil editor")
+	}
+	if !horz && !vert {
+		return nil
+	}
+	e.img = flipImage(e.img, horz, vert)
+	return nil
+}
+
 // Rotate rotates the image counter-clockwise by angle degrees (WP_Image_Editor::rotate, P8.36).
 // Supports quarter-turns (0/90/180/270 after normalization); other angles error.
 func (e *ImageEditor) Rotate(angle float64) error {
@@ -325,6 +338,27 @@ func cropImage(src image.Image, x, y, w, h int) image.Image {
 	r := image.Rect(b.Min.X+x, b.Min.Y+y, b.Min.X+x+w, b.Min.Y+y+h)
 	dst := image.NewRGBA(image.Rect(0, 0, w, h))
 	draw.Draw(dst, dst.Bounds(), src, r.Min, draw.Src)
+	return dst
+}
+
+// flipImage mirrors along axes matching WP_Image_Editor_GD::flip (P8.38).
+func flipImage(src image.Image, horz, vert bool) image.Image {
+	b := src.Bounds()
+	w, h := b.Dx(), b.Dy()
+	dst := image.NewRGBA(image.Rect(0, 0, w, h))
+	for y := 0; y < h; y++ {
+		sy := y
+		if horz {
+			sy = h - 1 - y
+		}
+		for x := 0; x < w; x++ {
+			sx := x
+			if vert {
+				sx = w - 1 - x
+			}
+			dst.Set(x, y, src.At(b.Min.X+sx, b.Min.Y+sy))
+		}
+	}
 	return dst
 }
 
