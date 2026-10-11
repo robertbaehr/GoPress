@@ -14,12 +14,14 @@ var (
 	reFigureOpen      = regexp.MustCompile(`(?is)^(\s*<figure\b)([^>]*)(>)`)
 )
 
-// renderImage renders core/image (P5.48 / P5.65).
+// renderImage renders core/image (P5.48 / P5.65 / P5.113).
 // Mirrors render_block_core_image subset: require <img>, honor data-id for
 // gallery nesting, drop empty figcaptions when caption attr is empty, and
 // synthesize markup from attrs when no saved HTML is present.
 // P5.65: ensure wp-block-image + align classes; width/height/aspectRatio/scale/
 // title/isDecorative/linkClass on synthesize and light saved-markup polish.
+// P5.113: className/anchor/sizeSlug polish on saved and synthesized markup;
+// is-resized when width/height present; rounded border style class.
 func (e *Env) renderImage(block Block) string {
 	e = e.ensure()
 	block = galleryImageDataIDBackcompat(block, false)
@@ -41,11 +43,104 @@ func (e *Env) renderImage(block Block) string {
 		out = reEmptyFigcaption.ReplaceAllString(out, "")
 	}
 
+	return applyImageAttrs(out, block.Attrs)
+}
+
+// applyImageAttrs polishes className/align/sizeSlug/anchor/is-resized on image roots (P5.113).
+func applyImageAttrs(htmlFragment string, attrs map[string]any) string {
+	out := htmlFragment
+	if strings.TrimSpace(out) == "" {
+		return out
+	}
 	out = addRootClass(out, "wp-block-image")
-	if align := strings.TrimSpace(attrString(block.Attrs, "align")); align != "" {
-		out = addRootClass(out, "align"+sanitizeClassToken(align))
+	sizeSlug := strings.TrimSpace(attrString(attrs, "sizeSlug"))
+	if sizeSlug == "" {
+		sizeSlug = "large"
+	}
+	sizeClass := "size-" + sanitizeClassToken(sizeSlug)
+	if !hasRootClass(out, sizeClass) && !hasRootClassPrefix(out, "size-") {
+		out = addRootClass(out, sizeClass)
+	}
+	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
+		cls := "align" + sanitizeClassToken(align)
+		if !hasRootClass(out, cls) {
+			out = addRootClass(out, cls)
+		}
+	}
+	width := strings.TrimSpace(attrString(attrs, "width"))
+	height := strings.TrimSpace(attrString(attrs, "height"))
+	if (width != "" || height != "") && !hasRootClass(out, "is-resized") {
+		out = addRootClass(out, "is-resized")
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		for _, part := range strings.Fields(cn) {
+			out = addRootClass(out, part)
+		}
+	}
+	// style.border.radius → is-style-rounded (core/image rounded block style).
+	if imageHasRoundedBorder(attrs) {
+		out = addRootClass(out, "is-style-rounded")
+	}
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
+		out = ensureRootAttribute(out, "id", anchor)
 	}
 	return out
+}
+
+func imageHasRoundedBorder(attrs map[string]any) bool {
+	if attrs == nil {
+		return false
+	}
+	style, _ := attrs["style"].(map[string]any)
+	if style == nil {
+		return false
+	}
+	border, _ := style["border"].(map[string]any)
+	if border == nil {
+		return false
+	}
+	switch r := border["radius"].(type) {
+	case string:
+		return strings.TrimSpace(r) != "" && strings.TrimSpace(r) != "0"
+	case float64:
+		return r > 0
+	case map[string]any:
+		return true
+	default:
+		return false
+	}
+}
+
+func hasRootClass(htmlFragment, className string) bool {
+	className = strings.TrimSpace(className)
+	if className == "" {
+		return false
+	}
+	re := regexp.MustCompile(`(?i)\bclass\s*=\s*["']([^"']*)["']`)
+	m := re.FindStringSubmatch(htmlFragment)
+	if len(m) < 2 {
+		return false
+	}
+	for _, c := range strings.Fields(m[1]) {
+		if c == className {
+			return true
+		}
+	}
+	return false
+}
+
+func hasRootClassPrefix(htmlFragment, prefix string) bool {
+	re := regexp.MustCompile(`(?i)\bclass\s*=\s*["']([^"']*)["']`)
+	m := re.FindStringSubmatch(htmlFragment)
+	if len(m) < 2 {
+		return false
+	}
+	for _, c := range strings.Fields(m[1]) {
+		if strings.HasPrefix(c, prefix) {
+			return true
+		}
+	}
+	return false
 }
 
 // renderGallery renders core/gallery (P5.48 / P5.110).
@@ -161,12 +256,15 @@ func synthesizeImageFigure(e *Env, block Block) string {
 	if sizeSlug == "" {
 		sizeSlug = "large"
 	}
-	class := "wp-block-image size-" + sizeSlug
+	class := "wp-block-image size-" + sanitizeClassToken(sizeSlug)
 	if align := strings.TrimSpace(attrString(block.Attrs, "align")); align != "" {
 		class += " align" + sanitizeClassToken(align)
 	}
 	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
 		class += " " + cn
+	}
+	if imageHasRoundedBorder(block.Attrs) {
+		class += " is-style-rounded"
 	}
 
 	width := strings.TrimSpace(attrString(block.Attrs, "width"))
@@ -236,7 +334,11 @@ func synthesizeImageFigure(e *Env, block Block) string {
 	if caption != "" {
 		capHTML = `<figcaption class="wp-element-caption">` + html.EscapeString(caption) + `</figcaption>`
 	}
-	return `<figure class="` + html.EscapeString(class) + `">` + inner + capHTML + `</figure>`
+	idAttr := ""
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		idAttr = ` id="` + html.EscapeString(anchor) + `"`
+	}
+	return `<figure` + idAttr + ` class="` + html.EscapeString(class) + `">` + inner + capHTML + `</figure>`
 }
 
 // sanitizeCSSLength allows numeric lengths with optional common CSS units.

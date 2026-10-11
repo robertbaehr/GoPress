@@ -4556,17 +4556,24 @@ wp-login.php#language-switcher-post
 - prefix: wp-includes/blocks/image.php
   go: internal/blocks/gallery_image.go
   status: partial
-  task: P5.65
+  task: P5.113
   api: internal
-  notes: "P5.65 — align/dimensions/decorative/linkClass polish on P5.48 gallery/image base"
+  notes: "P5.113 — className/anchor/sizeSlug/is-resized/rounded polish on P5.65/P5.48 image base"
 
 # P5.65: further polish core/image (align, dimensions, title, decorative, linkClass).
 - prefix: wp-includes/blocks/image.php#render
   go: internal/blocks/gallery_image.go
   status: partial
-  task: P5.65
+  task: P5.113
   api: internal
-  notes: "P5.65 — ensure wp-block-image/align*; width/height/aspectRatio/scale/title/isDecorative/linkClass"
+  notes: "P5.113 — applyImageAttrs className/anchor/sizeSlug; style.border.radius → is-style-rounded; P5.65 dimensions"
+
+- prefix: wp-includes/blocks/image.php#attrs
+  go: internal/blocks/gallery_image_test.go
+  status: partial
+  task: P5.113
+  api: internal
+  notes: "P5.113 — unit coverage for className/anchor/sizeSlug/rounded polish"
 
 # P5.110: deepen core/gallery className/align/anchor + linkTo/sizeSlug synthesize.
 - prefix: wp-includes/blocks/gallery.php#render
