@@ -717,7 +717,10 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	b.WriteString("\t\t\t\t<label for=\"rememberme\">Remember Me</label>\n")
 	b.WriteString("\t\t\t\t<span class=\"wp-tooltip wp-is-toggletip\">\n")
 	b.WriteString("\t\t\t\t<button aria-haspopup=\"dialog\" aria-label=\"Help\" class=\"wp-tooltip__toggle\" popovertarget=\"rememberme-help-toggletip\" type=\"button\"><span aria-hidden=\"true\" class=\"dashicons dashicons-editor-help\"></span></button>\n")
-	b.WriteString("\t\t\t\t<span popover=\"auto\" id=\"rememberme-help-toggletip\" class=\"wp-tooltip__bubble\" role=\"dialog\" aria-label=\"Help\" tabindex=\"-1\" autofocus><span id=\"rememberme-help-toggletip-text\" class=\"wp-tooltip__text\">Selecting &quot;Remember Me&quot; increases the length of time until you&#8217;re asked to log in again on this device. To keep your account secure, use this option only on your personal devices.</span><button type=\"button\" class=\"wp-tooltip__close\" popovertarget=\"rememberme-help-toggletip\" popovertargetaction=\"hide\" aria-label=\"Close\"><span class=\"dashicons dashicons-no-alt\" aria-hidden=\"true\"></span></button></span></span>\t\t\t</p>\n")
+	b.WriteString("\t\t\t\t<span popover=\"auto\" id=\"rememberme-help-toggletip\" class=\"wp-tooltip__bubble\" role=\"dialog\" aria-label=\"Help\" tabindex=\"-1\" autofocus><span id=\"rememberme-help-toggletip-text\" class=\"wp-tooltip__text\">")
+	// P6.66: login_remember_me_help_text filter (WP echoes into toggletip; keep HTML).
+	b.WriteString(loginRememberMeHelpText(c))
+	b.WriteString("</span><button type=\"button\" class=\"wp-tooltip__close\" popovertarget=\"rememberme-help-toggletip\" popovertargetaction=\"hide\" aria-label=\"Close\"><span class=\"dashicons dashicons-no-alt\" aria-hidden=\"true\"></span></button></span></span>\t\t\t</p>\n")
 	b.WriteString("\t\t\t<p class=\"submit\">\n")
 	b.WriteString("\t\t\t\t<input type=\"submit\" name=\"wp-submit\" id=\"wp-submit\" class=\"button button-primary button-large\" value=\"Log In\" />\n")
 	b.WriteString("\t\t\t\t\t\t\t\t\t<input type=\"hidden\" name=\"redirect_to\" value=\"")
@@ -745,7 +748,10 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	}
 	b.WriteString("\t\t\t<script>\n")
 	b.WriteString("function wp_attempt_focus() {setTimeout( function() {try {d = document.getElementById( \"user_login\" );d.focus(); d.select();} catch( er ) {}}, 200);}\n")
-	b.WriteString("wp_attempt_focus();\n")
+	// P6.66: enable_login_autofocus filter (default true); skip when login_error present.
+	if enableLoginAutofocus(c) && errMsg == "" {
+		b.WriteString("wp_attempt_focus();\n")
+	}
 	b.WriteString("if ( typeof wpOnload === 'function' ) { wpOnload() }\n")
 	b.WriteString("</script>\n")
 	if interim {
@@ -1183,6 +1189,40 @@ func lostPasswordHTMLLink(c *wp.Context, href string) string {
 		}
 	}
 	return link
+}
+
+// loginRememberMeHelpText returns filtered Remember Me tooltip text (P6.66).
+// WP: apply_filters( 'login_remember_me_help_text', … ); echoed without esc_html.
+func loginRememberMeHelpText(c *wp.Context) string {
+	text := `Selecting &quot;Remember Me&quot; increases the length of time until you&#8217;re asked to log in again on this device. To keep your account secure, use this option only on your personal devices.`
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("login_remember_me_help_text", text); v != nil {
+			if s, ok := v.(string); ok {
+				return s
+			}
+		}
+	}
+	return text
+}
+
+// enableLoginAutofocus reports whether to call wp_attempt_focus (P6.66).
+// WP: apply_filters( 'enable_login_autofocus', true ).
+func enableLoginAutofocus(c *wp.Context) bool {
+	if c == nil || c.Hooks == nil {
+		return true
+	}
+	if v := c.Hooks.ApplyFilters("enable_login_autofocus", true); v != nil {
+		switch t := v.(type) {
+		case bool:
+			return t
+		case int:
+			return t != 0
+		case string:
+			s := strings.TrimSpace(strings.ToLower(t))
+			return s != "" && s != "0" && s != "false"
+		}
+	}
+	return true
 }
 
 // applyLoginMessage mirrors login_header's apply_filters( 'login_message', $message ) (P6.51).

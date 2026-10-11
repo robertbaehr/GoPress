@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.223)
 
+- P6.66 `login_remember_me_help_text` + `enable_login_autofocus`
 - P10.223 STATUS/PORTING refresh after P6.65–P9.41
 - P9.41 `ApplyFiltersDeprecated` / `DoActionDeprecated` Context helpers
 - P7.162 tools.php pagenow chrome + `admin_body_class`

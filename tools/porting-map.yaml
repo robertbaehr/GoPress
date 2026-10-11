@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P6.66: Remember Me help text + enable_login_autofocus.
+- prefix: wp-login.php#login_remember_me_help_text
+  go: internal/login/login.go
+  status: partial
+  task: P6.66
+  api: n/a
+  notes: "P6.66 — login_remember_me_help_text + enable_login_autofocus filters"
+- prefix: wp-login.php#login_remember_me_help_text#tests
+  go: internal/login/remember_me_help_p6_66_test.go
+  status: partial
+  task: P6.66
+  api: n/a
+  notes: "P6.66 — help filter + autofocus off/error skip"
+
 # P10.223: STATUS/PORTING refresh after P6.65–P9.41 stack.
 - prefix: docs/STATUS.md#p10-223
   go: docs/STATUS.md
