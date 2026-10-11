@@ -10009,3 +10009,20 @@ wp-login.php#language-switcher-post
   task: P8.42
   api: n/a
   notes: "P8.42 — https force + empty filter"
+
+# P10.180: expand diff corpus after P5.135–P8.42.
+- prefix: tests/corpus#p10.180
+  go: tests/corpus
+  status: partial
+  task: P10.180
+  api: n/a
+  notes: "P10.180 — status/home-link/media/statuses/types headers + front/login/ajax/admin toppers; 1704 cases"
+
+# P10.181: STATUS/PORTING refresh after P5.135–P10.180.
+- prefix: docs/STATUS.md#p10.181
+  go: docs/STATUS.md
+  status: partial
+  task: P10.181
+  api: n/a
+  notes: "P10.181 — summarize home-link attrs, REST status invalid_param, admin_color, KsesHook, canonical comment-page, attachment_url SSL + 1704 corpus"
+
