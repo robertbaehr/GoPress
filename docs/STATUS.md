@@ -48,8 +48,9 @@ make check
 - `make diff` / `gopress-tools diff` reloads `tests/fixtures/site.sql` into `gopress_ref` and `gopress_go` unless `--skip-db`.
 - After e2e uploads or other writes, restart `gopress serve` (or omit `--skip-db`) so object-cache/options match the reloaded fixture. Stale process memory can make a green corpus look red.
 
-## Recent stack (through P10.222)
+## Recent stack (through P10.223)
 
+- P10.223 STATUS/PORTING refresh after P6.65–P9.41
 - P9.41 `ApplyFiltersDeprecated` / `DoActionDeprecated` Context helpers
 - P7.162 tools.php pagenow chrome + `admin_body_class`
 - P5.161 `core/social-links` align coerce + gradient/anchor
