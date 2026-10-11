@@ -11636,3 +11636,17 @@ wp-login.php#language-switcher-post
   task: P7.151
   api: n/a
   notes: "P7.151 — browser chrome + mode persist coverage"
+
+# P2.146: wp_http_validate_url (scheme/host/userinfo/port/private IP).
+- prefix: wp-includes/http.php#wp_http_validate_url
+  go: internal/wp/http_validate_url.go
+  status: partial
+  task: P2.146
+  api: exported
+  notes: "P2.146 — HttpValidateURL: http/https only, reject userinfo/private IPs/unsafe ports; http_request_host_is_external + http_allowed_safe_ports"
+- prefix: wp-includes/http.php#wp_http_validate_url#tests
+  go: internal/wp/http_validate_url_p2_146_test.go
+  status: partial
+  task: P2.146
+  api: n/a
+  notes: "P2.146 — numeric/js/userinfo/private/public/port/same-host/external filter"
