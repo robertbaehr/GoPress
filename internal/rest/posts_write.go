@@ -225,7 +225,9 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 	// P4.146: ?_embed → _embedded author / featuredmedia / terms.
 	applyPostsRESTEmbed(c, posts, r)
 	// P9.26: merge register_rest_field get_callback values when registered.
-	writeJSON(w, http.StatusOK, EncodeWithAdditionalFields(postType, posts, r))
+	// P4.147: ?_fields → sparse field projection (rest_filter_response_fields).
+	payload := EncodeWithAdditionalFields(postType, posts, r)
+	writeJSON(w, http.StatusOK, applyRESTResponseFields(r, payload))
 }
 
 func (s *Server) serveTypedItem(w http.ResponseWriter, r *http.Request, c *wp.Context, postType string, id int64) {
@@ -306,7 +308,9 @@ func (s *Server) getTypedItem(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	// P4.146: ?_embed → _embedded author / featuredmedia / terms.
 	applyPostRESTEmbed(c, post, r)
 	// P9.26: merge register_rest_field get_callback values when registered.
-	writeJSON(w, http.StatusOK, EncodeWithAdditionalFields(postType, post, r))
+	// P4.147: ?_fields → sparse field projection (rest_filter_response_fields).
+	payload := EncodeWithAdditionalFields(postType, post, r)
+	writeJSON(w, http.StatusOK, applyRESTResponseFields(r, payload))
 }
 
 func (s *Server) createPost(w http.ResponseWriter, r *http.Request, c *wp.Context) {
