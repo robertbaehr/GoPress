@@ -34,6 +34,41 @@ func TestPostEditShellDeepen(t *testing.T) {
 		`id="edit-slug-box"`,
 		`name="action" value="editpost"`,
 		`id="_wpnonce"`,
+		// P7.127 block editor chrome
+		`block-editor-page`,
+		`is-fullscreen-mode`,
+		`id="editor"`,
+		`edit-post-layout`,
+		`__gopressBlockEditorSettings`,
+		`pagenow = "post"`,
+		`The block editor requires JavaScript`,
+	} {
+		if !strings.Contains(body, want) {
+			t.Fatalf("missing %q in body", want)
+		}
+	}
+}
+
+func TestPostNewBlockEditorStub(t *testing.T) {
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}, Admin: &admin.Handler{}}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/post-new.php", nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
+	}
+	body := rec.Body.String()
+	for _, want := range []string{
+		`post-new-php`,
+		`block-editor-page`,
+		`id="editor"`,
+		`pagenow = "post-new"`,
+		`"isNew":true`,
+		`id="title"`,
 	} {
 		if !strings.Contains(body, want) {
 			t.Fatalf("missing %q in body", want)
