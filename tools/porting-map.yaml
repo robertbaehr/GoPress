@@ -11449,4 +11449,4 @@ wp-login.php#language-switcher-post
   status: partial
   task: P10.206
   api: n/a
-  notes: "P10.206 — table/tax_relation/site-health/utf8/robots/headerurl toppers; headers-safe"
+  notes: "P10.206 — table/tax_relation/site-health/utf8/robots/headerurl toppers; headers-safe; drop Link/set-cookie-sensitive"
