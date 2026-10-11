@@ -226,13 +226,10 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		writeRESTInvalidDateParams(w, badDates)
 		return
 	}
-	statuses, statusCode, statusMsg := parsePostsStatus(r, c)
-	if statusCode != 0 {
-		writeJSON(w, statusCode, map[string]any{
-			"code":    "rest_forbidden_status",
-			"message": statusMsg,
-			"data":    map[string]any{"status": statusCode},
-		})
+	statuses, forbiddenCode, enumInvalid := parsePostsStatus(r, c)
+	if forbiddenCode != 0 || enumInvalid {
+		// P4.151: WP wraps status sanitize errors as rest_invalid_param.
+		writeRESTInvalidPostsStatus(w, forbiddenCode, enumInvalid)
 		return
 	}
 	total, err := countPosts(c, postType, stickyFilter, search, searchColumns, authorIn, authorNotIn, categories, categoriesExclude, tags, tagsExclude, taxRelation, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, menuOrderFilter)

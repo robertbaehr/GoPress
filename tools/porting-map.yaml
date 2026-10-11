@@ -9939,3 +9939,17 @@ wp-login.php#language-switcher-post
   task: P5.135
   api: n/a
   notes: "P5.135 — nav context colors + anchor + href/rel/target/aria-current order"
+
+# P4.151: REST posts status query invalid_param / enum.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#sanitize_post_statuses
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.151
+  api: sanitize_post_statuses
+  notes: "P4.151 — rest_invalid_param wrap for forbidden; enum rest_not_in_enum for editors"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#sanitize_post_statuses#tests
+  go: internal/rest/posts_status_p4_151_test.go
+  status: partial
+  task: P4.151
+  api: n/a
+  notes: "P4.151 — anon forbidden wrap + editor enum reject"

@@ -284,13 +284,23 @@ func TestPostsStatusQueryParam(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
 
-	// Anonymous cannot request draft.
+	// Anonymous cannot request draft (P4.151: rest_invalid_param + rest_forbidden_status).
 	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?status=draft&per_page=10", nil)
 	rec := httptest.NewRecorder()
 	c = c.ForRequest(rec, req)
 	(&rest.Server{}).Handle(rec, req, c)
-	if rec.Code != http.StatusUnauthorized {
+	if rec.Code != http.StatusBadRequest {
 		t.Fatalf("anon draft status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var anonErr map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &anonErr); err != nil {
+		t.Fatal(err)
+	}
+	if anonErr["code"] != "rest_invalid_param" {
+		t.Fatalf("anon draft code=%v body=%s", anonErr["code"], rec.Body.String())
+	}
+	if !strings.Contains(rec.Body.String(), "rest_forbidden_status") {
+		t.Fatalf("anon draft expected rest_forbidden_status details: %s", rec.Body.String())
 	}
 
 	user, err := c.GetUserBy("login", "admin")
@@ -323,8 +333,9 @@ func TestPostsStatusQueryParam(t *testing.T) {
 			t.Fatalf("expected status=draft, got %q on post %d", p.Status, p.ID)
 		}
 	}
-	if rec.Header().Get("X-WP-Total") == "" || rec.Header().Get("X-WP-Total") == "0" {
-		t.Fatalf("expected X-WP-Total > 0, got %q", rec.Header().Get("X-WP-Total"))
+	totalDraft := rec.Header().Get("X-WP-Total")
+	if totalDraft == "" || totalDraft == "0" {
+		t.Fatalf("expected X-WP-Total > 0, got %q", totalDraft)
 	}
 
 	// Default status=publish still works without auth.
@@ -344,9 +355,10 @@ func TestPostsStatusQueryParam(t *testing.T) {
 			t.Fatalf("expected publish, got %q", p.Status)
 		}
 	}
+	totalPub := rec.Header().Get("X-WP-Total")
 
-	// P4.134: status[]= array form + status=any for editors.
-	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?status[]=draft&status[]=publish&per_page=20", nil)
+	// P4.134: status[]= array form — totals must equal draft+publish (page may be all publish).
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?status[]=draft&status[]=publish&per_page=5", nil)
 	req.AddCookie(ck)
 	rec = httptest.NewRecorder()
 	rc = c.ForRequest(rec, req)
@@ -361,19 +373,16 @@ func TestPostsStatusQueryParam(t *testing.T) {
 	if len(mixed) == 0 {
 		t.Fatal("expected posts for status[]=draft&status[]=publish")
 	}
-	seenDraft, seenPub := false, false
 	for _, p := range mixed {
-		switch p.Status {
-		case "draft":
-			seenDraft = true
-		case "publish":
-			seenPub = true
-		default:
+		if p.Status != "draft" && p.Status != "publish" {
 			t.Fatalf("unexpected status %q", p.Status)
 		}
 	}
-	if !seenDraft || !seenPub {
-		t.Fatalf("want both draft and publish in status[] results (draft=%v publish=%v)", seenDraft, seenPub)
+	td, _ := strconv.Atoi(totalDraft)
+	tp, _ := strconv.Atoi(totalPub)
+	tm, _ := strconv.Atoi(rec.Header().Get("X-WP-Total"))
+	if tm != td+tp {
+		t.Fatalf("status[] total=%d want draft(%d)+publish(%d)=%d", tm, td, tp, td+tp)
 	}
 
 	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?status=any&per_page=5", nil)
