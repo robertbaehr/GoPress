@@ -9009,3 +9009,18 @@ wp-login.php#language-switcher-post
   task: P10.165
   api: n/a
   notes: "P10.165 — summarize core/block halt, slug[] empty, admin-bar, is_serialized, generator filters, login_form_top + 1360 corpus"
+
+# P5.128: deepen core/pattern cycle guard.
+- prefix: wp-includes/blocks/pattern.php#render_block_core_pattern
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.128
+  api: render_block_core_pattern
+  notes: "P5.128 — DebugDisplay circular slug halt; missing slug/load empty"
+
+- prefix: wp-includes/blocks/pattern.php#render_block_core_pattern#tests
+  go: internal/blocks/pattern_p5_128_test.go
+  status: partial
+  task: P5.128
+  api: n/a
+  notes: "P5.128 — circular halt / quiet / missing slug coverage"

@@ -158,12 +158,16 @@ type Env struct {
 	// seenBlock tracks wp_block refs currently being rendered (cycle guard, P5.25).
 	seenBlock map[int64]bool
 
+	// seenPattern tracks core/pattern slugs currently being rendered (cycle guard, P5.128).
+	// Mirrors PHP $seen_refs in render_block_core_pattern.
+	seenPattern map[string]bool
+
 	// seenPostContent tracks post IDs while rendering core/post-content (P5.87).
 	// Mirrors PHP $seen_ids reentrancy guard in render_block_core_post_content.
 	seenPostContent map[int64]bool
 
-	// DebugDisplay, when true, surfaces post-content / synced-pattern reentrancy
-	// warnings (P5.87 / P5.127). Mirrors WP_DEBUG && WP_DEBUG_DISPLAY in PHP.
+	// DebugDisplay, when true, surfaces post-content / synced-pattern / pattern
+	// reentrancy warnings (P5.87 / P5.127 / P5.128). Mirrors WP_DEBUG && WP_DEBUG_DISPLAY.
 	DebugDisplay bool
 
 	// currentPost is the post in scope for post-title/content/date (P5.13).
