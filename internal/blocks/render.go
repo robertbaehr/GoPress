@@ -264,7 +264,9 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderSearch(block)
 		return applySupports(out, sanitizeSearchBlockAttrs(block.Attrs), name)
 	case "core/calendar":
+		// P5.165: coerce align enum before applySupports.
 		out = e.renderCalendar(block)
+		return applySupports(out, sanitizeCalendarBlockAttrs(block.Attrs), name)
 	case "core/archives":
 		out = e.renderArchives(block)
 	case "core/latest-posts":
