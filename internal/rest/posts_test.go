@@ -194,22 +194,7 @@ func TestPostsSearchColumnsQueryParam(t *testing.T) {
 	if err := json.Unmarshal(rec.Body.Bytes(), &contentHits); err != nil {
 		t.Fatal(err)
 	}
-	// Fixture "Hello world!" post has the word in the title; content may or may not.
-	// Ensure invalid columns are ignored and fall back to all columns.
-	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?search=Hello&search_columns=bogus&per_page=10", nil)
-	rec = httptest.NewRecorder()
-	c = c.ForRequest(rec, req)
-	(&rest.Server{}).Handle(rec, req, c)
-	if rec.Code != http.StatusOK {
-		t.Fatalf("bogus search_columns status=%d", rec.Code)
-	}
-	var allHits []rest.Post
-	if err := json.Unmarshal(rec.Body.Bytes(), &allHits); err != nil {
-		t.Fatal(err)
-	}
-	if len(allHits) == 0 {
-		t.Fatal("invalid search_columns should fall back to all columns")
-	}
+	// P4.153: invalid columns are rejected (rest_not_in_enum), covered in posts_search_columns_p4_153_test.go.
 
 	// Comma-separated columns still search titles.
 	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?search=Hello&search_columns=post_title,post_excerpt&per_page=10", nil)

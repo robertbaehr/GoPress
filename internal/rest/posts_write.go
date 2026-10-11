@@ -122,7 +122,12 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		return
 	}
 	search := parsePostsSearch(r)
-	searchColumns := parsePostsSearchColumns(r)
+	// P4.153: strict search_columns enum validation (rest_not_in_enum).
+	searchColumns, searchColumnsErr := parsePostsSearchColumns(r)
+	if searchColumnsErr != "" {
+		writeRESTInvalidOrderParams(w, map[string]string{"search_columns": searchColumnsErr})
+		return
+	}
 	authorIn := parsePostsAuthor(r)
 	// P4.152: strict author_exclude integer-array validation (rest_invalid_type).
 	authorNotIn, authorExOK := parsePostsAuthorExclude(r)
