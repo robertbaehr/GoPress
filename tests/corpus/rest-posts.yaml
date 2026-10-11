@@ -4603,3 +4603,183 @@
   body: null
   compare: headers
   nonce: null
+
+- id: rest-p10132-ns-wp-site-health
+  role: anon
+  method: GET
+  path: /wp-json/wp-site-health/v1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10132-ns-wp-block-editor
+  role: anon
+  method: GET
+  path: /wp-json/wp-block-editor/v1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10132-ns-wp-abilities
+  role: anon
+  method: GET
+  path: /wp-json/wp-abilities/v1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10132-rest-route-ns-wp-site-health
+  role: anon
+  method: GET
+  path: /?rest_route=/wp-site-health/v1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10132-rest-route-ns-wp-block-editor
+  role: anon
+  method: GET
+  path: /?rest_route=/wp-block-editor/v1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10132-rest-route-ns-wp-abilities
+  role: anon
+  method: GET
+  path: /?rest_route=/wp-abilities/v1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10132-block-types-button-context-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/button?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10132-block-types-button-context-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/button?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10132-block-types-button-context-edit
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/button?context=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10132-block-types-buttons-context-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/buttons?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10132-block-types-buttons-context-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/buttons?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10132-block-types-buttons-context-edit
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/buttons?context=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10132-rest-route-block-types-button
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/button
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10132-rest-route-block-types-buttons
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/buttons
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10132-rest-route-block-types-button-context-view
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/button&context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10132-rest-route-block-types-buttons-context-view
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/buttons&context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10132-types-post-context-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types/post?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10132-types-page-context-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types/page?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10132-types-attachment-context-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types/attachment?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10132-rest-route-types-post-context-embed
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/types/post&context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
