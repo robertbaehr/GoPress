@@ -10326,3 +10326,17 @@ wp-login.php#language-switcher-post
   task: P10.187
   api: n/a
   notes: "P10.187 — summarize comment-template attrs, format enum, update_nag, KsesNormalizeEntities, ClearPingback deepen, attachment-image attrs + 1865 corpus"
+
+# P5.139: core/avatar align / anchor.
+- prefix: wp-includes/blocks/avatar#align-anchor
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.139
+  api: render_block_core_avatar
+  notes: "P5.139 — supports.align / anchor on avatar wrapper"
+- prefix: wp-includes/blocks/avatar#align-anchor#tests
+  go: internal/blocks/avatar_attrs_p5_139_test.go
+  status: partial
+  task: P5.139
+  api: n/a
+  notes: "P5.139 — alignleft/anchor when email; empty without email"
