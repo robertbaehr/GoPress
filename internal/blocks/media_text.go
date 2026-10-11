@@ -14,13 +14,16 @@ var (
 	reMediaTextFigureInner = regexp.MustCompile(`(?is)(<figure\b[^>]*\bwp-block-media-text__media\b[^>]*>)(.*?)(</figure>)`)
 )
 
-// renderMediaText renders core/media-text (P5.55 / P5.109).
+// renderMediaText renders core/media-text (P5.55 / P5.109 / P5.152).
 // Prefers saved markup; synthesizes from mediaUrl/mediaId when empty; when
 // useFeaturedImage is set, injects the featured image into the media figure
 // (subset of render_block_core_media_text). P5.109: className/anchor/align polish
 // and href/linkTarget/rel wrapping around the media figure contents.
+// P5.152: coerce align to wide|full; fontSize + gradient polish; sanitize before supports.
 func (e *Env) renderMediaText(block Block) string {
 	e = e.ensure()
+	attrs := sanitizeMediaTextBlockAttrs(block.Attrs)
+	block.Attrs = attrs
 	out := e.renderSaved(block)
 	if strings.TrimSpace(out) == "" || !reMediaTextTag.MatchString(out) {
 		out = synthesizeMediaTextBlock(e, block)
@@ -28,10 +31,32 @@ func (e *Env) renderMediaText(block Block) string {
 	if strings.TrimSpace(out) == "" || !reMediaTextTag.MatchString(out) {
 		return ""
 	}
-	if attrBool(block.Attrs, "useFeaturedImage") {
-		out = e.applyMediaTextFeaturedImage(out, block.Attrs)
+	if attrBool(attrs, "useFeaturedImage") {
+		out = e.applyMediaTextFeaturedImage(out, attrs)
 	}
-	return applyMediaTextAttrs(out, block.Attrs)
+	return applyMediaTextAttrs(out, attrs)
+}
+
+// sanitizeMediaTextBlockAttrs coerces core/media-text supports.align to the block.json set (P5.152).
+// Allowed: wide, full (align: ["wide","full"]). Other align values (incl. default "none") are dropped.
+func sanitizeMediaTextBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "wide", "full":
+		// keep empty; wide/full pass through
+	case "none":
+		delete(out, "align")
+	default:
+		delete(out, "align")
+	}
+	return out
 }
 
 func synthesizeMediaTextBlock(e *Env, block Block) string {
@@ -139,6 +164,13 @@ func mediaTextClassFromAttrs(attrs map[string]any, mediaPos string, stacked, ima
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		class += " " + html.EscapeString(cn)
 	}
+	// P5.152: typography.fontSize + color.gradients presets on synthesize.
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		class += " has-" + sanitizeClassToken(fs) + "-font-size"
+	}
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		class += " has-background has-" + sanitizeClassToken(g) + "-gradient-background"
+	}
 	return class
 }
 
@@ -236,7 +268,7 @@ func wrapMediaTextHref(inner string, attrs map[string]any) string {
 	return b.String()
 }
 
-// applyMediaTextAttrs polishes saved + synthesized media-text markup (P5.109).
+// applyMediaTextAttrs polishes saved + synthesized media-text markup (P5.109 / P5.152).
 func applyMediaTextAttrs(htmlFragment string, attrs map[string]any) string {
 	out := htmlFragment
 	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" && align != "none" {
@@ -252,6 +284,15 @@ func applyMediaTextAttrs(htmlFragment string, attrs map[string]any) string {
 	}
 	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
 		out = ensureRootAttribute(out, "id", anchor)
+	}
+	// P5.152: typography.fontSize preset class (also via applySupports).
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		out = addRootClass(out, "has-"+sanitizeClassToken(fs)+"-font-size")
+	}
+	// P5.152: color.gradients preset → has-{slug}-gradient-background.
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		out = addRootClass(out, "has-background")
+		out = addRootClass(out, "has-"+sanitizeClassToken(g)+"-gradient-background")
 	}
 	// When synthesizing already wrapped href; for saved markup with empty figure
 	// media and href attrs, wrap figure contents if not already linked.

@@ -11818,3 +11818,17 @@ wp-login.php#language-switcher-post
   task: P10.213
   api: n/a
   notes: "P10.213 — summarize cover attrs, meta_key compares, attachment edit, SafeRemoteGet, prev/next rel, headertitle, corpus 2806"
+
+# P5.152: deepen core/media-text fontSize / gradient; coerce align enum.
+- prefix: wp-includes/blocks/media-text#attrs
+  go: internal/blocks/media_text.go
+  status: partial
+  task: P5.152
+  api: n/a
+  notes: "P5.152 — coerce align wide|full; drop none/bogus; fontSize + gradient polish; sanitize before applySupports"
+- prefix: wp-includes/blocks/media-text#attrs#tests
+  go: internal/blocks/media_text_attrs_p5_152_test.go
+  status: partial
+  task: P5.152
+  api: n/a
+  notes: "P5.152 — align coerce, saved fontSize/gradient, synthesize mediaAlt coverage"
