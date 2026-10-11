@@ -11650,3 +11650,23 @@ wp-login.php#language-switcher-post
   task: P2.146
   api: n/a
   notes: "P2.146 — numeric/js/userinfo/private/public/port/same-host/external filter"
+
+# P3.144: deepen front rel=canonical tag helper + request page/cpage.
+- prefix: wp-includes/link-template.php#rel_canonical#tag
+  go: internal/wp/canonical.go
+  status: partial
+  task: P3.144
+  api: exported
+  notes: "P3.144 — CanonicalTagHTML EscURL; RelCanonicalForRequest page/cpage"
+- prefix: wp-includes/general-template.php#rel_canonical#front
+  go: internal/server/front.go
+  status: partial
+  task: P3.144
+  api: n/a
+  notes: "P3.144 — writeFrontHeadLinks uses CanonicalTagHTML"
+- prefix: wp-includes/link-template.php#rel_canonical#tests
+  go: internal/wp/canonical_tag_p3_144_test.go
+  status: partial
+  task: P3.144
+  api: n/a
+  notes: "P3.144 — tag EscURL + RelCanonicalForRequest coverage"

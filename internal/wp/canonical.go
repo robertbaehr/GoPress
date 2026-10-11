@@ -101,14 +101,27 @@ func RelCanonicalLink(c *Context, postID int64) string {
 	return RelCanonicalLinkPaged(c, postID, 0, 0)
 }
 
-// RelCanonicalLinkPaged is rel_canonical with page/cpage (P3.101 / P3.105).
+// RelCanonicalLinkPaged is rel_canonical with page/cpage (P3.101 / P3.105 / P3.144).
 // Href is passed through EscURL like PHP esc_url().
 func RelCanonicalLinkPaged(c *Context, postID int64, page, cpage int) string {
 	url := GetCanonicalURL(c, postID, page, cpage)
+	return CanonicalTagHTML(url)
+}
+
+// CanonicalTagHTML builds <link rel="canonical" href="…"> via EscURL (P3.144).
+// Empty url → "" (matches rel_canonical early return).
+func CanonicalTagHTML(url string) string {
+	url = strings.TrimSpace(url)
 	if url == "" {
 		return ""
 	}
 	return `<link rel="canonical" href="` + EscURL(url) + `" />` + "\n"
+}
+
+// RelCanonicalForRequest is rel_canonical using request page/cpage (P3.144).
+func RelCanonicalForRequest(c *Context, postID int64) string {
+	page, cpage := CanonicalPageFromRequest(c)
+	return RelCanonicalLinkPaged(c, postID, page, cpage)
 }
 
 // CanonicalPageFromRequest reads page/cpage for singular canonical (P3.101 / P3.105 / P3.129).
