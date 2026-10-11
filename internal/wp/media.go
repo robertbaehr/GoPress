@@ -426,7 +426,7 @@ func PrependAttachment(c *Context, attachmentID int64, content string) string {
 	return p + "\n" + content
 }
 
-// GetAttachmentURL returns the public URL for an attachment (wp_get_attachment_url).
+// GetAttachmentURL returns the public URL for an attachment (wp_get_attachment_url, P8.42).
 func GetAttachmentURL(c *Context, attachmentID int64) string {
 	if c == nil || attachmentID <= 0 {
 		return ""
@@ -444,11 +444,9 @@ func GetAttachmentURL(c *Context, attachmentID int64) string {
 			if strings.HasPrefix(file, uploads.Basedir) {
 				url = uploads.Baseurl + strings.TrimPrefix(file, uploads.Basedir)
 			} else if strings.Contains(file, "wp-content/uploads") {
-				rel := file
-				if i := strings.Index(file, "wp-content/uploads/"); i >= 0 {
-					rel = file[i+len("wp-content/uploads/"):]
-				}
-				url = uploads.Baseurl + "/" + strings.TrimPrefix(rel, "/")
+				// P8.42: relative path via basename + dirname like _wp_get_attachment_relative_path.
+				rel := attachmentRelativePath(file)
+				url = strings.TrimRight(uploads.Baseurl, "/") + "/" + strings.TrimPrefix(rel, "/")
 			} else {
 				url = uploads.Baseurl + "/" + strings.TrimPrefix(file, "/")
 			}
@@ -457,13 +455,43 @@ func GetAttachmentURL(c *Context, attachmentID int64) string {
 	if url == "" {
 		url = strings.TrimSpace(post.GUID)
 	}
+	// P8.42: on SSL front end (not admin / login), force https like set_url_scheme.
+	if url != "" && IsSSL(c) && !scopeIsAdmin(c) && !IsLogin(c) {
+		url = SetURLScheme(c, url, "https")
+	}
 	if c.Hooks != nil {
 		filtered := c.Hooks.ApplyFilters("wp_get_attachment_url", url, attachmentID)
 		if s, ok := filtered.(string); ok {
 			url = s
 		}
 	}
-	return url
+	// WP returns false when empty after filters.
+	return strings.TrimSpace(url)
+}
+
+// attachmentRelativePath mirrors _wp_get_attachment_relative_path (P8.42).
+func attachmentRelativePath(file string) string {
+	file = strings.TrimSpace(file)
+	if i := strings.Index(file, "wp-content/uploads/"); i >= 0 {
+		file = file[i+len("wp-content/uploads/"):]
+	}
+	dir := ""
+	base := file
+	if j := strings.LastIndex(file, "/"); j >= 0 {
+		dir = file[:j]
+		base = file[j+1:]
+	}
+	if dir == "" || dir == "." {
+		return base
+	}
+	return strings.TrimPrefix(dir, "/") + "/" + base
+}
+
+func scopeIsAdmin(c *Context) bool {
+	if c == nil || c.Scope == nil {
+		return false
+	}
+	return c.Scope.IsAdmin
 }
 
 // GetPostThumbnailID returns the featured image attachment ID (_thumbnail_id).

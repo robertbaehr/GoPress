@@ -9995,3 +9995,17 @@ wp-login.php#language-switcher-post
   task: P3.129
   api: n/a
   notes: "P3.129 — pretty comment-page parse + orphan attachment empty"
+
+# P8.42: wp_get_attachment_url SSL + relative path.
+- prefix: wp-includes/post.php#wp_get_attachment_url
+  go: internal/wp/media.go
+  status: partial
+  task: P8.42
+  api: wp_get_attachment_url
+  notes: "P8.42 — SSL front https via set_url_scheme; relative path; empty filter clears"
+- prefix: wp-includes/post.php#wp_get_attachment_url#tests
+  go: internal/wp/attachment_url_p8_42_test.go
+  status: partial
+  task: P8.42
+  api: n/a
+  notes: "P8.42 — https force + empty filter"
