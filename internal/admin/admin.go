@@ -4637,8 +4637,9 @@ func (h *Handler) serveSiteHealth(w http.ResponseWriter, r *http.Request, c *wp.
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveSiteHealthInfo is the Site Health → Info (debug) tab stub (P7.44 / P7.45 / P7.92 / P7.148).
+// serveSiteHealthInfo is the Site Health → Info (debug) tab stub (P7.44 / P7.45 / P7.92 / P7.148 / P7.149).
 // P7.148: WP_Debug_Data-shaped accordion sections + copy clipboard text.
+// P7.149: media / active plugins / filesystem debug sections.
 func (h *Handler) serveSiteHealthInfo(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	if !canViewSiteHealthAdmin(c) {
 		http.Error(w, "Sorry, you are not allowed to access site health information.\n", http.StatusForbidden)
@@ -4700,7 +4701,7 @@ func (h *Handler) serveSiteHealthInfo(w http.ResponseWriter, r *http.Request, c 
 		}
 		b.WriteString("</tbody></table>\n</div>\n")
 	}
-	b.WriteString("<p class=\"description\">GoPress site-health info stub (P7.148).</p>\n")
+	b.WriteString("<p class=\"description\">GoPress site-health info stub (P7.149).</p>\n")
 	b.WriteString("</div>\n</div>\n</div>\n</body>\n</html>\n")
 	writeHTML(w, http.StatusOK, b.String())
 }
@@ -4809,6 +4810,17 @@ func siteHealthDebugSections(c *wp.Context) []siteHealthDebugSection {
 			},
 		},
 		{
+			slug:  "wp-media",
+			label: "Media Handling",
+			fields: siteHealthMediaDebugFields(c),
+		},
+		{
+			slug:      "wp-plugins-active",
+			label:     "Active Plugins",
+			showCount: true,
+			fields:    siteHealthActivePluginsDebugFields(c),
+		},
+		{
 			slug:  "wp-constants",
 			label: "WordPress Constants",
 			fields: []siteHealthDebugField{
@@ -4818,7 +4830,74 @@ func siteHealthDebugSections(c *wp.Context) []siteHealthDebugSection {
 				{label: "DB_CHARSET", value: optionString(c, "DB_CHARSET", "utf8mb4"), debug: "utf8mb4"},
 			},
 		},
+		{
+			slug:  "wp-filesystem",
+			label: "Filesystem Permissions",
+			fields: []siteHealthDebugField{
+				{label: "The main WordPress directory", value: "Writable", debug: "writable"},
+				{label: "The wp-content directory", value: "Writable", debug: "writable"},
+				{label: "The uploads directory", value: "Writable", debug: "writable"},
+				{label: "The plugins directory", value: "Writable", debug: "writable"},
+				{label: "The themes directory", value: "Writable", debug: "writable"},
+			},
+		},
 	}
+}
+
+// siteHealthMediaDebugFields builds WP_Debug_Data media section fields (P7.149).
+func siteHealthMediaDebugFields(c *wp.Context) []siteHealthDebugField {
+	thumbW := optionString(c, "thumbnail_size_w", "150")
+	thumbH := optionString(c, "thumbnail_size_h", "150")
+	medW := optionString(c, "medium_size_w", "300")
+	medH := optionString(c, "medium_size_h", "300")
+	largeW := optionString(c, "large_size_w", "1024")
+	largeH := optionString(c, "large_size_h", "1024")
+	yearMonth := "Yes"
+	if optionString(c, "uploads_use_yearmonth_folders", "1") == "0" {
+		yearMonth = "No"
+	}
+	maxUpload := "n/a (Go)"
+	if c != nil {
+		if n := wp.MaxUploadSize(c); n > 0 {
+			maxUpload = wp.SizeFormat(float64(n), 0)
+		}
+	}
+	return []siteHealthDebugField{
+		{label: "Active editor", value: "GoPress image editor", debug: "gopress"},
+		{label: "ImageMagick version number", value: "n/a", debug: "n/a"},
+		{label: "Imagick version", value: "n/a", debug: "n/a"},
+		{label: "File uploads", value: "Enabled", debug: "true"},
+		{label: "Max size of post data allowed", value: maxUpload, debug: maxUpload},
+		{label: "Max size of an uploaded file", value: maxUpload, debug: maxUpload},
+		{label: "Max effective file size", value: maxUpload, debug: maxUpload},
+		{label: "Max number of files allowed", value: "20", debug: "20"},
+		{label: "Max effective number of files", value: "20", debug: "20"},
+		{label: "GD version", value: "n/a (Go image)", debug: "n/a"},
+		{label: "Ghostscript version", value: "n/a", debug: "n/a"},
+		{label: "Thumbnail size", value: thumbW + "×" + thumbH, debug: thumbW + "," + thumbH},
+		{label: "Medium size", value: medW + "×" + medH, debug: medW + "," + medH},
+		{label: "Large size", value: largeW + "×" + largeH, debug: largeW + "," + largeH},
+		{label: "Organize uploads by year/month", value: yearMonth, debug: yearMonth},
+	}
+}
+
+// siteHealthActivePluginsDebugFields lists active_plugins entries (P7.149).
+func siteHealthActivePluginsDebugFields(c *wp.Context) []siteHealthDebugField {
+	files, err := plugins.ActivePluginFiles(c)
+	if err != nil || len(files) == 0 {
+		return []siteHealthDebugField{
+			{label: "No active plugins", value: "None", debug: "none"},
+		}
+	}
+	out := make([]siteHealthDebugField, 0, len(files))
+	for _, f := range files {
+		out = append(out, siteHealthDebugField{
+			label: f,
+			value: "Active",
+			debug: "active",
+		})
+	}
+	return out
 }
 
 // siteHealthDebugClipboard formats debug sections like WP_Debug_Data::format(..., 'debug') (P7.148).
