@@ -9706,3 +9706,23 @@ wp-login.php#language-switcher-post
   task: P4.149
   api: n/a
   notes: "P4.149 — unit coverage for order/orderby 400 + menu_order filter"
+
+# P7.134: deepen dashboard Quick Draft (nonce, auto-draft, recent drafts).
+- prefix: wp-admin/includes/dashboard.php#quick-press-p7.134
+  go: internal/admin/quickpress.go
+  status: partial
+  task: P7.134
+  api: internal
+  notes: "P7.134 — add-post nonce, post_ID auto-draft, recent drafts, admin_notice role=alert"
+- prefix: wp-admin/post.php#post-quickdraft-save-p7.134
+  go: internal/admin/quickpress.go
+  status: partial
+  task: P7.134
+  api: internal
+  notes: "P7.134 — nonce gate + default comment/ping status on insert"
+- prefix: wp-admin/includes/dashboard.php#quick-press-p7.134#tests
+  go: internal/admin/quickpress_p7_134_test.go
+  status: partial
+  task: P7.134
+  api: n/a
+  notes: "P7.134 — form nonce/fields + save with/without nonce"
