@@ -38,6 +38,7 @@ func TestLoginBodyClassFilterP656(t *testing.T) {
 
 func TestLoginBodyClassInterimP656(t *testing.T) {
 	c := bootOrSkip(t)
+	defer c.DB.Close()
 	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?interim-login=1", nil)
 	rec := httptest.NewRecorder()
 	c = c.ForRequest(rec, req)

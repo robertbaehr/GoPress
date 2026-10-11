@@ -10396,3 +10396,17 @@ wp-login.php#language-switcher-post
   task: P3.133
   api: n/a
   notes: "P3.133 — api.w.org Link + rest_url filter + path append"
+
+# P6.56: login_body_class filter.
+- prefix: wp-login.php#login_body_class
+  go: internal/login/login.go
+  status: partial
+  task: P6.56
+  api: login_body_class
+  notes: "P6.56 — login_body_class filter on action/wp-core-ui/admin-color/locale/extra classes"
+- prefix: wp-login.php#login_body_class#tests
+  go: internal/login/login_body_class_p6_56_test.go
+  status: partial
+  task: P6.56
+  api: n/a
+  notes: "P6.56 — filter append + interim-login class coverage"
