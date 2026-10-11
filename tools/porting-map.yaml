@@ -24,6 +24,21 @@
 
 
 
+
+# P8.61: image_resize_dimensions.
+- prefix: wp-includes/media.php#image_resize_dimensions
+  go: internal/wp/image_resize_dimensions.go
+  status: partial
+  task: P8.61
+  api: n/a
+  notes: "P8.61 — ImageResizeDimensions scale/crop + pre-filter + no upscale"
+- prefix: wp-includes/media.php#image_resize_dimensions#tests
+  go: internal/wp/image_resize_dimensions_p8_61_test.go
+  status: partial
+  task: P8.61
+  api: n/a
+  notes: "P8.61 — scale 800x600→400x300; crop; upscale reject"
+
 # P3.161: get_edit_term_link + edit_term meta cap.
 - prefix: wp-includes/link-template.php#get_edit_term_link
   go: internal/wp/edit_term_link.go
