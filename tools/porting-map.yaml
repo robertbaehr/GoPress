@@ -20,6 +20,15 @@
 
 
 
+
+# P10.229: STATUS/PORTING refresh after P6.71–P9.47 stack.
+- prefix: docs/STATUS.md#p10-229
+  go: docs/STATUS.md
+  status: partial
+  task: P10.229
+  api: n/a
+  notes: "P10.229 — summarize validate_password_reset, default mime ext, ContentURL, ConstrainDimensions, categories align, theme-install chrome, TIME orderby, IsPluginInactive"
+
 # P9.47: is_plugin_inactive.
 - prefix: wp-admin/includes/plugin.php#is_plugin_inactive
   go: internal/plugins/plugin.go
