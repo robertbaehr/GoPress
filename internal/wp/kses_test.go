@@ -105,6 +105,48 @@ func TestKsesSmoke(t *testing.T) {
 	}
 }
 
+func TestKsesPostFilteredAndDeep(t *testing.T) {
+	// P2.108: pre_kses + wp_kses_allowed_html + KsesPostDeep.
+	c := &wp.Context{Hooks: wp.NewHooks()}
+	c.Hooks.AddFilter("pre_kses", func(value any, args ...any) any {
+		s, _ := value.(string)
+		return strings.ReplaceAll(s, "EVIL", "SAFE")
+	}, 10, 1)
+	got := wp.KsesPostFiltered(c, `<p>EVIL</p><script>x</script>`)
+	if !strings.Contains(got, "SAFE") || strings.Contains(got, "EVIL") || strings.Contains(got, "<script>") {
+		t.Fatalf("pre_kses: %q", got)
+	}
+	c2 := &wp.Context{Hooks: wp.NewHooks()}
+	c2.Hooks.AddFilter("wp_kses_allowed_html", func(value any, args ...any) any {
+		m, _ := value.(wp.AllowedHTML)
+		out := make(wp.AllowedHTML, len(m)+1)
+		for k, v := range m {
+			out[k] = v
+		}
+		out["marquee"] = wp.AttrRule{"class": true}
+		return out
+	}, 10, 2)
+	got = wp.KsesPostFiltered(c2, `<marquee class="x">hi</marquee><blink>no</blink>`)
+	if !strings.Contains(got, `<marquee class="x">`) || strings.Contains(got, "<blink>") {
+		t.Fatalf("allowed_html filter: %q", got)
+	}
+	deep := wp.KsesPostDeep(map[string]any{
+		"a": `<p onclick="x">ok</p>`,
+		"b": []string{`<strong>y</strong><script>z</script>`},
+	})
+	m, ok := deep.(map[string]any)
+	if !ok {
+		t.Fatalf("deep type %T", deep)
+	}
+	if m["a"] != `<p>ok</p>` {
+		t.Fatalf("deep a: %q", m["a"])
+	}
+	arr, _ := m["b"].([]string)
+	if len(arr) != 1 || !strings.Contains(arr[0], "<strong>") || strings.Contains(arr[0], "<script>") {
+		t.Fatalf("deep b: %#v", m["b"])
+	}
+}
+
 func TestKsesAllowedMatchesGolden(t *testing.T) {
 	_, file, _, ok := runtime.Caller(0)
 	if !ok {

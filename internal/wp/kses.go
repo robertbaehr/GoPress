@@ -123,6 +123,53 @@ func KsesPost(data string) string {
 	return Kses(data, AllowedHTMLPost(), nil)
 }
 
+// KsesPostFiltered is wp_kses_post with Context hooks (P2.108):
+// wp_kses_allowed_html('post') then pre_kses before sanitization.
+func KsesPostFiltered(c *Context, data string) string {
+	allowed := AllowedHTMLFiltered(c, "post")
+	return KsesFiltered(c, data, allowed, nil)
+}
+
+// KsesPostDeep is wp_kses_post_deep (P2.108): recursively sanitize strings with KsesPost.
+func KsesPostDeep(data any) any {
+	switch v := data.(type) {
+	case string:
+		return KsesPost(v)
+	case []any:
+		out := make([]any, len(v))
+		for i, item := range v {
+			out[i] = KsesPostDeep(item)
+		}
+		return out
+	case []string:
+		out := make([]string, len(v))
+		for i, item := range v {
+			out[i] = KsesPost(item)
+		}
+		return out
+	case map[string]any:
+		out := make(map[string]any, len(v))
+		for k, item := range v {
+			out[k] = KsesPostDeep(item)
+		}
+		return out
+	case map[string]string:
+		out := make(map[string]string, len(v))
+		for k, item := range v {
+			out[k] = KsesPost(item)
+		}
+		return out
+	case map[any]any:
+		out := make(map[any]any, len(v))
+		for k, item := range v {
+			out[k] = KsesPostDeep(item)
+		}
+		return out
+	default:
+		return data
+	}
+}
+
 // KsesData sanitizes content with the data allow list (wp_kses_data when
 // current_filter() is empty / default).
 func KsesData(data string) string {
@@ -134,8 +181,58 @@ func KsesUserDescription(data string) string {
 	return Kses(data, AllowedHTMLUserDescription(), nil)
 }
 
+// AllowedHTMLFiltered is wp_kses_allowed_html($context) with the filter (P2.108).
+// Known contexts: "post", "data", "user_description"; others return a copy of post.
+func AllowedHTMLFiltered(c *Context, context string) AllowedHTML {
+	context = strings.TrimSpace(strings.ToLower(context))
+	var base AllowedHTML
+	switch context {
+	case "data":
+		base = AllowedHTMLData()
+	case "user_description":
+		base = AllowedHTMLUserDescription()
+	case "strip":
+		base = AllowedHTML{}
+	default:
+		if context == "" {
+			context = "post"
+		}
+		base = AllowedHTMLPost()
+	}
+	if c == nil || c.Hooks == nil {
+		return base
+	}
+	filtered := c.Hooks.ApplyFilters("wp_kses_allowed_html", base, context)
+	if m, ok := filtered.(AllowedHTML); ok {
+		return m
+	}
+	if m, ok := filtered.(map[string]AttrRule); ok {
+		return AllowedHTML(m)
+	}
+	return base
+}
+
 // Kses filters HTML content according to allowed tags/attrs (wp_kses subset).
 func Kses(content string, allowed AllowedHTML, protocols []string) string {
+	return ksesRun(content, allowed, protocols)
+}
+
+// KsesFiltered is wp_kses with the pre_kses hook (P2.108).
+func KsesFiltered(c *Context, content string, allowed AllowedHTML, protocols []string) string {
+	loadKsesAllowed()
+	if protocols == nil {
+		protocols = append([]string(nil), ksesProtos...)
+	}
+	if c != nil && c.Hooks != nil {
+		filtered := c.Hooks.ApplyFilters("pre_kses", content, allowed, protocols)
+		if s, ok := filtered.(string); ok {
+			content = s
+		}
+	}
+	return ksesRun(content, allowed, protocols)
+}
+
+func ksesRun(content string, allowed AllowedHTML, protocols []string) string {
 	loadKsesAllowed()
 	if protocols == nil {
 		protocols = ksesProtos
