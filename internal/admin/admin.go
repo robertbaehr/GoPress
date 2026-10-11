@@ -1267,7 +1267,7 @@ func (h *Handler) serveOptionsGeneral(w http.ResponseWriter, r *http.Request, c 
 	var b strings.Builder
 	b.WriteString("<h1>General Settings</h1>\n")
 	if r.URL.Query().Get("settings-updated") == "true" {
-		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p><strong>Settings saved.</strong></p></div>\n")
+		b.WriteString(wp.FormatSettingsSavedNotice(c) + "\n")
 	}
 	b.WriteString("<form method=\"post\" action=\"options.php\">\n")
 	b.WriteString("<input type=\"hidden\" name=\"option_page\" value=\"general\" />\n")
@@ -1489,7 +1489,7 @@ func (h *Handler) serveOptionsWriting(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1>Writing Settings</h1>\n")
 	if r.URL.Query().Get("settings-updated") == "true" {
-		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p><strong>Settings saved.</strong></p></div>\n")
+		b.WriteString(wp.FormatSettingsSavedNotice(c) + "\n")
 	}
 	b.WriteString("<p class=\"description\">GoPress writing settings — POST saves via options.php.</p>\n")
 	b.WriteString("<form method=\"post\" action=\"options.php\">\n")
@@ -1625,7 +1625,7 @@ func (h *Handler) serveOptionsReading(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1>Reading Settings</h1>\n")
 	if r.URL.Query().Get("settings-updated") == "true" {
-		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p><strong>Settings saved.</strong></p></div>\n")
+		b.WriteString(wp.FormatSettingsSavedNotice(c) + "\n")
 	}
 	b.WriteString("<p class=\"description\">GoPress reading settings — POST saves via options.php.</p>\n")
 	b.WriteString("<form method=\"post\" action=\"options.php\">\n")
@@ -1746,7 +1746,7 @@ func (h *Handler) serveOptionsDiscussion(w http.ResponseWriter, r *http.Request,
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1>Discussion Settings</h1>\n")
 	if r.URL.Query().Get("settings-updated") == "true" {
-		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p><strong>Settings saved.</strong></p></div>\n")
+		b.WriteString(wp.FormatSettingsSavedNotice(c) + "\n")
 	}
 	b.WriteString("<p class=\"description\">GoPress discussion settings — POST saves via options.php.</p>\n")
 	b.WriteString("<form method=\"post\" action=\"options.php\">\n")
@@ -1952,7 +1952,7 @@ func (h *Handler) serveOptionsMedia(w http.ResponseWriter, r *http.Request, c *w
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1>Media Settings</h1>\n")
 	if r.URL.Query().Get("settings-updated") == "true" {
-		b.WriteString("<div id=\"message\" class=\"updated notice is-dismissible\"><p><strong>Settings saved.</strong></p></div>\n")
+		b.WriteString(wp.FormatSettingsSavedNotice(c) + "\n")
 	}
 	b.WriteString("<p class=\"description\">GoPress media settings — POST saves via options.php.</p>\n")
 	b.WriteString("<form action=\"options.php\" method=\"post\">\n")
