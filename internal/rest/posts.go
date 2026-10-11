@@ -394,9 +394,10 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 	return out, nil
 }
 
-// parsePostsOrderbyTyped accepts REST orderby aliases (P4.83 / P4.94 / P4.131 / P4.149 / P4.159).
+// parsePostsOrderbyTyped accepts REST orderby aliases (P4.83 / P4.94 / P4.131 / P4.149 / P4.159 / P4.160).
 // Absent → ("date", true, false). Present but not in the post-type enum → ("", false, false).
 // typeErr is true when orderby[]= is present (rest_invalid_type / not string).
+// P4.160: orderby=slug sorts by post_name; WP_Query "name" alias is not accepted here.
 func parsePostsOrderbyTyped(r *http.Request, postType string) (val string, ok bool, typeErr bool) {
 	if r == nil {
 		return "date", true, false

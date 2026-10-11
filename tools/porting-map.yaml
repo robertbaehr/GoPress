@@ -10912,3 +10912,23 @@ wp-login.php#language-switcher-post
   task: P5.144
   api: n/a
   notes: "P5.144 — align drop, saved gradient/fontSize coverage"
+
+# P4.160: REST posts orderby=slug deepen.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#orderby-slug
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.160
+  api: n/a
+  notes: "P4.160 — orderby=slug post_name sort; name alias rejected; orderby[]=slug invalid_type"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#orderby-slug#query
+  go: internal/wp/query.go
+  status: partial
+  task: P4.160
+  api: n/a
+  notes: "P4.160 — slug/post_name/name ORDER BY post_name, ID"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#orderby-slug#tests
+  go: internal/rest/posts_slug_order_p4_160_test.go
+  status: partial
+  task: P4.160
+  api: n/a
+  notes: "P4.160 — slug asc/desc include + pages + name reject + array-form"
