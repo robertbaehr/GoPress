@@ -2171,13 +2171,20 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P2.60 — upload_path/upload_url_path + uploads_use_yearmonth_folders subdir"
 
-# P2.61: wp_mkdir_p recursive directory create with traversal guard.
+# P2.61 / P2.114: wp_mkdir_p recursive directory create with traversal guard.
 - prefix: wp-includes/functions.php#wp_mkdir_p
   go: internal/wp/mkdir_p.go
   status: partial
-  task: P2.61
+  task: P2.114
   api: exported
-  notes: "P2.61 — MkdirP; inherit parent mode; reject ..; used by SaveUploadedMedia"
+  notes: "P2.114 — MkdirP; mode&07777 inherit + post-umask chmod; file:// strip; reject ..; P2.61 base"
+
+- prefix: wp-includes/functions.php#wp_mkdir_p#tests
+  go: internal/wp/mkdir_p_test.go
+  status: partial
+  task: P2.114
+  api: n/a
+  notes: "P2.114 — file:// + inherited 0755 mode coverage"
 
 # P2.62: wp_tempnam + get_temp_dir.
 - prefix: wp-admin/includes/file.php#wp_tempnam
