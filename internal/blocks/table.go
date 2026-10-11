@@ -11,18 +11,41 @@ var (
 	reTableTag    = regexp.MustCompile(`(?is)<table\b`)
 )
 
-// renderTable renders core/table (P5.66 / P5.105).
+// renderTable renders core/table (P5.66 / P5.105 / P5.148).
 // Prefers saved markup; ensures figure.wp-block-table (+ align/className/style/anchor);
 // ensures has-fixed-layout on <table> when hasFixedLayout is true (block default);
 // synthesizes from head/body/foot/caption/anchor attrs when markup is absent.
-// Color/typography/border land via applySupports on the caller.
+// P5.148: coerce align enum; gradient preset + fontSize polish on figure.
+// Color/typography/border land via applySupports on the caller (sanitized attrs).
 func (e *Env) renderTable(block Block) string {
 	e = e.ensure()
+	attrs := sanitizeTableBlockAttrs(block.Attrs)
+	block.Attrs = attrs
 	out := e.renderSaved(block)
 	if strings.TrimSpace(out) != "" && (reFigureTable.MatchString(out) || reTableTag.MatchString(out)) {
-		return polishTableMarkup(out, block.Attrs)
+		return polishTableMarkup(out, attrs)
 	}
-	return synthesizeTableBlock(block.Attrs)
+	return synthesizeTableBlock(attrs)
+}
+
+// sanitizeTableBlockAttrs coerces core/table supports.align to the block.json enum (P5.148).
+// Allowed: left, center, right, wide, full. Other align values are dropped.
+func sanitizeTableBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "left", "center", "right", "wide", "full":
+		// keep
+	default:
+		delete(out, "align")
+	}
+	return out
 }
 
 func polishTableMarkup(out string, attrs map[string]any) string {
@@ -40,6 +63,15 @@ func polishTableMarkup(out string, attrs map[string]any) string {
 	}
 	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
 		out = ensureRootAttribute(out, "id", anchor)
+	}
+	// P5.148: typography.fontSize preset class (also via applySupports).
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		out = addRootClass(out, "has-"+sanitizeClassToken(fs)+"-font-size")
+	}
+	// P5.148: color.gradients preset → has-{slug}-gradient-background.
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		out = addRootClass(out, "has-background")
+		out = addRootClass(out, "has-"+sanitizeClassToken(g)+"-gradient-background")
 	}
 	if tableHasFixedLayout(attrs) {
 		out = ensureTableFixedLayout(out)
@@ -64,6 +96,12 @@ func synthesizeTableBlock(attrs map[string]any) string {
 	}
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		figClass += " " + html.EscapeString(cn)
+	}
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		figClass += " has-" + sanitizeClassToken(fs) + "-font-size"
+	}
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		figClass += " has-background has-" + sanitizeClassToken(g) + "-gradient-background"
 	}
 
 	tableClass := ""

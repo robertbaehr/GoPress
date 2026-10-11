@@ -11352,3 +11352,17 @@ wp-login.php#language-switcher-post
   task: P10.205
   api: n/a
   notes: "P10.205 — summarize list attrs, search semantics, site-health-info, StrLen, modulepreload, sizes attr, corpus 2501"
+
+# P5.148: deepen core/table fontSize / gradient; coerce align enum.
+- prefix: wp-includes/blocks/table#attrs
+  go: internal/blocks/table.go
+  status: partial
+  task: P5.148
+  api: n/a
+  notes: "P5.148 — coerce align left|center|right|wide|full; gradient preset + fontSize polish; sanitize before applySupports"
+- prefix: wp-includes/blocks/table#attrs#tests
+  go: internal/blocks/table_attrs_p5_148_test.go
+  status: partial
+  task: P5.148
+  api: n/a
+  notes: "P5.148 — align coerce, saved gradient/fontSize coverage"
