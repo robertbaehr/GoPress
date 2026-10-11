@@ -429,17 +429,35 @@ func parsePostsOrder(r *http.Request) (string, bool) {
 	return "", false
 }
 
-// parsePostsMenuOrder reads REST ?menu_order= for pages (P4.149).
-// Absent → use=false, ok=true. Present non-integer → ok=false.
+// parsePostsMenuOrder reads REST ?menu_order= for pages (P4.149 / P4.157).
+// Absent → use=false, ok=true. Present non-integer / empty / array form → ok=false.
+// P4.157: reject menu_order[]= (integer, not array) and empty menu_order=.
 func parsePostsMenuOrder(r *http.Request) (val int, use bool, ok bool) {
 	if r == nil {
 		return 0, false, true
 	}
 	q := r.URL.Query()
+	// P4.157: array form is never valid for an integer collection arg.
+	if _, hasArray := q["menu_order[]"]; hasArray {
+		return 0, false, false
+	}
 	if !q.Has("menu_order") {
 		return 0, false, true
 	}
 	v := strings.TrimSpace(q.Get("menu_order"))
+	if v == "" {
+		return 0, false, false
+	}
+	// P4.157: require a pure integer token (reject 1.5 / +1 / 1e2).
+	for i, ch := range v {
+		if ch >= '0' && ch <= '9' {
+			continue
+		}
+		if ch == '-' && i == 0 {
+			continue
+		}
+		return 0, false, false
+	}
 	n, err := strconv.Atoi(v)
 	if err != nil {
 		return 0, false, false

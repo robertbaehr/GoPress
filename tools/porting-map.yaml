@@ -10552,3 +10552,23 @@ wp-login.php#language-switcher-post
   task: P5.141
   api: n/a
   notes: "P5.141 — horizontal width mapping + saved aria-hidden coverage"
+
+# P4.157: REST posts/pages menu_order write + stricter query validation.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#menu_order-write
+  go: internal/rest/posts_write.go
+  status: partial
+  task: P4.157
+  api: menu_order
+  notes: "P4.157 — create/update menu_order write; insertPostRow MenuOrder"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#menu_order-query
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.157
+  api: menu_order
+  notes: "P4.157 — reject menu_order[]/empty/float/+N on pages filter"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#menu_order#tests
+  go: internal/rest/posts_menu_order_p4_157_test.go
+  status: partial
+  task: P4.157
+  api: n/a
+  notes: "P4.157 — invalid query forms + create page/update post write"

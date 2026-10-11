@@ -20,6 +20,8 @@ type postWriteBody struct {
 	Author  *int64          `json:"author"`
 	// Sticky is optional; nil means leave sticky_posts unchanged (P4.97).
 	Sticky *bool `json:"sticky"`
+	// MenuOrder is optional page-attributes order (P4.157).
+	MenuOrder *int `json:"menu_order"`
 	// Meta is optional registered post meta (footnotes); nil means omit (P4.130).
 	Meta map[string]any `json:"meta"`
 }
@@ -446,15 +448,20 @@ func (s *Server) createTypedPost(w http.ResponseWriter, r *http.Request, c *wp.C
 			return
 		}
 	}
+	menuOrder := 0
+	if body.MenuOrder != nil {
+		menuOrder = *body.MenuOrder
+	}
 	id, err := insertPostRow(c, postRowInsert{
-		Author:  author,
-		Date:    now,
-		Content: content,
-		Title:   title,
-		Excerpt: excerpt,
-		Status:  status,
-		Slug:    slug,
-		Type:    postType, // P4.150: route type wins over any body type
+		Author:    author,
+		Date:      now,
+		Content:   content,
+		Title:     title,
+		Excerpt:   excerpt,
+		Status:    status,
+		Slug:      slug,
+		Type:      postType, // P4.150: route type wins over any body type
+		MenuOrder: menuOrder,
 	})
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
@@ -583,6 +590,17 @@ func (s *Server) updatePost(w http.ResponseWriter, r *http.Request, c *wp.Contex
 			"data":    map[string]any{"status": 500},
 		})
 		return
+	}
+	// P4.157: menu_order write (page-attributes); omit-safe when nil.
+	if body.MenuOrder != nil {
+		if err := updatePostMenuOrder(c, id, *body.MenuOrder, now); err != nil {
+			writeJSON(w, http.StatusInternalServerError, map[string]any{
+				"code":    "rest_post_update",
+				"message": err.Error(),
+				"data":    map[string]any{"status": 500},
+			})
+			return
+		}
 	}
 	// Create a revision of the updated post when revisioned fields change (P4.48).
 	if changed && status != "auto-draft" {
@@ -731,15 +749,16 @@ func rawOrRendered(raw json.RawMessage) string {
 }
 
 type postRowInsert struct {
-	Author  int64
-	Date    string
-	Content string
-	Title   string
-	Excerpt string
-	Status  string
-	Slug    string
-	Type    string
-	Parent  int64
+	Author    int64
+	Date      string
+	Content   string
+	Title     string
+	Excerpt   string
+	Status    string
+	Slug      string
+	Type      string
+	Parent    int64
+	MenuOrder int // P4.157
 }
 
 // savePostRevision inserts a post_type=revision row for parentID (wp_save_post_revision subset, P4.48).
@@ -774,7 +793,7 @@ func insertPostRow(c *wp.Context, in postRowInsert) (int64, error) {
 			"(%d, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %d, %s, %d, %s, %s, %d)",
 		in.Author, in.Date, in.Date, in.Content, in.Title, in.Excerpt, in.Status,
 		"open", "open", "", in.Slug, "", "", in.Date, in.Date,
-		"", in.Parent, guid, 0, in.Type, "", 0,
+		"", in.Parent, guid, in.MenuOrder, in.Type, "", 0,
 	)
 	if err != nil {
 		return 0, err
@@ -804,6 +823,23 @@ func updatePostRow(c *wp.Context, id int64, title, content, excerpt, slug, statu
 			" SET post_title = %s, post_content = %s, post_excerpt = %s, post_name = %s, post_status = %s, "+
 			"post_modified = %s, post_modified_gmt = %s WHERE ID = %d AND post_type = %s",
 		title, content, excerpt, slug, status, modified, modified, id, "post",
+	)
+	if err != nil {
+		return err
+	}
+	_, err = c.DB.Exec(q, args...)
+	return err
+}
+
+// updatePostMenuOrder sets posts.menu_order (P4.157).
+func updatePostMenuOrder(c *wp.Context, id int64, menuOrder int, modified string) error {
+	if c == nil || c.DB == nil || id <= 0 {
+		return fmt.Errorf("nil DB")
+	}
+	q, args, err := c.DB.Prepare(
+		"UPDATE "+c.DB.Posts()+
+			" SET menu_order = %d, post_modified = %s, post_modified_gmt = %s WHERE ID = %d AND post_type = %s",
+		menuOrder, modified, modified, id, "post",
 	)
 	if err != nil {
 		return err
