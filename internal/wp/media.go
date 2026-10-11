@@ -705,17 +705,58 @@ func attachmentSizeEntry(meta map[string]any, name string) map[string]any {
 	return nil
 }
 
-// GetAttachmentImageSrc is wp_get_attachment_image_src (P8.32).
+// GetAttachmentImageSrc is wp_get_attachment_image_src (P8.32 / P8.48).
+// size is a registered size name (thumbnail, medium, …). For [width,height] arrays
+// use GetAttachmentImageSrcAny.
 func GetAttachmentImageSrc(c *Context, attachmentID int64, size string, icon bool) (AttachmentImageSrc, bool) {
-	_ = icon // mime icons deferred
-	src, ok := ImageDownsize(c, attachmentID, size)
+	return GetAttachmentImageSrcAny(c, attachmentID, size, icon)
+}
+
+// GetAttachmentImageSrcAny is wp_get_attachment_image_src with string|int[] size (P8.48).
+// size may be a registered name or []int{width,height} / []any{width,height}.
+// Filter returning false / non-array clears the result (WP returns false).
+func GetAttachmentImageSrcAny(c *Context, attachmentID int64, size any, icon bool) (AttachmentImageSrc, bool) {
+	sizeName, reqW, reqH := normalizeAttachmentImageSize(size)
+	var src AttachmentImageSrc
+	var ok bool
+	if sizeName != "" {
+		src, ok = ImageDownsize(c, attachmentID, sizeName)
+	} else if reqW > 0 || reqH > 0 {
+		src, ok = imageDownsizeByDimensions(c, attachmentID, reqW, reqH)
+	} else {
+		src, ok = ImageDownsize(c, attachmentID, "thumbnail")
+	}
 	if !ok {
-		return src, false
+		// P8.48: icon=true soft fallback when downsize fails (mime icon stub deferred;
+		// keep false unless a filter supplies a source).
+		_ = icon
+		src = AttachmentImageSrc{}
 	}
 	if c != nil && c.Hooks != nil {
-		arr := []any{src.URL, src.Width, src.Height, src.Resized}
-		filtered := c.Hooks.ApplyFilters("wp_get_attachment_image_src", arr, attachmentID, size, icon)
-		if t, ok := filtered.([]any); ok && len(t) >= 1 {
+		var filterSize any = sizeName
+		if sizeName == "" && (reqW > 0 || reqH > 0) {
+			filterSize = []int{reqW, reqH}
+		} else if sizeName == "" {
+			filterSize = size
+		}
+		var arr any
+		if ok && src.URL != "" {
+			arr = []any{src.URL, src.Width, src.Height, src.Resized}
+		} else {
+			arr = false
+		}
+		filtered := c.Hooks.ApplyFilters("wp_get_attachment_image_src", arr, attachmentID, filterSize, icon)
+		switch t := filtered.(type) {
+		case bool:
+			if !t {
+				return AttachmentImageSrc{}, false
+			}
+		case nil:
+			return AttachmentImageSrc{}, false
+		case []any:
+			if len(t) < 1 {
+				return AttachmentImageSrc{}, false
+			}
 			src.URL = strings.TrimSpace(fmt.Sprint(t[0]))
 			if len(t) >= 2 {
 				src.Width, _ = strconv.Atoi(fmt.Sprint(t[1]))
@@ -726,12 +767,103 @@ func GetAttachmentImageSrc(c *Context, attachmentID int64, size string, icon boo
 			if len(t) >= 4 {
 				src.Resized = optionTruthy(t[3])
 			}
+			ok = src.URL != ""
+		case AttachmentImageSrc:
+			src = t
+			ok = src.URL != ""
 		}
 	}
-	if src.URL == "" {
-		return src, false
+	if !ok || src.URL == "" {
+		return AttachmentImageSrc{}, false
 	}
 	return src, true
+}
+
+// normalizeAttachmentImageSize parses WP size arg: string name or [w,h] (P8.48).
+func normalizeAttachmentImageSize(size any) (name string, w, h int) {
+	switch t := size.(type) {
+	case string:
+		return strings.TrimSpace(t), 0, 0
+	case []int:
+		if len(t) >= 2 {
+			return "", t[0], t[1]
+		}
+		if len(t) == 1 {
+			return "", t[0], 0
+		}
+	case []int64:
+		if len(t) >= 2 {
+			return "", int(t[0]), int(t[1])
+		}
+	case []any:
+		if len(t) >= 2 {
+			return "", anyToInt(t[0]), anyToInt(t[1])
+		}
+	case []float64:
+		if len(t) >= 2 {
+			return "", int(t[0]), int(t[1])
+		}
+	}
+	return "", 0, 0
+}
+
+// imageDownsizeByDimensions picks the closest intermediate or full for [w,h] (P8.48).
+func imageDownsizeByDimensions(c *Context, attachmentID int64, reqW, reqH int) (AttachmentImageSrc, bool) {
+	full, ok := ImageDownsize(c, attachmentID, "full")
+	if !ok {
+		return full, false
+	}
+	meta, metaOK := GetAttachmentMetadata(c, attachmentID)
+	best := full
+	bestScore := -1
+	if metaOK {
+		sizesRaw, _ := meta["sizes"]
+		var sizes map[string]any
+		switch t := sizesRaw.(type) {
+		case map[string]any:
+			sizes = t
+		case map[any]any:
+			if m, ok := phpValueToStringMap(t); ok {
+				sizes = m
+			}
+		}
+		for name := range sizes {
+			if name == "full" {
+				continue
+			}
+			cand, cok := ImageDownsize(c, attachmentID, name)
+			if !cok || cand.URL == "" {
+				continue
+			}
+			// Prefer sizes that fit within requested box; score by area proximity.
+			if reqW > 0 && cand.Width > reqW {
+				continue
+			}
+			if reqH > 0 && cand.Height > reqH {
+				continue
+			}
+			score := cand.Width*cand.Height
+			if score > bestScore {
+				best = cand
+				bestScore = score
+			}
+		}
+	}
+	if bestScore < 0 {
+		// No fitting intermediate: return full with constrained display dims.
+		w, h := full.Width, full.Height
+		if reqW > 0 && w > reqW {
+			h = h * reqW / w
+			w = reqW
+		}
+		if reqH > 0 && h > reqH {
+			w = w * reqH / h
+			h = reqH
+		}
+		full.Width, full.Height = w, h
+		return full, true
+	}
+	return best, true
 }
 
 // GetAttachmentImageURL is wp_get_attachment_image_url (P8.32).

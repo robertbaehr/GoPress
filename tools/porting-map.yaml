@@ -12018,3 +12018,17 @@ wp-login.php#language-switcher-post
   task: P3.147
   api: n/a
   notes: "P3.147 — content type, get_feed_link, EscURL alternate HTML"
+
+# P8.48: deepen wp_get_attachment_image_src array size + filter false.
+- prefix: wp-includes/media.php#wp_get_attachment_image_src
+  go: internal/wp/media.go
+  status: partial
+  task: P8.48
+  api: exported
+  notes: "P8.48 — GetAttachmentImageSrcAny string|[w,h]; filter false clears; closest intermediate"
+- prefix: wp-includes/media.php#wp_get_attachment_image_src#tests
+  go: internal/wp/attachment_image_src_p8_48_test.go
+  status: partial
+  task: P8.48
+  api: n/a
+  notes: "P8.48 — array size, filter false/replace coverage"
