@@ -124,14 +124,22 @@ func (h *Handler) serveCredits(w http.ResponseWriter, r *http.Request, c *wp.Con
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// serveFreedoms is the About → Freedoms screen stub (P7.94).
+// serveFreedoms is the About → Freedoms screen stub (P7.94 / P7.160).
+// P7.160: pagenow/adminpage chrome, locale body class, admin_body_class,
+// data-tab wrap attr, X-GoPress-Freedoms header.
 func (h *Handler) serveFreedoms(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	// WP 5.3+: freedoms.php?privacy-notice redirects to privacy.php.
-	if _, ok := r.URL.Query()["privacy-notice"]; ok {
-		http.Redirect(w, r, "/wp-admin/options-privacy.php", http.StatusMovedPermanently)
-		return
+	if r != nil {
+		if _, ok := r.URL.Query()["privacy-notice"]; ok {
+			http.Redirect(w, r, "/wp-admin/options-privacy.php", http.StatusMovedPermanently)
+			return
+		}
 	}
 	blogname := optionString(c, "blogname", "GoPress")
+	tabParam := ""
+	if r != nil {
+		tabParam = wp.SanitizeKey(strings.TrimSpace(r.URL.Query().Get("tab")))
+	}
 	pluginsURL := "https://wordpress.org/plugins/"
 	themesURL := "https://wordpress.org/themes/"
 	if c != nil && c.CurrentUser != nil {
@@ -142,14 +150,33 @@ func (h *Handler) serveFreedoms(w http.ResponseWriter, r *http.Request, c *wp.Co
 			themesURL = "/wp-admin/themes.php"
 		}
 	}
+	bodyClass := "wp-admin wp-core-ui about-php freedoms-php locale-en-us"
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("admin_body_class", ""); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				bodyClass += " " + strings.TrimSpace(s)
+			}
+		}
+	}
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n")
 	b.WriteString("<title>Freedoms &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui about-php freedoms-php\">\n")
+	b.WriteString(" &#8212; WordPress</title>\n")
+	b.WriteString("<script>var ajaxurl = \"/wp-admin/admin-ajax.php\", pagenow = \"freedoms\", typenow = \"\", adminpage = \"freedoms-php\";</script>\n")
+	b.WriteString("</head>\n")
+	b.WriteString("<body class=\"")
+	b.WriteString(html.EscapeString(bodyClass))
+	b.WriteString("\">\n")
 	b.WriteString(adminNoticesHTML(c))
-	b.WriteString("<div class=\"wrap about__container\">\n")
+	b.WriteString("<div class=\"wrap about__container\"")
+	if tabParam != "" {
+		b.WriteString(` data-tab="`)
+		b.WriteString(html.EscapeString(tabParam))
+		b.WriteString(`"`)
+	}
+	b.WriteString(">\n")
 	b.WriteString("<div class=\"about__header\">\n")
 	b.WriteString("<div class=\"about__header-title\"><h1>The Four Freedoms</h1></div>\n")
 	b.WriteString("<div class=\"about__header-text\">WordPress is free and open source software</div>\n")
@@ -184,6 +211,7 @@ func (h *Handler) serveFreedoms(w http.ResponseWriter, r *http.Request, c *wp.Co
 	b.WriteString("\">themes</a> there.</p>\n")
 	b.WriteString("<p class=\"description\">GoPress freedoms stub (P7.94).</p>\n")
 	b.WriteString("</div>\n</div>\n</div>\n</body>\n</html>\n")
+	w.Header().Set("X-GoPress-Freedoms", "stub")
 	writeHTML(w, http.StatusOK, b.String())
 }
 
