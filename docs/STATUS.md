@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.225)
 
+- P4.178 WP_Query `orderby=meta_value` + `meta_type=DECIMAL`
 - P7.165 site-health.php pagenow chrome + `admin_body_class`
 - P5.164 `core/loginout` align coerce left|center|right
 - P8.57 `AttachmentURLToPostID` (`attachment_url_to_postid`)
