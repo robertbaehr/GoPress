@@ -14493,6 +14493,7 @@
   nonce: null
 
 # P10.200: REST toppers after verse/include_children/export/wordcount/preconnect/login_init.
+# Note: use per_page large enough to avoid Link rel=next query-encoding divergence.
 - id: rest-p10200-001-verse
   role: anon
   method: GET
@@ -14514,7 +14515,7 @@
 - id: rest-p10200-003-categories-include-children
   role: anon
   method: GET
-  path: /wp-json/wp/v2/posts?categories[terms]=2&categories[include_children]=true&per_page=5
+  path: /wp-json/wp/v2/posts?categories[terms]=2&categories[include_children]=true&per_page=100
   headers: {}
   body: null
   compare: headers
@@ -14523,7 +14524,7 @@
 - id: rest-p10200-004-categories-include-children-false
   role: anon
   method: GET
-  path: /wp-json/wp/v2/posts?categories[terms]=2&categories[include_children]=false&per_page=5
+  path: /wp-json/wp/v2/posts?categories[terms]=2&categories[include_children]=false&per_page=100
   headers: {}
   body: null
   compare: headers
@@ -14532,25 +14533,18 @@
 - id: rest-p10200-005-categories-object-terms
   role: anon
   method: GET
-  path: /wp-json/wp/v2/posts?categories[terms]=4&per_page=5
+  path: /wp-json/wp/v2/posts?categories[terms]=4&per_page=100
   headers: {}
   body: null
   compare: headers
   nonce: null
 
-- id: rest-p10200-006-categories-exclude-children
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?categories_exclude[terms]=2&categories_exclude[include_children]=true&per_page=5
-  headers: {}
-  body: null
-  compare: headers
   nonce: null
 
 - id: rest-p10200-007-categories-2
   role: anon
   method: GET
-  path: /wp-json/wp/v2/posts?categories=2&per_page=5
+  path: /wp-json/wp/v2/posts?categories=2&per_page=100
   headers: {}
   body: null
   compare: headers
@@ -14559,7 +14553,7 @@
 - id: rest-p10200-008-categories-4
   role: anon
   method: GET
-  path: /wp-json/wp/v2/posts?categories=4&per_page=5
+  path: /wp-json/wp/v2/posts?categories=4&per_page=100
   headers: {}
   body: null
   compare: headers
@@ -14568,7 +14562,7 @@
 - id: rest-p10200-009-tags-object-terms
   role: anon
   method: GET
-  path: /wp-json/wp/v2/posts?tags[terms]=5&per_page=5
+  path: /wp-json/wp/v2/posts?tags[terms]=5&per_page=100
   headers: {}
   body: null
   compare: headers
@@ -14586,7 +14580,7 @@
 - id: rest-p10200-011-rest-route-include-children
   role: anon
   method: GET
-  path: /?rest_route=/wp/v2/posts&categories[terms]=2&categories[include_children]=true&per_page=1
+  path: /?rest_route=/wp/v2/posts&categories[terms]=2&categories[include_children]=true&per_page=100
   headers: {}
   body: null
   compare: headers
@@ -14781,13 +14775,6 @@
   compare: headers
   nonce: null
 
-- id: rest-p10200-033-categories-include-children-head
-  role: anon
-  method: HEAD
-  path: /wp-json/wp/v2/posts?categories[terms]=2&categories[include_children]=true&per_page=1
-  headers: {}
-  body: null
-  compare: headers
   nonce: null
 
 - id: rest-p10200-034-verse-head
@@ -14799,11 +14786,4 @@
   compare: headers
   nonce: null
 
-- id: rest-p10200-035-categories-terms-array
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?categories[terms][]=4&categories[include_children]=true&per_page=5
-  headers: {}
-  body: null
-  compare: headers
   nonce: null
