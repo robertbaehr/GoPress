@@ -3,8 +3,10 @@ package admin
 import (
 	"fmt"
 	"html"
+	"path/filepath"
 	"strings"
 
+	"github.com/robertbaehr/GoPress/internal/theme"
 	"github.com/robertbaehr/GoPress/internal/wp"
 )
 
@@ -74,6 +76,8 @@ func dashboardRightNowHTML(c *wp.Context) string {
 	}
 
 	b.WriteString(`</ul>`)
+	// P7.132: update_right_now_message — WordPress version + active theme.
+	b.WriteString(updateRightNowMessage(c))
 	if blogPublicDiscouraged(c) {
 		title := ""
 		content := "Search engines discouraged"
@@ -99,8 +103,70 @@ func dashboardRightNowHTML(c *wp.Context) string {
 		b.WriteString(html.EscapeString(content))
 		b.WriteString(`</a></p>`)
 	}
-	b.WriteString(`</div></div></div>`)
+	b.WriteString(`</div>`)
+	// P7.132: rightnow_end / activity_box_end → optional .sub box.
+	if sub := dashboardRightNowEndHTML(c); sub != "" {
+		b.WriteString(`<div class="sub">`)
+		b.WriteString(sub)
+		b.WriteString(`</div>`)
+	}
+	b.WriteString(`</div></div>`)
 	return b.String()
+}
+
+// updateRightNowMessage mirrors update_right_now_message() (P7.132).
+func updateRightNowMessage(c *wp.Context) string {
+	themeName := activeThemeDisplayName(c)
+	themeHTML := html.EscapeString(themeName)
+	if c != nil && c.CurrentUser != nil && c.UserCan(c.CurrentUser, "switch_themes") {
+		themeHTML = `<a href="themes.php">` + themeHTML + `</a>`
+	}
+	content := "WordPress %1$s running %2$s theme."
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("update_right_now_text", content); v != nil {
+			if s, ok := v.(string); ok && s != "" {
+				content = s
+			}
+		}
+	}
+	msg := strings.Replace(content, "%1$s", html.EscapeString(wp.Version), 1)
+	msg = strings.Replace(msg, "%2$s", themeHTML, 1)
+	return `<p id="wp-version-message"><span id="wp-version">` + msg + `</span></p>`
+}
+
+func activeThemeDisplayName(c *wp.Context) string {
+	stylesheet := wp.ActiveStylesheet(c)
+	if stylesheet == "" {
+		stylesheet = "twentytwentyfive"
+	}
+	abs := wp.AbsPath(c)
+	if abs == "" {
+		abs = "/workspace/"
+	}
+	styleCSS := filepath.Join(theme.ThemesDir(abs), stylesheet, "style.css")
+	if data, err := theme.GetThemeData(styleCSS); err == nil && strings.TrimSpace(data.Name) != "" {
+		return data.Name
+	}
+	if c != nil && c.Options != nil {
+		if name := strings.TrimSpace(fmt.Sprint(c.Options.GetOption("current_theme", ""))); name != "" {
+			return name
+		}
+	}
+	return stylesheet
+}
+
+// dashboardRightNowEndHTML runs rightnow_end + activity_box_end and captures
+// WriteNotice output into the optional .sub box (P7.132).
+func dashboardRightNowEndHTML(c *wp.Context) string {
+	if c == nil || c.Hooks == nil {
+		return ""
+	}
+	var buf strings.Builder
+	c.Hooks.BeginNoticeCapture(&buf)
+	c.Hooks.DoAction("rightnow_end")
+	c.Hooks.DoAction("activity_box_end")
+	c.Hooks.EndNoticeCapture()
+	return strings.TrimSpace(buf.String())
 }
 
 func blogPublicDiscouraged(c *wp.Context) bool {
