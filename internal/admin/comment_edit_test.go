@@ -24,7 +24,7 @@ func TestCommentEditFormGET(t *testing.T) {
 	}
 
 	q, args, err := c.DB.Prepare(
-		"SELECT comment_ID FROM " + c.DB.Comments() + " WHERE comment_approved = %s ORDER BY comment_ID ASC LIMIT 1",
+		"SELECT comment_ID FROM "+c.DB.Comments()+" WHERE comment_approved = %s ORDER BY comment_ID ASC LIMIT 1",
 		"1",
 	)
 	if err != nil {
@@ -76,7 +76,7 @@ func TestCommentEditFormPOST(t *testing.T) {
 	}
 
 	q, args, err := c.DB.Prepare(
-		"SELECT comment_ID, comment_post_ID FROM " + c.DB.Comments() + " WHERE comment_approved = %s ORDER BY comment_ID ASC LIMIT 1",
+		"SELECT comment_ID, comment_post_ID FROM "+c.DB.Comments()+" WHERE comment_approved = %s ORDER BY comment_ID ASC LIMIT 1",
 		"1",
 	)
 	if err != nil {
