@@ -674,16 +674,19 @@ func (e *Env) renderPostExcerpt(block Block) string {
 	return `<div class="` + html.EscapeString(wrapperClass) + `">` + inner.String() + `</div>`
 }
 
-// trimExcerptWords mirrors wp_trim_words for core/post-excerpt (P5.89).
+// trimExcerptWords mirrors wp_trim_words for core/post-excerpt (P5.89 / P2.112).
+// Uses Unicode ellipsis to match block save/render expectations.
 func trimExcerptWords(text string, numWords int) string {
-	if numWords <= 0 {
-		return text
+	if numWords < 0 {
+		numWords = 0
 	}
-	words := strings.Fields(text)
-	if len(words) <= numWords {
-		return strings.Join(words, " ")
+	words := strings.FieldsFunc(text, func(r rune) bool {
+		return r == ' ' || r == '\n' || r == '\r' || r == '\t'
+	})
+	if len(words) > numWords {
+		return strings.Join(words[:numWords], " ") + "…"
 	}
-	return strings.Join(words[:numWords], " ") + "…"
+	return strings.Join(words, " ")
 }
 
 func (e *Env) renderPostDate(block Block) string {
