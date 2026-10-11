@@ -12,13 +12,16 @@ var (
 	reColumnTag  = regexp.MustCompile(`(?i)wp-block-column\b`)
 )
 
-// renderColumns renders core/columns (P5.57 / P5.106).
+// renderColumns renders core/columns (P5.57 / P5.106 / P5.149).
 // Prefers saved markup; synthesizes a flex wrapper from inner columns when
 // missing; applies is-not-stacked-on-mobile, are-vertically-aligned-*,
 // align/className/anchor from attrs.
-// Color/typography/spacing/border land via applySupports on the caller.
+// P5.149: coerce align to wide|full; gradient preset + fontSize polish.
+// Color/typography/spacing/border land via applySupports on the caller (sanitized attrs).
 func (e *Env) renderColumns(block Block) string {
 	e = e.ensure()
+	attrs := sanitizeColumnsBlockAttrs(block.Attrs)
+	block.Attrs = attrs
 	out := e.renderSaved(block)
 	if strings.TrimSpace(out) == "" || !reColumnsTag.MatchString(out) {
 		out = synthesizeColumnsBlock(e, block)
@@ -26,7 +29,27 @@ func (e *Env) renderColumns(block Block) string {
 	if strings.TrimSpace(out) == "" {
 		return ""
 	}
-	return applyColumnsAttrs(out, block.Attrs)
+	return applyColumnsAttrs(out, attrs)
+}
+
+// sanitizeColumnsBlockAttrs coerces core/columns supports.align to the block.json enum (P5.149).
+// Allowed: wide, full. Other align values are dropped before synthesize/polish/supports.
+func sanitizeColumnsBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "wide", "full":
+		// keep
+	default:
+		delete(out, "align")
+	}
+	return out
 }
 
 // renderColumn renders core/column (P5.57 / P5.106).
@@ -107,6 +130,13 @@ func columnsClassFromAttrs(attrs map[string]any) string {
 	}
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		class += " " + html.EscapeString(cn)
+	}
+	// P5.149: typography.fontSize + color.gradients presets on synthesize.
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		class += " has-" + sanitizeClassToken(fs) + "-font-size"
+	}
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		class += " has-background has-" + sanitizeClassToken(g) + "-gradient-background"
 	}
 	return class
 }
@@ -191,7 +221,7 @@ func applyColumnsAttrs(htmlFragment string, attrs map[string]any) string {
 			}
 		}
 	}
-	// P5.106: align / className / anchor polish on saved + synthesized markup.
+	// P5.106 / P5.149: align / className / anchor / fontSize / gradient polish.
 	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
 		out = addRootClass(out, "align"+sanitizeClassToken(align))
 	}
@@ -202,6 +232,15 @@ func applyColumnsAttrs(htmlFragment string, attrs map[string]any) string {
 	}
 	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
 		out = ensureRootAttribute(out, "id", anchor)
+	}
+	// P5.149: typography.fontSize preset class (also via applySupports).
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		out = addRootClass(out, "has-"+sanitizeClassToken(fs)+"-font-size")
+	}
+	// P5.149: color.gradients preset → has-{slug}-gradient-background.
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		out = addRootClass(out, "has-background")
+		out = addRootClass(out, "has-"+sanitizeClassToken(g)+"-gradient-background")
 	}
 	return out
 }

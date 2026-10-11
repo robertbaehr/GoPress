@@ -11458,3 +11458,17 @@ wp-login.php#language-switcher-post
   task: P10.207
   api: n/a
   notes: "P10.207 — summarize table attrs, tax_relation, site-health debug, UTF8URIEncode, robots meta, headerurl, corpus 2629"
+
+# P5.149: deepen core/columns fontSize / gradient; coerce align enum.
+- prefix: wp-includes/blocks/columns#attrs
+  go: internal/blocks/columns.go
+  status: partial
+  task: P5.149
+  api: n/a
+  notes: "P5.149 — coerce align wide|full; gradient preset + fontSize polish; sanitize before applySupports"
+- prefix: wp-includes/blocks/columns#attrs#tests
+  go: internal/blocks/columns_attrs_p5_149_test.go
+  status: partial
+  task: P5.149
+  api: n/a
+  notes: "P5.149 — align coerce, saved gradient/fontSize coverage"
