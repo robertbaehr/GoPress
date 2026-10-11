@@ -9115,3 +9115,198 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.164: expand after P5.127–P6.52 (empty slug[] / indexed / core/block / generator).
+- id: rest-p10164-001-posts-slug-empty-array
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?slug[]=
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10164-002-posts-slug-indexed-empty
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?slug[0]=
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10164-003-posts-slug-indexed-hello
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?slug[0]=hello-world&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10164-004-posts-slug-indexed-multi
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?slug[0]=hello-world&slug[1]=fixture-post-01&per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+
+- id: rest-p10164-006-pages-slug-empty-array
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?slug[]=
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10164-007-pages-slug-indexed-sample
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?slug[0]=sample-page&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10164-008-rest-route-slug-empty-array
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/posts&slug[]=
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10164-009-block-types-core-block
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/block
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10164-010-block-types-core-block-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/block?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+
+- id: rest-p10164-012-rest-route-core-block
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/block
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10164-013-posts-slug-array-empty-and-hello
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?slug[]=&slug[]=hello-world&per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10164-014-types-wp-block
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types/wp_block
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10164-015-posts-orderby-include-slugs-indexed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?slug[0]=fixture-post-01&slug[1]=hello-world&orderby=include_slugs&per_page=2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+
+
+- id: rest-p10164-018-comments-per-page-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/comments?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10164-019-settings-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/settings
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10164-020-block-types-core-loginout
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/loginout
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10164-021-posts-slug-hello-per-page-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?slug=hello-world&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10164-022-pages-slug-sample-per-page-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?slug=sample-page&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10164-023-categories-per-page-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/categories?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10164-024-tags-per-page-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/tags?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10164-025-search-hello
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?search=hello&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+

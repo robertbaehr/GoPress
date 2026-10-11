@@ -266,3 +266,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.164: ajax toppers after admin-bar / login_form_top stack.
+- id: ajax-p10164-001-heartbeat
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10164-002-heartbeat-dashboard
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=dashboard
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10164-003-heartbeat-edit-post
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=post
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

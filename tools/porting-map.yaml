@@ -8993,3 +8993,11 @@ wp-login.php#language-switcher-post
   task: P6.52
   api: n/a
   notes: "P6.52 — top/middle/bottom order coverage"
+
+# P10.164: expand diff corpus after P5.127–P6.52.
+- prefix: tests/corpus#p10.164
+  go: tests/corpus
+  status: partial
+  task: P10.164
+  api: n/a
+  notes: "P10.164 — empty slug[]/slug[N] + core/block + generator/login/ajax toppers; 1360 cases"

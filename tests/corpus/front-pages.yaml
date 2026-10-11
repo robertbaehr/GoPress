@@ -1386,3 +1386,67 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.164: front toppers after generator / admin-bar / block stack.
+- id: front-p10164-001-home-headers
+  role: anon
+  method: GET
+  path: /
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10164-002-feed-rss2
+  role: anon
+  method: GET
+  path: /feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10164-003-feed-atom
+  role: anon
+  method: GET
+  path: /feed/atom/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10164-004-feed-rdf
+  role: anon
+  method: GET
+  path: /feed/rdf/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10164-005-hello-world
+  role: anon
+  method: GET
+  path: /blog/uncategorized/hello-world/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10164-006-sample-page
+  role: anon
+  method: GET
+  path: /sample-page/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10164-007-search-block
+  role: anon
+  method: GET
+  path: /?s=block
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
