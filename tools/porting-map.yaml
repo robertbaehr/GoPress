@@ -2459,20 +2459,20 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P4.90 — sticky=true intersects include; sticky=false merges exclude"
 
-# P4.89: REST GET /wp/v2/posts?slug= filter (post_name__in).
+# P4.89 / P4.133: REST GET /wp/v2/posts?slug= filter (post_name__in).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#slug
   go: internal/rest/posts.go
   status: partial
-  task: P4.89
+  task: P4.133
   api: exported
-  notes: "P4.89 — ?slug= → QueryArgs.NameIn (comma/repeated)"
+  notes: "P4.133 — ?slug= / slug[]= → NameIn; sanitize_title (wp_parse_slug_list); P4.89 base"
 
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#slug-list
-  go: internal/rest/posts_write.go
+  go: internal/rest/posts.go
   status: partial
-  task: P4.89
+  task: P4.133
   api: exported
-  notes: "P4.89 — listPostCollection honors ?slug="
+  notes: "P4.133 — listPostCollection honors ?slug= / slug[]= with sanitize_title"
 
 - prefix: wp-includes/class-wp-query.php#post_name__in
   go: internal/wp/query.go
@@ -2480,6 +2480,20 @@ wp-login.php#language-switcher-post
   task: P4.89
   api: exported
   notes: "P4.89 — NameIn → post_name IN (...)"
+
+- prefix: wp-includes/functions.php#wp_parse_slug_list
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.133
+  api: internal
+  notes: "P4.133 — parsePostsSlug sanitize_title + unique (wp_parse_slug_list subset)"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#slug#tests
+  go: internal/rest/posts_test.go
+  status: partial
+  task: P4.133
+  api: n/a
+  notes: "P4.133 — slug[] array + sanitize_title query coverage"
 
 # P4.88: REST GET /wp/v2/posts?status= filter (editors may query non-publish).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#status
