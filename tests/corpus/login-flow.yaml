@@ -2380,3 +2380,141 @@
   body: null
   compare: headers
   nonce: null
+
+
+# P10.216: login toppers after feed-link/header stack.
+
+- id: login-p10216-001
+  role: anon
+  method: GET
+  path: /wp-login.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10216-002
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10216-003
+  role: anon
+  method: GET
+  path: /wp-login.php?action=register
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10216-004
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=confirm
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10216-005
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=registered
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10216-006
+  role: anon
+  method: GET
+  path: /wp-login.php?interim-login=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10216-007
+  role: anon
+  method: GET
+  path: /wp-login.php?redirect_to=%2Fwp-admin%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10216-008
+  role: anon
+  method: GET
+  path: /wp-login.php?redirect_to=%2Fwp-admin%2Fcustom-header.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10216-009
+  role: anon
+  method: GET
+  path: /wp-login.php?reauth=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10216b-010
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword&wp_lang=en_US
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10216-011
+  role: anon
+  method: GET
+  path: /wp-login.php?wp_lang=en_US
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10216-012
+  role: anon
+  method: GET
+  path: /wp-login.php?action=rp
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10216-013
+  role: anon
+  method: GET
+  path: /wp-login.php?registration=disabled
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10216-014
+  role: anon
+  method: GET
+  path: /wp-login.php?loggedout=true
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10216b-015
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=confirm&wp_lang=en_US
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

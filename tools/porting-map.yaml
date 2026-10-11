@@ -12032,3 +12032,11 @@ wp-login.php#language-switcher-post
   task: P8.48
   api: n/a
   notes: "P8.48 — array size, filter false/replace coverage"
+
+# P10.216: expand diff corpus after P5.153–P8.48 stack.
+- prefix: tests/corpus#p10.216
+  go: tests/corpus
+  status: partial
+  task: P10.216
+  api: n/a
+  notes: "P10.216 — gallery/meta_compare/custom-header/response-code/feed-link/image-src toppers; 3162 cases; headers-safe; drop set-cookie/Link/status-divergent"

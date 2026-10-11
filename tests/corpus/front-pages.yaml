@@ -4007,3 +4007,240 @@
   body: null
   compare: headers
   nonce: null
+
+
+# P10.216: front toppers after gallery/meta_compare/custom-header/feed-link/image-src stack.
+
+- id: front-p10216-001
+  role: anon
+  method: GET
+  path: /
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-002
+  role: anon
+  method: GET
+  path: /sample-page/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-003
+  role: anon
+  method: GET
+  path: /2024/06/15/hello-world/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-004
+  role: anon
+  method: GET
+  path: /?p=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-005
+  role: anon
+  method: GET
+  path: /?page_id=2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-006
+  role: anon
+  method: GET
+  path: /feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-007
+  role: anon
+  method: GET
+  path: /comments/feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-008
+  role: anon
+  method: GET
+  path: /feed/atom/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-009
+  role: anon
+  method: GET
+  path: /feed/rdf/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-010
+  role: anon
+  method: GET
+  path: /comments/feed/atom/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216b-011
+  role: anon
+  method: GET
+  path: /?s=gallery
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-012
+  role: anon
+  method: GET
+  path: /tag/template/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216b-013
+  role: anon
+  method: GET
+  path: /?s=header+image
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-014
+  role: anon
+  method: GET
+  path: /?s=gallery+attrs
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-015
+  role: anon
+  method: GET
+  path: /?s=meta_compare
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-016
+  role: anon
+  method: GET
+  path: /?s=custom+header
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-017
+  role: anon
+  method: GET
+  path: /?s=response+code
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-018
+  role: anon
+  method: GET
+  path: /?s=feed+link
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-019
+  role: anon
+  method: GET
+  path: /?s=image+src
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-020
+  role: anon
+  method: GET
+  path: /wp-sitemap.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-021
+  role: anon
+  method: GET
+  path: /robots.txt
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216b-022
+  role: anon
+  method: GET
+  path: /favicon.ico
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-023
+  role: anon
+  method: GET
+  path: /2024/06/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-024
+  role: anon
+  method: GET
+  path: /2024/06/15/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-025
+  role: anon
+  method: GET
+  path: /home-static/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10216-026
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/posts&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
