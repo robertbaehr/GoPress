@@ -1551,3 +1551,58 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.170: front toppers after the_excerpt stack.
+- id: front-p10170-001-home
+  role: anon
+  method: GET
+  path: /
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10170-002-hello-world
+  role: anon
+  method: GET
+  path: /hello-world/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10170-003-sample-page
+  role: anon
+  method: GET
+  path: /sample-page/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10170-004-search-hello
+  role: anon
+  method: GET
+  path: /?s=hello
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10170-005-feed
+  role: anon
+  method: GET
+  path: /feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10170-006-category-uncategorized
+  role: anon
+  method: GET
+  path: /category/uncategorized/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

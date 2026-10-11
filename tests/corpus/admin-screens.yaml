@@ -423,3 +423,40 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.170: admin toppers after admin notices helper.
+- id: admin-p10170-001-dashboard
+  role: admin
+  method: GET
+  path: /wp-admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10170-002-edit-posts
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10170-003-options-general
+  role: admin
+  method: GET
+  path: /wp-admin/options-general.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10170-004-options-writing
+  role: admin
+  method: GET
+  path: /wp-admin/options-writing.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

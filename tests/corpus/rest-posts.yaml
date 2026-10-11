@@ -9712,3 +9712,229 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.170: toppers after missing/_embed/notices/kses/excerpt/login_errors stack.
+- id: rest-p10170-001-posts-embed-param
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts/1?_embed=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-002-posts-embed-author
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts/1?_embed=author
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-003-posts-collection-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?per_page=1&_embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-004-pages-embed-param
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages/2?_embed=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-005-posts-context-embed-and-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts/1?context=embed&_embed=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-006-block-types-missing
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/missing
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-007-block-types-freeform
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/freeform
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-008-rest-route-posts-embed
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/posts/1&_embed=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-009-posts-per-page-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-010-pages-per-page-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-011-media-per-page-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/media?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-012-comments-per-page-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/comments?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-013-categories-per-page-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/categories?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-014-tags-per-page-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/tags?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-015-users-per-page-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/users?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-016-search-hello
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?search=hello&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-017-types-post
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types/post
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-018-statuses
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/statuses
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-019-taxonomies
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/taxonomies
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-020-namespaces-wp-v2
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-021-block-patterns
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-patterns/patterns
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-022-posts-orderby-date
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?orderby=date&order=desc&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-023-posts-slug-hello
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?slug=hello-world&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-024-settings-anon
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/settings
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-025-sitemap
+  role: anon
+  method: GET
+  path: /wp-sitemap.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

@@ -9416,3 +9416,11 @@ wp-login.php#language-switcher-post
   task: P6.53
   api: n/a
   notes: "P6.53 — filter rewrite + empty suppress"
+
+# P10.170: expand diff corpus after P5.130–P6.53.
+- prefix: tests/corpus#p10.170
+  go: tests/corpus
+  status: partial
+  task: P10.170
+  api: n/a
+  notes: "P10.170 — posts _embed + missing block-type + front/login/admin/ajax toppers; >1470 cases"
