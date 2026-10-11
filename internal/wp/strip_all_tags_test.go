@@ -51,3 +51,35 @@ func TestWPStripAllTagsScriptStyleBackref(t *testing.T) {
 		t.Fatalf("mismatched closer wiped too much: %q", got)
 	}
 }
+
+func TestWPStripAllTagsQuotedGT(t *testing.T) {
+	// P2.107: PHP strip_tags respects quotes so > inside attrs does not end the tag.
+	got := wp.WPStripAllTags(`<foo bar=">">x</foo>`, false)
+	if got != "x" {
+		t.Fatalf("quoted >: got %q want x", got)
+	}
+	got = wp.WPStripAllTags(`<img src="x" alt="a>b">tail`, false)
+	if got != "tail" {
+		t.Fatalf("img alt>: got %q want tail", got)
+	}
+	got = wp.WPStripAllTags(`<a title='say > hi'>link</a>`, false)
+	if got != "link" {
+		t.Fatalf("single-quoted >: got %q want link", got)
+	}
+}
+
+func TestWPStripAllTagsPHPAndComments(t *testing.T) {
+	if got := wp.WPStripAllTags(`a<?php echo 1; ?>b`, false); got != "ab" {
+		t.Fatalf("php tag: got %q", got)
+	}
+	if got := wp.WPStripAllTags(`a<% x %>b`, false); got != "ab" {
+		t.Fatalf("asp tag: got %q", got)
+	}
+	if got := wp.WPStripAllTags("a<!--\nmulti\n-->b", false); got != "ab" {
+		t.Fatalf("multiline comment: got %q", got)
+	}
+	src := "<script src=\"x\" type=\"text/javascript\">\nalert(1)\n</script>ok"
+	if got := wp.WPStripAllTags(src, false); got != "ok" {
+		t.Fatalf("multiline script: got %q", got)
+	}
+}
