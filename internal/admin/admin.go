@@ -4805,6 +4805,15 @@ func (h *Handler) serveTools(w http.ResponseWriter, r *http.Request, c *wp.Conte
 		b.WriteString("<a href=\"import.php\">Categories and Tags Converter</a> available from the Import screen.</p>\n")
 		b.WriteString("</div>\n")
 	}
+	// P7.146: Export card when user can export (tools.php deepen).
+	canExport := c != nil && c.CurrentUser != nil && c.UserCan(c.CurrentUser, "export")
+	if canExport {
+		b.WriteString("<div class=\"card\">\n")
+		b.WriteString("<h2 class=\"title\">Export</h2>\n")
+		b.WriteString("<p>Export your content to a WordPress eXtended RSS (WXR) file. ")
+		b.WriteString("<a href=\"export.php\">Open the Export screen</a> to choose posts, pages, or media.</p>\n")
+		b.WriteString("</div>\n")
+	}
 	b.WriteString("<p><a href=\"export.php\">Export</a> · <a href=\"import.php\">Import</a> · ")
 	b.WriteString("<a href=\"site-health.php\">Site Health</a> · ")
 	b.WriteString("<a href=\"export-personal-data.php\">Export Personal Data</a> · ")
