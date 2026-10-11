@@ -67,15 +67,6 @@ func KsesOneAttr(attr, element string) string {
 
 // ksesNoNullKeepSlash mirrors wp_kses_no_null(…, array('slash_zero'=>'keep')).
 func ksesNoNullKeepSlash(content string) string {
-	// Keep literal "\0" sequences; strip other NUL-like control chars like ksesNoNull.
-	var b strings.Builder
-	b.Grow(len(content))
-	for i := 0; i < len(content); i++ {
-		c := content[i]
-		if c == 0 {
-			continue
-		}
-		b.WriteByte(c)
-	}
-	return b.String()
+	// P2.133: keep "\0" slash-zero runs; still strip C0 controls via KsesNoNull.
+	return KsesNoNull(content, &KsesNoNullOptions{SlashZero: "keep"})
 }

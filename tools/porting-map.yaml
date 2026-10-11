@@ -10168,3 +10168,17 @@ wp-login.php#language-switcher-post
   task: P7.138
   api: n/a
   notes: "P7.138 — filter overrides + default Version thank-you"
+
+# P2.133: wp_kses_no_null export + slash_zero.
+- prefix: wp-includes/kses.php#wp_kses_no_null
+  go: internal/wp/kses.go
+  status: partial
+  task: P2.133
+  api: wp_kses_no_null
+  notes: "P2.133 — KsesNoNull C0 strip + slash_zero remove/keep"
+- prefix: wp-includes/kses.php#wp_kses_no_null#tests
+  go: internal/wp/kses_no_null_p2_133_test.go
+  status: partial
+  task: P2.133
+  api: n/a
+  notes: "P2.133 — controls / \\0 remove / keep"

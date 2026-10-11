@@ -659,16 +659,8 @@ func ksesBadProtocol(content string) string {
 }
 
 func ksesNoNull(content string) string {
-	var b strings.Builder
-	b.Grow(len(content))
-	for i := 0; i < len(content); i++ {
-		c := content[i]
-		if c < 0x20 && c != '\t' && c != '\n' && c != '\r' {
-			continue
-		}
-		b.WriteByte(c)
-	}
-	return b.String()
+	// P2.133: route through exported KsesNoNull (wp_kses_no_null, slash_zero=remove).
+	return KsesNoNull(content, nil)
 }
 
 func preKsesLessThan(content string) string {
