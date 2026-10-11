@@ -7006,3 +7006,18 @@ wp-login.php#language-switcher-post
   task: P2.105
   api: n/a
   notes: "P2.105 — unit coverage for key munging and amp/NUL"
+
+# P3.103: feed_links_extra category/tag archives.
+- prefix: wp-includes/general-template.php#feed_links_extra-category-tag
+  go: internal/server/front.go
+  status: partial
+  task: P3.103
+  api: n/a
+  notes: "P3.103 — category/tag feed_links_extra alternates + show_* filters + *_feed_link"
+
+- prefix: internal/server/front_test.go#p3-103
+  go: internal/server/front_test.go
+  status: partial
+  task: P3.103
+  api: n/a
+  notes: "P3.103 — category/tag feed alternate assertions"

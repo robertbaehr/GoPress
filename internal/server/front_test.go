@@ -1026,6 +1026,10 @@ func TestFrontTagArchive(t *testing.T) {
 	if strings.Contains(body, "GoPress: front route not implemented") {
 		t.Fatal("tag archive should not 501")
 	}
+	// P3.103: feed_links_extra tag alternate.
+	if !strings.Contains(body, "Tag Feed") || !strings.Contains(body, "/tag/fixture-tag-01/feed/") {
+		t.Fatalf("expected tag feed_links_extra alternate: %q", body[:min(1200, len(body))])
+	}
 
 	req = httptest.NewRequest(http.MethodGet, "/tag/nobody-here-tag/", nil)
 	rec = httptest.NewRecorder()
@@ -1081,6 +1085,10 @@ func TestFrontCategoryArchive(t *testing.T) {
 	}
 	if !strings.Contains(body, "category-uncategorized") && !strings.Contains(body, "category-1") {
 		t.Fatalf("expected category slug/id body class: %q", body[:min(500, len(body))])
+	}
+	// P3.103: feed_links_extra category alternate.
+	if !strings.Contains(body, "Category Feed") || !strings.Contains(body, "/category/uncategorized/feed/") {
+		t.Fatalf("expected category feed_links_extra alternate: %q", body[:min(1200, len(body))])
 	}
 
 	req = httptest.NewRequest(http.MethodGet, "/category/nobody-here-cat/", nil)
