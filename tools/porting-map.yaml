@@ -10668,3 +10668,17 @@ wp-login.php#language-switcher-post
   task: P2.137
   api: n/a
   notes: "P2.137 — IsUTF8Charset + charset passthrough + Ctx blog_charset"
+
+# P5.142: deepen core/separator gradient/align/tagName/margin attrs.
+- prefix: wp-includes/blocks/separator#attrs
+  go: internal/blocks/separator.go
+  status: partial
+  task: P5.142
+  api: core/separator
+  notes: "P5.142 — tagName enum coerce; opacity normalize; align=center; gradient preset classes; margin via applySupports"
+- prefix: wp-includes/blocks/separator#attrs#tests
+  go: internal/blocks/separator_attrs_p5_142_test.go
+  status: partial
+  task: P5.142
+  api: n/a
+  notes: "P5.142 — center/gradient/margin/invalid tagName + saved gradient polish"

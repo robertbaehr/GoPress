@@ -8,10 +8,12 @@ import (
 
 var reSeparatorTag = regexp.MustCompile(`(?i)wp-block-separator\b`)
 
-// renderSeparator renders core/separator (P5.60 / P5.112).
+// renderSeparator renders core/separator (P5.60 / P5.112 / P5.142).
 // Prefers saved markup; synthesizes hr/div with opacity + align + className.
 // P5.112: anchor + className polish on saved and synthesized markup;
 // background/gradient colors land via applySupports on the caller.
+// P5.142: tagName enum coerce; align=center; gradient preset classes;
+// spacing.margin via applySupports.
 func (e *Env) renderSeparator(block Block) string {
 	e = e.ensure()
 	out := e.renderSaved(block)
@@ -39,6 +41,7 @@ func synthesizeSeparatorBlock(attrs map[string]any) string {
 	return b.String()
 }
 
+// separatorTagName returns hr|div only (block.json enum); other values → hr (P5.142).
 func separatorTagName(attrs map[string]any) string {
 	tag := strings.ToLower(strings.TrimSpace(attrString(attrs, "tagName")))
 	if tag == "div" {
@@ -49,11 +52,7 @@ func separatorTagName(attrs map[string]any) string {
 
 func separatorClassFromAttrs(attrs map[string]any) string {
 	class := "wp-block-separator"
-	opacity := strings.TrimSpace(attrString(attrs, "opacity"))
-	if opacity == "" {
-		opacity = "alpha-channel"
-	}
-	switch opacity {
+	switch separatorOpacity(attrs) {
 	case "css":
 		class += " has-css-opacity"
 	default:
@@ -65,21 +64,29 @@ func separatorClassFromAttrs(attrs map[string]any) string {
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		class += " " + html.EscapeString(cn)
 	}
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		class += " has-background has-" + sanitizeClassToken(g) + "-gradient-background"
+	}
 	return class
 }
 
-// applySeparatorAttrs polishes className/align/opacity/anchor on separator roots (P5.112).
+// separatorOpacity normalizes opacity to css|alpha-channel (block.json default) (P5.142).
+func separatorOpacity(attrs map[string]any) string {
+	opacity := strings.TrimSpace(attrString(attrs, "opacity"))
+	if opacity == "css" {
+		return "css"
+	}
+	return "alpha-channel"
+}
+
+// applySeparatorAttrs polishes className/align/opacity/anchor/gradient on separator roots (P5.112 / P5.142).
 func applySeparatorAttrs(htmlFragment string, attrs map[string]any) string {
 	out := htmlFragment
 	if strings.TrimSpace(out) == "" {
 		return out
 	}
 	out = addRootClass(out, "wp-block-separator")
-	opacity := strings.TrimSpace(attrString(attrs, "opacity"))
-	if opacity == "" {
-		opacity = "alpha-channel"
-	}
-	switch opacity {
+	switch separatorOpacity(attrs) {
 	case "css":
 		if !strings.Contains(out, "has-css-opacity") {
 			out = addRootClass(out, "has-css-opacity")
@@ -103,7 +110,12 @@ func applySeparatorAttrs(htmlFragment string, attrs map[string]any) string {
 	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
 		out = ensureRootAttribute(out, "id", anchor)
 	}
-	// Retag when tagName=div and saved/synth used hr (or vice versa).
+	// P5.142: color.gradients preset → has-{slug}-gradient-background.
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		out = addRootClass(out, "has-background")
+		out = addRootClass(out, "has-"+sanitizeClassToken(g)+"-gradient-background")
+	}
+	// Retag when tagName=div and saved/synth used hr (or vice versa); invalid → hr.
 	tag := separatorTagName(attrs)
 	out = retagRootElement(out, tag)
 	return out
