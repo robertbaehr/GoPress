@@ -5292,9 +5292,14 @@ func insertAutoDraft(c *wp.Context, author int64, postType string) (int64, error
 	return id, nil
 }
 
-// writePostEditorShell emits the classic post editor stub (P7.24 / P7.120).
+// writePostEditorShell emits the classic post editor stub (P7.24 / P7.120 / P7.121).
 // isNew selects Add New heading + Publish button vs Edit + Update.
+// message is an optional admin notice (e.g. "Post updated.").
 func (h *Handler) writePostEditorShell(w http.ResponseWriter, c *wp.Context, post *wp.Post, isNew bool) {
+	h.writePostEditorShellMsg(w, c, post, isNew, "")
+}
+
+func (h *Handler) writePostEditorShellMsg(w http.ResponseWriter, c *wp.Context, post *wp.Post, isNew bool, message string) {
 	if post == nil {
 		http.Error(w, "Invalid post ID.\n", http.StatusBadRequest)
 		return
@@ -5302,18 +5307,25 @@ func (h *Handler) writePostEditorShell(w http.ResponseWriter, c *wp.Context, pos
 	blogname := optionString(c, "blogname", "GoPress")
 	heading := "Edit Post"
 	submit := "Update"
-	bodyClass := "wp-admin wp-core-ui post-php"
+	addNewLabel := "Add New"
+	addNewHref := "/wp-admin/post-new.php"
+	bodyClass := "wp-admin wp-core-ui post-php post-type-" + post.Type
 	if isNew {
 		heading = "Add New Post"
 		submit = "Publish"
-		bodyClass = "wp-admin wp-core-ui post-new-php"
+		bodyClass = "wp-admin wp-core-ui post-new-php post-type-" + post.Type
 	}
 	if post.Type == "page" {
+		addNewHref = "/wp-admin/post-new.php?post_type=page"
 		if isNew {
 			heading = "Add New Page"
 		} else {
 			heading = "Edit Page"
 		}
+	}
+	nonce := ""
+	if c != nil {
+		nonce = c.CreateNonce("update-post_" + strconv.FormatInt(post.ID, 10))
 	}
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
@@ -5326,20 +5338,40 @@ func (h *Handler) writePostEditorShell(w http.ResponseWriter, c *wp.Context, pos
 	b.WriteString(html.EscapeString(c.CreateNonce("wp_rest")))
 	b.WriteString("\"};</script>\n</head>\n")
 	b.WriteString("<body class=\"")
-	b.WriteString(bodyClass)
+	b.WriteString(html.EscapeString(bodyClass))
 	b.WriteString("\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1 class=\"wp-heading-inline\">")
 	b.WriteString(html.EscapeString(heading))
 	b.WriteString("</h1>\n")
-	b.WriteString("<form name=\"post\" action=\"/wp-admin/post.php\" method=\"post\" id=\"post\">\n")
+	// P7.121: Add New page-title-action like classic post.php.
+	if !isNew {
+		b.WriteString("<a href=\"")
+		b.WriteString(html.EscapeString(addNewHref))
+		b.WriteString("\" class=\"page-title-action\">")
+		b.WriteString(html.EscapeString(addNewLabel))
+		b.WriteString("</a>\n")
+	}
+	b.WriteString("<hr class=\"wp-header-end\">\n")
+	if message != "" {
+		b.WriteString("<div id=\"message\" class=\"updated notice notice-success is-dismissible\"><p>")
+		b.WriteString(html.EscapeString(message))
+		b.WriteString("</p></div>\n")
+	}
+	b.WriteString("<form name=\"post\" action=\"/wp-admin/post.php?post=")
+	b.WriteString(strconv.FormatInt(post.ID, 10))
+	b.WriteString("&amp;action=edit\" method=\"post\" id=\"post\">\n")
+	b.WriteString("<input type=\"hidden\" id=\"_wpnonce\" name=\"_wpnonce\" value=\"")
+	b.WriteString(html.EscapeString(nonce))
+	b.WriteString("\" />\n")
 	b.WriteString("<input type=\"hidden\" id=\"post_ID\" name=\"post_ID\" value=\"")
 	b.WriteString(strconv.FormatInt(post.ID, 10))
 	b.WriteString("\" />\n")
 	b.WriteString("<input type=\"hidden\" id=\"post_type\" name=\"post_type\" value=\"")
 	b.WriteString(html.EscapeString(post.Type))
 	b.WriteString("\" />\n")
+	b.WriteString("<input type=\"hidden\" name=\"action\" value=\"editpost\" />\n")
 	b.WriteString("<input type=\"hidden\" id=\"original_post_status\" name=\"original_post_status\" value=\"")
 	b.WriteString(html.EscapeString(post.Status))
 	b.WriteString("\" />\n")
@@ -5349,25 +5381,53 @@ func (h *Handler) writePostEditorShell(w http.ResponseWriter, c *wp.Context, pos
 	b.WriteString("<div id=\"titlediv\"><div id=\"titlewrap\">\n")
 	b.WriteString("<label class=\"screen-reader-text\" id=\"title-prompt-text\" for=\"title\">Add title</label>\n")
 	b.WriteString("<input type=\"text\" name=\"post_title\" size=\"30\" value=\"")
-	if !isNew {
+	if !isNew || (post.Title != "" && post.Title != "Auto Draft") {
 		b.WriteString(html.EscapeString(post.Title))
 	}
 	b.WriteString("\" id=\"title\" spellcheck=\"true\" autocomplete=\"off\" />\n")
-	b.WriteString("</div></div>\n")
+	b.WriteString("</div>\n")
+	// P7.121: sample permalink / slug edit.
+	if post.Name != "" || !isNew {
+		b.WriteString("<div id=\"edit-slug-box\" class=\"hide-if-no-js\">\n")
+		b.WriteString("<strong>Permalink:</strong>\n")
+		b.WriteString("<span id=\"sample-permalink\"><a href=\"/?p=")
+		b.WriteString(strconv.FormatInt(post.ID, 10))
+		b.WriteString("\">")
+		home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+		b.WriteString(html.EscapeString(home))
+		b.WriteString("/?p=")
+		b.WriteString(strconv.FormatInt(post.ID, 10))
+		b.WriteString("</a></span>\n")
+		b.WriteString("<span id=\"editable-post-name\" title=\"Click to edit this part of the permalink\"><input type=\"text\" name=\"post_name\" id=\"post_name\" value=\"")
+		b.WriteString(html.EscapeString(post.Name))
+		b.WriteString("\" autocomplete=\"off\" /></span>\n")
+		b.WriteString("</div>\n")
+	}
+	b.WriteString("</div>\n")
 	b.WriteString("<div id=\"postdivrich\" class=\"postarea wp-editor-expand\">\n")
 	b.WriteString("<div id=\"wp-content-editor-container\" class=\"wp-editor-container\">\n")
 	b.WriteString("<textarea class=\"wp-editor-area\" style=\"height:300px\" autocomplete=\"off\" cols=\"40\" name=\"content\" id=\"content\">")
-	if !isNew {
+	if !isNew || post.Content != "" {
 		b.WriteString(html.EscapeString(post.Content))
 	}
 	b.WriteString("</textarea>\n")
 	b.WriteString("</div>\n")
 	if isNew {
-		b.WriteString("<p class=\"description\">GoPress post-new stub (P7.120) — save/publish lands later.</p>\n")
+		b.WriteString("<p class=\"description\">GoPress post-new stub (P7.120).</p>\n")
 	} else {
-		b.WriteString("<p class=\"description\">GoPress post editor stub (P7.24) — save/publish lands later.</p>\n")
+		b.WriteString("<p class=\"description\">GoPress post editor (P7.121).</p>\n")
 	}
-	b.WriteString("</div>\n</div>\n")
+	b.WriteString("</div>\n")
+	// P7.121: excerpt metabox.
+	b.WriteString("<div id=\"postexcerpt\" class=\"postbox\">\n")
+	b.WriteString("<div class=\"postbox-header\"><h2 class=\"hndle\">Excerpt</h2></div>\n")
+	b.WriteString("<div class=\"inside\">\n")
+	b.WriteString("<label class=\"screen-reader-text\" for=\"excerpt\">Excerpt</label>\n")
+	b.WriteString("<textarea rows=\"1\" cols=\"40\" name=\"excerpt\" id=\"excerpt\">")
+	b.WriteString(html.EscapeString(post.Excerpt))
+	b.WriteString("</textarea>\n")
+	b.WriteString("</div></div>\n")
+	b.WriteString("</div>\n")
 	b.WriteString("<div id=\"postbox-container-1\" class=\"postbox-container\">\n")
 	b.WriteString("<div id=\"submitdiv\" class=\"postbox\">\n")
 	b.WriteString("<div class=\"postbox-header\"><h2 class=\"hndle\">Publish</h2></div>\n")
@@ -5379,7 +5439,7 @@ func (h *Handler) writePostEditorShell(w http.ResponseWriter, c *wp.Context, pos
 	b.WriteString("</strong></span></div>\n")
 	b.WriteString("</div></div>\n")
 	b.WriteString("<div id=\"major-publishing-actions\">\n")
-	b.WriteString("<div id=\"publishing-action\"><input type=\"submit\" name=\"publish\" id=\"publish\" class=\"button button-primary button-large\" value=\"")
+	b.WriteString("<div id=\"publishing-action\"><input type=\"submit\" name=\"save\" id=\"publish\" class=\"button button-primary button-large\" value=\"")
 	b.WriteString(html.EscapeString(submit))
 	b.WriteString("\" /></div>\n")
 	b.WriteString("<div class=\"clear\"></div>\n</div>\n</div>\n</div>\n</div>\n</div>\n")
@@ -5387,14 +5447,17 @@ func (h *Handler) writePostEditorShell(w http.ResponseWriter, c *wp.Context, pos
 	writeHTML(w, http.StatusOK, b.String())
 }
 
-// servePostEdit renders the classic post.php?action=edit stub shell (P7.24 / P7.32).
-// Also handles Quick Draft save (action=post-quickdraft-save, P7.55) and
-// trash/untrash (P7.74).
+// servePostEdit renders the classic post.php?action=edit stub shell (P7.24 / P7.32 / P7.121).
+// Also handles Quick Draft save (action=post-quickdraft-save, P7.55),
+// trash/untrash (P7.74), and editpost save (P7.121).
 func (h *Handler) servePostEdit(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	// P7.121: on POST, form action (editpost / quickdraft) wins over ?action=edit.
 	action := r.URL.Query().Get("action")
-	if action == "" && r.Method == http.MethodPost {
+	if r.Method == http.MethodPost {
 		_ = r.ParseForm()
-		action = r.FormValue("action")
+		if fa := r.FormValue("action"); fa != "" {
+			action = fa
+		}
 	}
 	if action == "" {
 		action = "edit"
@@ -5408,11 +5471,14 @@ func (h *Handler) servePostEdit(w http.ResponseWriter, r *http.Request, c *wp.Co
 		h.handlePostTrashAction(w, r, c, action)
 		return
 	}
-	if action != "edit" && action != "editattachment" {
+	if action != "edit" && action != "editattachment" && action != "editpost" {
 		http.Error(w, "GoPress: post.php action not implemented\n", http.StatusNotImplemented)
 		return
 	}
 	id, _ := strconv.ParseInt(r.URL.Query().Get("post"), 10, 64)
+	if id <= 0 && r.Method == http.MethodPost {
+		id, _ = strconv.ParseInt(r.FormValue("post_ID"), 10, 64)
+	}
 	if id <= 0 {
 		http.Error(w, "Invalid post ID.\n", http.StatusBadRequest)
 		return
@@ -5430,7 +5496,63 @@ func (h *Handler) servePostEdit(w http.ResponseWriter, r *http.Request, c *wp.Co
 		h.serveAttachmentEdit(w, r, c, post)
 		return
 	}
+	// P7.121: classic editor save (action=editpost).
+	if action == "editpost" && r.Method == http.MethodPost {
+		msg, err := h.savePostEdit(r, c, post)
+		if err != nil {
+			http.Error(w, "post edit: "+err.Error()+"\n", http.StatusBadRequest)
+			return
+		}
+		post, _ = wp.GetPostByID(c, id)
+		h.writePostEditorShellMsg(w, c, post, false, msg)
+		return
+	}
 	h.writePostEditorShell(w, c, post, false)
+}
+
+// savePostEdit persists title/content/excerpt/slug from classic post.php (P7.121).
+func (h *Handler) savePostEdit(r *http.Request, c *wp.Context, post *wp.Post) (string, error) {
+	if c == nil || c.DB == nil || post == nil {
+		return "", fmt.Errorf("invalid state")
+	}
+	_ = r.ParseForm()
+	if c.VerifyNonce(r.FormValue("_wpnonce"), "update-post_"+strconv.FormatInt(post.ID, 10)) == 0 {
+		return "", fmt.Errorf("invalid nonce")
+	}
+	if !c.CurrentUserCan("edit_post", post.ID) && !c.UserCan(c.CurrentUser, "edit_posts") {
+		return "", fmt.Errorf("forbidden")
+	}
+	title := r.FormValue("post_title")
+	content := r.FormValue("content")
+	excerpt := r.FormValue("excerpt")
+	name := strings.TrimSpace(r.FormValue("post_name"))
+	if name == "" {
+		name = post.Name
+	}
+	status := post.Status
+	if status == "auto-draft" {
+		status = "draft"
+	}
+	if _, ok := r.Form["publish"]; ok && status != "publish" {
+		status = "publish"
+	}
+	now := time.Now().UTC().Format("2006-01-02 15:04:05")
+	q, args, err := c.DB.Prepare(
+		"UPDATE "+c.DB.Posts()+
+			" SET post_title = %s, post_content = %s, post_excerpt = %s, post_name = %s, post_status = %s, "+
+			"post_modified = %s, post_modified_gmt = %s WHERE ID = %d",
+		title, content, excerpt, name, status, now, now, post.ID,
+	)
+	if err != nil {
+		return "", err
+	}
+	if _, err := c.DB.Exec(q, args...); err != nil {
+		return "", err
+	}
+	if post.Type == "page" {
+		return "Page updated.", nil
+	}
+	return "Post updated.", nil
 }
 
 // serveAttachmentEdit is the attachment / media edit screen stub (P7.32).
