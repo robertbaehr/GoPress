@@ -38,6 +38,19 @@ func GetPagenumLinkQuery(archiveBase string, page int, querySuffix string) strin
 	return href
 }
 
+// GetPagenumLinkCtx is GetPagenumLinkQuery plus the get_pagenum_link filter (P3.145).
+func GetPagenumLinkCtx(c *Context, archiveBase string, page int, querySuffix string) string {
+	href := GetPagenumLinkQuery(archiveBase, page, querySuffix)
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("get_pagenum_link", href, page); v != nil {
+			if s, ok := v.(string); ok {
+				href = s
+			}
+		}
+	}
+	return href
+}
+
 // ArchiveBaseFromRequest returns the absolute archive base URL (without /page/N/).
 func ArchiveBaseFromRequest(c *Context, home string) string {
 	home = strings.TrimRight(strings.TrimSpace(home), "/")
@@ -82,6 +95,11 @@ func ArchiveRelPrevNextHTML(archiveBase string, paged, maxPages int) string {
 
 // ArchiveRelPrevNextHTMLQuery is ArchiveRelPrevNextHTML with query suffix (P3.107).
 func ArchiveRelPrevNextHTMLQuery(archiveBase string, paged, maxPages int, querySuffix string) string {
+	return ArchiveRelPrevNextHTMLQueryCtx(nil, archiveBase, paged, maxPages, querySuffix)
+}
+
+// ArchiveRelPrevNextHTMLQueryCtx applies get_pagenum_link + EscURL on hrefs (P3.145).
+func ArchiveRelPrevNextHTMLQueryCtx(c *Context, archiveBase string, paged, maxPages int, querySuffix string) string {
 	if archiveBase == "" || maxPages < 2 {
 		return ""
 	}
@@ -90,13 +108,15 @@ func ArchiveRelPrevNextHTMLQuery(archiveBase string, paged, maxPages int, queryS
 	}
 	var b strings.Builder
 	if paged > 1 {
+		href := GetPagenumLinkCtx(c, archiveBase, paged-1, querySuffix)
 		b.WriteString(`<link rel="prev" href="`)
-		b.WriteString(html.EscapeString(GetPagenumLinkQuery(archiveBase, paged-1, querySuffix)))
+		b.WriteString(html.EscapeString(EscURL(href)))
 		b.WriteString(`" />` + "\n")
 	}
 	if paged < maxPages {
+		href := GetPagenumLinkCtx(c, archiveBase, paged+1, querySuffix)
 		b.WriteString(`<link rel="next" href="`)
-		b.WriteString(html.EscapeString(GetPagenumLinkQuery(archiveBase, paged+1, querySuffix)))
+		b.WriteString(html.EscapeString(EscURL(href)))
 		b.WriteString(`" />` + "\n")
 	}
 	return b.String()

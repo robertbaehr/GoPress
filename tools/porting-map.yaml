@@ -11768,3 +11768,23 @@ wp-login.php#language-switcher-post
   task: P2.147
   api: n/a
   notes: "P2.147 — reject unsafe URLs; BlockExternal; validated proceed"
+
+# P3.145: deepen front archive/singular prev/next rel helpers.
+- prefix: wp-includes/link-template.php#get_pagenum_link#filter
+  go: internal/wp/archive_rel.go
+  status: partial
+  task: P3.145
+  api: exported
+  notes: "P3.145 — GetPagenumLinkCtx + ArchiveRelPrevNextHTMLQueryCtx EscURL + filter"
+- prefix: wp-includes/link-template.php#get_adjacent_post_rel_link
+  go: internal/wp/adjacent_post.go
+  status: partial
+  task: P3.145
+  api: exported
+  notes: "P3.145 — GetAdjacentPostRelLinkHTML / AdjacentPostsRelLinkHTML + attachment parent"
+- prefix: wp-includes/link-template.php#prev_next_rel#tests
+  go: internal/wp/prev_next_rel_p3_145_test.go
+  status: partial
+  task: P3.145
+  api: n/a
+  notes: "P3.145 — get_pagenum_link filter, EscURL, adjacent rel HTML"
