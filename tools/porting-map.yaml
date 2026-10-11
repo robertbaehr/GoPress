@@ -7262,3 +7262,19 @@ wp-login.php#language-switcher-post
   task: P6.46
   api: n/a
   notes: "P6.46 — missing params die + valid key confirm chrome"
+
+# P10.132: expand diff corpus after P5.111–P6.46 deepen stack.
+- prefix: tests/corpus#p10-132
+  go: tests/corpus
+  status: partial
+  task: P10.132
+  api: n/a
+  notes: "P10.132 — namespace indexes + button/buttons contexts + types embed; 713/713"
+
+# P10.133: STATUS/PORTING refresh after P5.111–P10.132.
+- prefix: docs/STATUS.md#p10-133
+  go: docs/STATUS.md
+  status: partial
+  task: P10.133
+  api: n/a
+  notes: "P10.133 — summarize buttons, namespaces, widgets, strip_all_tags, canonical, confirmaction, 713 corpus"
