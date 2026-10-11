@@ -8934,3 +8934,18 @@ wp-login.php#language-switcher-post
   task: P7.128
   api: n/a
   notes: "P7.128 — filter/ajax/edit/search coverage"
+
+# P2.123: is_serialized / maybe_serialize / maybe_unserialize.
+- prefix: wp-includes/functions.php#is_serialized
+  go: internal/wp/is_serialized.go
+  status: partial
+  task: P2.123
+  api: is_serialized
+  notes: "P2.123 — IsSerialized/IsSerializedString/MaybeSerialize/MaybeUnserialize"
+
+- prefix: wp-includes/functions.php#is_serialized#tests
+  go: internal/wp/is_serialized_test.go
+  status: partial
+  task: P2.123
+  api: n/a
+  notes: "P2.123 — strict/loose/string/maybe_* coverage"
