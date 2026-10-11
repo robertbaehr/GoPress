@@ -53,6 +53,40 @@ func (e *ImageEditor) Size() (w, h int) {
 	return b.Dx(), b.Dy()
 }
 
+// Crop extracts a source rectangle and optionally resamples to dstW×dstH
+// (WP_Image_Editor::crop, P8.35). When srcAbs is true, srcW/srcH are treated as
+// absolute bottom-right coordinates (Imagick/GD parity). Zero dst dimensions
+// keep the cropped source size.
+func (e *ImageEditor) Crop(srcX, srcY, srcW, srcH, dstW, dstH int, srcAbs bool) error {
+	if e == nil || e.img == nil {
+		return fmt.Errorf("wp: ImageEditor.Crop: nil editor")
+	}
+	if srcAbs {
+		srcW -= srcX
+		srcH -= srcY
+	}
+	if srcW <= 0 || srcH <= 0 {
+		return fmt.Errorf("wp: ImageEditor.Crop: invalid source size")
+	}
+	imgW, imgH := e.Size()
+	if srcX < 0 || srcY < 0 || srcX+srcW > imgW || srcY+srcH > imgH {
+		return fmt.Errorf("wp: ImageEditor.Crop: source rect out of bounds")
+	}
+	if dstW <= 0 {
+		dstW = srcW
+	}
+	if dstH <= 0 {
+		dstH = srcH
+	}
+	cropped := cropImage(e.img, srcX, srcY, srcW, srcH)
+	if dstW == srcW && dstH == srcH {
+		e.img = cropped
+		return nil
+	}
+	e.img = scaleImage(cropped, dstW, dstH)
+	return nil
+}
+
 // Resize scales (and optionally center-crops) to width×height (WP_Image_Editor::resize).
 // Zero width or height means “preserve aspect for that axis”.
 func (e *ImageEditor) Resize(width, height int, crop bool) error {

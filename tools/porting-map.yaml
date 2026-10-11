@@ -727,6 +727,21 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P8.30 — MakeIntermediateSize file/width/height/mime-type bag"
 
+# P8.35: WP_Image_Editor::crop with optional dst resample + src_abs.
+- prefix: wp-includes/class-wp-image-editor.php#crop
+  go: internal/wp/image_editor.go
+  status: partial
+  task: P8.35
+  api: exported
+  notes: "P8.35 — ImageEditor.Crop(srcX/Y/W/H, dstW/H, srcAbs); bounds checks"
+
+- prefix: wp-includes/class-wp-image-editor.php#crop#tests
+  go: internal/wp/image_editor_test.go
+  status: partial
+  task: P8.35
+  api: n/a
+  notes: "P8.35 — crop, abs coords + scale, empty-size error"
+
 # P2.21: wp_check_password covers $wp$ / phpass; application passwords reuse it.
 # P4.110: introspect + AuthenticatedAppPasswordUUID + last_used recording.
 - prefix: wp-includes/class-wp-application-passwords.php
