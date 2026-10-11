@@ -427,3 +427,50 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.176: corpus expand after social-link/order/quick-draft/kses-one-attr/rel-home/login-footer stack.
+
+- id: ajax-p10176-001-heartbeat-edit-tags
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=edit-tags
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10176-002-heartbeat-term
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=term
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10176-003-heartbeat-user-edit
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=user-edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10176-004-heartbeat-tools
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=tools
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10176-005-heartbeat-site-health
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=site-health
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

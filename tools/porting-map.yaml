@@ -9785,3 +9785,11 @@ wp-login.php#language-switcher-post
   task: P6.54
   api: n/a
   notes: "P6.54 — filter rewrite + resetpass pass1 focus"
+
+# P10.176: expand diff corpus after P5.133–P6.54.
+- prefix: tests/corpus#p10.176
+  go: tests/corpus
+  status: partial
+  task: P10.176
+  api: n/a
+  notes: "P10.176 — +44 cases (order invalid/json, social-link contexts, menu_order empty, front/login/ajax/admin toppers)"

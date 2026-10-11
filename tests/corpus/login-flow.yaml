@@ -1108,3 +1108,32 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.176: corpus expand after social-link/order/quick-draft/kses-one-attr/rel-home/login-footer stack.
+
+- id: login-p10176-001-interim-login
+  role: anon
+  method: GET
+  path: /wp-login.php?interim-login=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10176-002-lostpassword-redirect
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword&redirect_to=%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10176-003-loggedout
+  role: anon
+  method: GET
+  path: /wp-login.php?loggedout=true
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
