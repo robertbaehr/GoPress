@@ -51,6 +51,12 @@ func TestParseList(t *testing.T) {
 		{"empty", "", []string{}},
 		{"bool true", true, []string{"1"}},
 		{"bool false", false, []string{}},
+		// P2.122
+		{"float", 1.5, []string{"1.5"}},
+		{"float integral", 3.0, []string{"3"}},
+		{"string slice keeps empty", []string{"a", "", "b"}, []string{"a", "", "b"}},
+		{"any slice keeps empty and nil-drop", []any{1, "", nil, "x", false}, []string{"1", "", "x", ""}},
+		{"int slice", []int{1, 2, 3}, []string{"1", "2", "3"}},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
@@ -59,6 +65,33 @@ func TestParseList(t *testing.T) {
 				t.Fatalf("ParseList(%#v)=%#v want %#v", tc.in, got, tc.want)
 			}
 		})
+	}
+}
+
+func TestParseIDList(t *testing.T) {
+	got := wp.ParseIDList("1, 2, 2, -3, abc")
+	want := []int64{1, 2, 3, 0}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("ParseIDList=%#v want %#v", got, want)
+	}
+	got = wp.ParseIDList([]any{10, "", 10})
+	want = []int64{10, 0}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("ParseIDList any=%#v want %#v", got, want)
+	}
+}
+
+func TestParseSlugList(t *testing.T) {
+	// wp_parse_list splits on whitespace first, then sanitize_title each part.
+	got := wp.ParseSlugList("Hello World, hello-world, Foo!")
+	want := []string{"hello", "world", "hello-world", "foo"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("ParseSlugList=%#v want %#v", got, want)
+	}
+	got = wp.ParseSlugList("My Slug, my-slug")
+	want = []string{"my", "slug", "my-slug"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("ParseSlugList csv=%#v want %#v", got, want)
 	}
 }
 

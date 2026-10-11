@@ -8821,3 +8821,18 @@ wp-login.php#language-switcher-post
   task: P7.127
   api: n/a
   notes: "P7.127 — block editor chrome coverage on post.php / post-new.php"
+
+# P2.122: deepen wp_parse_list + id/slug list helpers.
+- prefix: wp-includes/functions.php#wp_parse_list
+  go: internal/wp/is_numeric_array.go
+  status: partial
+  task: P2.122
+  api: wp_parse_list
+  notes: "P2.122 — float string cast; array empty-string keep; []int/[]int64; ParseIDList/ParseSlugList"
+
+- prefix: wp-includes/functions.php#wp_parse_list#tests
+  go: internal/wp/is_numeric_array_test.go
+  status: partial
+  task: P2.122
+  api: n/a
+  notes: "P2.122 — ParseList/ParseIDList/ParseSlugList unit coverage"
