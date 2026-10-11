@@ -1120,3 +1120,96 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.206: ajax toppers (headers-safe heartbeat).
+
+- id: ajax-p10206-001
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10206-002
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=dashboard
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10206-003
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=edit-post
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10206-004
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=site-health
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10206-005
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=upload
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10206-006
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=plugins
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10206-007
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=themes
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10206-008
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=users
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10206-009
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=tools
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10206-010
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=options-general
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+

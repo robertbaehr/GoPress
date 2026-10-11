@@ -1090,7 +1090,6 @@
   compare: headers
   nonce: null
 
-
 # P10.204: admin toppers (headers-safe; skip set-cookie-sensitive).
 
 - id: admin-p10204-001
@@ -1169,6 +1168,127 @@
   role: admin
   method: GET
   path: /wp-admin/options-general.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+# P10.206: admin toppers (headers-safe; skip set-cookie-sensitive).
+
+- id: admin-p10206-001
+  role: admin
+  method: GET
+  path: /wp-admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10206-002
+  role: admin
+  method: GET
+  path: /wp-admin/index.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10206-003
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10206-004
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_type=page
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10206-006
+  role: admin
+  method: GET
+  path: /wp-admin/edit-comments.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10206-007
+  role: admin
+  method: GET
+  path: /wp-admin/plugins.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10206-009
+  role: admin
+  method: GET
+  path: /wp-admin/users.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10206-011
+  role: admin
+  method: GET
+  path: /wp-admin/options-general.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10206-015
+  role: admin
+  method: GET
+  path: /wp-admin/site-health-info.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+# P10.206: safer admin replacements.
+
+- id: admin-p10206-r01
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_status=publish
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10206-r02
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_status=draft
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10206-r03
+  role: admin
+  method: GET
+  path: /wp-admin/profile.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10206-r07
+  role: admin
+  method: GET
+  path: /wp-admin/comment.php?action=editcomment&c=1
   headers: {}
   body: null
   compare: headers

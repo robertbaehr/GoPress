@@ -11442,3 +11442,11 @@ wp-login.php#language-switcher-post
   task: P6.59
   api: n/a
   notes: "P6.59 — EscURL spaces, deprecated title seed, headertext override"
+
+# P10.206: expand diff corpus after P5.148–P6.59 stack.
+- prefix: tests/corpus#p10.206
+  go: tests/corpus/
+  status: partial
+  task: P10.206
+  api: n/a
+  notes: "P10.206 — table/tax_relation/site-health/utf8/robots/headerurl toppers; headers-safe; drop Link/set-cookie-sensitive"

@@ -4810,8 +4810,8 @@ func siteHealthDebugSections(c *wp.Context) []siteHealthDebugSection {
 			},
 		},
 		{
-			slug:  "wp-media",
-			label: "Media Handling",
+			slug:   "wp-media",
+			label:  "Media Handling",
 			fields: siteHealthMediaDebugFields(c),
 		},
 		{
