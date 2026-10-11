@@ -1756,12 +1756,9 @@ func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, templa
 	b.WriteString("\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
 	b.WriteString(frontRobotsMetaTag(c))
+	// P3.126: block theme <title> via wp_get_document_title.
 	b.WriteString("<title>")
-	b.WriteString(html.EscapeString(blogname))
-	if paged > 1 {
-		b.WriteString(" &#8211; Page ")
-		b.WriteString(strconv.Itoa(paged))
-	}
+	b.WriteString(html.EscapeString(wp.GetDocumentTitle(c)))
 	b.WriteString("</title>\n")
 	writeFrontHeadLinks(&b, c, home, blogname, "", "", "", "", "", "", wp.SiteIconMetaTags(c))
 	b.WriteString(wp.EmojiHeadHTML()) // P3.12: wpemoji print scripts skipped
