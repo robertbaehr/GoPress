@@ -4867,6 +4867,28 @@ wp-login.php#language-switcher-post
   api: internal
   notes: "P5.84 — has-child submenu container + chevron icon"
 
+# P5.117: deepen core/navigation layout + submenu context.
+- prefix: wp-includes/blocks/navigation.php#p5.117
+  go: internal/blocks/navigation.go
+  status: partial
+  task: P5.117
+  api: internal
+  notes: "P5.117 — justifyContent/flexWrap/orientation classes; textDecoration; className/anchor; submenu open-on-click + showSubmenuIcon defaults"
+
+- prefix: wp-includes/blocks/navigation-submenu.php#p5.117
+  go: internal/blocks/navigation.go
+  status: partial
+  task: P5.117
+  api: internal
+  notes: "P5.117 — open-on-click button + open-on-hover-click; showSubmenuIcon toggle; Navigation context"
+
+- prefix: wp-includes/blocks/navigation.php#p5.117#tests
+  go: internal/blocks/navigation_test.go
+  status: partial
+  task: P5.117
+  api: n/a
+  notes: "P5.117 — layout classes + submenu context unit coverage"
+
 # P5.85: core/query + post-template polish (tagName/align, query args, layout classes).
 - prefix: wp-includes/blocks/query.php#p5.85
   go: internal/blocks/query.go

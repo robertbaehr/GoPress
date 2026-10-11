@@ -50,25 +50,24 @@ func (e *Env) renderNavigation(block Block) string {
 	}
 
 	ariaLabel, _ := block.Attrs["ariaLabel"].(string)
-	layoutOrientation := ""
-	if layout, ok := block.Attrs["layout"].(map[string]any); ok {
-		if o, ok := layout["orientation"].(string); ok {
-			layoutOrientation = strings.TrimSpace(o)
-		}
-	}
-	navClass := "wp-block-navigation"
+	// P5.117: layout justification/orientation/flexWrap + textDecoration + className.
+	navClasses := navigationWrapperClasses(block.Attrs)
 	ulClass := "wp-block-navigation__container"
-	if layoutOrientation == "vertical" {
-		navClass = "is-vertical " + navClass
+	if strings.Contains(navClasses, "is-vertical") {
 		ulClass += " is-vertical wp-block-navigation"
 	}
 	var b strings.Builder
 	b.WriteString(`<nav class="`)
-	b.WriteString(html.EscapeString(navClass))
+	b.WriteString(html.EscapeString(navClasses))
 	b.WriteString(`"`)
 	if ariaLabel != "" {
 		b.WriteString(` aria-label="`)
 		b.WriteString(html.EscapeString(ariaLabel))
+		b.WriteString(`"`)
+	}
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		b.WriteString(` id="`)
+		b.WriteString(html.EscapeString(anchor))
 		b.WriteString(`"`)
 	}
 	b.WriteString(`>`)
@@ -84,6 +83,52 @@ func (e *Env) renderNavigation(block Block) string {
 	b.WriteString(inner)
 	b.WriteString(`</ul></nav>`)
 	return b.String()
+}
+
+// navigationWrapperClasses builds core/navigation class list (P5.117).
+func navigationWrapperClasses(attrs map[string]any) string {
+	classes := []string{"wp-block-navigation"}
+	layoutOrientation := ""
+	justify := ""
+	flexWrap := ""
+	if layout, ok := attrs["layout"].(map[string]any); ok {
+		if o, ok := layout["orientation"].(string); ok {
+			layoutOrientation = strings.TrimSpace(o)
+		}
+		if j, ok := layout["justifyContent"].(string); ok {
+			justify = strings.TrimSpace(j)
+		}
+		if w, ok := layout["flexWrap"].(string); ok {
+			flexWrap = strings.TrimSpace(w)
+		}
+	}
+	switch justify {
+	case "left":
+		classes = append(classes, "items-justified-left")
+	case "right":
+		classes = append(classes, "items-justified-right")
+	case "center":
+		classes = append(classes, "items-justified-center")
+	case "space-between":
+		classes = append(classes, "items-justified-space-between")
+	}
+	if layoutOrientation == "vertical" {
+		classes = append(classes, "is-vertical")
+	}
+	if flexWrap == "nowrap" {
+		classes = append(classes, "no-wrap")
+	}
+	if style, ok := attrs["style"].(map[string]any); ok {
+		if typo, ok := style["typography"].(map[string]any); ok {
+			if dec := strings.TrimSpace(attrString(typo, "textDecoration")); dec != "" {
+				classes = append(classes, "has-text-decoration-"+sanitizeClassToken(dec))
+			}
+		}
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		classes = append(classes, cn)
+	}
+	return strings.Join(classes, " ")
 }
 
 // renderNavigationInnerMarkup renders wp_navigation post content into <li> items.
@@ -305,8 +350,9 @@ func (e *Env) renderNavigationLink(block Block) string {
 	return b.String()
 }
 
-// renderNavigationSubmenu renders core/navigation-submenu (P5.84).
-// Nested children become a submenu list; open-on-click is not modeled yet.
+// renderNavigationSubmenu renders core/navigation-submenu (P5.84 / P5.117).
+// Nested children become a submenu list; open-on-click / showSubmenuIcon follow
+// Navigation context (pageListNav).
 func (e *Env) renderNavigationSubmenu(block Block) string {
 	e = e.ensure()
 	label, _ := block.Attrs["label"].(string)
@@ -320,41 +366,85 @@ func (e *Env) renderNavigationSubmenu(block Block) string {
 	}
 	hasSubmenu := strings.TrimSpace(inner) != ""
 	isActive := e.navigationItemIsActive(block.Attrs)
+	nav := e.pageListNav
+	// Standalone submenu (no Navigation parent): WP block.json defaults.
+	if nav.submenuVisibility == "" {
+		nav.submenuVisibility = "hover"
+		nav.showSubmenuIcon = true
+	}
+	openOnClick := hasSubmenu && nav.submenuVisibility == "click"
+	openOnHover := hasSubmenu && nav.submenuVisibility == "hover"
+	openAlways := hasSubmenu && nav.submenuVisibility == "always"
+	showIcon := nav.showSubmenuIcon
 
-	liClass := "wp-block-navigation-item"
+	liClasses := []string{"wp-block-navigation-item"}
 	if hasSubmenu {
-		liClass += " has-child"
+		liClasses = append(liClasses, "has-child")
+		if openOnClick {
+			liClasses = append(liClasses, "open-on-click")
+		} else if openOnHover && showIcon {
+			liClasses = append(liClasses, "open-on-hover-click")
+		} else if openAlways {
+			liClasses = append(liClasses, "open-always")
+		}
 	}
 	if isActive {
-		liClass += " current-menu-item"
+		liClasses = append(liClasses, "current-menu-item")
 	}
 
 	var b strings.Builder
 	b.WriteString(`<li class="`)
-	b.WriteString(html.EscapeString(liClass))
-	b.WriteString(`"><a class="wp-block-navigation-item__content"`)
-	if strings.TrimSpace(url) != "" {
-		b.WriteString(` href="`)
-		b.WriteString(html.EscapeString(url))
-		b.WriteString(`"`)
-	}
-	if isActive {
-		b.WriteString(` aria-current="page"`)
-	}
-	writeNavigationLinkAttrs(&b, block.Attrs)
-	b.WriteString(`><span class="wp-block-navigation-item__label">`)
-	b.WriteString(html.EscapeString(label))
-	b.WriteString(`</span>`)
-	if desc, _ := block.Attrs["description"].(string); strings.TrimSpace(desc) != "" {
-		b.WriteString(`<span class="wp-block-navigation-item__description">`)
-		b.WriteString(html.EscapeString(desc))
+	b.WriteString(html.EscapeString(strings.Join(liClasses, " ")))
+	b.WriteString(`">`)
+	if openOnClick {
+		ariaLabel := strings.TrimSpace(label) + " submenu"
+		b.WriteString(`<button aria-label="`)
+		b.WriteString(html.EscapeString(ariaLabel))
+		b.WriteString(`" class="wp-block-navigation-item__content wp-block-navigation-submenu__toggle" aria-expanded="false">`)
+		b.WriteString(`<span class="wp-block-navigation-item__label">`)
+		b.WriteString(html.EscapeString(label))
 		b.WriteString(`</span>`)
+		if desc, _ := block.Attrs["description"].(string); strings.TrimSpace(desc) != "" {
+			b.WriteString(`<span class="wp-block-navigation-item__description">`)
+			b.WriteString(html.EscapeString(desc))
+			b.WriteString(`</span>`)
+		}
+		b.WriteString(`</button>`)
+		if hasSubmenu {
+			b.WriteString(`<span class="wp-block-navigation__submenu-icon">`)
+			b.WriteString(navigationSubmenuIconSVG())
+			b.WriteString(`</span>`)
+		}
+	} else {
+		b.WriteString(`<a class="wp-block-navigation-item__content"`)
+		if strings.TrimSpace(url) != "" {
+			b.WriteString(` href="`)
+			b.WriteString(html.EscapeString(url))
+			b.WriteString(`"`)
+		}
+		if isActive {
+			b.WriteString(` aria-current="page"`)
+		}
+		writeNavigationLinkAttrs(&b, block.Attrs)
+		b.WriteString(`><span class="wp-block-navigation-item__label">`)
+		b.WriteString(html.EscapeString(label))
+		b.WriteString(`</span>`)
+		if desc, _ := block.Attrs["description"].(string); strings.TrimSpace(desc) != "" {
+			b.WriteString(`<span class="wp-block-navigation-item__description">`)
+			b.WriteString(html.EscapeString(desc))
+			b.WriteString(`</span>`)
+		}
+		b.WriteString(`</a>`)
+		if hasSubmenu && showIcon {
+			ariaLabel := strings.TrimSpace(label) + " submenu"
+			b.WriteString(`<button aria-label="`)
+			b.WriteString(html.EscapeString(ariaLabel))
+			b.WriteString(`" class="wp-block-navigation__submenu-icon wp-block-navigation-submenu__toggle" aria-expanded="false">`)
+			b.WriteString(navigationSubmenuIconSVG())
+			b.WriteString(`</button>`)
+		}
 	}
-	b.WriteString(`</a>`)
 	if hasSubmenu {
-		b.WriteString(`<span class="wp-block-navigation__submenu-icon">`)
-		b.WriteString(navigationSubmenuIconSVG())
-		b.WriteString(`</span>`)
 		b.WriteString(`<ul class="wp-block-navigation__submenu-container">`)
 		b.WriteString(inner)
 		b.WriteString(`</ul>`)
