@@ -10516,3 +10516,11 @@ wp-login.php#language-switcher-post
   task: P9.33
   api: n/a
   notes: "P9.33 — no-callback short-circuit; notify+apply; do_action_deprecated"
+
+# P10.190: Diff corpus expand after P5.140–P9.33 stack.
+- prefix: tests/corpus#p10.190
+  go: tests/corpus
+  status: partial
+  task: P10.190
+  api: n/a
+  notes: "P10.190 — +124 headers-safe REST/front/admin/login/ajax cases after read-more/tags_exclude/browser-nag/kses-stripslashes/wlwmanifest/deprecated"

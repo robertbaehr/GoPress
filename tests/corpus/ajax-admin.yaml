@@ -720,3 +720,59 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.190: ajax toppers after browser-nag stack.
+
+- id: ajax-p10190-001-heartbeat
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10190-002-heartbeat-dashboard
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=dashboard
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10190-003-heartbeat-comments
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=comments
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10190-004-heartbeat-media
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=media
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10190-005-logged-in
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=logged-in
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10190-006-compression-test
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=wp-compression-test
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

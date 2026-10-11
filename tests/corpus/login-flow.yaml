@@ -1389,3 +1389,86 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.190: login toppers after stack.
+
+- id: login-p10190-001-login
+  role: anon
+  method: GET
+  path: /wp-login.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10190-002-lostpassword
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10190-003-rp
+  role: anon
+  method: GET
+  path: /wp-login.php?action=rp
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10190-004-resetpass
+  role: anon
+  method: GET
+  path: /wp-login.php?action=resetpass
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10190-005-checkemail-confirm
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=confirm
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10190-006-checkemail-registered
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=registered
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10190-007-interim
+  role: anon
+  method: GET
+  path: /wp-login.php?interim-login=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10190-008-reauth
+  role: anon
+  method: GET
+  path: /wp-login.php?reauth=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10190-009-confirm-admin-email
+  role: anon
+  method: GET
+  path: /wp-login.php?action=confirm_admin_email
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
