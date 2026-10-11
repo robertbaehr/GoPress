@@ -120,9 +120,9 @@ func (h *Handler) serveConfirmAction(w http.ResponseWriter, r *http.Request, c *
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	blogname := optionString(c, "blogname", "GoPress")
 	var b strings.Builder
-	writeLoginHead(&b, home, blogname, "User action confirmed.", "confirmaction")
+	writeLoginHead(&b, c, home, blogname, "User action confirmed.", "confirmaction")
 	b.WriteString("\t\t\t<div id=\"login\">\n")
-	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
+	writeLoginLogo(&b, c)
 	if strings.TrimSpace(message) != "" {
 		b.WriteString(message)
 	}
@@ -259,9 +259,9 @@ func (h *Handler) serveConfirmAdminEmail(w http.ResponseWriter, r *http.Request,
 		"&remind_me_later=" + url.QueryEscape(remindNonce)
 
 	var b strings.Builder
-	writeLoginHead(&b, home, blogname, "Confirm your administration email", "confirm_admin_email")
+	writeLoginHead(&b, c, home, blogname, "Confirm your administration email", "confirm_admin_email")
 	b.WriteString("\t\t\t<div id=\"login\">\n")
-	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
+	writeLoginLogo(&b, c)
 	b.WriteString("\t\t<form class=\"admin-email-confirm-form\" name=\"admin-email-confirm-form\" action=\"")
 	b.WriteString(html.EscapeString(loginURL + "?action=confirm_admin_email"))
 	b.WriteString("\" method=\"post\">\n")
@@ -402,10 +402,10 @@ func (h *Handler) serveRegisterForm(w http.ResponseWriter, r *http.Request, c *w
 	}
 
 	var b strings.Builder
-	writeLoginHead(&b, home, blogname, "Registration Form", "register")
+	writeLoginHead(&b, c, home, blogname, "Registration Form", "register")
 	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Registration Form</h1>\n")
 	b.WriteString("\t\t\t<div id=\"login\">\n")
-	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
+	writeLoginLogo(&b, c)
 	// P6.51: login_message filter (WP login_header).
 	if msg := applyLoginMessage(c, `<div class="notice notice-info message register"><p>Register For This Site</p></div>`+"\n"); strings.TrimSpace(msg) != "" {
 		b.WriteString(msg)
@@ -512,10 +512,10 @@ func (h *Handler) serveCheckEmail(w http.ResponseWriter, r *http.Request, c *wp.
 		}
 	}
 	var b strings.Builder
-	writeLoginHead(&b, home, blogname, "Check your email", "checkemail")
+	writeLoginHead(&b, c, home, blogname, "Check your email", "checkemail")
 	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Check your email</h1>\n")
 	b.WriteString("\t\t\t<div id=\"login\">\n")
-	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
+	writeLoginLogo(&b, c)
 	// P6.51: login_message runs in login_header; checkemail passes notice via WP_Error message data.
 	loginMsg := applyLoginMessage(c, `<div class="notice notice-info message" id="login-message"><p>`+msg+`</p></div>`+"\n")
 	if strings.TrimSpace(loginMsg) != "" {
@@ -607,10 +607,10 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	if interim {
 		extraClass = "interim-login"
 	}
-	writeLoginHead(&b, home, blogname, "Log In", "login", extraClass)
+	writeLoginHead(&b, c, home, blogname, "Log In", "login", extraClass)
 	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Log In</h1>\n")
 	b.WriteString("\t\t\t<div id=\"login\">\n")
-	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
+	writeLoginLogo(&b, c)
 	b.WriteString("\t\n")
 	// P6.51: login_message filter always runs (WP login_header), even when empty.
 	if msg := applyLoginMessage(c, ""); strings.TrimSpace(msg) != "" {
@@ -921,10 +921,10 @@ func (h *Handler) serveResetPassDone(w http.ResponseWriter, r *http.Request, c *
 	blogname := optionString(c, "blogname", "GoPress")
 	loginURL := home + "/wp-login.php"
 	var b strings.Builder
-	writeLoginHead(&b, home, blogname, "Password Reset", "resetpass")
+	writeLoginHead(&b, c, home, blogname, "Password Reset", "resetpass")
 	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Password Reset</h1>\n")
 	b.WriteString("\t\t\t<div id=\"login\">\n")
-	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
+	writeLoginLogo(&b, c)
 	doneMsg := `<p class="message reset-pass">Your password has been reset. <a href="` + html.EscapeString(loginURL) + `">Log in</a></p>` + "\n"
 	if msg := applyLoginMessage(c, doneMsg); strings.TrimSpace(msg) != "" {
 		b.WriteString(msg)
@@ -944,10 +944,10 @@ func (h *Handler) serveResetPassForm(w http.ResponseWriter, r *http.Request, c *
 	passHint := wp.GetPasswordHint(c)
 
 	var b strings.Builder
-	writeLoginHead(&b, home, blogname, "Reset Password", "resetpass")
+	writeLoginHead(&b, c, home, blogname, "Reset Password", "resetpass")
 	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Reset Password</h1>\n")
 	b.WriteString("\t\t\t<div id=\"login\">\n")
-	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
+	writeLoginLogo(&b, c)
 	if formErr != "" {
 		// P6.53: login_errors on resetpass form errors.
 		writeLoginErrorNotice(&b, c, "<p><strong>Error:</strong> "+html.EscapeString(formErr)+"</p>")
@@ -1041,10 +1041,10 @@ func (h *Handler) serveLostPassword(w http.ResponseWriter, r *http.Request, c *w
 	redirectTo := applyLostPasswordRedirect(c, requested)
 
 	var b strings.Builder
-	writeLoginHead(&b, home, blogname, "Lost Password", "lostpassword")
+	writeLoginHead(&b, c, home, blogname, "Lost Password", "lostpassword")
 	b.WriteString("\t\t\t\t<h1 class=\"screen-reader-text\">Lost Password</h1>\n")
 	b.WriteString("\t\t\t<div id=\"login\">\n")
-	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
+	writeLoginLogo(&b, c)
 	// P6.51: WP always shows the info message via login_header + login_message filter.
 	if msg := applyLoginMessage(c, `<div class="notice notice-info message"><p>Please enter your username or email address. You will receive an email message with instructions on how to reset your password.</p></div>`+"\n"); strings.TrimSpace(msg) != "" {
 		b.WriteString(msg)
@@ -1178,7 +1178,7 @@ func writeLoginErrorNotice(b *strings.Builder, c *wp.Context, errInner string) {
 	}
 }
 
-func writeLoginHead(b *strings.Builder, home, blogname, title, action string, extraClasses ...string) {
+func writeLoginHead(b *strings.Builder, c *wp.Context, home, blogname, title, action string, extraClasses ...string) {
 	ver := "7.2-alpha-64260"
 	styles := home + "/wp-admin/load-styles.php?c=0&dir=ltr&load%5Bchunk_0%5D=dashicons,buttons,forms,l10n,wp-base-styles,wp-tooltip,login&ver=" + ver
 	interim := false
@@ -1224,6 +1224,36 @@ func writeLoginHead(b *strings.Builder, home, blogname, title, action string, ex
 	b.WriteString("\t<script>\n")
 	b.WriteString("document.body.className = document.body.className.replace('no-js','js');\n")
 	b.WriteString("</script>\n\n")
+	// P6.55: do_action( 'login_header' ) after body open (WP login_header).
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("login_header")
+	}
+}
+
+// writeLoginLogo emits the login logo h1 with login_headerurl / login_headertext (P6.55).
+func writeLoginLogo(b *strings.Builder, c *wp.Context) {
+	if b == nil {
+		return
+	}
+	href := "https://wordpress.org/"
+	text := "Powered by WordPress"
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("login_headerurl", href); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				href = s
+			}
+		}
+		if v := c.Hooks.ApplyFilters("login_headertext", text); v != nil {
+			if s, ok := v.(string); ok {
+				text = s
+			}
+		}
+	}
+	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"")
+	b.WriteString(html.EscapeString(href))
+	b.WriteString("\">")
+	b.WriteString(html.EscapeString(text))
+	b.WriteString("</a></h1>\n")
 }
 
 func writeLoginScripts(b *strings.Builder, home string, c *wp.Context) {
@@ -1636,9 +1666,9 @@ func (h *Handler) serveInterimLoginSuccess(w http.ResponseWriter, r *http.Reques
 	message := applyLoginMessage(c, `<p class="message" id="login-message">You have logged in successfully.</p>`)
 	var b strings.Builder
 	// WP login_header( '', $message ) — empty title on interim success (P6.25 / P6.51).
-	writeLoginHead(&b, home, blogname, "", "login", "interim-login", "interim-login-success")
+	writeLoginHead(&b, c, home, blogname, "", "login", "interim-login", "interim-login-success")
 	b.WriteString("\t\t\t<div id=\"login\">\n")
-	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
+	writeLoginLogo(&b, c)
 	if strings.TrimSpace(message) != "" {
 		b.WriteString(message)
 		b.WriteByte('\n')

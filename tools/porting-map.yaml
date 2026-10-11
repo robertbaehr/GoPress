@@ -10096,3 +10096,17 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P3.130 — query context header + pre_get_shortlink filter"
 
+# P6.55: login_header logo filters + action.
+- prefix: wp-login.php#login_header
+  go: internal/login/login.go
+  status: partial
+  task: P6.55
+  api: login_header
+  notes: "P6.55 — login_header action; login_headerurl/login_headertext logo"
+- prefix: wp-login.php#login_header#tests
+  go: internal/login/login_header_p6_55_test.go
+  status: partial
+  task: P6.55
+  api: n/a
+  notes: "P6.55 — filter overrides + default logo"
+
