@@ -1209,6 +1209,12 @@ func writeLoginHead(b *strings.Builder, c *wp.Context, home, blogname, title, ac
 		// WP interim modal: transparent page chrome so the parent admin shows through.
 		b.WriteString("\t\t<style>html{background-color: transparent;}</style>\n")
 	}
+	// P6.57: do_action( 'login_enqueue_scripts' ) then do_action( 'login_head' )
+	// before </head> (WP login_header).
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("login_enqueue_scripts")
+		c.Hooks.DoAction("login_head")
+	}
 	b.WriteString("\t\t</head>\n")
 	// P6.56: build classes then login_body_class filter (WP login_header).
 	classes := loginBodyClasses(c, action, extraClasses...)
