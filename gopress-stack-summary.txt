@@ -1,13 +1,13 @@
-GoPress stack (from origin/cursor/p10-213-status-refresh-ddf1 / 4f2f9d2f6e1d)
+GoPress stack (from origin/cursor/p10-215-status-refresh-ddf1 / ff9a774fe5b7)
 
-cursor/p5-152-media-text-attrs-ddf1 → 1278b654d097779dd2f5d347e79226c2b146e1a7
-cursor/p4-168-rest-posts-meta_value-ddf1 → 9aaa5adb0928fbc8addea9249b122ce47aadbec5
-cursor/p7-153-custom-background-ddf1 → e95f9e698946c3818c88a8e38e1097f0535efc94
-cursor/p2-148-wp-remote-retrieve-body-ddf1 → 1839d5f7a029cccff33e065433670e7ce5814f9a
-cursor/p3-146-front-oembed-discovery-ddf1 → f7d8abc525083117697e90fa1a1a2afa597e9236
-cursor/p9-37-doing-action-ddf1 → 18dc618e2a615384f4d35ed99d51719967630ca6
-cursor/p10-214-corpus-expand-ddf1 → cd5274a3d93bda3c54d36c3f6a3b345c025a07d9
-cursor/p10-215-status-refresh-ddf1 → 8d551d367404d75a37ada735253532bbb53f338d
+cursor/p5-153-gallery-attrs-ddf1 → 6bf3aa0a26fc0017c180df201ac201285ccf72e3
+cursor/p4-169-rest-posts-meta_compare-ddf1 → 3632737207db620fa812e7093fcc3a2bd21e248d
+cursor/p7-154-custom-header-ddf1 → 778c8d042dfc525c88268e6babc240f0247908bb
+cursor/p2-149-wp-remote-retrieve-response-code-ddf1 → 94cac254194652b2f4df0eec585c1a9f7e753ff3
+cursor/p3-147-front-feed-link-alternate-ddf1 → 1b9f3e4657db8a01901c7997b461265abcd27800
+cursor/p8-48-media-wp-get-attachment-image-src-ddf1 → fbf4ada24484955b666dac5e87865c2566b4d406
+cursor/p10-216-corpus-expand-ddf1 → caec7de098fd97b28d6278396e4cce3ea4364b2a
+cursor/p10-217-status-refresh-ddf1 → caec7de098fd97b28d6278396e4cce3ea4364b2a
 
-make diff: 100.0% (3033/3033 strict matches, 0 allowlisted, 0 failed)
-make check: ok (lint + go test -p 1 ./...)
+make diff: 100.0% (3162/3162 strict matches, 0 allowlisted, 0 failed)
+make check: pending
