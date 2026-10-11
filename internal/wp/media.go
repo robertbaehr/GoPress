@@ -817,7 +817,7 @@ func imageDownsizeByDimensions(c *Context, attachmentID int64, reqW, reqH int) (
 	best := full
 	bestScore := -1
 	if metaOK {
-		sizesRaw, _ := meta["sizes"]
+		sizesRaw := meta["sizes"]
 		var sizes map[string]any
 		switch t := sizesRaw.(type) {
 		case map[string]any:
@@ -842,7 +842,7 @@ func imageDownsizeByDimensions(c *Context, attachmentID int64, reqW, reqH int) (
 			if reqH > 0 && cand.Height > reqH {
 				continue
 			}
-			score := cand.Width*cand.Height
+			score := cand.Width * cand.Height
 			if score > bestScore {
 				best = cand
 				bestScore = score

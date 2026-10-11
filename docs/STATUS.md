@@ -48,8 +48,16 @@ make check
 - `make diff` / `gopress-tools diff` reloads `tests/fixtures/site.sql` into `gopress_ref` and `gopress_go` unless `--skip-db`.
 - After e2e uploads or other writes, restart `gopress serve` (or omit `--skip-db`) so object-cache/options match the reloaded fixture. Stale process memory can make a green corpus look red.
 
-## Recent stack (through P10.215)
+## Recent stack (through P10.217)
 
+- P10.217 STATUS/PORTING refresh after P5.153–P10.216
+- P10.216 Diff corpus expand (3162/3162 match) + gallery/meta_compare/custom-header/feed-link/image-src toppers; replaced set-cookie/Link/status-divergent cases
+- P8.48 `GetAttachmentImageSrcAny` string|[w,h] + filter false clears
+- P3.147 Front feed_links alternate `feed_content_type` + EscURL hrefs; `GetFeedLink`/`FeedContentType`
+- P2.149 `RemoteRetrieveResponseCodeOK`/`ResponseMessage` + HTTPResponse.Status reason phrase
+- P7.154 custom-header admin + theme_mod helpers + body class
+- P4.169 REST posts `meta_compare` BETWEEN / NOT BETWEEN
+- P5.153 `core/gallery` gradient attrs + align left|center|right|wide|full coerce
 - P10.215 STATUS/PORTING refresh after P5.152–P10.214
 - P10.214 Diff corpus expand (3033/3033 match) + media-text/meta_value/custom-bg/retrieve/oembed/doing-action toppers; dropped Link/set-cookie-divergent cases
 - P9.37 `DidAction`/`DidFilter` Context helpers + nested `DoingAction` stack
