@@ -1,4 +1,18 @@
 
+# P8.52: get_post_mime_type.
+- prefix: wp-includes/post.php#get_post_mime_type
+  go: internal/wp/post_mime_type.go
+  status: partial
+  task: P8.52
+  api: GetPostMimeType
+  notes: "P8.52 — GetPostMimeType(postID) → mime, ok"
+- prefix: wp-includes/post.php#get_post_mime_type#tests
+  go: internal/wp/post_mime_type_p8_52_test.go
+  status: partial
+  task: P8.52
+  api: n/a
+  notes: "P8.52 — attachment image/*; empty post mime; missing/nil"
+
 # P3.152: get_comments_pagenum_link pretty/query + filter.
 - prefix: wp-includes/link-template.php#get_comments_pagenum_link
   go: internal/wp/comments_pagenum_link.go
