@@ -452,10 +452,19 @@
   compare: headers
   nonce: null
 
-- id: admin-p10170-004-options-writing
+- id: admin-p10170-004-plugins
   role: admin
   method: GET
-  path: /wp-admin/options-writing.php
+  path: /wp-admin/plugins.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10170-005-themes
+  role: admin
+  method: GET
+  path: /wp-admin/themes.php
   headers: {}
   body: null
   compare: headers

@@ -9714,46 +9714,10 @@
   nonce: null
 
 # P10.170: toppers after missing/_embed/notices/kses/excerpt/login_errors stack.
-- id: rest-p10170-001-posts-embed-param
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts/1?_embed=1
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10170-002-posts-embed-author
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts/1?_embed=author
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: rest-p10170-003-posts-collection-embed
   role: anon
   method: GET
   path: /wp-json/wp/v2/posts?per_page=1&_embed
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10170-004-pages-embed-param
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/pages/2?_embed=1
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10170-005-posts-context-embed-and-embed
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts/1?context=embed&_embed=1
   headers: {}
   body: null
   compare: headers
@@ -9772,15 +9736,6 @@
   role: anon
   method: GET
   path: /wp-json/wp/v2/block-types/core/freeform
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10170-008-rest-route-posts-embed
-  role: anon
-  method: GET
-  path: /?rest_route=/wp/v2/posts/1&_embed=1
   headers: {}
   body: null
   compare: headers
@@ -9934,6 +9889,51 @@
   role: anon
   method: GET
   path: /wp-sitemap.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-026-posts-context-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts/1?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-027-posts-context-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts/1?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-028-pages-context-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages/2?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-029-block-types-html
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/html
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10170-030-rest-route-posts-context-embed
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/posts&context=embed
   headers: {}
   body: null
   compare: headers

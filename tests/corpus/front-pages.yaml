@@ -1598,10 +1598,19 @@
   compare: headers
   nonce: null
 
-- id: front-p10170-006-category-uncategorized
+- id: front-p10170-006-robots
   role: anon
   method: GET
-  path: /category/uncategorized/
+  path: /robots.txt
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10170-007-sitemap
+  role: anon
+  method: GET
+  path: /wp-sitemap.xml
   headers: {}
   body: null
   compare: headers
