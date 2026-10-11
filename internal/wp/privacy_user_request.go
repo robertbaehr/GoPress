@@ -328,4 +328,3 @@ func PrivacyAccountRequestConfirmedMessage(c *Context, requestID int64) string {
 	}
 	return message
 }
-
