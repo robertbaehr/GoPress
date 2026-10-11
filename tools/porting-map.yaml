@@ -11210,3 +11210,23 @@ wp-login.php#language-switcher-post
   task: P3.140
   api: n/a
   notes: "P3.140 — prefetch dedupe + attrs + non-http reject"
+
+# P9.35: deepen has_action / has_filter package helpers.
+- prefix: wp-includes/plugin.php#has_action
+  go: internal/wp/has_action.go
+  status: partial
+  task: P9.35
+  api: n/a
+  notes: "P9.35 — HasAction/HasFilter/HasActionPriority helpers; empty tag false"
+- prefix: wp-includes/plugin.php#has_action#hooks
+  go: internal/wp/hooks.go
+  status: partial
+  task: P9.35
+  api: n/a
+  notes: "P9.35 — HasAction/HasFilter reject empty tag"
+- prefix: wp-includes/plugin.php#has_action#tests
+  go: internal/wp/has_action_p9_35_test.go
+  status: partial
+  task: P9.35
+  api: n/a
+  notes: "P9.35 — shared registry, RemoveAllActions, package helpers"

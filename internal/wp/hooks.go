@@ -397,12 +397,20 @@ func (h *Hooks) remove(tag string, id uintptr, priority int) bool {
 
 // HasAction reports whether tag has at least one registered callback.
 // Like WordPress, actions and filters share the registry.
+// P9.35: empty tag is always false (no anonymous catch-all).
 func (h *Hooks) HasAction(tag string) bool {
+	if tag == "" {
+		return false
+	}
 	return h.has(tag)
 }
 
 // HasFilter reports whether tag has at least one registered callback.
+// P9.35: empty tag is always false.
 func (h *Hooks) HasFilter(tag string) bool {
+	if tag == "" {
+		return false
+	}
 	return h.has(tag)
 }
 
