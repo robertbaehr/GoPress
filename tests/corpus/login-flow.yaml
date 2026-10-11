@@ -909,3 +909,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.160: login toppers after site-editor / sticky stack.
+- id: login-p10160-001-lostpassword-redirect-sample
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword&redirect_to=%2Fsample-page%2F
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10160-002-rp-wp-lang-empty
+  role: anon
+  method: GET
+  path: /wp-login.php?action=rp&wp_lang=
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10160-003-redirect-site-editor
+  role: anon
+  method: GET
+  path: /wp-login.php?redirect_to=%2Fwp-admin%2Fsite-editor.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

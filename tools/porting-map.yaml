@@ -8746,3 +8746,11 @@ wp-login.php#language-switcher-post
   task: P9.28
   api: n/a
   notes: "P9.28 — DidFilter increment / action isolation coverage"
+
+# P10.160: expand diff corpus after P5.125–P9.28.
+- prefix: tests/corpus#p10.160
+  go: tests/corpus
+  status: partial
+  task: P10.160
+  api: n/a
+  notes: "P10.160 — sticky/ignore_sticky invalid + query-pagination/site-editor/front/login/ajax toppers; 1295 cases"
