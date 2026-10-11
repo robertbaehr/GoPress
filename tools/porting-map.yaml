@@ -6486,6 +6486,21 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P5.82 — ListTagCloud(taxonomy, number) query LIMIT"
 
+# P4.129: REST comments collection query filters.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-comments-controller.php#get_items
+  go: internal/rest/comments.go
+  status: partial
+  task: P4.129
+  api: n/a
+  notes: "P4.129 — ?orderby/?order/?search/?parent/?author/?include/?exclude on collection (P4.98 status remains)"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-comments-controller.php#get_items#tests
+  go: internal/rest/comments_query_test.go
+  status: partial
+  task: P4.129
+  api: n/a
+  notes: "P4.129 — unit coverage for orderby/search/parent/include/exclude"
+
 # P4.98: REST comments ?status= filter + moderator item fetch.
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-comments-controller.php#status
   go: internal/rest/comments.go
