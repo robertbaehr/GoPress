@@ -11022,3 +11022,17 @@ wp-login.php#language-switcher-post
   task: P10.199
   api: n/a
   notes: "P10.199 — summarize preformatted attrs, slug orderby, export search, trim_excerpt, dns-prefetch, srcset, corpus 2271"
+
+# P5.145: deepen core/verse fontSize / gradient; drop align.
+- prefix: wp-includes/blocks/verse#attrs
+  go: internal/blocks/code_preformatted.go
+  status: partial
+  task: P5.145
+  api: n/a
+  notes: "P5.145 — drop unsupported align; gradient preset + fontSize polish; sanitize before applySupports"
+- prefix: wp-includes/blocks/verse#attrs#tests
+  go: internal/blocks/verse_attrs_p5_145_test.go
+  status: partial
+  task: P5.145
+  api: n/a
+  notes: "P5.145 — align drop, saved gradient/fontSize/textAlign coverage"

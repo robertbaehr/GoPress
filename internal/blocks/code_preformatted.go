@@ -180,19 +180,38 @@ func synthesizePreformattedBlock(attrs map[string]any) string {
 	return b.String()
 }
 
-// renderVerse renders core/verse (P5.62 / P5.100).
+// renderVerse renders core/verse (P5.62 / P5.100 / P5.145).
 // Prefers saved markup; synthesizes <pre> from content; honors textAlign/className/anchor.
-// Color/typography/spacing land via applySupports on the caller.
+// P5.145: drop unsupported align; gradient preset + fontSize polish.
+// Color/typography/spacing land via applySupports on the caller (sanitized attrs).
 func (e *Env) renderVerse(block Block) string {
 	e = e.ensure()
+	attrs := sanitizeVerseBlockAttrs(block.Attrs)
 	out := e.renderSaved(block)
 	if strings.TrimSpace(out) != "" && reVerseTag.MatchString(out) {
-		return polishVerseMarkup(out, block.Attrs)
+		return polishVerseMarkup(out, attrs)
 	}
-	return synthesizeVerseBlock(block.Attrs)
+	return synthesizeVerseBlock(attrs)
 }
 
-// polishVerseMarkup ensures wp-block-verse + textAlign/className/anchor on saved HTML (P5.100).
+// sanitizeVerseBlockAttrs drops supports.align (not in block.json) before
+// synthesize/polish/supports (P5.145).
+func sanitizeVerseBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	if strings.TrimSpace(attrString(out, "align")) != "" {
+		delete(out, "align")
+	}
+	return out
+}
+
+// polishVerseMarkup ensures wp-block-verse + textAlign/className/anchor/gradient/fontSize
+// on saved HTML (P5.100 / P5.145).
 func polishVerseMarkup(out string, attrs map[string]any) string {
 	out = addRootClass(out, "wp-block-verse")
 	if ta := strings.TrimSpace(attrString(attrs, "textAlign")); ta != "" {
@@ -206,6 +225,15 @@ func polishVerseMarkup(out string, attrs map[string]any) string {
 	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
 		out = ensureRootAttribute(out, "id", anchor)
 	}
+	// P5.145: typography.fontSize preset class (also via applySupports).
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		out = addRootClass(out, "has-"+sanitizeClassToken(fs)+"-font-size")
+	}
+	// P5.145: color.gradients preset → has-{slug}-gradient-background.
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		out = addRootClass(out, "has-background")
+		out = addRootClass(out, "has-"+sanitizeClassToken(g)+"-gradient-background")
+	}
 	return out
 }
 
@@ -217,6 +245,12 @@ func synthesizeVerseBlock(attrs map[string]any) string {
 	}
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		class += " " + html.EscapeString(cn)
+	}
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		class += " has-" + sanitizeClassToken(fs) + "-font-size"
+	}
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		class += " has-background has-" + sanitizeClassToken(g) + "-gradient-background"
 	}
 	var b strings.Builder
 	b.WriteString(`<pre class="`)
