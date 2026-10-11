@@ -9,6 +9,21 @@
 
 
 
+
+# P4.180: orderby meta_value + meta_type DATE.
+- prefix: wp-includes/class-wp-query.php#meta_type_date
+  go: internal/wp/query.go
+  status: partial
+  task: P4.180
+  api: n/a
+  notes: "P4.180 — orderby=meta_value + meta_type=DATE CAST coverage"
+- prefix: wp-includes/class-wp-query.php#meta_type_date#tests
+  go: internal/wp/query_orderby_meta_date_p4_180_test.go
+  status: partial
+  task: P4.180
+  api: n/a
+  notes: "P4.180 — chronological ASC for date meta values"
+
 # P7.167: update-core.php pagenow chrome.
 - prefix: wp-admin/update-core.php#pagenow
   go: internal/admin/update_core.go
