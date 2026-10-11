@@ -9514,3 +9514,18 @@ wp-login.php#language-switcher-post
   task: P3.125
   api: n/a
   notes: "P3.125 — 404/search/filter coverage"
+
+# P9.30: remove_all_filters / remove_all_actions.
+- prefix: wp-includes/plugin.php#remove_all_filters
+  go: internal/wp/hooks.go
+  status: partial
+  task: P9.30
+  api: remove_all_filters
+  notes: "P9.30 — RemoveAllFilters/Actions; optional priority; always true"
+
+- prefix: wp-includes/plugin.php#remove_all_filters#tests
+  go: internal/wp/hooks_test.go
+  status: partial
+  task: P9.30
+  api: n/a
+  notes: "P9.30 — priority slice + full clear + nil"

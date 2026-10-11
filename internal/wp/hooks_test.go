@@ -346,3 +346,39 @@ func TestHooksHasActionFuncPriority(t *testing.T) {
 		t.Fatal("nil HasFilterFunc")
 	}
 }
+
+// P9.30: remove_all_filters / remove_all_actions.
+func TestHooksRemoveAllFilters(t *testing.T) {
+	h := wp.NewHooks()
+	h.AddFilter("t", func(value any, args ...any) any { return value.(string) + "a" }, 10, 1)
+	h.AddFilter("t", func(value any, args ...any) any { return value.(string) + "b" }, 20, 1)
+	if !h.RemoveAllFilters("t", 10) {
+		t.Fatal("RemoveAllFilters should return true")
+	}
+	if got := h.ApplyFilters("t", "x"); got != "xb" {
+		t.Fatalf("after remove pri 10: %v", got)
+	}
+	_ = h.RemoveAllFilters("t", -1)
+	if h.HasFilter("t") {
+		t.Fatal("expected empty after remove all")
+	}
+	if got := h.ApplyFilters("t", "z"); got != "z" {
+		t.Fatalf("identity after clear: %v", got)
+	}
+}
+
+func TestHooksRemoveAllActions(t *testing.T) {
+	h := wp.NewHooks()
+	n := 0
+	h.AddAction("a", func(args ...any) { n++ }, 10, 0)
+	h.AddAction("a", func(args ...any) { n += 10 }, 20, 0)
+	_ = h.RemoveAllActions("a", -1)
+	h.DoAction("a")
+	if n != 0 {
+		t.Fatalf("n=%d after remove_all_actions", n)
+	}
+	var nilH *wp.Hooks
+	if !nilH.RemoveAllFilters("x", -1) {
+		t.Fatal("nil RemoveAllFilters")
+	}
+}

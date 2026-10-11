@@ -227,6 +227,47 @@ func (h *Hooks) RemoveFilter(tag string, fn FilterFunc, priority int) bool {
 	return h.remove(tag, funcID(fn), priority)
 }
 
+// RemoveAllFilters removes all callbacks on tag (remove_all_filters, P9.30).
+// When priorityExact >= 0, only that priority is cleared; otherwise all
+// priorities are removed. Always returns true (WP return value).
+func (h *Hooks) RemoveAllFilters(tag string, priorityExact int) bool {
+	return h.removeAll(tag, priorityExact)
+}
+
+// RemoveAllActions removes all callbacks on tag (remove_all_actions, P9.30).
+// Actions and filters share the registry — same as RemoveAllFilters.
+func (h *Hooks) RemoveAllActions(tag string, priorityExact int) bool {
+	return h.removeAll(tag, priorityExact)
+}
+
+func (h *Hooks) removeAll(tag string, priorityExact int) bool {
+	if h == nil {
+		return true
+	}
+	h.mu.Lock()
+	defer h.mu.Unlock()
+	list := h.byTag[tag]
+	if len(list) == 0 {
+		return true
+	}
+	if priorityExact < 0 {
+		delete(h.byTag, tag)
+		return true
+	}
+	kept := list[:0]
+	for _, cb := range list {
+		if cb.priority != priorityExact {
+			kept = append(kept, cb)
+		}
+	}
+	if len(kept) == 0 {
+		delete(h.byTag, tag)
+	} else {
+		h.byTag[tag] = kept
+	}
+	return true
+}
+
 func (h *Hooks) remove(tag string, id uintptr, priority int) bool {
 	h.mu.Lock()
 	defer h.mu.Unlock()
