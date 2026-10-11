@@ -583,17 +583,36 @@ func getCommentByIDAny(c *wp.Context, id int64) (*Comment, error) {
 
 func requestRemoteIP(r *http.Request) string {
 	if r == nil {
-		return ""
+		return "127.0.0.1"
 	}
+	raw := ""
 	if xff := r.Header.Get("X-Forwarded-For"); xff != "" {
 		parts := strings.Split(xff, ",")
-		return strings.TrimSpace(parts[0])
+		raw = strings.TrimSpace(parts[0])
+	} else {
+		host := r.RemoteAddr
+		if i := strings.LastIndex(host, ":"); i >= 0 {
+			// Prefer splitting host:port; keep IPv6 [::1]:port shape for RestIsIPAddress.
+			if strings.HasPrefix(host, "[") {
+				if end := strings.Index(host, "]"); end > 0 {
+					raw = host[1:end]
+				} else {
+					raw = host
+				}
+			} else if strings.Count(host, ":") == 1 {
+				raw = host[:i]
+			} else {
+				raw = host
+			}
+		} else {
+			raw = host
+		}
 	}
-	host := r.RemoteAddr
-	if i := strings.LastIndex(host, ":"); i >= 0 {
-		return host[:i]
+	// P2.118: rest_is_ip_address gate; invalid REMOTE_ADDR → 127.0.0.1 (WP comments controller).
+	if ok := wp.RestIsIPAddress(raw); ok != "" {
+		return ok
 	}
-	return host
+	return "127.0.0.1"
 }
 
 func truncateStr(s string, n int) string {
