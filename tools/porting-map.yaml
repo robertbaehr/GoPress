@@ -10800,3 +10800,17 @@ wp-login.php#language-switcher-post
   task: P5.143
   api: n/a
   notes: "P5.143 — full→drop, wide keep, saved gradient/fontSize coverage"
+
+# P4.159: REST posts orderby/order string-type + modified sort deepen.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#orderby-modified
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.159
+  api: n/a
+  notes: "P4.159 — orderby[]=/order[]= → rest_invalid_type string; modified asc/desc coverage"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#orderby-modified#tests
+  go: internal/rest/posts_modified_order_p4_159_test.go
+  status: partial
+  task: P4.159
+  api: n/a
+  notes: "P4.159 — array-form invalid_type + modified asc/desc with include"
