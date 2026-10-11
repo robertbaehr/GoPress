@@ -9492,3 +9492,25 @@ wp-login.php#language-switcher-post
   task: P2.127
   api: n/a
   notes: "P2.127 — class/inert/data-lazy + href protocol strip"
+
+# P3.125: classic wp_title parts + filters.
+- prefix: wp-includes/general-template.php#wp_title
+  go: internal/wp/wp_title.go
+  status: partial
+  task: P3.125
+  api: wp_title
+  notes: "P3.125 — GetWPTitle parts/sep/right; wp_title_parts + wp_title filters"
+
+- prefix: wp-includes/general-template.php#wp_title#front
+  go: internal/server/front.go
+  status: partial
+  task: P3.125
+  api: n/a
+  notes: "P3.125 — classic singular shim <title> via GetWPTitle + blogname"
+
+- prefix: wp-includes/general-template.php#wp_title#tests
+  go: internal/wp/wp_title_p3_125_test.go
+  status: partial
+  task: P3.125
+  api: n/a
+  notes: "P3.125 — 404/search/filter coverage"

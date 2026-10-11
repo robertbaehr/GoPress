@@ -1990,12 +1990,26 @@ func (f *Front) renderSingularShim(w http.ResponseWriter, c *wp.Context, post *s
 		bodyClass += " post-password-protected"
 	}
 
+	// P3.125: classic shim <title> via wp_title + blogname (theme filter style).
+	if c != nil && c.Scope != nil {
+		c.Scope.QueriedObjectID = post.ID
+		if post.Type == "page" {
+			c.Scope.IsPage = true
+		} else {
+			c.Scope.IsSingle = true
+		}
+		c.Scope.IsSingular = true
+	}
+	docTitle := strings.TrimSpace(wp.GetWPTitle(c, "\u2014", "right"))
+	if docTitle == "" {
+		docTitle = post.Title + " \u2014 "
+	}
+	docTitle = docTitle + blogname
+
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"utf-8\">\n")
 	b.WriteString("<title>")
-	b.WriteString(html.EscapeString(post.Title))
-	b.WriteString(" &#8212; ")
-	b.WriteString(html.EscapeString(blogname))
+	b.WriteString(html.EscapeString(docTitle))
 	b.WriteString("</title>\n</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(wp.BodyClassWithAdminBar(c, bodyClass)))
 	b.WriteString("\">\n")
