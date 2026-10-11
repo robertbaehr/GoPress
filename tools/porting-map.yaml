@@ -9925,3 +9925,17 @@ wp-login.php#language-switcher-post
   task: P10.179
   api: n/a
   notes: "P10.179 — summarize page-list-item, REST type create, welcome panel, KsesSplit, feed_links_extra singular, CurrentFilters + 1649 corpus"
+
+# P5.135: home-link attrs (nav context colors, anchor, class/attr order).
+- prefix: wp-includes/blocks/home-link.php#attrs
+  go: internal/blocks/navigation.go
+  status: partial
+  task: P5.135
+  api: render_block_core_home_link
+  notes: "P5.135 — Navigation context colors, supports.anchor id, class/attr order"
+- prefix: wp-includes/blocks/home-link.php#attrs#tests
+  go: internal/blocks/home_link_attrs_p5_135_test.go
+  status: partial
+  task: P5.135
+  api: n/a
+  notes: "P5.135 — nav context colors + anchor + href/rel/target/aria-current order"
