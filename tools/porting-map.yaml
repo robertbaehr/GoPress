@@ -9350,3 +9350,18 @@ wp-login.php#language-switcher-post
   task: P7.131
   api: n/a
   notes: "P7.131 — defaults, typed, filters, emit capture"
+
+# P2.126: deepen wp_kses_allowed_html contexts + explicit map + form restore.
+- prefix: wp-includes/kses.php#wp_kses_allowed_html
+  go: internal/wp/kses.go
+  status: partial
+  task: P2.126
+  api: wp_kses_allowed_html
+  notes: "P2.126 — user_description a[rel]/target; strip; entities; explicit map; post form restore"
+
+- prefix: wp-includes/kses.php#wp_kses_allowed_html#tests
+  go: internal/wp/kses_allowed_html_p2_126_test.go
+  status: partial
+  task: P2.126
+  api: n/a
+  notes: "P2.126 — context coverage + form restore + explicit filter"
