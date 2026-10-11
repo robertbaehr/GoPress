@@ -74,6 +74,17 @@ type Env struct {
 	// CommentOrder is comment_order option (asc|desc) for core/comment-template (P5.90).
 	CommentOrder string
 
+	// PageComments enables front comment paging (page_comments option, P3.108).
+	PageComments bool
+	// CommentsPerPage is comments_per_page when PageComments is on (P3.108).
+	CommentsPerPage int
+	// CommentPage is the resolved 1-based cpage (P3.108).
+	CommentPage int
+	// CommentTotalPages is total comment pages (≥1 when paging, P3.108).
+	CommentTotalPages int
+	// CommentPermalink is the singular URL used for cpage links (P3.108).
+	CommentPermalink string
+
 	// AuthorName / AuthorEmail / AuthorBio / AuthorLink power author blocks (P5.19/P5.46).
 	AuthorName  func(postID int64) string
 	AuthorEmail func(postID int64) string

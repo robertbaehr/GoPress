@@ -3820,6 +3820,35 @@ wp-login.php#language-switcher-post
   api: internal
   notes: "P3.97 — replytocom parent/title/cancel; comment-reply-link on shim list"
 
+# P3.108: front paged comments (page_comments / cpage).
+- prefix: wp-includes/comment-template.php#paginate_comments_links
+  go: internal/wp/comment_paging.go
+  status: partial
+  task: P3.108
+  api: exported
+  notes: "P3.108 — CommentPagingForPost/SliceCommentPage/CommentsPagenumLink/CommentPaginationHTML"
+
+- prefix: wp-includes/comment-template.php#comments_template_paging
+  go: internal/server/front.go
+  status: partial
+  task: P3.108
+  api: internal
+  notes: "P3.108 — writeCommentsSection honors page_comments + cpage + nav"
+
+- prefix: wp-includes/comment-template.php#paginate_comments_links#tests
+  go: internal/wp/comment_paging_test.go
+  status: partial
+  task: P3.108
+  api: n/a
+  notes: "P3.108 — unit coverage for newest/oldest defaults and nav links"
+
+- prefix: wp-includes/comment-template.php#comments_template_paging#tests
+  go: internal/server/comments_test.go
+  status: partial
+  task: P3.108
+  api: n/a
+  notes: "P3.108 — front singular cpage slice integration"
+
 - prefix: wp-includes/feed-rss2.php#slash_comments#test
   go: internal/server/feed_slash_comments_test.go
   status: partial

@@ -97,6 +97,55 @@ func TestCommentsPostMethodNotAllowed(t *testing.T) {
 	}
 }
 
+func TestFrontPagedComments(t *testing.T) {
+	// P3.108: page_comments + cpage slices block comment-template roots.
+	c := testBoot(t)
+	prevPage, _ := c.Options.GetOption("page_comments", "0").(string)
+	prevPer, _ := c.Options.GetOption("comments_per_page", "50").(string)
+	prevDef, _ := c.Options.GetOption("default_comments_page", "newest").(string)
+	t.Cleanup(func() {
+		_, _ = c.Options.UpdateOption("page_comments", prevPage, "yes")
+		_, _ = c.Options.UpdateOption("comments_per_page", prevPer, "yes")
+		_, _ = c.Options.UpdateOption("default_comments_page", prevDef, "yes")
+	})
+	_, _ = c.Options.UpdateOption("page_comments", "1", "yes")
+	_, _ = c.Options.UpdateOption("comments_per_page", "1", "yes")
+	_, _ = c.Options.UpdateOption("default_comments_page", "oldest", "yes")
+
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}}
+	req := httptest.NewRequest(http.MethodGet, "/?p=13&cpage=1", nil)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, "wp-block-comments-pagination") {
+		t.Fatalf("expected comments pagination block")
+	}
+	if !strings.Contains(body, "cpage=2") {
+		t.Fatalf("expected cpage=2 link")
+	}
+	// Page 1 (oldest): top-level comment-2 (+ threaded children), not comment-9.
+	if !strings.Contains(body, `id="comment-2"`) {
+		t.Fatalf("expected first page root comment-2")
+	}
+	if strings.Contains(body, `id="comment-9"`) {
+		t.Fatalf("comment-9 should be on a later page")
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/?p=13&cpage=2", nil)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	body = rec.Body.String()
+	if !strings.Contains(body, `id="comment-9"`) {
+		t.Fatalf("expected page 2 to include comment-9")
+	}
+	if strings.Contains(body, `id="comment-2"`) {
+		t.Fatalf("comment-2 should not repeat on page 2")
+	}
+}
+
 func TestCommentReplyToForm(t *testing.T) {
 	// P3.97: ?replytocom= sets parent, reply title, and visible cancel link.
 	c := testBoot(t)
