@@ -52,8 +52,9 @@ func TestPostEditSave(t *testing.T) {
 	}
 	t.Cleanup(func() {
 		q, args, perr := c.DB.Prepare(
-			"UPDATE "+c.DB.Posts()+" SET post_title = %s, post_content = %s, post_excerpt = %s, post_name = %s, post_status = %s WHERE ID = %d",
-			orig.Title, orig.Content, orig.Excerpt, orig.Name, orig.Status, orig.ID,
+			"UPDATE "+c.DB.Posts()+" SET post_title = %s, post_content = %s, post_excerpt = %s, post_name = %s, post_status = %s, "+
+				"post_modified = %s, post_modified_gmt = %s WHERE ID = %d",
+			orig.Title, orig.Content, orig.Excerpt, orig.Name, orig.Status, orig.Modified, orig.ModifiedGMT, orig.ID,
 		)
 		if perr == nil {
 			_, _ = c.DB.Exec(q, args...)
