@@ -5059,60 +5059,18 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 		},
 		CommentOrder: optionString(c, "comment_order", "asc"),
 		AdjacentPost: func(postID int64, previous bool, taxonomy string) *blocks.QueryPost {
-			// previous = older (date ASC toward past); next = newer.
-			// P5.97: taxonomy non-empty → in_same_term join (get_{next,previous}_post_link).
-			op, order := "<", "DESC"
-			if !previous {
-				op, order = ">", "ASC"
-			}
-			p, err := wp.GetPostByID(c, postID)
-			if err != nil || p == nil {
-				return nil
-			}
-			var q string
-			var args []any
-			taxonomy = strings.TrimSpace(taxonomy)
-			if taxonomy != "" {
-				q, args, err = c.DB.Prepare(
-					"SELECT p.ID, p.post_title, p.post_name, p.post_date FROM "+c.DB.Posts()+" p "+
-						"INNER JOIN "+c.DB.TermRelationships()+" tr ON p.ID = tr.object_id "+
-						"INNER JOIN "+c.DB.TermTaxonomy()+" tt ON tr.term_taxonomy_id = tt.term_taxonomy_id "+
-						"AND tt.taxonomy = %s "+
-						"WHERE p.post_type = %s AND p.post_status = %s AND p.post_date "+op+" %s "+
-						"AND tt.term_taxonomy_id IN ("+
-						"SELECT tt2.term_taxonomy_id FROM "+c.DB.TermRelationships()+" tr2 "+
-						"INNER JOIN "+c.DB.TermTaxonomy()+" tt2 ON tr2.term_taxonomy_id = tt2.term_taxonomy_id "+
-						"WHERE tr2.object_id = %d AND tt2.taxonomy = %s"+
-						") ORDER BY p.post_date "+order+" LIMIT 1",
-					taxonomy, "post", "publish", p.Date, postID, taxonomy,
-				)
-			} else {
-				q, args, err = c.DB.Prepare(
-					"SELECT ID, post_title, post_name, post_date FROM "+c.DB.Posts()+
-						" WHERE post_type = %s AND post_status = %s AND post_date "+op+" %s "+
-						"ORDER BY post_date "+order+" LIMIT 1",
-					"post", "publish", p.Date,
-				)
-			}
-			if err != nil {
-				return nil
-			}
-			row, err := c.DB.GetRow(q, args...)
-			if err != nil || row == nil {
+			// P3.122 / P5.97: get_adjacent_post + in_same_term + join/where/sort filters.
+			adj, err := wp.GetAdjacentPost(c, postID, previous, taxonomy)
+			if err != nil || adj == nil {
 				return nil
 			}
 			home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
-			id := rowInt64DB(row["ID"])
-			name := rowStringDB(row["post_name"])
-			date := rowStringDB(row["post_date"])
-			title := rowStringDB(row["post_title"])
-			link := home + "/?p=" + strconv.FormatInt(id, 10)
-			if name != "" && date != "" {
-				if t, err := time.Parse("2006-01-02 15:04:05", date); err == nil {
-					link = fmt.Sprintf("%s/%04d/%02d/%02d/%s/", home, t.Year(), int(t.Month()), t.Day(), name)
-				}
+			return &blocks.QueryPost{
+				ID:    adj.ID,
+				Title: adj.Title,
+				Link:  wp.AdjacentPostPermalink(home, adj),
+				Date:  adj.Date,
 			}
-			return &blocks.QueryPost{ID: id, Title: title, Link: link, Date: date}
 		},
 		AuthorName: func(postID int64) string {
 			u := authorUserForPost(c, postID)

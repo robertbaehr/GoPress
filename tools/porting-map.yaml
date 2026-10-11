@@ -9083,3 +9083,25 @@ wp-login.php#language-switcher-post
   task: P2.124
   api: n/a
   notes: "P2.124 — nested map/slice unslash + MapDeep coverage"
+
+# P3.122: front get_adjacent_post + join/where/sort filters.
+- prefix: wp-includes/link-template.php#get_adjacent_post
+  go: internal/wp/adjacent_post.go
+  status: partial
+  task: P3.122
+  api: get_adjacent_post
+  notes: "P3.122 — GetAdjacentPost/GetPreviousPost/GetNextPost; join/where/sort filters; ID tie-break"
+
+- prefix: wp-includes/link-template.php#get_adjacent_post#front
+  go: internal/server/front.go
+  status: partial
+  task: P3.122
+  api: n/a
+  notes: "P3.122 — AdjacentPost env uses GetAdjacentPost + AdjacentPostPermalink"
+
+- prefix: wp-includes/link-template.php#get_adjacent_post#tests
+  go: internal/wp/adjacent_post_test.go
+  status: partial
+  task: P3.122
+  api: n/a
+  notes: "P3.122 — previous/next + where filter + permalink coverage"
