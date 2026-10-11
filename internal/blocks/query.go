@@ -1465,10 +1465,14 @@ func (e *Env) renderQueryPagination(block Block) string {
 		return ""
 	}
 	classes := queryPaginationWrapperClasses(block.Attrs)
-	return `<nav aria-label="Pagination" class="` + html.EscapeString(classes) + `">` + inner + `</nav>`
+	idAttr := ""
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		idAttr = ` id="` + html.EscapeString(anchor) + `"`
+	}
+	return `<nav aria-label="Pagination"` + idAttr + ` class="` + html.EscapeString(classes) + `">` + inner + `</nav>`
 }
 
-// queryPaginationWrapperClasses mirrors get_block_wrapper_attributes for query-pagination (P5.119).
+// queryPaginationWrapperClasses mirrors get_block_wrapper_attributes for query-pagination (P5.119 / P5.125).
 func queryPaginationWrapperClasses(attrs map[string]any) string {
 	parts := []string{"wp-block-query-pagination"}
 	if align, ok := attrs["align"].(string); ok && strings.TrimSpace(align) != "" {
@@ -1477,9 +1481,23 @@ func queryPaginationWrapperClasses(attrs map[string]any) string {
 	if hasLinkColorAttr(attrs) {
 		parts = append(parts, "has-link-color")
 	}
+	if tc := strings.TrimSpace(attrString(attrs, "textColor")); tc != "" {
+		parts = append(parts, "has-text-color", "has-"+sanitizeClassToken(tc)+"-color")
+	}
+	if bg := strings.TrimSpace(attrString(attrs, "backgroundColor")); bg != "" {
+		parts = append(parts, "has-background", "has-"+sanitizeClassToken(bg)+"-background-color")
+	}
+	if hasCustomTextColor(attrs) {
+		parts = append(parts, "has-text-color")
+	}
+	if hasCustomBackgroundColor(attrs) {
+		parts = append(parts, "has-background")
+	}
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		parts = append(parts, cn)
 	}
+	// P5.125: block.json layout.default.type=flex → is-layout-flex wrapper classes.
+	parts = append(parts, "is-layout-flex", "wp-block-query-pagination-is-layout-flex")
 	return strings.Join(parts, " ")
 }
 
@@ -1624,7 +1642,12 @@ func (e *Env) renderQueryPaginationPrevious(block Block) string {
 	if !showLabel {
 		aria = ` aria-label="` + html.EscapeString(labelText) + `"`
 	}
-	return `<a href="` + html.EscapeString(href) + `" class="wp-block-query-pagination-previous"` + aria + `>` +
+	// P5.125: className on previous link (get_block_wrapper_attributes subset).
+	cls := "wp-block-query-pagination-previous"
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		cls += " " + cn
+	}
+	return `<a href="` + html.EscapeString(href) + `" class="` + html.EscapeString(cls) + `"` + aria + `>` +
 		label + `</a>`
 }
 
@@ -1664,26 +1687,43 @@ func (e *Env) renderQueryPaginationNext(block Block) string {
 	if !showLabel {
 		aria = ` aria-label="` + html.EscapeString(labelText) + `"`
 	}
-	return `<a href="` + html.EscapeString(href) + `" class="wp-block-query-pagination-next"` + aria + `>` +
+	// P5.125: className on next link (get_block_wrapper_attributes subset).
+	cls := "wp-block-query-pagination-next"
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		cls += " " + cn
+	}
+	return `<a href="` + html.EscapeString(href) + `" class="` + html.EscapeString(cls) + `"` + aria + `>` +
 		label + `</a>`
 }
 
 func (e *Env) renderQueryPaginationNumbers(block Block) string {
 	e = e.ensure()
-	_ = block
 	page := e.queryPaginationPage()
 	max := e.queryPaginationMaxPages()
 	if max <= 1 {
 		return ""
 	}
 	home := e.queryPaginationHome()
+	// P5.125: midSize via attrInt (float64/int/string); default 2 like paginate_links.
 	midSize := 2
-	if n, ok := block.Attrs["midSize"].(float64); ok && n >= 0 {
-		midSize = int(n)
+	if n, ok := attrInt(block.Attrs, "midSize"); ok && n >= 0 {
+		midSize = n
 	}
 
 	var b strings.Builder
-	b.WriteString(`<div class="wp-block-query-pagination-numbers">`)
+	b.WriteString(`<div`)
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		b.WriteString(` id="`)
+		b.WriteString(html.EscapeString(anchor))
+		b.WriteString(`"`)
+	}
+	numClasses := []string{"wp-block-query-pagination-numbers"}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		numClasses = append(numClasses, cn)
+	}
+	b.WriteString(` class="`)
+	b.WriteString(html.EscapeString(strings.Join(numClasses, " ")))
+	b.WriteString(`">`)
 	writePage := func(n int, current bool) {
 		if current {
 			b.WriteString(`<span aria-current="page" class="page-numbers current">`)

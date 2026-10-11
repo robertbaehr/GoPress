@@ -8628,3 +8628,25 @@ wp-login.php#language-switcher-post
   task: P10.156
   api: n/a
   notes: "P10.156 — offset validation + latest-posts/comments + front/login/admin toppers; 1240 cases"
+
+# P5.125: deepen query-pagination / previous / next / numbers.
+- prefix: wp-includes/blocks/query-pagination.php#p5.125
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.125
+  api: internal
+  notes: "P5.125 — anchor id; flex layout classes; text/background colors; previous/next/numbers className"
+
+- prefix: wp-includes/blocks/query-pagination-numbers.php#p5.125
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.125
+  api: internal
+  notes: "P5.125 — midSize via attrInt; numbers wrapper className/anchor"
+
+- prefix: wp-includes/blocks/query-pagination.php#p5.125#tests
+  go: internal/blocks/query_pagination_p5_125_test.go
+  status: partial
+  task: P5.125
+  api: n/a
+  notes: "P5.125 — anchor/flex/colors/midSize/className unit coverage"
