@@ -11891,6 +11891,20 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P6.62 — filter replace + default title shape"
 
+# P6.63: screen-reader <h1> from login_header title gating.
+- prefix: wp-login.php#login_header#screen-reader-title
+  go: internal/login/login.go
+  status: partial
+  task: P6.63
+  api: n/a
+  notes: "P6.63 — emit screen-reader h1 when !empty(title) && action != confirm_admin_email"
+- prefix: wp-login.php#login_header#screen-reader-title#tests
+  go: internal/login/login_screen_reader_title_p6_63_test.go
+  status: partial
+  task: P6.63
+  api: n/a
+  notes: "P6.63 — login has h1; interim empty + confirm_admin_email omit"
+
 # P10.212: expand diff corpus after P5.151–P6.60 stack.
 - prefix: tests/corpus#p10.212
   go: tests/corpus
