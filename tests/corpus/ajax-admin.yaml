@@ -1411,3 +1411,114 @@
   body: null
   compare: headers
   nonce: null
+
+
+# P10.216: ajax toppers after stack.
+
+- id: ajax-p10216-001
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=dashboard
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10216-002
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=upload
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10216-003
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10216-004
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=themes
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10216-005
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=plugins
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10216-006
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=media
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10216-007
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=custom-header
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10216-008
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=custom-background
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10216-009
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=wp-link-ajax
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10216-010
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=logged-in
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10216-011
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=rest-nonce
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10216-012
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=oembed-cache
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

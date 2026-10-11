@@ -1593,3 +1593,276 @@
   body: null
   compare: headers
   nonce: null
+
+
+# P10.216: admin toppers — custom-header + gallery-adjacent screens.
+
+- id: admin-p10216-001
+  role: admin
+  method: GET
+  path: /wp-admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216-002
+  role: admin
+  method: GET
+  path: /wp-admin/index.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216-003
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216-004
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_type=page
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216b-005
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_status=draft
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216b-006
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_status=trash
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216b-007
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?orderby=title&order=asc
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216-008
+  role: admin
+  method: GET
+  path: /wp-admin/custom-background.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216-009
+  role: admin
+  method: GET
+  path: /wp-admin/custom-header.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216-010
+  role: admin
+  method: GET
+  path: /wp-admin/options-general.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216b-011
+  role: admin
+  method: GET
+  path: /wp-admin/edit-comments.php?comment_status=moderated
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216b-012
+  role: admin
+  method: GET
+  path: /wp-admin/edit-comments.php?comment_status=spam
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216b-013
+  role: admin
+  method: GET
+  path: /wp-admin/edit-comments.php?comment_status=trash
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216b-014
+  role: admin
+  method: GET
+  path: /wp-admin/users.php?role=administrator
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216b-015
+  role: admin
+  method: GET
+  path: /wp-admin/users.php?role=subscriber
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216-016
+  role: admin
+  method: GET
+  path: /wp-admin/plugins.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216-017
+  role: admin
+  method: GET
+  path: /wp-admin/users.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216-018
+  role: admin
+  method: GET
+  path: /wp-admin/profile.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216-019
+  role: admin
+  method: GET
+  path: /wp-admin/edit-comments.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216-020
+  role: admin
+  method: GET
+  path: /wp-admin/edit-tags.php?taxonomy=category
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216-021
+  role: admin
+  method: GET
+  path: /wp-admin/edit-tags.php?taxonomy=post_tag
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216b-022
+  role: admin
+  method: GET
+  path: /wp-admin/plugins.php?plugin_status=active
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216b-023
+  role: admin
+  method: GET
+  path: /wp-admin/plugins.php?plugin_status=inactive
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216b-024
+  role: admin
+  method: GET
+  path: /wp-admin/edit-tags.php?taxonomy=category&orderby=name
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216b-025
+  role: admin
+  method: GET
+  path: /wp-admin/edit-tags.php?taxonomy=post_tag&orderby=name
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216b-026
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?s=hello
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216b-027
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?m=202406
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216b-028
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?cat=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216b-029
+  role: admin
+  method: GET
+  path: /wp-admin/index.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10216b-030
+  role: admin
+  method: GET
+  path: /wp-admin/profile.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

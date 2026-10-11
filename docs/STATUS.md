@@ -567,3 +567,5 @@ make check
 - P7.79 `edit.php` pages Order (`menu_order`) column
 - P4.94 REST pages `?orderby=menu_order`
 - P5.78 `core/widget-group` empty placeholder (widgets/sidebars gone)
+
+- P10.216 Diff corpus expand (3162/3162 match) + gallery/meta_compare/custom-header/feed-link/image-src toppers; replaced set-cookie/Link/status-divergent cases
