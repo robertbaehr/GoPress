@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -50,6 +51,9 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 			h.serveRegister(w, r, c)
 		case "confirm_admin_email":
 			h.serveConfirmAdminEmail(w, r, c)
+		case "confirmaction":
+			// P6.46: privacy user_request email confirmation.
+			h.serveConfirmAction(w, r, c)
 		case "checkemail":
 			// P6.44: WP sets $action=checkemail when ?checkemail= is present.
 			h.serveCheckEmail(w, r, c)
@@ -86,6 +90,55 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context) 
 		w.Header().Set("Allow", "GET, HEAD, POST")
 		http.Error(w, "Method Not Allowed\n", http.StatusMethodNotAllowed)
 	}
+}
+
+// serveConfirmAction handles wp-login.php?action=confirmaction (P6.46).
+// Validates request_id + confirm_key for a privacy user_request, fires
+// user_request_action_confirmed, and shows the confirmed message.
+func (h *Handler) serveConfirmAction(w http.ResponseWriter, r *http.Request, c *wp.Context) {
+	q := r.URL.Query()
+	if strings.TrimSpace(q.Get("request_id")) == "" {
+		wp.WriteDie(w, wp.Die(c, r, "Missing request ID.", "", map[string]any{"response": 500}))
+		return
+	}
+	if strings.TrimSpace(q.Get("confirm_key")) == "" {
+		wp.WriteDie(w, wp.Die(c, r, "Missing confirm key.", "", map[string]any{"response": 500}))
+		return
+	}
+	requestID, _ := strconv.ParseInt(strings.TrimSpace(q.Get("request_id")), 10, 64)
+	key := wp.SanitizeTextField(wp.UnslashString(q.Get("confirm_key")))
+	if err := wp.ValidateUserRequestKey(c, requestID, key); err != nil {
+		wp.WriteDie(w, wp.Die(c, r, err, "", nil))
+		return
+	}
+	_ = wp.ConfirmUserRequest(c, requestID)
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("user_request_action_confirmed", requestID)
+	}
+	message := wp.PrivacyAccountRequestConfirmedMessage(c, requestID)
+	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	blogname := optionString(c, "blogname", "GoPress")
+	var b strings.Builder
+	writeLoginHead(&b, home, blogname, "User action confirmed.", "confirmaction")
+	b.WriteString("\t\t\t<div id=\"login\">\n")
+	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"https://wordpress.org/\">Powered by WordPress</a></h1>\n")
+	b.WriteString("\t\t<div id=\"login-message\" class=\"message\">")
+	b.WriteString(message)
+	b.WriteString("</div>\n")
+	b.WriteString("\t\t<p id=\"backtoblog\"><a href=\"")
+	if home != "" {
+		b.WriteString(html.EscapeString(home + "/"))
+	} else {
+		b.WriteString("/")
+	}
+	b.WriteString("\">")
+	b.WriteString("&larr; Go to ")
+	b.WriteString(html.EscapeString(blogname))
+	b.WriteString("</a></p>\n")
+	b.WriteString("\t\t</div>\n")
+	b.WriteString("\t</body>\n")
+	b.WriteString("\t</html>\n")
+	writeLoginHTML(w, r, b.String(), false, c)
 }
 
 // servePostPass handles wp-login.php?action=postpass (P6.15).
