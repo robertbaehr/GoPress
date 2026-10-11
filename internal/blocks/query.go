@@ -806,11 +806,12 @@ func (e *Env) renderSiteTitle(block Block) string {
 			if t := strings.TrimSpace(attrString(block.Attrs, "linkTarget")); t != "" {
 				target = t
 			}
+			// P3.127: WP site-title attr order is href, target, rel="home", then aria-current.
 			aria := ""
 			if e.isSiteTitleCurrent() {
 				aria = ` aria-current="page"`
 			}
-			inner = `<a` + aria + ` href="` + html.EscapeString(home) + `" target="` + html.EscapeString(target) + `" rel="home">` + inner + `</a>`
+			inner = `<a href="` + html.EscapeString(home) + `" target="` + html.EscapeString(target) + `" rel="home"` + aria + `>` + inner + `</a>`
 		}
 	}
 	return `<` + tag + ` class="` + html.EscapeString(strings.Join(classes, " ")) + `">` + inner + `</` + tag + `>`
@@ -906,16 +907,18 @@ func (e *Env) renderSiteLogo(block Block) string {
 			if t, ok := block.Attrs["linkTarget"].(string); ok && strings.TrimSpace(t) != "" {
 				target = strings.TrimSpace(t)
 			}
-			aria := ""
-			if target == "_blank" {
-				aria = ` aria-label="(Home link, opens in a new tab)"`
-			}
-			// P5.120: aria-current like get_custom_logo / site-title (!is_paged front/home).
+			// P3.127 / get_custom_logo: href, class, rel="home", aria-current; then blank-tab attrs.
 			current := ""
 			if e.isSiteTitleCurrent() {
 				current = ` aria-current="page"`
 			}
-			inner = `<a` + current + ` href="` + html.EscapeString(home) + `" class="custom-logo-link" rel="home"` + aria + ` target="` + html.EscapeString(target) + `">` + img + `</a>`
+			extra := ""
+			if target == "_blank" {
+				extra = ` aria-label="(Home link, opens in a new tab)" target="_blank"`
+			} else if target != "_self" {
+				extra = ` target="` + html.EscapeString(target) + `"`
+			}
+			inner = `<a href="` + html.EscapeString(home) + `" class="custom-logo-link" rel="home"` + current + extra + `>` + img + `</a>`
 		}
 	}
 	// P5.120: className / align like get_block_wrapper_attributes.

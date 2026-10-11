@@ -9741,3 +9741,25 @@ wp-login.php#language-switcher-post
   task: P2.129
   api: n/a
   notes: "P2.129 — keep/reject attrs, whitespace, javascript: strip"
+
+# P3.127: front rel=home attr order on site-title / site-logo.
+- prefix: wp-includes/blocks/site-title.php#rel-home
+  go: internal/blocks/query.go
+  status: partial
+  task: P3.127
+  api: render_block_core_site_title
+  notes: "P3.127 — href/target/rel=home then aria-current attr order"
+
+- prefix: wp-includes/blocks/site-logo.php#rel-home
+  go: internal/blocks/query.go
+  status: partial
+  task: P3.127
+  api: render_block_core_site_logo
+  notes: "P3.127 — custom-logo-link href/class/rel then aria-current"
+
+- prefix: wp-includes/blocks/site-title.php#rel-home#tests
+  go: internal/blocks/site_title_rel_home_p3_127_test.go
+  status: partial
+  task: P3.127
+  api: n/a
+  notes: "P3.127 — exact attr order with aria-current on front"
