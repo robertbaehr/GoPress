@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.222)
 
+- P2.156 `GetAllowedHTTPOrigins` / `IsAllowedHTTPOrigin`
 - P4.176 WP_Query `orderby=meta_value` + `meta_type` CAST
 - P6.65 `lost_password_html_link` filter on login nav
 - P10.222 STATUS/PORTING refresh after P6.64–P9.40
