@@ -1875,17 +1875,20 @@ func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	stylesheet := activeStylesheet(c)
 	env := blockRenderEnv(c)
+	perm := singularPermalink(home, post)
 	env.SetCurrentPost(&blocks.QueryPost{
 		ID:               post.ID,
 		Title:            post.Title,
 		Content:          post.Content,
 		Date:             post.Date,
-		Link:             singularPermalink(home, post),
+		Link:             perm,
 		FeaturedImageURL: post.FeaturedImageURL,
 		FeaturedImageAlt: post.FeaturedImageAlt,
 		Password:         post.Password,
 		ClassList:        wp.GetPostClass(c, post.ID),
 	})
+	// P3.108: wire page_comments / cpage into comment-template + comments-pagination.
+	applyCommentPagingEnv(env, c, post.ID, perm)
 	env.PasswordRequired = func(postID int64) bool {
 		if postID != post.ID {
 			return false
@@ -1928,7 +1931,6 @@ func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString("</title>\n")
 	page, cpage := wp.CanonicalPageFromRequest(c)
-	perm := singularPermalink(home, post)
 	if canon := wp.GetCanonicalURL(c, post.ID, page, cpage); canon != "" {
 		perm = canon
 	}
@@ -2122,6 +2124,31 @@ func singularPermalink(home string, post *singularPost) string {
 	return home + "/?p=" + strconv.FormatInt(post.ID, 10)
 }
 
+// applyCommentPagingEnv sets Env comment paging fields from options + request (P3.108).
+func applyCommentPagingEnv(env *blocks.Env, c *wp.Context, postID int64, permalink string) {
+	if env == nil {
+		return
+	}
+	n := 0
+	if rows, err := wp.ListApprovedComments(c, postID); err == nil {
+		// Count top-level comments (matches comment-template paging).
+		for _, cm := range rows {
+			if cm.Parent == 0 {
+				n++
+			}
+		}
+		if n == 0 {
+			n = len(rows)
+		}
+	}
+	paging := wp.CommentPagingForPost(c, n)
+	env.PageComments = paging.Enabled
+	env.CommentsPerPage = paging.PerPage
+	env.CommentPage = paging.Page
+	env.CommentTotalPages = paging.Total
+	env.CommentPermalink = permalink
+}
+
 func (f *Front) writeCommentsSection(b *strings.Builder, c *wp.Context, post *singularPost) {
 	comments, err := wp.ListApprovedComments(c, post.ID)
 	if err != nil {
@@ -2129,13 +2156,17 @@ func (f *Front) writeCommentsSection(b *strings.Builder, c *wp.Context, post *si
 	}
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
 	perm := singularPermalink(home, post)
+	// P3.108: page_comments + cpage slice + comment navigation.
+	paging := wp.CommentPagingForPost(c, len(comments))
+	pageComments := wp.SliceCommentPage(comments, paging)
 	b.WriteString("<section id=\"comments\" class=\"comments-area\">\n")
 	b.WriteString("<h2 class=\"comments-title\">Comments</h2>\n")
 	if len(comments) == 0 {
 		b.WriteString("<p class=\"no-comments\">No comments yet.</p>\n")
 	} else {
+		b.WriteString(wp.CommentPaginationHTML(perm, paging))
 		b.WriteString("<ol class=\"comment-list\">\n")
-		for _, cm := range comments {
+		for _, cm := range pageComments {
 			b.WriteString("<li id=\"comment-")
 			b.WriteString(strconv.FormatInt(cm.ID, 10))
 			b.WriteString("\" class=\"comment\">\n")
@@ -2165,6 +2196,7 @@ func (f *Front) writeCommentsSection(b *strings.Builder, c *wp.Context, post *si
 			b.WriteString("</article>\n</li>\n")
 		}
 		b.WriteString("</ol>\n")
+		b.WriteString(wp.CommentPaginationHTML(perm, paging))
 	}
 	b.WriteString(commentFormHTML(c, post))
 	b.WriteString("</section>\n")

@@ -2005,6 +2005,107 @@ func postNavigationLinkWrapperClasses(navType string, attrs map[string]any) stri
 	return strings.Join(parts, " ")
 }
 
+// renderCommentsPagination wraps previous/numbers/next (P3.108).
+func (e *Env) renderCommentsPagination(block Block) string {
+	e = e.ensure()
+	if !e.PageComments || e.CommentTotalPages < 2 {
+		return ""
+	}
+	inner := e.renderSaved(block)
+	if strings.TrimSpace(inner) == "" {
+		inner = e.renderCommentsPaginationPrevious(block) +
+			e.renderCommentsPaginationNumbers(block) +
+			e.renderCommentsPaginationNext(block)
+	}
+	if strings.TrimSpace(inner) == "" {
+		return ""
+	}
+	classes := []string{"wp-block-comments-pagination"}
+	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
+		classes = append(classes, cn)
+	}
+	return `<nav class="` + html.EscapeString(strings.Join(classes, " ")) + `" aria-label="Comments pagination">` + inner + `</nav>`
+}
+
+func (e *Env) renderCommentsPaginationPrevious(block Block) string {
+	e = e.ensure()
+	if !e.PageComments || e.CommentPage <= 1 || e.CommentTotalPages < 2 {
+		return ""
+	}
+	label := strings.TrimSpace(attrString(block.Attrs, "label"))
+	if label == "" {
+		label = "Older Comments"
+	}
+	href := e.commentPageHref(e.CommentPage - 1)
+	return `<a class="wp-block-comments-pagination-previous" href="` + html.EscapeString(href) + `">` + html.EscapeString(label) + `</a>`
+}
+
+func (e *Env) renderCommentsPaginationNext(block Block) string {
+	e = e.ensure()
+	if !e.PageComments || e.CommentPage >= e.CommentTotalPages || e.CommentTotalPages < 2 {
+		return ""
+	}
+	label := strings.TrimSpace(attrString(block.Attrs, "label"))
+	if label == "" {
+		label = "Newer Comments"
+	}
+	href := e.commentPageHref(e.CommentPage + 1)
+	return `<a class="wp-block-comments-pagination-next" href="` + html.EscapeString(href) + `">` + html.EscapeString(label) + `</a>`
+}
+
+func (e *Env) renderCommentsPaginationNumbers(block Block) string {
+	e = e.ensure()
+	_ = block
+	if !e.PageComments || e.CommentTotalPages < 2 {
+		return ""
+	}
+	var b strings.Builder
+	b.WriteString(`<div class="wp-block-comments-pagination-numbers">`)
+	for n := 1; n <= e.CommentTotalPages; n++ {
+		if n == e.CommentPage {
+			b.WriteString(`<span aria-current="page" class="page-numbers current">`)
+			b.WriteString(strconv.Itoa(n))
+			b.WriteString(`</span>`)
+			continue
+		}
+		b.WriteString(`<a class="page-numbers" href="`)
+		b.WriteString(html.EscapeString(e.commentPageHref(n)))
+		b.WriteString(`">`)
+		b.WriteString(strconv.Itoa(n))
+		b.WriteString(`</a>`)
+	}
+	b.WriteString(`</div>`)
+	return b.String()
+}
+
+func (e *Env) commentPageHref(page int) string {
+	e = e.ensure()
+	base := strings.TrimSpace(e.CommentPermalink)
+	if base == "" && e.HomeURL != nil {
+		base = strings.TrimRight(e.HomeURL(), "/") + "/"
+	}
+	if base == "" || page <= 0 {
+		return "#comments"
+	}
+	sep := "?"
+	if strings.Contains(base, "?") {
+		sep = "&"
+	}
+	// Strip existing cpage.
+	if i := strings.Index(base, "cpage="); i >= 0 {
+		// crude cleanup: rebuild without cpage via query parse is heavier; append wins in browsers poorly.
+		// Prefer simple append; callers pass clean permalinks from front.
+	}
+	_ = sep
+	href := base
+	if strings.Contains(href, "?") {
+		href += "&cpage=" + strconv.Itoa(page)
+	} else {
+		href += "?cpage=" + strconv.Itoa(page)
+	}
+	return href + "#comments"
+}
+
 func (e *Env) renderCommentTemplate(block Block) string {
 	e = e.ensure()
 	if e.currentPost == nil || e.ListComments == nil {
@@ -2036,6 +2137,19 @@ func (e *Env) renderCommentTemplate(block Block) string {
 		// Flat fallback when parents are missing from the approved set.
 		roots = comments
 		byParent = nil
+	}
+	// P3.108: page_comments slices top-level comments by cpage.
+	if e.PageComments && e.CommentsPerPage > 0 && e.CommentPage > 0 {
+		start := (e.CommentPage - 1) * e.CommentsPerPage
+		if start >= len(roots) {
+			roots = nil
+		} else {
+			end := start + e.CommentsPerPage
+			if end > len(roots) {
+				end = len(roots)
+			}
+			roots = roots[start:end]
+		}
 	}
 	classes := []string{"wp-block-comment-template"}
 	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {

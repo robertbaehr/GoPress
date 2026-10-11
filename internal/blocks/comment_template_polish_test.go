@@ -84,3 +84,35 @@ func TestRenderCommentsTitleShowPostTitle(t *testing.T) {
 		t.Fatalf("showPostTitle=false should omit post title: %q", out)
 	}
 }
+
+func TestCommentTemplatePagesRoots(t *testing.T) {
+	env := &blocks.Env{
+		PageComments:      true,
+		CommentsPerPage:   2,
+		CommentPage:       1,
+		CommentTotalPages: 2,
+		CommentPermalink:  "http://example.test/hello/",
+		ListComments: func(postID int64) []blocks.CommentItem {
+			return []blocks.CommentItem{
+				{ID: 1, Author: "A", Content: "one"},
+				{ID: 2, Author: "B", Content: "two"},
+				{ID: 3, Author: "C", Content: "three"},
+			}
+		},
+	}
+	env.SetCurrentPost(&blocks.QueryPost{ID: 1, Title: "T"})
+	out := blocks.RenderWith(env, `<!-- wp:comment-template /-->`)
+	if !strings.Contains(out, `id="comment-1"`) || !strings.Contains(out, `id="comment-2"`) {
+		t.Fatalf("page1=%q", out)
+	}
+	if strings.Contains(out, `id="comment-3"`) {
+		t.Fatalf("comment-3 should be page 2: %q", out)
+	}
+	nav := blocks.RenderWith(env, `<!-- wp:comments-pagination -->
+<!-- wp:comments-pagination-previous /-->
+<!-- wp:comments-pagination-next /-->
+<!-- /wp:comments-pagination -->`)
+	if !strings.Contains(nav, "wp-block-comments-pagination") || !strings.Contains(nav, "cpage=2") {
+		t.Fatalf("nav=%q", nav)
+	}
+}

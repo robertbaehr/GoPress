@@ -210,6 +210,14 @@ func (e *Env) RenderBlock(block Block) string {
 		return e.renderPostNavigationLink(block)
 	case "core/comments-title":
 		out = e.renderCommentsTitle(block)
+	case "core/comments-pagination":
+		out = e.renderCommentsPagination(block)
+	case "core/comments-pagination-previous":
+		return e.renderCommentsPaginationPrevious(block)
+	case "core/comments-pagination-next":
+		return e.renderCommentsPaginationNext(block)
+	case "core/comments-pagination-numbers":
+		return e.renderCommentsPaginationNumbers(block)
 	case "core/search":
 		out = e.renderSearch(block)
 	case "core/calendar":
