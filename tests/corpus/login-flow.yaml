@@ -714,3 +714,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.148: wp_lang cookie toppers.
+- id: login-p10148-001-wp-lang-de
+  role: anon
+  method: GET
+  path: /wp-login.php?wp_lang=de_DE
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10148-002-wp-lang-empty
+  role: anon
+  method: GET
+  path: /wp-login.php?wp_lang=
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10148-003-wp-lang-fr-lostpassword
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword&wp_lang=fr_FR
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

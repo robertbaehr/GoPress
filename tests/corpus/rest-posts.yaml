@@ -7511,3 +7511,112 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.148: search_columns + post-template/query-pagination toppers.
+- id: rest-p10148-001-posts-search-columns-title
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?search=Hello&search_columns=post_title&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10148-002-posts-search-columns-content
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?search=Hello&search_columns=post_content&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10148-003-posts-search-columns-array
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?search=Hello&search_columns[]=post_title&search_columns[]=post_excerpt&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10148-004-pages-search-columns-title
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?search=Sample&search_columns=post_title&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10148-005-block-types-post-template
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/post-template
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10148-006-block-types-query-pagination
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/query-pagination
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10148-007-block-types-query-pagination-next
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/query-pagination-next
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10148-008-block-types-query-pagination-previous
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/query-pagination-previous
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10148-009-block-types-query-pagination-numbers
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/query-pagination-numbers
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10148-010-rest-route-posts-search-columns
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/posts&search=Hello&search_columns=post_title&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10148-011-posts-search-columns-comma
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?search=world&search_columns=post_title,post_excerpt&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10148-012-block-types-query
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/query
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

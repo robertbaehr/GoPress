@@ -290,3 +290,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.148: post-new.php toppers.
+- id: admin-p10148-001-post-new
+  role: admin
+  method: GET
+  path: /wp-admin/post-new.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10148-002-post-new-page
+  role: admin
+  method: GET
+  path: /wp-admin/post-new.php?post_type=page
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10148-003-post-edit
+  role: admin
+  method: GET
+  path: /wp-admin/post.php?post=1&action=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
