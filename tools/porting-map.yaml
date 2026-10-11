@@ -5330,10 +5330,18 @@ wp-login.php#language-switcher-post
   notes: "P7.113 — stub chrome + login redirect coverage"
 
 - prefix: wp-admin/theme-editor.php
-  go: internal/admin/admin.go
-  status: out-of-scope
-  task: P7.37
+  go: internal/admin/theme_editor.go
+  status: partial
+  task: P7.115
   api: n/a
+  notes: "P7.115 — Theme File Editor stub (edit_themes denied → 403 parity); Site Editor/Themes links; PHP file editing out of scope"
+
+- prefix: wp-admin/theme-editor.php#tests
+  go: internal/admin/theme_editor_test.go
+  status: partial
+  task: P7.115
+  api: n/a
+  notes: "P7.115 — 403 stub chrome + login redirect coverage"
 
 - prefix: wp-admin/plugin-editor.php
   go: internal/admin/admin.go
