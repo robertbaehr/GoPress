@@ -56,6 +56,8 @@ type Post struct {
 	MenuOrder     int               `json:"menu_order"`
 	ClassList     []string          `json:"class_list"`
 	Links         map[string]any    `json:"_links"`
+	// Embedded is populated when ?_embed is set (P4.146).
+	Embedded map[string]any `json:"_embedded,omitempty"`
 	// Edit-context fields (nil/absent in view; pointer so "" is emitted when set).
 	Password          *string `json:"password,omitempty"`
 	PermalinkTemplate string  `json:"permalink_template,omitempty"`
@@ -79,11 +81,12 @@ func (p Post) MarshalJSON() ([]byte, error) {
 			Author        int64             `json:"author"`
 			FeaturedMedia int64             `json:"featured_media"`
 			Links         map[string]any    `json:"_links"`
+			Embedded      map[string]any    `json:"_embedded,omitempty"`
 		}
 		return json.Marshal(embedOut{
 			ID: p.ID, Date: p.Date, Slug: p.Slug, Type: p.Type, Link: p.Link,
 			Title: p.Title, Excerpt: p.Excerpt, Author: p.Author,
-			FeaturedMedia: p.FeaturedMedia, Links: p.Links,
+			FeaturedMedia: p.FeaturedMedia, Links: p.Links, Embedded: p.Embedded,
 		})
 	}
 	if p.Type == "page" {
@@ -111,6 +114,7 @@ func (p Post) MarshalJSON() ([]byte, error) {
 			Meta              map[string]any    `json:"meta"`
 			ClassList         []string          `json:"class_list"`
 			Links             map[string]any    `json:"_links"`
+			Embedded          map[string]any    `json:"_embedded,omitempty"`
 			Password          *string           `json:"password,omitempty"`
 			PermalinkTemplate string            `json:"permalink_template,omitempty"`
 			GeneratedSlug     string            `json:"generated_slug,omitempty"`
@@ -123,6 +127,7 @@ func (p Post) MarshalJSON() ([]byte, error) {
 			FeaturedMedia: p.FeaturedMedia, Parent: p.Parent, MenuOrder: p.MenuOrder,
 			CommentStatus: p.CommentStatus, PingStatus: p.PingStatus,
 			Template: p.Template, Meta: p.Meta, ClassList: p.ClassList, Links: p.Links,
+			Embedded: p.Embedded,
 			Password: p.Password, PermalinkTemplate: p.PermalinkTemplate,
 			GeneratedSlug: p.GeneratedSlug,
 		})
@@ -153,6 +158,7 @@ func (p Post) MarshalJSON() ([]byte, error) {
 		Tags              []int64           `json:"tags"`
 		ClassList         []string          `json:"class_list"`
 		Links             map[string]any    `json:"_links"`
+		Embedded          map[string]any    `json:"_embedded,omitempty"`
 		Password          *string           `json:"password,omitempty"`
 		PermalinkTemplate string            `json:"permalink_template,omitempty"`
 		GeneratedSlug     string            `json:"generated_slug,omitempty"`
@@ -165,7 +171,7 @@ func (p Post) MarshalJSON() ([]byte, error) {
 		FeaturedMedia: p.FeaturedMedia, CommentStatus: p.CommentStatus,
 		PingStatus: p.PingStatus, Sticky: p.Sticky, Template: p.Template,
 		Format: p.Format, Meta: p.Meta, Categories: p.Categories, Tags: p.Tags,
-		ClassList: p.ClassList, Links: p.Links,
+		ClassList: p.ClassList, Links: p.Links, Embedded: p.Embedded,
 		Password: p.Password, PermalinkTemplate: p.PermalinkTemplate,
 		GeneratedSlug: p.GeneratedSlug,
 	})

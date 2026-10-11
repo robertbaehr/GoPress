@@ -9306,3 +9306,18 @@ wp-login.php#language-switcher-post
   task: P5.130
   api: n/a
   notes: "P5.130 — empty/null/whitespace attrs, InnerContent join, self-closing, prefer OC over OUD"
+
+# P4.146: REST posts ?_embed → _embedded author / featuredmedia / terms.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#_embed
+  go: internal/rest/posts_embed.go
+  status: partial
+  task: P4.146
+  api: _embed
+  notes: "P4.146 — ?_embed attaches _embedded author, wp:featuredmedia, wp:term; relation filter"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#_embed#tests
+  go: internal/rest/posts_embed_p4_146_test.go
+  status: partial
+  task: P4.146
+  api: n/a
+  notes: "P4.146 — item/collection embed, omit without param, author-only filter"
