@@ -11546,3 +11546,17 @@ wp-login.php#language-switcher-post
   task: P3.143
   api: n/a
   notes: "P3.143 — replytocom + unapproved preview noindex coverage"
+
+# P9.36: deepen current_action / current_filter package helpers.
+- prefix: wp-includes/plugin.php#current_action
+  go: internal/wp/current_action.go
+  status: partial
+  task: P9.36
+  api: n/a
+  notes: "P9.36 — CurrentAction/CurrentFilter/DoingAction/DoingFilter/CurrentFilters helpers"
+- prefix: wp-includes/plugin.php#current_action#tests
+  go: internal/wp/current_action_p9_36_test.go
+  status: partial
+  task: P9.36
+  api: n/a
+  notes: "P9.36 — nested stack, shared filter/action registry, nil context"
