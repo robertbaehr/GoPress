@@ -17,12 +17,15 @@ type socialLinksCtx struct {
 	hasIconBackgroundColor   bool
 }
 
-// renderSocialLinks renders core/social-links (P5.50).
+// renderSocialLinks renders core/social-links (P5.50 / P5.161).
 // Prefer saved InnerContent wrapper; synthesize a <ul> when missing.
+// P5.161: coerce align left|center|right; gradient/anchor polish.
 func (e *Env) renderSocialLinks(block Block) string {
 	e = e.ensure()
+	attrs := sanitizeSocialLinksBlockAttrs(block.Attrs)
+	block.Attrs = attrs
 	prev := e.socialCtx
-	e.socialCtx = socialLinksCtxFromAttrs(block.Attrs)
+	e.socialCtx = socialLinksCtxFromAttrs(attrs)
 	defer func() { e.socialCtx = prev }()
 
 	out := e.renderSaved(block)
@@ -34,7 +37,7 @@ func (e *Env) renderSocialLinks(block Block) string {
 	if !strings.Contains(out, "wp-block-social-links") {
 		var b strings.Builder
 		b.WriteString(`<ul class="`)
-		b.WriteString(html.EscapeString(socialLinksClassList(block.Attrs)))
+		b.WriteString(html.EscapeString(socialLinksClassList(attrs)))
 		b.WriteString(`">`)
 		if strings.TrimSpace(out) != "" {
 			b.WriteString(out)
@@ -45,6 +48,54 @@ func (e *Env) renderSocialLinks(block Block) string {
 		}
 		b.WriteString(`</ul>`)
 		out = b.String()
+	}
+	return applySocialLinksAttrs(out, attrs)
+}
+
+// sanitizeSocialLinksBlockAttrs coerces core/social-links supports.align (P5.161).
+// Allowed: left, center, right. Other values (incl. wide/full/none) are dropped.
+func sanitizeSocialLinksBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "left", "center", "right":
+		// keep
+	default:
+		delete(out, "align")
+	}
+	return out
+}
+
+// applySocialLinksAttrs polishes align/gradient/anchor on core/social-links (P5.161).
+func applySocialLinksAttrs(htmlFragment string, attrs map[string]any) string {
+	out := htmlFragment
+	if strings.TrimSpace(out) == "" {
+		return out
+	}
+	out = addRootClass(out, "wp-block-social-links")
+	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
+		cls := "align" + sanitizeClassToken(align)
+		if !hasRootClass(out, cls) {
+			out = addRootClass(out, cls)
+		}
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		for _, part := range strings.Fields(cn) {
+			out = addRootClass(out, part)
+		}
+	}
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		out = addRootClass(out, "has-background")
+		out = addRootClass(out, "has-"+sanitizeClassToken(g)+"-gradient-background")
+	}
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
+		out = ensureRootAttribute(out, "id", anchor)
 	}
 	return out
 }
@@ -168,6 +219,10 @@ func socialLinksClassList(attrs map[string]any) string {
 	}
 	if size := strings.TrimSpace(attrString(attrs, "size")); size != "" {
 		parts = append(parts, "has-"+sanitizeClassToken(size)+"-icon-size")
+	}
+	// P5.161: color.gradients preset class on synthesize.
+	if g := strings.TrimSpace(attrString(attrs, "gradient")); g != "" {
+		parts = append(parts, "has-background", "has-"+sanitizeClassToken(g)+"-gradient-background")
 	}
 	// P5.83: visible-label + default flex layout classes (block supports layout).
 	if attrBool(attrs, "showLabels") {

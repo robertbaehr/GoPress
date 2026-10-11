@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.222)
 
+- P5.161 `core/social-links` align coerce + gradient/anchor
 - P8.54 `GetOriginalImagePath` / `GetOriginalImageURL`
 - P3.154 `GetYearLink` / `GetMonthLink` / `GetDayLink`
 - P2.156 `GetAllowedHTTPOrigins` / `IsAllowedHTTPOrigin`

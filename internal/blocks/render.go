@@ -280,7 +280,9 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/nextpage":
 		return e.renderNextPage(block)
 	case "core/social-links":
+		// P5.161: coerce align enum before applySupports; gradient/anchor polish.
 		out = e.renderSocialLinks(block)
+		return applySupports(out, sanitizeSocialLinksBlockAttrs(block.Attrs), name)
 	case "core/social-link":
 		return e.renderSocialLink(block)
 	default:
