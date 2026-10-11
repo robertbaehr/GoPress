@@ -9590,3 +9590,25 @@ wp-login.php#language-switcher-post
   task: P7.133
   api: n/a
   notes: "P7.133 — row actions + nonce query args on dashboard"
+
+# P2.128: wp_kses_attr / wp_kses_attr_check.
+- prefix: wp-includes/kses.php#wp_kses_attr
+  go: internal/wp/kses_attr.go
+  status: partial
+  task: P2.128
+  api: wp_kses_attr
+  notes: "P2.128 — KsesAttr rebuild via KsesHair; required attrs; xhtml slash"
+
+- prefix: wp-includes/kses.php#wp_kses_attr_check
+  go: internal/wp/kses_attr.go
+  status: partial
+  task: P2.128
+  api: wp_kses_attr_check
+  notes: "P2.128 — data-* wildcard; style safecss; attr val limits"
+
+- prefix: wp-includes/kses.php#wp_kses_attr#tests
+  go: internal/wp/kses_attr_p2_128_test.go
+  status: partial
+  task: P2.128
+  api: n/a
+  notes: "P2.128 — keep/strip attrs, xhtml slash, attr_check"
