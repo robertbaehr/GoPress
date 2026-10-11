@@ -228,3 +228,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.160: heartbeat screens after site-editor deepen.
+- id: ajax-p10160-001-heartbeat-site-editor
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=site-editor
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10160-002-heartbeat-nav-menus
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=nav-menus
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10160-003-heartbeat-widgets
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=widgets
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

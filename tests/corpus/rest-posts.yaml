@@ -8705,3 +8705,193 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.160: sticky/ignore_sticky validation + query-pagination toppers.
+- id: rest-p10160-001-sticky-maybe
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?sticky=maybe
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10160-002-sticky-yes
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?sticky=yes
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10160-003-ignore-sticky-maybe
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?ignore_sticky=maybe
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10160-004-ignore-sticky-empty
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?ignore_sticky=
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10160-005-ignore-sticky-1-orderby-id
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?ignore_sticky=1&per_page=1&orderby=id
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10160-006-sticky-true-ignore-false
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?sticky=true&ignore_sticky=false&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10160-007-sticky-true-orderby-modified
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?sticky=true&per_page=1&orderby=modified
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10160-008-sticky-1-orderby-modified
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?sticky=1&per_page=1&orderby=modified
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10160-009-pages-orderby-modified
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?per_page=1&orderby=modified
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10160-010-query-pagination-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/query-pagination?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10160-011-query-pagination-edit
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/query-pagination?context=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10160-012-query-pagination-numbers-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/query-pagination-numbers?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10160-013-query-pagination-next-edit
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/query-pagination-next?context=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10160-014-query-pagination-previous-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/query-pagination-previous?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10160-015-rest-route-query-pagination-previous
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/query-pagination-previous
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10160-016-rest-route-query-pagination-numbers
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/query-pagination-numbers
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10160-017-rest-route-query-pagination-next
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/query-pagination-next
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10160-018-rest-route-posts-sticky-maybe
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/posts&sticky=maybe
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10160-019-rest-route-posts-ignore-sticky-maybe
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/posts&ignore_sticky=maybe
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10160-020-oembed-hello-world
+  role: anon
+  method: GET
+  path: /wp-json/oembed/1.0/embed?url=http://127.0.0.1:8081/2024/06/15/hello-world/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10160-021-search-columns-hello
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?search_columns=post_title&search=Hello&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
