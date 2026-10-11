@@ -840,7 +840,8 @@ func orderByClause(c *Context, args QueryArgs, aliased bool) (string, []any) {
 		return titleCol + " ASC, " + dateCol + " DESC, " + idCol + " ASC", nil
 	case "meta_value", "meta_value_num":
 		// P4.175: WP_Query orderby=meta_value / meta_value_num (requires meta_key).
-		// P4.176: meta_type CAST on orderby=meta_value (NUMERIC→SIGNED, etc.).
+		// P4.176/P4.177: meta_type CAST on orderby=meta_value (NUMERIC→SIGNED, UNSIGNED, …);
+		// meta_value_num always CAST AS SIGNED and ignores MetaType.
 		key := strings.TrimSpace(args.MetaKey)
 		if key == "" || c == nil || c.DB == nil {
 			return dateCol + " " + dir, nil
