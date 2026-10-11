@@ -65,7 +65,22 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		return
 	}
 	page := parsePage(r)
-	offset, useOffset := parsePostsOffset(r)
+	// P4.139: strict offset integer validation like rest_validate_request_arg.
+	offset, useOffset, offsetOK := parsePostsOffset(r)
+	if !offsetOK {
+		w.Header().Set("Allow", "GET")
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_invalid_param",
+			"message": "Invalid parameter(s): offset",
+			"data": map[string]any{
+				"status": 400,
+				"params": map[string]any{
+					"offset": "offset is not of type integer.",
+				},
+			},
+		})
+		return
+	}
 	edit := r.URL.Query().Get("context") == "edit" && canEditPosts(c)
 	stickyFilter := parseStickyQuery(r)
 	orderby := parsePostsOrderby(r)
