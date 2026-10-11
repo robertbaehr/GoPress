@@ -1280,8 +1280,9 @@ func loginBodyClasses(c *wp.Context, action string, extraClasses ...string) []st
 	return classes
 }
 
-// writeLoginLogo emits the login logo h1 with login_headerurl / login_headertext (P6.55 / P6.59).
+// writeLoginLogo emits the login logo h1 with login_headerurl / login_headertext (P6.55 / P6.59 / P6.60).
 // P6.59: EscURL on filtered header URL; login_headertitle deprecated → login_headertext.
+// P6.60: PHP empty() semantics for headertitle ("0" is empty); echo header text unescaped like wp-login.php.
 func writeLoginLogo(b *strings.Builder, c *wp.Context) {
 	if b == nil {
 		return
@@ -1303,7 +1304,8 @@ func writeLoginLogo(b *strings.Builder, c *wp.Context) {
 				headerTitle = s
 			}
 		}
-		if strings.TrimSpace(headerTitle) != "" {
+		// P6.60: PHP empty($login_header_title) — "" and "0" do not seed text.
+		if !phpEmptyString(headerTitle) {
 			text = headerTitle
 		}
 		if v := c.Hooks.ApplyFilters("login_headertext", text); v != nil {
@@ -1315,8 +1317,14 @@ func writeLoginLogo(b *strings.Builder, c *wp.Context) {
 	b.WriteString("\t\t<h1 role=\"presentation\" class=\"wp-login-logo\"><a href=\"")
 	b.WriteString(html.EscapeString(href))
 	b.WriteString("\">")
-	b.WriteString(html.EscapeString(text))
+	// P6.60: wp-login.php echoes $login_header_text without esc_html.
+	b.WriteString(text)
 	b.WriteString("</a></h1>\n")
+}
+
+// phpEmptyString mirrors PHP empty() for string title values (P6.60).
+func phpEmptyString(s string) bool {
+	return s == "" || s == "0"
 }
 
 func writeLoginScripts(b *strings.Builder, home string, c *wp.Context) {
