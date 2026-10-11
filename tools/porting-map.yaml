@@ -1,4 +1,18 @@
 
+# P2.155: get_http_origin + wp_http_supports subset.
+- prefix: wp-includes/http.php#get_http_origin
+  go: internal/wp/http_origin.go
+  status: partial
+  task: P2.155
+  api: GetHTTPOrigin
+  notes: "P2.155 — GetHTTPOrigin + http_origin filter; HttpSupports ssl subset"
+- prefix: wp-includes/http.php#get_http_origin#tests
+  go: internal/wp/http_origin_p2_155_test.go
+  status: partial
+  task: P2.155
+  api: n/a
+  notes: "P2.155 — Origin header/filter; ssl/unknown caps"
+
 # P6.64: login_link_separator filter + register nav when open.
 - prefix: wp-login.php#login_link_separator
   go: internal/login/login.go
