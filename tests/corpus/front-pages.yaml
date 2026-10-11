@@ -1505,3 +1505,49 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.168: front toppers after the_content deepen.
+- id: front-p10168-001-home
+  role: anon
+  method: GET
+  path: /
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10168-002-sample-page
+  role: anon
+  method: GET
+  path: /sample-page/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10168-003-feed
+  role: anon
+  method: GET
+  path: /feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10168-004-search-hello
+  role: anon
+  method: GET
+  path: /?s=hello
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10168-005-sitemap
+  role: anon
+  method: GET
+  path: /wp-sitemap.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
