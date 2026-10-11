@@ -29,3 +29,7 @@ coverage.out
 # Local oracle checkout symlink (Cloud / local abs path)
 /php-reference
 
+
+# Agent / local walkthrough artifacts
+/artifacts/
+/.cursor-artifacts/

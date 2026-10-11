@@ -11590,3 +11590,29 @@ wp-login.php#language-switcher-post
   task: P5.150
   api: n/a
   notes: "P5.150 — align coerce, saved gradient/fontSize/ariaLabel coverage"
+
+# P4.166: REST posts meta_key/meta_value/meta_compare (WP_Query meta_query subset).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_query
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.166
+  api: n/a
+  notes: "P4.166 — meta_key/meta_value/meta_compare string-type; meta_query[] reject; compare enum"
+- prefix: wp-includes/class-wp-query.php#meta_query
+  go: internal/wp/query.go
+  status: partial
+  task: P4.166
+  api: n/a
+  notes: "P4.166 — MetaKey/MetaValue/MetaCompare EXISTS filters (=, !=, LIKE, EXISTS, NOT EXISTS)"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_query#tests
+  go: internal/rest/posts_meta_query_p4_166_test.go
+  status: partial
+  task: P4.166
+  api: n/a
+  notes: "P4.166 — array-form invalid_type, compare enum, scalar filter"
+- prefix: wp-includes/class-wp-query.php#meta_query#tests
+  go: internal/wp/meta_query_p4_166_test.go
+  status: partial
+  task: P4.166
+  api: n/a
+  notes: "P4.166 — QueryArgs meta EXISTS coverage"

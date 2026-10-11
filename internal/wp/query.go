@@ -91,6 +91,11 @@ type QueryArgs struct {
 	ParentIn []int64
 	// ParentNotIn is post_parent__not_in (REST ?parent_exclude=, P4.93).
 	ParentNotIn []int64
+	// MetaKey / MetaValue / MetaCompare are WP_Query meta_key/meta_value/meta_compare
+	// (REST ?meta_key=&meta_value=&meta_compare=, P4.166). Empty MetaKey skips the clause.
+	MetaKey     string
+	MetaValue   string
+	MetaCompare string // default "="; supports =, !=, LIKE, EXISTS, NOT EXISTS
 }
 
 // Post is a row from wp_posts used by front and REST helpers.
@@ -184,6 +189,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		vals = append(vals, "post_tag", tag)
 		where, vals = appendTaxQueryFilters(c, where, vals, args, "p.ID")
 		where, vals = appendPostFormatFilter(c, where, vals, args, "p.ID")
+		where, vals = appendMetaQueryFilters(c, where, vals, args, "p.ID")
 		whereSQL := strings.Join(where, " AND ")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_type", "p.post_type")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_status", "p.post_status")
@@ -218,6 +224,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		vals = append(vals, "category", cat)
 		where, vals = appendTaxQueryFilters(c, where, vals, args, "p.ID")
 		where, vals = appendPostFormatFilter(c, where, vals, args, "p.ID")
+		where, vals = appendMetaQueryFilters(c, where, vals, args, "p.ID")
 		whereSQL := strings.Join(where, " AND ")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_type", "p.post_type")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_status", "p.post_status")
@@ -245,6 +252,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 	}
 	where, vals = appendTaxQueryFilters(c, where, vals, args, "ID")
 	where, vals = appendPostFormatFilter(c, where, vals, args, "ID")
+	where, vals = appendMetaQueryFilters(c, where, vals, args, "ID")
 	q := "SELECT COUNT(*) AS total FROM " + from + " WHERE " + strings.Join(where, " AND ")
 	sqlStr, sqlArgs, err := c.DB.Prepare(q, vals...)
 	if err != nil {
@@ -376,6 +384,8 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 	where, vals = appendTaxQueryFilters(c, where, vals, args, idCol)
 	// P4.96: format= via EXISTS / NOT EXISTS (works with or without tax joins).
 	where, vals = appendPostFormatFilter(c, where, vals, args, idCol)
+	// P4.166: meta_key/meta_value/meta_compare via EXISTS (idCol-aware).
+	where, vals = appendMetaQueryFilters(c, where, vals, args, idCol)
 	whereSQL := strings.Join(where, " AND ")
 	if aliased {
 		whereSQL = strings.ReplaceAll(whereSQL, "post_type", "p.post_type")
@@ -570,6 +580,41 @@ func appendDateQueryFilters(where []string, vals []any, args QueryArgs) ([]strin
 	if s := strings.TrimSpace(args.ModifiedBefore); s != "" {
 		where = append(where, "post_modified <= %s")
 		vals = append(vals, s)
+	}
+	return where, vals
+}
+
+// appendMetaQueryFilters applies WP_Query meta_key/meta_value/meta_compare (P4.166).
+// Emits EXISTS/NOT EXISTS against postmeta. idCol is "ID" or "p.ID".
+func appendMetaQueryFilters(c *Context, where []string, vals []any, args QueryArgs, idCol string) ([]string, []any) {
+	key := strings.TrimSpace(args.MetaKey)
+	if key == "" || c == nil || c.DB == nil {
+		return where, vals
+	}
+	if idCol == "" {
+		idCol = "ID"
+	}
+	compare := strings.ToUpper(strings.TrimSpace(args.MetaCompare))
+	if compare == "" {
+		compare = "="
+	}
+	pm := c.DB.PostMeta()
+	switch compare {
+	case "EXISTS":
+		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s)")
+		vals = append(vals, key)
+	case "NOT EXISTS":
+		where = append(where, "NOT EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s)")
+		vals = append(vals, key)
+	case "LIKE":
+		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND mq.meta_value LIKE %s)")
+		vals = append(vals, key, "%"+args.MetaValue+"%")
+	case "!=":
+		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND mq.meta_value != %s)")
+		vals = append(vals, key, args.MetaValue)
+	default: // "="
+		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND mq.meta_value = %s)")
+		vals = append(vals, key, args.MetaValue)
 	}
 	return where, vals
 }
