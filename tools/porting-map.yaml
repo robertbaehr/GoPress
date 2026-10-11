@@ -27,6 +27,20 @@
 
 
 
+# P8.62: wp_image_matches_ratio public helper.
+- prefix: wp-includes/media.php#wp_image_matches_ratio
+  go: internal/wp/image_matches_ratio.go
+  status: partial
+  task: P8.62
+  api: n/a
+  notes: "P8.62 — ImageMatchesRatio wraps imageMatchesRatio 1px fuzz"
+- prefix: wp-includes/media.php#wp_image_matches_ratio#tests
+  go: internal/wp/image_matches_ratio_p8_62_test.go
+  status: partial
+  task: P8.62
+  api: n/a
+  notes: "P8.62 — same ratio / mismatch / zero dims"
+
 # P3.162: get_term_link / get_category_link / get_tag_link.
 - prefix: wp-includes/taxonomy.php#get_term_link
   go: internal/wp/term_link.go
