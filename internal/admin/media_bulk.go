@@ -24,9 +24,12 @@ func (h *Handler) serveUpload(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		http.Error(w, "media: "+err.Error()+"\n", http.StatusInternalServerError)
 		return
 	}
-	// P7.42: grid is the WP default; ?mode=list keeps the list table.
+	// P7.42 / P7.151: grid is the WP default; ?mode=list keeps the list table.
+	// Explicit ?mode= persists to usermeta media_library_mode (WP upload.php).
 	mode := strings.TrimSpace(r.URL.Query().Get("mode"))
-	if mode != "list" && mode != "grid" {
+	if mode == "list" || mode == "grid" {
+		persistMediaLibraryMode(c, mode)
+	} else {
 		mode = mediaLibraryMode(c)
 	}
 	if mode == "grid" {
@@ -34,6 +37,21 @@ func (h *Handler) serveUpload(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		return
 	}
 	writeHTML(w, http.StatusOK, renderMediaList(blogname, items, c, r))
+}
+
+// persistMediaLibraryMode stores upload.php ?mode= in usermeta (P7.151).
+func persistMediaLibraryMode(c *wp.Context, mode string) {
+	if c == nil || c.CurrentUser == nil || c.Meta == nil {
+		return
+	}
+	if mode != "list" && mode != "grid" {
+		return
+	}
+	cur, _ := c.Meta.GetMetadata(wp.MetaUser, c.CurrentUser.ID, "media_library_mode", true).(string)
+	if strings.TrimSpace(cur) == mode {
+		return
+	}
+	_, _, _, _ = c.Meta.UpdateMetadata(wp.MetaUser, c.CurrentUser.ID, "media_library_mode", mode, "")
 }
 
 func (h *Handler) handleMediaBulk(w http.ResponseWriter, r *http.Request, c *wp.Context) {
