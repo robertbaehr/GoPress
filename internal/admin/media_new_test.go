@@ -33,14 +33,21 @@ func TestMediaNewFormStub(t *testing.T) {
 		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
 	}
 	body := rec.Body.String()
-	if !strings.Contains(body, "<h1>Upload New Media</h1>") {
+	// P7.123: title/h1 match media-new.php ("Upload Media").
+	if !strings.Contains(body, "<h1>Upload Media</h1>") {
 		t.Fatalf("missing heading: %q", body)
 	}
 	if !strings.Contains(body, `enctype="multipart/form-data"`) || !strings.Contains(body, `name="async-upload"`) {
 		t.Fatalf("missing upload form: %q", body)
 	}
+	if !strings.Contains(body, `type-form validate`) || !strings.Contains(body, `html-uploader`) {
+		t.Fatalf("missing form classes: %q", body)
+	}
 	if !strings.Contains(body, `name="_wpnonce"`) {
 		t.Fatalf("missing nonce: %q", body)
+	}
+	if !strings.Contains(body, `id="media-items"`) || !strings.Contains(body, `var post_id = 0`) {
+		t.Fatalf("missing media-items/post_id script: %q", body)
 	}
 	// P8.29: plupload UI + _wpPluploadSettings bootstrap.
 	if !strings.Contains(body, `id="plupload-upload-ui"`) || !strings.Contains(body, "var _wpPluploadSettings") {
@@ -48,6 +55,32 @@ func TestMediaNewFormStub(t *testing.T) {
 	}
 	if !strings.Contains(body, `"file_data_name":"async-upload"`) || !strings.Contains(body, "async-upload.php") {
 		t.Fatalf("plupload defaults incomplete: %q", body)
+	}
+}
+
+func TestMediaNewPostIDFromRequest(t *testing.T) {
+	c := bootOrSkip(t)
+	user, err := c.GetUserBy("login", "admin")
+	if err != nil || user == nil {
+		t.Fatalf("admin: %v", err)
+	}
+	set, err := c.SetAuthCookie(user, false, false, 0, "")
+	if err != nil {
+		t.Fatalf("cookie: %v", err)
+	}
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/media-new.php?post_id=1", nil)
+	req.AddCookie(&http.Cookie{Name: set.LoggedInName, Value: set.LoggedInValue})
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	if !(&admin.Handler{}).Handle(rec, req, rc, "/wp-admin/media-new.php") {
+		t.Fatal("media-new.php not handled")
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `var post_id = 1`) {
+		t.Fatalf("expected post_id script: %q", body)
+	}
+	if !strings.Contains(body, `name="post_id" id="post_id" value="1"`) {
+		t.Fatalf("expected post_id hidden: %q", body)
 	}
 }
 
