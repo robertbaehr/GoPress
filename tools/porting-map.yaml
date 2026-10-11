@@ -11886,3 +11886,17 @@ wp-login.php#language-switcher-post
   task: P2.148
   api: n/a
   notes: "P2.148 — nil/value/blocked RemoteGet retrieve coverage"
+
+# P3.146: deepen front oEmbed discovery EscURL + embeddable gate.
+- prefix: wp-includes/embed.php#wp_oembed_add_discovery_links
+  go: internal/wp/oembed_discovery.go
+  status: partial
+  task: P3.146
+  api: n/a
+  notes: "P3.146 — EscURL on hrefs; OEmbedDiscoveryLinksEmbeddable is_post_embeddable gate"
+- prefix: wp-includes/embed.php#wp_oembed_add_discovery_links#tests
+  go: internal/wp/oembed_discovery_p3_146_test.go
+  status: partial
+  task: P3.146
+  api: n/a
+  notes: "P3.146 — EscURL amp, embeddable false empty, discovery coverage"
