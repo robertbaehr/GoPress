@@ -213,7 +213,7 @@ func parsePostsOffset(r *http.Request) (offset int, ok bool) {
 	return n, true
 }
 
-func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, authorIn, authorNotIn []int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, offsetOverride int, useOffset bool) ([]Post, error) {
+func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, stickyFilter *bool, orderby, order, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool, offsetOverride int, useOffset bool) ([]Post, error) {
 	if limit <= 0 {
 		limit = 10
 	}
@@ -237,6 +237,7 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 		OrderBy:            orderby,
 		Order:              order,
 		Search:             search,
+		SearchColumns:      searchColumns,
 		AuthorIn:           authorIn,
 		AuthorNotIn:        authorNotIn,
 		CategoryIn:         categoryIn,
@@ -298,6 +299,40 @@ func parsePostsSearch(r *http.Request) string {
 		return ""
 	}
 	return strings.TrimSpace(r.URL.Query().Get("search"))
+}
+
+// parsePostsSearchColumns reads REST ?search_columns= (P4.135).
+// Accepts comma-separated values and/or repeated query keys; keeps only
+// post_title, post_content, post_excerpt (WP enum).
+func parsePostsSearchColumns(r *http.Request) []string {
+	if r == nil {
+		return nil
+	}
+	allowed := map[string]bool{
+		"post_title":   true,
+		"post_content": true,
+		"post_excerpt": true,
+	}
+	var out []string
+	seen := map[string]bool{}
+	add := func(raw string) {
+		for _, part := range strings.Split(raw, ",") {
+			part = strings.TrimSpace(part)
+			if !allowed[part] || seen[part] {
+				continue
+			}
+			seen[part] = true
+			out = append(out, part)
+		}
+	}
+	q := r.URL.Query()
+	for _, v := range q["search_columns"] {
+		add(v)
+	}
+	for _, v := range q["search_columns[]"] {
+		add(v)
+	}
+	return out
 }
 
 // parsePostsAuthor reads REST ?author= (maps to WP_Query author__in, P4.85 / P4.132).
@@ -624,7 +659,7 @@ func parsePostsTermIDs(r *http.Request, key string) []int64 {
 	return out
 }
 
-func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, authorIn, authorNotIn []int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool) (int, error) {
+func countPosts(c *wp.Context, postType string, stickyFilter *bool, search string, searchColumns []string, authorIn, authorNotIn []int64, categoryIn, tagIn []int64, statuses []string, slugs []string, include, exclude, parentIn, parentNotIn []int64, dateAfter, dateBefore, modifiedAfter, modifiedBefore string, formatIn []string, formatStandard bool) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
@@ -636,6 +671,7 @@ func countPosts(c *wp.Context, postType string, stickyFilter *bool, search strin
 		PostStatus:         "publish",
 		PostStatuses:       statuses,
 		Search:             search,
+		SearchColumns:      searchColumns,
 		AuthorIn:           authorIn,
 		AuthorNotIn:        authorNotIn,
 		CategoryIn:         categoryIn,

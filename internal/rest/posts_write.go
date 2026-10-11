@@ -56,6 +56,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 	orderby := parsePostsOrderby(r)
 	order := parsePostsOrder(r)
 	search := parsePostsSearch(r)
+	searchColumns := parsePostsSearchColumns(r)
 	authorIn := parsePostsAuthor(r)
 	authorNotIn := parsePostsAuthorExclude(r)
 	categories := parsePostsCategories(r)
@@ -107,7 +108,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		})
 		return
 	}
-	total, err := countPosts(c, postType, stickyFilter, search, authorIn, authorNotIn, categories, tags, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard)
+	total, err := countPosts(c, postType, stickyFilter, search, searchColumns, authorIn, authorNotIn, categories, tags, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",
@@ -116,7 +117,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		})
 		return
 	}
-	posts, err := listPostsPaged(c, postType, perPage, page, edit, stickyFilter, orderby, order, search, authorIn, authorNotIn, categories, tags, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, offset, useOffset)
+	posts, err := listPostsPaged(c, postType, perPage, page, edit, stickyFilter, orderby, order, search, searchColumns, authorIn, authorNotIn, categories, tags, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, offset, useOffset)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",
