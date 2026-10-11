@@ -209,3 +209,22 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.158: heartbeat screens after customize/search deepen.
+- id: ajax-p10158-001-heartbeat-customize
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=customize
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10158-002-heartbeat-search
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=search
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

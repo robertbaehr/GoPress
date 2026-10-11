@@ -881,3 +881,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.158: login_message-related toppers.
+- id: login-p10158-001-confirmaction
+  role: anon
+  method: GET
+  path: /wp-login.php?action=confirmaction
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10158-002-lostpassword-head
+  role: anon
+  method: HEAD
+  path: /wp-login.php?action=lostpassword
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10158-003-checkemail-registered
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=registered
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

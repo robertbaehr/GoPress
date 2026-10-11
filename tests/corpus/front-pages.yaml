@@ -1293,3 +1293,40 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.158: front toppers after wp_footer / search stack.
+- id: front-p10158-001-search-term
+  role: anon
+  method: GET
+  path: /?s=search
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10158-002-author-admin-feed
+  role: anon
+  method: GET
+  path: /author/admin/feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10158-003-search-gopress
+  role: anon
+  method: GET
+  path: /?s=gopress
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10158-004-robots
+  role: anon
+  method: GET
+  path: /robots.txt
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
