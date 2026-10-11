@@ -1,4 +1,18 @@
 
+# P7.158: deepen about.php pagenow / version chrome stub.
+- prefix: wp-admin/about.php#chrome
+  go: internal/admin/credits.go
+  status: partial
+  task: P7.158
+  api: n/a
+  notes: "P7.158 — pagenow/adminpage; locale body; admin_body_class; data-version/tab; X-GoPress-About-Version"
+- prefix: wp-admin/about.php#chrome#tests
+  go: internal/admin/about_chrome_p7_158_test.go
+  status: partial
+  task: P7.158
+  api: n/a
+  notes: "P7.158 — chrome + tab query + body class filter coverage"
+
 # P7.95: about.php What's New screen stub.
 - prefix: wp-admin/about.php
   go: internal/admin/credits.go
