@@ -11125,4 +11125,4 @@ wp-login.php#language-switcher-post
   status: partial
   task: P10.200
   api: n/a
-  notes: "P10.200 — verse/include_children/export/preconnect/login_init toppers; headers-safe"
+  notes: "P10.200 — verse/include_children/export/preconnect/login_init toppers; 2325/2325; headers-safe"
