@@ -9224,3 +9224,39 @@ wp-login.php#language-switcher-post
   task: P2.125
   api: n/a
   notes: "P2.125 — slash round-trip + current_filter allow list"
+
+# P3.123: front the_content deepen (wpautop / capital_P / more / ]]>).
+- prefix: wp-includes/post-template.php#the_content
+  go: internal/wp/content.go
+  status: partial
+  task: P3.123
+  api: the_content
+  notes: "P3.123 — classic WpAutop; CapitalPDangit; GetTheContent more; TheContentDisplay ]]> escape"
+
+- prefix: wp-includes/formatting.php#wpautop
+  go: internal/wp/content.go
+  status: partial
+  task: P3.123
+  api: wpautop
+  notes: "P3.123 — WpAutop subset for classic non-block content"
+
+- prefix: wp-includes/formatting.php#capital_P_dangit
+  go: internal/wp/content.go
+  status: partial
+  task: P3.123
+  api: capital_P_dangit
+  notes: "P3.123 — CapitalPDangit cautious Wordpress→WordPress"
+
+- prefix: wp-includes/post-template.php#the_content#front
+  go: internal/server/front.go
+  status: partial
+  task: P3.123
+  api: n/a
+  notes: "P3.123 — singular uses GetTheContent + TheContentDisplay"
+
+- prefix: wp-includes/post-template.php#the_content#tests
+  go: internal/wp/content_p3_123_test.go
+  status: partial
+  task: P3.123
+  api: n/a
+  notes: "P3.123 — autop / capital_P / more / CDATA coverage"
