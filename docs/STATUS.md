@@ -60,7 +60,7 @@ make check
 - P5.126 `core/post-terms` / `core/post-author` deepen (anchor/colors/defaults)
 - P10.161 STATUS/PORTING refresh after P5.125–P10.160
 - P10.161 STATUS/PORTING refresh after P5.125–P10.160
-- P10.160 Diff corpus expand (1325/1325 match) + sticky/ignore_sticky invalid + query-pagination / site-editor toppers
+- P10.160 Diff corpus expand (1295/1295 match) + sticky/ignore_sticky invalid + query-pagination / site-editor toppers
 - P9.28 `DidFilter` + `posts_results`/`the_posts` via `ApplyFiltersRefArray`
 - P3.119 Front `wp_head` / `wp_enqueue_scripts` / `wp_print_styles` / `wp_print_head_scripts`
 - P2.121 `wp_json_encode` depth limit + `JSON_PRETTY_PRINT` + typed map/slice walks
