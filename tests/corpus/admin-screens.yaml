@@ -461,10 +461,10 @@
   compare: headers
   nonce: null
 
-- id: admin-p10170-005-themes
+- id: admin-p10170-005-users
   role: admin
   method: GET
-  path: /wp-admin/themes.php
+  path: /wp-admin/users.php
   headers: {}
   body: null
   compare: headers
