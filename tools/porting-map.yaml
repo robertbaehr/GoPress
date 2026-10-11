@@ -10756,3 +10756,17 @@ wp-login.php#language-switcher-post
   task: P3.136
   api: n/a
   notes: "P3.136 — filtered settings JSON coverage"
+
+# P6.57: login_enqueue_scripts + login_head before </head>.
+- prefix: wp-login.php#login_enqueue_scripts
+  go: internal/login/login.go
+  status: partial
+  task: P6.57
+  api: login_enqueue_scripts
+  notes: "P6.57 — DoAction login_enqueue_scripts then login_head before </head>; login_header after body"
+- prefix: wp-login.php#login_enqueue_scripts#tests
+  go: internal/login/login_enqueue_scripts_p6_57_test.go
+  status: partial
+  task: P6.57
+  api: n/a
+  notes: "P6.57 — enqueue → head → header order coverage"
