@@ -24,13 +24,27 @@ func (h *Handler) serveImport(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		note, noteClass = h.handleWXRUpload(r)
 	}
 	blogname := optionString(c, "blogname", "GoPress")
+	// P7.164: pagenow/adminpage chrome, locale body class, admin_body_class.
+	bodyClass := "wp-admin wp-core-ui import-php locale-en-us"
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("admin_body_class", ""); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				bodyClass += " " + strings.TrimSpace(s)
+			}
+		}
+	}
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n")
 	b.WriteString("<title>Import &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
-	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	// P7.91: import-php body class like get_body_class for this screen.
-	b.WriteString("<body class=\"wp-admin wp-core-ui import-php\">\n")
+	b.WriteString(" &#8212; WordPress</title>\n")
+	b.WriteString("<script>var ajaxurl = \"/wp-admin/admin-ajax.php\", pagenow = \"import\", typenow = \"\", adminpage = \"import-php\";</script>\n")
+	b.WriteString("</head>\n")
+	// P7.91 / P7.164: import-php body class + admin_body_class.
+	b.WriteString("<body class=\"")
+	b.WriteString(html.EscapeString(bodyClass))
+	b.WriteString("\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1>Import</h1>\n")
