@@ -10040,3 +10040,17 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P5.136 — borderColor/radius/width + shadow + anchor fixture"
 
+# P4.152: REST posts author_exclude invalid_param.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#author_exclude
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.152
+  api: author_exclude
+  notes: "P4.152 — strict integer-array validation; rest_invalid_type on bad tokens"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#author_exclude#tests
+  go: internal/rest/posts_author_exclude_p4_152_test.go
+  status: partial
+  task: P4.152
+  api: n/a
+  notes: "P4.152 — notint + empty author_exclude[] reject"
+

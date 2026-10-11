@@ -124,7 +124,12 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 	search := parsePostsSearch(r)
 	searchColumns := parsePostsSearchColumns(r)
 	authorIn := parsePostsAuthor(r)
-	authorNotIn := parsePostsAuthorExclude(r)
+	// P4.152: strict author_exclude integer-array validation (rest_invalid_type).
+	authorNotIn, authorExOK := parsePostsAuthorExclude(r)
+	if !authorExOK {
+		writeRESTInvalidIntegerArrayParams(w, []string{"author_exclude"})
+		return
+	}
 	categories := parsePostsCategories(r)
 	categoriesExclude := parsePostsCategoriesExclude(r)
 	tags := parsePostsTags(r)

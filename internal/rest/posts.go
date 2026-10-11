@@ -534,9 +534,70 @@ func parsePostsAuthor(r *http.Request) []int64 {
 	return parsePostsTermIDs(r, "author")
 }
 
-// parsePostsAuthorExclude reads REST ?author_exclude= (author__not_in, P4.132).
-func parsePostsAuthorExclude(r *http.Request) []int64 {
-	return parsePostsTermIDs(r, "author_exclude")
+// parsePostsAuthorExclude reads REST ?author_exclude= (author__not_in, P4.132 / P4.152).
+// Present but non-integer → ok=false (rest_invalid_param / rest_invalid_type).
+func parsePostsAuthorExclude(r *http.Request) ([]int64, bool) {
+	return parsePostsAuthorIDs(r, "author_exclude")
+}
+
+// parsePostsAuthorIDs parses author / author_exclude with strict integer validation (P4.152).
+// Returns (nil, true) when absent or scalar-empty. Supports key=1,2, repeated ?key=, and key[]=.
+// Present but non-integer tokens → (nil, false). Positive IDs only (author__in/not_in).
+func parsePostsAuthorIDs(r *http.Request, key string) ([]int64, bool) {
+	if r == nil || key == "" {
+		return nil, true
+	}
+	q := r.URL.Query()
+	scalarVals, hasScalar := q[key]
+	arrayVals, hasArray := q[key+"[]"]
+	if !hasScalar && !hasArray {
+		return nil, true
+	}
+	seen := map[int64]bool{}
+	var out []int64
+	anyToken := false
+	addCSV := func(raw string, arrayElem bool) bool {
+		// PHP ?author_exclude[]= yields ['']; empty array elements fail integer validation.
+		if arrayElem && strings.TrimSpace(raw) == "" {
+			return false
+		}
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			return true
+		}
+		for _, part := range strings.Split(raw, ",") {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				continue
+			}
+			anyToken = true
+			n, err := strconv.ParseInt(part, 10, 64)
+			if err != nil {
+				return false
+			}
+			// author__in / author__not_in ignore non-positive IDs (WP_Query).
+			if n <= 0 || seen[n] {
+				continue
+			}
+			seen[n] = true
+			out = append(out, n)
+		}
+		return true
+	}
+	for _, v := range scalarVals {
+		if !addCSV(v, false) {
+			return nil, false
+		}
+	}
+	for _, v := range arrayVals {
+		if !addCSV(v, true) {
+			return nil, false
+		}
+	}
+	if !anyToken {
+		return nil, true
+	}
+	return out, true
 }
 
 // parsePostsCategories reads REST ?categories= (maps to tax_query category term_id IN, P4.86).
