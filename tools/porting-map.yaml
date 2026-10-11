@@ -7337,3 +7337,11 @@ wp-login.php#language-switcher-post
   task: P10.133
   api: n/a
   notes: "P10.133 — summarize buttons, namespaces, widgets, strip_all_tags, canonical, confirmaction, 713 corpus"
+
+# P10.134: expand diff corpus after P5.112–P8.34 deepen stack.
+- prefix: tests/corpus#p10-134
+  go: tests/corpus
+  status: partial
+  task: P10.134
+  api: n/a
+  notes: "P10.134 — batch/v1 + separator/spacer contexts + block-directory/pattern-directory; 734 cases"
