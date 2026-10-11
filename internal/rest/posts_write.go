@@ -133,7 +133,8 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 	if canEditPosts(c) {
 		w.Header().Set("Allow", "GET, POST")
 	}
-	writeJSON(w, http.StatusOK, posts)
+	// P9.26: merge register_rest_field get_callback values when registered.
+	writeJSON(w, http.StatusOK, EncodeWithAdditionalFields(postType, posts, r))
 }
 
 func (s *Server) serveTypedItem(w http.ResponseWriter, r *http.Request, c *wp.Context, postType string, id int64) {
@@ -200,7 +201,8 @@ func (s *Server) getTypedItem(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	if canEditPosts(c) {
 		w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
 	}
-	writeJSON(w, http.StatusOK, post)
+	// P9.26: merge register_rest_field get_callback values when registered.
+	writeJSON(w, http.StatusOK, EncodeWithAdditionalFields(postType, post, r))
 }
 
 func (s *Server) createPost(w http.ResponseWriter, r *http.Request, c *wp.Context) {
