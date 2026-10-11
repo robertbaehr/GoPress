@@ -4521,9 +4521,9 @@ wp-login.php#language-switcher-post
 - prefix: wp-includes/blocks/cover.php
   go: internal/blocks/cover.go
   status: partial
-  task: P5.108
+  task: P5.151
   api: internal
-  notes: "P5.108 — className/anchor/align/contentPosition/isDark polish; video synthesize; dimRatio overlay"
+  notes: "P5.151 — fontSize/sizeSlug/alt + align coerce (on P5.108 synthesize/polish)"
 
 - prefix: wp-includes/blocks/cover.php#test
   go: internal/blocks/cover_test.go
@@ -4536,9 +4536,9 @@ wp-login.php#language-switcher-post
 - prefix: wp-includes/blocks/media-text.php
   go: internal/blocks/media_text.go
   status: partial
-  task: P5.55
+  task: P5.152
   api: internal
-  notes: "P5.55 — renderMediaText synthesize from mediaUrl/mediaId + featured image in figure"
+  notes: "P5.152 — fontSize/gradient + align wide|full coerce (on P5.55/P5.109 synthesize/polish)"
 
 # P5.109: deepen core/media-text className/anchor/align + href wrap.
 - prefix: wp-includes/blocks/media-text.php#p5-109
@@ -11708,13 +11708,13 @@ wp-login.php#language-switcher-post
   notes: "P10.211 — summarize group attrs, meta_query, media-grid, HttpValidateURL, canonical tag, srcset helpers, corpus 2767"
 
 # P5.151: deepen core/cover fontSize / sizeSlug / alt; coerce align enum.
-- prefix: wp-includes/blocks/cover#attrs
+- prefix: wp-includes/blocks/cover.php#attrs
   go: internal/blocks/cover.go
   status: partial
   task: P5.151
   api: n/a
   notes: "P5.151 — coerce align left|center|right|wide|full; fontSize + sizeSlug + alt polish; sanitize before applySupports"
-- prefix: wp-includes/blocks/cover#attrs#tests
+- prefix: wp-includes/blocks/cover.php#attrs#tests
   go: internal/blocks/cover_attrs_p5_151_test.go
   status: partial
   task: P5.151
@@ -11820,13 +11820,13 @@ wp-login.php#language-switcher-post
   notes: "P10.213 — summarize cover attrs, meta_key compares, attachment edit, SafeRemoteGet, prev/next rel, headertitle, corpus 2806"
 
 # P5.152: deepen core/media-text fontSize / gradient; coerce align enum.
-- prefix: wp-includes/blocks/media-text#attrs
+- prefix: wp-includes/blocks/media-text.php#attrs
   go: internal/blocks/media_text.go
   status: partial
   task: P5.152
   api: n/a
   notes: "P5.152 — coerce align wide|full; drop none/bogus; fontSize + gradient polish; sanitize before applySupports"
-- prefix: wp-includes/blocks/media-text#attrs#tests
+- prefix: wp-includes/blocks/media-text.php#attrs#tests
   go: internal/blocks/media_text_attrs_p5_152_test.go
   status: partial
   task: P5.152
@@ -11922,3 +11922,11 @@ wp-login.php#language-switcher-post
   task: P10.214
   api: n/a
   notes: "P10.214 — media-text/meta_value/custom-bg/retrieve/oembed/doing-action toppers; 3033 cases; headers-safe; drop Link/set-cookie-divergent"
+
+# P10.215: STATUS/PORTING refresh after P5.152–P10.214.
+- prefix: docs/STATUS.md#p10.215
+  go: docs/STATUS.md
+  status: partial
+  task: P10.215
+  api: n/a
+  notes: "P10.215 — summarize media-text attrs, meta_value REGEXP, custom-bg, RemoteRetrieve, oEmbed EscURL, DidAction, corpus 3033"
