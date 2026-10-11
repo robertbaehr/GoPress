@@ -53,3 +53,21 @@ func RemoveFilter(c *Context, tag string, fn FilterFunc, priority int) bool {
 	}
 	return c.Hooks.RemoveFilter(tag, fn, priority)
 }
+
+// RemoveAllFilters removes all filter callbacks on tag via c.Hooks (remove_all_filters, P9.40).
+// priorityExact < 0 removes every priority. Nil context/hooks or empty tag → false.
+func RemoveAllFilters(c *Context, tag string, priorityExact int) bool {
+	if c == nil || c.Hooks == nil || tag == "" {
+		return false
+	}
+	return c.Hooks.RemoveAllFilters(tag, priorityExact)
+}
+
+// RemoveAllActions removes all action callbacks on tag via c.Hooks (remove_all_actions, P9.40).
+// priorityExact < 0 removes every priority. Nil context/hooks or empty tag → false.
+func RemoveAllActions(c *Context, tag string, priorityExact int) bool {
+	if c == nil || c.Hooks == nil || tag == "" {
+		return false
+	}
+	return c.Hooks.RemoveAllActions(tag, priorityExact)
+}

@@ -1,4 +1,18 @@
 
+# P9.40: RemoveAllFilters / RemoveAllActions Context helpers.
+- prefix: wp-includes/plugin.php#remove_all_filters
+  go: internal/wp/has_action.go
+  status: partial
+  task: P9.40
+  api: RemoveAllFilters
+  notes: "P9.40 — RemoveAllFilters/RemoveAllActions package helpers"
+- prefix: wp-includes/plugin.php#remove_all_filters#tests
+  go: internal/wp/remove_all_p9_40_test.go
+  status: partial
+  task: P9.40
+  api: n/a
+  notes: "P9.40 — nil/empty guards; priorityExact; clear all"
+
 # P7.161: deepen options-privacy.php pagenow chrome stub.
 - prefix: wp-admin/options-privacy.php#chrome
   go: internal/admin/admin.go
