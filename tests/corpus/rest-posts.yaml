@@ -8688,18 +8688,6 @@
   compare: headers
   nonce: null
 
-  nonce: null
-
-  nonce: null
-
-  nonce: null
-
-  nonce: null
-
-  nonce: null
-
-  nonce: null
-
 - id: rest-p10158-021-sticky-true-per-page-1
   role: anon
   method: GET
