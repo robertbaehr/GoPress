@@ -192,6 +192,8 @@ func CalculateImageSrcset(c *Context, width, height int, imageSrc string, imageM
 	}
 	uploads := GetUploadDir(c)
 	imageBaseurl := strings.TrimRight(uploads.Baseurl, "/") + "/" + dirname
+	// P8.47: on HTTPS, prefer https base URL when host matches the request Host.
+	imageBaseurl = preferHTTPSImageBaseURL(c, imageBaseurl)
 
 	editHash := ""
 	imageEdited := false
@@ -414,4 +416,153 @@ func attachmentUploadDirname(file string) string {
 		dirname = strings.TrimPrefix(dirname[idx+len("wp-content/uploads"):], "/")
 	}
 	return dirname
+}
+
+// preferHTTPSImageBaseURL upgrades http upload base URLs under SSL when Host matches (P8.47).
+func preferHTTPSImageBaseURL(c *Context, imageBaseurl string) string {
+	if !IsSSL(c) || strings.HasPrefix(strings.ToLower(imageBaseurl), "https") {
+		return imageBaseurl
+	}
+	parsed, ok := ParseURL(imageBaseurl)
+	if !ok || parsed == nil || parsed.Host == "" {
+		return imageBaseurl
+	}
+	domain := parsed.Host
+	if parsed.hasPort {
+		domain += ":" + strconv.Itoa(parsed.Port)
+	}
+	reqHost := ""
+	if c != nil && c.Req != nil {
+		reqHost = strings.TrimSpace(c.Req.Host)
+	}
+	if reqHost == "" || !strings.EqualFold(reqHost, domain) {
+		return imageBaseurl
+	}
+	return SetURLScheme(c, imageBaseurl, "https")
+}
+
+// ImageAddSrcsetAndSizes mirrors wp_image_add_srcset_and_sizes (P8.47).
+// Injects srcset/sizes into an <img> tag when metadata allows.
+func ImageAddSrcsetAndSizes(c *Context, imageHTML string, imageMeta map[string]any, attachmentID int64) string {
+	imageHTML = strings.TrimSpace(imageHTML)
+	if imageHTML == "" || imageMeta == nil {
+		return imageHTML
+	}
+	if _, ok := imageMeta["sizes"]; !ok {
+		return imageHTML
+	}
+	src := imgAttrValue(imageHTML, "src")
+	if src == "" {
+		return imageHTML
+	}
+	if q := strings.Index(src, "?"); q >= 0 {
+		src = src[:q]
+	}
+	// Bail when meta file carries an edit hash the src lacks.
+	if file := strings.TrimSpace(fmt.Sprint(imageMeta["file"])); file != "" && file != "<nil>" {
+		if m := reImageEditHash.FindString(file); m != "" && !strings.Contains(Basename(src, ""), m) {
+			return imageHTML
+		}
+	}
+	width := imgAttrInt(imageHTML, "width")
+	height := imgAttrInt(imageHTML, "height")
+	if width < 1 || height < 1 {
+		if w, h, ok := ImageSrcGetDimensions(src, imageMeta, attachmentID); ok {
+			width, height = w, h
+		} else {
+			return imageHTML
+		}
+	}
+	srcset := CalculateImageSrcset(c, width, height, src, imageMeta, attachmentID)
+	if srcset == "" {
+		return imageHTML
+	}
+	sizes := ""
+	if !strings.Contains(strings.ToLower(imageHTML), " sizes=") {
+		sizes = CalculateImageSizes(c, width, height, src, imageMeta, attachmentID)
+	} else {
+		sizes = "present"
+	}
+	if sizes == "" {
+		return imageHTML
+	}
+	attr := ` srcset="` + htmlEscapeAttr(srcset) + `"`
+	if sizes != "present" {
+		attr += ` sizes="` + htmlEscapeAttr(sizes) + `"`
+	}
+	re := regexp.MustCompile(`(?i)<img\s([^>]*?)(\s*/)?>`)
+	return re.ReplaceAllString(imageHTML, `<img $1`+attr+` />`)
+}
+
+// ImageSrcGetDimensions mirrors wp_image_src_get_dimensions (P8.47).
+// Matches src basename against meta sizes / full file.
+func ImageSrcGetDimensions(imageSrc string, imageMeta map[string]any, attachmentID int64) (width, height int, ok bool) {
+	_ = attachmentID
+	if imageMeta == nil {
+		return 0, 0, false
+	}
+	base := Basename(imageSrc, "")
+	if base == "" {
+		return 0, 0, false
+	}
+	if file := strings.TrimSpace(fmt.Sprint(imageMeta["file"])); file != "" && file != "<nil>" {
+		if Basename(file, "") == base {
+			w := anyToInt(imageMeta["width"])
+			h := anyToInt(imageMeta["height"])
+			if w > 0 {
+				return w, h, true
+			}
+		}
+	}
+	sizesRaw, has := imageMeta["sizes"]
+	if !has {
+		return 0, 0, false
+	}
+	var sizes map[string]any
+	switch t := sizesRaw.(type) {
+	case map[string]any:
+		sizes = t
+	default:
+		return 0, 0, false
+	}
+	for _, v := range sizes {
+		m, ok := v.(map[string]any)
+		if !ok {
+			continue
+		}
+		f := strings.TrimSpace(fmt.Sprint(m["file"]))
+		if Basename(f, "") != base {
+			continue
+		}
+		w := anyToInt(m["width"])
+		h := anyToInt(m["height"])
+		if w > 0 {
+			return w, h, true
+		}
+	}
+	return 0, 0, false
+}
+
+func imgAttrValue(htmlFragment, name string) string {
+	re := regexp.MustCompile(`(?i)\b` + regexp.QuoteMeta(name) + `\s*=\s*"([^"]*)"`)
+	if m := re.FindStringSubmatch(htmlFragment); len(m) == 2 {
+		return m[1]
+	}
+	re = regexp.MustCompile(`(?i)\b` + regexp.QuoteMeta(name) + `\s*=\s*'([^']*)'`)
+	if m := re.FindStringSubmatch(htmlFragment); len(m) == 2 {
+		return m[1]
+	}
+	return ""
+}
+
+func imgAttrInt(htmlFragment, name string) int {
+	v := strings.TrimSpace(imgAttrValue(htmlFragment, name))
+	if v == "" {
+		return 0
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil {
+		return 0
+	}
+	return n
 }

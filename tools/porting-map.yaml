@@ -11670,3 +11670,23 @@ wp-login.php#language-switcher-post
   task: P3.144
   api: n/a
   notes: "P3.144 — tag EscURL + RelCanonicalForRequest coverage"
+
+# P8.47: deepen wp_calculate_image_srcset (HTTPS baseurl + add srcset/sizes to img).
+- prefix: wp-includes/media.php#wp_calculate_image_srcset#https
+  go: internal/wp/image_srcset.go
+  status: partial
+  task: P8.47
+  api: exported
+  notes: "P8.47 — preferHTTPSImageBaseURL; ImageAddSrcsetAndSizes; ImageSrcGetDimensions"
+- prefix: wp-includes/media.php#wp_image_add_srcset_and_sizes
+  go: internal/wp/image_srcset.go
+  status: partial
+  task: P8.47
+  api: exported
+  notes: "P8.47 — inject srcset/sizes into img markup"
+- prefix: wp-includes/media.php#wp_calculate_image_srcset#tests
+  go: internal/wp/image_srcset_p8_47_test.go
+  status: partial
+  task: P8.47
+  api: n/a
+  notes: "P8.47 — add srcset/sizes, HTTPS upgrade, src dimensions"
