@@ -12173,6 +12173,20 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P2.149 — nil/value/fallback/blocked RemoteGet response code coverage"
 
+# P3.150: get_category_feed_link / get_tag_feed_link / get_term_feed_link.
+- prefix: wp-includes/link-template.php#get_term_feed_link
+  go: internal/wp/feed_links.go
+  status: partial
+  task: P3.150
+  api: exported
+  notes: "P3.150 — GetTerm/Category/TagFeedLink pretty paths; category/tag/taxonomy_feed_link filters"
+- prefix: wp-includes/link-template.php#get_term_feed_link#tests
+  go: internal/wp/term_feed_link_p3_150_test.go
+  status: partial
+  task: P3.150
+  api: n/a
+  notes: "P3.150 — uncategorized/tag fixtures + filter coverage"
+
 # P3.149: get_author_feed_link / get_author_posts_url pretty subset.
 - prefix: wp-includes/link-template.php#get_author_feed_link
   go: internal/wp/feed_links.go
