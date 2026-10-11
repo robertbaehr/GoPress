@@ -6,23 +6,86 @@ import (
 	"unicode/utf8"
 )
 
-// WPStripAllTags mirrors wp_strip_all_tags (P2.31 / P2.107).
+// WPStripAllTags mirrors wp_strip_all_tags (P2.31 / P2.107 / P2.138).
 //
 // Removes <script>/<style> blocks (including their contents), then all HTML
 // tags (PHP strip_tags subset: quoted attributes may contain '>'). When
 // removeBreaks is true, collapses runs of whitespace to a single space.
+// P2.138: quote-aware script/style open-tag ends (attrs may contain '>').
 func WPStripAllTags(text string, removeBreaks bool) string {
 	text = strings.ReplaceAll(text, "\x00", "")
 	// PHP: preg_replace( '@<(script|style)[^>]*?>.*?</\\1>@si', '', $text )
-	// RE2 lacks backrefs, so apply script and style removals separately.
-	text = reScriptBlock.ReplaceAllString(text, "")
-	text = reStyleBlock.ReplaceAllString(text, "")
+	// RE2 lacks backrefs; remove script and style separately with quote-aware opens.
+	text = stripScriptStyleBlocks(text, "script")
+	text = stripScriptStyleBlocks(text, "style")
 	// P2.107: quote-aware tag strip (PHP strip_tags), not naive <[^>]*>.
 	text = stripHTMLTags(text)
 	if removeBreaks {
 		text = reWhitespace.ReplaceAllString(text, " ")
 	}
 	return strings.TrimSpace(text)
+}
+
+// WPStripAllTagsDeep recursively strips tags from string leaves (P2.138).
+// Mirrors map_deep( $data, 'wp_strip_all_tags' ) with remove_breaks=false.
+func WPStripAllTagsDeep(data any) any {
+	return MapDeep(data, func(v any) any {
+		switch s := v.(type) {
+		case string:
+			return WPStripAllTags(s, false)
+		default:
+			return v
+		}
+	})
+}
+
+// stripScriptStyleBlocks removes <tag…>…</tag> pairs with quote-aware open tags (P2.138).
+func stripScriptStyleBlocks(text, tag string) string {
+	if text == "" || tag == "" {
+		return text
+	}
+	lower := strings.ToLower(text)
+	openPrefix := "<" + tag
+	closeTag := "</" + tag + ">"
+	var b strings.Builder
+	b.Grow(len(text))
+	i := 0
+	for i < len(text) {
+		rel := strings.Index(lower[i:], openPrefix)
+		if rel < 0 {
+			b.WriteString(text[i:])
+			break
+		}
+		start := i + rel
+		// Ensure tag boundary: <script… or <script> / <script/ …
+		after := start + len(openPrefix)
+		if after < len(text) {
+			r, _ := utf8.DecodeRuneInString(text[after:])
+			if r != '>' && r != '/' && !unicode.IsSpace(r) {
+				// e.g. <scripted — not a script tag
+				b.WriteString(text[i : after])
+				i = after
+				continue
+			}
+		}
+		b.WriteString(text[i:start])
+		endOpen := findTagEnd(text, after)
+		if endOpen < 0 {
+			// Unclosed open tag: leave '<' for stripHTMLTags and continue.
+			b.WriteByte('<')
+			i = start + 1
+			continue
+		}
+		closeRel := strings.Index(lower[endOpen+1:], closeTag)
+		if closeRel < 0 {
+			// No matching closer (PHP \\1 backref miss): keep open tag for stripHTMLTags.
+			b.WriteString(text[start : endOpen+1])
+			i = endOpen + 1
+			continue
+		}
+		i = endOpen + 1 + closeRel + len(closeTag)
+	}
+	return b.String()
 }
 
 // stripHTMLTags removes HTML/PHP/ASP tags while respecting quoted attribute
