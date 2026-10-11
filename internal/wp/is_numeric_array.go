@@ -5,6 +5,7 @@ import (
 	"reflect"
 	"regexp"
 	"strconv"
+	"strings"
 )
 
 var parseListSplit = regexp.MustCompile(`[\s,]+`)
@@ -59,8 +60,10 @@ func isNumericArrayKey(k reflect.Value) bool {
 	}
 }
 
-// ParseList splits a comma- or whitespace-separated list (wp_parse_list, P2.91).
-// Integers become a single-element list; empty / whitespace-only → empty slice.
+// ParseList splits a comma- or whitespace-separated list (wp_parse_list, P2.91 / P2.122).
+// Integers become a single-element list; empty / whitespace-only string → empty slice.
+// Array inputs keep empty-string scalars (PHP array_filter is_scalar) and stringify
+// numeric/bool entries; nil / non-scalar array entries are dropped.
 func ParseList(input any) []string {
 	switch v := input.(type) {
 	case nil:
@@ -78,47 +81,149 @@ func ParseList(input any) []string {
 	case uint, uint8, uint16, uint32, uint64:
 		return []string{fmt.Sprint(v)}
 	case float64:
-		return []string{strconv.FormatInt(int64(v), 10)}
+		// P2.122: PHP casts floats via (string) before preg_split ("1.5", not "1").
+		return parseListFromString(phpStringCastFloat(v))
 	case float32:
-		return []string{strconv.FormatInt(int64(v), 10)}
+		return parseListFromString(phpStringCastFloat(float64(v)))
 	case bool:
 		if v {
 			return []string{"1"}
 		}
 		return []string{}
 	case string:
-		parts := parseListSplit.Split(v, -1)
-		out := make([]string, 0, len(parts))
-		for _, p := range parts {
-			if p != "" {
-				out = append(out, p)
-			}
+		return parseListFromString(v)
+	case []string:
+		// P2.122: preserve empty strings like PHP array_filter(..., 'is_scalar').
+		out := make([]string, 0, len(v))
+		out = append(out, v...)
+		return out
+	case []int:
+		out := make([]string, len(v))
+		for i, n := range v {
+			out[i] = strconv.Itoa(n)
 		}
 		return out
-	case []string:
-		out := make([]string, 0, len(v))
-		for _, item := range v {
-			if item != "" {
-				out = append(out, item)
-			}
+	case []int64:
+		out := make([]string, len(v))
+		for i, n := range v {
+			out[i] = strconv.FormatInt(n, 10)
 		}
 		return out
 	case []any:
 		out := make([]string, 0, len(v))
 		for _, item := range v {
+			if item == nil {
+				continue
+			}
 			switch s := item.(type) {
 			case string:
-				if s != "" {
-					out = append(out, s)
+				out = append(out, s)
+			case bool:
+				if s {
+					out = append(out, "1")
+				} else {
+					out = append(out, "")
 				}
-			case int, int64, float64, bool:
-				out = append(out, ParseList(s)...)
+			case int:
+				out = append(out, strconv.Itoa(s))
+			case int8:
+				out = append(out, strconv.Itoa(int(s)))
+			case int16:
+				out = append(out, strconv.Itoa(int(s)))
+			case int32:
+				out = append(out, strconv.Itoa(int(s)))
+			case int64:
+				out = append(out, strconv.FormatInt(s, 10))
+			case uint, uint8, uint16, uint32, uint64:
+				out = append(out, fmt.Sprint(s))
+			case float64:
+				out = append(out, phpStringCastFloat(s))
+			case float32:
+				out = append(out, phpStringCastFloat(float64(s)))
+			default:
+				// Non-scalar (maps/slices/structs) dropped like !is_scalar.
 			}
 		}
 		return out
 	default:
 		return nil
 	}
+}
+
+func parseListFromString(v string) []string {
+	parts := parseListSplit.Split(v, -1)
+	out := make([]string, 0, len(parts))
+	for _, p := range parts {
+		if p != "" {
+			out = append(out, p)
+		}
+	}
+	return out
+}
+
+// phpStringCastFloat mirrors PHP (string)$float for wp_parse_list scalars (P2.122).
+func phpStringCastFloat(f float64) string {
+	// Prefer integer form when the float is integral (PHP: (string)3.0 === "3").
+	if f == float64(int64(f)) && !isNegZero(f) {
+		return strconv.FormatInt(int64(f), 10)
+	}
+	return strconv.FormatFloat(f, 'G', -1, 64)
+}
+
+func isNegZero(f float64) bool {
+	return f == 0 && strconv.FormatFloat(f, 'f', -1, 64) == "-0"
+}
+
+// ParseIDList cleans a list of IDs (wp_parse_id_list, P2.122).
+// Returns unique abs(int) values; may include 0. Order follows first occurrence.
+func ParseIDList(input any) []int64 {
+	list := ParseList(input)
+	seen := map[int64]bool{}
+	out := make([]int64, 0, len(list))
+	for _, s := range list {
+		s = strings.TrimSpace(s)
+		if s == "" {
+			// absint('') → 0 in PHP.
+			if !seen[0] {
+				seen[0] = true
+				out = append(out, 0)
+			}
+			continue
+		}
+		n, err := strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			// Non-numeric → absint → 0.
+			if !seen[0] {
+				seen[0] = true
+				out = append(out, 0)
+			}
+			continue
+		}
+		if n < 0 {
+			n = -n
+		}
+		if !seen[n] {
+			seen[n] = true
+			out = append(out, n)
+		}
+	}
+	return out
+}
+
+// ParseSlugList cleans a list of slugs (wp_parse_slug_list, P2.122).
+// Runs sanitize_title on each entry and unique's the result.
+func ParseSlugList(input any) []string {
+	list := ParseList(input)
+	seen := map[string]bool{}
+	out := make([]string, 0, len(list))
+	for _, s := range list {
+		slug := SanitizeTitle(fmt.Sprint(s))
+		if !seen[slug] {
+			seen[slug] = true
+			out = append(out, slug)
+		}
+	}
+	return out
 }
 
 // RestIsArray reports whether value is array-like (rest_is_array, P2.91).
