@@ -21,6 +21,21 @@
 
 
 
+
+# P6.72: lostpassword_post action.
+- prefix: wp-includes/user.php#lostpassword_post
+  go: internal/wp/password_reset.go
+  status: partial
+  task: P6.72
+  api: n/a
+  notes: "P6.72 — DoAction lostpassword_post with errCode + user before send"
+- prefix: wp-includes/user.php#lostpassword_post#tests
+  go: internal/login/lostpassword_post_p6_72_test.go
+  status: partial
+  task: P6.72
+  api: n/a
+  notes: "P6.72 — empty_username + success user"
+
 # P10.229: STATUS/PORTING refresh after P6.71–P9.47 stack.
 - prefix: docs/STATUS.md#p10-229
   go: docs/STATUS.md
