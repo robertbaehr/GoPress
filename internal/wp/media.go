@@ -835,9 +835,10 @@ func GetAttachmentImage(c *Context, attachmentID int64, size string, icon bool, 
 			}
 		}
 	}
-	if addAutoSizes && strings.TrimSpace(attrs["loading"]) == "lazy" {
-		if sz := strings.TrimSpace(attrs["sizes"]); sz != "" && !sizesAttributeIncludesAuto(sz) {
-			attrs["sizes"] = "auto, " + sz
+	// P8.46: prependAutoSizes helper; only when loading=lazy (trimmed).
+	if addAutoSizes && strings.EqualFold(strings.TrimSpace(attrs["loading"]), "lazy") {
+		if sz := strings.TrimSpace(attrs["sizes"]); sz != "" {
+			attrs["sizes"] = prependAutoSizes(sz)
 		}
 	}
 

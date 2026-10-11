@@ -11322,3 +11322,17 @@ wp-login.php#language-switcher-post
   task: P3.141
   api: n/a
   notes: "P3.141 — modulepreload dedupe + attrs + non-http reject; default empty"
+
+# P8.46: deepen image sizes attr (meta size name, filters, auto prefix).
+- prefix: wp-includes/media.php#wp_calculate_image_sizes
+  go: internal/wp/image_srcset.go
+  status: partial
+  task: P8.46
+  api: exported
+  notes: "P8.46 — ImageSizeFromMeta; CalculateImageSizesFromName; wp_get_attachment_image_sizes filter; prependAutoSizes"
+- prefix: wp-includes/media.php#wp_calculate_image_sizes#tests
+  go: internal/wp/image_sizes_attr_p8_46_test.go
+  status: partial
+  task: P8.46
+  api: n/a
+  notes: "P8.46 — meta size resolve, name filter, auto prefix / eager skip"
