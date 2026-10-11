@@ -11,6 +11,15 @@
 
 
 
+
+# P10.228: STATUS/PORTING refresh after P6.70–P9.46 stack.
+- prefix: docs/STATUS.md#p10-228
+  go: docs/STATUS.md
+  status: partial
+  task: P10.228
+  api: n/a
+  notes: "P10.228 — summarize wp_login_failed, SendFrameOptionsHeader, GetEditUserLink, GetAdjacentImageLink, archives align, update-core chrome, DATE orderby, PluginsURL"
+
 # P9.46: plugins_url / plugin_dir_url.
 - prefix: wp-includes/link-template.php#plugins_url
   go: internal/plugins/plugins_url.go
