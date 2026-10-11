@@ -4721,6 +4721,20 @@ wp-login.php#language-switcher-post
   task: P5.42
   api: internal
 
+- prefix: wp-includes/blocks/search.php#p5.124
+  go: internal/blocks/widget_blocks.go
+  status: partial
+  task: P5.124
+  api: internal
+  notes: "P5.124 — buttonUseIcon SVG/has-icon; query hidden inputs; width; button-only searchfield-hidden; tagName/search-element"
+
+- prefix: wp-includes/blocks/search.php#p5.124-test
+  go: internal/blocks/widget_blocks_test.go
+  status: partial
+  task: P5.124
+  api: n/a
+  notes: "P5.124 — unit coverage for icon/query/width/tagName search block"
+
 # P5.43: post-terms / post-date / post-author / post-title / post-excerpt / post-content.
 - prefix: wp-includes/blocks/post-terms.php
   go: internal/blocks/query.go

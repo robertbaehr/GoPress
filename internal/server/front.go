@@ -5229,6 +5229,10 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			v, err := c.DB.GetVar(q, args...)
 			return err == nil && v != nil && fmt.Sprint(v) != "" && fmt.Sprint(v) != "<nil>"
 		},
+		// P5.124: html5 search-element opt-in for core/search landmark wrapper.
+		ThemeSupports: func(feature string, args ...any) bool {
+			return wp.CurrentThemeSupports(c, feature, args...)
+		},
 		ListTagCloud: func(taxonomy string, number int) []blocks.TagCloudItem {
 			if c == nil || c.DB == nil {
 				return nil
