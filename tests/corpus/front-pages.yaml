@@ -1918,10 +1918,10 @@
   compare: headers
   nonce: null
 
-- id: front-p10184-004-xmlrpc
+- id: front-p10184-004-robots
   role: anon
   method: GET
-  path: /xmlrpc.php
+  path: /robots.txt
   headers: {}
   body: null
   compare: headers

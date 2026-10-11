@@ -1290,19 +1290,19 @@
   compare: headers
   nonce: null
 
-- id: login-p10184-004-confirmaction
+- id: login-p10184-004-checkemail-confirm
   role: anon
   method: GET
-  path: /wp-login.php?action=confirmaction
+  path: /wp-login.php?checkemail=confirm
   headers: {}
   body: null
   compare: headers
   nonce: null
 
-- id: login-p10184-005-logout
+- id: login-p10184-005-interim
   role: anon
   method: GET
-  path: /wp-login.php?action=logout
+  path: /wp-login.php?interim-login=1
   headers: {}
   body: null
   compare: headers
