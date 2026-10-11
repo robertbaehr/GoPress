@@ -1202,7 +1202,7 @@ wp-login.php#language-switcher-post
   task: P3.29
   api: n/a
 
-# P3.31: /favicon.ico → site icon / default logo (do_favicon).
+# P3.31 / P3.112: /favicon.ico → site icon / default logo (do_favicon).
 - prefix: wp-includes/functions.php#do_favicon
   go: internal/server/favicon.go
   status: partial
@@ -1212,8 +1212,30 @@ wp-login.php#language-switcher-post
 - prefix: wp-includes/general-template.php#get_site_icon_url
   go: internal/wp/site_icon.go
   status: partial
-  task: P3.31
+  task: P3.112
   api: exported
+  notes: "P3.112 — size-aware GetAttachmentImageURL; get_site_icon_url filter; SiteIconID; P3.31 base"
+
+- prefix: wp-includes/general-template.php#wp_site_icon
+  go: internal/wp/site_icon.go
+  status: partial
+  task: P3.112
+  api: exported
+  notes: "P3.112 — SiteIconMetaTags (32/192/apple-touch/msapplication) + site_icon_meta_tags filter"
+
+- prefix: wp-includes/general-template.php#wp_site_icon#front
+  go: internal/server/front.go
+  status: partial
+  task: P3.112
+  api: n/a
+  notes: "P3.112 — writeFrontHeadLinks emits SiteIconMetaTags in wp_head"
+
+- prefix: wp-includes/general-template.php#get_site_icon_url#tests
+  go: internal/wp/site_icon_test.go
+  status: partial
+  task: P3.112
+  api: n/a
+  notes: "P3.112 — meta tags + filter unit coverage"
 
 # P9.6: plugin uninstall hook stub.
 - prefix: wp-admin/includes/plugin.php#uninstall_plugin
