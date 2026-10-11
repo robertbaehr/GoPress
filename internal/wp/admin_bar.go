@@ -3,7 +3,6 @@ package wp
 
 import (
 	"html"
-	"strings"
 )
 
 // AdminBarHTML returns minimal #wpadminbar markup when a user is logged in.
@@ -29,19 +28,4 @@ func AdminBarHTML(c *Context) string {
 	b.WriteString(`</a></li>`)
 	b.WriteString(`</ul></div></div>`)
 	return b.String()
-}
-
-// BodyClassWithAdminBar appends admin-bar to a body class list when logged in.
-func BodyClassWithAdminBar(c *Context, classes string) string {
-	if c == nil || c.CurrentUser == nil {
-		return classes
-	}
-	classes = strings.TrimSpace(classes)
-	if classes == "" {
-		return "admin-bar"
-	}
-	if strings.Contains(" "+classes+" ", " admin-bar ") {
-		return classes
-	}
-	return classes + " admin-bar"
 }
