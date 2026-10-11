@@ -11852,3 +11852,23 @@ wp-login.php#language-switcher-post
   task: P4.168
   api: n/a
   notes: "P4.168 — REGEXP/NOT REGEXP/RLIKE filters + expanded enum message"
+
+# P7.153: custom-background.php admin + theme_mod helpers.
+- prefix: wp-admin/custom-background.php
+  go: internal/admin/custom_background.go
+  status: partial
+  task: P7.153
+  api: n/a
+  notes: "P7.153 — edit_theme_options gate; background-color save; image display stub"
+- prefix: wp-includes/theme.php#custom-background
+  go: internal/wp/custom_background.go
+  status: partial
+  task: P7.153
+  api: n/a
+  notes: "P7.153 — Get/SetBackgroundColor/Image; HasCustomBackground body class"
+- prefix: wp-admin/custom-background.php#tests
+  go: internal/admin/custom_background_p7_153_test.go
+  status: partial
+  task: P7.153
+  api: n/a
+  notes: "P7.153 — login redirect, color save nonce, body class with support"

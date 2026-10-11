@@ -101,6 +101,10 @@ func (h *Handler) Handle(w http.ResponseWriter, r *http.Request, c *wp.Context, 
 		// P7.112: Appearance → Widgets stub (widgets REST / editor gone).
 		h.requireLogin(w, r, c, h.serveWidgets)
 		return true
+	case "/wp-admin/custom-background.php":
+		// P7.153: Appearance → Background (theme_mod color save + image stub).
+		h.requireLogin(w, r, c, h.serveCustomBackground)
+		return true
 	case "/wp-admin/customize.php":
 		h.requireLogin(w, r, c, h.serveCustomizerGone)
 		return true

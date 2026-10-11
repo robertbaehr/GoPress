@@ -21,6 +21,10 @@ func GetBodyClass(c *Context, classes string) string {
 	if HasCustomLogo(c) {
 		parts = appendBodyClassUnique(parts, "wp-custom-logo")
 	}
+	// P7.153: custom-background when theme supports + non-default color/image.
+	if HasCustomBackground(c) {
+		parts = appendBodyClassUnique(parts, "custom-background")
+	}
 	if c != nil && c.Hooks != nil {
 		filtered := c.Hooks.ApplyFilters("body_class", parts, []string{})
 		switch t := filtered.(type) {
