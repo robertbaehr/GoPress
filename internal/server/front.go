@@ -662,7 +662,7 @@ func (f *Front) renderSearchBlockTemplate(w http.ResponseWriter, c *wp.Context, 
 	}
 	writeFrontHeadLinks(&b, c, home, blogname, "", "", "", extraTitle, extraHref, "", wp.SiteIconMetaTags(c))
 	writeArchiveRelLinks(&b, c, home)
-	b.WriteString(wp.EmojiHeadHTML())
+	b.WriteString(wp.EmojiHeadHTMLCtx(c))
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
 	b.WriteString("\">\n")
@@ -847,7 +847,7 @@ func (f *Front) renderDateArchiveBlockTemplate(w http.ResponseWriter, c *wp.Cont
 	b.WriteString("</title>\n")
 	writeFrontHeadLinks(&b, c, home, blogname, "", "", "", "", "", "", wp.SiteIconMetaTags(c))
 	writeArchiveRelLinks(&b, c, home)
-	b.WriteString(wp.EmojiHeadHTML())
+	b.WriteString(wp.EmojiHeadHTMLCtx(c))
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
 	b.WriteString("\">\n")
@@ -1039,7 +1039,7 @@ func (f *Front) renderAuthorArchiveBlockTemplate(w http.ResponseWriter, c *wp.Co
 	}
 	writeFrontHeadLinks(&b, c, home, blogname, "", restPath, "", extraTitle, extraHref, "", wp.SiteIconMetaTags(c))
 	writeArchiveRelLinks(&b, c, home)
-	b.WriteString(wp.EmojiHeadHTML())
+	b.WriteString(wp.EmojiHeadHTMLCtx(c))
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
 	b.WriteString("\">\n")
@@ -1193,7 +1193,7 @@ func (f *Front) renderCategoryArchiveBlockTemplate(w http.ResponseWriter, c *wp.
 	extraTitle, extraHref := termArchiveFeedLink(c, blogname, home, "category", term)
 	writeFrontHeadLinks(&b, c, home, blogname, "", "", "", extraTitle, extraHref, "", wp.SiteIconMetaTags(c))
 	writeArchiveRelLinks(&b, c, home)
-	b.WriteString(wp.EmojiHeadHTML())
+	b.WriteString(wp.EmojiHeadHTMLCtx(c))
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
 	b.WriteString("\">\n")
@@ -1400,7 +1400,7 @@ func (f *Front) renderTagArchiveBlockTemplate(w http.ResponseWriter, c *wp.Conte
 	extraTitle, extraHref := termArchiveFeedLink(c, blogname, home, "post_tag", term)
 	writeFrontHeadLinks(&b, c, home, blogname, "", "", "", extraTitle, extraHref, "", wp.SiteIconMetaTags(c))
 	writeArchiveRelLinks(&b, c, home)
-	b.WriteString(wp.EmojiHeadHTML())
+	b.WriteString(wp.EmojiHeadHTMLCtx(c))
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
 	b.WriteString("\">\n")
@@ -1761,7 +1761,7 @@ func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, templa
 	b.WriteString(html.EscapeString(wp.GetDocumentTitle(c)))
 	b.WriteString("</title>\n")
 	writeFrontHeadLinks(&b, c, home, blogname, "", "", "", "", "", "", wp.SiteIconMetaTags(c))
-	b.WriteString(wp.EmojiHeadHTML()) // P3.12: wpemoji print scripts skipped
+	b.WriteString(wp.EmojiHeadHTMLCtx(c)) // P3.12: wpemoji print scripts skipped
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
 	b.WriteString("\">\n")
@@ -1798,7 +1798,7 @@ func (f *Front) renderHomeShim(w http.ResponseWriter, c *wp.Context) {
 	b.WriteString("<title>")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString("</title>\n")
-	b.WriteString(wp.EmojiHeadHTML()) // P3.12: wpemoji print scripts skipped
+	b.WriteString(wp.EmojiHeadHTMLCtx(c)) // P3.12: wpemoji print scripts skipped
 	b.WriteString("</head>\n<body")
 	if cls := wp.BodyClassWithAdminBar(c, ""); cls != "" {
 		b.WriteString(` class="`)
@@ -1943,7 +1943,7 @@ func (f *Front) renderSingularBlockTemplate(w http.ResponseWriter, c *wp.Context
 	// does not double-emit.
 	extraTitle, extraHref := singularCommentsFeedLink(c, home, blogname, perm, post)
 	writeFrontHeadLinks(&b, c, home, blogname, perm, restPath, "", extraTitle, extraHref, shortlink, wp.SiteIconMetaTags(c))
-	b.WriteString(wp.EmojiHeadHTML())
+	b.WriteString(wp.EmojiHeadHTMLCtx(c))
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
 	b.WriteString("\">\n")
@@ -3982,7 +3982,7 @@ func (f *Front) render404BlockTemplate(w http.ResponseWriter, c *wp.Context, tem
 	b.WriteString(front404DocumentTitle(c, blogname))
 	b.WriteString("</title>\n")
 	writeFrontHeadLinks(&b, c, home, blogname, "", "", "", "", "", "", wp.SiteIconMetaTags(c))
-	b.WriteString(wp.EmojiHeadHTML())
+	b.WriteString(wp.EmojiHeadHTMLCtx(c))
 	b.WriteString("</head>\n<body class=\"")
 	b.WriteString(html.EscapeString(bodyClasses))
 	b.WriteString("\">\n")
