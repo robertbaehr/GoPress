@@ -1236,7 +1236,8 @@ func TestConfirmActionMissingParams(t *testing.T) {
 func TestConfirmActionValidKey(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
-	reqRow, err := wp.CreateUserRequest(c, "confirm-action@example.com", "export_personal_data", "pending")
+	email := fmt.Sprintf("confirm-action-%d@example.com", time.Now().UnixNano())
+	reqRow, err := wp.CreateUserRequest(c, email, "export_personal_data", "pending")
 	if err != nil {
 		t.Fatalf("create: %v", err)
 	}
