@@ -5442,6 +5442,20 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P7.125 — unit coverage for customizer stub deepenings"
 
+# P7.155: customize messenger_channel + theme attr + loaded_components filter.
+- prefix: wp-admin/customize.php#p7.155
+  go: internal/admin/admin.go
+  status: out-of-scope
+  task: P7.155
+  api: n/a
+  notes: "P7.155 — messenger_channel; data-theme + X-GoPress-Customizer-Theme; customize_loaded_components"
+- prefix: wp-admin/customize.php#p7.155-test
+  go: internal/admin/admin_test.go
+  status: out-of-scope
+  task: P7.155
+  api: n/a
+  notes: "P7.155 — unit coverage for messenger/theme/components deepenings"
+
 - prefix: wp-includes/widgets/
   go: out-of-scope
   status: out-of-scope

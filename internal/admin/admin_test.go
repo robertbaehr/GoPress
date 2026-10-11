@@ -346,6 +346,48 @@ func TestCustomizerDeepensURLAutofocusChangeset(t *testing.T) {
 	}
 }
 
+func TestCustomizerDeepensMessengerThemeComponents(t *testing.T) {
+	// P7.155: messenger_channel, theme data attr/header, customize_loaded_components.
+	c := bootOrSkip(t)
+	ck := loginCookie(t, c)
+	c.Hooks.AddFilter("customize_loaded_components", func(value any, _ ...any) any {
+		return []string{"widgets", "nav_menus"}
+	}, 10, 1)
+	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
+	req := httptest.NewRequest(http.MethodGet,
+		"/wp-admin/customize.php?customize_messenger_channel=preview-1&return=/wp-admin/",
+		nil)
+	req.AddCookie(ck)
+	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if rec.Code != http.StatusForbidden {
+		t.Fatalf("status=%d", rec.Code)
+	}
+	body := rec.Body.String()
+	if !strings.Contains(body, `data-messenger-channel="preview-1"`) {
+		t.Fatalf("expected messenger channel attr: %q", body)
+	}
+	if !strings.Contains(body, `data-theme="`) {
+		t.Fatalf("expected data-theme attr: %q", body)
+	}
+	if !strings.Contains(body, `data-loaded-components="widgets,nav_menus"`) {
+		t.Fatalf("expected loaded components attr: %q", body)
+	}
+	if got := rec.Header().Get("X-GoPress-Customizer-Theme"); got == "" {
+		t.Fatalf("missing X-GoPress-Customizer-Theme header")
+	}
+	// Messenger channel is sanitize_key'd (lowercase, strip junk).
+	req = httptest.NewRequest(http.MethodGet,
+		"/wp-admin/customize.php?customize_messenger_channel=Prev@iew#2!",
+		nil)
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	if !strings.Contains(rec.Body.String(), `data-messenger-channel="preview2"`) {
+		t.Fatalf("expected sanitized messenger channel: %q", rec.Body.String())
+	}
+}
+
 func TestThemeInstallOutOfScope(t *testing.T) {
 	// P7.113: authorized users get a 200 stub; remote install stays unavailable.
 	c := bootOrSkip(t)

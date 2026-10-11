@@ -5881,17 +5881,19 @@ func privacyPolicyGuideSearchScript() string {
 `
 }
 
-// serveCustomizerGone rejects the Customizer as out of scope (P7.6 / P7.88 / P7.125).
+// serveCustomizerGone rejects the Customizer as out of scope (P7.6 / P7.88 / P7.125 / P7.155).
 // Mirrors customize.php bootstrap: logged-in gate (caller), customize capability
-// denial messaging, validated return/url/autofocus/changeset_uuid, controls init
-// action, and Site Editor fallback.
+// denial messaging, validated return/url/autofocus/changeset_uuid/messenger_channel,
+// loaded components filter, controls init action, and Site Editor fallback.
 func (h *Handler) serveCustomizerGone(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	blogname := optionString(c, "blogname", "GoPress")
 	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "/")), "/")
+	stylesheet := optionString(c, "stylesheet", optionString(c, "template", "twentytwentyfive"))
 	returnURL := "/wp-admin/"
 	previewURL := home + "/"
 	autofocus := map[string]string{}
 	changesetUUID := ""
+	messengerChannel := ""
 	if r != nil {
 		q := r.URL.Query()
 		if raw := strings.TrimSpace(q.Get("return")); raw != "" {
@@ -5912,9 +5914,29 @@ func (h *Handler) serveCustomizerGone(w http.ResponseWriter, r *http.Request, c 
 			}
 		}
 		changesetUUID = wp.SanitizeKey(strings.TrimSpace(q.Get("changeset_uuid")))
+		// P7.155: customize_messenger_channel (preview ↔ controls).
+		messengerChannel = wp.SanitizeKey(strings.TrimSpace(q.Get("customize_messenger_channel")))
 	}
 	// P7.88: customize maps to do_not_allow in GoPress (Customizer gone).
 	canCustomize := c != nil && c.CurrentUser != nil && c.UserCan(c.CurrentUser, "customize")
+
+	// P7.155: customize_loaded_components filter (widgets/nav_menus omitted when gone).
+	components := []string{}
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("customize_loaded_components", components); v != nil {
+			switch t := v.(type) {
+			case []string:
+				components = t
+			case []any:
+				components = components[:0]
+				for _, item := range t {
+					if s, ok := item.(string); ok && strings.TrimSpace(s) != "" {
+						components = append(components, strings.TrimSpace(s))
+					}
+				}
+			}
+		}
+	}
 
 	// P7.125: customize_controls_init fires before controls UI (even when stubbed).
 	if c != nil && c.Hooks != nil {
@@ -5951,9 +5973,22 @@ func (h *Handler) serveCustomizerGone(w http.ResponseWriter, r *http.Request, c 
 	b.WriteString(` data-preview-url="`)
 	b.WriteString(html.EscapeString(previewURL))
 	b.WriteString(`"`)
+	b.WriteString(` data-theme="`)
+	b.WriteString(html.EscapeString(stylesheet))
+	b.WriteString(`"`)
 	if changesetUUID != "" {
 		b.WriteString(` data-changeset-uuid="`)
 		b.WriteString(html.EscapeString(changesetUUID))
+		b.WriteString(`"`)
+	}
+	if messengerChannel != "" {
+		b.WriteString(` data-messenger-channel="`)
+		b.WriteString(html.EscapeString(messengerChannel))
+		b.WriteString(`"`)
+	}
+	if len(components) > 0 {
+		b.WriteString(` data-loaded-components="`)
+		b.WriteString(html.EscapeString(strings.Join(components, ",")))
 		b.WriteString(`"`)
 	}
 	for _, key := range []string{"control", "section", "panel"} {
@@ -5990,6 +6025,9 @@ func (h *Handler) serveCustomizerGone(w http.ResponseWriter, r *http.Request, c 
 	w.Header().Set("X-GoPress-Customizer", "disabled")
 	if previewURL != "" {
 		w.Header().Set("X-GoPress-Customizer-Preview", previewURL)
+	}
+	if stylesheet != "" {
+		w.Header().Set("X-GoPress-Customizer-Theme", stylesheet)
 	}
 	writeHTML(w, http.StatusForbidden, b.String())
 }
