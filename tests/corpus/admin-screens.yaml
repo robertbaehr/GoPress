@@ -359,19 +359,19 @@
   compare: headers
   nonce: null
 
-- id: admin-p10156-002-options-reading
+- id: admin-p10156-002-heartbeat-options-reading
   role: admin
   method: GET
-  path: /wp-admin/options-reading.php
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=options-reading
   headers: {}
   body: null
   compare: headers
   nonce: null
 
-- id: admin-p10156-003-tools
+- id: admin-p10156-003-heartbeat-tools
   role: admin
   method: GET
-  path: /wp-admin/tools.php
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=tools
   headers: {}
   body: null
   compare: headers
