@@ -2647,12 +2647,20 @@ wp-login.php#language-switcher-post
   task: P8.9
   api: exported
 
-# P3.40: wp_get_shortlink + Link rel=shortlink / head shortlink.
+# P3.40 / P3.106: wp_get_shortlink + Link rel=shortlink / head shortlink.
 - prefix: wp-includes/link-template.php#wp_get_shortlink
   go: internal/wp/shortlink.go
   status: partial
-  task: P3.40
+  task: P3.106
   api: exported
+  notes: "P3.106 — pre_get_shortlink / get_shortlink filters; allow_slugs arg; attachment Link header"
+
+- prefix: wp-includes/link-template.php#wp_get_shortlink#tests
+  go: internal/wp/shortlink_test.go
+  status: partial
+  task: P3.106
+  api: n/a
+  notes: "P3.106 — filter short-circuit coverage"
 
 # P3.42 / P3.101: rel=canonical / wp_get_canonical_url deepen.
 - prefix: wp-includes/link-template.php#wp_get_canonical_url
