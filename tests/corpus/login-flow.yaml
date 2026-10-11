@@ -853,3 +853,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.156: login toppers after stack.
+- id: login-p10156-001-interim-head
+  role: anon
+  method: HEAD
+  path: /wp-login.php?interim-login=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10156-002-checkemail-confirm
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=confirm
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10156-003-lostpassword-checkemail
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword&checkemail=confirm
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

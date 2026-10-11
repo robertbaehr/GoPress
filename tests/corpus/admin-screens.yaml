@@ -348,3 +348,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.156: admin toppers after async-upload deepen.
+- id: admin-p10156-001-media-new
+  role: admin
+  method: GET
+  path: /wp-admin/media-new.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10156-002-themes
+  role: admin
+  method: GET
+  path: /wp-admin/themes.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10156-003-upload
+  role: admin
+  method: GET
+  path: /wp-admin/upload.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

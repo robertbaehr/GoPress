@@ -8497,3 +8497,11 @@ wp-login.php#language-switcher-post
   task: P5.122
   api: n/a
   notes: "P5.122 — archives dropdown + calendar empty/wrapper unit coverage"
+
+# P10.156: expand diff corpus after P5.123–P8.38.
+- prefix: tests/corpus#p10.156
+  go: tests/corpus
+  status: partial
+  task: P10.156
+  api: n/a
+  notes: "P10.156 — offset validation + latest-posts/comments + front/login/admin toppers; grow past 1200"

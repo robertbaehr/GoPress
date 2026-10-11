@@ -1247,3 +1247,49 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.156: front toppers after wp_head feed_links deepen.
+- id: front-p10156-001-sample-preview
+  role: anon
+  method: GET
+  path: /sample-page/?preview=true
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10156-002-hello-dated
+  role: anon
+  method: GET
+  path: /2024/06/15/hello-world/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10156-003-robots-head
+  role: anon
+  method: HEAD
+  path: /robots.txt
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10156-004-wp-cron
+  role: anon
+  method: GET
+  path: /wp-cron.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10156-005-sitemap
+  role: anon
+  method: GET
+  path: /wp-sitemap.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
