@@ -745,6 +745,79 @@ func TestPostsSlugArrayQueryParam(t *testing.T) {
 	}
 }
 
+func TestPostsSlugEmptyArrayZeroResults(t *testing.T) {
+	// P4.143: slug[]= / slug[0]= present-but-empty → zero results (WP REST).
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	for _, path := range []string{
+		"/wp-json/wp/v2/posts?slug[]=&per_page=10",
+		"/wp-json/wp/v2/posts?slug[0]=&per_page=10",
+	} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		rec := httptest.NewRecorder()
+		c = c.ForRequest(rec, req)
+		(&rest.Server{}).Handle(rec, req, c)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("%s status=%d body=%s", path, rec.Code, rec.Body.String())
+		}
+		var hits []rest.Post
+		if err := json.Unmarshal(rec.Body.Bytes(), &hits); err != nil {
+			t.Fatal(err)
+		}
+		if len(hits) != 0 {
+			t.Fatalf("%s: expected 0 posts, got %d", path, len(hits))
+		}
+		if rec.Header().Get("X-WP-Total") != "0" {
+			t.Fatalf("%s: expected X-WP-Total=0, got %q", path, rec.Header().Get("X-WP-Total"))
+		}
+	}
+
+	// Scalar slug= remains no filter.
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?slug=&per_page=1", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("slug= status=%d", rec.Code)
+	}
+	var one []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &one); err != nil {
+		t.Fatal(err)
+	}
+	if len(one) != 1 {
+		t.Fatalf("scalar empty slug= should list posts, got %d", len(one))
+	}
+}
+
+func TestPostsSlugIndexedQueryParam(t *testing.T) {
+	// P4.143: slug[0]= / slug[1]= indexed array form.
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?slug[0]=hello-world&slug[1]=fixture-post-01&per_page=10", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("slug[N] status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var hits []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &hits); err != nil {
+		t.Fatal(err)
+	}
+	if len(hits) < 2 {
+		t.Fatalf("expected >=2 for slug[N], got %d", len(hits))
+	}
+	seen := map[string]bool{}
+	for _, p := range hits {
+		seen[p.Slug] = true
+	}
+	if !seen["hello-world"] || !seen["fixture-post-01"] {
+		t.Fatalf("slug[N] missing expected posts: %+v", seen)
+	}
+}
+
 func TestPostsIncludeExcludeQueryParams(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()

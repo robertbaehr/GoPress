@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -648,17 +649,21 @@ func writeRESTInvalidDateParams(w http.ResponseWriter, keys []string) {
 	})
 }
 
-// parsePostsSlug reads REST ?slug= (maps to post_name__in, P4.89 / P4.133).
-// Accepts comma-separated slugs, repeated ?slug=, and PHP-style slug[]= arrays.
-// Collection query params are not sanitize_title'd (WP REST slug query has no
-// sanitize_callback; write schema sanitize_slug is separate).
+// parsePostsSlug reads REST ?slug= (maps to post_name__in, P4.89 / P4.133 / P4.143).
+// Accepts comma-separated slugs, repeated ?slug=, PHP-style slug[]= arrays, and
+// indexed slug[0]= / slug[1]= forms. Collection query params are not
+// sanitize_title'd (WP REST slug query has no sanitize_callback).
+//
+// Scalar slug= (empty) → no filter. Present array form with only empty elements
+// (slug[]= / slug[0]=) → empty NameIn filter (zero results), matching WP.
 func parsePostsSlug(r *http.Request) []string {
 	if r == nil {
 		return nil
 	}
 	seen := map[string]bool{}
 	var out []string
-	add := func(raw string) {
+	arrayPresent := false
+	addScalar := func(raw string) {
 		raw = strings.TrimSpace(raw)
 		if raw == "" {
 			return
@@ -672,20 +677,79 @@ func parsePostsSlug(r *http.Request) []string {
 			out = append(out, part)
 		}
 	}
+	addArray := func(raw string) {
+		arrayPresent = true
+		raw = strings.TrimSpace(raw)
+		// Empty array element is retained as a filter token (→ post_name IN ('')).
+		if raw == "" {
+			if !seen[""] {
+				seen[""] = true
+				out = append(out, "")
+			}
+			return
+		}
+		for _, part := range strings.Split(raw, ",") {
+			part = strings.TrimSpace(part)
+			if part == "" {
+				if !seen[""] {
+					seen[""] = true
+					out = append(out, "")
+				}
+				continue
+			}
+			if seen[part] {
+				continue
+			}
+			seen[part] = true
+			out = append(out, part)
+		}
+	}
 	q := r.URL.Query()
 	if vals, ok := q["slug"]; ok {
 		for _, v := range vals {
-			add(v)
+			addScalar(v)
 		}
 	}
 	// PHP array form: slug[]=a&slug[]=b (rest_sanitize_array / WP_REST_Request).
 	if vals, ok := q["slug[]"]; ok {
 		for _, v := range vals {
-			add(v)
+			addArray(v)
+		}
+	}
+	// Indexed form: slug[0]=a&slug[1]=b — collect in numeric index order (P4.143).
+	type idxVal struct {
+		idx int
+		val string
+	}
+	var indexed []idxVal
+	for key, vals := range q {
+		if !strings.HasPrefix(key, "slug[") || !strings.HasSuffix(key, "]") || key == "slug[]" {
+			continue
+		}
+		inner := key[len("slug[") : len(key)-1]
+		n, err := strconv.Atoi(inner)
+		if err != nil {
+			// Non-numeric slug[foo]= — still treat as array element (WP keeps key order).
+			for _, v := range vals {
+				addArray(v)
+			}
+			continue
+		}
+		for _, v := range vals {
+			indexed = append(indexed, idxVal{idx: n, val: v})
+		}
+	}
+	if len(indexed) > 0 {
+		sort.SliceStable(indexed, func(i, j int) bool { return indexed[i].idx < indexed[j].idx })
+		for _, iv := range indexed {
+			addArray(iv.val)
 		}
 	}
 	if len(out) == 0 {
-		add(q.Get("slug"))
+		if arrayPresent {
+			return []string{""}
+		}
+		return nil
 	}
 	return out
 }
