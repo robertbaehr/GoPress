@@ -813,6 +813,34 @@ func GetAttachmentImage(c *Context, attachmentID int64, size string, icon bool, 
 		delete(attrs, "fetchpriority")
 	}
 
+	// P8.45: generate srcset/sizes when not already present (wp_get_attachment_image).
+	if strings.TrimSpace(attrs["srcset"]) == "" {
+		if meta, okMeta := GetAttachmentMetadata(c, attachmentID); okMeta {
+			srcset := CalculateImageSrcset(c, src.Width, src.Height, src.URL, meta, attachmentID)
+			sizes := CalculateImageSizes(c, src.Width, src.Height, src.URL, meta, attachmentID)
+			if srcset != "" && (sizes != "" || strings.TrimSpace(attrs["sizes"]) != "") {
+				attrs["srcset"] = srcset
+				if strings.TrimSpace(attrs["sizes"]) == "" {
+					attrs["sizes"] = sizes
+				}
+			}
+		}
+	}
+	// P8.45: prepend auto to sizes for lazy-loaded images (wp_img_tag_add_auto_sizes).
+	addAutoSizes := true
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("wp_img_tag_add_auto_sizes", true); v != nil {
+			if b, ok := v.(bool); ok {
+				addAutoSizes = b
+			}
+		}
+	}
+	if addAutoSizes && strings.TrimSpace(attrs["loading"]) == "lazy" {
+		if sz := strings.TrimSpace(attrs["sizes"]); sz != "" && !sizesAttributeIncludesAuto(sz) {
+			attrs["sizes"] = "auto, " + sz
+		}
+	}
+
 	var attachment *Post
 	if c != nil {
 		attachment, _ = GetPostByID(c, attachmentID)
