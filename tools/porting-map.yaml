@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P7.163: export.php pagenow chrome.
+- prefix: wp-admin/export.php#pagenow
+  go: internal/admin/export_wxr.go
+  status: partial
+  task: P7.163
+  api: n/a
+  notes: "P7.163 — export.php pagenow/adminpage + admin_body_class + locale"
+- prefix: wp-admin/export.php#pagenow#tests
+  go: internal/admin/export_chrome_p7_163_test.go
+  status: partial
+  task: P7.163
+  api: n/a
+  notes: "P7.163 — pagenow chrome + folded body class"
+
 # P5.162: core/navigation align coerce wide|full.
 - prefix: wp-includes/blocks/navigation#align
   go: internal/blocks/navigation.go

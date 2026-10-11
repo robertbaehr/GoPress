@@ -29,16 +29,29 @@ func (h *Handler) serveExport(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	authors, _ := editPostAuthors(c, "post")
 	dateOpts := exportDateOptions(c, "post")
 	blogname := optionString(c, "blogname", "GoPress")
+	// P7.163: pagenow/adminpage chrome, locale body class, admin_body_class.
+	bodyClass := "wp-admin wp-core-ui export-php locale-en-us"
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("admin_body_class", ""); v != nil {
+			if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+				bodyClass += " " + strings.TrimSpace(s)
+			}
+		}
+	}
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
+	b.WriteString("<meta name=\"viewport\" content=\"width=device-width,initial-scale=1.0\">\n")
 	b.WriteString("<title>Export &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n")
+	b.WriteString("<script>var ajaxurl = \"/wp-admin/admin-ajax.php\", pagenow = \"export\", typenow = \"\", adminpage = \"export-php\";</script>\n")
 	// P7.146: export_add_js — show/hide filter lists by content radio.
 	b.WriteString("<script>\njQuery(function($){var form=$('#export-filters'),filters=form.find('.export-filters');filters.hide();form.find('input:radio').on('change',function(){filters.slideUp('fast');switch($(this).val()){case'attachment':$('#attachment-filters').slideDown();break;case'posts':$('#post-filters').slideDown();break;case'pages':$('#page-filters').slideDown();break;}});});\n</script>\n")
 	b.WriteString("</head>\n")
-	// P7.90: export-php body class like get_body_class for this screen.
-	b.WriteString("<body class=\"wp-admin wp-core-ui export-php\">\n")
+	// P7.90 / P7.163: export-php body class + admin_body_class.
+	b.WriteString("<body class=\"")
+	b.WriteString(html.EscapeString(bodyClass))
+	b.WriteString("\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap\">\n")
 	b.WriteString("<h1>Export</h1>\n")
