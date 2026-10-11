@@ -232,6 +232,8 @@ func (h *Handler) renderDashboard(w http.ResponseWriter, r *http.Request, c *wp.
 	// P7.135: Welcome panel (wp_welcome_panel).
 	recentCommentsHTML := activityRecentCommentsHTML(c, 5)
 	recentPublishedHTML := activityRecentlyPublishedHTML(c, 5)
+	// P7.141: dashboard_browser_nag (default empty — no browse-happy API).
+	browserNagHTML := dashboardBrowserNagHTML(c)
 	// P7.140: dashboard_php_nag (default empty — GoPress has no PHP runtime).
 	phpNagHTML := dashboardPHPNagHTML(c)
 	siteHealthHTML := siteHealthDashboardWidgetHTML(c)
@@ -243,6 +245,7 @@ func (h *Handler) renderDashboard(w http.ResponseWriter, r *http.Request, c *wp.
 <div id="dashboard-widgets-wrap">
 <div id="dashboard-widgets" class="metabox-holder">
 <div id="postbox-container-1" class="postbox-container">
+%s
 %s
 %s
 %s
@@ -284,7 +287,7 @@ func (h *Handler) renderDashboard(w http.ResponseWriter, r *http.Request, c *wp.
 </div>
 </div>
 </div>
-`, adminNoticesHTML(c), html.EscapeString(blogname), welcomeHTML, rightNowHTML, phpNagHTML, siteHealthHTML, recentPublishedHTML, recentCommentsHTML, quickDraftFormHTML(c, noticeHTML))
+`, adminNoticesHTML(c), html.EscapeString(blogname), welcomeHTML, rightNowHTML, browserNagHTML, phpNagHTML, siteHealthHTML, recentPublishedHTML, recentCommentsHTML, quickDraftFormHTML(c, noticeHTML))
 	writeAdminPage(w, r, c, ch, inner)
 }
 

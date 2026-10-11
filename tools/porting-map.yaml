@@ -10454,3 +10454,17 @@ wp-login.php#language-switcher-post
   task: P4.156
   api: n/a
   notes: "P4.156 — notint/empty-array/valid coverage"
+
+# P7.141: dashboard browser nag stub.
+- prefix: wp-admin/includes/dashboard.php#dashboard_browser_nag
+  go: internal/admin/browser_nag.go
+  status: partial
+  task: P7.141
+  api: wp_dashboard_browser_nag
+  notes: "P7.141 — dashboard_browser_nag widget; default no check (no browse-happy API)"
+- prefix: wp-admin/includes/dashboard.php#dashboard_browser_nag#tests
+  go: internal/admin/browser_nag_p7_141_test.go
+  status: partial
+  task: P7.141
+  api: n/a
+  notes: "P7.141 — absent by default; injected insecure check; CheckBrowserVersion"
