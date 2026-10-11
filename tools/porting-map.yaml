@@ -10296,3 +10296,17 @@ wp-login.php#language-switcher-post
   task: P3.132
   api: n/a
   notes: "P3.132 — comma-joined Link + IsPingbackLink"
+
+# P8.43: deepen wp_get_attachment_image attrs filter.
+- prefix: wp-includes/media.php#wp_get_attachment_image#p8.43
+  go: internal/wp/media.go
+  status: partial
+  task: P8.43
+  api: wp_get_attachment_image
+  notes: "P8.43 — attributes filter; decoding enum; fetchpriority; width/height override"
+- prefix: wp-includes/media.php#wp_get_attachment_image#p8.43#tests
+  go: internal/wp/attachment_image_p8_43_test.go
+  status: partial
+  task: P8.43
+  api: n/a
+  notes: "P8.43 — filter/fetchpriority/decoding/dims coverage"

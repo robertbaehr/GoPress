@@ -4,6 +4,7 @@ package wp
 import (
 	"fmt"
 	"path"
+	"sort"
 	"strconv"
 	"strings"
 	"sync"
@@ -651,8 +652,9 @@ func GetAttachmentImageURL(c *Context, attachmentID int64, size string, icon boo
 	return src.URL
 }
 
-// GetAttachmentImage returns an HTML <img> for an attachment (wp_get_attachment_image, P8.32).
-// attr may include class, alt, loading, decoding.
+// GetAttachmentImage returns an HTML <img> for an attachment (wp_get_attachment_image, P8.32 / P8.43).
+// attr may include class, alt, loading, decoding, fetchpriority, width, height, src.
+// P8.43: fires wp_get_attachment_image_attributes; validates decoding; honors fetchpriority.
 func GetAttachmentImage(c *Context, attachmentID int64, size string, icon bool, attr map[string]string) string {
 	if size == "" {
 		size = "thumbnail"
@@ -662,7 +664,6 @@ func GetAttachmentImage(c *Context, attachmentID int64, size string, icon bool, 
 		return ""
 	}
 	sizeClass := sanitizeImageSizeClass(size)
-	class := "attachment-" + sizeClass + " size-" + sizeClass
 	alt := ""
 	if c != nil && c.Meta != nil {
 		alt = strings.TrimSpace(fmt.Sprint(c.Meta.GetMetadata(MetaPost, attachmentID, "_wp_attachment_image_alt", true)))
@@ -670,53 +671,100 @@ func GetAttachmentImage(c *Context, attachmentID int64, size string, icon bool, 
 			alt = ""
 		}
 	}
-	loading := "lazy"
-	decoding := "async"
-	if attr != nil {
-		if v, ok := attr["class"]; ok && strings.TrimSpace(v) != "" {
-			class = strings.TrimSpace(v)
-		}
-		if v, ok := attr["alt"]; ok {
-			alt = v
-		}
-		if v, ok := attr["loading"]; ok {
-			loading = v
-		}
-		if v, ok := attr["decoding"]; ok {
-			decoding = v
-		}
-		if v, ok := attr["src"]; ok && strings.TrimSpace(v) != "" {
-			src.URL = strings.TrimSpace(v)
-		}
+	attrs := map[string]string{
+		"src":      src.URL,
+		"class":    "attachment-" + sizeClass + " size-" + sizeClass,
+		"alt":      alt,
+		"loading":  "lazy",
+		"decoding": "async",
 	}
-	var b strings.Builder
-	b.WriteString(`<img src="`)
-	b.WriteString(htmlEscapeAttr(src.URL))
-	b.WriteString(`" class="`)
-	b.WriteString(htmlEscapeAttr(class))
-	b.WriteString(`"`)
 	if src.Width > 0 {
-		b.WriteString(` width="`)
-		b.WriteString(strconv.Itoa(src.Width))
-		b.WriteString(`"`)
+		attrs["width"] = strconv.Itoa(src.Width)
 	}
 	if src.Height > 0 {
-		b.WriteString(` height="`)
-		b.WriteString(strconv.Itoa(src.Height))
-		b.WriteString(`"`)
+		attrs["height"] = strconv.Itoa(src.Height)
 	}
-	b.WriteString(` alt="`)
-	b.WriteString(htmlEscapeAttr(alt))
-	b.WriteString(`"`)
-	if decoding != "" && decoding != "false" {
-		b.WriteString(` decoding="`)
-		b.WriteString(htmlEscapeAttr(decoding))
-		b.WriteString(`"`)
+	for k, v := range attr {
+		k = strings.TrimSpace(k)
+		if k == "" {
+			continue
+		}
+		attrs[k] = v
 	}
-	if loading != "" && loading != "false" {
-		b.WriteString(` loading="`)
-		b.WriteString(htmlEscapeAttr(loading))
-		b.WriteString(`"`)
+	// P8.43: width/height from src when caller omitted a numeric override.
+	if w := strings.TrimSpace(attrs["width"]); w == "" || !isNumericString(w) {
+		if src.Width > 0 {
+			attrs["width"] = strconv.Itoa(src.Width)
+		} else {
+			delete(attrs, "width")
+		}
+	}
+	if h := strings.TrimSpace(attrs["height"]); h == "" || !isNumericString(h) {
+		if src.Height > 0 {
+			attrs["height"] = strconv.Itoa(src.Height)
+		} else {
+			delete(attrs, "height")
+		}
+	}
+	// P8.43: omit decoding unless async|sync|auto (WP media.php).
+	switch strings.TrimSpace(attrs["decoding"]) {
+	case "async", "sync", "auto":
+	default:
+		delete(attrs, "decoding")
+	}
+	// P8.43: omit loading / fetchpriority when false or empty.
+	if v := strings.TrimSpace(attrs["loading"]); v == "" || v == "false" {
+		delete(attrs, "loading")
+	}
+	if v := strings.TrimSpace(attrs["fetchpriority"]); v == "" || v == "false" {
+		delete(attrs, "fetchpriority")
+	} else if v != "high" && v != "low" && v != "auto" {
+		delete(attrs, "fetchpriority")
+	}
+
+	var attachment *Post
+	if c != nil {
+		attachment, _ = GetPostByID(c, attachmentID)
+	}
+	if c != nil && c.Hooks != nil {
+		filtered := c.Hooks.ApplyFilters("wp_get_attachment_image_attributes", attrs, attachment, size)
+		if m, ok := filtered.(map[string]string); ok && m != nil {
+			attrs = m
+		}
+	}
+
+	// Preserve prior GoPress attr order (src/class/width/height/alt/decoding/loading)
+	// so front custom-logo / featured-image HTML stays stable for the diff corpus.
+	order := []string{"src", "class", "width", "height", "alt", "decoding", "loading", "fetchpriority", "srcset", "sizes"}
+	seen := map[string]bool{}
+	var b strings.Builder
+	b.WriteString(`<img`)
+	for _, name := range order {
+		v, ok := attrs[name]
+		if !ok || strings.TrimSpace(v) == "" && name != "alt" {
+			continue
+		}
+		seen[name] = true
+		b.WriteByte(' ')
+		b.WriteString(htmlEscapeAttr(name))
+		b.WriteString(`="`)
+		b.WriteString(htmlEscapeAttr(v))
+		b.WriteByte('"')
+	}
+	var extra []string
+	for name := range attrs {
+		if seen[name] || name == "" {
+			continue
+		}
+		extra = append(extra, name)
+	}
+	sort.Strings(extra)
+	for _, name := range extra {
+		b.WriteByte(' ')
+		b.WriteString(htmlEscapeAttr(name))
+		b.WriteString(`="`)
+		b.WriteString(htmlEscapeAttr(attrs[name]))
+		b.WriteByte('"')
 	}
 	b.WriteString(` />`)
 	html := b.String()
@@ -727,6 +775,21 @@ func GetAttachmentImage(c *Context, attachmentID int64, size string, icon bool, 
 		}
 	}
 	return html
+}
+
+func isNumericString(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i, r := range s {
+		if r < '0' || r > '9' {
+			if i == 0 && (r == '+' || r == '-') {
+				continue
+			}
+			return false
+		}
+	}
+	return true
 }
 
 func sanitizeImageSizeClass(size string) string {
