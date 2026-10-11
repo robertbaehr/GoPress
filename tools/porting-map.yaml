@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P2.161: send_frame_options_header.
+- prefix: wp-includes/functions.php#send_frame_options_header
+  go: internal/wp/nosniff_admin_headers.go
+  status: partial
+  task: P2.161
+  api: n/a
+  notes: "P2.161 — SendFrameOptionsHeader X-Frame-Options SAMEORIGIN + CSP frame-ancestors"
+- prefix: wp-includes/functions.php#send_frame_options_header#tests
+  go: internal/wp/frame_options_p2_161_test.go
+  status: partial
+  task: P2.161
+  api: n/a
+  notes: "P2.161 — header values + nil guard"
+
 # P6.70: wp_login_failed action.
 - prefix: wp-includes/pluggable.php#wp_login_failed
   go: internal/wp/auth_cookie.go
