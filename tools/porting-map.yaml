@@ -2697,6 +2697,21 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P3.90 — wp_robots filter; search/embed noindex; max-image-preview:large"
 
+# P3.104: deepen wp_robots_no_robots (noindex+follow) + directive order.
+- prefix: wp-includes/robots-template.php#wp_robots_no_robots
+  go: internal/server/front.go
+  status: partial
+  task: P3.104
+  api: n/a
+  notes: "P3.104 — search/embed → noindex,follow when public; format order matches WP filter chain"
+
+- prefix: internal/server/front_test.go#p3-104
+  go: internal/server/front_test.go
+  status: partial
+  task: P3.104
+  api: n/a
+  notes: "P3.104 — search robots content noindex, follow, max-image-preview:large"
+
 - prefix: wp-includes/sitemaps/class-wp-sitemaps.php#enabled
   go: internal/server/robots_sitemap.go
   status: partial
@@ -7119,3 +7134,33 @@ wp-login.php#language-switcher-post
   task: P10.129
   api: n/a
   notes: "P10.129 — summarize media-text, types REST, dashboard, parse_str, feed links, EXIF, 672 corpus"
+
+# P9.24: theme supports API + REST theme_supports for active theme.
+- prefix: wp-includes/theme.php#add_theme_support
+  go: internal/wp/theme_supports.go
+  status: partial
+  task: P9.24
+  api: exported
+  notes: "P9.24 — AddThemeSupport/CurrentThemeSupports/GetThemeSupport; block-theme defaults"
+
+- prefix: wp-includes/theme.php#current_theme_supports
+  go: internal/wp/theme_supports.go
+  status: partial
+  task: P9.24
+  api: exported
+  notes: "P9.24 — html5/post-formats/post-thumbnails arg checks"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-themes-controller.php#theme_supports
+  go: internal/rest/themes.go
+  status: partial
+  task: P9.24
+  api: exported
+  notes: "P9.24 — active theme ThemeSupportsForREST map for /wp/v2/themes"
+
+- prefix: internal/wp/theme_supports_test.go#p9-24
+  go: internal/wp/theme_supports_test.go
+  status: partial
+  task: P9.24
+  api: n/a
+  notes: "P9.24 — unit coverage for supports registry and REST map"
+

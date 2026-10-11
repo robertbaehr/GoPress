@@ -58,6 +58,9 @@ type Context struct {
 	// Theme is the active theme.json settings/styles subset (P5.4).
 	Theme *theme.JSON
 
+	// ThemeFeatures is the add_theme_support registry (P9.24).
+	ThemeFeatures *ThemeFeatures
+
 	// Patterns is the block pattern registry (P5.9).
 	Patterns *PatternRegistry
 
@@ -142,6 +145,7 @@ func (c *Context) ForRequest(w http.ResponseWriter, r *http.Request) *Context {
 		Users:             c.Users,
 		Roles:             c.Roles,
 		Theme:             c.Theme,
+		ThemeFeatures:     c.ThemeFeatures,
 		Patterns:          c.Patterns,
 		PatternCategories: c.PatternCategories,
 		BlockStyles:       c.BlockStyles,
