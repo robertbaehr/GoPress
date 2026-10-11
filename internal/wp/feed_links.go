@@ -180,3 +180,94 @@ func GetAuthorFeedLink(c *Context, home string, authorID int64, feed string) str
 	}
 	return out
 }
+
+// GetCategoryFeedLink builds a category feed permalink (get_category_feed_link, P3.150).
+func GetCategoryFeedLink(c *Context, home string, catID int64, feed string) string {
+	return GetTermFeedLink(c, home, catID, "category", feed)
+}
+
+// GetTagFeedLink builds a tag feed permalink (get_tag_feed_link, P3.150).
+func GetTagFeedLink(c *Context, home string, tagID int64, feed string) string {
+	return GetTermFeedLink(c, home, tagID, "post_tag", feed)
+}
+
+// GetTermFeedLink builds a term archive feed permalink (get_term_feed_link, P3.150).
+// Pretty subset: /category/{slug}/feed/, /tag/{slug}/feed/, or /{taxonomy}/{slug}/feed/.
+// Applies category_feed_link / tag_feed_link / taxonomy_feed_link filters.
+func GetTermFeedLink(c *Context, home string, termID int64, taxonomy, feed string) string {
+	home = strings.TrimRight(strings.TrimSpace(home), "/")
+	if home == "" && c != nil {
+		home = strings.TrimRight(optionStringBlogInfo(c, "home", optionStringBlogInfo(c, "siteurl", "")), "/")
+	}
+	taxonomy = strings.TrimSpace(taxonomy)
+	if home == "" || termID <= 0 || taxonomy == "" || c == nil || c.DB == nil {
+		return ""
+	}
+	slug := termSlugForTaxonomy(c, termID, taxonomy)
+	if slug == "" {
+		return ""
+	}
+	basePath := ""
+	switch taxonomy {
+	case "category":
+		basePath = "/category/" + slug
+	case "post_tag":
+		basePath = "/tag/" + slug
+	default:
+		basePath = "/" + taxonomy + "/" + slug
+	}
+	feed = strings.ToLower(strings.TrimSpace(feed))
+	if feed == "" {
+		feed = "rss2"
+	}
+	out := ""
+	if feed == "rss2" || feed == "rss" {
+		out = home + basePath + "/feed/"
+	} else {
+		out = home + basePath + "/feed/" + feed + "/"
+	}
+	if c.Hooks != nil {
+		switch taxonomy {
+		case "category":
+			if v := c.Hooks.ApplyFilters("category_feed_link", out, feed); v != nil {
+				if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+					return strings.TrimSpace(s)
+				}
+			}
+		case "post_tag":
+			if v := c.Hooks.ApplyFilters("tag_feed_link", out, feed); v != nil {
+				if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+					return strings.TrimSpace(s)
+				}
+			}
+		default:
+			if v := c.Hooks.ApplyFilters("taxonomy_feed_link", out, feed, taxonomy); v != nil {
+				if s, ok := v.(string); ok && strings.TrimSpace(s) != "" {
+					return strings.TrimSpace(s)
+				}
+			}
+		}
+	}
+	return out
+}
+
+// termSlugForTaxonomy looks up a term slug when the term exists in taxonomy.
+func termSlugForTaxonomy(c *Context, termID int64, taxonomy string) string {
+	if c == nil || c.DB == nil || termID <= 0 || taxonomy == "" {
+		return ""
+	}
+	q, args, err := c.DB.Prepare(
+		"SELECT t.slug FROM "+c.DB.Terms()+" t "+
+			"INNER JOIN "+c.DB.TermTaxonomy()+" tt ON t.term_id = tt.term_id "+
+			"WHERE t.term_id = %d AND tt.taxonomy = %s LIMIT 1",
+		termID, taxonomy,
+	)
+	if err != nil {
+		return ""
+	}
+	row, err := c.DB.GetRow(q, args...)
+	if err != nil || row == nil {
+		return ""
+	}
+	return strings.TrimSpace(rowString(row["slug"]))
+}
