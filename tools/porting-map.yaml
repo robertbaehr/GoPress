@@ -10268,3 +10268,17 @@ wp-login.php#language-switcher-post
   task: P7.139
   api: n/a
   notes: "P7.139 — absent by default; injected upgrade; skipped on update-core.php"
+
+# P2.134: wp_kses_normalize_entities export.
+- prefix: wp-includes/kses.php#wp_kses_normalize_entities
+  go: internal/wp/kses.go
+  status: partial
+  task: P2.134
+  api: wp_kses_normalize_entities
+  notes: "P2.134 — KsesNormalizeEntities + valid_unicode; wired into ksesRun / EscHTML"
+- prefix: wp-includes/kses.php#wp_kses_normalize_entities#tests
+  go: internal/wp/kses_normalize_entities_p2_134_test.go
+  status: partial
+  task: P2.134
+  api: n/a
+  notes: "P2.134 — named/numeric/xml context + kses wiring"
