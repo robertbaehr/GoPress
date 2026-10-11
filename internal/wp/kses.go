@@ -33,11 +33,11 @@ type ksesAllowFile struct {
 }
 
 var (
-	ksesOnce       sync.Once
-	ksesDataHTML   AllowedHTML
-	ksesPostHTML   AllowedHTML
-	ksesEntities   []string
-	ksesProtos     []string
+	ksesOnce     sync.Once
+	ksesDataHTML AllowedHTML
+	ksesPostHTML AllowedHTML
+	ksesEntities []string
+	ksesProtos   []string
 )
 
 func loadKsesAllowed() {
