@@ -11706,3 +11706,17 @@ wp-login.php#language-switcher-post
   task: P10.211
   api: n/a
   notes: "P10.211 — summarize group attrs, meta_query, media-grid, HttpValidateURL, canonical tag, srcset helpers, corpus 2767"
+
+# P5.151: deepen core/cover fontSize / sizeSlug / alt; coerce align enum.
+- prefix: wp-includes/blocks/cover#attrs
+  go: internal/blocks/cover.go
+  status: partial
+  task: P5.151
+  api: n/a
+  notes: "P5.151 — coerce align left|center|right|wide|full; fontSize + sizeSlug + alt polish; sanitize before applySupports"
+- prefix: wp-includes/blocks/cover#attrs#tests
+  go: internal/blocks/cover_attrs_p5_151_test.go
+  status: partial
+  task: P5.151
+  api: n/a
+  notes: "P5.151 — align coerce, saved fontSize, synthesize sizeSlug/alt coverage"

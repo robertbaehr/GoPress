@@ -68,7 +68,9 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/gallery":
 		out = e.renderGallery(block)
 	case "core/cover":
+		// P5.151: coerce align enum before applySupports; fontSize/sizeSlug/alt polish.
 		out = e.renderCover(block)
+		return applySupports(out, sanitizeCoverBlockAttrs(block.Attrs), name)
 	case "core/media-text":
 		out = e.renderMediaText(block)
 	case "core/columns":
