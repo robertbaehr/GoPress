@@ -12496,3 +12496,17 @@ wp-login.php#language-switcher-post
   task: P10.219
   api: n/a
   notes: "P10.219 — freeze tip SHAs after make check"
+
+# P10.220: STATUS/PORTING refresh after P5.158–P7.159.
+- prefix: docs/STATUS.md#p10.220
+  go: docs/STATUS.md
+  status: partial
+  task: P10.220
+  api: n/a
+  notes: "P10.220 — summarize video attrs, remote_request, search-feed, attachment_is, meta_type_key, credits chrome"
+- prefix: gopress-stack-summary.txt#p10.220
+  go: gopress-stack-summary.txt
+  status: partial
+  task: P10.220
+  api: n/a
+  notes: "P10.220 — freeze tip SHAs after make check"
