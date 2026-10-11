@@ -5914,16 +5914,16 @@ wp-login.php#language-switcher-post
 - prefix: wp-admin/theme-editor.php
   go: internal/admin/theme_editor.go
   status: partial
-  task: P7.115
+  task: P7.156
   api: n/a
-  notes: "P7.115 — Theme File Editor stub (edit_themes denied → 403 parity); Site Editor/Themes links; PHP file editing out of scope"
+  notes: "P7.156 — theme/file/action data attrs; pagenow; updated notice; X-GoPress-Theme-Editor-Theme; edit_themes 403 stub"
 
 - prefix: wp-admin/theme-editor.php#tests
   go: internal/admin/theme_editor_test.go
   status: partial
-  task: P7.115
+  task: P7.156
   api: n/a
-  notes: "P7.115 — 403 stub chrome + login redirect coverage"
+  notes: "P7.156 — query chrome + 403 stub + login redirect coverage"
 
 - prefix: wp-admin/plugin-editor.php
   go: internal/admin/plugin_editor.go
