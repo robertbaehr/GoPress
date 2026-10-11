@@ -71,3 +71,34 @@ func RemoveAllActions(c *Context, tag string, priorityExact int) bool {
 	}
 	return c.Hooks.RemoveAllActions(tag, priorityExact)
 }
+
+// ApplyFiltersDeprecated runs apply_filters_deprecated via c.Hooks (P9.41).
+// Nil context/hooks returns args[0] when present, else nil.
+func ApplyFiltersDeprecated(c *Context, hookName string, args []any, version, replacement, message string) any {
+	if c == nil || c.Hooks == nil {
+		if len(args) > 0 {
+			return args[0]
+		}
+		return nil
+	}
+	return c.Hooks.ApplyFiltersDeprecated(hookName, args, version, replacement, message)
+}
+
+// DoActionDeprecated runs do_action_deprecated via c.Hooks (P9.41).
+// Nil context/hooks is a no-op.
+func DoActionDeprecated(c *Context, hookName string, args []any, version, replacement, message string) {
+	if c == nil || c.Hooks == nil {
+		return
+	}
+	c.Hooks.DoActionDeprecated(hookName, args, version, replacement, message)
+}
+
+// DeprecatedHookNotify records a deprecated-hook notice via c.Hooks (P9.41).
+// Nil context/hooks clears LastDeprecatedHookNotice.
+func DeprecatedHookNotify(c *Context, hookName, version, replacement, message string) {
+	if c == nil || c.Hooks == nil {
+		LastDeprecatedHookNotice = ""
+		return
+	}
+	c.Hooks.DeprecatedHook(hookName, version, replacement, message)
+}

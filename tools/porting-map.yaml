@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P9.41: deprecated hook Context helpers.
+- prefix: wp-includes/plugin.php#apply_filters_deprecated
+  go: internal/wp/has_action.go
+  status: partial
+  task: P9.41
+  api: n/a
+  notes: "P9.41 — ApplyFiltersDeprecated / DoActionDeprecated / DeprecatedHookNotify"
+- prefix: wp-includes/plugin.php#apply_filters_deprecated#tests
+  go: internal/wp/deprecated_hook_helpers_p9_41_test.go
+  status: partial
+  task: P9.41
+  api: n/a
+  notes: "P9.41 — Context helper coverage + nil guards"
+
 # P7.162: tools.php pagenow chrome.
 - prefix: wp-admin/tools.php#pagenow
   go: internal/admin/admin.go
