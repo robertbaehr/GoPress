@@ -12071,6 +12071,26 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P7.154 — login redirect, text color save nonce, body class with support"
 
+# P2.151: wp_remote_head / wp_safe_remote_head.
+- prefix: wp-includes/http.php#wp_remote_head
+  go: internal/wp/http.go
+  status: partial
+  task: P2.151
+  api: n/a
+  notes: "P2.151 — RemoteHead HEAD via shared remoteRequest"
+- prefix: wp-includes/http.php#wp_safe_remote_head
+  go: internal/wp/http.go
+  status: partial
+  task: P2.151
+  api: n/a
+  notes: "P2.151 — SafeRemoteHead validates via HttpValidateURL then RemoteHead"
+- prefix: wp-includes/http.php#wp_remote_head#tests
+  go: internal/wp/remote_head_p2_151_test.go
+  status: partial
+  task: P2.151
+  api: n/a
+  notes: "P2.151 — HEAD dial; BlockExternal; SafeRemoteHead unsafe reject"
+
 # P2.150: wp_remote_post / wp_safe_remote_post.
 - prefix: wp-includes/http.php#wp_remote_post
   go: internal/wp/http.go
@@ -12124,6 +12144,20 @@ wp-login.php#language-switcher-post
   task: P3.147
   api: n/a
   notes: "P3.147 — content type, get_feed_link, EscURL alternate HTML"
+
+# P8.49: wp_get_attachment_caption from post_excerpt + filter.
+- prefix: wp-includes/post.php#wp_get_attachment_caption
+  go: internal/wp/media.go
+  status: partial
+  task: P8.49
+  api: exported
+  notes: "P8.49 — GetAttachmentCaption post_excerpt; wp_get_attachment_caption filter; non-attachment empty"
+- prefix: wp-includes/post.php#wp_get_attachment_caption#tests
+  go: internal/wp/attachment_caption_p8_49_test.go
+  status: partial
+  task: P8.49
+  api: n/a
+  notes: "P8.49 — excerpt read, filter replace, non-attachment empty"
 
 # P8.48: deepen wp_get_attachment_image_src array size + filter false.
 - prefix: wp-includes/media.php#wp_get_attachment_image_src
