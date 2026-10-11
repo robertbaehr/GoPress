@@ -10382,3 +10382,17 @@ wp-login.php#language-switcher-post
   task: P2.135
   api: n/a
   notes: "P2.135 — decimal/hex decode + bad-protocol entity scheme coverage"
+
+# P3.133: front rest_output_link_header.
+- prefix: wp-includes/rest-api.php#rest_output_link_header
+  go: internal/wp/rest_link.go
+  status: partial
+  task: P3.133
+  api: rest_output_link_header
+  notes: "P3.133 — GetRestURL/RestURL + RestOutputLinkHeader; front archives/singular wire"
+- prefix: wp-includes/rest-api.php#rest_output_link_header#tests
+  go: internal/wp/rest_link_p3_133_test.go
+  status: partial
+  task: P3.133
+  api: n/a
+  notes: "P3.133 — api.w.org Link + rest_url filter + path append"

@@ -4459,41 +4459,28 @@ func ensureMainSkipTarget(htmlBody string) string {
 
 // setFrontAPILink mirrors rest_output_link_header (rel=https://api.w.org/).
 func setFrontAPILink(w http.ResponseWriter, c *wp.Context) {
-	siteURL := strings.TrimRight(optionString(c, "siteurl", ""), "/")
-	home := strings.TrimRight(optionString(c, "home", siteURL), "/")
-	if home == "" {
-		home = siteURL
-	}
-	if home == "" {
-		return
-	}
-	// P3.131: never advertise pingback discovery on front archives/home.
-	wp.ClearPingbackHeaders(w)
-	w.Header().Set("Link", fmt.Sprintf(`<%s/wp-json/>; rel="https://api.w.org/"`, home))
+	// P3.133: shared RestOutputLinkHeader (get_rest_url + rest_url filter + Add).
+	wp.RestOutputLinkHeader(w, c)
 }
 
 // setFrontSingularLinks mirrors WP Link headers for singular views (P5.17).
 // X-Pingback is intentionally omitted: XML-RPC/pingbacks are out of scope (P3.41 / P3.98 / P3.131).
 func setFrontSingularLinks(w http.ResponseWriter, c *wp.Context, post *singularPost) {
-	siteURL := strings.TrimRight(optionString(c, "siteurl", ""), "/")
-	home := strings.TrimRight(optionString(c, "home", siteURL), "/")
-	if home == "" {
-		home = siteURL
-	}
-	if home == "" || post == nil {
+	if post == nil {
 		return
 	}
-	// P3.131 / P3.98: ClearPingbackHeaders drops X-Pingback + Link rel=pingback.
-	wp.ClearPingbackHeaders(w)
-	w.Header().Add("Link", fmt.Sprintf(`<%s/wp-json/>; rel="https://api.w.org/"`, home))
+	// P3.133: api.w.org discovery via rest_output_link_header.
+	wp.RestOutputLinkHeader(w, c)
 	restType := "posts"
 	if post.Type == "page" {
 		restType = "pages"
 	}
 	if post.Type == "post" || post.Type == "page" {
-		w.Header().Add("Link", fmt.Sprintf(
-			`<%s/wp-json/wp/v2/%s/%d>; rel="alternate"; title="JSON"; type="application/json"`,
-			home, restType, post.ID))
+		if alt := wp.RestURL(c, fmt.Sprintf("/wp/v2/%s/%d", restType, post.ID)); alt != "" {
+			w.Header().Add("Link", fmt.Sprintf(
+				`<%s>; rel="alternate"; title="JSON"; type="application/json"`,
+				wp.SanitizeURL(alt)))
+		}
 	}
 	// P3.106 / P3.130: shortlink Link header via wp_shortlink_header (query context).
 	wp.ShortlinkHeader(w, c, post.ID)
