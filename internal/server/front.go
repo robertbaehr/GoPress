@@ -4947,6 +4947,13 @@ func blockRenderEnv(c *wp.Context) *blocks.Env {
 			}
 			return c.Hooks.ApplyFilters(tag, value, args...)
 		},
+		// P5.131: wp_hash for core/legacy-widget instance hash_equals.
+		HashNonce: func(data string) string {
+			if c == nil || c.Auth == nil {
+				return ""
+			}
+			return c.Auth.Hash(data, "auth")
+		},
 		IsLoggedIn: func() bool {
 			return c != nil && c.CurrentUser != nil
 		},

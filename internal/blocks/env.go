@@ -63,6 +63,10 @@ type Env struct {
 	// When nil, filters are skipped (empty injection).
 	ApplyFilter func(tag string, value any, args ...any) any
 
+	// HashNonce is wp_hash($data) for legacy-widget instance verification (P5.131).
+	// When nil, encoded+hash instances fail closed (empty render).
+	HashNonce func(data string) string
+
 	// GetAttachmentURL resolves attachment IDs for core/image and core/gallery (P5.48).
 	GetAttachmentURL func(id int64) string
 	// GetAttachmentDimensions returns width/height from attachment metadata (P5.114 / core/video).

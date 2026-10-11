@@ -9432,3 +9432,18 @@ wp-login.php#language-switcher-post
   task: P10.171
   api: n/a
   notes: "P10.171 — summarize missing, _embed, admin notices, kses contexts, the_excerpt, login_errors + 1476 corpus"
+
+# P5.131: deepen core/legacy-widget id/idBase/instance hash paths.
+- prefix: wp-includes/blocks/legacy-widget.php#p5.131
+  go: internal/blocks/legacy_widget.go
+  status: partial
+  task: P5.131
+  api: n/a
+  notes: "P5.131 — id/idBase gates; instance.encoded+hash via HashNonce; no InnerHTML leak"
+
+- prefix: wp-includes/blocks/legacy-widget.php#p5.131#tests
+  go: internal/blocks/legacy_widget_p5_131_test.go
+  status: partial
+  task: P5.131
+  api: n/a
+  notes: "P5.131 — attr paths + hash mismatch/match still empty"
