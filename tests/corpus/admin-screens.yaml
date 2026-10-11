@@ -37,6 +37,7 @@
   nonce: null
 
 # P10.74: additional admin chrome screens (headers-only).
+
 - id: admin-edit-comments
   role: admin
   method: GET
@@ -56,6 +57,7 @@
   nonce: null
 
 # P10.110: headers-only expand after P5.100–P6.42 stack.
+
 - id: admin-plugin-editor
   role: admin
   method: GET
@@ -76,6 +78,7 @@
 
 
 # P10.120: pages list chrome after P7.106.
+
 - id: admin-edit-pages
   role: admin
   method: GET
@@ -95,6 +98,7 @@
   nonce: null
 
 # P10.122: comments list chrome after P7.107.
+
 - id: admin-edit-comments-search
   role: admin
   method: GET
@@ -123,6 +127,7 @@
   nonce: null
 
 # P10.126: profile.php chrome after P7.109.
+
 - id: admin-p10126-profile
   role: admin
   method: GET
@@ -133,6 +138,7 @@
   nonce: null
 
 # P10.142: headers-only expand after P5.116–P6.48.
+
 - id: admin-p10142-001-wp-admin-edit-tags-php-taxonomy-category
   role: admin
   method: GET
@@ -215,6 +221,7 @@
   nonce: null
 
 # P10.142c safe toppers.
+
 - id: admin-p10142c-001-edit-tags-msg
   role: admin
   method: GET
@@ -245,6 +252,7 @@
 
 
 # P10.144 safe toppers (plugin/theme editor stubs already deep; link-manager admin 500≠403 skipped).
+
 - id: admin-p10144-001-dashboard
   role: admin
   method: GET
@@ -264,6 +272,7 @@
   nonce: null
 
 # P10.146 safe toppers (comment edit form headers).
+
 - id: admin-p10146-001-comment-edit
   role: admin
   method: GET
@@ -302,7 +311,6 @@
   compare: headers
   nonce: null
 
-
 - id: admin-p10152-004-dashboard
   role: admin
   method: GET
@@ -313,6 +321,7 @@
   nonce: null
 
 # P10.154: admin toppers after media-new deepen (stable header compares).
+
 - id: admin-p10154-001-edit
   role: admin
   method: GET
@@ -350,6 +359,7 @@
   nonce: null
 
 # P10.156: one cookie-stable admin topper after async-upload deepen.
+
 - id: admin-p10156-001-edit-pages
   role: admin
   method: GET
@@ -360,6 +370,7 @@
   nonce: null
 
 # P10.166: admin toppers after edit-comments screen options.
+
 - id: admin-p10166-001-edit-comments
   role: admin
   method: GET
@@ -388,6 +399,7 @@
   nonce: null
 
 # P10.168: admin toppers after help tabs.
+
 - id: admin-p10168-001-edit-posts
   role: admin
   method: GET
@@ -425,6 +437,7 @@
   nonce: null
 
 # P10.170: admin toppers after admin notices helper.
+
 - id: admin-p10170-001-dashboard
   role: admin
   method: GET
@@ -568,7 +581,6 @@
   compare: headers
   nonce: null
 
-
 - id: admin-p10180-004-edit
   role: admin
   method: GET
@@ -676,6 +688,62 @@
   role: admin
   method: GET
   path: /wp-admin/options-general.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+# P10.186: admin update-nag / footer chrome after stack.
+
+- id: admin-p10186-001-dashboard
+  role: admin
+  method: GET
+  path: /wp-admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10186-002-edit
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10186-003-plugins
+  role: admin
+  method: GET
+  path: /wp-admin/plugins.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10186-004-users
+  role: admin
+  method: GET
+  path: /wp-admin/users.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10186-005-options-general
+  role: admin
+  method: GET
+  path: /wp-admin/options-general.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10186-008-comments
+  role: admin
+  method: GET
+  path: /wp-admin/edit-comments.php
   headers: {}
   body: null
   compare: headers

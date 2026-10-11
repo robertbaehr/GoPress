@@ -89,6 +89,7 @@
   nonce: null
 
 # P10.74: post statuses collection already matches PHP JSON.
+
 - id: rest-statuses-anon
   role: anon
   method: GET
@@ -117,6 +118,7 @@
   nonce: wp_rest
 
 # Anon forbidden/not-logged-in shapes already match PHP (P10.15).
+
 - id: rest-settings-anon
   role: anon
   method: GET
@@ -136,6 +138,7 @@
   nonce: null
 
 # P10.76: status item + rest_route door JSON parity.
+
 - id: rest-status-publish
   role: anon
   method: GET
@@ -164,6 +167,7 @@
   nonce: null
 
 # P10.78: search type filters + more anon REST headers.
+
 - id: rest-search-term
   role: anon
   method: GET
@@ -237,6 +241,7 @@
   nonce: null
 
 # P10.80: block-directory term gate + more collection filters (headers/json).
+
 - id: rest-block-directory-anon
   role: anon
   method: GET
@@ -328,6 +333,7 @@
   nonce: null
 
 # P10.82: widgets permission parity + more REST collections (json/headers).
+
 - id: rest-widgets-anon
   role: anon
   method: GET
@@ -509,6 +515,7 @@
   nonce: null
 
 # P10.82b: replacements for admin cookie-meta mismatches.
+
 - id: rest-posts-orderby-id
   role: anon
   method: GET
@@ -537,6 +544,7 @@
   nonce: null
 
 # P10.84: expand corpus with matching REST/oEmbed/sidebars headers.
+
 - id: rest-categories-1
   role: anon
   method: GET
@@ -736,6 +744,7 @@
   nonce: null
 
 # P10.86: expand with widget-types item, search filters, rest_route, oEmbed.
+
 - id: rest-widget-types-search-anon
   role: anon
   method: GET
@@ -881,6 +890,7 @@
   nonce: null
 
 # P10.88: expand with post-excerpt/content/title block-types + REST filters.
+
 - id: rest-block-types-post-excerpt-anon
   role: anon
   method: GET
@@ -1062,6 +1072,7 @@
   nonce: null
 
 # P10.90: comments/comment-template block-types + REST filters.
+
 - id: rest-block-types-comments-anon
   role: anon
   method: GET
@@ -1252,6 +1263,7 @@
   nonce: null
 
 # P10.92: expand matching block-types + rest_route header cases.
+
 - id: rest-block-types-avatar-anon
   role: anon
   method: GET
@@ -1586,6 +1598,7 @@
   nonce: null
 
 # P10.94: more matching block-types / REST header cases.
+
 - id: rest-block-types-social-links-anon
   role: anon
   method: GET
@@ -1731,6 +1744,7 @@
   nonce: null
 
 # P10.96: more matching REST header cases after P5.93–P6.39.
+
 - id: rest-block-types-block-anon
   role: anon
   method: GET
@@ -1822,6 +1836,7 @@
   nonce: null
 
 # P10.98: application-passwords introspect + more block-types / rest_route headers.
+
 - id: rest-app-passwords-me-anon
   role: anon
   method: GET
@@ -1967,6 +1982,7 @@
   nonce: null
 
 # P10.100: template revisions + menus + term-description rest_route header cases.
+
 - id: rest-route-templates-index-revisions
   role: anon
   method: GET
@@ -2040,6 +2056,7 @@
   nonce: null
 
 # P10.102: template-parts area filter + footer revisions + query-no-results.
+
 - id: rest-json-template-parts-area-header
   role: anon
   method: GET
@@ -2230,6 +2247,7 @@
   nonce: null
 
 # P10.104: font-collections item/route, orderby variants, templates, block-types routes.
+
 - id: rest-json-font-collections-google-fonts
   role: anon
   method: GET
@@ -2429,6 +2447,7 @@
   nonce: null
 
 # P10.106: autosaves HEAD, orderby/offset/include, templates, font-collections, search type.
+
 - id: rest-autosaves-head-anon
   role: anon
   method: HEAD
@@ -2592,6 +2611,7 @@
   nonce: null
 
 # P10.108: revisions/autosaves context + details/patterns/themes headers after P5.99–P8.29.
+
 - id: rest-revisions-head-anon
   role: anon
   method: HEAD
@@ -2991,6 +3011,7 @@
   nonce: null
 
 # P10.112: headers-only expand after P5.101–P8.30 stack.
+
 - id: rest-route-block-types-preformatted
   role: anon
   method: GET
@@ -3136,6 +3157,7 @@
   nonce: null
 
 # P10.114: headers-only expand after P5.102–P9.22 stack.
+
 - id: rest-p10114-users-1-view
   role: anon
   method: GET
@@ -3254,6 +3276,7 @@
   nonce: null
 
 # P10.116: headers-only expand after P5.103–P6.43 stack.
+
 - id: rest-p10116-taxonomies-category
   role: anon
   method: GET
@@ -3362,7 +3385,6 @@
   compare: headers
   nonce: null
 
-
 - id: rest-p10116-block-types-anon
   role: anon
   method: GET
@@ -3391,6 +3413,7 @@
   nonce: null
 
 # P10.118: headers-only expand after P5.104–P8.31 stack.
+
 - id: rest-p10118-categories-search
   role: anon
   method: GET
@@ -3527,6 +3550,7 @@
   nonce: null
 
 # P10.120: headers-only expand after P5.105–P6.44 stack.
+
 - id: rest-p10120-tags-orderby-id-desc
   role: anon
   method: GET
@@ -3654,6 +3678,7 @@
   nonce: null
 
 # P10.122: headers-only expand after P5.106–P9.23 stack.
+
 - id: rest-p10122-search-orderby-id-asc
   role: anon
   method: GET
@@ -3880,6 +3905,7 @@
   nonce: null
 
 # P10.124: corpus expand after P5.107–P8.32.
+
 - id: rest-p10124-posts-search-relevance
   role: anon
   method: GET
@@ -4061,6 +4087,7 @@
   nonce: null
 
 # P10.126: REST headers after P5.108–P6.45 deepen stack.
+
 - id: rest-p10126-block-types-cover-context-view
   role: anon
   method: GET
@@ -4143,6 +4170,7 @@
   nonce: null
 
 # P10.128: REST headers after P5.109–P8.33 deepen stack.
+
 - id: rest-p10128-types-post
   role: anon
   method: GET
@@ -4297,6 +4325,7 @@
   nonce: null
 
 # P10.128: extra type/block-type items (headers-only) after ajax prune.
+
 - id: rest-p10128-types-wp-navigation
   role: anon
   method: GET
@@ -4442,6 +4471,7 @@
   nonce: null
 
 # P10.130: statuses OPTIONS/HEAD/context + gallery block-types after P5.110–P9.24.
+
 - id: rest-p10130-statuses-options
   role: anon
   method: OPTIONS
@@ -4785,6 +4815,7 @@
   nonce: null
 
 # P10.134: batch/v1 + separator/spacer contexts + related headers-only expands.
+
 - id: rest-p10134-batch-v1-get
   role: anon
   method: GET
@@ -4975,6 +5006,7 @@
   nonce: null
 
 # P10.136: comments query + image/block-type/search header cases after P5.113–P6.47.
+
 - id: rest-p10136-comments-orderby-post
   role: anon
   method: GET
@@ -5309,6 +5341,7 @@
   nonce: null
 
 # P10.138: audio/video/file + comments-pagination + meta/_fields + bindings-related block-types (headers-only).
+
 - id: rest-p10138-block-types-audio-context-view
   role: anon
   method: GET
@@ -5931,6 +5964,7 @@
   nonce: null
 
 # P10.140: headers-only expand after P5.115–P8.35 (orderby/attachment/embed).
+
 - id: rest-p10140-001-json-wp-v2-posts-orderby-include
   role: anon
   method: GET
@@ -6490,6 +6524,7 @@
   nonce: null
 
 # P10.142: headers-only expand after P5.116–P6.48.
+
 - id: rest-p10142-004-wp-json-wp-v2-posts-author-exclude-1-per-page-5
   role: anon
   method: GET
@@ -7004,6 +7039,7 @@
   nonce: null
 
 # P10.142c safe toppers.
+
 - id: rest-p10142c-001-posts-author-99999
   role: anon
   method: GET
@@ -7106,6 +7142,7 @@
 
 
 # P10.144: expand after P5.117–P8.36 (slug[] / navigation / site-logo).
+
 - id: rest-p10144-001-posts-slug-array-hello
   role: anon
   method: GET
@@ -7287,6 +7324,7 @@
   nonce: null
 
 # P10.146: headers-only expand after P5.118–P9.26 stack.
+
 - id: rest-p10146-006-template-part-block-type-view
   role: anon
   method: GET
@@ -7513,6 +7551,7 @@
   nonce: null
 
 # P10.148: search_columns + post-template/query-pagination toppers.
+
 - id: rest-p10148-001-posts-search-columns-title
   role: anon
   method: GET
@@ -7649,6 +7688,7 @@
   nonce: null
 
 # P10.150: tax_query exclude/relation + site-logo block-types after deepen stack.
+
 - id: rest-p10150-001-posts-categories-exclude
   role: anon
   method: GET
@@ -7884,6 +7924,7 @@
   nonce: null
 
 # P10.152: include[]/exclude[] + loginout/stack toppers after P5.121–P9.27.
+
 - id: rest-p10152-001-posts-include-array
   role: anon
   method: GET
@@ -8101,6 +8142,7 @@
   nonce: null
 
 # P10.154: per_page validation + archives/calendar/comment-template toppers after P5.122–P6.50.
+
 - id: rest-p10154-001-posts-per-page-101
   role: anon
   method: GET
@@ -8282,6 +8324,7 @@
   nonce: null
 
 # P10.156: offset validation + latest-posts/comments toppers after P5.123–P8.38.
+
 - id: rest-p10156-001-posts-offset-abc
   role: anon
   method: GET
@@ -8562,6 +8605,7 @@
   nonce: null
 
 # P10.158: after/before validation + search/calendar block toppers after P5.124–P6.51.
+
 - id: rest-p10158-001-posts-after-invalid
   role: anon
   method: GET
@@ -8707,6 +8751,7 @@
   nonce: null
 
 # P10.160: sticky/ignore_sticky validation + query-pagination toppers.
+
 - id: rest-p10160-001-sticky-maybe
   role: anon
   method: GET
@@ -8897,6 +8942,7 @@
   nonce: null
 
 # P10.162: parent validation + post-author/terms toppers after P5.126–P8.39.
+
 - id: rest-p10162-001-pages-parent-foo
   role: anon
   method: GET
@@ -8914,7 +8960,6 @@
   body: null
   compare: headers
   nonce: null
-
 
 - id: rest-p10162-004-pages-parent-array-436
   role: anon
@@ -9078,7 +9123,6 @@
   compare: headers
   nonce: null
 
-
 - id: rest-p10162-023-oembed-sample-page
   role: anon
   method: GET
@@ -9087,7 +9131,6 @@
   body: null
   compare: headers
   nonce: null
-
 
 - id: rest-p10162-025-pages-parent-436-orderby-id
   role: anon
@@ -9117,6 +9160,7 @@
   nonce: null
 
 # P10.164: expand after P5.127–P6.52 (empty slug[] / indexed / core/block / generator).
+
 - id: rest-p10164-001-posts-slug-empty-array
   role: anon
   method: GET
@@ -9152,7 +9196,6 @@
   body: null
   compare: headers
   nonce: null
-
 
 - id: rest-p10164-006-pages-slug-empty-array
   role: anon
@@ -9199,7 +9242,6 @@
   compare: headers
   nonce: null
 
-
 - id: rest-p10164-012-rest-route-core-block
   role: anon
   method: GET
@@ -9235,8 +9277,6 @@
   body: null
   compare: headers
   nonce: null
-
-
 
 - id: rest-p10164-018-comments-per-page-1
   role: anon
@@ -9312,6 +9352,7 @@
 
 
 # P10.166: expand after P5.128–P9.29 (pattern / modified_gmt / adjacent / has_filter).
+
 - id: rest-p10166-001-block-types-core-pattern
   role: anon
   method: GET
@@ -9504,7 +9545,6 @@
   compare: headers
   nonce: null
 
-
 - id: rest-p10168-004-pages-collection-embed
   role: anon
   method: GET
@@ -9640,7 +9680,6 @@
   compare: headers
   nonce: null
 
-
 - id: rest-p10168-020-sitemap
   role: anon
   method: GET
@@ -9714,6 +9753,7 @@
   nonce: null
 
 # P10.170: toppers after missing/_embed/notices/kses/excerpt/login_errors stack.
+
 - id: rest-p10170-003-posts-collection-embed
   role: anon
   method: GET
@@ -11191,8 +11231,6 @@
   compare: headers
   nonce: null
 
-
-
 - id: rest-p10180-020-head-statuses
   role: anon
   method: HEAD
@@ -11292,7 +11330,6 @@
   compare: headers
   nonce: null
 
-
 - id: rest-p10180-032-block-types-page-list-item-embed
   role: anon
   method: GET
@@ -11376,7 +11413,6 @@
   compare: headers
   nonce: null
 
-
 - id: rest-p10182-003-posts-author-exclude-empty-array
   role: anon
   method: GET
@@ -11431,7 +11467,6 @@
   compare: headers
   nonce: null
 
-
 - id: rest-p10182-010-pages-author-exclude-1
   role: anon
   method: GET
@@ -11441,7 +11476,6 @@
   compare: headers
   nonce: null
 
-
 - id: rest-p10182-012-block-types-post-featured-image-view
   role: anon
   method: GET
@@ -11450,7 +11484,6 @@
   body: null
   compare: headers
   nonce: null
-
 
 - id: rest-p10182-014-types-post-headers
   role: anon
@@ -11550,7 +11583,6 @@
   body: null
   compare: headers
   nonce: null
-
 
 - id: rest-p10182-026-posts-orderby-date
   role: anon
@@ -11954,6 +11986,314 @@
   role: anon
   method: GET
   path: /wp-json/wp/v2/settings
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+# P10.186: corpus expand after comment-template attrs / format enum / update-nag / kses-normalize / x-pingback / attachment-image stack.
+
+- id: rest-p10186-001-format-bogus
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?format=bogus&per_page=1
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-p10186-002-format-mixed-invalid
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?format=aside,bogus&per_page=1
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-p10186-003-format-aside-case
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?format=Aside&per_page=1
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-p10186-004-format-empty-array
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?format[]=&per_page=1
+  headers: {}
+  body: null
+  compare: json
+  nonce: null
+
+- id: rest-p10186-005-format-status
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?format=status&per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-006-format-array-status
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?format[]=status&per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-009-format-video
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?format=video&per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-010-rest-route-format-bogus
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/posts&format=bogus&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-011-pages-format-ignored
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?format=bogus&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-012-block-types-comment-template
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/comment-template
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-013-block-types-query-no-results
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/query-no-results
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-014-media-list
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/media?per_page=3
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-016-posts-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?per_page=1&_embed=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-018-search-columns-bogus
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?search=Hello&search_columns=bogus&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-020-categories
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/categories?per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-021-tags
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/tags?per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-022-types-post
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types/post
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-023-statuses
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/statuses
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-024-taxonomies
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/taxonomies
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-025-users
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/users?per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-026-comments
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/comments?per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-027-namespace-wp-v2
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-029-posts-orderby-date
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?orderby=date&order=desc&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-030-posts-slug
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?slug=hello-world&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-031-pages-slug
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?slug=sample-page&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-032-block-patterns
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-patterns/patterns
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-033-themes
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/themes
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-034-plugins
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/plugins
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-035-settings
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/settings
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-036-format-status-aside
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?format=status,aside&per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-037-format-chat
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?format=chat&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-038-oembed
+  role: anon
+  method: GET
+  path: /wp-json/oembed/1.0/embed?url=http://127.0.0.1:8081/?p=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-039-search
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?search=Hello&per_page=5
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10186-040-menu-locations
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/menu-locations
   headers: {}
   body: null
   compare: headers

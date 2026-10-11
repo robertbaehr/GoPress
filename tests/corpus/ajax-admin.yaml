@@ -662,3 +662,50 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.186: ajax heartbeat headers after stack.
+
+- id: ajax-p10186-001-heartbeat-dashboard
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=dashboard
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10186-002-heartbeat-edit-post
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=edit-post
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10186-003-heartbeat-upload
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=upload
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10186-004-heartbeat-users
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=users
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10186-005-heartbeat-options
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=options-general
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
