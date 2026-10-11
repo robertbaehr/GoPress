@@ -11126,3 +11126,11 @@ wp-login.php#language-switcher-post
   task: P10.200
   api: n/a
   notes: "P10.200 — verse/include_children/export/preconnect/login_init toppers; 2325/2325; headers-safe"
+
+# P10.201: STATUS/PORTING refresh after P5.145–P10.200.
+- prefix: docs/STATUS.md#p10.201
+  go: docs/STATUS.md
+  status: partial
+  task: P10.201
+  api: n/a
+  notes: "P10.201 — summarize verse attrs, include_children, tools-export, word_count_type, preconnect, login_init, corpus 2325"
