@@ -2734,34 +2734,7 @@
   compare: headers
   nonce: null
 
-- id: front-p10200-006-rsd
-  role: anon
-  method: GET
-  path: /rsd.xml
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: front-p10200-007-wlwmanifest
-  role: anon
-  method: GET
-  path: /wlwmanifest.xml
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: front-p10200-008-category-uncategorized
-  role: anon
-  method: GET
-  path: /category/uncategorized/
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: front-p10200-009-search
+- id: front-p10200-006-search
   role: anon
   method: GET
   path: /?s=hello
@@ -2770,7 +2743,7 @@
   compare: headers
   nonce: null
 
-- id: front-p10200-010-page-sample
+- id: front-p10200-007-page-sample
   role: anon
   method: GET
   path: /sample-page/
@@ -2779,10 +2752,28 @@
   compare: headers
   nonce: null
 
-- id: front-p10200-011-hello-world
+- id: front-p10200-008-atom
   role: anon
   method: GET
-  path: /2024/01/01/hello-world/
+  path: /feed/atom/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10200-009-comments-feed
+  role: anon
+  method: GET
+  path: /comments/feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10200-010-rdf
+  role: anon
+  method: GET
+  path: /feed/rdf/
   headers: {}
   body: null
   compare: headers
