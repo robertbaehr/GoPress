@@ -1639,3 +1639,49 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.198: login toppers.
+- id: login-p10198-001-login
+  role: anon
+  method: GET
+  path: /wp-login.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10198-002-lostpassword
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10198-003-checkemail
+  role: anon
+  method: GET
+  path: /wp-login.php?checkemail=confirm
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10198-004-registration-disabled
+  role: anon
+  method: GET
+  path: /wp-login.php?registration=disabled
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10198-005-loggedout
+  role: anon
+  method: GET
+  path: /wp-login.php?loggedout=true
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

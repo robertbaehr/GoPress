@@ -2587,3 +2587,103 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.198: front toppers after dns-prefetch / stack.
+- id: front-p10198-001-home
+  role: anon
+  method: GET
+  path: /
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10198-002-sample
+  role: anon
+  method: GET
+  path: /sample-page/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10198-003-feed
+  role: anon
+  method: GET
+  path: /feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10198-004-feed-rss2
+  role: anon
+  method: GET
+  path: /feed/rss2/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10198-005-feed-rdf
+  role: anon
+  method: GET
+  path: /feed/rdf/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10198-006-comments-feed
+  role: anon
+  method: GET
+  path: /comments/feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10198-007-sitemap
+  role: anon
+  method: GET
+  path: /wp-sitemap.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10198-008-sitemap-posts
+  role: anon
+  method: GET
+  path: /wp-sitemap-posts-post-1.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10198-009-sitemap-category
+  role: anon
+  method: GET
+  path: /wp-sitemap-taxonomies-category-1.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10198-010-sitemap-tag
+  role: anon
+  method: GET
+  path: /wp-sitemap-taxonomies-post_tag-1.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10198-011-robots
+  role: anon
+  method: GET
+  path: /robots.txt
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

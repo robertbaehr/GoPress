@@ -889,3 +889,40 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.198: ajax toppers after export deepen.
+- id: ajax-p10198-001-heartbeat-export
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=export-personal-data
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10198-002-heartbeat-privacy-guide
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=privacy-policy-guide
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10198-003-heartbeat-upload
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=upload
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10198-004-heartbeat
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
