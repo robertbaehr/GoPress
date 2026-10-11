@@ -732,6 +732,40 @@ func ksesEscapeAttr(v string) string {
 	return replacer.Replace(v)
 }
 
+// KsesNoNullOptions mirrors the $options array for wp_kses_no_null (P2.133).
+type KsesNoNullOptions struct {
+	// SlashZero is "remove" (default) or "keep". When remove, sequences of
+	// backslashes followed by zeros (e.g. "\0", "\\0") are stripped.
+	SlashZero string
+}
+
+// KsesNoNull is wp_kses_no_null (P2.133).
+// Strips C0 controls except TAB/LF/CR; optionally removes \0-style slash-zero runs.
+func KsesNoNull(content string, opts *KsesNoNullOptions) string {
+	slashZero := "remove"
+	if opts != nil && opts.SlashZero != "" {
+		slashZero = opts.SlashZero
+	}
+	var b strings.Builder
+	b.Grow(len(content))
+	for i := 0; i < len(content); i++ {
+		c := content[i]
+		// PHP: /[\x00-\x08\x0B\x0C\x0E-\x1F]/ — keep TAB(09), LF(0A), CR(0D).
+		if c < 0x20 && c != '\t' && c != '\n' && c != '\r' {
+			continue
+		}
+		b.WriteByte(c)
+	}
+	out := b.String()
+	if slashZero == "remove" {
+		out = ksesSlashZeroRemove.ReplaceAllString(out, "")
+	}
+	return out
+}
+
+// ksesSlashZeroRemove matches PHP preg_replace('/\\\\+0+/', ”, …).
+var ksesSlashZeroRemove = regexp.MustCompile(`\\+0+`)
+
 // KsesBadProtocol is wp_kses_bad_protocol (P2.132).
 // Strips disallowed URI schemes; nil/empty protocols use the default allowlist.
 func KsesBadProtocol(content string, protocols []string) string {
