@@ -6,6 +6,7 @@ import (
 	"html"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -4010,9 +4011,10 @@ func writeArchiveRelLinks(b *strings.Builder, c *wp.Context, home string) {
 	b.WriteString(wp.ArchiveRelPrevNextHTML(base, paged, maxPages))
 }
 
-// frontRobotsMetaTag returns the <meta name='robots' …> line (wp_robots, P3.44 / P3.90).
+// frontRobotsMetaTag returns the <meta name='robots' …> line (wp_robots, P3.44 / P3.90 / P3.104).
 // Applies the wp_robots filter after default directives matching WP core callbacks:
-// noindex/nofollow when blog_public=0; noindex on search/embed; max-image-preview:large when public.
+// noindex/nofollow when blog_public=0; wp_robots_no_robots (noindex+follow) on
+// search/embed when public; max-image-preview:large when public.
 func frontRobotsMetaTag(c *wp.Context) string {
 	robots := frontRobotsDirectives(c)
 	if c != nil && c.Hooks != nil {
@@ -4035,34 +4037,47 @@ func frontRobotsMetaTag(c *wp.Context) string {
 	return "<meta name='robots' content='" + html.EscapeString(content) + "' />\n"
 }
 
-// frontRobotsDirectives builds the default wp_robots directive map (P3.90).
+// frontRobotsDirectives builds the default wp_robots directive map (P3.90 / P3.104).
+// Mirrors the default_filters.php callback order:
+// wp_robots_noindex → noindex_embeds → noindex_search → max_image_preview_large.
 func frontRobotsDirectives(c *wp.Context) map[string]any {
 	public := optionTruthy(c, "blog_public")
 	robots := map[string]any{}
+	// wp_robots_noindex → wp_robots_no_robots when blog_public=0.
 	if !public {
-		// wp_robots_noindex → wp_robots_no_robots when blog_public=0.
-		robots["noindex"] = true
-		robots["nofollow"] = true
-		return robots
+		return wpRobotsNoRobots(robots, false)
+	}
+	// wp_robots_noindex_embeds / wp_robots_noindex_search → wp_robots_no_robots.
+	if c != nil && c.Scope != nil && (c.Scope.IsSearch || c.Scope.IsEmbed) {
+		robots = wpRobotsNoRobots(robots, true)
 	}
 	// wp_robots_max_image_preview_large when public.
 	robots["max-image-preview"] = "large"
-	if c != nil && c.Scope != nil {
-		// wp_robots_noindex_search / wp_robots_noindex_embeds.
-		if c.Scope.IsSearch || c.Scope.IsEmbed {
-			robots["noindex"] = true
-		}
+	return robots
+}
+
+// wpRobotsNoRobots mirrors wp_robots_no_robots() (P3.104).
+func wpRobotsNoRobots(robots map[string]any, public bool) map[string]any {
+	if robots == nil {
+		robots = map[string]any{}
+	}
+	robots["noindex"] = true
+	if public {
+		robots["follow"] = true
+	} else {
+		robots["nofollow"] = true
 	}
 	return robots
 }
 
-// formatRobotsDirectives joins wp_robots directives into a meta content string (P3.90).
+// formatRobotsDirectives joins wp_robots directives into a meta content string (P3.90 / P3.104).
+// Order mirrors PHP array insertion from the default filter chain:
+// noindex, follow/nofollow, …, then max-image-preview.
 func formatRobotsDirectives(robots map[string]any) string {
 	if len(robots) == 0 {
 		return ""
 	}
-	// Stable order for common directives (matches typical WP output).
-	order := []string{"max-image-preview", "noindex", "nofollow", "noarchive", "nosnippet"}
+	order := []string{"noindex", "follow", "nofollow", "noarchive", "nosnippet", "max-image-preview"}
 	seen := map[string]bool{}
 	var parts []string
 	appendDir := func(k string, v any) {
@@ -4099,8 +4114,15 @@ func formatRobotsDirectives(robots map[string]any) string {
 			appendDir(k, v)
 		}
 	}
-	for k, v := range robots {
-		appendDir(k, v)
+	var extras []string
+	for k := range robots {
+		if !seen[k] {
+			extras = append(extras, k)
+		}
+	}
+	sort.Strings(extras)
+	for _, k := range extras {
+		appendDir(k, robots[k])
 	}
 	return strings.Join(parts, ", ")
 }

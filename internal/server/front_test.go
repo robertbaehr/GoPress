@@ -871,12 +871,10 @@ func TestFrontSearchRobotsNoindex(t *testing.T) {
 		t.Fatalf("status=%d", rec.Code)
 	}
 	body := rec.Body.String()
-	if !strings.Contains(body, `content='max-image-preview:large, noindex'`) &&
-		!strings.Contains(body, `content='noindex, max-image-preview:large'`) {
-		// Accept either directive order; must include both.
-		if !strings.Contains(body, "noindex") || !strings.Contains(body, "max-image-preview:large") {
-			t.Fatalf("expected search robots noindex + max-image-preview: %q", body)
-		}
+	// P3.104: search uses wp_robots_no_robots → noindex, follow + max-image-preview:large.
+	want := `content='noindex, follow, max-image-preview:large'`
+	if !strings.Contains(body, want) {
+		t.Fatalf("expected search robots %q in %q", want, body)
 	}
 }
 
