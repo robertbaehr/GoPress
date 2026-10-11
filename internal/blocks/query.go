@@ -2472,6 +2472,8 @@ func (e *Env) commentPageHref(page int) string {
 	return href + "#comments"
 }
 
+// renderCommentTemplate renders core/comment-template (P5.90 / P3.116 / P5.138).
+// P5.138: supports.align / fontSize / anchor on the ol wrapper.
 func (e *Env) renderCommentTemplate(block Block) string {
 	e = e.ensure()
 	if e.currentPost == nil || e.ListComments == nil {
@@ -2517,15 +2519,35 @@ func (e *Env) renderCommentTemplate(block Block) string {
 			roots = roots[start:end]
 		}
 	}
-	classes := []string{"wp-block-comment-template"}
-	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
-		classes = append(classes, cn)
-	}
+	// P5.138: supports.align / fontSize / className on the ol wrapper.
+	classes := commentTemplateWrapperClasses(block.Attrs)
 	var b strings.Builder
-	b.WriteString(`<ol class="` + html.EscapeString(strings.Join(classes, " ")) + `">`)
+	b.WriteString(`<ol class="` + html.EscapeString(classes) + `"`)
+	// P5.138: supports.anchor → id on the wrapper (block.json supports.anchor).
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		b.WriteString(` id="` + html.EscapeString(anchor) + `"`)
+	}
+	b.WriteString(`>`)
 	e.writeCommentTemplateItems(&b, roots, byParent, 1, true)
 	b.WriteString(`</ol>`)
 	return b.String()
+}
+
+// commentTemplateWrapperClasses builds ol classes for core/comment-template (P5.90 / P5.138).
+func commentTemplateWrapperClasses(attrs map[string]any) string {
+	parts := []string{"wp-block-comment-template"}
+	// P5.138: supports.align → align{slug} class.
+	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
+		parts = append(parts, "align"+sanitizeClassToken(align))
+	}
+	// P5.138: supports.typography.fontSize → has-{slug}-font-size.
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		parts = append(parts, "has-"+sanitizeClassToken(fs)+"-font-size")
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		parts = append(parts, cn)
+	}
+	return strings.Join(parts, " ")
 }
 
 func (e *Env) writeCommentTemplateItems(b *strings.Builder, items []CommentItem, byParent map[int64][]CommentItem, depth int, threadEven bool) {
