@@ -1,4 +1,12 @@
 
+# P10.221: STATUS/PORTING refresh after P6.63–P9.39 stack.
+- prefix: docs/STATUS.md#p10.221
+  go: docs/STATUS.md
+  status: partial
+  task: P10.221
+  api: n/a
+  notes: "P10.221 — summarize screen-reader title, freedoms chrome, HTTPS detection, comments pagenum, mime type, pullquote attrs, meta orderby, ref_array helpers"
+
 # P9.39: DoActionRefArray / ApplyFiltersRefArray Context helpers.
 - prefix: wp-includes/plugin.php#do_action_ref_array
   go: internal/wp/ref_array.go
