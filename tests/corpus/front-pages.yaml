@@ -1072,3 +1072,67 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.150: front toppers after body_class / site-logo stack.
+- id: front-p10150-001-sample-page
+  role: anon
+  method: GET
+  path: /sample-page/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10150-002-search-logo
+  role: anon
+  method: GET
+  path: /?s=logo
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10150-003-feed-atom
+  role: anon
+  method: GET
+  path: /feed/atom/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10150-004-feed-rdf
+  role: anon
+  method: GET
+  path: /feed/rdf/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10150-005-comments-feed
+  role: anon
+  method: GET
+  path: /comments/feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10150-006-hello-world-pretty
+  role: anon
+  method: GET
+  path: /2024/06/15/hello-world/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10150-007-sitemap
+  role: anon
+  method: GET
+  path: /wp-sitemap.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
