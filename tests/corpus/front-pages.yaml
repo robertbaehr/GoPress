@@ -1794,3 +1794,50 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.180: corpus expand after stacked deepen pass.
+
+- id: front-p10180-001-sitemap
+  role: anon
+  method: GET
+  path: /wp-sitemap.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10180-002-search-hello
+  role: anon
+  method: GET
+  path: /?s=hello
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10180-003-hello-world
+  role: anon
+  method: GET
+  path: /2024/06/15/hello-world/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10180-004-home
+  role: anon
+  method: GET
+  path: /
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10180-005-rest-route-wp-v2
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

@@ -521,3 +521,50 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.180: corpus expand after stacked deepen pass.
+
+- id: ajax-p10180-001-heartbeat-profile
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=profile
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10180-002-heartbeat-upload
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=upload
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10180-003-heartbeat-edit-comments
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=edit-comments
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10180-004-heartbeat-plugins
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=plugins
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10180-005-heartbeat-users
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=users
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
