@@ -206,7 +206,7 @@ func socialLinkServiceName(service string) string {
 		"github":    "GitHub",
 		"mail":      "Mail",
 		"email":     "Mail",
-		"share":     "Share Link",
+		"share":     "Share Icon", // P5.133: WP block_core_social_link_services share name
 		"bluesky":   "Bluesky",
 		"whatsapp":  "WhatsApp",
 		"mastodon":  "Mastodon",
@@ -220,8 +220,12 @@ func socialLinkServiceName(service string) string {
 	if n, ok := names[service]; ok {
 		return n
 	}
+	// P5.133: deepen catalog with remaining WP social-link services.
+	if extra, ok := socialLinkServicesP5133[service]; ok && extra.Name != "" {
+		return extra.Name
+	}
 	if service == "" {
-		return "Share Link"
+		return "Share Icon"
 	}
 	// Title-case unknown service slug.
 	return strings.ToUpper(service[:1]) + service[1:]
@@ -253,6 +257,9 @@ func socialLinkIconSVG(service string) string {
 	if !ok {
 		if service == "email" {
 			path = icons["mail"]
+		} else if extra, ok := socialLinkServicesP5133[service]; ok && extra.Path != "" {
+			// P5.133: brand paths from block_core_social_link_services.
+			path = extra.Path
 		} else {
 			// Generic share icon.
 			path = `<path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92s2.92-1.31 2.92-2.92-1.31-2.92-2.92-2.92z"></path>`
