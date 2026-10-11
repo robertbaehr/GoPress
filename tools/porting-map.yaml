@@ -1,4 +1,18 @@
 
+# P4.175: WP_Query orderby=meta_value / meta_value_num.
+- prefix: wp-includes/class-wp-query.php#orderby-meta_value
+  go: internal/wp/query.go
+  status: partial
+  task: P4.175
+  api: n/a
+  notes: "P4.175 — orderby meta_value/meta_value_num subquery CAST; requires MetaKey"
+- prefix: wp-includes/class-wp-query.php#orderby-meta_value#tests
+  go: internal/wp/query_orderby_meta_p4_175_test.go
+  status: partial
+  task: P4.175
+  api: n/a
+  notes: "P4.175 — string ASC; numeric ASC; missing MetaKey date fallback"
+
 # P5.159: deepen core/pullquote fontSize/gradient; coerce align enum.
 - prefix: wp-includes/blocks/pullquote.php#attrs
   go: internal/blocks/pullquote.go
