@@ -10952,3 +10952,23 @@ wp-login.php#language-switcher-post
   task: P7.145
   api: n/a
   notes: "P7.145 — search hit/miss + privacy-tools marker coverage"
+
+# P2.140: wp_trim_excerpt.
+- prefix: wp-includes/formatting.php#wp_trim_excerpt
+  go: internal/wp/trim_excerpt.go
+  status: partial
+  task: P2.140
+  api: wp_trim_excerpt
+  notes: "P2.140 — WPTrimExcerpt; excerpt_length/excerpt_more/wp_trim_excerpt filters; strip shortcodes/blocks/footnotes"
+- prefix: wp-includes/formatting.php#wp_trim_excerpt#get_the_excerpt
+  go: internal/wp/excerpt.go
+  status: partial
+  task: P2.140
+  api: get_the_excerpt
+  notes: "P2.140 — GetTheExcerpt calls WPTrimExcerpt after get_the_excerpt filter"
+- prefix: wp-includes/formatting.php#wp_trim_excerpt#tests
+  go: internal/wp/trim_excerpt_p2_140_test.go
+  status: partial
+  task: P2.140
+  api: n/a
+  notes: "P2.140 — passthrough, length/more filters, GetTheExcerpt wiring"
