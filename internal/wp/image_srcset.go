@@ -27,7 +27,8 @@ func GetAttachmentImageSrcset(c *Context, attachmentID int64, size string, image
 	return CalculateImageSrcset(c, src.Width, src.Height, src.URL, imageMeta, attachmentID)
 }
 
-// GetAttachmentImageSizes is wp_get_attachment_image_sizes (P8.45).
+// GetAttachmentImageSizes is wp_get_attachment_image_sizes (P8.45 / P8.46).
+// P8.46: fires wp_get_attachment_image_sizes filter after calculate.
 func GetAttachmentImageSizes(c *Context, attachmentID int64, size string, imageMeta map[string]any) string {
 	src, ok := GetAttachmentImageSrc(c, attachmentID, size, false)
 	if !ok {
@@ -36,12 +37,74 @@ func GetAttachmentImageSizes(c *Context, attachmentID int64, size string, imageM
 	if imageMeta == nil {
 		imageMeta, _ = GetAttachmentMetadata(c, attachmentID)
 	}
-	return CalculateImageSizes(c, src.Width, src.Height, src.URL, imageMeta, attachmentID)
+	if size == "" {
+		size = "medium"
+	}
+	sizes := CalculateImageSizes(c, src.Width, src.Height, src.URL, imageMeta, attachmentID)
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("wp_get_attachment_image_sizes", sizes, size, src.URL, imageMeta, attachmentID); v != nil {
+			if s, ok := v.(string); ok {
+				sizes = s
+			}
+		}
+	}
+	return sizes
 }
 
-// CalculateImageSizes mirrors wp_calculate_image_sizes (P8.45).
+// ImageSizeFromMeta mirrors _wp_get_image_size_from_meta (P8.46).
+// Returns width/height for "full" or meta.sizes[name]; ok=false when missing.
+func ImageSizeFromMeta(sizeName string, imageMeta map[string]any) (width, height int, ok bool) {
+	if imageMeta == nil {
+		return 0, 0, false
+	}
+	sizeName = strings.TrimSpace(sizeName)
+	if sizeName == "" {
+		return 0, 0, false
+	}
+	if sizeName == "full" {
+		w := anyToInt(imageMeta["width"])
+		h := anyToInt(imageMeta["height"])
+		if w < 1 {
+			return 0, 0, false
+		}
+		return w, h, true
+	}
+	entry := attachmentSizeEntry(imageMeta, sizeName)
+	if entry == nil {
+		return 0, 0, false
+	}
+	w := anyToInt(entry["width"])
+	h := anyToInt(entry["height"])
+	if w < 1 {
+		return 0, 0, false
+	}
+	return w, h, true
+}
+
+// CalculateImageSizesFromName mirrors wp_calculate_image_sizes($size_name, ...) (P8.46).
+// Resolves width from image meta then fires wp_calculate_image_sizes with the string size.
+func CalculateImageSizesFromName(c *Context, sizeName, imageSrc string, imageMeta map[string]any, attachmentID int64) string {
+	if imageMeta == nil && attachmentID > 0 {
+		imageMeta, _ = GetAttachmentMetadata(c, attachmentID)
+	}
+	w, _, ok := ImageSizeFromMeta(sizeName, imageMeta)
+	if !ok || w < 1 {
+		return ""
+	}
+	sizes := fmt.Sprintf("(max-width: %dpx) 100vw, %dpx", w, w)
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("wp_calculate_image_sizes", sizes, sizeName, imageSrc, imageMeta, attachmentID); v != nil {
+			if s, ok := v.(string); ok {
+				sizes = s
+			}
+		}
+	}
+	return sizes
+}
+
+// CalculateImageSizes mirrors wp_calculate_image_sizes (P8.45 / P8.46).
+// size filter arg is []int{width, height}; use CalculateImageSizesFromName for string sizes.
 func CalculateImageSizes(c *Context, width, height int, imageSrc string, imageMeta map[string]any, attachmentID int64) string {
-	_ = height
 	_ = imageSrc
 	_ = imageMeta
 	if width < 1 {
@@ -312,7 +375,8 @@ func constrainDimensionsForRatio(currentW, currentH, maxW, maxH int) (int, int) 
 	return w, h
 }
 
-// sizesAttributeIncludesAuto mirrors wp_sizes_attribute_includes_valid_auto (P8.45).
+// sizesAttributeIncludesAuto mirrors wp_sizes_attribute_includes_valid_auto (P8.45 / P8.46).
+// True when the first comma-separated token is exactly "auto" (case-insensitive).
 func sizesAttributeIncludesAuto(sizes string) bool {
 	sizes = strings.TrimSpace(sizes)
 	if sizes == "" {
@@ -320,6 +384,15 @@ func sizesAttributeIncludesAuto(sizes string) bool {
 	}
 	first, _, _ := strings.Cut(sizes, ",")
 	return strings.EqualFold(strings.TrimSpace(first), "auto")
+}
+
+// prependAutoSizes prefixes "auto, " when missing (P8.46 helper for lazy img tags).
+func prependAutoSizes(sizes string) string {
+	sizes = strings.TrimSpace(sizes)
+	if sizes == "" || sizesAttributeIncludesAuto(sizes) {
+		return sizes
+	}
+	return "auto, " + sizes
 }
 
 func fuzzyNumberMatch(a, b int) bool {
