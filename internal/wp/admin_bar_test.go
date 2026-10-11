@@ -32,7 +32,10 @@ func TestAdminBarHTMLLoggedIn(t *testing.T) {
 	if !strings.Contains(html, `/wp-admin/`) {
 		t.Fatalf("missing dashboard link: %q", html)
 	}
-	if cls := wp.BodyClassWithAdminBar(c, "home"); cls != "home admin-bar" {
-		t.Fatalf("class=%q", cls)
+	cls := wp.BodyClassWithAdminBar(c, "home")
+	for _, want := range []string{"home", "logged-in", "admin-bar", "no-customize-support"} {
+		if !strings.Contains(" "+cls+" ", " "+want+" ") {
+			t.Fatalf("missing %q in %q", want, cls)
+		}
 	}
 }

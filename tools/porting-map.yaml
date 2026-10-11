@@ -8147,3 +8147,18 @@ wp-login.php#language-switcher-post
   task: P2.116
   api: n/a
   notes: "P2.116 — register/unregister + NormalizePath preserve scheme"
+
+# P3.114: front get_body_class logged-in / wp-custom-logo / body_class filter.
+- prefix: wp-includes/post-template.php#get_body_class
+  go: internal/wp/body_class.go
+  status: partial
+  task: P3.114
+  api: exported
+  notes: "P3.114 — GetBodyClass: logged-in, admin-bar, no-customize-support, wp-custom-logo, body_class filter"
+
+- prefix: wp-includes/post-template.php#get_body_class#tests
+  go: internal/wp/body_class_test.go
+  status: partial
+  task: P3.114
+  api: n/a
+  notes: "P3.114 — logged-in classes + body_class filter coverage"
