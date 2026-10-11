@@ -86,3 +86,31 @@ func TestStripslashesDeepAlias(t *testing.T) {
 		t.Fatal("expected string strip")
 	}
 }
+
+// P2.124: map[string][]string / []map[string]any / MapDeep.
+func TestUnslashMapStringStringSlice(t *testing.T) {
+	in := map[string][]string{"q": {`a\'b`, `c\"d`}}
+	out := wp.Unslash(in).(map[string][]string)
+	if out["q"][0] != "a'b" || out["q"][1] != `c"d` {
+		t.Fatalf("got %#v", out)
+	}
+}
+
+func TestUnslashSliceOfMaps(t *testing.T) {
+	in := []map[string]any{{"k": `x\'y`}, {"n": 7}}
+	out := wp.Unslash(in).([]map[string]any)
+	if out[0]["k"].(string) != "x'y" {
+		t.Fatalf("got %#v", out[0])
+	}
+	if out[1]["n"].(int) != 7 {
+		t.Fatalf("non-string leaf: %#v", out[1])
+	}
+}
+
+func TestMapDeepIdentity(t *testing.T) {
+	in := map[string][]any{"a": {"b", 1}}
+	out := wp.MapDeep(in, func(v any) any { return v }).(map[string][]any)
+	if out["a"][0].(string) != "b" || out["a"][1].(int) != 1 {
+		t.Fatalf("got %#v", out)
+	}
+}
