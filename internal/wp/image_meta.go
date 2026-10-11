@@ -324,7 +324,7 @@ func WPUpdateAttachmentMetadata(c *Context, attachmentID int64, data map[string]
 // attachmentMetadataTruthy mirrors PHP if ( $data ) for metadata maps (P8.39).
 // nil or empty maps are falsy; non-empty maps are truthy.
 func attachmentMetadataTruthy(data map[string]any) bool {
-	return data != nil && len(data) > 0
+	return len(data) > 0
 }
 
 // GenerateAndUpdateAttachmentMetadata generates metadata then persists via
