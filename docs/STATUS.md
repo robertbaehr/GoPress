@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.221)
 
+- P8.53 `MimeTypeIcon` (`wp_mime_type_icon` subset)
 - P3.153 `GetPostTypeArchiveLink` / `GetPostTypeArchiveFeedLink` (post)
 - P2.155 `GetHTTPOrigin` / `HttpSupports` (ssl subset)
 - P6.64 `login_link_separator` filter + register nav when `users_can_register`
