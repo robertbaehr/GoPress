@@ -11294,3 +11294,17 @@ wp-login.php#language-switcher-post
   task: P7.148
   api: n/a
   notes: "P7.148 — accordion triggers, sections, clipboard coverage"
+
+# P2.143: PHP strlen / _mb_strlen compat helpers.
+- prefix: wp-includes/compat.php#_mb_strlen
+  go: internal/wp/strlen.go
+  status: partial
+  task: P2.143
+  api: exported
+  notes: "P2.143 — StrLen/WPStrLen byte length; MBStrLen/MBStrLenCtx UTF-8 codepoints vs byte length"
+- prefix: wp-includes/compat.php#_mb_strlen#tests
+  go: internal/wp/strlen_p2_143_test.go
+  status: partial
+  task: P2.143
+  api: n/a
+  notes: "P2.143 — byte length, UTF-8 codepoints, blog_charset Ctx"
