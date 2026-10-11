@@ -8011,3 +8011,25 @@ wp-login.php#language-switcher-post
   task: P2.115
   api: n/a
   notes: "P2.115 — dimension sibling collision coverage"
+
+# P3.113: get_bloginfo expand (name/url/charset/language/…) + front consumers.
+- prefix: wp-includes/general-template.php#get_bloginfo
+  go: internal/wp/bloginfo.go
+  status: partial
+  task: P3.113
+  api: exported
+  notes: "P3.113 — BlogInfo name/description/url/wpurl/charset/version/language/feeds + display filters"
+
+- prefix: wp-includes/general-template.php#get_bloginfo#tests
+  go: internal/wp/bloginfo_test.go
+  status: partial
+  task: P3.113
+  api: n/a
+  notes: "P3.113 — name/url/charset/version + bloginfo/bloginfo_url filters"
+
+- prefix: wp-includes/general-template.php#get_bloginfo#front
+  go: internal/server/front.go
+  status: partial
+  task: P3.113
+  api: internal
+  notes: "P3.113 — block template html lang/charset/name/url + comments feed via BlogInfo"

@@ -167,9 +167,13 @@ func isCommentsFeedVars(vars map[string]string) bool {
 
 // renderCommentsFeedRSS2 emits feed-rss2-comments.php shape (P3.27).
 func (f *Front) renderCommentsFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Context) {
-	blogname := optionString(c, "blogname", "GoPress")
-	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
-	desc := optionString(c, "blogdescription", "")
+	// P3.113: channel title/description via get_bloginfo.
+	blogname := wp.BlogInfo(c, "name", "raw")
+	if blogname == "" {
+		blogname = "GoPress"
+	}
+	home := strings.TrimRight(wp.BlogInfo(c, "url", "raw"), "/")
+	desc := wp.BlogInfo(c, "description", "raw")
 	comments, err := wp.ListRecentComments(c, 10)
 	if err != nil {
 		http.Error(w, "comments feed: "+err.Error()+"\n", http.StatusInternalServerError)
@@ -1726,8 +1730,20 @@ func (f *Front) renderSearchShim(w http.ResponseWriter, c *wp.Context, term stri
 
 // renderBlockTemplate parses and renders a block theme template document.
 func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, template string) {
-	blogname := optionString(c, "blogname", "GoPress")
-	home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+	// P3.113: name / url / language via get_bloginfo.
+	blogname := wp.BlogInfo(c, "name", "raw")
+	if blogname == "" {
+		blogname = "GoPress"
+	}
+	home := strings.TrimRight(wp.BlogInfo(c, "url", "raw"), "/")
+	lang := wp.BlogInfo(c, "language", "raw")
+	if lang == "" {
+		lang = "en-US"
+	}
+	charset := wp.BlogInfo(c, "charset", "raw")
+	if charset == "" {
+		charset = "UTF-8"
+	}
 	stylesheet := activeStylesheet(c)
 	env := blockRenderEnv(c)
 	env.IsFrontPage = func() bool {
@@ -1758,8 +1774,12 @@ func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, templa
 	safe = ensureMainSkipTarget(safe)
 
 	var b strings.Builder
-	b.WriteString("<!DOCTYPE html>\n<html lang=\"en-US\">\n<head>\n")
-	b.WriteString("<meta charset=\"UTF-8\" />\n")
+	b.WriteString("<!DOCTYPE html>\n<html lang=\"")
+	b.WriteString(html.EscapeString(lang))
+	b.WriteString("\">\n<head>\n")
+	b.WriteString("<meta charset=\"")
+	b.WriteString(html.EscapeString(charset))
+	b.WriteString("\" />\n")
 	b.WriteString("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\" />\n")
 	b.WriteString(frontRobotsMetaTag(c))
 	b.WriteString("<title>")
@@ -1782,7 +1802,7 @@ func (f *Front) renderBlockTemplate(w http.ResponseWriter, c *wp.Context, templa
 	b.WriteString("</body>\n</html>\n")
 
 	setFrontAPILink(w, c)
-	w.Header().Set("Content-Type", "text/html; charset=UTF-8")
+	w.Header().Set("Content-Type", "text/html; charset="+charset)
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(b.String()))
 }
