@@ -1515,3 +1515,36 @@ func TestPostsOffset(t *testing.T) {
 		t.Fatalf("expected empty for huge offset, got %d", len(empty))
 	}
 }
+
+func TestPostsPerPageValidation(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	// P4.138: per_page out of schema range → rest_invalid_param.
+	for _, path := range []string{
+		"/wp-json/wp/v2/posts?per_page=0",
+		"/wp-json/wp/v2/posts?per_page=101",
+		"/wp-json/wp/v2/posts?per_page=-1",
+		"/wp-json/wp/v2/posts?per_page=abc",
+		"/wp-json/wp/v2/pages?per_page=200",
+	} {
+		req := httptest.NewRequest(http.MethodGet, path, nil)
+		rec := httptest.NewRecorder()
+		rc := c.ForRequest(rec, req)
+		(&rest.Server{}).Handle(rec, req, rc)
+		if rec.Code != http.StatusBadRequest {
+			t.Fatalf("%s: status=%d body=%s", path, rec.Code, rec.Body.String())
+		}
+		if !strings.Contains(rec.Body.String(), "rest_invalid_param") || !strings.Contains(rec.Body.String(), "per_page") {
+			t.Fatalf("%s: expected rest_invalid_param per_page: %s", path, rec.Body.String())
+		}
+	}
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?per_page=100", nil)
+	rec := httptest.NewRecorder()
+	rc := c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, rc)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("per_page=100 status=%d body=%s", rec.Code, rec.Body.String())
+	}
+}
