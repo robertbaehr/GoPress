@@ -171,3 +171,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.126: heartbeat screens after profile deepen.
+- id: ajax-p10126-heartbeat-profile
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=profile
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10126-heartbeat-options-general
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=options-general
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: ajax-p10126-heartbeat-edit-comments
+  role: anon
+  method: GET
+  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=edit-comments
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

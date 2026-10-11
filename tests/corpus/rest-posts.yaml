@@ -4059,3 +4059,85 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.126: REST headers after P5.108–P6.45 deepen stack.
+- id: rest-p10126-block-types-cover-context-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/cover?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10126-block-types-cover-context-edit
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/cover?context=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10126-block-types-group-context-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/group?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10126-block-types-namespace-core
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10126-block-types-query
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/query
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10126-search-cover-relevance
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/search?search=cover&orderby=relevance
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10126-posts-search-cover
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?search=cover
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10126-rest-route-block-types-core
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10126-rest-route-block-types-cover-context
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/cover&context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
