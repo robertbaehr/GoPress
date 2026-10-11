@@ -1057,12 +1057,20 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P7.102 — sanitize category/tag bases; P7.52 selection radio save"
 
-# P2.31: wp_strip_all_tags.
+# P2.31 / P2.107: wp_strip_all_tags (quote-aware strip_tags).
 - prefix: wp-includes/formatting.php#wp_strip_all_tags
   go: internal/wp/strip_all_tags.go
   status: partial
-  task: P2.31
+  task: P2.107
   api: exported
+  notes: "P2.107 — quote-aware tag strip ( > in attrs ); script/style pairs; comments/PHP/ASP; P2.31 base"
+
+- prefix: internal/wp/strip_all_tags_test.go#p2-107
+  go: internal/wp/strip_all_tags_test.go
+  status: done
+  task: P2.107
+  api: n/a
+  notes: "P2.107 — unit coverage for quoted >, PHP/ASP tags, multiline comments/script"
 
 # P2.42: wp_check_invalid_utf8 (+ strip → U+FFFD).
 - prefix: wp-includes/formatting.php#wp_check_invalid_utf8
