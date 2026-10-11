@@ -9895,3 +9895,17 @@ wp-login.php#language-switcher-post
   task: P3.128
   api: n/a
   notes: "P3.128 — hello-world shows; home-static hides; filter off"
+
+# P9.31: current_filter / current_action / doing_filter / CurrentFilters.
+- prefix: wp-includes/plugin.php#current_filter
+  go: internal/wp/hooks.go
+  status: partial
+  task: P9.31
+  api: current_filter
+  notes: "P9.31 — CurrentFilter/CurrentAction/DoingFilter/DoingAction + CurrentFilters stack copy"
+- prefix: wp-includes/plugin.php#current_filter#tests
+  go: internal/wp/hooks_test.go
+  status: partial
+  task: P9.31
+  api: n/a
+  notes: "P9.31 — nested DoAction/ApplyFiltersRefArray stack + nil-safe"
