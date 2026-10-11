@@ -2568,6 +2568,20 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P4.91 — ?after=/?before= → QueryArgs.DateAfter/DateBefore (inclusive)"
 
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#after-validate
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.140
+  api: exported
+  notes: "P4.140 — reject invalid/empty after/before/modified_* with rest_invalid_param + rest_invalid_date"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#after-validate-test
+  go: internal/rest/posts_test.go
+  status: partial
+  task: P4.140
+  api: n/a
+  notes: "P4.140 — unit coverage for invalid date-time collection params on posts/pages"
+
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#modified_after
   go: internal/rest/posts.go
   status: partial

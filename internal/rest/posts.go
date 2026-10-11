@@ -520,48 +520,79 @@ func parsePostsParentIDs(r *http.Request, key string) []int64 {
 	return out
 }
 
-// parsePostsAfter reads REST ?after= (ISO8601 → MySQL datetime, P4.91).
-func parsePostsAfter(r *http.Request) string {
+// parsePostsAfter reads REST ?after= (ISO8601 → MySQL datetime, P4.91 / P4.140).
+// Present but invalid/empty → ok=false (rest_invalid_param / rest_invalid_date).
+func parsePostsAfter(r *http.Request) (string, bool) {
 	return parseRESTDateTimeQuery(r, "after")
 }
 
-// parsePostsBefore reads REST ?before= (ISO8601 → MySQL datetime, P4.91).
-func parsePostsBefore(r *http.Request) string {
+// parsePostsBefore reads REST ?before= (ISO8601 → MySQL datetime, P4.91 / P4.140).
+func parsePostsBefore(r *http.Request) (string, bool) {
 	return parseRESTDateTimeQuery(r, "before")
 }
 
-// parsePostsModifiedAfter reads REST ?modified_after= (P4.95).
-func parsePostsModifiedAfter(r *http.Request) string {
+// parsePostsModifiedAfter reads REST ?modified_after= (P4.95 / P4.140).
+func parsePostsModifiedAfter(r *http.Request) (string, bool) {
 	return parseRESTDateTimeQuery(r, "modified_after")
 }
 
-// parsePostsModifiedBefore reads REST ?modified_before= (P4.95).
-func parsePostsModifiedBefore(r *http.Request) string {
+// parsePostsModifiedBefore reads REST ?modified_before= (P4.95 / P4.140).
+func parsePostsModifiedBefore(r *http.Request) (string, bool) {
 	return parseRESTDateTimeQuery(r, "modified_before")
 }
 
 // parseRESTDateTimeQuery parses an ISO8601 / MySQL datetime query arg to MySQL form.
-func parseRESTDateTimeQuery(r *http.Request, key string) string {
+// Absent → ("", true). Present but empty/unparseable → ("", false) (P4.140).
+func parseRESTDateTimeQuery(r *http.Request, key string) (string, bool) {
 	if r == nil || key == "" {
-		return ""
+		return "", true
 	}
-	raw := strings.TrimSpace(r.URL.Query().Get(key))
+	q := r.URL.Query()
+	if !q.Has(key) {
+		return "", true
+	}
+	raw := strings.TrimSpace(q.Get(key))
 	if raw == "" {
-		return ""
+		return "", false
 	}
 	// Zoned timestamps → UTC MySQL; bare wall times keep the clock as written
 	// (matches WP date_query against post_date / post_modified).
 	for _, layout := range []string{time.RFC3339Nano, time.RFC3339} {
 		if t, err := time.Parse(layout, raw); err == nil {
-			return t.UTC().Format("2006-01-02 15:04:05")
+			return t.UTC().Format("2006-01-02 15:04:05"), true
 		}
 	}
 	for _, layout := range []string{"2006-01-02T15:04:05", "2006-01-02 15:04:05", "2006-01-02"} {
 		if t, err := time.ParseInLocation(layout, raw, time.UTC); err == nil {
-			return t.Format("2006-01-02 15:04:05")
+			return t.Format("2006-01-02 15:04:05"), true
 		}
 	}
-	return ""
+	return "", false
+}
+
+// writeRESTInvalidDateParams emits rest_invalid_param for invalid date-time args (P4.140).
+func writeRESTInvalidDateParams(w http.ResponseWriter, keys []string) {
+	params := map[string]any{}
+	details := map[string]any{}
+	for _, k := range keys {
+		params[k] = "Invalid date."
+		details[k] = map[string]any{
+			"code":    "rest_invalid_date",
+			"message": "Invalid date.",
+			"data":    nil,
+		}
+	}
+	msg := "Invalid parameter(s): " + strings.Join(keys, ", ")
+	w.Header().Set("Allow", "GET")
+	writeJSON(w, http.StatusBadRequest, map[string]any{
+		"code":    "rest_invalid_param",
+		"message": msg,
+		"data": map[string]any{
+			"status":  400,
+			"params":  params,
+			"details": details,
+		},
+	})
 }
 
 // parsePostsSlug reads REST ?slug= (maps to post_name__in, P4.89 / P4.133).
