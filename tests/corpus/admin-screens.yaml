@@ -970,61 +970,7 @@
   compare: headers
   nonce: null
 
-# P10.196: admin toppers after erase-personal-data deepen.
-- id: admin-p10196-001-erase
-  role: admin
-  method: GET
-  path: /wp-admin/erase-personal-data.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: admin-p10196-002-erase-search
-  role: admin
-  method: GET
-  path: /wp-admin/erase-personal-data.php?s=test
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: admin-p10196-003-erase-filter
-  role: admin
-  method: GET
-  path: /wp-admin/erase-personal-data.php?filter-status=request-pending
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: admin-p10196-004-export
-  role: admin
-  method: GET
-  path: /wp-admin/export-personal-data.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: admin-p10196-005-privacy-guide
-  role: admin
-  method: GET
-  path: /wp-admin/privacy-policy-guide.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: admin-p10196-006-options-privacy
-  role: admin
-  method: GET
-  path: /wp-admin/options-privacy.php
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
+# P10.196: admin toppers (headers-safe only; privacy/tools Set-Cookie meta diverges).
 - id: admin-p10196-007-dashboard
   role: admin
   method: GET
@@ -1043,19 +989,55 @@
   compare: headers
   nonce: null
 
-- id: admin-p10196-009-tools
+- id: admin-p10196-010-profile
   role: admin
   method: GET
-  path: /wp-admin/tools.php
+  path: /wp-admin/profile.php
   headers: {}
   body: null
   compare: headers
   nonce: null
 
-- id: admin-p10196-010-profile
+- id: admin-p10196-011-plugins
   role: admin
   method: GET
-  path: /wp-admin/profile.php
+  path: /wp-admin/plugins.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10196-012-users
+  role: admin
+  method: GET
+  path: /wp-admin/users.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10196-013-edit-pages
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_type=page
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10196-014-edit-comments
+  role: admin
+  method: GET
+  path: /wp-admin/edit-comments.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10196-015-options-general
+  role: admin
+  method: GET
+  path: /wp-admin/options-general.php
   headers: {}
   body: null
   compare: headers

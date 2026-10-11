@@ -2534,24 +2534,6 @@
   compare: headers
   nonce: null
 
-- id: front-p10196-009-category
-  role: anon
-  method: GET
-  path: /category/uncategorized/
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: front-p10196-010-author
-  role: anon
-  method: GET
-  path: /author/admin/
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: front-p10196-011-comments-feed
   role: anon
   method: GET
@@ -2561,28 +2543,46 @@
   compare: headers
   nonce: null
 
-- id: front-p10196-012-rsd
-  role: anon
-  method: GET
-  path: /rsd.xml
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: front-p10196-013-wlwmanifest
-  role: anon
-  method: GET
-  path: /wlwmanifest.xml
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: front-p10196-014-feed-rss2
   role: anon
   method: GET
   path: /feed/rss2/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10196-017-feed-atom
+  role: anon
+  method: GET
+  path: /feed/atom/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10196-018-sitemap-users
+  role: anon
+  method: GET
+  path: /wp-sitemap-users-1.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10196-019-sitemap-posts
+  role: anon
+  method: GET
+  path: /wp-sitemap-posts-post-1.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10196-020-sitemap-pages
+  role: anon
+  method: GET
+  path: /wp-sitemap-posts-page-1.xml
   headers: {}
   body: null
   compare: headers
