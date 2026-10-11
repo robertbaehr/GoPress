@@ -311,3 +311,40 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.154: admin toppers after media-new deepen (stable header compares).
+- id: admin-p10154-001-edit
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10154-002-upload
+  role: admin
+  method: GET
+  path: /wp-admin/upload.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10154-003-dashboard
+  role: admin
+  method: GET
+  path: /wp-admin/index.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10154-004-edit-comments
+  role: admin
+  method: GET
+  path: /wp-admin/edit-comments.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

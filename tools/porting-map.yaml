@@ -8307,6 +8307,14 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P10.153 — summarize loginout/include[]/revision/filesize/post_class/do_action_ref + 1167 corpus"
 
+# P10.154: expand diff corpus after P5.122–P6.50.
+- prefix: tests/corpus#p10.154
+  go: tests/corpus
+  status: partial
+  task: P10.154
+  api: n/a
+  notes: "P10.154 — per_page validation + archives/calendar/comment-template + front/login/admin toppers; 1200 cases"
+
 # P6.50: deepen login shake via shake_error_codes filter.
 - prefix: wp-login.php#shake_error_codes
   go: internal/login/login.go

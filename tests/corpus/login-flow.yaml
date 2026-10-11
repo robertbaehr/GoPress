@@ -816,3 +816,40 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.154: login toppers after shake_error_codes deepen.
+- id: login-p10154-001-login
+  role: anon
+  method: GET
+  path: /wp-login.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10154-002-lostpassword
+  role: anon
+  method: GET
+  path: /wp-login.php?action=lostpassword
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10154-003-reauth
+  role: anon
+  method: GET
+  path: /wp-login.php?reauth=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: login-p10154-004-interim
+  role: anon
+  method: GET
+  path: /wp-login.php?interim-login=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

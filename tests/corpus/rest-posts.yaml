@@ -8099,3 +8099,184 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.154: per_page validation + archives/calendar/comment-template toppers after P5.122–P6.50.
+- id: rest-p10154-001-posts-per-page-101
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?per_page=101
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10154-002-posts-per-page-0
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?per_page=0
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10154-003-posts-per-page-abc
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?per_page=abc
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10154-004-pages-per-page-101
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?per_page=101
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10154-005-posts-per-page-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10154-006-posts-per-page-50
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/posts?per_page=50
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10154-007-rest-route-posts-per-page-101
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/posts&per_page=101
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10154-008-archives-block-type
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/archives
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10154-009-calendar-block-type
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/calendar
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10154-010-comment-template-block-type
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/comment-template
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10154-011-archives-context-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/archives?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10154-012-calendar-context-edit
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/calendar?context=edit
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10154-013-comment-template-context-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/comment-template?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10154-014-pages-per-page-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/pages?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10154-015-comments-per-page-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/comments?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10154-016-tags-per-page-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/tags?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10154-017-categories-per-page-1
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/categories?per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10154-018-rest-route-pages-per-page-1
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/pages&per_page=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10154-019-types
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/types
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10154-020-statuses
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/statuses
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
