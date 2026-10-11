@@ -1215,18 +1215,23 @@ func writeLoginHTML(w http.ResponseWriter, r *http.Request, body string, reauth 
 		Path:     "/",
 		HttpOnly: true,
 	})
-	// P6.23: persist login-screen locale from ?wp_lang= (HttpOnly, session cookie).
+	// P6.23 / P6.49: persist login-screen locale from ?wp_lang= (HttpOnly, session).
+	// PHP: if ( isset( $_GET['wp_lang'] ) ) setcookie(..., COOKIEPATH, ...).
 	if r != nil {
-		if lang := wp.SanitizeTextField(r.URL.Query().Get("wp_lang")); lang != "" {
+		if _, ok := r.URL.Query()["wp_lang"]; ok {
+			lang := wp.SanitizeTextField(r.URL.Query().Get("wp_lang"))
 			secure := false
+			cookiePath := "/"
 			if c != nil {
-				loginURL := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/") + "/wp-login.php"
+				home := strings.TrimRight(optionString(c, "home", optionString(c, "siteurl", "")), "/")
+				loginURL := home + "/wp-login.php"
 				secure = strings.HasPrefix(strings.ToLower(loginURL), "https://")
+				cookiePath = loginCookiePath(home) // COOKIEPATH
 			}
 			http.SetCookie(w, &http.Cookie{
 				Name:     "wp_lang",
 				Value:    lang,
-				Path:     "/",
+				Path:     cookiePath,
 				HttpOnly: true,
 				Secure:   secure,
 			})
@@ -1751,6 +1756,20 @@ func sanitizeRedirect(raw, home string) string {
 		return "/"
 	}
 	return u.RequestURI()
+}
+
+// loginCookiePath mirrors COOKIEPATH from the home URL path (P6.49).
+// Root installs → "/"; subdirectory installs → "/subdir" (no trailing slash except root).
+func loginCookiePath(home string) string {
+	home = strings.TrimSpace(home)
+	if home == "" {
+		return "/"
+	}
+	u, err := url.Parse(home)
+	if err != nil || u.Path == "" || u.Path == "/" {
+		return "/"
+	}
+	return strings.TrimRight(u.Path, "/")
 }
 
 // writeLanguageSwitcher emits the login language dropdown when languages exist (P6.11 / P6.39).
