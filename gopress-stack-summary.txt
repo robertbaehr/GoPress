@@ -1,13 +1,13 @@
-GoPress stack tip cursor/p10-220-status-refresh-ddf1 / PENDING
+GoPress stack tip cursor/p10-220-status-refresh-ddf1 / 101ff0d60d44820dbdd9af420fa937568fd3a550
 
 cursor/p5-158-video-attrs-ddf1 → baa087118de8
 cursor/p2-153-remote-request-ddf1 → 69c5745a1068
 cursor/p3-151-search-feed-link-ddf1 → 0e897812c118
 cursor/p8-51-attachment-is-ddf1 → c8830410da09
-cursor/p4-174-rest-posts-meta-type-key-ddf1 → b652a9bc2b77
-cursor/p7-159-credits-chrome-ddf1 → 27a772f315ce
+cursor/p4-174-rest-posts-meta-type-key-ddf1 → f4f9b1997b27
+cursor/p7-159-credits-chrome-ddf1 → f87c8eade3b5
 
-cursor/p10-220-status-refresh-ddf1 → PENDING
+cursor/p10-220-status-refresh-ddf1 → 101ff0d60d44
 
 make diff: 100.0% (3162/3162 strict matches, 0 allowlisted, 0 failed) — carried from P10.218
-make check: pending
+make check: ok (lint + go test -p 1 ./...)
