@@ -9477,3 +9477,18 @@ wp-login.php#language-switcher-post
   task: P7.132
   api: n/a
   notes: "P7.132 — version/theme + sub capture"
+
+# P2.127: wp_kses_hair attribute list parser.
+- prefix: wp-includes/kses.php#wp_kses_hair
+  go: internal/wp/kses_hair.go
+  status: partial
+  task: P2.127
+  api: wp_kses_hair
+  notes: "P2.127 — name/value/whole/vless; URI bad_protocol; syntax escape"
+
+- prefix: wp-includes/kses.php#wp_kses_hair#tests
+  go: internal/wp/kses_hair_p2_127_test.go
+  status: partial
+  task: P2.127
+  api: n/a
+  notes: "P2.127 — class/inert/data-lazy + href protocol strip"
