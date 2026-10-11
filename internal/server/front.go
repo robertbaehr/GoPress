@@ -4424,9 +4424,8 @@ func writeFrontHeadLinks(b *strings.Builder, c *wp.Context, home, blogname, perm
 		b.WriteString(html.EscapeString(home + "/wp-json" + restPath))
 		b.WriteString("\" />\n")
 	}
-	b.WriteString("<link rel=\"EditURI\" type=\"application/rsd+xml\" title=\"RSD\" href=\"")
-	b.WriteString(html.EscapeString(home + "/xmlrpc.php?rsd"))
-	b.WriteString("\" />\n")
+	// P3.135: rsd_link() — EditURI via site_url( xmlrpc.php?rsd, rpc ).
+	b.WriteString(wp.RsdLink(c))
 	// P3.121: wp_generator → the_generator( wp_generator_type ).
 	b.WriteString(wp.MetaGeneratorXHTMLFor(c))
 	b.WriteString("\n")
