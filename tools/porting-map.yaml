@@ -11414,3 +11414,17 @@ wp-login.php#language-switcher-post
   task: P2.144
   api: n/a
   notes: "P2.144 — café, space encode, length truncate, sanitize_title display"
+
+# P3.142: deepen front wp_robots helpers + string-map filter coercion.
+- prefix: wp-includes/robots-template.php#wp_robots
+  go: internal/server/front.go
+  status: partial
+  task: P3.142
+  api: n/a
+  notes: "P3.142 — discrete noindex/embeds/search/max-image-preview/sensitive helpers; map[string]string filter coerce"
+- prefix: wp-includes/robots-template.php#wp_robots#tests
+  go: internal/server/front_robots_p3_142_test.go
+  status: partial
+  task: P3.142
+  api: n/a
+  notes: "P3.142 — string-map filter, sensitive-page noarchive, search noindex follow"
