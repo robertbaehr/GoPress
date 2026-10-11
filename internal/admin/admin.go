@@ -229,7 +229,7 @@ func (h *Handler) renderDashboard(w http.ResponseWriter, r *http.Request, c *wp.
 	recentPublishedHTML := activityRecentlyPublishedHTML(c, 5)
 	siteHealthHTML := siteHealthDashboardWidgetHTML(c)
 	rightNowHTML := dashboardRightNowHTML(c)
-	inner := fmt.Sprintf(`%s%s<h1>Dashboard</h1>
+	inner := fmt.Sprintf(`%s<h1>Dashboard</h1>
 <p>%s</p>
 <div id="dashboard-widgets-wrap">
 <div id="dashboard-widgets" class="metabox-holder">
@@ -250,15 +250,7 @@ func (h *Handler) renderDashboard(w http.ResponseWriter, r *http.Request, c *wp.
 <div id="dashboard_quick_press" class="postbox">
 <h2 class="hndle"><span>Quick Draft</span></h2>
 <div class="inside">
-<form name="post" action="/wp-admin/post.php" method="post" id="quick-press">
-<input type="hidden" name="action" id="quickpost-action" value="post-quickdraft-save" />
-<div class="input-text-wrap"><label for="title">Title</label>
-<input type="text" name="post_title" id="title" autocomplete="off" /></div>
-<div class="textarea-wrap"><label for="content">Content</label>
-<textarea name="content" id="content" rows="3" cols="15" autocomplete="off"></textarea></div>
-<p class="submit"><input type="submit" name="save" id="save-post" class="button button-primary" value="Save Draft" />
-<br class="clear" /></p>
-</form>
+%s
 </div>
 </div>
 <div id="dashboard_primary" class="postbox">
@@ -282,7 +274,7 @@ func (h *Handler) renderDashboard(w http.ResponseWriter, r *http.Request, c *wp.
 </div>
 </div>
 </div>
-`, adminNoticesHTML(c), noticeHTML, html.EscapeString(blogname), rightNowHTML, siteHealthHTML, recentPublishedHTML, recentCommentsHTML)
+`, adminNoticesHTML(c), html.EscapeString(blogname), rightNowHTML, siteHealthHTML, recentPublishedHTML, recentCommentsHTML, quickDraftFormHTML(c, noticeHTML))
 	writeAdminPage(w, c, ch, inner)
 }
 

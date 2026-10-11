@@ -16,14 +16,30 @@ func TestQuickDraftCreatesPost(t *testing.T) {
 	ck := loginCookie(t, c)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}, Admin: &admin.Handler{}}
 
-	form := url.Values{}
-	form.Set("action", "post-quickdraft-save")
-	form.Set("post_title", "Quick Draft Title")
-	form.Set("content", "Hello from Quick Draft")
-	req := httptest.NewRequest(http.MethodPost, "/wp-admin/post.php", strings.NewReader(form.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/", nil)
 	req.AddCookie(ck)
 	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	nonce := ""
+	if i := strings.Index(rec.Body.String(), `name="_wpnonce" value="`); i >= 0 {
+		rest := rec.Body.String()[i+len(`name="_wpnonce" value="`):]
+		if j := strings.Index(rest, `"`); j >= 0 {
+			nonce = rest[:j]
+		}
+	}
+	if nonce == "" {
+		t.Fatal("missing add-post nonce on dashboard")
+	}
+
+	form := url.Values{}
+	form.Set("action", "post-quickdraft-save")
+	form.Set("_wpnonce", nonce)
+	form.Set("post_title", "Quick Draft Title")
+	form.Set("content", "Hello from Quick Draft")
+	req = httptest.NewRequest(http.MethodPost, "/wp-admin/post.php", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
 	srv.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
@@ -75,14 +91,27 @@ func TestQuickDraftRejectsEmpty(t *testing.T) {
 	ck := loginCookie(t, c)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Front: &server.Front{}, Admin: &admin.Handler{}}
 
-	form := url.Values{}
-	form.Set("action", "post-quickdraft-save")
-	form.Set("post_title", "")
-	form.Set("content", "")
-	req := httptest.NewRequest(http.MethodPost, "/wp-admin/post.php", strings.NewReader(form.Encode()))
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req := httptest.NewRequest(http.MethodGet, "/wp-admin/", nil)
 	req.AddCookie(ck)
 	rec := httptest.NewRecorder()
+	srv.ServeHTTP(rec, req)
+	nonce := ""
+	if i := strings.Index(rec.Body.String(), `name="_wpnonce" value="`); i >= 0 {
+		rest := rec.Body.String()[i+len(`name="_wpnonce" value="`):]
+		if j := strings.Index(rest, `"`); j >= 0 {
+			nonce = rest[:j]
+		}
+	}
+
+	form := url.Values{}
+	form.Set("action", "post-quickdraft-save")
+	form.Set("_wpnonce", nonce)
+	form.Set("post_title", "")
+	form.Set("content", "")
+	req = httptest.NewRequest(http.MethodPost, "/wp-admin/post.php", strings.NewReader(form.Encode()))
+	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.AddCookie(ck)
+	rec = httptest.NewRecorder()
 	srv.ServeHTTP(rec, req)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status=%d", rec.Code)
