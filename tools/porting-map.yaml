@@ -11472,3 +11472,29 @@ wp-login.php#language-switcher-post
   task: P5.149
   api: n/a
   notes: "P5.149 — align coerce, saved gradient/fontSize coverage"
+
+# P4.165: deepen REST date_query string-type + inclusive after/before.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#date_query#typed
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.165
+  api: n/a
+  notes: "P4.165 — after/before/modified_*[] and [N] → rest_invalid_type; string date-time schema"
+- prefix: wp-includes/class-wp-query.php#date_query#inclusive
+  go: internal/wp/query.go
+  status: partial
+  task: P4.165
+  api: n/a
+  notes: "P4.165 — inclusive post_date/post_modified date_query filters"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#date_query#tests
+  go: internal/rest/posts_date_query_p4_165_test.go
+  status: partial
+  task: P4.165
+  api: n/a
+  notes: "P4.165 — array form invalid type + scalar inclusive still works"
+- prefix: wp-includes/class-wp-query.php#date_query#tests
+  go: internal/wp/date_query_p4_165_test.go
+  status: partial
+  task: P4.165
+  api: n/a
+  notes: "P4.165 — inclusive boundary retain coverage"
