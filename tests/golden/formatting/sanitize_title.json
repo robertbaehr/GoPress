@@ -149,6 +149,62 @@
             "input": "http://example.com/foo bar",
             "sanitize_title": "http-example-com-foo-bar",
             "sanitize_title_with_dashes": "httpexample-comfoo-bar"
+        },
+        {
+            "input": "!!!",
+            "sanitize_title": "",
+            "sanitize_title_with_dashes": "",
+            "sanitize_title_for_query": "",
+            "i": 25
+        },
+        {
+            "input": "hash#frag",
+            "sanitize_title": "hashfrag",
+            "sanitize_title_with_dashes": "hashfrag",
+            "sanitize_title_for_query": "hashfrag",
+            "i": 26
+        },
+        {
+            "input": "query?x=1",
+            "sanitize_title": "queryx1",
+            "sanitize_title_with_dashes": "queryx1",
+            "sanitize_title_for_query": "queryx1",
+            "i": 27
+        },
+        {
+            "input": "END.",
+            "sanitize_title": "end",
+            "sanitize_title_with_dashes": "end",
+            "sanitize_title_for_query": "end",
+            "i": 28
+        },
+        {
+            "input": "«quotes»",
+            "sanitize_title": "quotes",
+            "sanitize_title_with_dashes": "%c2%abquotes%c2%bb",
+            "sanitize_title_for_query": "%c2%abquotes%c2%bb",
+            "i": 29
+        },
+        {
+            "input": "日本語タイトル",
+            "sanitize_title": "%e6%97%a5%e6%9c%ac%e8%aa%9e%e3%82%bf%e3%82%a4%e3%83%88%e3%83%ab",
+            "sanitize_title_with_dashes": "%e6%97%a5%e6%9c%ac%e8%aa%9e%e3%82%bf%e3%82%a4%e3%83%88%e3%83%ab",
+            "sanitize_title_for_query": "%e6%97%a5%e6%9c%ac%e8%aa%9e%e3%82%bf%e3%82%a4%e3%83%88%e3%83%ab",
+            "i": 30
+        },
+        {
+            "input": "percent%20encoded",
+            "sanitize_title": "percent%20encoded",
+            "sanitize_title_with_dashes": "percent%20encoded",
+            "sanitize_title_for_query": "percent%20encoded",
+            "i": 31
+        },
+        {
+            "input": "foo--bar---baz",
+            "sanitize_title": "foo-bar-baz",
+            "sanitize_title_with_dashes": "foo-bar-baz",
+            "sanitize_title_for_query": "foo-bar-baz",
+            "i": 32
         }
     ]
 }

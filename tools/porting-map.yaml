@@ -653,6 +653,13 @@ wp-login.php#language-switcher-post
 
 # P2.24: expanded sanitize_title golden — tests/golden/formatting/sanitize_title.json
 
+- prefix: wp-includes/formatting.php#sanitize_title-p2.119
+  go: internal/wp/formatting.go
+  status: partial
+  task: P2.119
+  api: exported
+  notes: "P2.119 — SanitizeTitleWithContext/ForQuery/WithDashes/Filtered + save vs display; golden ≥30"
+
 # P2.25: expanded wptexturize golden — tests/golden/formatting/wptexturize.json
 - prefix: wp-includes/formatting.php#wptexturize
   go: internal/wp/content.go

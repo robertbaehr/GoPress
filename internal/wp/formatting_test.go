@@ -177,25 +177,41 @@ func TestSanitizeTitleExtraGolden(t *testing.T) {
 	}
 	var corpus struct {
 		Vectors []struct {
-			Input         string `json:"input"`
-			SanitizeTitle string `json:"sanitize_title"`
+			Input                   string `json:"input"`
+			SanitizeTitle           string `json:"sanitize_title"`
+			SanitizeTitleWithDashes string `json:"sanitize_title_with_dashes"`
+			SanitizeTitleForQuery   string `json:"sanitize_title_for_query"`
 		} `json:"vectors"`
 	}
 	if err := json.Unmarshal(data, &corpus); err != nil {
 		t.Fatalf("json: %v", err)
 	}
-	if len(corpus.Vectors) < 20 {
-		t.Fatalf("expected ≥20 sanitize_title vectors, got %d", len(corpus.Vectors))
+	if len(corpus.Vectors) < 30 {
+		t.Fatalf("expected ≥30 sanitize_title vectors, got %d", len(corpus.Vectors))
 	}
 	var fails int
 	for i, v := range corpus.Vectors {
 		got := wp.SanitizeTitle(v.Input)
 		if got != v.SanitizeTitle {
 			fails++
-			t.Errorf("i=%d input=%q\n  want %q\n  got  %q", i, v.Input, v.SanitizeTitle, got)
+			t.Errorf("i=%d sanitize_title input=%q\n  want %q\n  got  %q", i, v.Input, v.SanitizeTitle, got)
+		}
+		// display-context with_dashes (default PHP context).
+		if got := wp.SanitizeTitleWithDashes(v.Input, "", "display"); got != v.SanitizeTitleWithDashes {
+			fails++
+			t.Errorf("i=%d with_dashes input=%q\n  want %q\n  got  %q", i, v.Input, v.SanitizeTitleWithDashes, got)
+		}
+		// P2.119 extras include sanitize_title_for_query when present.
+		if v.SanitizeTitleForQuery != "" {
+			if got := wp.SanitizeTitleForQuery(v.Input); got != v.SanitizeTitleForQuery {
+				fails++
+				t.Errorf("i=%d for_query input=%q\n  want %q\n  got  %q", i, v.Input, v.SanitizeTitleForQuery, got)
+			}
 		}
 	}
-	t.Logf("sanitize_title extra golden: %d/%d match", len(corpus.Vectors)-fails, len(corpus.Vectors))
+	if fails == 0 {
+		t.Logf("sanitize_title extra golden: %d/%d match", len(corpus.Vectors), len(corpus.Vectors))
+	}
 }
 
 func TestSizeFormatGolden(t *testing.T) {
@@ -278,5 +294,48 @@ func TestSanitizeFileNameExtras(t *testing.T) {
 		if got != tc.want {
 			t.Errorf("SanitizeFileName(%q)=%q want %q", tc.in, got, tc.want)
 		}
+	}
+}
+
+func TestSanitizeTitleDeepen(t *testing.T) {
+	cases := map[string]string{
+		"Café résumé":         "cafe-resume",
+		"Title — with emdash": "title-with-emdash",
+		"«quotes»":            "quotes",
+		"!!!":                 "",
+		"path/to/file":        "path-to-file",
+		"query?x=1":           "queryx1",
+		"END.":                "end",
+		"hash#frag":           "hashfrag",
+	}
+	for in, want := range cases {
+		if got := wp.SanitizeTitle(in); got != want {
+			t.Errorf("SanitizeTitle(%q)=%q want %q", in, got, want)
+		}
+	}
+	// P2.119: query context skips remove_accents (accents stay as octets).
+	if got := wp.SanitizeTitleForQuery("Café"); got != "caf%c3%a9" {
+		t.Fatalf("SanitizeTitleForQuery Café=%q", got)
+	}
+	// display with_dashes keeps encoded angle quotes; save strips them.
+	if got := wp.SanitizeTitleWithDashes("«quotes»", "", "display"); got != "%c2%abquotes%c2%bb" {
+		t.Fatalf("with_dashes display=%q", got)
+	}
+	if got := wp.SanitizeTitleWithDashes("«quotes»", "", "save"); got != "quotes" {
+		t.Fatalf("with_dashes save=%q", got)
+	}
+	// fallback when empty
+	if got := wp.SanitizeTitleWithContext(nil, "!!!", "fallback-slug", "save"); got != "fallback-slug" {
+		t.Fatalf("fallback=%q", got)
+	}
+	c := &wp.Context{Hooks: wp.NewHooks()}
+	c.Hooks.AddFilter("sanitize_title", func(value any, args ...any) any {
+		if s, ok := value.(string); ok && s != "" {
+			return s + "-x"
+		}
+		return value
+	}, 10, 3)
+	if got := wp.SanitizeTitleFiltered(c, "Hello World", ""); got != "hello-world-x" {
+		t.Fatalf("filtered=%q", got)
 	}
 }
