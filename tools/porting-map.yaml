@@ -11829,6 +11829,26 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P6.60 — empty('0'), whitespace seed, markup pass-through"
 
+# P6.61: determine_locale + sanitize_locale_name for login language switcher.
+- prefix: wp-includes/l10n.php#determine_locale
+  go: internal/wp/determine_locale.go
+  status: partial
+  task: P6.61
+  api: exported
+  notes: "P6.61 — SanitizeLocaleName; GetLocale; DetermineLocale login GET/cookie + filters"
+- prefix: wp-login.php#language-switcher-determine-locale
+  go: internal/login/login.go
+  status: partial
+  task: P6.61
+  api: n/a
+  notes: "P6.61 — switcher selected via DetermineLocale; POST wp_lang overlay kept"
+- prefix: wp-includes/l10n.php#determine_locale#tests
+  go: internal/wp/determine_locale_p6_61_test.go
+  status: partial
+  task: P6.61
+  api: n/a
+  notes: "P6.61 — sanitize/get/determine filter coverage"
+
 # P10.212: expand diff corpus after P5.151–P6.60 stack.
 - prefix: tests/corpus#p10.212
   go: tests/corpus
