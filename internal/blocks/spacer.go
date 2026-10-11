@@ -8,10 +8,12 @@ import (
 
 var reSpacerTag = regexp.MustCompile(`(?i)wp-block-spacer\b`)
 
-// renderSpacer renders core/spacer (P5.59 / P5.112).
+// renderSpacer renders core/spacer (P5.59 / P5.112 / P5.141).
 // Prefers saved markup; synthesizes height/width (default height 100px);
 // normalizes unitless numeric lengths to px; honors className.
 // P5.112: anchor + className polish on saved and synthesized markup.
+// P5.141: usesContext orientation=horizontal → width axis; aria-hidden polish;
+// spacing.margin lands via applySupports on the caller.
 func (e *Env) renderSpacer(block Block) string {
 	e = e.ensure()
 	out := e.renderSaved(block)
@@ -25,6 +27,13 @@ func (e *Env) renderSpacer(block Block) string {
 func synthesizeSpacerBlock(attrs map[string]any) string {
 	height := attrLength(attrs["height"])
 	width := attrLength(attrs["width"])
+	// P5.141: usesContext orientation=horizontal maps the spacer onto width.
+	if spacerOrientationHorizontal(attrs) {
+		if width == "" && height != "" {
+			width = height
+		}
+		height = ""
+	}
 	// Horizontal flex spacers often set width only; keep height omitted then.
 	if height == "" && width == "" {
 		height = "100px"
@@ -60,6 +69,23 @@ func synthesizeSpacerBlock(attrs map[string]any) string {
 	return b.String()
 }
 
+// spacerOrientationHorizontal reports usesContext orientation=horizontal (P5.141).
+// Attrs may carry orientation from parent flex context serialization.
+func spacerOrientationHorizontal(attrs map[string]any) bool {
+	if attrs == nil {
+		return false
+	}
+	if o := strings.ToLower(strings.TrimSpace(attrString(attrs, "orientation"))); o == "horizontal" {
+		return true
+	}
+	if layout, ok := attrs["layout"].(map[string]any); ok {
+		if o, ok := layout["orientation"].(string); ok && strings.EqualFold(strings.TrimSpace(o), "horizontal") {
+			return true
+		}
+	}
+	return false
+}
+
 // normalizeCSSLength appends px to bare numeric lengths (WP spacer attrs).
 func normalizeCSSLength(v string) string {
 	v = strings.TrimSpace(v)
@@ -76,7 +102,7 @@ func normalizeCSSLength(v string) string {
 	return v + "px"
 }
 
-// applySpacerAttrs polishes className/anchor on spacer roots (P5.112).
+// applySpacerAttrs polishes className/anchor/aria-hidden on spacer roots (P5.112 / P5.141).
 func applySpacerAttrs(htmlFragment string, attrs map[string]any) string {
 	out := htmlFragment
 	if strings.TrimSpace(out) == "" {
@@ -91,5 +117,7 @@ func applySpacerAttrs(htmlFragment string, attrs map[string]any) string {
 	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
 		out = ensureRootAttribute(out, "id", anchor)
 	}
+	// P5.141: spacer is always decorative (block.json / core save).
+	out = ensureRootAttribute(out, "aria-hidden", "true")
 	return out
 }

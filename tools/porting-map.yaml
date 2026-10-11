@@ -10538,3 +10538,17 @@ wp-login.php#language-switcher-post
   task: P10.191
   api: n/a
   notes: "P10.191 — summarize read-more attrs, tags_exclude integer, browser_nag, KsesStripslashes, wlwmanifest, ApplyFiltersDeprecated + 2003 corpus"
+
+# P5.141: deepen core/spacer orientation + aria-hidden.
+- prefix: wp-includes/blocks/spacer#orientation
+  go: internal/blocks/spacer.go
+  status: partial
+  task: P5.141
+  api: core/spacer
+  notes: "P5.141 — usesContext orientation=horizontal → width axis; aria-hidden polish; margin via applySupports"
+- prefix: wp-includes/blocks/spacer#orientation#tests
+  go: internal/blocks/spacer_attrs_p5_141_test.go
+  status: partial
+  task: P5.141
+  api: n/a
+  notes: "P5.141 — horizontal width mapping + saved aria-hidden coverage"
