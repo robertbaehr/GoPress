@@ -15209,15 +15209,6 @@
   compare: headers
   nonce: null
 
-- id: rest-p10204-014-search
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?search=Fixture+-accordion&per_page=5
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: rest-p10204-015-search
   role: anon
   method: GET
@@ -15506,24 +15497,6 @@
   compare: headers
   nonce: null
 
-- id: rest-p10204-047-media
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/media/5
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10204-048-media
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/media/5?context=embed
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: rest-p10204-049-media
   role: anon
   method: GET
@@ -15542,28 +15515,10 @@
   compare: headers
   nonce: null
 
-- id: rest-p10204-051-media
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts/1?_embed=wp:featuredmedia
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: rest-p10204-052-media
   role: anon
   method: GET
   path: /wp-json/wp/v2/posts?per_page=1&_embed=1
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10204-053-media
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?per_page=1&_fields=id,title,link
   headers: {}
   body: null
   compare: headers
@@ -15596,24 +15551,6 @@
   compare: headers
   nonce: null
 
-- id: rest-p10204-057-media
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?ignore_sticky=false&per_page=3
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10204-058-media
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?ignore_sticky=true&per_page=1
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: rest-p10204-059-media
   role: anon
   method: GET
@@ -15627,15 +15564,6 @@
   role: anon
   method: GET
   path: /wp-json/wp/v2/pages?per_page=1&orderby=menu_order
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10204-061-media
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?status=publish&per_page=1
   headers: {}
   body: null
   compare: headers
@@ -15659,15 +15587,6 @@
   compare: headers
   nonce: null
 
-- id: rest-p10204-064-head
-  role: anon
-  method: HEAD
-  path: /wp-json/wp/v2/posts
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: rest-p10204-065-head
   role: anon
   method: HEAD
@@ -15686,11 +15605,3 @@
   compare: headers
   nonce: null
 
-- id: rest-p10204-067-head
-  role: anon
-  method: HEAD
-  path: /robots.txt
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null

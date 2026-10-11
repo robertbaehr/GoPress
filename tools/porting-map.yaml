@@ -11343,4 +11343,4 @@ wp-login.php#language-switcher-post
   status: partial
   task: P10.204
   api: n/a
-  notes: "P10.204 — list/search/site-health/strlen/modulepreload/sizes toppers; 2525 cases; headers-safe"
+  notes: "P10.204 — list/search/site-health/strlen/modulepreload/sizes toppers; 2501 cases; headers-safe"

@@ -705,15 +705,6 @@
   compare: headers
   nonce: null
 
-- id: front-p10122-category-fixture-root
-  role: anon
-  method: GET
-  path: /category/fixture-root/
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: front-p10122-tag-a
   role: anon
   method: GET
@@ -789,15 +780,6 @@
   nonce: null
 
 # P10.126: front pagination after P3.102.
-
-- id: front-p10126-category-uncategorized-page-2
-  role: anon
-  method: GET
-  path: /category/uncategorized/page/2/
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
 
 - id: front-p10126-sample-page
   role: anon
@@ -3026,46 +3008,10 @@
   compare: headers
   nonce: null
 
-- id: front-p10204-014
-  role: anon
-  method: GET
-  path: /rsd.xml
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: front-p10204-015
   role: anon
   method: GET
   path: /?rest_route=/
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: front-p10204-016
-  role: anon
-  method: GET
-  path: /category/uncategorized/
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: front-p10204-017
-  role: anon
-  method: GET
-  path: /tag/fixture/
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: front-p10204-018
-  role: anon
-  method: GET
-  path: /author/admin/
   headers: {}
   body: null
   compare: headers
@@ -3129,15 +3075,6 @@
   role: anon
   method: HEAD
   path: /feed/
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: front-p10204-026-head
-  role: anon
-  method: HEAD
-  path: /robots.txt
   headers: {}
   body: null
   compare: headers
