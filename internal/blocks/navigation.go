@@ -7,21 +7,25 @@ import (
 	"strings"
 )
 
+// renderNavigation renders core/navigation (P5.117 / P5.162).
+// P5.162: coerce supports.align to wide|full before applySupports.
 func (e *Env) renderNavigation(block Block) string {
 	e = e.ensure()
+	attrs := sanitizeNavigationBlockAttrs(block.Attrs)
+	block.Attrs = attrs
 	prevNav := e.renderingNavigation
 	prevCtx := e.pageListNav
 	e.renderingNavigation = true
-	e.pageListNav = pageListNavCtxFromAttrs(block.Attrs)
+	e.pageListNav = pageListNavCtxFromAttrs(attrs)
 	defer func() {
 		e.renderingNavigation = prevNav
 		e.pageListNav = prevCtx
 	}()
 	inner := ""
 
-	ref := attrInt64(block.Attrs, "ref")
+	ref := attrInt64(attrs, "ref")
 	if ref == 0 {
-		ref = attrInt64(block.Attrs, "navigationMenuId") // legacy
+		ref = attrInt64(attrs, "navigationMenuId") // legacy
 	}
 
 	switch {
@@ -49,9 +53,10 @@ func (e *Env) renderNavigation(block Block) string {
 		return ""
 	}
 
-	ariaLabel, _ := block.Attrs["ariaLabel"].(string)
+	ariaLabel, _ := attrs["ariaLabel"].(string)
 	// P5.117: layout justification/orientation/flexWrap + textDecoration + className.
-	navClasses := navigationWrapperClasses(block.Attrs)
+	// P5.162: align wide|full on wrapper.
+	navClasses := navigationWrapperClasses(attrs)
 	ulClass := "wp-block-navigation__container"
 	if strings.Contains(navClasses, "is-vertical") {
 		ulClass += " is-vertical wp-block-navigation"
@@ -65,7 +70,7 @@ func (e *Env) renderNavigation(block Block) string {
 		b.WriteString(html.EscapeString(ariaLabel))
 		b.WriteString(`"`)
 	}
-	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
 		b.WriteString(` id="`)
 		b.WriteString(html.EscapeString(anchor))
 		b.WriteString(`"`)
@@ -85,9 +90,32 @@ func (e *Env) renderNavigation(block Block) string {
 	return b.String()
 }
 
-// navigationWrapperClasses builds core/navigation class list (P5.117).
+// sanitizeNavigationBlockAttrs coerces core/navigation supports.align (P5.162).
+// Allowed: wide, full. Other values (incl. left/center/right/none) are dropped.
+func sanitizeNavigationBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "wide", "full":
+		// keep
+	default:
+		delete(out, "align")
+	}
+	return out
+}
+
+// navigationWrapperClasses builds core/navigation class list (P5.117 / P5.162).
 func navigationWrapperClasses(attrs map[string]any) string {
 	classes := []string{"wp-block-navigation"}
+	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
+		classes = append(classes, "align"+sanitizeClassToken(align))
+	}
 	layoutOrientation := ""
 	justify := ""
 	flexWrap := ""

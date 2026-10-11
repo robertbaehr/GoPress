@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P5.162: core/navigation align coerce wide|full.
+- prefix: wp-includes/blocks/navigation#align
+  go: internal/blocks/navigation.go
+  status: partial
+  task: P5.162
+  api: n/a
+  notes: "P5.162 — align wide|full coerce before applySupports"
+- prefix: wp-includes/blocks/navigation#align#tests
+  go: internal/blocks/navigation_attrs_p5_162_test.go
+  status: partial
+  task: P5.162
+  api: n/a
+  notes: "P5.162 — drop left/center/right/none/bogus"
+
 # P8.55: update_attached_file helper.
 - prefix: wp-includes/post.php#update_attached_file
   go: internal/wp/update_attached_file.go

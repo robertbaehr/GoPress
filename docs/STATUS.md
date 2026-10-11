@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.223)
 
+- P5.162 `core/navigation` align coerce wide|full
 - P8.55 `UpdateAttachedFile` / `RelativeUploadPath`
 - P3.155 `GetEditPostLink`
 - P2.157 `SendOriginHeaders` CORS helper
