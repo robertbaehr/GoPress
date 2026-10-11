@@ -72,6 +72,9 @@ type QueryArgs struct {
 	OrderBy string
 	// Order is ASC or DESC (default DESC) (P4.83).
 	Order string
+	// MenuOrderFilter when non-nil limits to menu_order = *MenuOrderFilter
+	// (REST pages ?menu_order=, P4.149).
+	MenuOrderFilter *int
 	// DateAfter / DateBefore filter post_date (REST ?after=/?before=, inclusive, P4.91).
 	// Values are MySQL datetimes "2006-01-02 15:04:05".
 	DateAfter  string
@@ -163,6 +166,11 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		where = append(where, clause)
 		vals = append(vals, cvals...)
 	}
+	if args.MenuOrderFilter != nil {
+		// P4.149: REST ?menu_order= equality filter.
+		where = append(where, "menu_order = %d")
+		vals = append(vals, *args.MenuOrderFilter)
+	}
 	from := c.DB.Posts()
 	if tag := strings.TrimSpace(args.Tag); tag != "" {
 		from = c.DB.Posts() + " p INNER JOIN " + c.DB.TermRelationships() + " tr ON tr.object_id = p.ID" +
@@ -185,6 +193,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_parent", "p.post_parent")
+		whereSQL = strings.ReplaceAll(whereSQL, "menu_order", "p.menu_order")
 		q := "SELECT COUNT(DISTINCT p.ID) AS total FROM " + from + " WHERE " + whereSQL
 		sqlStr, sqlArgs, err := c.DB.Prepare(q, vals...)
 		if err != nil {
@@ -218,6 +227,7 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_parent", "p.post_parent")
+		whereSQL = strings.ReplaceAll(whereSQL, "menu_order", "p.menu_order")
 		q := "SELECT COUNT(DISTINCT p.ID) AS total FROM " + from + " WHERE " + whereSQL
 		sqlStr, sqlArgs, err := c.DB.Prepare(q, vals...)
 		if err != nil {
@@ -329,6 +339,11 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 		where = append(where, clause)
 		vals = append(vals, cvals...)
 	}
+	if args.MenuOrderFilter != nil {
+		// P4.149: REST ?menu_order= equality filter.
+		where = append(where, "menu_order = %d")
+		vals = append(vals, *args.MenuOrderFilter)
+	}
 	from := c.DB.Posts() + " p"
 	if tag := strings.TrimSpace(args.Tag); tag != "" {
 		from += " INNER JOIN " + c.DB.TermRelationships() + " tr ON tr.object_id = p.ID" +
@@ -372,6 +387,7 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "ID IN", "p.ID IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "ID NOT IN", "p.ID NOT IN")
 		whereSQL = strings.ReplaceAll(whereSQL, "post_parent", "p.post_parent")
+		whereSQL = strings.ReplaceAll(whereSQL, "menu_order", "p.menu_order")
 	}
 
 	orderSQL, orderVals := orderByClause(args, aliased)
