@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P6.69: lostpassword_form action.
+- prefix: wp-login.php#lostpassword_form
+  go: internal/login/login.go
+  status: partial
+  task: P6.69
+  api: n/a
+  notes: "P6.69 — do_action lostpassword_form before hidden fields"
+- prefix: wp-login.php#lostpassword_form#tests
+  go: internal/login/lostpassword_form_p6_69_test.go
+  status: partial
+  task: P6.69
+  api: n/a
+  notes: "P6.69 — action fires once on lostpassword GET"
+
 # P10.226: STATUS/PORTING refresh after P6.68–P9.44 stack.
 - prefix: docs/STATUS.md#p10-226
   go: docs/STATUS.md

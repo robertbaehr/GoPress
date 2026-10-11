@@ -1093,6 +1093,10 @@ func (h *Handler) serveLostPassword(w http.ResponseWriter, r *http.Request, c *w
 	b.WriteString("\t\t\t\t<label for=\"user_login\">Username or Email Address</label>\n")
 	b.WriteString("\t\t\t\t<input type=\"text\" name=\"user_login\" id=\"user_login\" class=\"input ltr\" value=\"\" size=\"20\" autocapitalize=\"off\" autocomplete=\"username\" required=\"required\" />\n")
 	b.WriteString("\t\t\t</p>\n")
+	// P6.69: lostpassword_form action before hidden fields (wp-login.php).
+	if c != nil && c.Hooks != nil {
+		c.Hooks.DoAction("lostpassword_form")
+	}
 	b.WriteString("\t\t\t\t\t\t<input type=\"hidden\" name=\"redirect_to\" value=\"")
 	b.WriteString(html.EscapeString(redirectTo))
 	b.WriteString("\" />\n")
