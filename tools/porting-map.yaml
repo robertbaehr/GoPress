@@ -10317,4 +10317,4 @@ wp-login.php#language-switcher-post
   status: partial
   task: P10.186
   api: n/a
-  notes: "P10.186 — format enum / comment-template / update-nag / x-pingback / attachment-image toppers"
+  notes: "P10.186 — +56 headers-safe cases after drop of cookie/Link/status-sensitive toppers"

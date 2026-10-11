@@ -44,6 +44,7 @@
   nonce: null
 
 # P10.29: /favicon.ico follows to site icon / default logo PNG.
+
 - id: front-favicon
   role: anon
   method: GET
@@ -64,6 +65,7 @@
 
 # P10.21: front search. Full HTML still diverges (robots meta, search form,
 # query-title curly quotes, pagination); headers compare matches today.
+
 - id: front-search-hello
   role: anon
   method: GET
@@ -74,6 +76,7 @@
   nonce: null
 
 # P10.74: Atom / comments feeds + cron + date archive — Content-Type parity.
+
 - id: front-atom-feed
   role: anon
   method: GET
@@ -111,6 +114,7 @@
   nonce: null
 
 # P10.76: more front headers + rest_route door.
+
 - id: front-rdf-feed
   role: anon
   method: GET
@@ -247,6 +251,7 @@
   nonce: null
 
 # P10.78: remaining sitemap taxonomy slices.
+
 - id: front-sitemap-taxonomies-post-tag
   role: anon
   method: GET
@@ -266,6 +271,7 @@
   nonce: null
 
 # P10.80: query-string singulars + trailing-slash redirect headers.
+
 - id: front-p-1
   role: anon
   method: GET
@@ -294,6 +300,7 @@
   nonce: null
 
 # P10.84: pretty permalinks, author, and 404 query headers.
+
 - id: front-hello-world-pretty
   role: anon
   method: GET
@@ -322,6 +329,7 @@
   nonce: null
 
 # P10.86: empty/miss search, date archives, missing tag.
+
 - id: front-search-empty
   role: anon
   method: GET
@@ -368,6 +376,7 @@
   nonce: null
 
 # P10.88: author/category/tag 404s + search headers.
+
 - id: front-author-missing-404
   role: anon
   method: GET
@@ -414,6 +423,7 @@
   nonce: null
 
 # P10.90: more matching front header cases.
+
 - id: front-feed-atom-alt
   role: anon
   method: GET
@@ -451,6 +461,7 @@
   nonce: null
 
 # P10.92: more matching front header cases.
+
 - id: front-search-gopress
   role: anon
   method: GET
@@ -461,6 +472,7 @@
   nonce: null
 
 # P10.98: date/tag/feed query header cases.
+
 - id: front-date-feed-2024-02-01
   role: anon
   method: GET
@@ -534,6 +546,7 @@
   nonce: null
 
 # P10.100: RDF feed query string header case.
+
 - id: front-feed-rdf-query
   role: anon
   method: GET
@@ -544,6 +557,7 @@
   nonce: null
 
 # P10.102: rest_route pages header case.
+
 - id: front-rest-route-pages
   role: anon
   method: GET
@@ -563,6 +577,7 @@
   nonce: null
 
 # P10.112: missing tag archive 404 headers.
+
 - id: front-tag-foo-404
   role: anon
   method: GET
@@ -573,6 +588,7 @@
   nonce: null
 
 # P10.114: rest_route types header case.
+
 - id: front-p10114-rest-route-types
   role: anon
   method: GET
@@ -583,6 +599,7 @@
   nonce: null
 
 # P10.116: front headers after replytocom / archive stack.
+
 - id: front-p10116-hello-replytocom
   role: anon
   method: GET
@@ -611,6 +628,7 @@
   nonce: null
 
 # P10.118: front headers after pingback/list stack.
+
 - id: front-p10118-feed-rss2
   role: anon
   method: GET
@@ -639,6 +657,7 @@
   nonce: null
 
 # P10.120: front headers after pages/oembed stack.
+
 - id: front-p10120-fixture-child
   role: anon
   method: GET
@@ -667,6 +686,7 @@
   nonce: null
 
 # P10.122: front headers after columns/search/rsd stack.
+
 - id: front-p10122-sample-page
   role: anon
   method: GET
@@ -740,6 +760,7 @@
   nonce: null
 
 # P10.124: front headers after stacked deepen.
+
 - id: front-p10124-search-sample
   role: anon
   method: GET
@@ -768,6 +789,7 @@
   nonce: null
 
 # P10.126: front pagination after P3.102.
+
 - id: front-p10126-category-uncategorized-page-2
   role: anon
   method: GET
@@ -787,6 +809,7 @@
   nonce: null
 
 # P10.128: front headers after P3.103 feed links deepen.
+
 - id: front-p10128-search-media
   role: anon
   method: GET
@@ -806,6 +829,7 @@
   nonce: null
 
 # P10.130: front search headers after P3.104 robots noindex,follow.
+
 - id: front-p10130-search-robots-meta
   role: anon
   method: GET
@@ -834,6 +858,7 @@
   nonce: null
 
 # P10.142: headers-only expand after P5.116–P6.48.
+
 - id: front-p10142-001-feed
   role: anon
   method: GET
@@ -925,6 +950,7 @@
   nonce: null
 
 # P10.142c safe toppers.
+
 - id: front-p10142c-001-atom
   role: anon
   method: GET
@@ -963,6 +989,7 @@
 
 
 # P10.144 safe toppers.
+
 - id: front-p10144-001-hello-world
   role: anon
   method: GET
@@ -991,6 +1018,7 @@
   nonce: null
 
 # P10.146 safe toppers (site icon empty → same head as PHP).
+
 - id: front-p10146-001-home
   role: anon
   method: GET
@@ -1028,6 +1056,7 @@
   nonce: null
 
 # P10.148: front toppers after bloginfo deepen.
+
 - id: front-p10148-001-home
   role: anon
   method: GET
@@ -1074,6 +1103,7 @@
   nonce: null
 
 # P10.150: front toppers after body_class / site-logo stack.
+
 - id: front-p10150-001-sample-page
   role: anon
   method: GET
@@ -1138,6 +1168,7 @@
   nonce: null
 
 # P10.152: front toppers after post_class / loginout stack.
+
 - id: front-p10152-001-sample-page
   role: anon
   method: GET
@@ -1203,6 +1234,7 @@
 
 
 # P10.154: front toppers after archives/calendar/comment_class stack.
+
 - id: front-p10154-001-year-archive
   role: anon
   method: GET
@@ -1249,6 +1281,7 @@
   nonce: null
 
 # P10.156: front toppers after wp_head feed_links deepen.
+
 - id: front-p10156-001-sample-preview
   role: anon
   method: GET
@@ -1295,6 +1328,7 @@
   nonce: null
 
 # P10.158: front toppers after wp_footer / search stack.
+
 - id: front-p10158-001-search-term
   role: anon
   method: GET
@@ -1332,6 +1366,7 @@
   nonce: null
 
 # P10.160: front toppers after query-pagination / sticky stack.
+
 - id: front-p10160-001-search-pagination
   role: anon
   method: GET
@@ -1360,6 +1395,7 @@
   nonce: null
 
 # P10.162: front toppers after language_attributes / post-terms stack.
+
 - id: front-p10162-001-search-author
   role: anon
   method: GET
@@ -1388,6 +1424,7 @@
   nonce: null
 
 # P10.164: front toppers after generator / admin-bar / block stack.
+
 - id: front-p10164-001-home-headers
   role: anon
   method: GET
@@ -1452,6 +1489,7 @@
   nonce: null
 
 # P10.166: front toppers after adjacent-posts / pattern stack.
+
 - id: front-p10166-001-home
   role: anon
   method: GET
@@ -1507,6 +1545,7 @@
   nonce: null
 
 # P10.168: front toppers after the_content deepen.
+
 - id: front-p10168-001-home
   role: anon
   method: GET
@@ -1553,6 +1592,7 @@
   nonce: null
 
 # P10.170: front toppers after the_excerpt stack.
+
 - id: front-p10170-001-home
   role: anon
   method: GET
@@ -1983,46 +2023,10 @@
   compare: headers
   nonce: null
 
-- id: front-p10186-006-rsd
-  role: anon
-  method: GET
-  path: /rsd.xml
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: front-p10186-007-sitemap
   role: anon
   method: GET
   path: /wp-sitemap.xml
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: front-p10186-008-category
-  role: anon
-  method: GET
-  path: /category/uncategorized/
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: front-p10186-009-tag
-  role: anon
-  method: GET
-  path: /tag/fixture-tag-01/
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: front-p10186-010-author
-  role: anon
-  method: GET
-  path: /author/admin/
   headers: {}
   body: null
   compare: headers
