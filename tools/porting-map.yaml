@@ -10682,3 +10682,35 @@ wp-login.php#language-switcher-post
   task: P5.142
   api: n/a
   notes: "P5.142 — center/gradient/margin/invalid tagName + saved gradient polish"
+
+# P4.158: REST sticky_posts deepen — is_sticky filter + stuck actions + empty post__in=[0].
+- prefix: wp-includes/post.php#is_sticky
+  go: internal/wp/post_class.go
+  status: partial
+  task: P4.158
+  api: is_sticky
+  notes: "P4.158 — IsSticky applies is_sticky filter after sticky_posts lookup"
+- prefix: wp-includes/post.php#stick_post
+  go: internal/wp/post_class.go
+  status: partial
+  task: P4.158
+  api: stick_post
+  notes: "P4.158 — StickPost fires post_stuck on sticky_posts update"
+- prefix: wp-includes/post.php#unstick_post
+  go: internal/wp/post_class.go
+  status: partial
+  task: P4.158
+  api: unstick_post
+  notes: "P4.158 — UnstickPost fires post_unstuck on sticky_posts update"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#sticky_posts
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.158
+  api: sticky
+  notes: "P4.158 — empty sticky_posts → post__in=[0]; sticky field via IsSticky; StickyPostIDs"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#sticky_posts#tests
+  go: internal/rest/posts_sticky_posts_p4_158_test.go
+  status: partial
+  task: P4.158
+  api: n/a
+  notes: "P4.158 — empty sticky_posts + is_sticky filter field coverage"

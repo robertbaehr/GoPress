@@ -69,25 +69,42 @@ func AppendStickyClass(c *Context, postID int64, classes []string) []string {
 	return classes
 }
 
-// IsSticky reports whether postID is in the sticky_posts option (is_sticky, P7.67).
+// IsSticky reports whether postID is in the sticky_posts option (is_sticky, P7.67 / P4.158).
+// Applies the is_sticky filter after consulting sticky_posts.
 func IsSticky(c *Context, postID int64) bool {
 	if postID <= 0 {
-		return false
+		return applyIsStickyFilter(c, false, postID)
 	}
+	isSticky := false
 	for _, id := range stickyPostIDs(c) {
 		if id == postID {
-			return true
+			isSticky = true
+			break
 		}
 	}
-	return false
+	return applyIsStickyFilter(c, isSticky, postID)
 }
 
-// StickyPostIDs returns sticky_posts option IDs (P4.97 / P7.82).
+func applyIsStickyFilter(c *Context, isSticky bool, postID int64) bool {
+	if c == nil || c.Hooks == nil {
+		return isSticky
+	}
+	v := c.Hooks.ApplyFilters("is_sticky", isSticky, postID)
+	switch t := v.(type) {
+	case bool:
+		return t
+	default:
+		return isSticky
+	}
+}
+
+// StickyPostIDs returns sticky_posts option IDs (P4.97 / P7.82 / P4.158).
 func StickyPostIDs(c *Context) []int64 {
 	return stickyPostIDs(c)
 }
 
-// StickPost adds postID to sticky_posts (stick_post, P4.97).
+// StickPost adds postID to sticky_posts (stick_post, P4.97 / P4.158).
+// Fires post_stuck when the sticky_posts option is updated.
 func StickPost(c *Context, postID int64) error {
 	if c == nil || c.Options == nil || postID <= 0 {
 		return nil
@@ -99,10 +116,17 @@ func StickPost(c *Context, postID int64) error {
 		}
 	}
 	ids = append(ids, postID)
-	return saveStickyPosts(c, ids)
+	if err := saveStickyPosts(c, ids); err != nil {
+		return err
+	}
+	if c.Hooks != nil {
+		c.Hooks.DoAction("post_stuck", postID)
+	}
+	return nil
 }
 
-// UnstickPost removes postID from sticky_posts (unstick_post, P4.97).
+// UnstickPost removes postID from sticky_posts (unstick_post, P4.97 / P4.158).
+// Fires post_unstuck when the sticky_posts option is updated.
 func UnstickPost(c *Context, postID int64) error {
 	if c == nil || c.Options == nil || postID <= 0 {
 		return nil
@@ -120,7 +144,13 @@ func UnstickPost(c *Context, postID int64) error {
 	if !found {
 		return nil
 	}
-	return saveStickyPosts(c, out)
+	if err := saveStickyPosts(c, out); err != nil {
+		return err
+	}
+	if c.Hooks != nil {
+		c.Hooks.DoAction("post_unstuck", postID)
+	}
+	return nil
 }
 
 func saveStickyPosts(c *Context, ids []int64) error {

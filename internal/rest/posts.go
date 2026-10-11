@@ -1315,9 +1315,10 @@ func countPosts(c *wp.Context, postType string, stickyFilter *bool, search strin
 	return wp.CountPosts(c, args)
 }
 
-// applyStickyQueryFilter maps REST ?sticky=true|false onto post__in / post__not_in (P4.82).
+// applyStickyQueryFilter maps REST ?sticky=true|false onto post__in / post__not_in (P4.82 / P4.158).
 // When include/exclude are also set, sticky=true intersects post__in and sticky=false
 // merges into post__not_in (WP REST posts controller).
+// P4.158: empty sticky_posts (or empty intersection) → post__in = [0].
 func applyStickyQueryFilter(c *wp.Context, postType string, stickyFilter *bool, args *wp.QueryArgs) {
 	if stickyFilter == nil || args == nil || postType != "post" {
 		return
@@ -1330,8 +1331,8 @@ func applyStickyQueryFilter(c *wp.Context, postType string, stickyFilter *bool, 
 		} else {
 			args.PostIn = ids
 		}
-		if args.PostIn == nil {
-			args.PostIn = []int64{}
+		if len(args.PostIn) == 0 {
+			args.PostIn = []int64{0}
 		}
 		return
 	}
@@ -1362,6 +1363,10 @@ func intersectIDs(a, b []int64) []int64 {
 }
 
 func stickyIDList(c *wp.Context) []int64 {
+	// P4.158: prefer shared StickyPostIDs (sticky_posts option parser).
+	if ids := wp.StickyPostIDs(c); len(ids) > 0 {
+		return ids
+	}
 	m := stickyPostIDs(c)
 	if len(m) == 0 {
 		return nil
@@ -1373,6 +1378,15 @@ func stickyIDList(c *wp.Context) []int64 {
 		}
 	}
 	return out
+}
+
+// stickyField resolves the REST sticky property via is_sticky (P4.158).
+// Falls back to the preloaded sticky_posts map when hooks are unavailable.
+func stickyField(c *wp.Context, id int64, sticky map[int64]bool) bool {
+	if c != nil && c.Hooks != nil {
+		return wp.IsSticky(c, id)
+	}
+	return sticky[id]
 }
 
 // parseStickyQuery reads REST ?sticky= as an optional boolean (P4.82 / P2.120 / P4.141).
@@ -1481,7 +1495,8 @@ func postFromWP(c *wp.Context, row wp.Post, home string, edit bool, sticky map[i
 		FeaturedMedia: featuredMediaID(c, row.ID),
 		CommentStatus: row.CommentStatus,
 		PingStatus:    row.PingStatus,
-		Sticky:        sticky[row.ID],
+		// P4.158: sticky field via is_sticky (option + is_sticky filter).
+		Sticky:        stickyField(c, row.ID, sticky),
 		Template:      pageTemplate(c, row.ID),
 		Format:        format,
 		Meta:          postMetaFields(c, row.ID),
