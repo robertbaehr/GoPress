@@ -8836,3 +8836,25 @@ wp-login.php#language-switcher-post
   task: P2.122
   api: n/a
   notes: "P2.122 — ParseList/ParseIDList/ParseSlugList unit coverage"
+
+# P3.120: front language_attributes / get_language_attributes.
+- prefix: wp-includes/general-template.php#language_attributes
+  go: internal/wp/language_attributes.go
+  status: partial
+  task: P3.120
+  api: language_attributes
+  notes: "P3.120 — get_language_attributes; is_rtl stub; language_attributes filter; xhtml xml:lang"
+
+- prefix: wp-includes/general-template.php#language_attributes#front
+  go: internal/server/front.go
+  status: partial
+  task: P3.120
+  api: n/a
+  notes: "P3.120 — wire LanguageAttributesHTML into front document shells"
+
+- prefix: wp-includes/general-template.php#language_attributes#tests
+  go: internal/wp/language_attributes_test.go
+  status: partial
+  task: P3.120
+  api: n/a
+  notes: "P3.120 — default/rtl/filter/xhtml unit coverage"
