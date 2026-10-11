@@ -12,13 +12,16 @@ var (
 	reCoverInnerContainerStart = regexp.MustCompile(`(?i)<div\b[^>]*\bwp-block-cover__inner-container\b[^>]*>`)
 )
 
-// renderCover renders core/cover (P5.54 / P5.108).
+// renderCover renders core/cover (P5.54 / P5.108 / P5.151).
 // Prefers saved markup; synthesizes from url/id when empty; when useFeaturedImage
 // is set with an image background, injects the featured image before the inner
 // container (subset of render_block_core_cover). P5.108: className/anchor/align,
 // contentPosition, isDark/is-light, video background synthesize, dimRatio overlay.
+// P5.151: coerce align enum; fontSize + sizeSlug + alt polish; sanitize before supports.
 func (e *Env) renderCover(block Block) string {
 	e = e.ensure()
+	attrs := sanitizeCoverBlockAttrs(block.Attrs)
+	block.Attrs = attrs
 	out := e.renderSaved(block)
 	if strings.TrimSpace(out) == "" {
 		out = synthesizeCoverBlock(e, block)
@@ -26,14 +29,34 @@ func (e *Env) renderCover(block Block) string {
 	if strings.TrimSpace(out) == "" || !reCoverTag.MatchString(out) {
 		return ""
 	}
-	bgType := strings.TrimSpace(attrString(block.Attrs, "backgroundType"))
+	bgType := strings.TrimSpace(attrString(attrs, "backgroundType"))
 	if bgType == "" {
 		bgType = "image"
 	}
-	if bgType == "image" && attrBool(block.Attrs, "useFeaturedImage") {
-		out = e.applyCoverFeaturedImage(out, block.Attrs)
+	if bgType == "image" && attrBool(attrs, "useFeaturedImage") {
+		out = e.applyCoverFeaturedImage(out, attrs)
 	}
-	return applyCoverAttrs(out, block.Attrs)
+	return applyCoverAttrs(out, attrs)
+}
+
+// sanitizeCoverBlockAttrs coerces core/cover supports.align to the block.json set (P5.151).
+// Allowed: left, center, right, wide, full (align: true). Other align values are dropped.
+func sanitizeCoverBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "left", "center", "right", "wide", "full":
+		// keep
+	default:
+		delete(out, "align")
+	}
+	return out
 }
 
 func synthesizeCoverBlock(e *Env, block Block) string {
@@ -101,7 +124,15 @@ func synthesizeCoverBlock(e *Env, block Block) string {
 		}
 		b.WriteString(`></video>`)
 	} else if bgType == "image" && url != "" && !hasParallax && !isRepeated {
-		b.WriteString(`<img class="wp-block-cover__image-background" alt="" src="`)
+		alt := strings.TrimSpace(attrString(block.Attrs, "alt"))
+		b.WriteString(`<img class="wp-block-cover__image-background`)
+		if slug := strings.TrimSpace(attrString(block.Attrs, "sizeSlug")); slug != "" {
+			b.WriteString(" size-")
+			b.WriteString(sanitizeClassToken(slug))
+		}
+		b.WriteString(`" alt="`)
+		b.WriteString(html.EscapeString(alt))
+		b.WriteString(`" src="`)
 		b.WriteString(html.EscapeString(url))
 		b.WriteString(`" data-object-fit="cover"/>`)
 	}
@@ -245,6 +276,10 @@ func coverClassFromAttrs(attrs map[string]any, dimRatio int, hasParallax, isRepe
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		class += " " + html.EscapeString(cn)
 	}
+	// P5.151: typography.fontSize preset on synthesize.
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		class += " has-" + sanitizeClassToken(fs) + "-font-size"
+	}
 	return class
 }
 
@@ -278,7 +313,7 @@ func coverContentPositionClass(attrs map[string]any) string {
 	return "is-position-" + sanitizeClassToken(token)
 }
 
-// applyCoverAttrs polishes saved + synthesized cover markup (P5.108).
+// applyCoverAttrs polishes saved + synthesized cover markup (P5.108 / P5.151).
 func applyCoverAttrs(htmlFragment string, attrs map[string]any) string {
 	out := htmlFragment
 	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
@@ -294,6 +329,10 @@ func applyCoverAttrs(htmlFragment string, attrs map[string]any) string {
 	}
 	if anchor := strings.TrimSpace(attrString(attrs, "anchor")); anchor != "" {
 		out = ensureRootAttribute(out, "id", anchor)
+	}
+	// P5.151: typography.fontSize preset class (also via applySupports).
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		out = addRootClass(out, "has-"+sanitizeClassToken(fs)+"-font-size")
 	}
 	if pos := coverContentPositionClass(attrs); pos != "" {
 		if !strings.Contains(out, "has-custom-content-position") {
