@@ -58,6 +58,17 @@ func RemoteHead(c *Context, rawURL string) (*HTTPResponse, error) {
 	return remoteRequest(c, http.MethodHead, rawURL, "")
 }
 
+// RemoteRequest performs wp_remote_request (P2.153).
+// method defaults to GET when empty; body is used for non-GET/HEAD methods.
+// When Config.BlockExternal is true, returns http_request_not_executed without dialing.
+func RemoteRequest(c *Context, rawURL, method, body string) (*HTTPResponse, error) {
+	method = strings.ToUpper(strings.TrimSpace(method))
+	if method == "" {
+		method = http.MethodGet
+	}
+	return remoteRequest(c, method, rawURL, body)
+}
+
 // SafeRemoteGet mirrors wp_safe_remote_get (P2.147).
 // Validates the URL with HttpValidateURL (reject_unsafe_urls) before RemoteGet.
 func SafeRemoteGet(c *Context, rawURL string) (*HTTPResponse, error) {
@@ -95,6 +106,19 @@ func SafeRemoteHead(c *Context, rawURL string) (*HTTPResponse, error) {
 		}
 	}
 	return RemoteHead(c, validated)
+}
+
+// SafeRemoteRequest mirrors wp_safe_remote_request (P2.153).
+// Validates the URL with HttpValidateURL (reject_unsafe_urls) before RemoteRequest.
+func SafeRemoteRequest(c *Context, rawURL, method, body string) (*HTTPResponse, error) {
+	validated := HttpValidateURL(c, rawURL)
+	if validated == "" {
+		return nil, &HTTPError{
+			Code:    "http_request_failed",
+			Message: "A valid URL was not provided.",
+		}
+	}
+	return RemoteRequest(c, validated, method, body)
 }
 
 // remoteRequest is the shared dial path for RemoteGet / RemotePost / RemoteHead.
