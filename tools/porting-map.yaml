@@ -3971,13 +3971,20 @@ wp-login.php#language-switcher-post
   api: internal
   notes: "P5.53 — renderVideo synthesize + width/height aspect-ratio"
 
-# P5.54: core/cover synthesize + useFeaturedImage injection.
+# P5.54 / P5.108: core/cover synthesize + useFeaturedImage + polish.
 - prefix: wp-includes/blocks/cover.php
   go: internal/blocks/cover.go
   status: partial
-  task: P5.54
+  task: P5.108
   api: internal
-  notes: "P5.54 — renderCover synthesize from url/id + featured image before inner container"
+  notes: "P5.108 — className/anchor/align/contentPosition/isDark polish; video synthesize; dimRatio overlay"
+
+- prefix: wp-includes/blocks/cover.php#test
+  go: internal/blocks/cover_test.go
+  status: partial
+  task: P5.108
+  api: n/a
+  notes: "P5.108 — unit coverage for position/light/video polish"
 
 # P5.55: core/media-text synthesize + useFeaturedImage injection.
 - prefix: wp-includes/blocks/media-text.php
