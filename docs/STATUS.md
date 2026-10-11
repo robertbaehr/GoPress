@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.221)
 
+- P6.64 `login_link_separator` filter + register nav when `users_can_register`
 - P10.221 STATUS/PORTING refresh after P6.63–P9.39
 - P9.39 `DoActionRefArray` / `ApplyFiltersRefArray` Context helpers
 - P4.175 WP_Query `orderby=meta_value` / `meta_value_num`
