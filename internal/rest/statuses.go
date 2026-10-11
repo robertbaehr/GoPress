@@ -70,7 +70,7 @@ func (s *Server) serveStatuses(w http.ResponseWriter, r *http.Request, c *wp.Con
 		if c != nil && c.CurrentUser != nil {
 			status = http.StatusForbidden
 		}
-		w.Header().Set("Allow", "GET")
+		// Oracle omits Allow on auth failures for statuses collection.
 		writeJSON(w, status, map[string]any{
 			"code":    "rest_cannot_view",
 			"message": "Sorry, you are not allowed to manage post statuses.",
@@ -82,6 +82,8 @@ func (s *Server) serveStatuses(w http.ResponseWriter, r *http.Request, c *wp.Con
 	canManage := canEditPosts(c)
 	w.Header().Set("Allow", "GET")
 	if r.Method == http.MethodHead {
+		// Match WP: HEAD still advertises JSON content type.
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusOK)
 		return
 	}
@@ -122,7 +124,7 @@ func (s *Server) serveStatusItem(w http.ResponseWriter, r *http.Request, c *wp.C
 		}
 	}
 	if found == nil {
-		w.Header().Set("Allow", "GET")
+		// Oracle omits Allow on invalid status 404s.
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"code":    "rest_status_invalid",
 			"message": "Invalid status.",
@@ -140,7 +142,7 @@ func (s *Server) serveStatusItem(w http.ResponseWriter, r *http.Request, c *wp.C
 		if c != nil && c.CurrentUser != nil {
 			status = http.StatusForbidden
 		}
-		w.Header().Set("Allow", "GET")
+		// Oracle omits Allow on unreadable status auth failures.
 		writeJSON(w, status, map[string]any{
 			"code":    "rest_cannot_read_status",
 			"message": "Cannot view status.",
@@ -153,7 +155,6 @@ func (s *Server) serveStatusItem(w http.ResponseWriter, r *http.Request, c *wp.C
 		if c != nil && c.CurrentUser != nil {
 			status = http.StatusForbidden
 		}
-		w.Header().Set("Allow", "GET")
 		writeJSON(w, status, map[string]any{
 			"code":    "rest_cannot_read_status",
 			"message": "Cannot view status.",
@@ -164,6 +165,7 @@ func (s *Server) serveStatusItem(w http.ResponseWriter, r *http.Request, c *wp.C
 	edit := context == "edit" && canManage
 	w.Header().Set("Allow", "GET")
 	if r.Method == http.MethodHead {
+		w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 		w.WriteHeader(http.StatusOK)
 		return
 	}

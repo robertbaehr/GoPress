@@ -4440,3 +4440,166 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.130: statuses OPTIONS/HEAD/context + gallery block-types after P5.110–P9.24.
+- id: rest-p10130-statuses-options
+  role: anon
+  method: OPTIONS
+  path: /wp-json/wp/v2/statuses
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10130-statuses-head
+  role: anon
+  method: HEAD
+  path: /wp-json/wp/v2/statuses
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10130-statuses-publish-options
+  role: anon
+  method: OPTIONS
+  path: /wp-json/wp/v2/statuses/publish
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10130-statuses-publish-head
+  role: anon
+  method: HEAD
+  path: /wp-json/wp/v2/statuses/publish
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10130-statuses-context-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/statuses?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10130-statuses-context-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/statuses?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10130-statuses-publish-context-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/statuses/publish?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10130-statuses-publish-context-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/statuses/publish?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10130-rest-route-statuses-context-view
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/statuses&context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10130-rest-route-statuses-publish-context-view
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/statuses/publish&context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10130-block-types-gallery-context-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/gallery?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10130-block-types-gallery-context-embed
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/gallery?context=embed
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10130-block-types-image
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/image
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10130-rest-route-block-types-gallery
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/gallery
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10130-rest-route-block-types-image
+  role: anon
+  method: GET
+  path: /?rest_route=/wp/v2/block-types/core/image
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10130-block-types-group
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/group
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10130-block-types-columns
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/columns
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: rest-p10130-block-types-cover-context-view
+  role: anon
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/cover?context=view
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

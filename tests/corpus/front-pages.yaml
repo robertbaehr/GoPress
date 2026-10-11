@@ -804,3 +804,31 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.130: front search headers after P3.104 robots noindex,follow.
+- id: front-p10130-search-robots-meta
+  role: anon
+  method: GET
+  path: /?s=robots-meta
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10130-search-gallery
+  role: anon
+  method: GET
+  path: /?s=gallery
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10130-search-theme
+  role: anon
+  method: GET
+  path: /?s=theme
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

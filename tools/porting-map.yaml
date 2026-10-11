@@ -7164,3 +7164,11 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P9.24 — unit coverage for supports registry and REST map"
 
+# P10.130: expand diff corpus after P5.110–P9.24 deepen stack.
+- prefix: tests/corpus#p10-130
+  go: tests/corpus
+  status: partial
+  task: P10.130
+  api: n/a
+  notes: "P10.130 — statuses OPTIONS/HEAD/context + gallery block-types + search robots headers"
+

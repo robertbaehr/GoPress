@@ -2010,7 +2010,7 @@ func TestNavMenusEditSelectorAndCreate(t *testing.T) {
 
 	form := url.Values{}
 	form.Set("action", "update")
-	form.Set("menu-name", "Agent Nav Menu")
+	form.Set("menu-name", "ZZZ Agent Nav Menu Temp")
 	form.Set("save_menu", "Create Menu")
 	req = httptest.NewRequest(http.MethodPost, "/wp-admin/nav-menus.php?action=edit&menu=0", strings.NewReader(form.Encode()))
 	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
@@ -2026,6 +2026,46 @@ func TestNavMenusEditSelectorAndCreate(t *testing.T) {
 	loc := rec.Header().Get("Location")
 	if !strings.Contains(loc, "/wp-admin/nav-menus.php?menu=") || !strings.Contains(loc, "message=1") {
 		t.Fatalf("redirect=%q", loc)
+	}
+	// Cleanup created menu so shared fixture DB stays stable for REST menu tests.
+	u, err := url.Parse(loc)
+	if err == nil {
+		if id, _ := strconv.ParseInt(u.Query().Get("menu"), 10, 64); id > 0 {
+			t.Cleanup(func() { cleanupNavMenuTerm(t, c, id) })
+		}
+	}
+}
+
+func cleanupNavMenuTerm(t *testing.T, c *wp.Context, id int64) {
+	t.Helper()
+	if c == nil || c.DB == nil || id <= 0 {
+		return
+	}
+	tq, targs, err := c.DB.Prepare(
+		"SELECT term_taxonomy_id FROM "+c.DB.TermTaxonomy()+" WHERE term_id = %d AND taxonomy = %s LIMIT 1",
+		id, "nav_menu",
+	)
+	if err != nil {
+		return
+	}
+	row, err := c.DB.GetRow(tq, targs...)
+	if err != nil || row == nil {
+		return
+	}
+	ttID, _ := strconv.ParseInt(fmt.Sprint(row["term_taxonomy_id"]), 10, 64)
+	if ttID > 0 {
+		dq, dargs, _ := c.DB.Prepare("DELETE FROM "+c.DB.TermRelationships()+" WHERE term_taxonomy_id = %d", ttID)
+		if dq != "" {
+			_, _ = c.DB.Exec(dq, dargs...)
+		}
+		dq, dargs, _ = c.DB.Prepare("DELETE FROM "+c.DB.TermTaxonomy()+" WHERE term_taxonomy_id = %d", ttID)
+		if dq != "" {
+			_, _ = c.DB.Exec(dq, dargs...)
+		}
+	}
+	dq, dargs, _ := c.DB.Prepare("DELETE FROM "+c.DB.Terms()+" WHERE term_id = %d", id)
+	if dq != "" {
+		_, _ = c.DB.Exec(dq, dargs...)
 	}
 }
 
