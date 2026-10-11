@@ -5118,8 +5118,16 @@ wp-login.php#language-switcher-post
 - prefix: wp-includes/block-bindings.php
   go: internal/blocks/bindings.go
   status: partial
-  task: P5.39
+  task: P9.25
   api: partial
+  notes: "P9.25 — BindingSupportedAttrs/filter; button target/rel; image caption; post-date datetime; nav url (P5.39/P5.20 base)"
+
+- prefix: wp-includes/block-bindings.php#tests
+  go: internal/blocks/bindings_test.go
+  status: partial
+  task: P9.25
+  api: n/a
+  notes: "P9.25 — unit coverage for target/rel/caption/attrs filter"
 
 - prefix: wp-includes/block-bindings/
   go: internal/blocks/bindings.go
