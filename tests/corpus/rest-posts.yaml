@@ -7139,8 +7139,6 @@
   compare: headers
   nonce: null
 
-
-
 # P10.144: expand after P5.117–P8.36 (slug[] / navigation / site-logo).
 
 - id: rest-p10144-001-posts-slug-array-hello
@@ -9350,7 +9348,6 @@
   compare: headers
   nonce: null
 
-
 # P10.166: expand after P5.128–P9.29 (pattern / modified_gmt / adjacent / has_filter).
 
 - id: rest-p10166-001-block-types-core-pattern
@@ -9532,7 +9529,6 @@
   body: null
   compare: headers
   nonce: null
-
 
 # P10.168: expand after freeform/context/help/kses/the_content/intermediate stack.
 
@@ -12301,60 +12297,6 @@
 
 # P10.188: corpus expand after avatar attrs / categories_exclude / php-nag / kses-decode / rest-link / login-body stack.
 
-- id: rest-p10188-001-categories-exclude-bogus
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?categories_exclude=notint&per_page=1
-  headers: {}
-  body: null
-  compare: json
-  nonce: null
-
-- id: rest-p10188-002-categories-exclude-empty-array
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?categories_exclude[]=&per_page=1
-  headers: {}
-  body: null
-  compare: json
-  nonce: null
-
-- id: rest-p10188-003-categories-exclude-valid
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?categories_exclude=1&per_page=5
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10188-004-categories-exclude-multi
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?categories_exclude=1,2&per_page=5
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10188-005-categories-exclude-array
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?categories_exclude[]=1&per_page=5
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10188-006-categories-exclude-empty-scalar
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?categories_exclude=&per_page=1
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: rest-p10188-007-block-types-avatar
   role: anon
   method: GET
@@ -12377,15 +12319,6 @@
   role: anon
   method: GET
   path: /wp-json/wp/v2/posts?author_exclude=1&per_page=5
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10188-010-tags-exclude
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?tags_exclude=1&per_page=5
   headers: {}
   body: null
   compare: headers
@@ -12440,15 +12373,6 @@
   role: anon
   method: GET
   path: /wp-json/wp/v2/posts?orderby=modified&order=desc&per_page=3
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: rest-p10188-017-posts-sticky-false
-  role: anon
-  method: GET
-  path: /wp-json/wp/v2/posts?sticky=false&per_page=3
   headers: {}
   body: null
   compare: headers

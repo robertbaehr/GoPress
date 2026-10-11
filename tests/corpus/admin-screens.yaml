@@ -76,7 +76,6 @@
   compare: headers
   nonce: null
 
-
 # P10.120: pages list chrome after P7.106.
 
 - id: admin-edit-pages
@@ -248,8 +247,6 @@
   body: null
   compare: headers
   nonce: null
-
-
 
 # P10.144 safe toppers (plugin/theme editor stubs already deep; link-manager admin 500≠403 skipped).
 

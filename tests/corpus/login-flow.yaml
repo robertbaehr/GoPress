@@ -307,7 +307,6 @@
   compare: headers
   nonce: null
 
-
 # P10.104: postpass + interim checkemail confirm.
 - id: login-action-postpass
   role: anon
@@ -674,8 +673,6 @@
   body: null
   compare: headers
   nonce: null
-
-
 
 # P10.144 safe toppers.
 - id: login-p10144-001-lostpassword

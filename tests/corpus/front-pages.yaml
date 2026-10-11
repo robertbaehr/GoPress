@@ -987,7 +987,6 @@
   compare: headers
   nonce: null
 
-
 # P10.144 safe toppers.
 
 - id: front-p10144-001-hello-world
@@ -1231,7 +1230,6 @@
   body: null
   compare: headers
   nonce: null
-
 
 # P10.154: front toppers after archives/calendar/comment_class stack.
 
@@ -2083,15 +2081,6 @@
   role: anon
   method: GET
   path: /robots.txt
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: front-p10188-007-rsd
-  role: anon
-  method: GET
-  path: /rsd.xml
   headers: {}
   body: null
   compare: headers

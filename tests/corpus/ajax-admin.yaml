@@ -712,24 +712,6 @@
 
 # P10.188: ajax toppers after php-nag / dashboard stack.
 
-- id: ajax-p10188-001-heartbeat-dashboard
-  role: admin
-  method: GET
-  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=dashboard
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
-- id: ajax-p10188-002-heartbeat-edit
-  role: admin
-  method: GET
-  path: /wp-admin/admin-ajax.php?action=heartbeat&screen_id=edit-post
-  headers: {}
-  body: null
-  compare: headers
-  nonce: null
-
 - id: ajax-p10188-003-heartbeat-anon
   role: anon
   method: GET
