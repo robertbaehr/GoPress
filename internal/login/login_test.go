@@ -211,6 +211,43 @@ func TestInterimLoginMessagesFilter(t *testing.T) {
 	}
 }
 
+func TestLoginMessageFilterOnFormAndLostPassword(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+	if c.Hooks == nil {
+		c.Hooks = wp.NewHooks()
+	}
+	c.Hooks.AddFilter("login_message", func(value any, _ ...any) any {
+		raw, _ := value.(string)
+		if strings.TrimSpace(raw) == "" {
+			return `<div class="notice notice-info message" id="login-message"><p>Injected login banner.</p></div>`
+		}
+		return strings.Replace(raw, "Please enter your username", "FILTERED: Please enter your username", 1)
+	}, 10, 1)
+
+	req := httptest.NewRequest(http.MethodGet, "/wp-login.php", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("login status=%d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "Injected login banner.") {
+		t.Fatalf("expected empty login_message injection: %q", rec.Body.String()[:min(800, len(rec.Body.String()))])
+	}
+
+	req = httptest.NewRequest(http.MethodGet, "/wp-login.php?action=lostpassword", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&login.Handler{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("lostpassword status=%d", rec.Code)
+	}
+	if !strings.Contains(rec.Body.String(), "FILTERED: Please enter your username") {
+		t.Fatalf("expected lostpassword login_message filter: %q", rec.Body.String()[:min(900, len(rec.Body.String()))])
+	}
+}
+
 func TestInterimLoginPostBodyOnly(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()

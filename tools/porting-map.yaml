@@ -8486,6 +8486,21 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P6.50 — filter remove incorrect_password / add test_cookie coverage"
 
+# P6.51: deepen login_message filter across login screens.
+- prefix: wp-login.php#login_message
+  go: internal/login/login.go
+  status: partial
+  task: P6.51
+  api: n/a
+  notes: "P6.51 — applyLoginMessage on login/lostpassword/resetpass/register/checkemail/confirmaction/interim"
+
+- prefix: internal/login/login_test.go#p6.51
+  go: internal/login/login_test.go
+  status: partial
+  task: P6.51
+  api: n/a
+  notes: "P6.51 — login_message inject on form + filter lostpassword notice"
+
 # P3.116: deepen get_comment_class / comment-template classes.
 - prefix: wp-includes/comment-template.php#get_comment_class
   go: internal/wp/comment_class.go
