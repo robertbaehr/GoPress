@@ -12065,6 +12065,26 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P4.172 — enum reject + LIKE filter EXISTS coverage"
 
+# P4.173: REST posts meta_compare_key NOT LIKE / != / EXISTS / NOT EXISTS.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_compare_key_not_like
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.173
+  api: n/a
+  notes: "P4.173 — expand meta_compare_key enum; NOT LIKE/!=/EXISTS/NOT EXISTS"
+- prefix: wp-includes/class-wp-meta-query.php#compare_key_not_like
+  go: internal/wp/query.go
+  status: partial
+  task: P4.173
+  api: n/a
+  notes: "P4.173 — negate EXISTS for NOT LIKE/!=; inline NOT for value compares"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_compare_key_not_like#tests
+  go: internal/rest/posts_meta_compare_key_p4_173_test.go
+  status: partial
+  task: P4.173
+  api: n/a
+  notes: "P4.173 — expanded enum + NOT LIKE EXISTS exclude coverage"
+
 # P4.170: REST posts meta_type (WP_Query / WP_Meta_Query cast).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_type
   go: internal/rest/posts.go
