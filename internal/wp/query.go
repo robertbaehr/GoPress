@@ -95,7 +95,7 @@ type QueryArgs struct {
 	// (REST ?meta_key=&meta_value=&meta_compare=, P4.166). Empty MetaKey skips the clause.
 	MetaKey     string
 	MetaValue   string
-	MetaCompare string // default "="; supports =, !=, LIKE, EXISTS, NOT EXISTS
+	MetaCompare string // default "="; supports =, !=, LIKE, NOT LIKE, >, >=, <, <=, EXISTS, NOT EXISTS
 }
 
 // Post is a row from wp_posts used by front and REST helpers.
@@ -584,8 +584,9 @@ func appendDateQueryFilters(where []string, vals []any, args QueryArgs) ([]strin
 	return where, vals
 }
 
-// appendMetaQueryFilters applies WP_Query meta_key/meta_value/meta_compare (P4.166).
+// appendMetaQueryFilters applies WP_Query meta_key/meta_value/meta_compare (P4.166 / P4.167).
 // Emits EXISTS/NOT EXISTS against postmeta. idCol is "ID" or "p.ID".
+// P4.167: NOT LIKE, >, >=, <, <= numeric/string compares.
 func appendMetaQueryFilters(c *Context, where []string, vals []any, args QueryArgs, idCol string) ([]string, []any) {
 	key := strings.TrimSpace(args.MetaKey)
 	if key == "" || c == nil || c.DB == nil {
@@ -609,8 +610,14 @@ func appendMetaQueryFilters(c *Context, where []string, vals []any, args QueryAr
 	case "LIKE":
 		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND mq.meta_value LIKE %s)")
 		vals = append(vals, key, "%"+args.MetaValue+"%")
+	case "NOT LIKE":
+		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND mq.meta_value NOT LIKE %s)")
+		vals = append(vals, key, "%"+args.MetaValue+"%")
 	case "!=":
 		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND mq.meta_value != %s)")
+		vals = append(vals, key, args.MetaValue)
+	case ">", ">=", "<", "<=":
+		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND mq.meta_value "+compare+" %s)")
 		vals = append(vals, key, args.MetaValue)
 	default: // "="
 		where = append(where, "EXISTS (SELECT 1 FROM "+pm+" mq WHERE mq.post_id = "+idCol+" AND mq.meta_key = %s AND mq.meta_value = %s)")
