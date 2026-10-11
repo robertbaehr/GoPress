@@ -10026,3 +10026,17 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P10.181 — summarize home-link attrs, REST status invalid_param, admin_color, KsesHook, canonical comment-page, attachment_url SSL + 1704 corpus"
 
+# P5.136: post-featured-image border/shadow/anchor attrs.
+- prefix: wp-includes/blocks/post-featured-image.php#get_block_core_post_featured_image_border_attributes
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.136
+  api: get_block_core_post_featured_image_border_attributes
+  notes: "P5.136 — border skipSerialization on img+overlay; style.shadow; supports.anchor id"
+- prefix: wp-includes/blocks/post-featured-image.php#border_attrs#tests
+  go: internal/blocks/featured_image_attrs_p5_136_test.go
+  status: partial
+  task: P5.136
+  api: n/a
+  notes: "P5.136 — borderColor/radius/width + shadow + anchor fixture"
+

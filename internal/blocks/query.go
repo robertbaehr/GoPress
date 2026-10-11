@@ -1241,6 +1241,12 @@ func (e *Env) renderPostFeaturedImage(block Block) string {
 	}
 	imgClass := "attachment-" + sizeSlug + " size-" + sizeSlug
 
+	// P5.136: border support attrs land on the <img> (skipSerialization), not the figure.
+	borderClass, borderStyle := featuredImageBorderAttributes(block.Attrs)
+	if borderClass != "" {
+		imgClass += " " + borderClass
+	}
+
 	var styleParts []string
 	aspect := strings.TrimSpace(attrString(block.Attrs, "aspectRatio"))
 	width := strings.TrimSpace(attrString(block.Attrs, "width"))
@@ -1263,6 +1269,15 @@ func (e *Env) renderPostFeaturedImage(block Block) string {
 	}
 	if scale != "" {
 		styleParts = append(styleParts, "object-fit:"+sanitizeCSSToken(scale))
+	}
+	// P5.136: style.shadow → box-shadow on the image (WP post-featured-image).
+	if style, ok := block.Attrs["style"].(map[string]any); ok {
+		if shadow := borderScalar(style["shadow"]); shadow != "" {
+			styleParts = append(styleParts, "box-shadow:"+cssValue(shadow))
+		}
+	}
+	if borderStyle != "" {
+		styleParts = append(styleParts, borderStyle)
 	}
 
 	imgAttrs := ` src="` + html.EscapeString(url) + `" alt="` + html.EscapeString(alt) + `" class="` + html.EscapeString(imgClass) + `"`
@@ -1293,10 +1308,51 @@ func (e *Env) renderPostFeaturedImage(block Block) string {
 	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
 		figClass += " " + cn
 	}
-	return `<figure class="` + html.EscapeString(figClass) + `">` + inner + `</figure>`
+	fig := `<figure class="` + html.EscapeString(figClass) + `"`
+	// P5.136: supports.anchor → id on the figure wrapper.
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		fig += ` id="` + html.EscapeString(anchor) + `"`
+	}
+	return fig + `>` + inner + `</figure>`
 }
 
-// featuredImageOverlayMarkup mirrors get_block_core_post_featured_image_overlay_element_markup (P5.86).
+// featuredImageBorderAttributes mirrors get_block_core_post_featured_image_border_attributes (P5.136).
+// Returns class names and CSS declarations for the <img> (border skipSerialization).
+func featuredImageBorderAttributes(attrs map[string]any) (classAttr, styleAttr string) {
+	if attrs == nil {
+		return "", ""
+	}
+	border := map[string]any{}
+	if style, ok := attrs["style"].(map[string]any); ok {
+		if b, ok := style["border"].(map[string]any); ok && b != nil {
+			for k, v := range b {
+				border[k] = v
+			}
+		}
+	}
+	// Top-level borderColor preset → var:preset|color|{slug} (WP).
+	if bc := strings.TrimSpace(attrString(attrs, "borderColor")); bc != "" {
+		if borderScalar(border["color"]) == "" {
+			border["color"] = "var:preset|color|" + bc
+		}
+	}
+	if len(border) == 0 {
+		return "", ""
+	}
+	var classes []string
+	if color := borderScalar(border["color"]); color != "" {
+		classes = append(classes, "has-border-color")
+		if slug := presetColorSlug(color); slug != "" {
+			classes = append(classes, "has-"+slug+"-border-color")
+		} else if bc := strings.TrimSpace(attrString(attrs, "borderColor")); bc != "" {
+			classes = append(classes, "has-"+sanitizeClassToken(bc)+"-border-color")
+		}
+	}
+	css := strings.Join(borderStyles(border), ";")
+	return strings.Join(classes, " "), css
+}
+
+// featuredImageOverlayMarkup mirrors get_block_core_post_featured_image_overlay_element_markup (P5.86 / P5.136).
 func featuredImageOverlayMarkup(attrs map[string]any) string {
 	dim := int(attrInt64(attrs, "dimRatio"))
 	if dim <= 0 {
@@ -1304,10 +1360,20 @@ func featuredImageOverlayMarkup(attrs map[string]any) string {
 	}
 	classes := []string{
 		"wp-block-post-featured-image__overlay",
-		"has-background-dim",
-		fmt.Sprintf("has-background-dim-%d", dim),
 	}
 	var styles []string
+	// P5.136: border attrs also apply to the overlay element (WP).
+	borderClass, borderStyle := featuredImageBorderAttributes(attrs)
+	if borderClass != "" {
+		classes = append(classes, strings.Fields(borderClass)...)
+	}
+	if borderStyle != "" {
+		styles = append(styles, borderStyle)
+	}
+	classes = append(classes,
+		"has-background-dim",
+		fmt.Sprintf("has-background-dim-%d", dim),
+	)
 	if overlay := strings.TrimSpace(attrString(attrs, "overlayColor")); overlay != "" {
 		classes = append(classes, "has-"+sanitizeClassToken(overlay)+"-background-color")
 	}
