@@ -219,7 +219,7 @@ func (f *Front) renderCommentsFeedRSS2(w http.ResponseWriter, r *http.Request, c
 	b.WriteString("\t<sy:updateFrequency>\n")
 	b.WriteString("\t1\t</sy:updateFrequency>\n")
 	b.WriteString("\t")
-	b.WriteString(wp.GetTheGenerator("rss2"))
+	b.WriteString(wp.TheGenerator(c, "rss2"))
 	b.WriteString("\n")
 
 	for _, cm := range comments {
@@ -333,7 +333,7 @@ func (f *Front) renderCommentsFeedAtom(w http.ResponseWriter, r *http.Request, c
 	b.WriteString("\t<id>")
 	b.WriteString(xmlEscape(self))
 	b.WriteString("</id>\n")
-	b.WriteString(wp.GetTheGenerator("atom"))
+	b.WriteString(wp.TheGenerator(c, "atom"))
 	b.WriteString("\n")
 
 	for _, cm := range comments {
@@ -2401,7 +2401,7 @@ func (f *Front) renderFeedRSS2(w http.ResponseWriter, r *http.Request, c *wp.Con
 	b.WriteString("\t<sy:updateFrequency>\n")
 	b.WriteString("\t1\t</sy:updateFrequency>\n")
 	b.WriteString("\t")
-	b.WriteString(wp.GetTheGenerator("rss2"))
+	b.WriteString(wp.TheGenerator(c, "rss2"))
 	b.WriteString("\n")
 	// P3.52: rss2_site_icon channel <image> when a custom site icon is set.
 	if img := rss2SiteIconImage(c, blogname, home); img != "" {
@@ -2559,7 +2559,7 @@ func (f *Front) renderFeedAtom(w http.ResponseWriter, r *http.Request, c *wp.Con
 		b.WriteString("</rights>\n")
 	}
 	b.WriteString("\t")
-	b.WriteString(wp.GetTheGenerator("atom"))
+	b.WriteString(wp.TheGenerator(c, "atom"))
 	b.WriteString("\n")
 
 	for i, p := range posts {
@@ -2734,7 +2734,7 @@ func (f *Front) renderFeedRDF(w http.ResponseWriter, r *http.Request, c *wp.Cont
 	b.WriteString("\t<sy:updateBase>2000-01-01T12:00+00:00</sy:updateBase>\n")
 	// P3.56: rdf_header → the_generator (admin:generatorAgent).
 	b.WriteString("\t")
-	b.WriteString(wp.GetTheGenerator("rdf"))
+	b.WriteString(wp.TheGenerator(c, "rdf"))
 	b.WriteString("\n")
 	// P3.89: rdf_header action after generator (plugins append channel markup).
 	if c != nil && c.Hooks != nil {
@@ -4400,7 +4400,8 @@ func writeFrontHeadLinks(b *strings.Builder, c *wp.Context, home, blogname, perm
 	b.WriteString("<link rel=\"EditURI\" type=\"application/rsd+xml\" title=\"RSD\" href=\"")
 	b.WriteString(html.EscapeString(home + "/xmlrpc.php?rsd"))
 	b.WriteString("\" />\n")
-	b.WriteString(wp.MetaGeneratorXHTML())
+	// P3.121: wp_generator → the_generator( wp_generator_type ).
+	b.WriteString(wp.MetaGeneratorXHTMLFor(c))
 	b.WriteString("\n")
 	// P3.42 / P3.105: rel=canonical (wp_get_canonical_url / rel_canonical) on singular.
 	if permalink != "" {
