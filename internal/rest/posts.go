@@ -1540,14 +1540,19 @@ func parseStickyQuery(r *http.Request) (*bool, bool) {
 	return &v, true
 }
 
-// parseIgnoreStickyQuery reads REST ?ignore_sticky= (P4.141).
+// parseIgnoreStickyQuery reads REST ?ignore_sticky= (P4.141 / P4.162).
 // Absent → default true (WP schema). Present but invalid → ok=false.
 // When false, sticky posts are prepended (StickyFirst); when true, no prepend.
+// P4.162: ignore_sticky[]= is rest_invalid_type (schema type boolean, not array).
 func parseIgnoreStickyQuery(r *http.Request) (ignore bool, ok bool) {
 	if r == nil {
 		return true, true
 	}
 	q := r.URL.Query()
+	// P4.162: schema type boolean — reject ignore_sticky[]=.
+	if _, hasArray := q["ignore_sticky[]"]; hasArray {
+		return true, false
+	}
 	if !q.Has("ignore_sticky") {
 		return true, true // WP default
 	}
