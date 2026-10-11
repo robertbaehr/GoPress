@@ -20,7 +20,7 @@ const (
 	PHPURLFragment = 7
 )
 
-// ParsedURL is the associative array returned by wp_parse_url (P2.40 / P2.79).
+// ParsedURL is the associative array returned by wp_parse_url (P2.40 / P2.79 / P2.145).
 type ParsedURL struct {
 	Scheme   string
 	Host     string
@@ -32,6 +32,7 @@ type ParsedURL struct {
 	Fragment string
 	hasPort  bool
 	hasPass  bool // true when userinfo included a password (even empty)
+	hasPath  bool // true when path key is present (incl. empty "" for empty URL, P2.145)
 }
 
 // schemelessHostPort matches PHP parse_url treating host:digits[/path] as authority
@@ -59,7 +60,8 @@ func (p *ParsedURL) ToMap() map[string]any {
 	if p.hasPass {
 		out["pass"] = p.Pass
 	}
-	if p.Path != "" {
+	// P2.145: empty URL yields path:"" (PHP parse_url("")).
+	if p.hasPath || p.Path != "" {
 		out["path"] = p.Path
 	}
 	if p.Query != "" {
@@ -91,6 +93,10 @@ func ParseURLComponent(raw string, component int) (any, bool) {
 }
 
 func parseURLRaw(raw string) (*ParsedURL, bool) {
+	// P2.145: PHP parse_url("") → array('path' => '').
+	if raw == "" {
+		return &ParsedURL{Path: "", hasPath: true}, true
+	}
 	toUnset := map[string]bool{}
 	u := raw
 	if strings.HasPrefix(u, "//") {
@@ -114,7 +120,7 @@ func parseURLRaw(raw string) (*ParsedURL, bool) {
 		out.Scheme = parsed.Scheme
 	}
 	if !toUnset["host"] {
-		out.Host = parsed.Hostname()
+		out.Host = phpParseURLHost(parsed)
 	}
 	// P2.79: bare "http://" / "http:///path" → false in PHP (http/https require a host).
 	if !toUnset["host"] && out.Host == "" {
@@ -145,9 +151,64 @@ func parseURLRaw(raw string) (*ParsedURL, bool) {
 		}
 	}
 	out.Path = parsed.Path
+	if out.Path != "" {
+		out.hasPath = true
+	}
 	out.Query = parsed.RawQuery
 	out.Fragment = parsed.Fragment
 	return out, true
+}
+
+// phpParseURLHost returns the host the way PHP parse_url does (P2.145).
+// IPv6 literals keep square brackets (Hostname() strips them in Go).
+func phpParseURLHost(parsed *url.URL) string {
+	if parsed == nil {
+		return ""
+	}
+	host := parsed.Host
+	if host == "" {
+		return ""
+	}
+	// Bracketed IPv6: "[::1]:8080" or "[::1]".
+	if strings.HasPrefix(host, "[") {
+		if end := strings.Index(host, "]"); end >= 0 {
+			return host[:end+1]
+		}
+	}
+	h := parsed.Hostname()
+	if h == "" {
+		return ""
+	}
+	// Re-bracket IPv6 if Hostname() returned bare form.
+	if ip := net.ParseIP(h); ip != nil && ip.To4() == nil {
+		return "[" + h + "]"
+	}
+	return h
+}
+
+// TranslatePHPURLConstantToKey mirrors _wp_translate_php_url_constant_to_key (P2.145).
+// Returns the named array key or "" when the constant is unknown.
+func TranslatePHPURLConstantToKey(component int) string {
+	switch component {
+	case PHPURLScheme:
+		return "scheme"
+	case PHPURLHost:
+		return "host"
+	case PHPURLPort:
+		return "port"
+	case PHPURLUser:
+		return "user"
+	case PHPURLPass:
+		return "pass"
+	case PHPURLPath:
+		return "path"
+	case PHPURLQuery:
+		return "query"
+	case PHPURLFragment:
+		return "fragment"
+	default:
+		return ""
+	}
 }
 
 func isSchemelessHostPort(raw string) bool {
@@ -192,7 +253,7 @@ func getURLComponent(parts *ParsedURL, component int) any {
 		}
 		return parts.Pass
 	case PHPURLPath:
-		if parts.Path == "" {
+		if !parts.hasPath && parts.Path == "" {
 			return nil
 		}
 		return parts.Path
