@@ -8,6 +8,21 @@
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
 
+
+# P7.167: update-core.php pagenow chrome.
+- prefix: wp-admin/update-core.php#pagenow
+  go: internal/admin/update_core.go
+  status: partial
+  task: P7.167
+  api: n/a
+  notes: "P7.167 — update-core.php pagenow/adminpage + admin_body_class + locale"
+- prefix: wp-admin/update-core.php#pagenow#tests
+  go: internal/admin/update_core_chrome_p7_167_test.go
+  status: partial
+  task: P7.167
+  api: n/a
+  notes: "P7.167 — pagenow chrome + folded body class"
+
 # P5.166: core/archives align coerce.
 - prefix: wp-includes/blocks/archives#align
   go: internal/blocks/widget_blocks.go
