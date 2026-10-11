@@ -457,7 +457,10 @@ func (h *Handler) serveRegisterForm(w http.ResponseWriter, r *http.Request, c *w
 	b.WriteString("\t\t\t<a class=\"wp-login-log-in\" href=\"")
 	b.WriteString(html.EscapeString(loginURL))
 	b.WriteString("\">Log in</a>\n")
-	b.WriteString("\t\t\t | \n")
+	// P6.64: login_link_separator between nav links (WP esc_html).
+	b.WriteString("\t\t\t")
+	b.WriteString(html.EscapeString(loginLinkSeparator(c)))
+	b.WriteString("\n")
 	b.WriteString("\t\t\t<a class=\"wp-login-lost-password\" href=\"")
 	b.WriteString(html.EscapeString(lostURL))
 	b.WriteString("\">Lost your password?</a>\n")
@@ -728,6 +731,14 @@ func (h *Handler) serveForm(w http.ResponseWriter, r *http.Request, c *wp.Contex
 	b.WriteString("\t\t</form>\n\n")
 	if !interim {
 		b.WriteString("\t\t\t\t\t<p id=\"nav\">\n")
+		// P6.64: Register + login_link_separator before lost-password when registration open (WP login form).
+		if usersCanRegister(c) {
+			b.WriteString("\t\t\t\t<a class=\"wp-login-register\" href=\"")
+			b.WriteString(html.EscapeString(loginURL + "?action=register"))
+			b.WriteString("\">Register</a>\n")
+			b.WriteString(html.EscapeString(loginLinkSeparator(c)))
+			b.WriteString("\n")
+		}
 		b.WriteString("\t\t\t\t<a class=\"wp-login-lost-password\" href=\"")
 		b.WriteString(html.EscapeString(loginURL + "?action=lostpassword"))
 		b.WriteString("\">Lost your password?</a>\t\t\t</p>\n")
@@ -1078,6 +1089,14 @@ func (h *Handler) serveLostPassword(w http.ResponseWriter, r *http.Request, c *w
 	b.WriteString("\t\t\t<a class=\"wp-login-log-in\" href=\"")
 	b.WriteString(html.EscapeString(loginURL))
 	b.WriteString("\">Log in</a>\n")
+	// P6.64: login_link_separator + Register when users_can_register (WP lostpassword nav).
+	if usersCanRegister(c) {
+		b.WriteString(html.EscapeString(loginLinkSeparator(c)))
+		b.WriteString("\n")
+		b.WriteString("\t\t\t<a class=\"wp-login-register\" href=\"")
+		b.WriteString(html.EscapeString(loginURL + "?action=register"))
+		b.WriteString("\">Register</a>\n")
+	}
 	b.WriteString("\t\t\t\t\t</p>\n")
 	writeLoginBackToBlog(&b, c, home, blogname)
 	if link := wp.PrivacyPolicyPageLinkHTML(c); link != "" {
@@ -1136,6 +1155,20 @@ func writeLoginFooterFocus(b *strings.Builder, inputID string) {
 	b.WriteString("').focus();}catch(e){}\n")
 	b.WriteString("\t\tif(typeof wpOnload==='function')wpOnload();\n")
 	b.WriteString("\t</script>\n")
+}
+
+// loginLinkSeparator returns the filtered separator between login nav links (P6.64).
+// WP: apply_filters( 'login_link_separator', ' | ' ) then esc_html when echoed.
+func loginLinkSeparator(c *wp.Context) string {
+	sep := " | "
+	if c != nil && c.Hooks != nil {
+		if v := c.Hooks.ApplyFilters("login_link_separator", sep); v != nil {
+			if s, ok := v.(string); ok {
+				sep = s
+			}
+		}
+	}
+	return sep
 }
 
 // applyLoginMessage mirrors login_header's apply_filters( 'login_message', $message ) (P6.51).
