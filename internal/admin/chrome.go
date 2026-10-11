@@ -35,7 +35,7 @@ func newAdminChrome(c *wp.Context, title, screen string) adminChrome {
 		head += c.CaptureAdminHead()
 	}
 	return adminChrome{
-		Title:     title,
+		Title: title,
 		// P7.137: auto-fold is the WP default when user setting "unfold" is unset.
 		BodyClass: "wp-admin wp-core-ui no-js " + screen + " auto-fold admin-bar admin-color-" + scheme + " locale-en-us",
 		Blogname:  blogname,
