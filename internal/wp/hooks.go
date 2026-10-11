@@ -208,6 +208,40 @@ func (h *Hooks) ApplyFiltersRefArray(tag string, args []any) any {
 	return h.ApplyFilters(tag, args[0], args[1:]...)
 }
 
+// ApplyFiltersDeprecated mirrors apply_filters_deprecated (P9.33).
+// When no callbacks are registered on hookName, returns args[0] without
+// firing deprecated_hook_run. Otherwise notifies via DeprecatedHook then
+// applies the filter with ApplyFiltersRefArray.
+func (h *Hooks) ApplyFiltersDeprecated(hookName string, args []any, version, replacement, message string) any {
+	if len(args) == 0 {
+		return nil
+	}
+	if h == nil || !h.HasFilter(hookName) {
+		return args[0]
+	}
+	h.DeprecatedHook(hookName, version, replacement, message)
+	return h.ApplyFiltersRefArray(hookName, args)
+}
+
+// DoActionDeprecated mirrors do_action_deprecated (P9.33).
+// No-op when no callbacks are registered on hookName.
+func (h *Hooks) DoActionDeprecated(hookName string, args []any, version, replacement, message string) {
+	if h == nil || !h.HasAction(hookName) {
+		return
+	}
+	h.DeprecatedHook(hookName, version, replacement, message)
+	h.DoActionRefArray(hookName, args)
+}
+
+// DeprecatedHook mirrors _deprecated_hook (P9.33).
+// Fires deprecated_hook_run; error triggering (WP_DEBUG) is out of scope.
+func (h *Hooks) DeprecatedHook(hookName, version, replacement, message string) {
+	if h == nil {
+		return
+	}
+	h.DoAction("deprecated_hook_run", hookName, replacement, version, message)
+}
+
 // DidAction returns how many times tag has been fired via DoAction /
 // DoActionRefArray (did_action, P9.27).
 func (h *Hooks) DidAction(tag string) int {
