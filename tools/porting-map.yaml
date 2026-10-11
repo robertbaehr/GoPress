@@ -7043,3 +7043,11 @@ wp-login.php#language-switcher-post
   task: P8.33
   api: n/a
   notes: "P8.33 — unit coverage for frac/date helpers and JPEG EXIF bag"
+
+# P10.128: expand diff corpus after P5.109–P8.33.
+- prefix: tests/corpus#p10-128
+  go: tests/corpus
+  status: partial
+  task: P10.128
+  api: n/a
+  notes: "P10.128 — types item/context, media-text, search/login/front; grow after stacked deepen"

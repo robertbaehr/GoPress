@@ -36,8 +36,9 @@ type PostType struct {
 
 func (s *Server) serveTypes(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	// P4.125: OPTIONS returns public item schema.
+	// Allow header matches WP oracle (READABLE → "GET") even though HEAD/OPTIONS work.
 	if r.Method == http.MethodOptions {
-		w.Header().Set("Allow", "GET, HEAD, OPTIONS")
+		w.Header().Set("Allow", "GET")
 		writeJSON(w, http.StatusOK, postTypeItemSchema())
 		return
 	}
@@ -62,6 +63,7 @@ func (s *Server) serveTypes(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		if c != nil && c.CurrentUser != nil {
 			status = http.StatusForbidden
 		}
+		w.Header().Set("Allow", "GET")
 		writeJSON(w, status, map[string]any{
 			"code":    "rest_cannot_view",
 			"message": "Sorry, you are not allowed to edit posts in this post type.",
@@ -69,7 +71,7 @@ func (s *Server) serveTypes(w http.ResponseWriter, r *http.Request, c *wp.Contex
 		})
 		return
 	}
-	w.Header().Set("Allow", "GET, HEAD, OPTIONS")
+	w.Header().Set("Allow", "GET")
 	if r.Method == http.MethodHead {
 		w.WriteHeader(http.StatusOK)
 		return
@@ -80,7 +82,7 @@ func (s *Server) serveTypes(w http.ResponseWriter, r *http.Request, c *wp.Contex
 // serveTypeItem handles GET/HEAD/OPTIONS /wp/v2/types/{type} (P4.125).
 func (s *Server) serveTypeItem(w http.ResponseWriter, r *http.Request, c *wp.Context, slug string) {
 	if r.Method == http.MethodOptions {
-		w.Header().Set("Allow", "GET, HEAD, OPTIONS")
+		w.Header().Set("Allow", "GET")
 		writeJSON(w, http.StatusOK, postTypeItemSchema())
 		return
 	}
@@ -97,6 +99,7 @@ func (s *Server) serveTypeItem(w http.ResponseWriter, r *http.Request, c *wp.Con
 	}
 	slug = strings.TrimSpace(slug)
 	if slug == "" || strings.Contains(slug, "/") || strings.Contains(slug, "..") {
+		w.Header().Set("Allow", "GET")
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"code":    "rest_type_invalid",
 			"message": "Invalid post type.",
@@ -114,6 +117,7 @@ func (s *Server) serveTypeItem(w http.ResponseWriter, r *http.Request, c *wp.Con
 		if c != nil && c.CurrentUser != nil {
 			status = http.StatusForbidden
 		}
+		w.Header().Set("Allow", "GET")
 		writeJSON(w, status, map[string]any{
 			"code":    "rest_forbidden_context",
 			"message": "Sorry, you are not allowed to edit posts in this post type.",
@@ -124,6 +128,7 @@ func (s *Server) serveTypeItem(w http.ResponseWriter, r *http.Request, c *wp.Con
 	all := builtinPostTypes(c, edit)
 	pt, ok := all[slug]
 	if !ok {
+		w.Header().Set("Allow", "GET")
 		writeJSON(w, http.StatusNotFound, map[string]any{
 			"code":    "rest_type_invalid",
 			"message": "Invalid post type.",
@@ -131,7 +136,7 @@ func (s *Server) serveTypeItem(w http.ResponseWriter, r *http.Request, c *wp.Con
 		})
 		return
 	}
-	w.Header().Set("Allow", "GET, HEAD, OPTIONS")
+	w.Header().Set("Allow", "GET")
 	if r.Method == http.MethodHead {
 		w.WriteHeader(http.StatusOK)
 		return

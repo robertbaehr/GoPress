@@ -196,12 +196,12 @@ func buildExifTIFF() []byte {
 	writeIFD(ifd0Entries)
 	writeIFD(exifEntries)
 	for _, e := range ifd0Entries {
-		if e.blob != nil && len(e.blob) > 4 {
+		if len(e.blob) > 4 {
 			buf = append(buf, e.blob...)
 		}
 	}
 	for _, e := range exifEntries {
-		if e.blob != nil && len(e.blob) > 4 {
+		if len(e.blob) > 4 {
 			buf = append(buf, e.blob...)
 		}
 	}
