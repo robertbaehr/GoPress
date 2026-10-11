@@ -654,20 +654,8 @@ func looksLikePHPFile(url string) bool {
 }
 
 func ksesBadProtocol(content string) string {
-	content = ksesNoNull(content)
-	lower := strings.ToLower(content)
-	if (strings.HasPrefix(lower, "https://") && allowedProtocols["https"]) ||
-		(strings.HasPrefix(lower, "http://") && allowedProtocols["http"]) {
-		return content
-	}
-	for i := 0; i < 6; i++ {
-		next := ksesBadProtocolOnce(content)
-		if next == content {
-			return content
-		}
-		content = next
-	}
-	return ""
+	// P2.132: route through exported KsesBadProtocol (wp_kses_bad_protocol).
+	return KsesBadProtocol(content, nil)
 }
 
 func ksesBadProtocolOnce(content string) string {

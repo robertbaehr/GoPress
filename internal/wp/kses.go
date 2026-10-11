@@ -732,6 +732,25 @@ func ksesEscapeAttr(v string) string {
 	return replacer.Replace(v)
 }
 
+// KsesBadProtocol is wp_kses_bad_protocol (P2.132).
+// Strips disallowed URI schemes; nil/empty protocols use the default allowlist.
+func KsesBadProtocol(content string, protocols []string) string {
+	protoSet := map[string]bool{}
+	if len(protocols) == 0 {
+		for p := range allowedProtocols {
+			protoSet[p] = true
+		}
+	} else {
+		for _, p := range protocols {
+			p = strings.ToLower(strings.TrimSpace(p))
+			if p != "" {
+				protoSet[p] = true
+			}
+		}
+	}
+	return ksesBadProtocolWith(content, protoSet)
+}
+
 func ksesBadProtocolWith(content string, protoSet map[string]bool) string {
 	content = ksesNoNull(content)
 	lower := strings.ToLower(content)
