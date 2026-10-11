@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 )
 
@@ -119,7 +120,7 @@ func exifTypesAllow(types []any, want int) bool {
 	return false
 }
 
-// Filesize returns the file size in bytes (wp_filesize, P8.26).
+// Filesize returns the file size in bytes without filters (wp_filesize core, P8.26).
 // Returns 0 when the path is missing or unreadable.
 func Filesize(file string) int64 {
 	file = strings.TrimSpace(file)
@@ -131,6 +132,69 @@ func Filesize(file string) int64 {
 		return 0
 	}
 	return st.Size()
+}
+
+// FilesizeFiltered mirrors wp_filesize() including pre_wp_filesize / wp_filesize
+// filters (P2.117). Non-negative pre_wp_filesize short-circuits the os.Stat call.
+// Negative / non-numeric pre values are ignored; the final filter result is max(0, n).
+func FilesizeFiltered(c *Context, file string) int64 {
+	file = strings.TrimSpace(file)
+	if c != nil && c.Hooks != nil {
+		pre := c.Hooks.ApplyFilters("pre_wp_filesize", nil, file)
+		if n, ok := filesizeFilterInt(pre); ok && n >= 0 {
+			return n
+		}
+	}
+	size := Filesize(file)
+	if c == nil || c.Hooks == nil {
+		return size
+	}
+	filtered := c.Hooks.ApplyFilters("wp_filesize", size, file)
+	if n, ok := filesizeFilterInt(filtered); ok {
+		if n < 0 {
+			return 0
+		}
+		return n
+	}
+	return 0
+}
+
+func filesizeFilterInt(v any) (int64, bool) {
+	switch t := v.(type) {
+	case nil:
+		return 0, false
+	case int:
+		return int64(t), true
+	case int32:
+		return int64(t), true
+	case int64:
+		return t, true
+	case uint:
+		return int64(t), true
+	case uint32:
+		return int64(t), true
+	case uint64:
+		if t > uint64(^uint64(0)>>1) {
+			return 0, true
+		}
+		return int64(t), true
+	case float64:
+		return int64(t), true
+	case float32:
+		return int64(t), true
+	case string:
+		s := strings.TrimSpace(t)
+		if s == "" {
+			return 0, false
+		}
+		n, err := strconv.ParseInt(s, 10, 64)
+		if err != nil {
+			return 0, false
+		}
+		return n, true
+	default:
+		return 0, false
+	}
 }
 
 // GenerateAttachmentMetadata builds a minimal wp_generate_attachment_metadata bag (P8.25 / P8.26).
@@ -193,10 +257,11 @@ func generateAttachmentMetadata(c *Context, attachmentID int64, file, context st
 			attachPDFPreviewSizes(c, out, file)
 		}
 	}
-	// P8.26: always capture filesize when the file exists (WP 6.0+).
+	// P8.26 / P2.117: always capture filesize when the file exists (WP 6.0+).
 	// Prefer scaled path filesize when maybeScaleBigImage already set it.
+	// Uses FilesizeFiltered so pre_wp_filesize / wp_filesize hooks apply.
 	if out["filesize"] == nil {
-		if fs := Filesize(file); fs > 0 {
+		if fs := FilesizeFiltered(c, file); fs > 0 {
 			out["filesize"] = fs
 		}
 	}
