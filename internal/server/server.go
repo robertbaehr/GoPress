@@ -147,7 +147,8 @@ func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	if path == "/wp-includes/wlwmanifest.xml" {
-		serveWLWManifestStub(w, r)
+		c := s.requestContext(w, r)
+		serveWLWManifestStub(w, r, c)
 		return
 	}
 	if path == "/rsd.xml" {
