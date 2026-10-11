@@ -6,10 +6,11 @@ import (
 	"strings"
 )
 
-// ResourceHintsHTML mirrors wp_resource_hints() markup (P3.137 / P3.138).
+// ResourceHintsHTML mirrors wp_resource_hints() markup (P3.137 / P3.138 / P3.139).
 // Default dns-prefetch hosts come from DependenciesUniqueHosts (empty until
 // remote script/style enqueue is wired). Filters wp_resource_hints per relation.
 // P3.138: bare hostnames, case-insensitive dns-prefetch host dedupe.
+// P3.139: case-insensitive scheme+host preconnect dedupe; crossorigin preserved.
 func ResourceHintsHTML(c *Context) string {
 	hints := map[string][]any{
 		"dns-prefetch": dependenciesUniqueHostsAny(c),
@@ -38,7 +39,8 @@ func ResourceHintsHTML(c *Context) string {
 		}
 		unique := map[string]map[string]string{}
 		order := make([]string, 0)
-		seenHosts := map[string]bool{} // P3.138: case-insensitive host dedupe for dns-prefetch
+		seenHosts := map[string]bool{}      // P3.138: case-insensitive host dedupe for dns-prefetch
+		seenPreconnect := map[string]bool{} // P3.139: scheme+host (lower) dedupe
 		for _, item := range urls {
 			atts := map[string]string{}
 			href := ""
@@ -99,8 +101,21 @@ func ResourceHintsHTML(c *Context) string {
 				}
 				if relation == "preconnect" && parsed.Scheme != "" {
 					href = parsed.Scheme + "://" + parsed.Host
+					// P3.139: case-insensitive scheme+host dedupe (keep first casing).
+					pcKey := strings.ToLower(parsed.Scheme) + "://" + hostKey
+					if seenPreconnect[pcKey] {
+						continue
+					}
+					seenPreconnect[pcKey] = true
 				} else {
 					href = "//" + parsed.Host
+					if relation == "preconnect" {
+						pcKey := "//" + hostKey
+						if seenPreconnect[pcKey] {
+							continue
+						}
+						seenPreconnect[pcKey] = true
+					}
 				}
 				href = EscURL(href)
 				if href == "" {
