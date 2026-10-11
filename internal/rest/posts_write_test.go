@@ -85,7 +85,8 @@ func TestCreateUpdateDeletePost(t *testing.T) {
 	if updated.Title.Rendered != "GoPress Write Post Updated" {
 		t.Fatalf("updated title=%q", updated.Title.Rendered)
 	}
-	if updated.Content.Rendered != "Updated body" {
+	// P3.123: the_content runs wpautop on classic (non-block) bodies.
+	if updated.Content.Rendered != "<p>Updated body</p>\n" {
 		t.Fatalf("content=%q", updated.Content.Rendered)
 	}
 	// P4.48: updating revisioned fields creates a revision child.
