@@ -222,6 +222,8 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		w.Header().Set("Allow", "GET, POST")
 	}
 	applyPostsRESTContext(posts, restCtx)
+	// P4.146: ?_embed → _embedded author / featuredmedia / terms.
+	applyPostsRESTEmbed(c, posts, r)
 	// P9.26: merge register_rest_field get_callback values when registered.
 	writeJSON(w, http.StatusOK, EncodeWithAdditionalFields(postType, posts, r))
 }
@@ -301,6 +303,8 @@ func (s *Server) getTypedItem(w http.ResponseWriter, r *http.Request, c *wp.Cont
 		w.Header().Set("Allow", "GET, POST, PUT, PATCH, DELETE")
 	}
 	post.RESTContext = restCtx
+	// P4.146: ?_embed → _embedded author / featuredmedia / terms.
+	applyPostRESTEmbed(c, post, r)
 	// P9.26: merge register_rest_field get_callback values when registered.
 	writeJSON(w, http.StatusOK, EncodeWithAdditionalFields(postType, post, r))
 }
