@@ -11930,3 +11930,17 @@ wp-login.php#language-switcher-post
   task: P10.215
   api: n/a
   notes: "P10.215 — summarize media-text attrs, meta_value REGEXP, custom-bg, RemoteRetrieve, oEmbed EscURL, DidAction, corpus 3033"
+
+# P5.153: deepen core/gallery gradient; coerce align enum.
+- prefix: wp-includes/blocks/gallery.php#attrs
+  go: internal/blocks/gallery_image.go
+  status: partial
+  task: P5.153
+  api: n/a
+  notes: "P5.153 — coerce align left|center|right|wide|full; drop none/bogus; gradient polish; sanitize before applySupports"
+- prefix: wp-includes/blocks/gallery.php#attrs#tests
+  go: internal/blocks/gallery_attrs_p5_153_test.go
+  status: partial
+  task: P5.153
+  api: n/a
+  notes: "P5.153 — align coerce, saved gradient, className/anchor coverage"
