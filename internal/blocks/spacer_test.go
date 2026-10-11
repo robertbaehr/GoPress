@@ -59,3 +59,20 @@ func TestRenderSpacerPrefersSaved(t *testing.T) {
 		t.Fatalf("saved markup should win: %q", out)
 	}
 }
+
+func TestRenderSpacerAnchorAndClassNamePolish(t *testing.T) {
+	// P5.112: anchor on synthesize; className/anchor polish on saved.
+	out := blocks.Render(`<!-- wp:spacer {"height":"48px","anchor":"sp-1","className":"extra-space"} /-->`)
+	for _, want := range []string{`id="sp-1"`, `extra-space`, `height:48px`, `aria-hidden="true"`} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+	saved := `<!-- wp:spacer {"anchor":"saved-sp","className":"is-style-tall","height":"20px"} --><div style="height:12px" aria-hidden="true" class="wp-block-spacer"></div><!-- /wp:spacer -->`
+	got := blocks.Render(saved)
+	for _, want := range []string{`id="saved-sp"`, `is-style-tall`, `height:12px`} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("saved polish missing %q in %q", want, got)
+		}
+	}
+}

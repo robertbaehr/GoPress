@@ -310,7 +310,7 @@ func templatePartTag(block Block) string {
 
 func isSafeHTMLTag(tag string) bool {
 	switch tag {
-	case "div", "header", "footer", "section", "aside", "main", "nav":
+	case "div", "header", "footer", "section", "aside", "main", "nav", "hr":
 		return true
 	default:
 		return false

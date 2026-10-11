@@ -51,3 +51,29 @@ func TestRenderSeparatorPrefersSavedMarkup(t *testing.T) {
 		t.Fatalf("lost saved class: %q", out)
 	}
 }
+
+func TestRenderSeparatorAnchorClassNameAndColor(t *testing.T) {
+	// P5.112: anchor/className/backgroundColor on synthesize + saved polish.
+	out := blocks.Render(`<!-- wp:separator {"opacity":"css","align":"wide","className":"is-style-dots","anchor":"sep-1","backgroundColor":"vivid-cyan-blue"} /-->`)
+	for _, want := range []string{
+		`id="sep-1"`,
+		`has-css-opacity`,
+		`alignwide`,
+		`is-style-dots`,
+		`has-background`,
+		`has-vivid-cyan-blue-background-color`,
+	} {
+		if !strings.Contains(out, want) {
+			t.Fatalf("missing %q in %q", want, out)
+		}
+	}
+	saved := `<!-- wp:separator {"anchor":"saved-sep","className":"is-style-wide","align":"full","tagName":"div"} -->
+<hr class="wp-block-separator has-alpha-channel-opacity"/>
+<!-- /wp:separator -->`
+	got := blocks.Render(saved)
+	for _, want := range []string{`id="saved-sep"`, `is-style-wide`, `alignfull`, `<div`} {
+		if !strings.Contains(got, want) {
+			t.Fatalf("saved polish missing %q in %q", want, got)
+		}
+	}
+}

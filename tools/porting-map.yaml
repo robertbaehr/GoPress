@@ -4120,21 +4120,35 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P5.107 — unit coverage for className/anchor polish"
 
-# P5.59: polish core/spacer (synthesize height/width, unitless → px, className).
+# P5.59 / P5.112: polish core/spacer (synthesize height/width, unitless → px, className, anchor).
 - prefix: wp-includes/blocks/spacer
   go: internal/blocks/spacer.go
   status: partial
-  task: P5.59
+  task: P5.112
   api: internal
-  notes: "P5.59 — prefer saved markup; default height 100px; normalize unitless lengths; className"
+  notes: "P5.112 — prefer saved markup; default height 100px; normalize unitless lengths; className/anchor polish"
 
-# P5.60: polish core/separator (opacity classes, tagName, align, className).
+- prefix: wp-includes/blocks/spacer#tests
+  go: internal/blocks/spacer_test.go
+  status: partial
+  task: P5.112
+  api: n/a
+  notes: "P5.112 — unit coverage for anchor/className polish"
+
+# P5.60 / P5.112: polish core/separator (opacity classes, tagName, align, className, anchor).
 - prefix: wp-includes/blocks/separator
   go: internal/blocks/separator.go
   status: partial
-  task: P5.60
+  task: P5.112
   api: internal
-  notes: "P5.60 — prefer saved markup; has-css-opacity / has-alpha-channel-opacity; tagName hr|div; align; className"
+  notes: "P5.112 — prefer saved markup; opacity classes; tagName hr|div retag; align; className/anchor polish; colors via applySupports"
+
+- prefix: wp-includes/blocks/separator#tests
+  go: internal/blocks/separator_test.go
+  status: partial
+  task: P5.112
+  api: n/a
+  notes: "P5.112 — unit coverage for anchor/className/tagName polish"
 
 # P5.61 / P5.103: polish core/quote + core/pullquote (synthesize value/citation, layout, align).
 - prefix: wp-includes/blocks/quote
