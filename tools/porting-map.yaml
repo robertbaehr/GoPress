@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P4.176: MetaType CAST on WP_Query orderby=meta_value.
+- prefix: wp-includes/class-wp-query.php#orderby_meta_type
+  go: internal/wp/query.go
+  status: partial
+  task: P4.176
+  api: n/a
+  notes: "P4.176 — meta_type CAST on orderby=meta_value (NUMERIC→SIGNED)"
+- prefix: wp-includes/class-wp-query.php#orderby_meta_type#tests
+  go: internal/wp/query_orderby_meta_type_p4_176_test.go
+  status: partial
+  task: P4.176
+  api: n/a
+  notes: "P4.176 — NUMERIC vs CHAR orderby coverage"
+
 # P6.65: lost_password_html_link filter on login nav.
 - prefix: wp-login.php#lost_password_html_link
   go: internal/login/login.go
