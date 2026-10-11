@@ -518,3 +518,32 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.178: corpus expand after page-list-item/type/welcome/kses-split/feed-extra/current-filter stack.
+
+- id: admin-p10178-001-dashboard
+  role: admin
+  method: GET
+  path: /wp-admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10178-002-edit-pages
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_type=page
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10178-003-plugins
+  role: admin
+  method: GET
+  path: /wp-admin/plugins.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
