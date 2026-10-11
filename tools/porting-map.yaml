@@ -11965,6 +11965,26 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P4.169 — BETWEEN/NOT BETWEEN filters + expanded enum message"
 
+# P4.170: REST posts meta_type (WP_Query / WP_Meta_Query cast).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_type
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.170
+  api: n/a
+  notes: "P4.170 — meta_type string-type + NUMERIC/BINARY/CHAR/DATE/DATETIME/DECIMAL/SIGNED/TIME/UNSIGNED enum"
+- prefix: wp-includes/class-wp-meta-query.php#get_cast_for_type
+  go: internal/wp/query.go
+  status: partial
+  task: P4.170
+  api: n/a
+  notes: "P4.170 — metaTypeCastSQL NUMERIC→SIGNED; CAST on value compares"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_type#tests
+  go: internal/rest/posts_meta_type_p4_170_test.go
+  status: partial
+  task: P4.170
+  api: n/a
+  notes: "P4.170 — array-form/enum/NUMERIC >= filter tests"
+
 # P7.154: custom-header.php admin + theme_mod helpers.
 - prefix: wp-admin/custom-header.php
   go: internal/admin/custom_header.go
