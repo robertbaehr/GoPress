@@ -476,7 +476,8 @@ func parseRESTDateTimeQuery(r *http.Request, key string) string {
 
 // parsePostsSlug reads REST ?slug= (maps to post_name__in, P4.89 / P4.133).
 // Accepts comma-separated slugs, repeated ?slug=, and PHP-style slug[]= arrays.
-// Each token is sanitized with sanitize_title (wp_parse_slug_list parity).
+// Collection query params are not sanitize_title'd (WP REST slug query has no
+// sanitize_callback; write schema sanitize_slug is separate).
 func parsePostsSlug(r *http.Request) []string {
 	if r == nil {
 		return nil
@@ -490,11 +491,6 @@ func parsePostsSlug(r *http.Request) []string {
 		}
 		for _, part := range strings.Split(raw, ",") {
 			part = strings.TrimSpace(part)
-			if part == "" {
-				continue
-			}
-			// P4.133: wp_parse_slug_list → sanitize_title each item.
-			part = wp.SanitizeTitle(part)
 			if part == "" || seen[part] {
 				continue
 			}

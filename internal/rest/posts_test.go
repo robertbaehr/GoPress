@@ -542,8 +542,8 @@ func TestPostsSlugQueryParam(t *testing.T) {
 	}
 }
 
-func TestPostsSlugArrayAndSanitize(t *testing.T) {
-	// P4.133: slug[]= array form + sanitize_title on query tokens.
+func TestPostsSlugArrayQueryParam(t *testing.T) {
+	// P4.133: slug[]= array form (WP REST type=array query param).
 	c := bootOrSkip(t)
 	defer c.DB.Close()
 
@@ -569,20 +569,20 @@ func TestPostsSlugArrayAndSanitize(t *testing.T) {
 		t.Fatalf("slug[] missing expected posts: %+v", seen)
 	}
 
-	// Title-cased / spaced input sanitizes to hello-world.
+	// Collection slug is not sanitize_title'd — spaced title does not match.
 	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?slug=Hello%20World&per_page=10", nil)
 	rec = httptest.NewRecorder()
 	c = c.ForRequest(rec, req)
 	(&rest.Server{}).Handle(rec, req, c)
 	if rec.Code != http.StatusOK {
-		t.Fatalf("sanitized slug status=%d", rec.Code)
+		t.Fatalf("unsanitized slug status=%d", rec.Code)
 	}
-	var sanitized []rest.Post
-	if err := json.Unmarshal(rec.Body.Bytes(), &sanitized); err != nil {
+	var miss []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &miss); err != nil {
 		t.Fatal(err)
 	}
-	if len(sanitized) != 1 || sanitized[0].Slug != "hello-world" {
-		t.Fatalf("expected sanitize_title→hello-world, got %+v", sanitized)
+	if len(miss) != 0 {
+		t.Fatalf("expected empty for unsanitized Hello World slug, got %+v", miss)
 	}
 }
 
