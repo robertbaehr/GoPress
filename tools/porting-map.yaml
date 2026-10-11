@@ -23,6 +23,21 @@
 
 
 
+
+# P3.161: get_edit_term_link + edit_term meta cap.
+- prefix: wp-includes/link-template.php#get_edit_term_link
+  go: internal/wp/edit_term_link.go
+  status: partial
+  task: P3.161
+  api: n/a
+  notes: "P3.161 — GetEditTermLink term.php + edit_term→manage_categories"
+- prefix: wp-includes/link-template.php#get_edit_term_link#tests
+  go: internal/wp/edit_term_link_p3_161_test.go
+  status: partial
+  task: P3.161
+  api: n/a
+  notes: "P3.161 — admin link; filter; anon/missing deny"
+
 # P2.163: includes_url.
 - prefix: wp-includes/link-template.php#includes_url
   go: internal/wp/includes_url.go
