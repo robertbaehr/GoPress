@@ -71,8 +71,9 @@ type QueryArgs struct {
 	// PostNotIn excludes these IDs (post__not_in; REST sticky=false, P4.82).
 	PostNotIn []int64
 	// OrderBy is a WP_Query orderby alias: date (default), title, id, slug,
-	// menu_order, author, modified, parent, include, include_slugs, relevance
-	// (P4.83 / P4.94 / P4.131).
+	// menu_order, author, modified, parent, include, include_slugs, relevance,
+	// meta_value, meta_value_num (P4.83 / P4.94 / P4.131 / P4.175).
+	// meta_value* require MetaKey (otherwise falls back to date).
 	OrderBy string
 	// Order is ASC or DESC (default DESC) (P4.83).
 	Order string
@@ -407,7 +408,7 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 		whereSQL = strings.ReplaceAll(whereSQL, "menu_order", "p.menu_order")
 	}
 
-	orderSQL, orderVals := orderByClause(args, aliased)
+	orderSQL, orderVals := orderByClause(c, args, aliased)
 	vals = append(vals, orderVals...)
 	q := "SELECT " + selectPostColumns(aliased) + " FROM " +
 		from + " WHERE " + whereSQL +
@@ -767,12 +768,12 @@ func splitMetaInValues(raw string) []string {
 	return strings.Fields(raw)
 }
 
-// orderByClause maps QueryArgs.OrderBy/Order onto SQL (P4.83 / P4.94 / P4.131).
+// orderByClause maps QueryArgs.OrderBy/Order onto SQL (P4.83 / P4.94 / P4.131 / P4.175).
 // Supported orderby: date (default), title, id, slug, menu_order, author,
 // modified, parent, include (FIELD post__in), include_slugs (FIELD post_name__in),
-// relevance (title then date when searching).
-// Order: ASC|DESC (default DESC). Extra Prepare args are returned for FIELD lists.
-func orderByClause(args QueryArgs, aliased bool) (string, []any) {
+// relevance (title then date when searching), meta_value, meta_value_num (need MetaKey).
+// Order: ASC|DESC (default DESC). Extra Prepare args are returned for FIELD lists / meta key.
+func orderByClause(c *Context, args QueryArgs, aliased bool) (string, []any) {
 	orderby := strings.ToLower(strings.TrimSpace(args.OrderBy))
 	dir := "DESC"
 	if strings.EqualFold(strings.TrimSpace(args.Order), "ASC") {
@@ -837,6 +838,18 @@ func orderByClause(args QueryArgs, aliased bool) (string, []any) {
 	case "relevance":
 		// Without FULLTEXT, approximate WP search relevance: title then date.
 		return titleCol + " ASC, " + dateCol + " DESC, " + idCol + " ASC", nil
+	case "meta_value", "meta_value_num":
+		// P4.175: WP_Query orderby=meta_value / meta_value_num (requires meta_key).
+		key := strings.TrimSpace(args.MetaKey)
+		if key == "" || c == nil || c.DB == nil {
+			return dateCol + " " + dir, nil
+		}
+		pm := c.DB.PostMeta()
+		sub := "(SELECT mq.meta_value FROM " + pm + " mq WHERE mq.post_id = " + idCol + " AND mq.meta_key = %s LIMIT 1)"
+		if orderby == "meta_value_num" {
+			sub = "CAST(" + sub + " AS SIGNED)"
+		}
+		return sub + " " + dir + ", " + idCol + " " + dir, []any{key}
 	case "date", "post_date", "":
 		return dateCol + " " + dir, nil
 	default:
