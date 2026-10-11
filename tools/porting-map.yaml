@@ -1,4 +1,18 @@
 
+# P6.64: login_link_separator filter + register nav when open.
+- prefix: wp-login.php#login_link_separator
+  go: internal/login/login.go
+  status: partial
+  task: P6.64
+  api: n/a
+  notes: "P6.64 — login_link_separator filter (esc_html); register link on login/lostpassword nav"
+- prefix: wp-login.php#login_link_separator#tests
+  go: internal/login/login_link_separator_p6_64_test.go
+  status: partial
+  task: P6.64
+  api: n/a
+  notes: "P6.64 — filter replace; esc_html; default separator"
+
 # P10.221: STATUS/PORTING refresh after P6.63–P9.39 stack.
 - prefix: docs/STATUS.md#p10.221
   go: docs/STATUS.md
