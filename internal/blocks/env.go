@@ -95,6 +95,10 @@ type Env struct {
 	// GetPostMeta resolves core/post-meta block bindings (P5.20).
 	GetPostMeta func(postID int64, key string) string
 
+	// BindingAttrsFilter mirrors block_bindings_supported_attributes{,_$type} (P9.25).
+	// Receives block type + default supported attrs; return the effective list.
+	BindingAttrsFilter func(blockType string, attrs []string) []string
+
 	// PatternOverrides is context for core/pattern-overrides bindings (P5.20/P5.25).
 	// Keys are metadata.name values; values map attribute → override string.
 	// Populated from core/block content|overrides attrs (providesContext pattern/overrides).

@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// Supported block-binding attributes (wp-includes/block-bindings.php subset, P5.20/P5.39).
+// Supported block-binding attributes (wp-includes/block-bindings.php subset, P5.20/P5.39/P9.25).
 var bindingsSupportedAttrs = map[string][]string{
 	"core/paragraph":          {"content"},
 	"core/heading":            {"content"},
@@ -19,12 +19,23 @@ var bindingsSupportedAttrs = map[string][]string{
 	"core/navigation-submenu": {"url"},
 }
 
+// BindingSupportedAttrs returns attributes supported for bindings on a block type (P9.25).
+// Mirrors get_block_bindings_supported_attributes; BindingAttrsFilter may extend/replace.
+func (e *Env) BindingSupportedAttrs(blockType string) []string {
+	e = e.ensure()
+	base := append([]string(nil), bindingsSupportedAttrs[blockType]...)
+	if e.BindingAttrsFilter != nil {
+		return e.BindingAttrsFilter(blockType, base)
+	}
+	return base
+}
+
 // applyBindings resolves metadata.bindings sources and patches attrs / InnerHTML.
 // Stub sources: core/post-meta and core/pattern-overrides.
 func (e *Env) applyBindings(block Block) Block {
 	e = e.ensure()
 	name := blockName(block)
-	supported := bindingsSupportedAttrs[name]
+	supported := e.BindingSupportedAttrs(name)
 	if len(supported) == 0 || block.Attrs == nil {
 		return block
 	}
@@ -196,14 +207,19 @@ func (e *Env) resolveTermDataBinding(args map[string]any) (string, bool) {
 }
 
 var (
-	rePContent   = regexp.MustCompile(`(?is)(<p\b[^>]*>)(.*?)(</p>)`)
-	reHContent   = regexp.MustCompile(`(?is)(<h[1-6]\b[^>]*>)(.*?)(</h[1-6]>)`)
-	reLIContent  = regexp.MustCompile(`(?is)(<li\b[^>]*>)(.*?)(</li>)`)
-	reButtonText = regexp.MustCompile(`(?is)(<a\b[^>]*>)(.*?)(</a>)`)
-	reImgSrc     = regexp.MustCompile(`(?i)(\ssrc=")([^"]*)(")`)
-	reImgAlt     = regexp.MustCompile(`(?i)(\salt=")([^"]*)(")`)
-	reImgTitle   = regexp.MustCompile(`(?i)(\stitle=")([^"]*)(")`)
-	reAHref      = regexp.MustCompile(`(?i)(\shref=")([^"]*)(")`)
+	rePContent     = regexp.MustCompile(`(?is)(<p\b[^>]*>)(.*?)(</p>)`)
+	reHContent     = regexp.MustCompile(`(?is)(<h[1-6]\b[^>]*>)(.*?)(</h[1-6]>)`)
+	reLIContent    = regexp.MustCompile(`(?is)(<li\b[^>]*>)(.*?)(</li>)`)
+	reButtonText   = regexp.MustCompile(`(?is)(<a\b[^>]*>)(.*?)(</a>)`)
+	reImgSrc       = regexp.MustCompile(`(?i)(\ssrc=")([^"]*)(")`)
+	reImgAlt       = regexp.MustCompile(`(?i)(\salt=")([^"]*)(")`)
+	reImgTitle     = regexp.MustCompile(`(?i)(\stitle=")([^"]*)(")`)
+	reAHref        = regexp.MustCompile(`(?i)(\shref=")([^"]*)(")`)
+	reFigCaption   = regexp.MustCompile(`(?is)(<figcaption\b[^>]*>)(.*?)(</figcaption>)`)
+	reTimeDatetime = regexp.MustCompile(`(?i)(\sdatetime=")([^"]*)(")`)
+	reATarget      = regexp.MustCompile(`(?i)(\starget=")([^"]*)(")`)
+	reARel         = regexp.MustCompile(`(?i)(\srel=")([^"]*)(")`)
+	reAOpen        = regexp.MustCompile(`(?is)<a\b([^>]*)>`)
 )
 
 func replaceBoundHTML(inner, blockType, attr, value string) string {
@@ -230,6 +246,10 @@ func replaceBoundHTML(inner, blockType, attr, value string) string {
 			return reButtonText.ReplaceAllString(inner, "${1}"+esc+"${3}")
 		case "url":
 			return reAHref.ReplaceAllString(inner, "${1}"+esc+"${3}")
+		case "linkTarget":
+			return upsertAnchorAttr(inner, "target", value)
+		case "rel":
+			return upsertAnchorAttr(inner, "rel", value)
 		}
 	case "core/image":
 		switch attr {
@@ -244,7 +264,50 @@ func replaceBoundHTML(inner, blockType, attr, value string) string {
 			if reImgTitle.MatchString(inner) {
 				return reImgTitle.ReplaceAllString(inner, "${1}"+esc+"${3}")
 			}
+		case "caption":
+			if reFigCaption.MatchString(inner) {
+				return reFigCaption.ReplaceAllString(inner, "${1}"+esc+"${3}")
+			}
+			if strings.Contains(inner, "</figure>") {
+				return strings.Replace(inner, "</figure>", `<figcaption class="wp-element-caption">`+esc+`</figcaption></figure>`, 1)
+			}
+		}
+	case "core/post-date":
+		if attr == "datetime" {
+			if reTimeDatetime.MatchString(inner) {
+				return reTimeDatetime.ReplaceAllString(inner, "${1}"+esc+"${3}")
+			}
+			return strings.Replace(inner, "<time ", `<time datetime="`+esc+`" `, 1)
+		}
+	case "core/navigation-link", "core/navigation-submenu":
+		if attr == "url" {
+			return reAHref.ReplaceAllString(inner, "${1}"+esc+"${3}")
 		}
 	}
 	return inner
+}
+
+// upsertAnchorAttr sets target/rel on the first <a> in bound button markup (P9.25).
+func upsertAnchorAttr(inner, name, value string) string {
+	esc := html.EscapeString(value)
+	m := reAOpen.FindStringSubmatchIndex(inner)
+	if m == nil {
+		return inner
+	}
+	attrs := inner[m[2]:m[3]]
+	switch strings.ToLower(name) {
+	case "target":
+		if reATarget.MatchString(attrs) {
+			attrs = reATarget.ReplaceAllString(attrs, ` target="`+esc+`"`)
+		} else {
+			attrs = strings.TrimRight(attrs, " ") + ` target="` + esc + `"`
+		}
+	case "rel":
+		if reARel.MatchString(attrs) {
+			attrs = reARel.ReplaceAllString(attrs, ` rel="`+esc+`"`)
+		} else {
+			attrs = strings.TrimRight(attrs, " ") + ` rel="` + esc + `"`
+		}
+	}
+	return inner[:m[0]] + "<a" + attrs + ">" + inner[m[1]:]
 }

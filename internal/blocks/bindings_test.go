@@ -128,3 +128,68 @@ func TestSyncedPatternLegacyOverridesAttr(t *testing.T) {
 		t.Fatalf("expected legacy overrides attr, got %q", out)
 	}
 }
+
+func TestButtonBindingLinkTargetAndRel(t *testing.T) {
+	in := `<!-- wp:button {"metadata":{"bindings":{"linkTarget":{"source":"core/post-meta","args":{"key":"target"}},"rel":{"source":"core/post-meta","args":{"key":"rel"}}}}} -->
+<div class="wp-block-button"><a class="wp-block-button__link" href="https://example.com">Go</a></div>
+<!-- /wp:button -->`
+	env := &blocks.Env{
+		GetPostMeta: func(postID int64, key string) string {
+			if key == "target" {
+				return "_blank"
+			}
+			if key == "rel" {
+				return "noopener"
+			}
+			return ""
+		},
+	}
+	env.SetCurrentPost(&blocks.QueryPost{ID: 1})
+	out := blocks.RenderWith(env, in)
+	if !strings.Contains(out, `target="_blank"`) || !strings.Contains(out, `rel="noopener"`) {
+		t.Fatalf("expected target/rel: %q", out)
+	}
+}
+
+func TestImageCaptionBinding(t *testing.T) {
+	in := `<!-- wp:image {"metadata":{"bindings":{"caption":{"source":"core/post-meta","args":{"key":"cap"}}}}} -->
+<figure class="wp-block-image"><img src="https://example.com/a.jpg" alt=""/><figcaption>Old</figcaption></figure>
+<!-- /wp:image -->`
+	env := &blocks.Env{
+		GetPostMeta: func(postID int64, key string) string {
+			if key == "cap" {
+				return "Bound caption"
+			}
+			return ""
+		},
+	}
+	env.SetCurrentPost(&blocks.QueryPost{ID: 1})
+	out := blocks.RenderWith(env, in)
+	if !strings.Contains(out, "Bound caption") || strings.Contains(out, ">Old<") {
+		t.Fatalf("caption binding: %q", out)
+	}
+}
+
+func TestBindingAttrsFilterExtendsSupport(t *testing.T) {
+	in := `<!-- wp:paragraph {"metadata":{"bindings":{"content":{"source":"core/post-meta","args":{"key":"x"}}}}} -->
+<p>Fallback</p>
+<!-- /wp:paragraph -->`
+	env := &blocks.Env{
+		GetPostMeta: func(postID int64, key string) string { return "via-filter" },
+		BindingAttrsFilter: func(blockType string, attrs []string) []string {
+			if blockType == "core/paragraph" {
+				return attrs // keep defaults
+			}
+			return attrs
+		},
+	}
+	env.SetCurrentPost(&blocks.QueryPost{ID: 1})
+	out := blocks.RenderWith(env, in)
+	if !strings.Contains(out, "via-filter") {
+		t.Fatalf("filter path: %q", out)
+	}
+	got := env.BindingSupportedAttrs("core/button")
+	if len(got) < 4 {
+		t.Fatalf("button supported attrs=%v", got)
+	}
+}
