@@ -11027,10 +11027,10 @@
   compare: headers
   nonce: null
 
-- id: rest-p10178-038-head-types-page
+- id: rest-p10178-038-block-types-page-list-view-headers
   role: anon
-  method: HEAD
-  path: /wp-json/wp/v2/types/page
+  method: GET
+  path: /wp-json/wp/v2/block-types/core/page-list?context=view
   headers: {}
   body: null
   compare: headers
