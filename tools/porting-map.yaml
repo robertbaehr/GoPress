@@ -11720,3 +11720,23 @@ wp-login.php#language-switcher-post
   task: P5.151
   api: n/a
   notes: "P5.151 — align coerce, saved fontSize, synthesize sizeSlug/alt coverage"
+
+# P4.167: deepen REST posts meta_key meta_compare (NOT LIKE / inequalities).
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_key
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.167
+  api: n/a
+  notes: "P4.167 — meta_compare NOT LIKE / > / >= / < / <=; expanded enum validation"
+- prefix: wp-includes/class-wp-query.php#meta_key#compare
+  go: internal/wp/query.go
+  status: partial
+  task: P4.167
+  api: n/a
+  notes: "P4.167 — appendMetaQueryFilters NOT LIKE and inequality operators"
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#meta_key#tests
+  go: internal/rest/posts_meta_key_p4_167_test.go
+  status: partial
+  task: P4.167
+  api: n/a
+  notes: "P4.167 — NOT LIKE / >= filters + expanded enum message"
