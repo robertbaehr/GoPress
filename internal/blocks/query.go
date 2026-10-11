@@ -351,9 +351,10 @@ func postLIClass(post QueryPost) string {
 	return "wp-block-post"
 }
 
-// renderQueryNoResults renders core/query-no-results (P5.3 / P5.96).
+// renderQueryNoResults renders core/query-no-results (P5.3 / P5.96 / P5.137).
 // P5.96: wrap inner content in a div with get_block_wrapper_attributes classes
 // (has-link-color / className / colors) when the parent query has no posts.
+// P5.137: supports.align / fontSize / anchor on the wrapper.
 func (e *Env) renderQueryNoResults(block Block) string {
 	e = e.ensure()
 	if e.queryHasPosts {
@@ -364,11 +365,20 @@ func (e *Env) renderQueryNoResults(block Block) string {
 		return ""
 	}
 	classes := queryNoResultsWrapperClasses(block.Attrs)
-	return `<div class="` + html.EscapeString(classes) + `">` + inner + `</div>`
+	out := `<div class="` + html.EscapeString(classes) + `"`
+	// P5.137: supports.anchor → id on the wrapper (block.json supports.anchor).
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		out += ` id="` + html.EscapeString(anchor) + `"`
+	}
+	return out + `>` + inner + `</div>`
 }
 
 func queryNoResultsWrapperClasses(attrs map[string]any) string {
 	parts := []string{"wp-block-query-no-results"}
+	// P5.137: supports.align → align{slug} class.
+	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
+		parts = append(parts, "align"+sanitizeClassToken(align))
+	}
 	if hasLinkColorAttr(attrs) {
 		parts = append(parts, "has-link-color")
 	}
@@ -383,6 +393,10 @@ func queryNoResultsWrapperClasses(attrs map[string]any) string {
 	}
 	if hasCustomBackgroundColor(attrs) {
 		parts = append(parts, "has-background")
+	}
+	// P5.137: supports.typography.fontSize → has-{slug}-font-size.
+	if fs := strings.TrimSpace(attrString(attrs, "fontSize")); fs != "" {
+		parts = append(parts, "has-"+sanitizeClassToken(fs)+"-font-size")
 	}
 	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
 		parts = append(parts, cn)

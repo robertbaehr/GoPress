@@ -10126,3 +10126,17 @@ wp-login.php#language-switcher-post
   task: P10.183
   api: n/a
   notes: "P10.183 — summarize featured-image attrs, author_exclude invalid_param, menu collapse, KsesBadProtocol, ShortlinkHeader, login_header + 1754 corpus"
+
+# P5.137: query-no-results align / fontSize / anchor.
+- prefix: wp-includes/blocks/query-no-results.php#align-fontSize-anchor
+  go: internal/blocks/query.go
+  status: partial
+  task: P5.137
+  api: render_block_core_query_no_results
+  notes: "P5.137 — supports.align / fontSize / anchor on no-results wrapper"
+- prefix: wp-includes/blocks/query-no-results.php#align-fontSize-anchor#tests
+  go: internal/blocks/query_no_results_p5_137_test.go
+  status: partial
+  task: P5.137
+  api: n/a
+  notes: "P5.137 — alignwide/fontSize/anchor when empty; hidden when posts"
