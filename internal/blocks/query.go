@@ -1968,8 +1968,12 @@ func (e *Env) renderAvatar(block Block) string {
 		}
 		inner = `<a href="` + html.EscapeString(link) + `" target="` + html.EscapeString(target) + `"` + aria + ` class="wp-block-avatar__link">` + img + `</a>`
 	}
-	// P5.91: textAlign / has-link-color / className on wrapper.
+	// P5.91 / P5.139: textAlign / has-link-color / className / align / anchor on wrapper.
 	classes := []string{"wp-block-avatar"}
+	// P5.139: supports.align → align{slug} (block.json supports.align; alignWide false).
+	if align := strings.TrimSpace(attrString(block.Attrs, "align")); align != "" {
+		classes = append(classes, "align"+sanitizeClassToken(align))
+	}
 	if ta := strings.TrimSpace(attrString(block.Attrs, "textAlign")); ta != "" {
 		classes = append(classes, "has-text-align-"+sanitizeClassToken(ta))
 	}
@@ -1979,7 +1983,12 @@ func (e *Env) renderAvatar(block Block) string {
 	if cn := strings.TrimSpace(attrString(block.Attrs, "className")); cn != "" {
 		classes = append(classes, cn)
 	}
-	return `<div class="` + html.EscapeString(strings.Join(classes, " ")) + `">` + inner + `</div>`
+	idAttr := ""
+	// P5.139: supports.anchor → id on the wrapper.
+	if anchor := strings.TrimSpace(attrString(block.Attrs, "anchor")); anchor != "" {
+		idAttr = ` id="` + html.EscapeString(anchor) + `"`
+	}
+	return `<div class="` + html.EscapeString(strings.Join(classes, " ")) + `"` + idAttr + `>` + inner + `</div>`
 }
 
 func (e *Env) authorArchiveLink(postID int64) string {
