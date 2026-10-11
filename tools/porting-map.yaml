@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P3.159: get_edit_user_link.
+- prefix: wp-includes/link-template.php#get_edit_user_link
+  go: internal/wp/edit_user_link.go
+  status: partial
+  task: P3.159
+  api: n/a
+  notes: "P3.159 — GetEditUserLink profile.php / user-edit.php + edit_user cap + filter"
+- prefix: wp-includes/link-template.php#get_edit_user_link#tests
+  go: internal/wp/edit_user_link_p3_159_test.go
+  status: partial
+  task: P3.159
+  api: n/a
+  notes: "P3.159 — self profile; filter; anon deny"
+
 # P2.161: send_frame_options_header.
 - prefix: wp-includes/functions.php#send_frame_options_header
   go: internal/wp/nosniff_admin_headers.go
