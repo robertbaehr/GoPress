@@ -397,10 +397,22 @@ func (e *Env) renderPattern(block Block) string {
 	if slug == "" || e.LoadPattern == nil {
 		return ""
 	}
+	if e.seenPattern == nil {
+		e.seenPattern = map[string]bool{}
+	}
+	// P5.128: match render_block_core_pattern $seen_refs — debug halt when WP_DEBUG_DISPLAY.
+	if e.seenPattern[slug] {
+		if e.DebugDisplay {
+			return `[block rendering halted for pattern "` + slug + `"]`
+		}
+		return ""
+	}
 	content, ok := e.LoadPattern(slug)
 	if !ok || strings.TrimSpace(content) == "" {
 		return ""
 	}
+	e.seenPattern[slug] = true
+	defer delete(e.seenPattern, slug)
 	return e.Render(content)
 }
 
