@@ -394,39 +394,96 @@ func listPostsPaged(c *wp.Context, postType string, limit, page int, edit bool, 
 	return out, nil
 }
 
-// parsePostsOrderby accepts REST orderby aliases (P4.83 / P4.94 / P4.131 / P4.149).
+// parsePostsOrderby accepts REST orderby aliases (P4.83 / P4.94 / P4.131 / P4.149 / P4.159).
 // Absent → ("date", true). Present but not in the post-type enum → ("", false).
+// P4.159: orderby[]= array form → ("", false, typeErr=true) via parsePostsOrderbyTyped.
 func parsePostsOrderby(r *http.Request, postType string) (string, bool) {
-	if r == nil || !r.URL.Query().Has("orderby") {
-		return "date", true
+	v, ok, _ := parsePostsOrderbyTyped(r, postType)
+	return v, ok
+}
+
+// parsePostsOrderbyTyped is parsePostsOrderby with array-form detection (P4.159).
+// typeErr is true when orderby[]= is present (rest_invalid_type / not string).
+func parsePostsOrderbyTyped(r *http.Request, postType string) (val string, ok bool, typeErr bool) {
+	if r == nil {
+		return "date", true, false
 	}
-	v := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("orderby")))
+	q := r.URL.Query()
+	// P4.159: schema type string — reject orderby[]= (rest_invalid_type).
+	if _, hasArray := q["orderby[]"]; hasArray {
+		return "", false, true
+	}
+	if !q.Has("orderby") {
+		return "date", true, false
+	}
+	v := strings.ToLower(strings.TrimSpace(q.Get("orderby")))
 	switch v {
 	case "author", "date", "id", "include", "modified", "parent",
 		"relevance", "slug", "include_slugs", "title":
-		return v, true
+		return v, true, false
 	case "menu_order":
 		// P4.94 / P4.149: menu_order enum only for pages (page-attributes).
 		if postType == "page" {
-			return v, true
+			return v, true, false
 		}
-		return "", false
+		return "", false, false
 	default:
-		return "", false
+		return "", false, false
 	}
 }
 
-// parsePostsOrder accepts REST order=asc|desc (P4.83 / P4.149).
+// parsePostsOrder accepts REST order=asc|desc (P4.83 / P4.149 / P4.159).
 // Absent → ("desc", true). Present but not asc|desc → ("", false).
 func parsePostsOrder(r *http.Request) (string, bool) {
-	if r == nil || !r.URL.Query().Has("order") {
-		return "desc", true
+	v, ok, _ := parsePostsOrderTyped(r)
+	return v, ok
+}
+
+// parsePostsOrderTyped is parsePostsOrder with array-form detection (P4.159).
+// typeErr is true when order[]= is present (rest_invalid_type / not string).
+func parsePostsOrderTyped(r *http.Request) (val string, ok bool, typeErr bool) {
+	if r == nil {
+		return "desc", true, false
 	}
-	v := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("order")))
+	q := r.URL.Query()
+	// P4.159: schema type string — reject order[]= (rest_invalid_type).
+	if _, hasArray := q["order[]"]; hasArray {
+		return "", false, true
+	}
+	if !q.Has("order") {
+		return "desc", true, false
+	}
+	v := strings.ToLower(strings.TrimSpace(q.Get("order")))
 	if v == "asc" || v == "desc" {
-		return v, true
+		return v, true, false
 	}
-	return "", false
+	return "", false, false
+}
+
+// writeRESTInvalidStringParams emits rest_invalid_param for non-string query args (P4.159).
+func writeRESTInvalidStringParams(w http.ResponseWriter, keys []string) {
+	params := map[string]any{}
+	details := map[string]any{}
+	for _, k := range keys {
+		msg := k + " is not of type string."
+		params[k] = msg
+		details[k] = map[string]any{
+			"code":    "rest_invalid_type",
+			"message": msg,
+			"data":    map[string]any{"param": k},
+		}
+	}
+	msg := "Invalid parameter(s): " + strings.Join(keys, ", ")
+	w.Header().Set("Allow", "GET")
+	writeJSON(w, http.StatusBadRequest, map[string]any{
+		"code":    "rest_invalid_param",
+		"message": msg,
+		"data": map[string]any{
+			"status":  400,
+			"params":  params,
+			"details": details,
+		},
+	})
 }
 
 // parsePostsMenuOrder reads REST ?menu_order= for pages (P4.149 / P4.157).
