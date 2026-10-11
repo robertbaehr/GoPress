@@ -1,4 +1,4 @@
-GoPress stack tip cursor/p10-226-status-refresh-ddf1 / PENDING
+GoPress stack tip cursor/p10-226-status-refresh-ddf1 / 842caccd29ef422ce363a6a2191b72777b0583a0
 
 cursor/p6-68-wp-logout-action-ddf1 → eab4642ad215
 cursor/p2-159-nosniff-admin-headers-ddf1 → 8d7a2876b8a5
@@ -9,7 +9,7 @@ cursor/p7-165-site-health-chrome-ddf1 → 4bf8d8208f14
 cursor/p4-178-orderby-meta-decimal-ddf1 → b6531a3c36ce
 cursor/p9-44-notice-capture-helpers-ddf1 → 1f6aca70277b
 
-cursor/p10-226-status-refresh-ddf1 → PENDING
+cursor/p10-226-status-refresh-ddf1 → 842caccd29ef
 
 make diff: 100.0% (3162/3162 strict matches, 0 allowlisted, 0 failed) — carried from P10.218
 make check: pending
