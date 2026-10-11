@@ -291,9 +291,23 @@
 - prefix: wp-login.php#confirm_admin_email
   go: internal/login/login.go
   status: partial
-  task: P6.42
+  task: P6.47
   api: n/a
-  notes: "P6.42 — sanitize redirect_to; remind/check interval filters; hide remind at 0; confirm actions; P6.14 base"
+  notes: "P6.47 — post-login confirm_admin_email redirect when lifespan elapsed; P6.42 remind/check filters; P6.14 form"
+
+- prefix: wp-login.php#confirm_admin_email#post-login
+  go: internal/login/login.go
+  status: partial
+  task: P6.47
+  api: n/a
+  notes: "P6.47 — maybeAdminEmailConfirmRedirect after successful signon for manage_options"
+
+- prefix: wp-login.php#confirm_admin_email#tests
+  go: internal/login/login_test.go
+  status: partial
+  task: P6.47
+  api: n/a
+  notes: "P6.47 — due redirect + interval=0 skip coverage"
 
 # P6.43: registration form when users_can_register; POST creates subscriber.
 - prefix: wp-login.php#register
