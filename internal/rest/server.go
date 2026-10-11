@@ -1236,7 +1236,7 @@ func collectionListArgs() map[string]any {
 		"tags":               intArray,
 		"tags_exclude":       intArray,
 		"sticky":             map[string]any{"description": "Limit result set to items that are sticky.", "type": "boolean", "required": false},
-		"ignore_sticky":      map[string]any{"description": "Whether to ignore sticky posts or not.", "type": "boolean", "default": false, "required": false},
+		"ignore_sticky":      map[string]any{"description": "Whether to ignore sticky posts or not.", "type": "boolean", "default": true, "required": false},
 		"format":             map[string]any{"description": "Limit result set to items assigned one or more given formats.", "type": "array", "required": false, "items": map[string]any{"type": "string"}},
 		"parent":             intArray,
 		"parent_exclude":     intArray,

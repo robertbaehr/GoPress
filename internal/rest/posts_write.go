@@ -82,7 +82,20 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		return
 	}
 	edit := r.URL.Query().Get("context") == "edit" && canEditPosts(c)
-	stickyFilter := parseStickyQuery(r)
+	// P4.141: strict sticky / ignore_sticky boolean validation (rest_invalid_type).
+	stickyFilter, stickyOK := parseStickyQuery(r)
+	ignoreSticky, ignoreOK := parseIgnoreStickyQuery(r)
+	var badBools []string
+	if !stickyOK {
+		badBools = append(badBools, "sticky")
+	}
+	if !ignoreOK {
+		badBools = append(badBools, "ignore_sticky")
+	}
+	if len(badBools) > 0 {
+		writeRESTInvalidBooleanParams(w, badBools)
+		return
+	}
 	orderby := parsePostsOrderby(r)
 	order := parsePostsOrder(r)
 	search := parsePostsSearch(r)
@@ -169,7 +182,7 @@ func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *w
 		})
 		return
 	}
-	posts, err := listPostsPaged(c, postType, perPage, page, edit, stickyFilter, orderby, order, search, searchColumns, authorIn, authorNotIn, categories, categoriesExclude, tags, tagsExclude, taxRelation, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, offset, useOffset)
+	posts, err := listPostsPaged(c, postType, perPage, page, edit, stickyFilter, ignoreSticky, orderby, order, search, searchColumns, authorIn, authorNotIn, categories, categoriesExclude, tags, tagsExclude, taxRelation, statuses, slugs, include, exclude, parentIn, parentNotIn, dateAfter, dateBefore, modifiedAfter, modifiedBefore, formatIn, formatStandard, offset, useOffset)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, map[string]any{
 			"code":    "rest_post_query",
