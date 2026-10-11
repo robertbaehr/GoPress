@@ -50,6 +50,7 @@ make check
 
 ## Recent stack (through P10.226)
 
+- P6.69 `lostpassword_form` action on lost-password screen
 - P10.226 STATUS/PORTING refresh after P6.68–P9.44
 - P9.44 `BeginNoticeCapture` / `WriteNotice` / `EndNoticeCapture` Context helpers
 - P4.178 WP_Query `orderby=meta_value` + `meta_type=DECIMAL`
