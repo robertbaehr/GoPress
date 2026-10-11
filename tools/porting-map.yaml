@@ -12153,6 +12153,26 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P7.154 — login redirect, text color save nonce, body class with support"
 
+# P2.153: wp_remote_request / wp_safe_remote_request.
+- prefix: wp-includes/http.php#wp_remote_request
+  go: internal/wp/http.go
+  status: partial
+  task: P2.153
+  api: n/a
+  notes: "P2.153 — RemoteRequest arbitrary method; default GET; shared remoteRequest"
+- prefix: wp-includes/http.php#wp_safe_remote_request
+  go: internal/wp/http.go
+  status: partial
+  task: P2.153
+  api: n/a
+  notes: "P2.153 — SafeRemoteRequest validates via HttpValidateURL then RemoteRequest"
+- prefix: wp-includes/http.php#wp_remote_request#tests
+  go: internal/wp/remote_request_p2_153_test.go
+  status: partial
+  task: P2.153
+  api: n/a
+  notes: "P2.153 — default GET; PUT dial; SafeRemoteRequest unsafe/blocked"
+
 # P2.152: wp_remote_retrieve_cookies / cookie / cookie_value.
 - prefix: wp-includes/http.php#wp_remote_retrieve_cookies
   go: internal/wp/http.go
