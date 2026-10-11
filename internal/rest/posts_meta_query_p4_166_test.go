@@ -44,7 +44,7 @@ func TestPostsMetaCompareInvalidEnumP4166(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
 
-	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?meta_compare=BETWEEN&per_page=1", nil)
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?meta_compare=IN&per_page=1", nil)
 	rec := httptest.NewRecorder()
 	c = c.ForRequest(rec, req)
 	(&rest.Server{}).Handle(rec, req, c)
