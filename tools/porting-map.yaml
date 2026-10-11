@@ -819,13 +819,20 @@ wp-login.php#language-switcher-post
   task: P4
   api: exported
 
-# P4.70: batch/v1 207 Multi-Status + header envelopes + require-all-validate.
+# P4.70 / P4.128: batch/v1 207 Multi-Status + header envelopes + require-all-validate.
 - prefix: wp-includes/rest-api/class-wp-rest-server.php#serve_batch_request_v1
   go: internal/rest/batch.go
   status: partial
-  task: P4.70
+  task: P4.128
   api: exported
-  notes: "P4.70 — 207 responses, Allow/Link envelopes, validation=require-all-validate"
+  notes: "P4.128 — 207 responses, OPTIONS/HEAD schema, rest_get_max_batch_size, sub-request headers/query, require-all-validate"
+
+- prefix: wp-includes/rest-api/class-wp-rest-server.php#serve_batch_request_v1#tests
+  go: internal/rest/batch_test.go
+  status: partial
+  task: P4.128
+  api: n/a
+  notes: "P4.128 — OPTIONS/HEAD, max-size filter, sub-headers coverage"
 
 # P4.80: DELETE /wp/v2/comments/{id} (trash or force hard-delete).
 - prefix: wp-includes/rest-api/endpoints/class-wp-rest-comments-controller.php#delete_item
