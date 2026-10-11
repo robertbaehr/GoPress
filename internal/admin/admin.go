@@ -2851,13 +2851,14 @@ func mediaMimeFilterOptions(current string) string {
 	return b.String()
 }
 
-// serveMediaNew is the Upload New Media form stub (P7.27 / media-new.php).
+// serveMediaNew is the Upload New Media form stub (P7.27 / P7.123 / media-new.php).
 func (h *Handler) serveMediaNew(w http.ResponseWriter, r *http.Request, c *wp.Context) {
 	if c == nil || c.CurrentUser == nil {
 		http.Error(w, "Unauthorized\n", http.StatusUnauthorized)
 		return
 	}
-	if !c.UserCan(c.CurrentUser, "upload_files") && !c.UserCan(c.CurrentUser, "edit_posts") {
+	// P7.123: media-new.php gates on upload_files only (not edit_posts).
+	if !c.UserCan(c.CurrentUser, "upload_files") {
 		http.Error(w, "Sorry, you are not allowed to upload files.\n", http.StatusForbidden)
 		return
 	}
@@ -2865,30 +2866,57 @@ func (h *Handler) serveMediaNew(w http.ResponseWriter, r *http.Request, c *wp.Co
 		h.handleMediaNewUpload(w, r, c)
 		return
 	}
+	// P7.123: post_id from request when editable (media-new.php).
+	postID := int64(0)
+	if raw := strings.TrimSpace(r.URL.Query().Get("post_id")); raw != "" {
+		if n, err := strconv.ParseInt(raw, 10, 64); err == nil && n > 0 {
+			if p, err := wp.GetPostByID(c, n); err == nil && p != nil && c.UserCan(c.CurrentUser, "edit_post", n) {
+				postID = n
+			}
+		}
+	}
 	blogname := optionString(c, "blogname", "GoPress")
 	nonce := c.CreateNonce("media-form")
+	// P7.123: form classes match media-new.php (+ html-uploader for browser path).
+	formClass := "wp-upload-form media-upload-form type-form validate"
+	if r.URL.Query().Get("browser-uploader") != "" {
+		formClass += " html-uploader"
+	} else {
+		// Default stub uses the browser uploader markup below.
+		formClass += " html-uploader"
+	}
 	var b strings.Builder
 	b.WriteString("<!DOCTYPE html>\n<html>\n<head>\n<meta charset=\"utf-8\">\n")
-	b.WriteString("<title>Upload New Media &lsaquo; ")
+	b.WriteString("<title>Upload Media &lsaquo; ")
 	b.WriteString(html.EscapeString(blogname))
 	b.WriteString(" &#8212; WordPress</title>\n</head>\n")
-	b.WriteString("<body class=\"wp-admin wp-core-ui\">\n")
+	b.WriteString("<body class=\"wp-admin wp-core-ui upload-php media-new-php\">\n")
 	b.WriteString(adminNoticesHTML(c))
 	b.WriteString("<div class=\"wrap\">\n")
-	b.WriteString("<h1>Upload New Media</h1>\n")
-	b.WriteString("<form enctype=\"multipart/form-data\" method=\"post\" action=\"/wp-admin/media-new.php\" class=\"wp-upload-form media-upload-form html-uploader\" id=\"file-form\">\n")
-	b.WriteString("<input type=\"hidden\" id=\"_wpnonce\" name=\"_wpnonce\" value=\"")
-	b.WriteString(html.EscapeString(nonce))
-	b.WriteString("\" />\n")
-	b.WriteString("<input type=\"hidden\" name=\"post_id\" id=\"post_id\" value=\"0\" />\n")
+	b.WriteString("<h1>Upload Media</h1>\n")
+	b.WriteString("<form enctype=\"multipart/form-data\" method=\"post\" action=\"/wp-admin/media-new.php\" class=\"")
+	b.WriteString(html.EscapeString(formClass))
+	b.WriteString("\" id=\"file-form\">\n")
 	b.WriteString("<div id=\"plupload-upload-ui\" class=\"hide-if-no-js\">\n")
 	b.WriteString("<div id=\"drag-drop-area\"><div class=\"drag-drop-inside\">\n")
 	b.WriteString("<p class=\"drag-drop-info\">Drop files to upload</p>\n")
-	b.WriteString("<p><button type=\"button\" id=\"plupload-browse-button\" class=\"browser button\">Select Files</button></p>\n")
+	b.WriteString("<p class=\"drag-drop-buttons\"><input id=\"plupload-browse-button\" type=\"button\" value=\"Select Files\" class=\"browser button\" /></p>\n")
 	b.WriteString("</div></div>\n</div>\n")
+	b.WriteString("<div id=\"html-upload-ui\" class=\"hide-if-js\">\n")
 	b.WriteString("<p><label for=\"async-upload\">Choose a file</label>\n")
 	b.WriteString("<input type=\"file\" id=\"async-upload\" name=\"async-upload\" /></p>\n")
 	b.WriteString("<p class=\"submit\"><input type=\"submit\" name=\"html-upload\" id=\"html-upload\" class=\"button\" value=\"Upload\" /></p>\n")
+	b.WriteString("</div>\n")
+	b.WriteString("<div id=\"media-items\" class=\"hide-if-no-js\"></div>\n")
+	b.WriteString("<script>\nvar post_id = ")
+	b.WriteString(strconv.FormatInt(postID, 10))
+	b.WriteString(", shortform = 3;\n</script>\n")
+	b.WriteString("<input type=\"hidden\" name=\"post_id\" id=\"post_id\" value=\"")
+	b.WriteString(strconv.FormatInt(postID, 10))
+	b.WriteString("\" />\n")
+	b.WriteString("<input type=\"hidden\" id=\"_wpnonce\" name=\"_wpnonce\" value=\"")
+	b.WriteString(html.EscapeString(nonce))
+	b.WriteString("\" />\n")
 	b.WriteString("</form>\n")
 	// P8.29: emit _wpPluploadSettings like wp_plupload_default_settings().
 	if raw, err := json.Marshal(wp.PluploadDefaultSettings(c)); err == nil {
