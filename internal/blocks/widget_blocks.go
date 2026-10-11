@@ -48,9 +48,13 @@ const searchIconSVG = `<svg class="search-icon" viewBox="0 0 24 24" width="24" h
 					<path d="M13 5c-3.3 0-6 2.7-6 6 0 1.4.5 2.7 1.3 3.7l-3.8 3.8 1.1 1.1 3.8-3.8c1 .8 2.3 1.3 3.7 1.3 3.3 0 6-2.7 6-6S16.3 5 13 5zm0 10.5c-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5 4.5 2 4.5 4.5-2 4.5-4.5 4.5z"></path>
 				</svg>`
 
+// renderSearch renders core/search (P5.124 / P5.163).
+// P5.163: coerce supports.align to left|center|right before applySupports.
 func (e *Env) renderSearch(block Block) string {
 	e = e.ensure()
-	label := attrString(block.Attrs, "label")
+	attrs := sanitizeSearchBlockAttrs(block.Attrs)
+	block.Attrs = attrs
+	label := attrString(attrs, "label")
 	if label == "" {
 		label = "Search"
 	}
@@ -104,11 +108,18 @@ func (e *Env) renderSearch(block Block) string {
 		}
 	}
 	classParts = append(classParts, "wp-block-search")
+	// P5.163: supports.align left|center|right.
+	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
+		classParts = append(classParts, "align"+sanitizeClassToken(align))
+	}
+	if cn := strings.TrimSpace(attrString(attrs, "className")); cn != "" {
+		classParts = append(classParts, strings.Fields(cn)...)
+	}
 	class := strings.Join(classParts, " ")
 
 	// P5.124: width/widthUnit → inline style on inside-wrapper.
 	wrapperStyle := ""
-	if w, ok := attrInt(block.Attrs, "width"); ok && w > 0 {
+	if w, ok := attrInt(attrs, "width"); ok && w > 0 {
 		unit := strings.TrimSpace(attrString(block.Attrs, "widthUnit"))
 		if unit == "" {
 			unit = "px"
@@ -196,6 +207,25 @@ func (e *Env) renderSearch(block Block) string {
 		b.WriteString(`</form>`)
 	}
 	return b.String()
+}
+
+// sanitizeSearchBlockAttrs coerces core/search supports.align (P5.163).
+// Allowed: left, center, right. Other values (incl. wide/full/none) are dropped.
+func sanitizeSearchBlockAttrs(attrs map[string]any) map[string]any {
+	if attrs == nil {
+		return nil
+	}
+	out := make(map[string]any, len(attrs))
+	for k, v := range attrs {
+		out[k] = v
+	}
+	align := strings.TrimSpace(attrString(out, "align"))
+	switch align {
+	case "", "left", "center", "right":
+	default:
+		delete(out, "align")
+	}
+	return out
 }
 
 // searchQueryHiddenInputs emits <input type="hidden"> for attributes.query (P5.124).

@@ -258,7 +258,9 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/comments-pagination-numbers":
 		return e.renderCommentsPaginationNumbers(block)
 	case "core/search":
+		// P5.163: coerce align enum before applySupports (left|center|right).
 		out = e.renderSearch(block)
+		return applySupports(out, sanitizeSearchBlockAttrs(block.Attrs), name)
 	case "core/calendar":
 		out = e.renderCalendar(block)
 	case "core/archives":

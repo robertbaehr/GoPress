@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P5.163: core/search align coerce left|center|right.
+- prefix: wp-includes/blocks/search#align
+  go: internal/blocks/widget_blocks.go
+  status: partial
+  task: P5.163
+  api: n/a
+  notes: "P5.163 — align left|center|right coerce before applySupports"
+- prefix: wp-includes/blocks/search#align#tests
+  go: internal/blocks/search_attrs_p5_163_test.go
+  status: partial
+  task: P5.163
+  api: n/a
+  notes: "P5.163 — drop wide/full/none/bogus"
+
 # P7.164: import.php pagenow chrome.
 - prefix: wp-admin/import.php#pagenow
   go: internal/admin/import_wxr.go
