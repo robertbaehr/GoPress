@@ -9726,3 +9726,18 @@ wp-login.php#language-switcher-post
   task: P7.134
   api: n/a
   notes: "P7.134 — form nonce/fields + save with/without nonce"
+
+# P2.129: wp_kses_one_attr.
+- prefix: wp-includes/kses.php#wp_kses_one_attr
+  go: internal/wp/kses_one_attr.go
+  status: partial
+  task: P2.129
+  api: wp_kses_one_attr
+  notes: "P2.129 — KsesOneAttr; whitespace preserve; URI bad-protocol; KsesAttrCheck"
+
+- prefix: wp-includes/kses.php#wp_kses_one_attr#tests
+  go: internal/wp/kses_one_attr_p2_129_test.go
+  status: partial
+  task: P2.129
+  api: n/a
+  notes: "P2.129 — keep/reject attrs, whitespace, javascript: strip"
