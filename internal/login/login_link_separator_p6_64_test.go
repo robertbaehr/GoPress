@@ -13,8 +13,9 @@ import (
 func TestLoginLinkSeparatorFilterP664(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
+	orig := c.Options.GetOption("users_can_register", 0)
 	_, _ = c.Options.UpdateOption("users_can_register", "1", "yes")
-	t.Cleanup(func() { _, _ = c.Options.UpdateOption("users_can_register", "0", "yes") })
+	t.Cleanup(func() { _, _ = c.Options.UpdateOption("users_can_register", orig, "yes") })
 
 	c.Hooks.AddFilter("login_link_separator", func(value any, _ ...any) any {
 		return " :: "
@@ -40,8 +41,9 @@ func TestLoginLinkSeparatorFilterP664(t *testing.T) {
 func TestLoginLinkSeparatorEscapedP664(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
+	orig := c.Options.GetOption("users_can_register", 0)
 	_, _ = c.Options.UpdateOption("users_can_register", "1", "yes")
-	t.Cleanup(func() { _, _ = c.Options.UpdateOption("users_can_register", "0", "yes") })
+	t.Cleanup(func() { _, _ = c.Options.UpdateOption("users_can_register", orig, "yes") })
 
 	c.Hooks.AddFilter("login_link_separator", func(value any, _ ...any) any {
 		return ` <b>x</b> `
@@ -64,8 +66,9 @@ func TestLoginLinkSeparatorEscapedP664(t *testing.T) {
 func TestLoginLinkSeparatorDefaultP664(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
+	orig := c.Options.GetOption("users_can_register", 0)
 	_, _ = c.Options.UpdateOption("users_can_register", "1", "yes")
-	t.Cleanup(func() { _, _ = c.Options.UpdateOption("users_can_register", "0", "yes") })
+	t.Cleanup(func() { _, _ = c.Options.UpdateOption("users_can_register", orig, "yes") })
 
 	req := httptest.NewRequest(http.MethodGet, "/wp-login.php?action=register", nil)
 	rec := httptest.NewRecorder()
