@@ -969,3 +969,94 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.196: admin toppers after erase-personal-data deepen.
+- id: admin-p10196-001-erase
+  role: admin
+  method: GET
+  path: /wp-admin/erase-personal-data.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10196-002-erase-search
+  role: admin
+  method: GET
+  path: /wp-admin/erase-personal-data.php?s=test
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10196-003-erase-filter
+  role: admin
+  method: GET
+  path: /wp-admin/erase-personal-data.php?filter-status=request-pending
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10196-004-export
+  role: admin
+  method: GET
+  path: /wp-admin/export-personal-data.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10196-005-privacy-guide
+  role: admin
+  method: GET
+  path: /wp-admin/privacy-policy-guide.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10196-006-options-privacy
+  role: admin
+  method: GET
+  path: /wp-admin/options-privacy.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10196-007-dashboard
+  role: admin
+  method: GET
+  path: /wp-admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10196-008-edit
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10196-009-tools
+  role: admin
+  method: GET
+  path: /wp-admin/tools.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10196-010-profile
+  role: admin
+  method: GET
+  path: /wp-admin/profile.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
