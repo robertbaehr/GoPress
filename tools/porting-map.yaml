@@ -10986,3 +10986,23 @@ wp-login.php#language-switcher-post
   task: P3.138
   api: n/a
   notes: "P3.138 — bare host + dedupe + invalid reject coverage"
+
+# P8.45: wp_get_attachment_image_srcset / wp_calculate_image_srcset.
+- prefix: wp-includes/media.php#wp_calculate_image_srcset
+  go: internal/wp/image_srcset.go
+  status: partial
+  task: P8.45
+  api: wp_calculate_image_srcset
+  notes: "P8.45 — CalculateImageSrcset/GetAttachmentImageSrcset; ratio match; max width; edit hash"
+- prefix: wp-includes/media.php#wp_get_attachment_image#srcset
+  go: internal/wp/media.go
+  status: partial
+  task: P8.45
+  api: wp_get_attachment_image
+  notes: "P8.45 — auto srcset/sizes + auto sizes prefix for lazy"
+- prefix: wp-includes/media.php#wp_calculate_image_srcset#tests
+  go: internal/wp/image_srcset_p8_45_test.go
+  status: partial
+  task: P8.45
+  api: n/a
+  notes: "P8.45 — medium srcset, thumbnail empty, max width filter"
