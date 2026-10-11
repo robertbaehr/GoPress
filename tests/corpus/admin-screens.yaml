@@ -801,3 +801,86 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.190: admin toppers after browser-nag stack.
+
+- id: admin-p10190-001-edit-trash
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_status=trash
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10190-002-edit-publish
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_status=publish
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10190-003-edit-search
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?s=Hello
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10190-004-comments-moderated
+  role: admin
+  method: GET
+  path: /wp-admin/edit-comments.php?comment_status=moderated
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10190-005-comments-trash
+  role: admin
+  method: GET
+  path: /wp-admin/edit-comments.php?comment_status=trash
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10190-010-plugins-active
+  role: admin
+  method: GET
+  path: /wp-admin/plugins.php?plugin_status=active
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10190-011-plugins-inactive
+  role: admin
+  method: GET
+  path: /wp-admin/plugins.php?plugin_status=inactive
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10190-029-options
+  role: admin
+  method: GET
+  path: /wp-admin/options.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10190-034-customize
+  role: admin
+  method: GET
+  path: /wp-admin/customize.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

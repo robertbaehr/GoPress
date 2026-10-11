@@ -2094,3 +2094,131 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.190: front toppers after wlwmanifest / rest-link stack.
+
+- id: front-p10190-001-home
+  role: anon
+  method: GET
+  path: /
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10190-002-hello
+  role: anon
+  method: GET
+  path: /?p=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10190-003-sample-page
+  role: anon
+  method: GET
+  path: /?page_id=2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10190-004-page-2
+  role: anon
+  method: GET
+  path: /?page=2
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10190-005-year-2024
+  role: anon
+  method: GET
+  path: /?year=2024
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10190-006-m-2024
+  role: anon
+  method: GET
+  path: /?m=2024
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10190-007-search-test
+  role: anon
+  method: GET
+  path: /?s=test
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10190-008-search-hello
+  role: anon
+  method: GET
+  path: /?s=Hello
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10190-009-feed
+  role: anon
+  method: GET
+  path: /feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10190-010-feed-rss
+  role: anon
+  method: GET
+  path: /feed/rss/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10190-011-feed-atom
+  role: anon
+  method: GET
+  path: /feed/atom/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10190-012-comments-feed
+  role: anon
+  method: GET
+  path: /comments/feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10190-013-robots
+  role: anon
+  method: GET
+  path: /robots.txt
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10190-014-sitemap
+  role: anon
+  method: GET
+  path: /wp-sitemap.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
