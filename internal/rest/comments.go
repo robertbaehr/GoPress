@@ -100,7 +100,20 @@ type commentStatusFilter struct {
 	Any      bool     // no status filter (moderators only; unused today)
 }
 
-func listCommentsPaged(c *wp.Context, postID int64, limit, page int, status commentStatusFilter) ([]Comment, error) {
+// commentListQuery holds REST collection filters for comments (P4.129).
+type commentListQuery struct {
+	PostID  int64
+	Status  commentStatusFilter
+	Search  string
+	Orderby string
+	Order   string
+	Author  []int64
+	Parent  []int64 // nil = absent; may include 0
+	Include []int64
+	Exclude []int64
+}
+
+func listCommentsPaged(c *wp.Context, q commentListQuery, limit, page int) ([]Comment, error) {
 	if c == nil || c.DB == nil {
 		return nil, fmt.Errorf("nil DB")
 	}
@@ -111,23 +124,18 @@ func listCommentsPaged(c *wp.Context, postID int64, limit, page int, status comm
 		page = 1
 	}
 	offset := (page - 1) * limit
-	where, whereArgs := commentStatusWhere(status)
+	where, args := buildCommentListWhere(q)
 	sql := "SELECT comment_ID, comment_post_ID, comment_author, comment_author_email, comment_author_url, " +
 		"comment_date, comment_date_gmt, comment_content, comment_approved, comment_type, comment_parent, user_id " +
 		"FROM " + c.DB.Comments() +
-		" WHERE " + where + " AND comment_type IN (%s, %s)"
-	args := append(append([]any{}, whereArgs...), "comment", "")
-	if postID > 0 {
-		sql += " AND comment_post_ID = %d"
-		args = append(args, postID)
-	}
-	sql += " ORDER BY comment_date_gmt DESC LIMIT %d OFFSET %d"
+		" WHERE " + where
+	sql += " ORDER BY " + commentOrderBySQL(q.Orderby, q.Order, q.Include) + " LIMIT %d OFFSET %d"
 	args = append(args, limit, offset)
-	q, prepArgs, err := c.DB.Prepare(sql, args...)
+	prepared, prepArgs, err := c.DB.Prepare(sql, args...)
 	if err != nil {
 		return nil, err
 	}
-	rows, err := c.DB.GetResults(q, prepArgs...)
+	rows, err := c.DB.GetResults(prepared, prepArgs...)
 	if err != nil {
 		return nil, err
 	}
@@ -139,23 +147,17 @@ func listCommentsPaged(c *wp.Context, postID int64, limit, page int, status comm
 	return out, nil
 }
 
-func countComments(c *wp.Context, postID int64, status commentStatusFilter) (int, error) {
+func countComments(c *wp.Context, q commentListQuery) (int, error) {
 	if c == nil || c.DB == nil {
 		return 0, fmt.Errorf("nil DB")
 	}
-	where, whereArgs := commentStatusWhere(status)
-	sql := "SELECT COUNT(*) AS total FROM " + c.DB.Comments() +
-		" WHERE " + where + " AND comment_type IN (%s, %s)"
-	args := append(append([]any{}, whereArgs...), "comment", "")
-	if postID > 0 {
-		sql += " AND comment_post_ID = %d"
-		args = append(args, postID)
-	}
-	q, prepArgs, err := c.DB.Prepare(sql, args...)
+	where, args := buildCommentListWhere(q)
+	sql := "SELECT COUNT(*) AS total FROM " + c.DB.Comments() + " WHERE " + where
+	prepared, prepArgs, err := c.DB.Prepare(sql, args...)
 	if err != nil {
 		return 0, err
 	}
-	row, err := c.DB.GetRow(q, prepArgs...)
+	row, err := c.DB.GetRow(prepared, prepArgs...)
 	if err != nil {
 		return 0, err
 	}
@@ -163,6 +165,141 @@ func countComments(c *wp.Context, postID int64, status commentStatusFilter) (int
 		return 0, nil
 	}
 	return int(asInt64(row["total"])), nil
+}
+
+func buildCommentListWhere(q commentListQuery) (string, []any) {
+	statusWhere, statusArgs := commentStatusWhere(q.Status)
+	sql := statusWhere + " AND comment_type IN (%s, %s)"
+	args := append(append([]any{}, statusArgs...), "comment", "")
+	if q.PostID > 0 {
+		sql += " AND comment_post_ID = %d"
+		args = append(args, q.PostID)
+	}
+	if q.Search != "" {
+		like := "%" + q.Search + "%"
+		sql += " AND (comment_content LIKE %s OR comment_author LIKE %s OR comment_author_email LIKE %s)"
+		args = append(args, like, like, like)
+	}
+	if len(q.Author) > 0 {
+		sql += " AND user_id IN (" + placeholdersN(len(q.Author)) + ")"
+		for _, id := range q.Author {
+			args = append(args, id)
+		}
+	}
+	if q.Parent != nil {
+		if len(q.Parent) == 0 {
+			sql += " AND 1=0"
+		} else {
+			sql += " AND comment_parent IN (" + placeholdersN(len(q.Parent)) + ")"
+			for _, id := range q.Parent {
+				args = append(args, id)
+			}
+		}
+	}
+	if len(q.Include) > 0 {
+		sql += " AND comment_ID IN (" + placeholdersN(len(q.Include)) + ")"
+		for _, id := range q.Include {
+			args = append(args, id)
+		}
+	}
+	if len(q.Exclude) > 0 {
+		sql += " AND comment_ID NOT IN (" + placeholdersN(len(q.Exclude)) + ")"
+		for _, id := range q.Exclude {
+			args = append(args, id)
+		}
+	}
+	return sql, args
+}
+
+func placeholdersN(n int) string {
+	if n <= 0 {
+		return ""
+	}
+	parts := make([]string, n)
+	for i := range parts {
+		parts[i] = "%d"
+	}
+	return strings.Join(parts, ", ")
+}
+
+// commentOrderBySQL maps REST orderby/order to SQL (P4.129).
+func commentOrderBySQL(orderby, order string, include []int64) string {
+	dir := "DESC"
+	if strings.EqualFold(order, "asc") {
+		dir = "ASC"
+	}
+	switch strings.ToLower(strings.TrimSpace(orderby)) {
+	case "date":
+		return "comment_date " + dir
+	case "id":
+		return "comment_ID " + dir
+	case "post":
+		return "comment_post_ID " + dir + ", comment_ID " + dir
+	case "parent":
+		return "comment_parent " + dir + ", comment_ID " + dir
+	case "type":
+		return "comment_type " + dir + ", comment_ID " + dir
+	case "include":
+		if len(include) > 0 {
+			var b strings.Builder
+			b.WriteString("FIELD(comment_ID")
+			for _, id := range include {
+				b.WriteString(", ")
+				b.WriteString(strconv.FormatInt(id, 10))
+			}
+			b.WriteString(")")
+			return b.String()
+		}
+		return "comment_date_gmt " + dir
+	case "date_gmt", "":
+		fallthrough
+	default:
+		return "comment_date_gmt " + dir
+	}
+}
+
+// parseCommentsOrderby accepts REST orderby=date|date_gmt|id|include|post|parent|type (P4.129).
+func parseCommentsOrderby(r *http.Request) string {
+	v := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("orderby")))
+	switch v {
+	case "date", "date_gmt", "id", "include", "post", "parent", "type":
+		return v
+	case "":
+		return "date_gmt"
+	default:
+		return "date_gmt"
+	}
+}
+
+func parseCommentsOrder(r *http.Request) string {
+	v := strings.ToLower(strings.TrimSpace(r.URL.Query().Get("order")))
+	if v == "asc" {
+		return "asc"
+	}
+	return "desc"
+}
+
+func parseCommentsSearch(r *http.Request) string {
+	if r == nil {
+		return ""
+	}
+	return strings.TrimSpace(r.URL.Query().Get("search"))
+}
+
+func parseCommentsAuthorIDs(r *http.Request) []int64 {
+	return parsePostsTermIDs(r, "author")
+}
+
+func parseCommentsParentIDs(r *http.Request) []int64 {
+	return parsePostsParentIDs(r, "parent")
+}
+
+func parseCommentsInclude(r *http.Request) []int64 {
+	return parsePostsTermIDs(r, "include")
+}
+
+func parseCommentsExclude(r *http.Request) []int64 {
+	return parsePostsTermIDs(r, "exclude")
 }
 
 // commentStatusWhere builds the comment_approved SQL fragment + bind args (P4.98).
