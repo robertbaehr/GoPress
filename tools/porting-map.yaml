@@ -1,4 +1,18 @@
 
+# P5.159: deepen core/pullquote fontSize/gradient; coerce align enum.
+- prefix: wp-includes/blocks/pullquote.php#attrs
+  go: internal/blocks/pullquote.go
+  status: partial
+  task: P5.159
+  api: n/a
+  notes: "P5.159 — coerce align left|right|wide|full; drop center/none/bogus; fontSize/gradient/anchor polish"
+- prefix: wp-includes/blocks/pullquote.php#attrs#tests
+  go: internal/blocks/pullquote_attrs_p5_159_test.go
+  status: partial
+  task: P5.159
+  api: n/a
+  notes: "P5.159 — align coerce, saved fontSize/gradient coverage"
+
 # P8.52: get_post_mime_type.
 - prefix: wp-includes/post.php#get_post_mime_type
   go: internal/wp/post_mime_type.go

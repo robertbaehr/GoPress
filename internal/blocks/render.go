@@ -121,7 +121,9 @@ func (e *Env) RenderBlock(block Block) string {
 		out = e.renderVerse(block)
 		return applySupports(out, sanitizeVerseBlockAttrs(block.Attrs), name)
 	case "core/pullquote":
+		// P5.159: coerce align enum before applySupports; fontSize/gradient polish.
 		out = e.renderPullquote(block)
+		return applySupports(out, sanitizePullquoteBlockAttrs(block.Attrs), name)
 	case "core/buttons":
 		// P5.155: coerce align enum before applySupports; fontSize/gradient polish.
 		out = e.renderButtons(block)
