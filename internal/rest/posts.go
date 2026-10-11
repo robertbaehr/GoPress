@@ -1058,7 +1058,7 @@ func postFromWP(c *wp.Context, row wp.Post, home string, edit bool, sticky map[i
 		DateGMT:     mysqlDateToREST(row.DateGMT),
 		GUID:        RenderedString{Rendered: row.GUID},
 		Modified:    mysqlDateToREST(row.Modified),
-		ModifiedGMT: mysqlDateToREST(row.ModifiedGMT),
+		ModifiedGMT: modifiedGMTToREST(c, row.ModifiedGMT, row.Modified),
 		Slug:        row.Name,
 		Status:      row.Status,
 		Type:        row.Type,
@@ -1408,7 +1408,7 @@ func postPermalink(home, mysqlDate, slug string, id int64) string {
 
 func mysqlDateToREST(s string) string {
 	s = strings.TrimSpace(s)
-	if s == "" {
+	if s == "" || isZeroMySQLDate(s) {
 		return ""
 	}
 	t, err := time.Parse("2006-01-02 15:04:05", s)
@@ -1416,6 +1416,44 @@ func mysqlDateToREST(s string) string {
 		return strings.ReplaceAll(s, " ", "T")
 	}
 	return t.Format("2006-01-02T15:04:05")
+}
+
+// isZeroMySQLDate reports WP's empty datetime sentinel.
+func isZeroMySQLDate(s string) bool {
+	s = strings.TrimSpace(s)
+	return s == "0000-00-00 00:00:00" || s == "0000-00-00T00:00:00"
+}
+
+// modifiedGMTToREST mirrors WP REST prepare_item_for_response modified_gmt:
+// when post_modified_gmt is the zero sentinel, shim from post_modified using
+// the site timezone / gmt_offset (P4.144).
+func modifiedGMTToREST(c *wp.Context, modifiedGMT, modified string) string {
+	gmt := strings.TrimSpace(modifiedGMT)
+	if isZeroMySQLDate(gmt) || gmt == "" {
+		local := strings.TrimSpace(modified)
+		if local == "" || isZeroMySQLDate(local) {
+			return ""
+		}
+		converted, err := wp.GetGMTFromDate(local, wp.TimezoneString(c), "Y-m-d H:i:s")
+		if err != nil || strings.TrimSpace(converted) == "" {
+			// Fallback: gmt_offset hours (WP casts float→int).
+			offset := 0.0
+			if c != nil && c.Options != nil {
+				raw := strings.TrimSpace(fmt.Sprint(c.Options.GetOption("gmt_offset", "0")))
+				if n, err := strconv.ParseFloat(raw, 64); err == nil {
+					offset = n
+				}
+			}
+			t, err := time.Parse("2006-01-02 15:04:05", local)
+			if err != nil {
+				return ""
+			}
+			t = t.Add(-time.Duration(int(offset)) * time.Hour)
+			return t.Format("2006-01-02T15:04:05")
+		}
+		gmt = converted
+	}
+	return mysqlDateToREST(gmt)
 }
 
 func asString(v any) string {
