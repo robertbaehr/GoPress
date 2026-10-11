@@ -9560,3 +9560,18 @@ wp-login.php#language-switcher-post
   task: P5.132
   api: n/a
   notes: "P5.132 — title/sidebar paths still empty; no leak"
+
+# P4.148: deepen REST posts/pages ?_embed with replies + up.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#_embed#p4.148
+  go: internal/rest/posts_embed.go
+  status: partial
+  task: P4.148
+  api: n/a
+  notes: "P4.148 — replies (embed comments) + up (page parent); Comment embed MarshalJSON"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#_embed#p4.148#tests
+  go: internal/rest/posts_embed_p4_148_test.go
+  status: partial
+  task: P4.148
+  api: n/a
+  notes: "P4.148 — replies filter/all + pages up parent"
