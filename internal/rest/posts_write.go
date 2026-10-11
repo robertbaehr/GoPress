@@ -48,7 +48,22 @@ func (s *Server) servePostCollection(w http.ResponseWriter, r *http.Request, c *
 }
 
 func (s *Server) listPostCollection(w http.ResponseWriter, r *http.Request, c *wp.Context, postType string) {
-	perPage := parsePerPage(r, 10)
+	// P4.138: strict per_page validation (1–100) like rest_validate_request_arg.
+	perPage, perOK := parsePostsPerPage(r, 10)
+	if !perOK {
+		w.Header().Set("Allow", "GET")
+		writeJSON(w, http.StatusBadRequest, map[string]any{
+			"code":    "rest_invalid_param",
+			"message": "Invalid parameter(s): per_page",
+			"data": map[string]any{
+				"status": 400,
+				"params": map[string]any{
+					"per_page": "per_page must be between 1 (inclusive) and 100 (inclusive)",
+				},
+			},
+		})
+		return
+	}
 	page := parsePage(r)
 	offset, useOffset := parsePostsOffset(r)
 	edit := r.URL.Query().Get("context") == "edit" && canEditPosts(c)

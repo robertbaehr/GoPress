@@ -185,6 +185,27 @@ func parsePerPage(r *http.Request, def int) int {
 	return perPage
 }
 
+// parsePostsPerPage validates REST collection per_page (P4.138).
+// Mirrors WP_REST_Controller::get_collection_params: integer, min 1, max 100.
+// Absent → def; invalid/out-of-range → ok=false (caller returns rest_invalid_param).
+func parsePostsPerPage(r *http.Request, def int) (perPage int, ok bool) {
+	if def <= 0 {
+		def = 10
+	}
+	if r == nil {
+		return def, true
+	}
+	v := strings.TrimSpace(r.URL.Query().Get("per_page"))
+	if v == "" {
+		return def, true
+	}
+	n, err := strconv.Atoi(v)
+	if err != nil || n < 1 || n > 100 {
+		return 0, false
+	}
+	return n, true
+}
+
 func parsePage(r *http.Request) int {
 	page := 1
 	if v := r.URL.Query().Get("page"); v != "" {
