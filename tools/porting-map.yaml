@@ -10418,3 +10418,11 @@ wp-login.php#language-switcher-post
   task: P10.188
   api: n/a
   notes: "P10.188 — +40 headers-safe cases after drop of Link/status/json-sensitive toppers"
+
+# P10.189: STATUS/PORTING refresh after P5.139–P10.188.
+- prefix: docs/STATUS.md#p10.189
+  go: docs/STATUS.md
+  status: partial
+  task: P10.189
+  api: n/a
+  notes: "P10.189 — summarize avatar attrs, categories_exclude integer, php_nag, KsesDecodeEntities, RestOutputLinkHeader, login_body_class + 1905 corpus"
