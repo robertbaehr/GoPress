@@ -7776,10 +7776,16 @@ func writeHTML(w http.ResponseWriter, status int, body string) {
 }
 
 func adminNoticesHTML(c *wp.Context) string {
-	if c == nil {
+	if c == nil || c.Hooks == nil {
 		return ""
 	}
-	return c.CaptureAdminNotices()
+	// P7.139: update_nag runs at priority 3 before other admin_notices callbacks.
+	var buf strings.Builder
+	c.Hooks.BeginNoticeCapture(&buf)
+	defer c.Hooks.EndNoticeCapture()
+	UpdateNag(c)
+	c.Hooks.DoAction("admin_notices")
+	return buf.String()
 }
 
 func optionString(c *wp.Context, name, fallback string) string {

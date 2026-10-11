@@ -10254,3 +10254,17 @@ wp-login.php#language-switcher-post
   task: P4.154
   api: n/a
   notes: "P4.154 — bogus/mixed index/array/empty scalar coverage"
+
+# P7.139: update_nag admin notice.
+- prefix: wp-admin/includes/update.php#update_nag
+  go: internal/admin/update_nag.go
+  status: partial
+  task: P7.139
+  api: update_nag
+  notes: "P7.139 — update_nag warning; skip update-core.php; default no upgrade (updates OOS)"
+- prefix: wp-admin/includes/update.php#update_nag#tests
+  go: internal/admin/update_nag_p7_139_test.go
+  status: partial
+  task: P7.139
+  api: n/a
+  notes: "P7.139 — absent by default; injected upgrade; skipped on update-core.php"
