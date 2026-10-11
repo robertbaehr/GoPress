@@ -27,6 +27,14 @@
 
 
 
+# P10.230: STATUS/PORTING refresh after P6.72–P9.48 stack.
+- prefix: docs/STATUS.md#p10-230
+  go: docs/STATUS.md
+  status: partial
+  task: P10.230
+  api: n/a
+  notes: "P10.230 — summarize lostpassword_post, IncludesURL, GetEditTermLink, ImageResizeDimensions, latest-posts align, plugin-install chrome, SIGNED orderby, IsPluginActiveForNetwork"
+
 # P9.48: is_plugin_active_for_network (single-site always false).
 - prefix: wp-admin/includes/plugin.php#is_plugin_active_for_network
   go: internal/plugins/plugin.go
