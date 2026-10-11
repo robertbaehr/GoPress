@@ -154,3 +154,44 @@ func writeTinyPNG(t *testing.T, path string) {
 		t.Fatal(err)
 	}
 }
+
+// P2.117: pre_wp_filesize short-circuit + wp_filesize filter.
+func TestFilesizeFilteredHooks(t *testing.T) {
+	c := mediaBoot(t)
+	dir := t.TempDir()
+	path := filepath.Join(dir, "sized.bin")
+	if err := os.WriteFile(path, []byte("abcdefghij"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got := wp.Filesize(path); got != 10 {
+		t.Fatalf("Filesize=%d want 10", got)
+	}
+	if got := wp.FilesizeFiltered(c, path); got != 10 {
+		t.Fatalf("unfiltered FilesizeFiltered=%d want 10", got)
+	}
+
+	c.Hooks.AddFilter("pre_wp_filesize", func(value any, args ...any) any {
+		return int64(42)
+	}, 10, 2)
+	if got := wp.FilesizeFiltered(c, path); got != 42 {
+		t.Fatalf("pre_wp_filesize short-circuit=%d want 42", got)
+	}
+	if got := wp.FilesizeFiltered(c, "/no/such/file"); got != 42 {
+		t.Fatalf("pre bypasses missing file: %d", got)
+	}
+
+	// Negative pre is ignored (WP 7.1+).
+	c2 := mediaBoot(t)
+	c2.Hooks.AddFilter("pre_wp_filesize", func(value any, args ...any) any {
+		return int64(-1)
+	}, 10, 2)
+	c2.Hooks.AddFilter("wp_filesize", func(value any, args ...any) any {
+		if n, ok := value.(int64); ok {
+			return n + 5
+		}
+		return value
+	}, 10, 2)
+	if got := wp.FilesizeFiltered(c2, path); got != 15 {
+		t.Fatalf("wp_filesize filter=%d want 15", got)
+	}
+}

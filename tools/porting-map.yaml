@@ -5237,6 +5237,21 @@ wp-login.php#language-switcher-post
   api: exported
   notes: "P8.26 — Filesize via os.Stat"
 
+# P2.117: deepen wp_filesize with pre_wp_filesize / wp_filesize filters.
+- prefix: wp-includes/functions.php#wp_filesize.p2.117
+  go: internal/wp/image_meta.go
+  status: partial
+  task: P2.117
+  api: exported
+  notes: "P2.117 — FilesizeFiltered: pre short-circuit + wp_filesize filter; used by metadata"
+
+- prefix: wp-includes/functions.php#wp_filesize.p2.117.tests
+  go: internal/wp/image_meta_test.go
+  status: partial
+  task: P2.117
+  api: n/a
+  notes: "P2.117 — FilesizeFiltered hook coverage"
+
 # P8.26: generate attachment metadata filesize deepen.
 - prefix: wp-admin/includes/image.php#wp_generate_attachment_metadata.p8.26
   go: internal/wp/image_meta.go
