@@ -516,20 +516,34 @@ func parsePostsSlug(r *http.Request) []string {
 	return out
 }
 
-// parsePostsStatus reads REST ?status= (maps to WP_Query post_status, P4.88).
-// Default is publish. Non-publish values require edit_posts (editors).
-// Returns http status code + message on forbidden (0 on success).
+// parsePostsStatus reads REST ?status= (maps to WP_Query post_status, P4.88 / P4.134).
+// Default is publish. Non-publish values (incl. "any") require edit_posts (editors).
+// Accepts comma-separated values, repeated ?status=, and PHP-style status[]= arrays.
+// Tokens are sanitize_key'd (lowercase a-z0-9_-). Returns http status + message on
+// forbidden (0 on success).
 func parsePostsStatus(r *http.Request, c *wp.Context) (statuses []string, code int, message string) {
 	if r == nil {
 		return []string{"publish"}, 0, ""
 	}
 	var raw []string
-	for _, v := range r.URL.Query()["status"] {
+	add := func(v string) {
 		for _, part := range strings.Split(v, ",") {
-			part = strings.ToLower(strings.TrimSpace(part))
+			part = sanitizeRESTStatusKey(part)
 			if part != "" {
 				raw = append(raw, part)
 			}
+		}
+	}
+	q := r.URL.Query()
+	if vals, ok := q["status"]; ok {
+		for _, v := range vals {
+			add(v)
+		}
+	}
+	// PHP array form: status[]=draft&status[]=pending (rest_sanitize_array).
+	if vals, ok := q["status[]"]; ok {
+		for _, v := range vals {
+			add(v)
 		}
 	}
 	if len(raw) == 0 {
@@ -558,6 +572,21 @@ func parsePostsStatus(r *http.Request, c *wp.Context) (statuses []string, code i
 		}
 	}
 	return out, 0, ""
+}
+
+// sanitizeRESTStatusKey mirrors sanitize_key for REST post status tokens (P4.134).
+func sanitizeRESTStatusKey(s string) string {
+	s = strings.ToLower(strings.TrimSpace(s))
+	if s == "" {
+		return ""
+	}
+	var b strings.Builder
+	for _, r := range s {
+		if (r >= 'a' && r <= 'z') || (r >= '0' && r <= '9') || r == '_' || r == '-' {
+			b.WriteRune(r)
+		}
+	}
+	return b.String()
 }
 
 func parsePostsTermIDs(r *http.Request, key string) []int64 {
