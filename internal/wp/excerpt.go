@@ -12,9 +12,9 @@ func HasExcerpt(post *Post) bool {
 	return post != nil && strings.TrimSpace(post.Excerpt) != ""
 }
 
-// GetTheExcerpt is get_the_excerpt() (P3.124).
+// GetTheExcerpt is get_the_excerpt() (P3.124 / P2.140).
 // Password-protected posts return the protected message. Applies get_the_excerpt
-// filter, then wp_trim_excerpt-style generation from content when still empty.
+// filter, then wp_trim_excerpt (P2.140) which generates from content when empty.
 func GetTheExcerpt(c *Context, post *Post) string {
 	if post == nil {
 		return ""
@@ -30,10 +30,8 @@ func GetTheExcerpt(c *Context, post *Post) string {
 			}
 		}
 	}
-	if strings.TrimSpace(excerpt) == "" {
-		excerpt = TrimExcerptFromContent(post.Content, 55)
-	}
-	return excerpt
+	// P2.140: default WP wires wp_trim_excerpt onto get_the_excerpt @10.
+	return WPTrimExcerpt(c, excerpt, post)
 }
 
 // TheExcerpt is the_excerpt() display path (P3.124): GetTheExcerpt → wpautop →
@@ -57,23 +55,12 @@ func TheExcerpt(c *Context, post *Post) string {
 
 // TrimExcerptFromContent is a wp_trim_excerpt subset for empty custom excerpts (P3.124).
 // Strips tags / shortcodes / block comments lightly and keeps numWords (default 55).
+// Prefer WPTrimExcerpt (P2.140) for filter-aware generation.
 func TrimExcerptFromContent(content string, numWords int) string {
 	if numWords <= 0 {
 		numWords = 55
 	}
-	text := content
-	for {
-		start := strings.Index(text, "<!--")
-		if start < 0 {
-			break
-		}
-		end := strings.Index(text[start:], "-->")
-		if end < 0 {
-			text = text[:start]
-			break
-		}
-		text = text[:start] + text[start+end+3:]
-	}
+	text := stripBlockComments(content)
 	text = StripShortcodes(nil, text)
 	text = stripTagsBasic(text)
 	text = strings.Join(strings.Fields(text), " ")

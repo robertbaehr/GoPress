@@ -34,12 +34,13 @@ func TestGetTheExcerptTrimFromContent(t *testing.T) {
 	if strings.Contains(got, "<p>") {
 		t.Fatalf("should strip tags: %q", got)
 	}
-	if !strings.HasSuffix(got, "…") {
-		t.Fatalf("expected ellipsis trim: %q", got)
+	// P2.140: default excerpt_more is " [&hellip;]".
+	if !strings.Contains(got, "[&hellip;]") {
+		t.Fatalf("expected excerpt_more trim: %q", got)
 	}
-	if len(strings.Fields(got)) != 55 {
-		// 55 words + ellipsis attached to last — Fields still 55
-		t.Fatalf("word count=%d got=%q", len(strings.Fields(strings.TrimSuffix(got, "…"))), got)
+	trimmed := strings.TrimSpace(strings.TrimSuffix(strings.TrimSpace(got), "[&hellip;]"))
+	if n := len(strings.Fields(trimmed)); n != 55 {
+		t.Fatalf("word count=%d got=%q", n, got)
 	}
 }
 
