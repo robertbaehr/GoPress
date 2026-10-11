@@ -11014,3 +11014,11 @@ wp-login.php#language-switcher-post
   task: P10.198
   api: n/a
   notes: "P10.198 — preformatted/slug-order/export/trim-excerpt/dns-prefetch/srcset toppers; 2271 cases; dropped set-cookie admin"
+
+# P10.199: STATUS/PORTING refresh after P5.144–P10.198.
+- prefix: docs/STATUS.md#p10.199
+  go: docs/STATUS.md
+  status: partial
+  task: P10.199
+  api: n/a
+  notes: "P10.199 — summarize preformatted attrs, slug orderby, export search, trim_excerpt, dns-prefetch, srcset, corpus 2271"
