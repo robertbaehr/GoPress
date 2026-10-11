@@ -8307,6 +8307,14 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P10.153 — summarize loginout/include[]/revision/filesize/post_class/do_action_ref + 1167 corpus"
 
+# P10.155: STATUS/PORTING refresh after P5.122–P10.154.
+- prefix: docs/STATUS.md#p10.155
+  go: docs/STATUS.md
+  status: partial
+  task: P10.155
+  api: n/a
+  notes: "P10.155 — summarize archives/calendar/per_page/media-new/is_ip/comment_class/shake + 1200 corpus"
+
 # P10.154: expand diff corpus after P5.122–P6.50.
 - prefix: tests/corpus#p10.154
   go: tests/corpus
