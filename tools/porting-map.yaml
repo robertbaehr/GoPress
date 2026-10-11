@@ -11182,3 +11182,17 @@ wp-login.php#language-switcher-post
   task: P7.147
   api: n/a
   notes: "P7.147 — popular importers + Import card + WXR counts coverage"
+
+# P2.142: wp.utils.WordCounter / block word count helper.
+- prefix: wp-admin/js/word-count.js#WordCounter
+  go: internal/wp/word_count.go
+  status: partial
+  task: P2.142
+  api: n/a
+  notes: "P2.142 — WordCount + WPWordCount words/characters_* matching word-count.js"
+- prefix: wp-admin/js/word-count.js#WordCounter#tests
+  go: internal/wp/word_count_p2_142_test.go
+  status: partial
+  task: P2.142
+  api: n/a
+  notes: "P2.142 — words, characters modes, locale default type"
