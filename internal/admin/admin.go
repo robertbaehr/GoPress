@@ -205,9 +205,6 @@ func (h *Handler) renderDashboard(w http.ResponseWriter, r *http.Request, c *wp.
 	blogname := optionString(c, "blogname", "GoPress")
 	restNonce := c.CreateNonce("wp_rest")
 	hbNonce := c.CreateNonce("heartbeat-nonce")
-	posts := countPostsByTypeStatus(c, "post", "publish")
-	pages := countPostsByTypeStatus(c, "page", "publish")
-	comments := countComments(c, "1")
 	ch := newAdminChrome(c, "Dashboard", "index-php")
 	ch.HeadExtra += fmt.Sprintf(
 		`<script>var wpApiSettings = {"root":"/wp-json/","nonce":"%s"};</script>
@@ -218,31 +215,23 @@ func (h *Handler) renderDashboard(w http.ResponseWriter, r *http.Request, c *wp.
 	// P7.55: optional noticeHTML for Quick Draft save feedback.
 	// P7.56: Activity widget lists recent comments from the DB.
 	// P7.57: Site Health Status widget (wp_dashboard_site_health).
+	// P7.110: At a Glance deepen + Recently Published list.
 	recentCommentsHTML := activityRecentCommentsHTML(c, 5)
+	recentPublishedHTML := activityRecentlyPublishedHTML(c, 5)
 	siteHealthHTML := siteHealthDashboardWidgetHTML(c)
+	rightNowHTML := dashboardRightNowHTML(c)
 	inner := fmt.Sprintf(`%s%s<h1>Dashboard</h1>
 <p>%s</p>
 <div id="dashboard-widgets-wrap">
 <div id="dashboard-widgets" class="metabox-holder">
 <div id="postbox-container-1" class="postbox-container">
-<div id="dashboard_right_now" class="postbox">
-<h2 class="hndle"><span>At a Glance</span></h2>
-<div class="inside">
-<ul>
-<li class="post-count"><a href="/wp-admin/edit.php">%d Posts</a></li>
-<li class="page-count"><a href="/wp-admin/edit.php?post_type=page">%d Pages</a></li>
-<li class="comment-count"><a href="/wp-admin/edit-comments.php">%d Comments</a></li>
-</ul>
-</div>
-</div>
+%s
 %s
 <div id="dashboard_activity" class="postbox">
 <h2 class="hndle"><span>Activity</span></h2>
 <div class="inside">
 <div id="activity-widget">
-<div id="published-posts" class="activity-block"><h3>Recently Published</h3>
-<p>Recent posts appear here when available.</p>
-</div>
+%s
 %s
 </div>
 </div>
@@ -284,7 +273,7 @@ func (h *Handler) renderDashboard(w http.ResponseWriter, r *http.Request, c *wp.
 </div>
 </div>
 </div>
-`, adminNoticesHTML(c), noticeHTML, html.EscapeString(blogname), posts, pages, comments, siteHealthHTML, recentCommentsHTML)
+`, adminNoticesHTML(c), noticeHTML, html.EscapeString(blogname), rightNowHTML, siteHealthHTML, recentPublishedHTML, recentCommentsHTML)
 	writeAdminPage(w, c, ch, inner)
 }
 
