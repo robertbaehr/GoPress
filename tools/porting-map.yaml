@@ -7959,3 +7959,25 @@ wp-login.php#language-switcher-post
   task: P5.119
   api: n/a
   notes: "P5.119 — className/arrow/showLabel unit coverage"
+
+# P4.135: REST posts search_columns query param.
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#search_columns
+  go: internal/rest/posts.go
+  status: partial
+  task: P4.135
+  api: exported
+  notes: "P4.135 — ?search_columns= post_title|post_content|post_excerpt; comma + array; invalid ignored"
+
+- prefix: wp-includes/class-wp-query.php#search_columns
+  go: internal/wp/query.go
+  status: partial
+  task: P4.135
+  api: exported
+  notes: "P4.135 — QueryArgs.SearchColumns + searchFilterSQL column subset"
+
+- prefix: wp-includes/rest-api/endpoints/class-wp-rest-posts-controller.php#search_columns#tests
+  go: internal/rest/posts_test.go
+  status: partial
+  task: P4.135
+  api: n/a
+  notes: "P4.135 — search_columns title/content/fallback/comma coverage"

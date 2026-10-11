@@ -26,6 +26,9 @@ type QueryArgs struct {
 	PageName string // page slug (query var "pagename"); implies post_type=page when PostType unset
 	// Search is the `s` query var (title/content LIKE, P3.21).
 	Search string
+	// SearchColumns limits Search LIKE columns (REST search_columns, P4.135).
+	// Allowed: post_title, post_content, post_excerpt. Empty → all three.
+	SearchColumns []string
 	// Year / MonthNum / Day filter post_date for date archives (P3.22).
 	Year     int
 	MonthNum int
@@ -124,10 +127,9 @@ func CountPosts(c *Context, args QueryArgs) (int, error) {
 		where = append(where, clause)
 		vals = append(vals, cvals...)
 	}
-	if term := strings.TrimSpace(args.Search); term != "" {
-		like := "%" + db.EscapeLike(term) + "%"
-		where = append(where, "(post_title LIKE %s OR post_excerpt LIKE %s OR post_content LIKE %s)")
-		vals = append(vals, like, like, like)
+	if clause, cvals := searchFilterSQL(args.Search, args.SearchColumns); clause != "" {
+		where = append(where, clause)
+		vals = append(vals, cvals...)
 	}
 	if args.Year > 0 {
 		where = append(where, "YEAR(post_date) = %d")
@@ -356,10 +358,9 @@ func GetPosts(c *Context, args QueryArgs) ([]Post, error) {
 		where = append(where, clause)
 		vals = append(vals, cvals...)
 	}
-	if term := strings.TrimSpace(args.Search); term != "" {
-		like := "%" + db.EscapeLike(term) + "%"
-		where = append(where, "(post_title LIKE %s OR post_excerpt LIKE %s OR post_content LIKE %s)")
-		vals = append(vals, like, like, like)
+	if clause, cvals := searchFilterSQL(args.Search, args.SearchColumns); clause != "" {
+		where = append(where, clause)
+		vals = append(vals, cvals...)
 	}
 	if args.Year > 0 {
 		where = append(where, "YEAR(post_date) = %d")
@@ -953,6 +954,42 @@ func lastPathSegment(path string) string {
 	}
 	parts := strings.Split(path, "/")
 	return parts[len(parts)-1]
+}
+
+// searchFilterSQL builds the Search LIKE clause (P3.21 / P4.135).
+// columns may be post_title, post_content, post_excerpt; invalid names ignored.
+// Empty columns → all three (WP default).
+func searchFilterSQL(term string, columns []string) (string, []any) {
+	term = strings.TrimSpace(term)
+	if term == "" {
+		return "", nil
+	}
+	allowed := map[string]bool{
+		"post_title":   true,
+		"post_content": true,
+		"post_excerpt": true,
+	}
+	var cols []string
+	seen := map[string]bool{}
+	for _, c := range columns {
+		c = strings.TrimSpace(c)
+		if !allowed[c] || seen[c] {
+			continue
+		}
+		seen[c] = true
+		cols = append(cols, c)
+	}
+	if len(cols) == 0 {
+		cols = []string{"post_title", "post_excerpt", "post_content"}
+	}
+	like := "%" + db.EscapeLike(term) + "%"
+	parts := make([]string, len(cols))
+	vals := make([]any, len(cols))
+	for i, c := range cols {
+		parts[i] = c + " LIKE %s"
+		vals[i] = like
+	}
+	return "(" + strings.Join(parts, " OR ") + ")", vals
 }
 
 func rowString(v any) string {

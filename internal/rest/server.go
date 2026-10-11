@@ -1222,7 +1222,11 @@ func collectionListArgs() map[string]any {
 			"type":        "string", "default": "date", "required": false,
 			"enum": []string{"author", "date", "id", "include", "modified", "parent", "relevance", "slug", "include_slugs", "title"},
 		},
-		"search_columns":     map[string]any{"type": "array", "default": []any{}, "required": false, "items": map[string]any{"type": "string"}},
+		"search_columns": map[string]any{
+			"description": "Array of column names to be searched.",
+			"type":        "array", "default": []any{}, "required": false,
+			"items": map[string]any{"type": "string", "enum": []string{"post_title", "post_content", "post_excerpt"}},
+		},
 		"search_semantics":   map[string]any{"description": "How to interpret the search input.", "type": "string", "required": false, "enum": []string{"exact"}},
 		"slug":               map[string]any{"description": "Limit result set to posts with one or more specific slugs.", "type": "array", "required": false, "items": map[string]any{"type": "string"}},
 		"status":             map[string]any{"description": "Limit result set to posts assigned one or more statuses.", "type": "array", "default": "publish", "required": false},

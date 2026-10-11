@@ -162,6 +162,72 @@ func TestPostsOrderbyQueryParam(t *testing.T) {
 	}
 }
 
+func TestPostsSearchColumnsQueryParam(t *testing.T) {
+	c := bootOrSkip(t)
+	defer c.DB.Close()
+
+	// Title-only search should still find Hello world.
+	req := httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?search=Hello&search_columns=post_title&per_page=10", nil)
+	rec := httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("search_columns=post_title status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var hits []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &hits); err != nil {
+		t.Fatal(err)
+	}
+	if len(hits) == 0 {
+		t.Fatal("expected title hits for Hello")
+	}
+
+	// Content-only search for a title term should miss when the term is only in the title.
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?search=Hello&search_columns=post_content&per_page=10", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("search_columns=post_content status=%d", rec.Code)
+	}
+	var contentHits []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &contentHits); err != nil {
+		t.Fatal(err)
+	}
+	// Fixture "Hello world!" post has the word in the title; content may or may not.
+	// Ensure invalid columns are ignored and fall back to all columns.
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?search=Hello&search_columns=bogus&per_page=10", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("bogus search_columns status=%d", rec.Code)
+	}
+	var allHits []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &allHits); err != nil {
+		t.Fatal(err)
+	}
+	if len(allHits) == 0 {
+		t.Fatal("invalid search_columns should fall back to all columns")
+	}
+
+	// Comma-separated columns still search titles.
+	req = httptest.NewRequest(http.MethodGet, "/wp-json/wp/v2/posts?search=Hello&search_columns=post_title,post_excerpt&per_page=10", nil)
+	rec = httptest.NewRecorder()
+	c = c.ForRequest(rec, req)
+	(&rest.Server{}).Handle(rec, req, c)
+	if rec.Code != http.StatusOK {
+		t.Fatalf("comma search_columns status=%d", rec.Code)
+	}
+	var commaHits []rest.Post
+	if err := json.Unmarshal(rec.Body.Bytes(), &commaHits); err != nil {
+		t.Fatal(err)
+	}
+	if len(commaHits) == 0 {
+		t.Fatal("expected hits for search_columns=post_title,post_excerpt")
+	}
+}
+
 func TestPostsSearchQueryParam(t *testing.T) {
 	c := bootOrSkip(t)
 	defer c.DB.Close()
