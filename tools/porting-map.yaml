@@ -10054,3 +10054,17 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P4.152 — notint + empty author_exclude[] reject"
 
+# P7.137: admin menu collapse control + fold body classes.
+- prefix: wp-admin/menu-header.php#collapse-menu
+  go: internal/admin/chrome.go
+  status: partial
+  task: P7.137
+  api: collapse-menu
+  notes: "P7.137 — collapse-menu button; auto-fold; folded from mfold=f cookie"
+- prefix: wp-admin/admin-header.php#mfold#tests
+  go: internal/admin/admin_menu_collapse_p7_137_test.go
+  status: partial
+  task: P7.137
+  api: n/a
+  notes: "P7.137 — collapse chrome + folded class order"
+
