@@ -4638,11 +4638,25 @@ wp-login.php#language-switcher-post
   task: P5.42
   api: internal
 
+- prefix: wp-includes/blocks/latest-posts.php#p5.123
+  go: internal/blocks/widget_blocks.go
+  status: partial
+  task: P5.123
+  api: internal
+  notes: "P5.123 — order/orderBy/selectedAuthor/categories; displayAuthor/excerpt/full; grid+columns; has-dates/has-author; applySupports"
+
 - prefix: wp-includes/blocks/latest-comments.php
   go: internal/blocks/widget_blocks.go
   status: partial
   task: P5.42
   api: internal
+
+- prefix: wp-includes/blocks/latest-comments.php#p5.123
+  go: internal/blocks/widget_blocks.go
+  status: partial
+  task: P5.123
+  api: internal
+  notes: "P5.123 — displayAvatar/has-avatars gravatar; applySupports className; AuthorEmail wired from front"
 
 - prefix: wp-includes/blocks/tag-cloud.php#p5.42
   go: internal/blocks/widget_blocks.go

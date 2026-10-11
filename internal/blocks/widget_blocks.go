@@ -23,16 +23,17 @@ type TagCloudItem struct {
 	Count int
 }
 
-// LatestCommentItem is a site-wide comment for core/latest-comments (P5.42).
+// LatestCommentItem is a site-wide comment for core/latest-comments (P5.42 / P5.123).
 type LatestCommentItem struct {
-	ID        int64
-	Author    string
-	AuthorURL string
-	Content   string
-	Date      string
-	PostID    int64
-	PostTitle string
-	PostURL   string
+	ID          int64
+	Author      string
+	AuthorURL   string
+	AuthorEmail string // for displayAvatar gravatar (P5.123)
+	Content     string
+	Date        string
+	PostID      int64
+	PostTitle   string
+	PostURL     string
 }
 
 var searchInputSeq atomic.Uint64
@@ -387,12 +388,84 @@ func (e *Env) renderLatestPosts(block Block) string {
 	if v, ok := block.Attrs["displayPostDate"].(bool); ok {
 		displayDate = v
 	}
+	displayAuthor := false
+	if v, ok := block.Attrs["displayAuthor"].(bool); ok {
+		displayAuthor = v
+	}
+	displayContent := false
+	if v, ok := block.Attrs["displayPostContent"].(bool); ok {
+		displayContent = v
+	}
+	contentRadio := strings.TrimSpace(attrString(block.Attrs, "displayPostContentRadio"))
+	if contentRadio == "" {
+		contentRadio = "excerpt"
+	}
+	excerptLen := 55
+	if v, ok := attrInt(block.Attrs, "excerptLength"); ok && v > 0 {
+		excerptLen = v
+	}
+	order := strings.ToLower(strings.TrimSpace(attrString(block.Attrs, "order")))
+	if order != "asc" && order != "desc" {
+		order = "desc"
+	}
+	orderBy := strings.TrimSpace(attrString(block.Attrs, "orderBy"))
+	if orderBy == "" {
+		orderBy = "date"
+	}
+	var authorID int64
+	if v, ok := attrInt(block.Attrs, "selectedAuthor"); ok && v > 0 {
+		authorID = int64(v)
+	}
+	cats := latestPostsCategoryIDs(block.Attrs)
+	args := QueryLoopArgs{
+		PerPage:    n,
+		PostType:   "post",
+		Order:      order,
+		OrderBy:    orderBy,
+		Author:     authorID,
+		CategoryIn: cats,
+		Sticky:     "ignore",
+	}
 	var posts []QueryPost
 	if e.ListPosts != nil {
-		posts = e.ListPosts(QueryLoopArgs{PerPage: n, PostType: "post"})
+		posts = e.ListPosts(args)
+	}
+	// P5.123: grid layout + has-dates/has-author + wrapper supports.
+	classes := []string{"wp-block-latest-posts__list"}
+	layoutType := "default"
+	if strings.EqualFold(strings.TrimSpace(attrString(block.Attrs, "postLayout")), "grid") {
+		layoutType = "grid"
+	}
+	if layout, ok := block.Attrs["layout"].(map[string]any); ok {
+		if t := strings.TrimSpace(fmt.Sprint(layout["type"])); strings.EqualFold(t, "grid") {
+			layoutType = "grid"
+		}
+	}
+	if layoutType == "grid" {
+		classes = append(classes, "is-grid")
+		cols := 0
+		if v, ok := attrInt(block.Attrs, "columns"); ok && v > 0 {
+			cols = v
+		}
+		if layout, ok := block.Attrs["layout"].(map[string]any); ok {
+			if v, ok := attrInt(layout, "columnCount"); ok && v > 0 {
+				cols = v
+			}
+		}
+		if cols > 0 {
+			classes = append(classes, fmt.Sprintf("columns-%d", cols))
+		}
+	}
+	if displayDate {
+		classes = append(classes, "has-dates")
+	}
+	if displayAuthor {
+		classes = append(classes, "has-author")
 	}
 	var b strings.Builder
-	b.WriteString(`<ul class="wp-block-latest-posts wp-block-latest-posts__list">`)
+	b.WriteString(`<ul class="wp-block-latest-posts `)
+	b.WriteString(html.EscapeString(strings.Join(classes, " ")))
+	b.WriteString(`">`)
 	for _, p := range posts {
 		title := strings.TrimSpace(p.Title)
 		if title == "" {
@@ -404,6 +477,13 @@ func (e *Env) renderLatestPosts(block Block) string {
 		b.WriteString(`">`)
 		b.WriteString(html.EscapeString(title))
 		b.WriteString(`</a>`)
+		if displayAuthor && e.AuthorName != nil {
+			if name := strings.TrimSpace(e.AuthorName(p.ID)); name != "" {
+				b.WriteString(`<div class="wp-block-latest-posts__post-author">by `)
+				b.WriteString(html.EscapeString(name))
+				b.WriteString(`</div>`)
+			}
+		}
 		if displayDate && p.Date != "" {
 			b.WriteString(`<time datetime="`)
 			b.WriteString(html.EscapeString(p.Date))
@@ -411,10 +491,90 @@ func (e *Env) renderLatestPosts(block Block) string {
 			b.WriteString(html.EscapeString(formatDisplayDate(p.Date)))
 			b.WriteString(`</time>`)
 		}
+		if displayContent {
+			switch contentRadio {
+			case "full_post":
+				content := p.Content
+				if p.Password != "" {
+					content = "This content is password protected."
+				}
+				b.WriteString(`<div class="wp-block-latest-posts__post-full-content">`)
+				b.WriteString(content)
+				b.WriteString(`</div>`)
+			default: // excerpt
+				ex := strings.TrimSpace(p.Excerpt)
+				if ex == "" {
+					ex = strings.TrimSpace(p.Content)
+				}
+				if p.Password != "" {
+					ex = "This content is password protected."
+				} else {
+					ex = trimExcerptWords(stripTagsForExcerpt(ex), excerptLen)
+				}
+				b.WriteString(`<div class="wp-block-latest-posts__post-excerpt">`)
+				b.WriteString(html.EscapeString(ex))
+				b.WriteString(`</div>`)
+			}
+		}
 		b.WriteString(`</li>`)
 	}
 	b.WriteString(`</ul>`)
-	return b.String()
+	return applySupports(b.String(), block.Attrs, "core/latest-posts")
+}
+
+func latestPostsCategoryIDs(attrs map[string]any) []int64 {
+	if attrs == nil {
+		return nil
+	}
+	raw, ok := attrs["categories"]
+	if !ok || raw == nil {
+		return nil
+	}
+	var out []int64
+	switch v := raw.(type) {
+	case string:
+		if n, err := strconv.ParseInt(strings.TrimSpace(v), 10, 64); err == nil && n > 0 {
+			out = append(out, n)
+		}
+	case float64:
+		if int64(v) > 0 {
+			out = append(out, int64(v))
+		}
+	case []any:
+		for _, item := range v {
+			switch t := item.(type) {
+			case map[string]any:
+				if id, ok := attrInt(t, "id"); ok && id > 0 {
+					out = append(out, int64(id))
+				}
+			case float64:
+				if int64(t) > 0 {
+					out = append(out, int64(t))
+				}
+			case string:
+				if n, err := strconv.ParseInt(strings.TrimSpace(t), 10, 64); err == nil && n > 0 {
+					out = append(out, n)
+				}
+			}
+		}
+	}
+	return out
+}
+
+func stripTagsForExcerpt(s string) string {
+	var b strings.Builder
+	inTag := false
+	for _, r := range s {
+		switch {
+		case r == '<':
+			inTag = true
+		case r == '>':
+			inTag = false
+		case !inTag:
+			b.WriteRune(r)
+		}
+	}
+	return strings.Join(strings.Fields(b.String()), " ")
 }
 
 func (e *Env) renderLatestComments(block Block) string {
@@ -426,6 +586,10 @@ func (e *Env) renderLatestComments(block Block) string {
 	displayDate := true
 	if v, ok := block.Attrs["displayDate"].(bool); ok {
 		displayDate = v
+	}
+	displayAvatar := true
+	if v, ok := block.Attrs["displayAvatar"].(bool); ok {
+		displayAvatar = v
 	}
 	displayExcerpt := true
 	if v, ok := block.Attrs["displayExcerpt"].(bool); ok {
@@ -444,6 +608,9 @@ func (e *Env) renderLatestComments(block Block) string {
 		items = e.ListLatestComments(n)
 	}
 	classes := []string{"wp-block-latest-comments"}
+	if displayAvatar {
+		classes = append(classes, "has-avatars")
+	}
 	if displayDate {
 		classes = append(classes, "has-dates")
 	}
@@ -452,14 +619,24 @@ func (e *Env) renderLatestComments(block Block) string {
 	}
 	if len(items) == 0 {
 		classes = append(classes, "no-comments")
-		return fmt.Sprintf(`<div class="%s">No comments to show.</div>`, strings.Join(classes, " "))
+		empty := fmt.Sprintf(`<div class="%s">No comments to show.</div>`, html.EscapeString(strings.Join(classes, " ")))
+		return applySupports(empty, block.Attrs, "core/latest-comments")
 	}
 	var b strings.Builder
 	b.WriteString(`<ol class="`)
-	b.WriteString(strings.Join(classes, " "))
+	b.WriteString(html.EscapeString(strings.Join(classes, " ")))
 	b.WriteString(`">`)
 	for _, cm := range items {
-		b.WriteString(`<li class="wp-block-latest-comments__comment"><article>`)
+		b.WriteString(`<li class="wp-block-latest-comments__comment">`)
+		if displayAvatar {
+			email := strings.TrimSpace(cm.AuthorEmail)
+			hash := gravatarHash(email)
+			src := fmt.Sprintf("https://secure.gravatar.com/avatar/%s?s=48&d=mm&r=g", hash)
+			b.WriteString(`<img alt="" class="avatar avatar-48 photo wp-block-latest-comments__comment-avatar" height="48" src="`)
+			b.WriteString(html.EscapeString(src))
+			b.WriteString(`" width="48"/>`)
+		}
+		b.WriteString(`<article>`)
 		b.WriteString(`<footer class="wp-block-latest-comments__comment-meta">`)
 		author := html.EscapeString(cm.Author)
 		if cm.AuthorURL != "" {
@@ -503,7 +680,7 @@ func (e *Env) renderLatestComments(block Block) string {
 		b.WriteString(`</article></li>`)
 	}
 	b.WriteString(`</ol>`)
-	return b.String()
+	return applySupports(b.String(), block.Attrs, "core/latest-comments")
 }
 
 func (e *Env) renderTagCloud(block Block) string {
