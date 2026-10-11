@@ -11400,3 +11400,17 @@ wp-login.php#language-switcher-post
   task: P7.149
   api: n/a
   notes: "P7.149 — media/plugins/filesystem section coverage"
+
+# P2.144: export utf8_uri_encode with length + encode_ascii_characters.
+- prefix: wp-includes/formatting.php#utf8_uri_encode
+  go: internal/wp/utf8_uri_encode.go
+  status: partial
+  task: P2.144
+  api: exported
+  notes: "P2.144 — UTF8URIEncode/WPUTF8URIEncode; length limit; encodeASCII rawurlencode; sanitize_title uses helper"
+- prefix: wp-includes/formatting.php#utf8_uri_encode#tests
+  go: internal/wp/utf8_uri_encode_p2_144_test.go
+  status: partial
+  task: P2.144
+  api: n/a
+  notes: "P2.144 — café, space encode, length truncate, sanitize_title display"
