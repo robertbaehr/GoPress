@@ -7,6 +7,20 @@
   api: n/a
   notes: "P10.222 — summarize login_link_separator, HTTPS origin, archive links, mime icon, embed align, privacy chrome, RemoveAll helpers"
 
+# P8.57: attachment_url_to_postid.
+- prefix: wp-includes/media.php#attachment_url_to_postid
+  go: internal/wp/attachment_url_to_postid.go
+  status: partial
+  task: P8.57
+  api: n/a
+  notes: "P8.57 — AttachmentURLToPostID + pre_/attachment_url_to_postid filters"
+- prefix: wp-includes/media.php#attachment_url_to_postid#tests
+  go: internal/wp/attachment_url_to_postid_p8_57_test.go
+  status: partial
+  task: P8.57
+  api: n/a
+  notes: "P8.57 — resolve fixture URL; pre short-circuit; filter replace"
+
 # P3.157: get_preview_post_link helper.
 - prefix: wp-includes/link-template.php#get_preview_post_link
   go: internal/wp/preview_post_link.go
