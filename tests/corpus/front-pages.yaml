@@ -832,3 +832,130 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.142: headers-only expand after P5.116–P6.48.
+- id: front-p10142-001-feed
+  role: anon
+  method: GET
+  path: /feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10142-002-comments-feed
+  role: anon
+  method: GET
+  path: /comments/feed/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10142-003-robots-txt
+  role: anon
+  method: GET
+  path: /robots.txt
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10142-004-s-hello
+  role: anon
+  method: GET
+  path: /?s=hello
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10142-005-p-1
+  role: anon
+  method: GET
+  path: /?p=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10142-006-sample-page
+  role: anon
+  method: GET
+  path: /sample-page/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10142-007-2024-02-01-fixture-post-01
+  role: anon
+  method: GET
+  path: /2024/02/01/fixture-post-01/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10142-008-category-uncategorized
+  role: anon
+  method: GET
+  path: /category/uncategorized/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10142-009-tag-fixture
+  role: anon
+  method: GET
+  path: /tag/fixture/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10142-010-author-admin
+  role: anon
+  method: GET
+  path: /author/admin/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10142-011-favicon-ico
+  role: anon
+  method: GET
+  path: /favicon.ico
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10142-012-rsd-xml
+  role: anon
+  method: GET
+  path: /rsd.xml
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10142-013-wp-json
+  role: anon
+  method: GET
+  path: /wp-json/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: front-p10142-014-rest-route
+  role: anon
+  method: GET
+  path: /?rest_route=/
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null

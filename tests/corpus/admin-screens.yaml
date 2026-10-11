@@ -131,3 +131,148 @@
   body: null
   compare: headers
   nonce: null
+
+# P10.142: headers-only expand after P5.116–P6.48.
+- id: admin-p10142-001-wp-admin-edit-tags-php-taxonomy-category
+  role: admin
+  method: GET
+  path: /wp-admin/edit-tags.php?taxonomy=category
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-002-wp-admin-edit-tags-php-taxonomy-post-tag
+  role: admin
+  method: GET
+  path: /wp-admin/edit-tags.php?taxonomy=post_tag
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-003-wp-admin-edit-tags-php-taxonomy-category-s-uncategorized
+  role: admin
+  method: GET
+  path: /wp-admin/edit-tags.php?taxonomy=category&s=uncategorized
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-004-wp-admin-edit-tags-php-taxonomy-post-tag-s-fixture
+  role: admin
+  method: GET
+  path: /wp-admin/edit-tags.php?taxonomy=post_tag&s=fixture
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-005-wp-admin-edit-tags-php-taxonomy-category-s-zzzz-no-match
+  role: admin
+  method: GET
+  path: /wp-admin/edit-tags.php?taxonomy=category&s=zzzz-no-match
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-006-wp-admin-edit-tags-php
+  role: admin
+  method: GET
+  path: /wp-admin/edit-tags.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-007-wp-admin-edit-php-s-hello
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?s=hello
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-008-wp-admin-edit-php-post-status-draft
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?post_status=draft
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-009-wp-admin-edit-php-author-1
+  role: admin
+  method: GET
+  path: /wp-admin/edit.php?author=1
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-010-wp-admin-upload-php
+  role: admin
+  method: GET
+  path: /wp-admin/upload.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-011-wp-admin-themes-php
+  role: admin
+  method: GET
+  path: /wp-admin/themes.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-012-wp-admin-nav-menus-php
+  role: admin
+  method: GET
+  path: /wp-admin/nav-menus.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-013-wp-admin-options-reading-php
+  role: admin
+  method: GET
+  path: /wp-admin/options-reading.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-014-wp-admin-options-writing-php
+  role: admin
+  method: GET
+  path: /wp-admin/options-writing.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-015-wp-admin-options-discussion-php
+  role: admin
+  method: GET
+  path: /wp-admin/options-discussion.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
+
+- id: admin-p10142-016-wp-admin-tools-php
+  role: admin
+  method: GET
+  path: /wp-admin/tools.php
+  headers: {}
+  body: null
+  compare: headers
+  nonce: null
