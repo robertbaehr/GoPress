@@ -9612,3 +9612,32 @@ wp-login.php#language-switcher-post
   task: P2.128
   api: n/a
   notes: "P2.128 — keep/strip attrs, xhtml slash, attr_check"
+
+# P3.126: wp_get_document_title / _wp_render_title_tag.
+- prefix: wp-includes/general-template.php#wp_get_document_title
+  go: internal/wp/document_title.go
+  status: partial
+  task: P3.126
+  api: wp_get_document_title
+  notes: "P3.126 — pre_get_document_title; parts/separator/document_title filters"
+
+- prefix: wp-includes/general-template.php#_wp_render_title_tag
+  go: internal/wp/document_title.go
+  status: partial
+  task: P3.126
+  api: _wp_render_title_tag
+  notes: "P3.126 — RenderTitleTag when title-tag supported"
+
+- prefix: wp-includes/general-template.php#wp_get_document_title#front
+  go: internal/server/front.go
+  status: partial
+  task: P3.126
+  api: n/a
+  notes: "P3.126 — block theme home <title> via GetDocumentTitle"
+
+- prefix: wp-includes/general-template.php#wp_get_document_title#tests
+  go: internal/wp/document_title_p3_126_test.go
+  status: partial
+  task: P3.126
+  api: n/a
+  notes: "P3.126 — front/pre/separator/document filters + title-tag gate"
