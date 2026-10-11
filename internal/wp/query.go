@@ -98,6 +98,7 @@ type QueryArgs struct {
 	MetaCompare    string // default "="; supports =, !=, LIKE, NOT LIKE, >, >=, <, <=, EXISTS, NOT EXISTS, REGEXP, BETWEEN, IN, …
 	MetaType       string // CHAR (default), NUMERIC/SIGNED/UNSIGNED/DECIMAL/BINARY/DATE/DATETIME/TIME
 	MetaCompareKey string // P4.172: = (default) or LIKE on meta_key
+	MetaTypeKey    string // P4.174: BINARY casts meta_key for compares
 }
 
 // Post is a row from wp_posts used by front and REST helpers.
@@ -606,7 +607,7 @@ func appendMetaQueryFilters(c *Context, where []string, vals []any, args QueryAr
 	if compare == "" {
 		compare = "="
 	}
-	keySQL, keyVal, negateKey := metaKeyCompareSQL(args.MetaCompareKey, key)
+	keySQL, keyVal, negateKey := metaKeyCompareSQL(args.MetaCompareKey, key, args.MetaTypeKey)
 	cast := metaTypeCastSQL(args.MetaType)
 	valExpr := "mq.meta_value"
 	if cast != "" && cast != "CHAR" {
@@ -620,11 +621,15 @@ func appendMetaQueryFilters(c *Context, where []string, vals []any, args QueryAr
 			existsOp, notExistsOp = notExistsOp, existsOp
 		} else {
 			// Value compares: emit negative key operator inline.
+			col := "mq.meta_key"
+			if strings.ToUpper(strings.TrimSpace(args.MetaTypeKey)) == "BINARY" {
+				col = "CAST(mq.meta_key AS BINARY)"
+			}
 			switch strings.ToUpper(strings.TrimSpace(args.MetaCompareKey)) {
 			case "NOT LIKE":
-				keySQL = "mq.meta_key NOT LIKE %s"
+				keySQL = col + " NOT LIKE %s"
 			case "!=", "NOT EXISTS":
-				keySQL = "mq.meta_key != %s"
+				keySQL = col + " != %s"
 			}
 			negateKey = false
 		}
@@ -694,19 +699,24 @@ func appendMetaQueryFilters(c *Context, where []string, vals []any, args QueryAr
 	return where, vals
 }
 
-// metaKeyCompareSQL maps meta_compare_key to a meta_key predicate (P4.172 / P4.173).
+// metaKeyCompareSQL maps meta_compare_key to a meta_key predicate (P4.172 / P4.173 / P4.174).
 // Returns SQL fragment with one %s placeholder, the bound value, and whether
 // EXISTS/NOT EXISTS should be flipped (negative operators NOT LIKE / != / NOT EXISTS).
-func metaKeyCompareSQL(compareKey, key string) (sqlFrag string, val string, negate bool) {
+// P4.174: meta_type_key=BINARY wraps meta_key in CAST(... AS BINARY).
+func metaKeyCompareSQL(compareKey, key, typeKey string) (sqlFrag string, val string, negate bool) {
+	col := "mq.meta_key"
+	if strings.ToUpper(strings.TrimSpace(typeKey)) == "BINARY" {
+		col = "CAST(mq.meta_key AS BINARY)"
+	}
 	switch strings.ToUpper(strings.TrimSpace(compareKey)) {
 	case "LIKE":
-		return "mq.meta_key LIKE %s", "%" + key + "%", false
+		return col + " LIKE %s", "%" + key + "%", false
 	case "NOT LIKE":
-		return "mq.meta_key LIKE %s", "%" + key + "%", true
+		return col + " LIKE %s", "%" + key + "%", true
 	case "!=", "NOT EXISTS":
-		return "mq.meta_key = %s", key, true
+		return col + " = %s", key, true
 	default: // "=", EXISTS, empty, unknown
-		return "mq.meta_key = %s", key, false
+		return col + " = %s", key, false
 	}
 }
 
