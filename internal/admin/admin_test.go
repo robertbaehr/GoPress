@@ -241,6 +241,7 @@ func TestCustomizerRejectsExternalReturn(t *testing.T) {
 }
 
 func TestThemeInstallOutOfScope(t *testing.T) {
+	// P7.113: authorized users get a 200 stub; remote install stays unavailable.
 	c := bootOrSkip(t)
 	ck := loginCookie(t, c)
 	srv := &server.Server{WP: c, AbsPath: "/workspace/", Admin: &admin.Handler{}}
@@ -248,7 +249,7 @@ func TestThemeInstallOutOfScope(t *testing.T) {
 	req.AddCookie(ck)
 	rec := httptest.NewRecorder()
 	srv.ServeHTTP(rec, req)
-	if rec.Code != http.StatusForbidden {
+	if rec.Code != http.StatusOK {
 		t.Fatalf("status=%d body=%q", rec.Code, rec.Body.String())
 	}
 	body := rec.Body.String()
@@ -257,6 +258,9 @@ func TestThemeInstallOutOfScope(t *testing.T) {
 	}
 	if !strings.Contains(body, "themes.php") {
 		t.Fatalf("expected themes screen link, got %q", body)
+	}
+	if rec.Header().Get("X-GoPress-Theme-Install") != "disabled" {
+		t.Fatalf("X-GoPress-Theme-Install=%q", rec.Header().Get("X-GoPress-Theme-Install"))
 	}
 }
 
