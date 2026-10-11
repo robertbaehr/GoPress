@@ -277,7 +277,9 @@ func (e *Env) RenderBlock(block Block) string {
 		return applySupports(out, sanitizeLatestPostsBlockAttrs(block.Attrs), name)
 	case "core/rss":
 		// P5.79: local feed link list; remote fetch blocked.
+		// P5.169: coerce align enum before applySupports.
 		out = e.renderRSS(block)
+		return applySupports(out, sanitizeRSSBlockAttrs(block.Attrs), name)
 	case "core/latest-comments":
 		out = e.renderLatestComments(block)
 	case "core/tag-cloud":

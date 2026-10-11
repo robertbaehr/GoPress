@@ -27,6 +27,20 @@
 
 
 
+# P5.169: core/rss align coerce.
+- prefix: wp-includes/blocks/rss#align
+  go: internal/blocks/rss.go
+  status: partial
+  task: P5.169
+  api: n/a
+  notes: "P5.169 — rss align left|center|right|wide|full coerce"
+- prefix: wp-includes/blocks/rss#align#tests
+  go: internal/blocks/rss_attrs_p5_169_test.go
+  status: partial
+  task: P5.169
+  api: n/a
+  notes: "P5.169 — keep allowed align; drop none/bogus"
+
 # P8.62: wp_image_matches_ratio public helper.
 - prefix: wp-includes/media.php#wp_image_matches_ratio
   go: internal/wp/image_matches_ratio.go
