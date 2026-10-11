@@ -6820,6 +6820,14 @@ wp-login.php#language-switcher-post
   api: n/a
   notes: "P10.122 — search orderby, columns block-types, edit-comments search/views, heartbeat, feeds; grow after P5.106–P9.23; 591 cases"
 
+# P10.124: expand diff corpus after P5.107–P8.32.
+- prefix: tests/corpus/#p10-124
+  go: tests/corpus/
+  status: partial
+  task: P10.124
+  api: n/a
+  notes: "P10.124 — media search, search relevance, rest_route, login redirect, heartbeat; grow after P5.107–P8.32; 617 cases"
+
 # P10.121: STATUS/PORTING refresh after P5.105–P10.120.
 - prefix: docs/STATUS.md#p10-121
   go: docs/STATUS.md
