@@ -168,7 +168,9 @@ func (e *Env) RenderBlock(block Block) string {
 		// P5.118: assign to out so applySupports can attach colors/typography.
 		out = e.renderTemplatePart(block)
 	case "core/navigation":
+		// P5.162: coerce align enum before applySupports (wide|full).
 		out = e.renderNavigation(block)
+		return applySupports(out, sanitizeNavigationBlockAttrs(block.Attrs), name)
 	case "core/navigation-link":
 		return e.renderNavigationLink(block)
 	case "core/navigation-submenu":
