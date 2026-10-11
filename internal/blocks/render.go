@@ -52,7 +52,9 @@ func (e *Env) RenderBlock(block Block) string {
 	case "core/paragraph":
 		out = e.renderParagraph(block)
 	case "core/quote":
+		// P5.146: coerce align enum before applySupports; fontSize/gradient polish.
 		out = e.renderQuote(block)
+		return applySupports(out, sanitizeQuoteBlockAttrs(block.Attrs), name)
 	case "core/terms-query":
 		// WP layout support defaults to flow for terms-query (P10.8 / feed parity).
 		html := e.renderSaved(block)
