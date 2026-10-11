@@ -53,13 +53,12 @@ func applyImageAttrs(htmlFragment string, attrs map[string]any) string {
 		return out
 	}
 	out = addRootClass(out, "wp-block-image")
-	sizeSlug := strings.TrimSpace(attrString(attrs, "sizeSlug"))
-	if sizeSlug == "" {
-		sizeSlug = "large"
-	}
-	sizeClass := "size-" + sanitizeClassToken(sizeSlug)
-	if !hasRootClass(out, sizeClass) && !hasRootClassPrefix(out, "size-") {
-		out = addRootClass(out, sizeClass)
+	// Only surface size-* when sizeSlug is explicitly set (saved markup often omits it).
+	if sizeSlug := strings.TrimSpace(attrString(attrs, "sizeSlug")); sizeSlug != "" {
+		sizeClass := "size-" + sanitizeClassToken(sizeSlug)
+		if !hasRootClass(out, sizeClass) && !hasRootClassPrefix(out, "size-") {
+			out = addRootClass(out, sizeClass)
+		}
 	}
 	if align := strings.TrimSpace(attrString(attrs, "align")); align != "" {
 		cls := "align" + sanitizeClassToken(align)
