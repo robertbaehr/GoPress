@@ -48,6 +48,7 @@ func TestOEmbedPostByQueryID(t *testing.T) {
 }
 
 func TestOEmbedNamespaceAlias(t *testing.T) {
+	// P4.127: GET /oembed/1.0 is the namespace index (embed lives at /oembed/1.0/embed).
 	c := bootOrSkip(t)
 	t.Cleanup(func() { _ = c.DB.Close() })
 	q := url.Values{}
@@ -58,6 +59,17 @@ func TestOEmbedNamespaceAlias(t *testing.T) {
 	(&rest.Server{}).Handle(rec, req, c)
 	if rec.Code != http.StatusOK {
 		t.Fatalf("status=%d body=%s", rec.Code, rec.Body.String())
+	}
+	var body map[string]any
+	if err := json.Unmarshal(rec.Body.Bytes(), &body); err != nil {
+		t.Fatalf("json: %v", err)
+	}
+	if body["namespace"] != "oembed/1.0" {
+		t.Fatalf("expected namespace index, got %v", body["namespace"])
+	}
+	routes, _ := body["routes"].(map[string]any)
+	if len(routes) == 0 {
+		t.Fatalf("expected routes in namespace index: %v", body)
 	}
 }
 
