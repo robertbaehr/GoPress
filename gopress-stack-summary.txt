@@ -1,4 +1,4 @@
-GoPress stack tip cursor/p10-219-status-refresh-ddf1 / 2c704ea33c47bfcb569279b2aa1dcb927e4afc43
+GoPress stack tip cursor/p10-219-status-refresh-ddf1 / fd49bf0d9334672a46ad47a6c25859249e86de1f
 
 cursor/p5-156-file-attrs-ddf1 → 565e14924e04
 cursor/p4-172-rest-posts-meta-compare-key-ddf1 → 23b48aef1c3a
@@ -11,7 +11,7 @@ cursor/p4-173-rest-posts-meta-compare-key-not-like-ddf1 → 36b7ae9a6300
 cursor/p6-62-login-title-ddf1 → a2e07a32a3e3
 cursor/p7-158-about-chrome-ddf1 → 016113ad6ddc
 
-cursor/p10-219-status-refresh-ddf1 → 2c704ea33c47
+cursor/p10-219-status-refresh-ddf1 → fd49bf0d9334
 
 make diff: 100.0% (3162/3162 strict matches, 0 allowlisted, 0 failed) — carried from P10.218
 make check: ok (lint + go test -p 1 ./...)
