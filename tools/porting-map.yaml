@@ -10524,3 +10524,9 @@ wp-login.php#language-switcher-post
   task: P10.190
   api: n/a
   notes: "P10.190 — +124 headers-safe REST/front/admin/login/ajax cases after read-more/tags_exclude/browser-nag/kses-stripslashes/wlwmanifest/deprecated"
+- prefix: tests/corpus#p10.190#drop
+  go: tests/corpus
+  status: partial
+  task: P10.190
+  api: n/a
+  notes: "P10.190 — drop 26 set-cookie-sensitive admin toppers; 2003/2003 match"
