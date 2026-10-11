@@ -1,4 +1,18 @@
 
+# P3.153: get_post_type_archive_link / feed_link (post type).
+- prefix: wp-includes/link-template.php#get_post_type_archive_link
+  go: internal/wp/post_type_archive_link.go
+  status: partial
+  task: P3.153
+  api: GetPostTypeArchiveLink
+  notes: "P3.153 — post archive home/page_for_posts; feed link; filters"
+- prefix: wp-includes/link-template.php#get_post_type_archive_link#tests
+  go: internal/wp/post_type_archive_link_p3_153_test.go
+  status: partial
+  task: P3.153
+  api: n/a
+  notes: "P3.153 — home archive; atom feed; filters; unknown type"
+
 # P2.155: get_http_origin + wp_http_supports subset.
 - prefix: wp-includes/http.php#get_http_origin
   go: internal/wp/http_origin.go
