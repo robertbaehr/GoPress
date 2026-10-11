@@ -43,6 +43,11 @@ func nextSearchInputID() string {
 	return fmt.Sprintf("wp-block-search__input-%d", n)
 }
 
+// searchIconSVG is the core/search buttonUseIcon glyph (P5.124).
+const searchIconSVG = `<svg class="search-icon" viewBox="0 0 24 24" width="24" height="24">
+					<path d="M13 5c-3.3 0-6 2.7-6 6 0 1.4.5 2.7 1.3 3.7l-3.8 3.8 1.1 1.1 3.8-3.8c1 .8 2.3 1.3 3.7 1.3 3.3 0 6-2.7 6-6S16.3 5 13 5zm0 10.5c-2.5 0-4.5-2-4.5-4.5s2-4.5 4.5-4.5 4.5 2 4.5 4.5-2 4.5-4.5 4.5z"></path>
+				</svg>`
+
 func (e *Env) renderSearch(block Block) string {
 	e = e.ensure()
 	label := attrString(block.Attrs, "label")
@@ -63,6 +68,10 @@ func (e *Env) renderSearch(block Block) string {
 		buttonPos = "button-outside"
 	}
 	showButton := buttonPos != "no-button"
+	useIcon := false
+	if v, ok := block.Attrs["buttonUseIcon"].(bool); ok {
+		useIcon = v
+	}
 	home := "/"
 	if e.HomeURL != nil {
 		if h := strings.TrimSpace(e.HomeURL()); h != "" {
@@ -75,49 +84,157 @@ func (e *Env) renderSearch(block Block) string {
 	value := strings.TrimSpace(e.SearchQuery)
 	inputID := nextSearchInputID()
 
-	class := "wp-block-search__button-outside wp-block-search__text-button wp-block-search"
+	// P5.124: classnames_for_block_core_search (+ wp-block-search root).
+	var classParts []string
 	switch buttonPos {
 	case "button-inside":
-		class = "wp-block-search__button-inside wp-block-search__text-button wp-block-search"
+		classParts = append(classParts, "wp-block-search__button-inside")
 	case "button-only":
-		class = "wp-block-search__button-only wp-block-search__text-button wp-block-search"
+		classParts = append(classParts, "wp-block-search__button-only", "wp-block-search__searchfield-hidden")
 	case "no-button":
-		class = "wp-block-search__no-button wp-block-search"
+		classParts = append(classParts, "wp-block-search__no-button")
+	default:
+		classParts = append(classParts, "wp-block-search__button-outside")
+	}
+	if showButton {
+		if useIcon {
+			classParts = append(classParts, "wp-block-search__icon-button")
+		} else {
+			classParts = append(classParts, "wp-block-search__text-button")
+		}
+	}
+	classParts = append(classParts, "wp-block-search")
+	class := strings.Join(classParts, " ")
+
+	// P5.124: width/widthUnit → inline style on inside-wrapper.
+	wrapperStyle := ""
+	if w, ok := attrInt(block.Attrs, "width"); ok && w > 0 {
+		unit := strings.TrimSpace(attrString(block.Attrs, "widthUnit"))
+		if unit == "" {
+			unit = "px"
+		}
+		wrapperStyle = fmt.Sprintf(` style="width: %d%s;"`, w, html.EscapeString(unit))
 	}
 
-	var b strings.Builder
-	b.WriteString(`<form role="search" method="get" action="`)
-	b.WriteString(html.EscapeString(home))
-	b.WriteString(`" class="`)
-	b.WriteString(html.EscapeString(class))
-	b.WriteString(`" >`)
+	var field strings.Builder
 	labelClass := "wp-block-search__label"
 	if !showLabel {
 		labelClass += " screen-reader-text"
 	}
-	b.WriteString(`<label class="`)
-	b.WriteString(labelClass)
-	b.WriteString(`" for="`)
-	b.WriteString(html.EscapeString(inputID))
-	b.WriteString(`" >`)
-	b.WriteString(html.EscapeString(label))
-	b.WriteString(`</label>`)
-	b.WriteString(`<div class="wp-block-search__inside-wrapper" >`)
-	b.WriteString(`<input class="wp-block-search__input" id="`)
-	b.WriteString(html.EscapeString(inputID))
-	b.WriteString(`" placeholder="`)
-	b.WriteString(html.EscapeString(placeholder))
-	b.WriteString(`" value="`)
-	b.WriteString(html.EscapeString(value))
-	b.WriteString(`" type="search" name="s" required />`)
+	field.WriteString(`<label class="`)
+	field.WriteString(labelClass)
+	field.WriteString(`" for="`)
+	field.WriteString(html.EscapeString(inputID))
+	field.WriteString(`" >`)
+	field.WriteString(html.EscapeString(label))
+	field.WriteString(`</label>`)
+	field.WriteString(`<div class="wp-block-search__inside-wrapper"`)
+	field.WriteString(wrapperStyle)
+	field.WriteString(` >`)
+	field.WriteString(`<input class="wp-block-search__input" id="`)
+	field.WriteString(html.EscapeString(inputID))
+	field.WriteString(`" placeholder="`)
+	field.WriteString(html.EscapeString(placeholder))
+	field.WriteString(`" value="`)
+	field.WriteString(html.EscapeString(value))
+	field.WriteString(`" type="search" name="s" required />`)
+	// P5.124: attributes.query → hidden inputs (post_type etc.).
+	field.WriteString(searchQueryHiddenInputs(block.Attrs))
 	if showButton {
-		b.WriteString(`<button aria-label="`)
-		b.WriteString(html.EscapeString(buttonText))
-		b.WriteString(`" class="wp-block-search__button wp-element-button" type="submit" >`)
-		b.WriteString(html.EscapeString(buttonText))
-		b.WriteString(`</button>`)
+		btnClass := "wp-block-search__button wp-element-button"
+		btnInner := html.EscapeString(buttonText)
+		ariaLabel := buttonText
+		btnType := "submit"
+		extraAttrs := ""
+		if useIcon {
+			btnClass += " has-icon"
+			btnInner = searchIconSVG
+		}
+		if buttonPos == "button-only" {
+			// Expandable searchfield SSR defaults (interactivity directives omitted).
+			ariaLabel = "Expand search field"
+			btnType = "button"
+			extraAttrs = ` aria-controls="` + html.EscapeString(inputID) + `" aria-expanded="false"`
+		}
+		field.WriteString(`<button aria-label="`)
+		field.WriteString(html.EscapeString(ariaLabel))
+		field.WriteString(`" class="`)
+		field.WriteString(html.EscapeString(btnClass))
+		field.WriteString(`" type="`)
+		field.WriteString(btnType)
+		field.WriteString(`"`)
+		field.WriteString(extraAttrs)
+		field.WriteString(` >`)
+		field.WriteString(btnInner)
+		field.WriteString(`</button>`)
 	}
-	b.WriteString(`</div></form>`)
+	field.WriteString(`</div>`)
+
+	// P5.124: tagName / html5 search-element opt-in (ThemeSupports).
+	tagName := strings.TrimSpace(attrString(block.Attrs, "tagName"))
+	useSearchEl := tagName == "search"
+	if tagName == "" && e.ThemeSupports != nil && e.ThemeSupports("html5", "search-element") {
+		useSearchEl = true
+	}
+	var b strings.Builder
+	if useSearchEl && tagName != "form" {
+		b.WriteString(`<search class="`)
+		b.WriteString(html.EscapeString(class))
+		b.WriteString(`" >`)
+		b.WriteString(`<form method="get" action="`)
+		b.WriteString(html.EscapeString(home))
+		b.WriteString(`">`)
+		b.WriteString(field.String())
+		b.WriteString(`</form></search>`)
+	} else {
+		b.WriteString(`<form role="search" method="get" action="`)
+		b.WriteString(html.EscapeString(home))
+		b.WriteString(`" class="`)
+		b.WriteString(html.EscapeString(class))
+		b.WriteString(`" >`)
+		b.WriteString(field.String())
+		b.WriteString(`</form>`)
+	}
+	return b.String()
+}
+
+// searchQueryHiddenInputs emits <input type="hidden"> for attributes.query (P5.124).
+func searchQueryHiddenInputs(attrs map[string]any) string {
+	if attrs == nil {
+		return ""
+	}
+	raw, ok := attrs["query"]
+	if !ok || raw == nil {
+		return ""
+	}
+	m, ok := raw.(map[string]any)
+	if !ok || len(m) == 0 {
+		return ""
+	}
+	keys := make([]string, 0, len(m))
+	for k := range m {
+		keys = append(keys, k)
+	}
+	// Stable order for tests / diffs.
+	for i := 0; i < len(keys); i++ {
+		for j := i + 1; j < len(keys); j++ {
+			if keys[j] < keys[i] {
+				keys[i], keys[j] = keys[j], keys[i]
+			}
+		}
+	}
+	var b strings.Builder
+	for _, k := range keys {
+		k = strings.TrimSpace(k)
+		if k == "" {
+			continue
+		}
+		b.WriteString(`<input type="hidden" name="`)
+		b.WriteString(html.EscapeString(k))
+		b.WriteString(`" value="`)
+		b.WriteString(html.EscapeString(fmt.Sprint(m[k])))
+		b.WriteString(`" />`)
+	}
 	return b.String()
 }
 

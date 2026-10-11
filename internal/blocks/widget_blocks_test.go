@@ -33,6 +33,45 @@ func TestRenderSearchBlock(t *testing.T) {
 	}
 }
 
+func TestRenderSearchBlockIconQueryWidthAndTag(t *testing.T) {
+	env := &blocks.Env{
+		HomeURL: func() string { return "http://example.test" },
+		ThemeSupports: func(feature string, args ...any) bool {
+			return feature == "html5" && len(args) > 0 && args[0] == "search-element"
+		},
+	}
+	out := blocks.RenderWith(env, `<!-- wp:search {"label":"Find","buttonText":"Go","buttonUseIcon":true,"buttonPosition":"button-only","width":300,"widthUnit":"px","query":{"post_type":"post"}} /-->`)
+	if !strings.Contains(out, `wp-block-search__button-only`) || !strings.Contains(out, `wp-block-search__searchfield-hidden`) {
+		t.Fatalf("missing button-only classes: %q", out)
+	}
+	if !strings.Contains(out, `wp-block-search__icon-button`) || !strings.Contains(out, `has-icon`) {
+		t.Fatalf("missing icon button classes: %q", out)
+	}
+	if !strings.Contains(out, `search-icon`) || !strings.Contains(out, `<svg`) {
+		t.Fatalf("missing icon SVG: %q", out)
+	}
+	if !strings.Contains(out, `type="button"`) || !strings.Contains(out, `Expand search field`) {
+		t.Fatalf("button-only should be type=button expand: %q", out)
+	}
+	if !strings.Contains(out, `name="post_type"`) || !strings.Contains(out, `value="post"`) {
+		t.Fatalf("missing query hidden input: %q", out)
+	}
+	if !strings.Contains(out, `style="width: 300px;"`) {
+		t.Fatalf("missing width style: %q", out)
+	}
+	if !strings.Contains(out, `<search `) || !strings.Contains(out, `</search>`) {
+		t.Fatalf("expected <search> landmark from theme support: %q", out)
+	}
+	// Explicit tagName=form forces classic markup even with theme support.
+	outForm := blocks.RenderWith(env, `<!-- wp:search {"tagName":"form","buttonUseIcon":false} /-->`)
+	if !strings.Contains(outForm, `role="search"`) || strings.Contains(outForm, `<search`) {
+		t.Fatalf("tagName=form should keep classic form: %q", outForm)
+	}
+	if !strings.Contains(outForm, `wp-block-search__text-button`) {
+		t.Fatalf("expected text-button class: %q", outForm)
+	}
+}
+
 func TestRenderCalendarBlock(t *testing.T) {
 	env := &blocks.Env{HomeURL: func() string { return "http://example.test" }}
 	out := blocks.RenderWith(env, `<!-- wp:calendar /-->`)

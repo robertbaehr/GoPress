@@ -115,6 +115,10 @@ type Env struct {
 	// SearchQuery is the front `s` term for core/query-title type=search (P3.21).
 	SearchQuery string
 
+	// ThemeSupports mirrors current_theme_supports for block opt-ins (P5.124 search-element).
+	// feature is e.g. "html5"; args are optional sub-features like "search-element".
+	ThemeSupports func(feature string, args ...any) bool
+
 	// ArchiveTitle is the front date/term archive heading for core/query-title type=archive (P3.22).
 	ArchiveTitle string
 
